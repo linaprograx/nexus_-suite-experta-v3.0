@@ -1,5 +1,3 @@
-
-
 import * as React from 'react';
 import { initializeApp, FirebaseApp } from 'firebase/app';
 import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, User, Auth, signInWithCustomToken } from 'firebase/auth';
@@ -52,17 +50,24 @@ const generateImage = async (prompt: string) => {
     }
     
     const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
-    const response = await ai.models.generateContent({
-        model: 'gemini-2.5-flash-image',
-        contents: { parts: [{ text: prompt }] },
-        config: { responseModalities: [Modality.IMAGE] },
-    });
-    
-    const base64Data = response.candidates?.[0]?.content?.parts?.find(p => p.inlineData)?.inlineData?.data;
-    if (!base64Data) {
-        throw new Error("La respuesta de la API de Imagen (flash) no contenía datos de imagen válidos.");
+    try {
+        // FIX: Se asegura que la llamada a la API se asigna a una constante 'response'.
+        const response = await ai.models.generateContent({
+            model: 'gemini-2.5-flash-image',
+            contents: { parts: [{ text: prompt }] },
+            config: { responseModalities: [Modality.IMAGE] },
+        });
+        
+        // FIX: Se define 'base64Data' a partir de la 'response' obtenida.
+        const base64Data = response.candidates?.[0]?.content?.parts?.find(p => p.inlineData)?.inlineData?.data;
+        if (!base64Data) {
+            throw new Error("La respuesta de la API de Imagen (flash) no contenía datos de imagen válidos.");
+        }
+        return { predictions: [{ bytesBase64Encoded: base64Data }] };
+    } catch (error) {
+        console.error("Error en la API de Imagen (flash):", error);
+        throw new Error("La llamada a la API de imagen falló. Revisa la consola.");
     }
-    return { predictions: [{ bytesBase64Encoded: base64Data }] };
 };
 
 // Helper de API para llamadas con Google Search (para Trend Locator)
@@ -1817,6 +1822,22 @@ const GrimoriumView: React.FC<{
             </Modal>
         </div>
     );
+};
+
+const EscandalloHistoryCard: React.FC<{
+    item: Escandallo;
+    onLoadHistory: (item: Escandallo) => void;
+    db: Firestore;
+    escandallosColPath: string;
+}> = ({ item, onLoadHistory, db, escandallosColPath }) => {
+    return (
+        <Card onClick={() => onLoadHistory(item)} className="cursor-pointer hover:bg-accent p-2">
+            <p className="font-semibold text-sm">{item.recipeName}</p>
+            <div className="flex justify-between text-xs text-muted-foreground">
+                <span>Costo: €{(item.costo || 0).toFixed(2)}</span>
+                <span>PVP: €{(item.precioVenta || 0).toFixed(2)}</span>
+            </div>
+            <div className="text-xs">
                 <span className="text-muted-foreground">Rentab: <span className="font-medium text-primary">{item.rentabilidad.toFixed(1)}%</span></span>
             </div>
         </Card>
