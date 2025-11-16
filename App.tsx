@@ -607,7 +607,8 @@ const DashboardView: React.FC<{
   allPizarronTasks: PizarronTask[];
   allIngredients: Ingredient[];
   auth: Auth;
-}> = ({ allRecipes, allPizarronTasks, allIngredients, auth }) => {
+  setCurrentView: (view: ViewName) => void;
+}> = ({ allRecipes, allPizarronTasks, allIngredients, auth, setCurrentView }) => {
     const { userProfile } = useApp();
 
     const kpis = React.useMemo(() => {
@@ -676,8 +677,12 @@ const DashboardView: React.FC<{
                         <p className="text-lg">Horas Reales Ahorradas</p>
                     </CardContent>
                 </Card>
-                <KPICard title="Total Recetas" value={kpis.totalRecipes} icon={<FaBook size={24} />} color="bg-blue-500" />
-                <KPICard title="Total Tareas" value={kpis.totalTasks} icon={<FaBolt size={24} />} color="bg-green-500" />
+                <div onClick={() => setCurrentView('grimorium')} className="cursor-pointer">
+                    <KPICard title="Total Recetas" value={kpis.totalRecipes} icon={<FaBook size={24} />} color="bg-blue-500" />
+                </div>
+                <div onClick={() => setCurrentView('pizarron')} className="cursor-pointer">
+                    <KPICard title="Total Tareas" value={kpis.totalTasks} icon={<FaBolt size={24} />} color="bg-green-500" />
+                </div>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -3933,6 +3938,7 @@ const PizarronView: React.FC<{
 // --- CONTENT VIEW ---
 const ContentView: React.FC<{
   currentView: ViewName;
+  setCurrentView: (view: ViewName) => void;
   db: Firestore;
   auth: Auth;
   storage: FirebaseStorage;
@@ -3958,7 +3964,7 @@ const ContentView: React.FC<{
   const renderView = () => {
     switch (currentView) {
       case 'dashboard':
-        return <DashboardView allRecipes={rest.allRecipes} allPizarronTasks={rest.allPizarronTasks} allIngredients={rest.allIngredients} auth={rest.auth} />;
+        return <DashboardView allRecipes={rest.allRecipes} allPizarronTasks={rest.allPizarronTasks} allIngredients={rest.allIngredients} auth={rest.auth} setCurrentView={props.setCurrentView} />;
       case 'grimorium':
         return <GrimoriumView 
             db={rest.db}
@@ -4295,6 +4301,7 @@ const MainAppContent = () => {
             />
             <ContentView 
                 currentView={currentView} 
+                setCurrentView={setCurrentView}
                 db={db}
                 auth={auth}
                 storage={storage}
