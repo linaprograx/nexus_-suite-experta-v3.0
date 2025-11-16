@@ -4136,7 +4136,7 @@ const ChatbotWidget: React.FC = () => {
         <div className="fixed bottom-6 right-6 w-96 h-[60vh] bg-card border rounded-lg shadow-xl flex flex-col z-50">
             <header className="p-4 border-b flex justify-between items-center">
                 <h3 className="font-semibold">Asistente Nexus</h3>
-                <Button variant="ghost" size="icon" onClick={() => setIsOpen(false)} className="text-foreground">
+                <Button variant="ghost" size="icon" onClick={() => setIsOpen(false)} className="text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white">
                     <Icon svg={ICONS.x} className="h-4 w-4" />
                 </Button>
             </header>
