@@ -135,6 +135,23 @@ const blobToBase64 = (blob: Blob): Promise<string> => {
     });
 };
 
+// Helper para interpretar números en formato europeo
+export function parseEuroNumber(value: string | number | null | undefined): number {
+  if (value === null || value === undefined) return 0;
+  if (typeof value === 'number') return value;
+
+  let cleaned = value
+    .toString()
+    .trim()
+    .replace(/\s/g, '')   // quitar espacios
+    .replace(/€/g, '')     // quitar símbolo €
+    .replace(/\./g, '')   // quitar separador de miles: 1.234,50 -> 1234,50
+    .replace(',', '.');    // cambiar coma decimal por punto
+
+  const num = Number(cleaned);
+  return isNaN(num) ? 0 : num;
+}
+
 
 // Componente para inyectar los estilos de impresión
 const PrintStyles: React.FC = () => (
@@ -1649,16 +1666,13 @@ const GrimoriumView: React.FC<{
                     const nombre = cols[0].replace(/\uFEFF/g, '').trim();
                     const categoria = cols[1]?.trim() || 'General';
                     
-                    const cleanPrice = (str: string) => {
-                        if (!str) return 0;
-                        const precioLimpio = str.replace(/[^\d,.-]/g, '').replace(',', '.');
-                        return parseFloat(precioLimpio) || 0;
-                    };
-
-                    const precioCompra = cleanPrice(cols[2]);
+                    const precioCompra = parseEuroNumber(cols[2]);
                     const unidadCompra = cols[3]?.trim() || 'und';
                     const standardUnit = cols[4]?.trim() || 'und';
-                    const standardQuantity = cleanPrice(cols[5]);
+                    const standardQuantity = parseEuroNumber(cols[5]);
+
+                    // TODO: eliminar logs de debug tras validar importación.
+                    console.log('DEBUG CSV PRICE:', cols[2], '->', precioCompra);
 
                     let standardPrice = 0;
                     if (standardQuantity > 0 && precioCompra > 0) {
