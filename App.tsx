@@ -3812,7 +3812,11 @@ const PizarronView: React.FC<{
 
   React.useEffect(() => {
     const unsub = onSnapshot(collection(db, boardsColPath), async (snap) => {
-        const boardsData = snap.docs.map(d => ({...d.data(), id: d.id} as PizarronBoard));
+        const boardsData = snap.docs.map(d => ({
+          id: d.id,
+          name: d.data().name || 'Tablero sin nombre',
+          filters: d.data().filters || {}
+        } as PizarronBoard));
         if (boardsData.length === 0) {
             await setDoc(doc(db, boardsColPath, 'general'), { name: 'General' });
             return;

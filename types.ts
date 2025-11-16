@@ -78,12 +78,7 @@ export interface PizarronTask {
 export interface PizarronBoard {
   id: string;
   name: string;
-  filters: {
-    status?: 'ideas' | 'pruebas' | 'aprobado';
-    category?: string;
-    labels?: string[];
-    priority?: 'baja' | 'media' | 'alta';
-  };
+  filters: any;
 }
 
 
