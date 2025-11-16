@@ -895,6 +895,7 @@ const Combobox: React.FC<{
 const CreativityTab: React.FC<{
     db: Firestore;
     userId: string;
+    appId: string;
     allRecipes: Recipe[];
     selectedRecipe: Recipe | null;
     setSelectedRecipe: (recipe: Recipe | null) => void;
@@ -909,7 +910,7 @@ const CreativityTab: React.FC<{
     showHistory: boolean;
     setShowHistory: (show: boolean) => void;
     onOpenRecipeModal: (recipe: Partial<Recipe> | null) => void;
-}> = ({ db, userId, allRecipes, selectedRecipe, setSelectedRecipe, rawInput, setRawInput, handleGenerate, loading, imageLoading, error, result, setResult, showHistory, setShowHistory, onOpenRecipeModal }) => (
+}> = ({ db, userId, appId, allRecipes, selectedRecipe, setSelectedRecipe, rawInput, setRawInput, handleGenerate, loading, imageLoading, error, result, setResult, showHistory, setShowHistory, onOpenRecipeModal }) => (
     <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
         <div className="lg:col-span-2">
             <Card>
@@ -994,11 +995,12 @@ const CreativityTab: React.FC<{
                             if (!result) return;
                             try {
                               const taskText = `[CerebrIty] ${result.storytelling || result.mejora}`.substring(0, 500);
-                              await addDoc(collection(db, `users/${userId}/pizarron-tasks`), {
+                              await addDoc(collection(db, `artifacts/${appId}/public/data/pizarron-tasks`), {
                                 content: taskText,
                                 status: 'Ideas',
                                 category: 'Ideas',
-                                createdAt: serverTimestamp()
+                                createdAt: serverTimestamp(),
+                                boardId: 'general'
                               });
                               alert("Idea guardada en el Pizarrón.");
                             } catch (e) {
@@ -1276,8 +1278,8 @@ const CerebrItyView: React.FC<{
     const handleSaveLabResultToPizarron = async (title: string, content: string) => {
         const combination = labInputs.map(i => i.nombre).join(', ');
         const taskContent = `[The Lab: ${combination}] ${title} - ${content}`.substring(0, 500);
-        await addDoc(collection(db, `users/${userId}/pizarron-tasks`), {
-            content: taskContent, status: 'Ideas', category: 'Ideas', createdAt: serverTimestamp()
+        await addDoc(collection(db, `artifacts/${appId}/public/data/pizarron-tasks`), {
+            content: taskContent, status: 'Ideas', category: 'Ideas', createdAt: serverTimestamp(), boardId: 'general'
         });
         alert("Idea guardada en el Pizarrón.");
     };
@@ -1296,6 +1298,7 @@ const CerebrItyView: React.FC<{
                 <CreativityTab
                     db={db}
                     userId={userId}
+                    appId={appId}
                     allRecipes={allRecipes}
                     selectedRecipe={selectedRecipe}
                     setSelectedRecipe={setSelectedRecipe}
@@ -2038,8 +2041,8 @@ const EscandallatorView: React.FC<{
         const handleSaveToPizarron = async () => {
             const recipeName = allRecipes.find(r => r.id === batchSelectedRecipeId)?.nombre;
             const taskContent = `[Batch] Producir ${targetQuantityStr} ${targetUnit} de ${recipeName}. Dilución: ${includeDilution ? 'Sí' : 'No'}`;
-            await addDoc(collection(db, `users/${userId}/pizarron-tasks`), {
-                content: taskContent, status: 'Ideas', category: 'Desarrollo', createdAt: serverTimestamp()
+            await addDoc(collection(db, `artifacts/${appId}/public/data/pizarron-tasks`), {
+                content: taskContent, status: 'Ideas', category: 'Desarrollo', createdAt: serverTimestamp(), boardId: 'general'
             });
             alert("Tarea de batch guardada en el Pizarrón.");
         };
@@ -2179,14 +2182,15 @@ const TrendResultCard: React.FC<{
     item: TrendResult;
     db: Firestore;
     userId: string;
+    appId: string;
     trendHistoryPath: string;
-}> = ({ item, db, userId, trendHistoryPath }) => {
+}> = ({ item, db, userId, appId, trendHistoryPath }) => {
 
     const handleSaveToPizarron = async () => {
         if(!db || !userId) return;
         const taskText = `[Trend] ${item.titulo}: ${item.resumen}`.substring(0, 500);
-        await addDoc(collection(db, `users/${userId}/pizarron-tasks`), {
-            content: taskText, status: 'Ideas', category: 'Ideas', createdAt: serverTimestamp()
+        await addDoc(collection(db, `artifacts/${appId}/public/data/pizarron-tasks`), {
+            content: taskText, status: 'Ideas', category: 'Ideas', createdAt: serverTimestamp(), boardId: 'general'
         });
         alert("Idea guardada en el Pizarrón.");
     };
@@ -2352,7 +2356,7 @@ const TrendLocatorView: React.FC<{
                 {error && <Alert variant="destructive" title="Error de Búsqueda" description={error} />}
                 {trendResults && trendResults.length > 0 && (
                     <div className="space-y-4">
-                        {trendResults.map((item, index) => <TrendResultCard key={index} item={item} db={db} userId={userId} trendHistoryPath={trendHistoryPath} />)}
+                        {trendResults.map((item, index) => <TrendResultCard key={index} item={item} db={db} userId={userId} appId={appId} trendHistoryPath={trendHistoryPath} />)}
                         {trendSources && trendSources.length > 0 && (
                             <Card>
                                 <CardHeader><CardTitle>Fuentes de Información</CardTitle></CardHeader>
@@ -2452,11 +2456,12 @@ const ZeroWasteView: React.FC<{
 
         const handleSaveToPizarron = async () => {
             const taskContent = `[Zero Waste] Desarrollar: ${recipe.nombre}`.substring(0, 500);
-            await addDoc(collection(db, `users/${userId}/pizarron-tasks`), {
+            await addDoc(collection(db, `artifacts/${appId}/public/data/pizarron-tasks`), {
                 content: taskContent,
                 status: 'Ideas',
                 category: 'Desarrollo',
                 createdAt: serverTimestamp(),
+                boardId: 'general',
             });
             alert("Elaboración guardada en el Pizarrón.");
         };
@@ -2554,14 +2559,16 @@ const MenuResultCard: React.FC<{
     item: MenuLayout;
     db: Firestore;
     userId: string;
-}> = ({ item, db, userId }) => {
+    appId: string;
+}> = ({ item, db, userId, appId }) => {
     const handleSaveToPizarron = async () => {
         const taskContent = `[Diseño Menú] Adaptar el concepto '${item.themeName}'. Descripción: ${item.description}`.substring(0, 500);
-        await addDoc(collection(db, `users/${userId}/pizarron-tasks`), {
+        await addDoc(collection(db, `artifacts/${appId}/public/data/pizarron-tasks`), {
             content: taskContent,
             status: 'ideas',
             category: 'Marketing',
-            createdAt: serverTimestamp()
+            createdAt: serverTimestamp(),
+            boardId: 'general'
         });
         alert("Concepto de menú guardado en Pizarrón.");
     };
@@ -2765,7 +2772,7 @@ const MakeMenuView: React.FC<{
                 {menuResults && menuResults.length > 0 && (
                     <div className="flex flex-col h-full">
                         <div className="flex border-b">{menuResults.map((_, index) => (<button key={index} onClick={() => setActiveDesignerTab(index)} className={`py-2 px-4 text-sm font-medium ${activeDesignerTab === index ? 'border-b-2 border-primary text-primary' : 'text-muted-foreground'}`}>Opción {index + 1}</button>))}</div>
-                        <div className="flex-1 pt-4"><MenuResultCard item={menuResults[activeDesignerTab]} db={db} userId={userId} /></div>
+                        <div className="flex-1 pt-4"><MenuResultCard item={menuResults[activeDesignerTab]} db={db} userId={userId} appId={appId} /></div>
                     </div>
                 )}
             </div>
@@ -3790,8 +3797,12 @@ const PizarronView: React.FC<{
   }, [taskToOpen, allPizarronTasks, onTaskOpened, setSelectedTask]);
 
   React.useEffect(() => {
-    const unsub = onSnapshot(collection(db, boardsColPath), (snap) => {
+    const unsub = onSnapshot(collection(db, boardsColPath), async (snap) => {
         const boardsData = snap.docs.map(d => ({...d.data(), id: d.id} as PizarronBoard));
+        if (boardsData.length === 0) {
+            await setDoc(doc(db, boardsColPath, 'general'), { name: 'General' });
+            return;
+        }
         setBoards(boardsData);
         if (!activeBoardId && boardsData.length > 0) {
             setActiveBoardId(boardsData[0].id);
