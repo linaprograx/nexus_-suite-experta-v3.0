@@ -953,15 +953,15 @@ const CreativityTab: React.FC<{
                         </Card>
                          <Card>
                             <CardHeader><CardTitle>Mejora Táctica</CardTitle></CardHeader>
-                            <CardContent><p className="text-sm">{result.mejora}</p></CardContent>
+                            <CardContent>{result && <p className="text-sm">{result.mejora}</p>}</CardContent>
                         </Card>
                          <Card>
                             <CardHeader><CardTitle>Garnish de Alto Nivel</CardTitle></CardHeader>
-                            <CardContent><p className="text-sm">{result.garnishComplejo}</p></CardContent>
+                            <CardContent>{result && <p className="text-sm">{result.garnishComplejo}</p>}</CardContent>
                         </Card>
                          <Card>
                             <CardHeader><CardTitle>Storytelling</CardTitle></CardHeader>
-                            <CardContent><p className="text-sm">{result.storytelling}</p></CardContent>
+                            <CardContent>{result && <p className="text-sm">{result.storytelling}</p>}</CardContent>
                         </Card>
                     </div>
                     <div className="flex gap-4">
@@ -1096,19 +1096,19 @@ const TheLabTab: React.FC<{
                     </Card>
                     <Card className="md:col-span-3">
                         <CardHeader className="flex flex-row justify-between items-center"><CardTitle>Perfil Aromático Combinado</CardTitle><Button size="sm" variant="outline" onClick={() => handleSaveLabResultToPizarron('Perfil Aromático', labResult.perfil)}>Guardar</Button></CardHeader>
-                        <CardContent><p>{labResult.perfil}</p></CardContent>
+                        <CardContent>{labResult && <p>{labResult.perfil}</p>}</CardContent>
                     </Card>
                     <Card>
                         <CardHeader className="flex flex-row justify-between items-center"><CardTitle>Emparejamientos Clásicos</CardTitle><Button size="sm" variant="outline" onClick={() => handleSaveLabResultToPizarron('Clásicos', labResult.clasicos.join(', '))}>Guardar</Button></CardHeader>
-                        <CardContent><ul className="list-disc list-inside space-y-1">{labResult.clasicos.map((item, index) => <li key={index}>{item}</li>)}</ul></CardContent>
+                        <CardContent>{labResult && <ul className="list-disc list-inside space-y-1">{labResult.clasicos.map((item, index) => <li key={index}>{item}</li>)}</ul>}</CardContent>
                     </Card>
                     <Card>
                         <CardHeader className="flex flex-row justify-between items-center"><CardTitle>Emparejamientos Moleculares</CardTitle><Button size="sm" variant="outline" onClick={() => handleSaveLabResultToPizarron('Moleculares', labResult.moleculares.join(', '))}>Guardar</Button></CardHeader>
-                        <CardContent><ul className="list-disc list-inside space-y-1">{labResult.moleculares.map((item, index) => <li key={index}>{item}</li>)}</ul></CardContent>
+                        <CardContent>{labResult && <ul className="list-disc list-inside space-y-1">{labResult.moleculares.map((item, index) => <li key={index}>{item}</li>)}</ul>}</CardContent>
                     </Card>
                     <Card>
                         <CardHeader className="flex flex-row justify-between items-center"><CardTitle>Técnica Sugerida</CardTitle><Button size="sm" variant="outline" onClick={() => handleSaveLabResultToPizarron('Técnica Sugerida', labResult.tecnica)}>Guardar</Button></CardHeader>
-                        <CardContent><p>{labResult.tecnica}</p></CardContent>
+                        <CardContent>{labResult && <p>{labResult.tecnica}</p>}</CardContent>
                     </Card>
                 </div>
             )}
@@ -2350,10 +2350,10 @@ const TrendLocatorView: React.FC<{
             <div className="flex-1 overflow-y-auto space-y-4">
                 {loading && <div className="flex justify-center p-8"><Spinner className="w-8 h-8"/></div>}
                 {error && <Alert variant="destructive" title="Error de Búsqueda" description={error} />}
-                {trendResults.length > 0 && (
+                {trendResults && trendResults.length > 0 && (
                     <div className="space-y-4">
                         {trendResults.map((item, index) => <TrendResultCard key={index} item={item} db={db} userId={userId} trendHistoryPath={trendHistoryPath} />)}
-                        {trendSources.length > 0 && (
+                        {trendSources && trendSources.length > 0 && (
                             <Card>
                                 <CardHeader><CardTitle>Fuentes de Información</CardTitle></CardHeader>
                                 <CardContent>
@@ -2531,7 +2531,7 @@ const ZeroWasteView: React.FC<{
             <div className="flex-1 overflow-y-auto space-y-4">
                 {loading && <div className="flex justify-center p-8"><Spinner className="w-8 h-8"/></div>}
                 {error && <Alert variant="destructive" title="Error de Generación" description={error} />}
-                {recipeResults.length > 0 && (
+                {recipeResults && recipeResults.length > 0 && (
                     <div className="space-y-4">
                         {recipeResults.map((recipe, index) => (
                             <ZeroWasteResultCard
@@ -2762,7 +2762,7 @@ const MakeMenuView: React.FC<{
             <div className="flex-1 overflow-y-auto">
                 {loading && <div className="flex justify-center p-8"><Spinner className="w-8 h-8"/></div>}
                 {error && <Alert variant="destructive" title="Error de Generación" description={error} />}
-                {menuResults.length > 0 && (
+                {menuResults && menuResults.length > 0 && (
                     <div className="flex flex-col h-full">
                         <div className="flex border-b">{menuResults.map((_, index) => (<button key={index} onClick={() => setActiveDesignerTab(index)} className={`py-2 px-4 text-sm font-medium ${activeDesignerTab === index ? 'border-b-2 border-primary text-primary' : 'text-muted-foreground'}`}>Opción {index + 1}</button>))}</div>
                         <div className="flex-1 pt-4"><MenuResultCard item={menuResults[activeDesignerTab]} db={db} userId={userId} /></div>
@@ -2800,10 +2800,10 @@ const MakeMenuView: React.FC<{
                      {criticError && <Alert variant="destructive" title="Error de Análisis" description={criticError} />}
                      {criticResult && (
                         <div className="space-y-4">
-                            <Card className="border-l-4 border-green-500"><CardHeader><CardTitle>Puntos Fuertes</CardTitle></CardHeader><CardContent><ul className="list-disc list-inside space-y-1 text-sm">{criticResult.puntosFuertes.map((item, i) => <li key={i}>{item}</li>)}</ul></CardContent></Card>
-                            <Card className="border-l-4 border-red-500"><CardHeader><CardTitle>Debilidades</CardTitle></CardHeader><CardContent><ul className="list-disc list-inside space-y-1 text-sm">{criticResult.debilidades.map((item, i) => <li key={i}>{item}</li>)}</ul></CardContent></Card>
-                            <Card className="border-l-4 border-yellow-500"><CardHeader><CardTitle>Oportunidades</CardTitle></CardHeader><CardContent><ul className="list-disc list-inside space-y-1 text-sm">{criticResult.oportunidades.map((item, i) => <li key={i}>{item}</li>)}</ul></CardContent></Card>
-                            <Card className="border-l-4 border-blue-500"><CardHeader><CardTitle>Feedback Estratégico</CardTitle></CardHeader><CardContent><p className="text-sm">{criticResult.feedback}</p></CardContent></Card>
+                            <Card className="border-l-4 border-green-500"><CardHeader><CardTitle>Puntos Fuertes</CardTitle></CardHeader><CardContent>{criticResult && <ul className="list-disc list-inside space-y-1 text-sm">{criticResult.puntosFuertes.map((item, i) => <li key={i}>{item}</li>)}</ul>}</CardContent></Card>
+                            <Card className="border-l-4 border-red-500"><CardHeader><CardTitle>Debilidades</CardTitle></CardHeader><CardContent>{criticResult && <ul className="list-disc list-inside space-y-1 text-sm">{criticResult.debilidades.map((item, i) => <li key={i}>{item}</li>)}</ul>}</CardContent></Card>
+                            <Card className="border-l-4 border-yellow-500"><CardHeader><CardTitle>Oportunidades</CardTitle></CardHeader><CardContent>{criticResult && <ul className="list-disc list-inside space-y-1 text-sm">{criticResult.oportunidades.map((item, i) => <li key={i}>{item}</li>)}</ul>}</CardContent></Card>
+                            <Card className="border-l-4 border-blue-500"><CardHeader><CardTitle>Feedback Estratégico</CardTitle></CardHeader><CardContent>{criticResult && <p className="text-sm">{criticResult.feedback}</p>}</CardContent></Card>
                         </div>
                      )}
                      {showCriticHistory && <CriticHistorySidebar db={db} historyPath={criticHistoryPath} onClose={() => setShowCriticHistory(false)} />}
@@ -3056,6 +3056,7 @@ const ColegiumView: React.FC<{
 
     const QuizInProgress = () => {
         const currentQ = quizData[currentQuestionIndex];
+        if (!currentQ) return null;
         return (
             <Card className="w-full max-w-2xl">
                 <CardHeader>
