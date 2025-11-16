@@ -3,6 +3,7 @@ import { initializeApp, FirebaseApp } from 'firebase/app';
 import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, User, Auth, signInWithCustomToken } from 'firebase/auth';
 import { getFirestore, collection, onSnapshot, addDoc, doc, updateDoc, deleteDoc, writeBatch, Firestore, serverTimestamp, query, orderBy, limit, setDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
 import { getStorage, ref, uploadString, getDownloadURL, FirebaseStorage, uploadBytes } from 'firebase/storage';
+import { parseEuroNumber } from "./src/utils/parseEuroNumber";
 import { ViewName, Ingredient, Recipe, PizarronTask, PizarronStatus, UIContextType, AppContextType, TaskCategory, IngredientLineItem, CerebrityResult, Escandallo, TrendResult, MenuLayout, QuizQuestion, ColegiumResult, UserProfile, ZeroWasteResult, PizarronComment, PizarronBoard, AppNotification } from './types';
 import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, AreaChart, Area, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar } from 'recharts';
 import { GoogleGenAI, Type, Modality } from "@google/genai";
@@ -135,22 +136,6 @@ const blobToBase64 = (blob: Blob): Promise<string> => {
     });
 };
 
-// Helper para interpretar números en formato europeo
-export function parseEuroNumber(value: string | number | null | undefined): number {
-  if (value === null || value === undefined) return 0;
-  if (typeof value === 'number') return value;
-
-  let cleaned = value
-    .toString()
-    .trim()
-    .replace(/\s/g, '')   // quitar espacios
-    .replace(/€/g, '')     // quitar símbolo €
-    .replace(/\./g, '')   // quitar separador de miles: 1.234,50 -> 1234,50
-    .replace(',', '.');    // cambiar coma decimal por punto
-
-  const num = Number(cleaned);
-  return isNaN(num) ? 0 : num;
-}
 
 
 // Componente para inyectar los estilos de impresión
@@ -1658,7 +1643,8 @@ const GrimoriumView: React.FC<{
 
             for (const row of rows) {
                 if (!row) continue;
-                const cols = row.split(';');
+                const rowClean = row.replace(/\r/g, '');
+                const cols = rowClean.split(';');
 
                 if (!cols[0]) continue;
 
