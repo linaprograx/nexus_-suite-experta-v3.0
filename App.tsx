@@ -4377,3 +4377,4 @@ const AppContent: React.FC = () => {
 };
 
 export default App;
+// Refrescando para Vercel
