@@ -71,6 +71,8 @@ export interface PizarronTask {
   attachments: { name: string, url: string, type: 'image' | 'pdf' | 'link' }[];
   assignees: string[]; // Array de UserIDs
   dueDate: any; // Timestamp (para el Calendario)
+  authorName?: string;
+  authorPhotoURL?: string;
 }
 
 export interface PizarronBoard {

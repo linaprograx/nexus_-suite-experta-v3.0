@@ -3313,6 +3313,7 @@ interface AddTaskModalProps {
 }
 
 const AddTaskModal: React.FC<AddTaskModalProps> = ({ isOpen, onClose, db, appId, userId, auth, initialStatus, activeBoardId }) => {
+  const { userProfile } = useApp();
   const [texto, setTexto] = React.useState('');
   const [category, setCategory] = React.useState<TaskCategory>('Ideas');
   const [priority, setPriority] = React.useState<'baja' | 'media' | 'alta'>('media');
@@ -3340,7 +3341,9 @@ const AddTaskModal: React.FC<AddTaskModalProps> = ({ isOpen, onClose, db, appId,
       starRating: {},
       attachments: [],
       assignees: [auth.currentUser?.email || userId],
-      dueDate: null
+      dueDate: null,
+      authorName: userProfile.displayName || 'Unknown Author',
+      authorPhotoURL: userProfile.photoURL || ''
     };
 
     try {
@@ -3618,6 +3621,12 @@ const PizarronCard: React.FC<PizarronCardProps> = ({ task, onDragStart, onOpenDe
           )}
         </div>
       </div>
+      {task.authorName && (
+        <div className="flex items-center gap-2 pt-2 border-t mt-2">
+          <img src={task.authorPhotoURL || `https://ui-avatars.com/api/?name=${task.authorName}&background=random`} alt={task.authorName} className="w-6 h-6 rounded-full" />
+          <span className="text-xs text-muted-foreground">{task.authorName}</span>
+        </div>
+      )}
     </Card>
   );
 };
