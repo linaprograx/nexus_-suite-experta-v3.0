@@ -663,7 +663,7 @@ const DashboardView: React.FC<{
     );
 
     return (
-        <div className="p-4 lg:p-8 bg-gray-50 dark:bg-gray-900/50 min-h-full overflow-y-auto">
+        <div className="p-4 lg:p-8 bg-gray-50 dark:bg-gray-900/50 overflow-y-auto max-h-screen pb-32">
             <div className="mb-8">
                 <h1 className="text-3xl font-bold tracking-tight">Bienvenido, {userProfile?.displayName || auth.currentUser?.email}</h1>
                 <p className="text-muted-foreground">Una vista de alto nivel del ecosistema Nexus.</p>
