@@ -8,6 +8,7 @@ import { ViewName, Ingredient, Recipe, PizarronTask, PizarronStatus, UIContextTy
 import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, AreaChart, Area, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar } from 'recharts';
 import { GoogleGenAI, Type, Modality } from "@google/genai";
 import { FaBook, FaBolt, FaWineGlassAlt } from 'react-icons/fa';
+import TodayTasks from './src/components/dashboard/TodayTasks';
 
 
 // --- HARDCODED CONFIGURATIONS (as per requirement) ---
@@ -199,13 +200,13 @@ const UIContext = React.createContext<UIContextType | undefined>(undefined);
 const AppContext = React.createContext<AppContextType | undefined>(undefined);
 
 // --- HOOKS for consuming contexts ---
-const useUI = (): UIContextType => {
+export const useUI = (): UIContextType => {
   const context = React.useContext(UIContext);
   if (!context) throw new Error('useUI must be used within a UIProvider');
   return context;
 };
 
-const useApp = (): AppContextType => {
+export const useApp = (): AppContextType => {
   const context = React.useContext(AppContext);
   if (!context) throw new Error('useApp must be used within an AppProvider');
   return context;
@@ -731,6 +732,7 @@ const DashboardView: React.FC<{
                     </CardContent>
                 </Card>
             </div>
+            <TodayTasks />
         </div>
     );
 };
