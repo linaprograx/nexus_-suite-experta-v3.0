@@ -1,0 +1,56 @@
+import React from 'react';
+import { Card, CardContent } from '../../../components/ui/Card';
+import { Button } from '../../../components/ui/Button';
+import { Icon } from '../../../components/ui/Icon';
+import { ICONS } from '../../../components/ui/icons';
+import { ImpactBadge } from './ImpactBadge';
+import { NextBestActionData } from '../nextBestActionService';
+
+interface NBACardProps {
+  data: NextBestActionData;
+  isLoading: boolean;
+  onRefresh: () => void;
+}
+
+export const NBACard: React.FC<NBACardProps> = ({ data, isLoading, onRefresh }) => {
+  return (
+    <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/10 dark:to-indigo-900/10 border-blue-100 dark:border-blue-900/30">
+      <CardContent className="p-4 sm:p-5">
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex-1 space-y-2">
+            <div className="flex items-center gap-2">
+              <span className="flex h-6 w-6 items-center justify-center rounded-full bg-blue-100 dark:bg-blue-900/30">
+                <Icon svg={ICONS.sparkles} className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
+              </span>
+              <h3 className="text-sm font-semibold text-blue-900 dark:text-blue-100">
+                Análisis estratégico + acción inmediata
+              </h3>
+              <ImpactBadge impact={data.impact} />
+            </div>
+
+            <div>
+              <p className="text-base font-medium text-gray-900 dark:text-gray-100">
+                {isLoading ? 'Analizando tu contexto creativo...' : data.action}
+              </p>
+              {!isLoading && (
+                <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
+                  {data.reason} • <span className="text-blue-600 dark:text-blue-400 font-medium">{data.time} min</span>
+                </p>
+              )}
+            </div>
+          </div>
+
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onRefresh}
+            disabled={isLoading}
+            className="text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400"
+          >
+            <Icon svg={ICONS.refresh} className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  );
+};
