@@ -81,5 +81,5 @@ export const ContentView: React.FC<ContentViewProps> = (props) => {
     }
   };
 
-  return <div className="flex-1 overflow-y-auto">{renderView()}</div>;
+  return <div className="w-full h-full">{renderView()}</div>;
 };

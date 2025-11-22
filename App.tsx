@@ -4,11 +4,12 @@ import { ViewName, Recipe, Ingredient, PizarronTask, AppNotification } from './t
 
 // Providers & Context
 import { AppProvider, useApp } from './src/context/AppContext';
-import { UIProvider } from './src/context/UIContext';
+import { UIProvider, useUI } from './src/context/UIContext';
 
 // Components
 import { Spinner } from './src/components/ui/Spinner';
 import { Sidebar } from './src/components/layout/Sidebar';
+import { Topbar } from './src/components/layout/Topbar';
 import { ContentView } from './src/views/ContentView';
 import { RecipeFormModal } from './src/components/grimorium/RecipeFormModal';
 import { NotificationsDrawer } from './src/components/dashboard/NotificationsDrawer';
@@ -19,6 +20,8 @@ import { PrintStyles } from './src/components/ui/PrintStyles';
 // --- MAIN APP COMPONENT ---
 const MainAppContent = () => {
     const { db, userId, auth, storage, appId, userProfile } = useApp();
+    const { isSidebarCollapsed } = useUI();
+    
     const [currentView, setCurrentView] = React.useState<ViewName>('dashboard');
     const [allRecipes, setAllRecipes] = React.useState<Recipe[]>([]);
     const [allIngredients, setAllIngredients] = React.useState<Ingredient[]>([]);
@@ -26,6 +29,7 @@ const MainAppContent = () => {
     
     const [notifications, setNotifications] = React.useState<AppNotification[]>([]);
     const [showNotificationsDrawer, setShowNotificationsDrawer] = React.useState(false);
+    const [isMobileSidebarOpen, setIsMobileSidebarOpen] = React.useState(false);
 
     const [showRecipeModal, setShowRecipeModal] = React.useState(false);
     const [recipeToEdit, setRecipeToEdit] = React.useState<Partial<Recipe> | null>(null);
@@ -67,37 +71,52 @@ const MainAppContent = () => {
     if (!db || !userId || !auth || !storage || !appId) return <div className="flex h-screen items-center justify-center"><Spinner className="w-12 h-12"/></div>;
 
     return (
-        <div className="flex h-screen bg-background text-foreground">
+        <div className="min-h-screen bg-slate-950 text-slate-50 font-sans antialiased selection:bg-indigo-500/30">
             <Sidebar 
                 currentView={currentView} 
                 setCurrentView={setCurrentView} 
                 onShowNotifications={() => setShowNotificationsDrawer(true)}
                 unreadNotifications={notifications.some(n => !n.read)}
+                isMobileOpen={isMobileSidebarOpen}
+                onCloseMobile={() => setIsMobileSidebarOpen(false)}
             />
-            <ContentView 
-                currentView={currentView} 
-                setCurrentView={setCurrentView}
-                db={db}
-                auth={auth}
-                storage={storage}
-                userId={userId}
-                appId={appId}
-                allRecipes={allRecipes}
-                allIngredients={allIngredients}
-                allPizarronTasks={allPizarronTasks}
-                onOpenRecipeModal={handleOpenRecipeModal}
-                taskToOpen={taskToOpen}
-                onTaskOpened={() => setTaskToOpen(null)}
-                draggingRecipe={draggingRecipe}
-                onDragRecipeStart={setDraggingRecipe}
-                draggingTask={draggingTask}
-                onDragTaskStart={setDraggingTask}
-                onDropEnd={handleDropEnd}
-                onAnalyze={handleAnalyzeRequest}
-                initialText={textToAnalyze}
-                onAnalysisDone={() => setTextToAnalyze('')}
-                userProfile={userProfile}
-            />
+            
+            <div className={`flex-1 flex flex-col transition-all duration-300 h-screen ${isSidebarCollapsed ? 'md:ml-20' : 'md:ml-64'}`}>
+                <Topbar 
+                    onToggleMobileSidebar={() => setIsMobileSidebarOpen(true)}
+                    onShowNotifications={() => setShowNotificationsDrawer(true)}
+                    unreadNotifications={notifications.some(n => !n.read)}
+                    title="Nexus Suite"
+                />
+                
+                <main className="flex-1 overflow-y-auto p-4 scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-transparent">
+                    <ContentView 
+                        currentView={currentView} 
+                        setCurrentView={setCurrentView}
+                        db={db}
+                        auth={auth}
+                        storage={storage}
+                        userId={userId}
+                        appId={appId}
+                        allRecipes={allRecipes}
+                        allIngredients={allIngredients}
+                        allPizarronTasks={allPizarronTasks}
+                        onOpenRecipeModal={handleOpenRecipeModal}
+                        taskToOpen={taskToOpen}
+                        onTaskOpened={() => setTaskToOpen(null)}
+                        draggingRecipe={draggingRecipe}
+                        onDragRecipeStart={setDraggingRecipe}
+                        draggingTask={draggingTask}
+                        onDragTaskStart={setDraggingTask}
+                        onDropEnd={handleDropEnd}
+                        onAnalyze={handleAnalyzeRequest}
+                        initialText={textToAnalyze}
+                        onAnalysisDone={() => setTextToAnalyze('')}
+                        userProfile={userProfile}
+                    />
+                </main>
+            </div>
+
             {showRecipeModal && <RecipeFormModal isOpen={showRecipeModal} onClose={() => setShowRecipeModal(false)} db={db} userId={userId} initialData={recipeToEdit} allIngredients={allIngredients}/>}
             {showNotificationsDrawer && (
                 <NotificationsDrawer
