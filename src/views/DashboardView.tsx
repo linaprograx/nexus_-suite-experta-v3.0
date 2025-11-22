@@ -121,6 +121,9 @@ const DashboardView: React.FC<{
         userProfile?.displayName || 'Usuario'
     );
 
+    // DEBUG: NBA
+    console.log("NBA DEBUG:", nbaData);
+
     // --- Components ---
 
     const KpiCard = ({ title, value, icon, trend, colorClass }: any) => (
@@ -305,7 +308,7 @@ const DashboardView: React.FC<{
                         <CreativeWeekPanel data={creativeWeekData} />
                     </div>
                     
-                    {nbaData && (
+                    {nbaData?.action && (
                         <div className="mt-8">
                             <HybridNBACard 
                                 data={nbaData} 

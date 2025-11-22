@@ -13,6 +13,10 @@ interface HybridNBACardProps {
 }
 
 export const HybridNBACard: React.FC<HybridNBACardProps> = ({ data, isLoading, onRefresh }) => {
+  if (!data?.action) return null;
+
+  const { action = "Revisa tus tareas", reason = "", impact = "medium", time = 10 } = data || {};
+
   return (
     <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/10 dark:to-indigo-900/10 border-blue-100 dark:border-blue-900/30">
       <CardContent className="p-4 sm:p-5">
@@ -25,16 +29,16 @@ export const HybridNBACard: React.FC<HybridNBACardProps> = ({ data, isLoading, o
               <h3 className="text-sm font-semibold text-blue-900 dark:text-blue-100">
                 Análisis estratégico + acción inmediata
               </h3>
-              <ImpactBadge impact={data.impact} />
+              <ImpactBadge impact={impact} />
             </div>
 
             <div>
               <p className="text-base font-medium text-gray-900 dark:text-gray-100">
-                {isLoading ? 'Analizando tu contexto creativo...' : data.action}
+                {isLoading ? 'Analizando tu contexto creativo...' : action}
               </p>
               {!isLoading && (
                 <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
-                  {data.reason} • <span className="text-blue-600 dark:text-blue-400 font-medium">{data.time} min</span>
+                  {reason} • <span className="text-blue-600 dark:text-blue-400 font-medium">{time} min</span>
                 </p>
               )}
             </div>

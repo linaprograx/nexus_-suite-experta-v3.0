@@ -7,6 +7,24 @@ const CACHE_KEY = 'nexus_nba_data';
 const CACHE_TIMESTAMP = 'nexus_nba_timestamp';
 const CACHE_DURATION = 2 * 60 * 60 * 1000; // 2 horas
 
+// Fallback constante para asegurar renderizado
+const FALLBACK_ACTION: NextBestActionData = {
+  action: "Revisar tus tareas del día",
+  reason: "No se pudo generar un análisis estable. Usando reglas internas.",
+  impact: "medium",
+  time: 10
+};
+
+function isValidNBA(data: any): boolean {
+  return (
+    data &&
+    typeof data.action === 'string' &&
+    typeof data.reason === 'string' &&
+    ['low', 'medium', 'high'].includes(data.impact) &&
+    typeof data.time === 'number'
+  );
+}
+
 export function useNextBestAction(recipes: Recipe[], tasks: PizarronTask[], userName: string) {
   const { summary } = useCreativeWeek(tasks);
   const [data, setData] = useState<NextBestActionData | null>(null);
@@ -23,19 +41,30 @@ export function useNextBestAction(recipes: Recipe[], tasks: PizarronTask[], user
       if (!force && cached && timestamp) {
         const age = Date.now() - parseInt(timestamp, 10);
         if (age < CACHE_DURATION) {
-          setData(JSON.parse(cached));
-          setIsLoading(false);
-          return;
+          const obj = JSON.parse(cached);
+          if (isValidNBA(obj)) {
+            setData(obj);
+            setIsLoading(false);
+            return;
+          } else {
+            // Caché corrupto, borrar
+            localStorage.removeItem(CACHE_KEY);
+            localStorage.removeItem(CACHE_TIMESTAMP);
+          }
         }
       }
 
       // 2. Si no hay caché o expiró, llamar a Gemini
-      const newData = await getNextBestAction(
+      let newData = await getNextBestAction(
         recipes,
         tasks,
         summary,
         userName || 'Usuario'
       );
+
+      if (!isValidNBA(newData)) {
+        newData = FALLBACK_ACTION;
+      }
 
       // 3. Guardar en caché
       localStorage.setItem(CACHE_KEY, JSON.stringify(newData));
@@ -44,12 +73,7 @@ export function useNextBestAction(recipes: Recipe[], tasks: PizarronTask[], user
       setData(newData);
     } catch (error) {
       console.error('Error fetching Next Best Action:', error);
-      setData({
-        action: "Revisar tus tareas del día",
-        reason: "No pudimos conectar con el asistente. Usando reglas internas.",
-        impact: "medium",
-        time: 10
-      });
+      setData(FALLBACK_ACTION);
     } finally {
       setIsLoading(false);
     }

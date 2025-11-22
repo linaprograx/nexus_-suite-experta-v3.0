@@ -16,6 +16,16 @@ const FALLBACK_ACTION: NextBestActionData = {
   time: 10
 };
 
+function isValidNBA(data: any) {
+  return (
+    data &&
+    typeof data.action === 'string' &&
+    typeof data.reason === 'string' &&
+    ['low','medium','high'].includes(data.impact) &&
+    typeof data.time === 'number'
+  );
+}
+
 interface PreprocessedData {
   userName: string;
   recipes: { title: string; category: string; status: string; difficulty: string }[];
@@ -66,28 +76,31 @@ export async function getNextBestAction(
   const processedData = preprocessData(recipes, tasks, creativeSummary, userName);
 
   const systemPrompt = `
-You are a hybrid expert in mixology R&D, bar operations, and AI-driven productivity. 
-Your job is to determine the Next Best Action the user must take TODAY. 
-You must combine business strategy, bar production logic, creativity, menu development, and operational efficiency.
+Eres un experto híbrido en I+D de mixología, operaciones de bar y productividad impulsada por IA.
+Tu trabajo es determinar la Próxima Mejor Acción (Next Best Action) que el usuario debe tomar HOY.
+Debes combinar estrategia de negocio, lógica de producción de bar, creatividad, desarrollo de menús y eficiencia operativa.
 
-Rules:
-- Deliver ONE clear action.
-- It must be achievable today (micro-step), but aligned with a bigger vision (macro).
-- Consider urgency, creative momentum, FENÓMENO’s bar concept, ingredient usage, and current production flow.
-- IMPORTANT: If data is unclear, incomplete, or ambiguous, you MUST infer and still produce a high-quality recommendation.
-- NEVER return empty text or say you cannot analyze. Infer and generate.
-- ALWAYS follow the JSON output format exactly.
+Reglas:
+- Entrega UNA sola acción clara.
+- Debe ser realizable hoy (micro-paso), pero alineada con una visión más grande (macro).
+- Considera la urgencia, el impulso creativo, el concepto del bar FENÓMENO, el uso de ingredientes y el flujo de producción actual.
+- IMPORTANTE: Si los datos son poco claros, incompletos o ambiguos, DEBES inferir y aun así producir una recomendación de alta calidad.
+- NUNCA devuelvas texto vacío ni digas que no puedes analizar. Infiere y genera.
+- SIEMPRE responde en español. Si detectas texto, categorías o datos en inglés, TÚ debes traducirlo automáticamente al español.
+- Mantén un tono profesional, claro, directo y estilo "Nexus Suite". Usa "tú", no "usted".
+- La variable "reason" debe redactarse en español fluido y tener menos de 40 palabras.
+- SIEMPRE sigue exactamente el formato de salida JSON.
 `;
 
   const userQuery = `
-Analyze the structured context below and determine the single Next Best Action. 
-Explain the reason clearly in <50 words.  
-Return only JSON.
+Analiza el contexto estructurado a continuación y determina la única Próxima Mejor Acción.
+Explica la razón claramente en menos de 40 palabras en español fluido.
+Devuelve solo JSON.
 
-Context Data:
+Datos de Contexto:
 ${JSON.stringify(processedData, null, 2)}
 
-Required JSON Format:
+Formato JSON Requerido:
 {
   "action": "string",
   "reason": "string",
@@ -99,8 +112,11 @@ Required JSON Format:
   try {
     const result = await callGeminiApi(userQuery, systemPrompt);
     
-    // Limpieza básica de la respuesta para extraer JSON si viene con markdown
-    const cleanText = result.text.replace(/```json\n?|\n?```/g, '').trim();
+    // Limpieza mejorada de JSON
+    const cleanText = result.text
+      .replace(/```json/g, '')
+      .replace(/```/g, '')
+      .trim();
     
     let parsedData: any;
     try {
@@ -110,13 +126,8 @@ Required JSON Format:
       return FALLBACK_ACTION;
     }
 
-    // Validación estructural básica
-    if (
-      typeof parsedData.action === 'string' &&
-      typeof parsedData.reason === 'string' &&
-      ['low', 'medium', 'high'].includes(parsedData.impact) &&
-      typeof parsedData.time === 'number'
-    ) {
+    // Validación estricta usando helper
+    if (isValidNBA(parsedData)) {
       return parsedData as NextBestActionData;
     } else {
       console.warn('NBA: Invalid JSON structure, triggering fallback.');
