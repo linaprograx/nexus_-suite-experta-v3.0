@@ -34,21 +34,21 @@ const NavLink: React.FC<NavLinkProps> = ({ view, label, icon, currentView, setCu
   const baseClasses = "group flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium transition-all duration-300 relative overflow-hidden";
   
   const activeClasses = 
-    "bg-gradient-to-r from-indigo-500 via-fuchsia-500 to-emerald-400 " +
-    "text-slate-50 shadow-[0_0_25px_rgba(129,140,248,0.45)] border border-white/20";
+    "bg-slate-200 text-slate-900 dark:bg-gradient-to-r dark:from-indigo-500 dark:via-fuchsia-500 dark:to-emerald-400 " +
+    "dark:text-slate-50 dark:shadow-[0_0_25px_rgba(129,140,248,0.45)] border border-white/60 dark:border-white/10";
     
   const inactiveClasses = 
-    "text-slate-300 hover:bg-slate-800/60 hover:text-white " +
-    "hover:shadow-[0_0_20px_rgba(15,23,42,0.6)]";
+    "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/60 hover:text-slate-900 dark:hover:text-white " +
+    "dark:hover:shadow-[0_0_20px_rgba(15,23,42,0.6)]";
 
   return (
     <button
       onClick={() => setCurrentView(view)}
       className={`${baseClasses} ${isActive ? activeClasses : inactiveClasses} ${isCollapsed ? 'justify-center' : ''}`}
     >
-      <Icon svg={icon} className={`h-5 w-5 flex-shrink-0 ${isActive ? 'text-white' : 'text-slate-500 group-hover:text-slate-200'}`} />
+      <Icon svg={icon} className={`h-5 w-5 flex-shrink-0 ${isActive ? 'text-slate-900 dark:text-white' : 'text-slate-500 dark:text-slate-500 group-hover:text-slate-900 dark:group-hover:text-slate-200'}`} />
       {!isCollapsed && <span className="truncate">{label}</span>}
-      {isActive && <div className="absolute inset-0 bg-white/10 blur-sm rounded-xl pointer-events-none" />}
+      {isActive && <div className="absolute inset-0 bg-white/10 blur-sm rounded-xl pointer-events-none hidden dark:block" />}
     </button>
   );
 };
@@ -87,8 +87,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
           
           {!isSidebarCollapsed && (
             <div className="flex flex-col overflow-hidden">
-              <span className="font-bold text-slate-100 whitespace-nowrap">Nexus Suite</span>
-              <span className="text-[10px] text-slate-400 uppercase tracking-wider">AI Bar OS</span>
+              <span className="font-bold text-slate-800 dark:text-slate-100 whitespace-nowrap">Nexus Suite</span>
+              <span className="text-[10px] text-slate-500 dark:text-slate-400 uppercase tracking-wider">AI Bar OS</span>
             </div>
           )}
         </div>
@@ -96,7 +96,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         {/* Toggle Button (Desktop only) */}
         <div className="hidden md:block">
             {!isSidebarCollapsed && (
-                <Button variant="ghost" size="icon" onClick={toggleSidebar} className="text-slate-400 hover:text-white">
+                <Button variant="ghost" size="icon" onClick={toggleSidebar} className="text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white">
                     <Icon svg={ICONS.chevronLeft} />
                 </Button>
             )}
@@ -106,7 +106,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       {/* If collapsed, show expand button at top/center */}
       {isSidebarCollapsed && (
         <div className="hidden md:flex justify-center mb-4">
-            <Button variant="ghost" size="icon" onClick={toggleSidebar} className="text-slate-400 hover:text-white">
+            <Button variant="ghost" size="icon" onClick={toggleSidebar} className="text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white">
                 <Icon svg={ICONS.chevronRight} />
             </Button>
         </div>
@@ -129,7 +129,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       </nav>
 
       {/* Footer */}
-      <div className="p-3 mt-2 border-t border-slate-800/70 space-y-1">
+      <div className="p-3 mt-2 space-y-1 bg-white/40 dark:bg-slate-950/40 backdrop-blur-xl border-t border-slate-200 dark:border-slate-800">
         <NavLink 
             view="personal" 
             label={userProfile?.displayName || "Mi Perfil"} 
@@ -145,10 +145,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
         {/* Custom Footer Buttons mimicking NavLink style */}
         <button
           onClick={() => { onShowNotifications(); onCloseMobile(); }}
-          className={`w-full flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium transition text-slate-300 hover:bg-slate-800/60 hover:text-white hover:shadow-[0_0_20px_rgba(15,23,42,0.6)] ${isSidebarCollapsed ? 'justify-center' : ''}`}
+          className={`w-full flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium transition text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/60 hover:text-slate-900 dark:hover:text-white dark:hover:shadow-[0_0_20px_rgba(15,23,42,0.6)] ${isSidebarCollapsed ? 'justify-center' : ''}`}
         >
           <div className="relative">
-            <Icon svg={ICONS.bell} className="h-5 w-5 text-slate-500 group-hover:text-slate-200" />
+            <Icon svg={ICONS.bell} className="h-5 w-5 text-slate-500 group-hover:text-slate-900 dark:group-hover:text-slate-200" />
             {unreadNotifications && <span className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full shadow-sm" />}
           </div>
           {!isSidebarCollapsed && <span>Notificaciones</span>}
@@ -156,9 +156,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
         <button
           onClick={() => setTheme(prevTheme => prevTheme === 'dark' ? 'light' : 'dark')}
-          className={`w-full flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium transition text-slate-300 hover:bg-slate-800/60 hover:text-white hover:shadow-[0_0_20px_rgba(15,23,42,0.6)] ${isSidebarCollapsed ? 'justify-center' : ''}`}
+          className={`w-full flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium transition text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/60 hover:text-slate-900 dark:hover:text-white dark:hover:shadow-[0_0_20px_rgba(15,23,42,0.6)] ${isSidebarCollapsed ? 'justify-center' : ''}`}
         >
-          <Icon svg={theme === 'dark' ? ICONS.sun : ICONS.moon} className="h-5 w-5 text-slate-500 group-hover:text-slate-200" />
+          <Icon svg={theme === 'dark' ? ICONS.sun : ICONS.moon} className="h-5 w-5 text-slate-500 group-hover:text-slate-900 dark:group-hover:text-slate-200" />
           {!isSidebarCollapsed && <span>{theme === 'dark' ? 'Modo Claro' : 'Modo Oscuro'}</span>}
         </button>
 
@@ -179,8 +179,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
       <aside 
         className={`
             hidden md:flex flex-col fixed left-0 top-0 h-screen z-40
-            bg-slate-950/80 backdrop-blur-xl border-r border-slate-800/70 
-            shadow-[0_0_40px_rgba(15,23,42,0.85)]
+            bg-white/75 backdrop-blur-xl border-r border-slate-200 shadow-[0_4px_20px_rgba(0,0,0,0.04)]
+            dark:bg-slate-950/70 dark:backdrop-blur-xl dark:border-slate-800 dark:shadow-[0_0_40px_rgba(15,23,42,0.85)]
             transition-all duration-300 ease-in-out
             ${isSidebarCollapsed ? 'w-20' : 'w-64'}
         `}
@@ -201,8 +201,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
       <div 
         className={`
             md:hidden fixed inset-y-0 left-0 z-50 w-64 
-            bg-slate-950/90 backdrop-blur-xl border-r border-slate-800/70 
-            shadow-2xl transform transition-transform duration-300 ease-in-out
+            bg-white/75 backdrop-blur-xl border-r border-slate-200 shadow-[0_4px_20px_rgba(0,0,0,0.04)]
+            dark:bg-slate-950/70 dark:backdrop-blur-xl dark:border-slate-800 dark:shadow-[0_0_40px_rgba(15,23,42,0.85)]
+            transform transition-transform duration-300 ease-in-out
             ${isMobileOpen ? 'translate-x-0' : '-translate-x-full'}
         `}
       >

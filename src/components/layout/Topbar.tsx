@@ -17,7 +17,7 @@ export const Topbar: React.FC<TopbarProps> = ({
   title = "Nexus Suite"
 }) => {
   return (
-    <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-slate-800/60 bg-slate-900/60 px-4 backdrop-blur-xl dark:bg-slate-900/70">
+    <header className="sticky top-0 z-30 flex h-16 items-center justify-between bg-white/70 backdrop-blur-xl border-b border-slate-200 shadow-sm dark:bg-slate-950/60 dark:border-slate-800 dark:shadow-[0_0_20px_rgba(0,0,0,0.4)] px-4">
       {/* Left: Workspace Badge / Title */}
       <div className="flex items-center gap-3">
         {/* Mobile Hamburger */}
