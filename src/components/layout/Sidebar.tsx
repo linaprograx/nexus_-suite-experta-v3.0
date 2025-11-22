@@ -145,7 +145,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         {/* Custom Footer Buttons mimicking NavLink style */}
         <button
           onClick={() => { onShowNotifications(); onCloseMobile(); }}
-          className={`w-full flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium transition text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/60 hover:text-slate-900 dark:hover:text-white dark:hover:shadow-[0_0_20px_rgba(15,23,42,0.6)] ${isSidebarCollapsed ? 'justify-center' : ''}`}
+          className={`w-full flex items-center gap-3 rounded-xl py-2 text-sm font-medium transition text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/60 hover:text-slate-900 dark:hover:text-white dark:hover:shadow-[0_0_20px_rgba(15,23,42,0.6)] ${isSidebarCollapsed ? 'justify-center px-0' : 'px-3'}`}
         >
           <div className="relative">
             <Icon svg={ICONS.bell} className="h-5 w-5 text-slate-500 group-hover:text-slate-900 dark:group-hover:text-slate-200" />
@@ -156,7 +156,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
         <button
           onClick={() => setTheme(prevTheme => prevTheme === 'dark' ? 'light' : 'dark')}
-          className={`w-full flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium transition text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/60 hover:text-slate-900 dark:hover:text-white dark:hover:shadow-[0_0_20px_rgba(15,23,42,0.6)] ${isSidebarCollapsed ? 'justify-center' : ''}`}
+          className={`w-full flex items-center gap-3 rounded-xl py-2 text-sm font-medium transition text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/60 hover:text-slate-900 dark:hover:text-white dark:hover:shadow-[0_0_20px_rgba(15,23,42,0.6)] ${isSidebarCollapsed ? 'justify-center px-0' : 'px-3'}`}
         >
           <Icon svg={theme === 'dark' ? ICONS.sun : ICONS.moon} className="h-5 w-5 text-slate-500 group-hover:text-slate-900 dark:group-hover:text-slate-200" />
           {!isSidebarCollapsed && <span>{theme === 'dark' ? 'Modo Claro' : 'Modo Oscuro'}</span>}
@@ -164,7 +164,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
         <button
           onClick={() => auth.signOut()}
-          className={`w-full flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium transition text-red-400 hover:bg-red-900/20 hover:text-red-300 ${isSidebarCollapsed ? 'justify-center' : ''}`}
+          className={`w-full flex items-center gap-3 rounded-xl py-2 text-sm font-medium transition text-red-400 hover:bg-red-900/20 hover:text-red-300 ${isSidebarCollapsed ? 'justify-center px-0' : 'px-3'}`}
         >
           <Icon svg={ICONS.logOut} className="h-5 w-5" />
           {!isSidebarCollapsed && <span>Cerrar Sesión</span>}

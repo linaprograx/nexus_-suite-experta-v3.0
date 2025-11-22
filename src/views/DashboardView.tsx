@@ -29,6 +29,8 @@ import {
   PolarRadiusAxis, 
   Radar 
 } from 'recharts';
+import { useToday, TodayPanel } from '../features/today';
+import { useCreativeWeek, CreativeWeekPanel } from '../features/creative-week';
 
 // Helper components for the new layout
 const ProgressBar: React.FC<{ value: number; color?: string }> = ({ value, color = "bg-primary" }) => (
@@ -110,18 +112,8 @@ const DashboardView: React.FC<{
         { subject: 'Especiado', A: 4, fullMark: 10 },
     ];
 
-    // --- Column Data Filters ---
-    const ideasTasks = React.useMemo(() => 
-        allPizarronTasks.filter(t => t.status === 'ideas').slice(0, 10), 
-    [allPizarronTasks]);
-
-    const inProgressTasks = React.useMemo(() => 
-        allPizarronTasks.filter(t => t.status === 'pruebas').slice(0, 10), 
-    [allPizarronTasks]);
-
-    const priorityTasks = React.useMemo(() => 
-        allPizarronTasks.filter(t => t.category === 'Urgente').slice(0, 10), 
-    [allPizarronTasks]);
+    const { ideas, inProgress, urgent } = useToday(allPizarronTasks, userProfile);
+    const creativeWeekData = useCreativeWeek(allPizarronTasks);
 
     // --- Components ---
 
@@ -302,79 +294,10 @@ const DashboardView: React.FC<{
                 
                 {/* To-Do Board (Takes 3 cols on large screens) */}
                 <div className="xl:col-span-3">
-                    <Card className="h-full shadow-md border border-gray-200 dark:border-gray-700">
-                        <CardHeader className="pb-4 border-b border-gray-100 dark:border-gray-800">
-                            <div className="flex justify-between items-center">
-                                <div>
-                                    <CardTitle>Lo que debes hacer hoy</CardTitle>
-                                    <CardDescription>Tu roadmap diario priorizado</CardDescription>
-                                </div>
-                                <button 
-                                    onClick={() => setCurrentView('pizarron')}
-                                    className="text-sm text-indigo-600 hover:text-indigo-700 font-medium flex items-center gap-1"
-                                >
-                                    Ver todo <FaArrowRight size={12} />
-                                </button>
-                            </div>
-                        </CardHeader>
-                        <CardContent className="p-6">
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                                {/* Col 1: Ideas */}
-                                <div className="bg-gray-50/50 dark:bg-gray-800/30 rounded-xl p-4 border border-dashed border-gray-200 dark:border-gray-700">
-                                    <h3 className="text-sm font-bold text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
-                                        <FaLightbulb className="text-yellow-500" /> Ideas del Pizarrón
-                                    </h3>
-                                    <div className="space-y-3 max-h-[240px] overflow-y-auto pr-2 custom-scrollbar">
-                                        {ideasTasks.length > 0 ? (
-                                            ideasTasks.map(task => (
-                                                <TaskListItem key={task.id} task={task} color="text-yellow-600" />
-                                            ))
-                                        ) : (
-                                            <div className="text-center py-8 text-gray-400 text-xs">
-                                                No hay ideas pendientes
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-
-                                {/* Col 2: En Progreso */}
-                                <div className="bg-gray-50/50 dark:bg-gray-800/30 rounded-xl p-4 border border-dashed border-gray-200 dark:border-gray-700">
-                                    <h3 className="text-sm font-bold text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
-                                        <FaFlask className="text-blue-500" /> Recetas en Progreso
-                                    </h3>
-                                    <div className="space-y-3 max-h-[240px] overflow-y-auto pr-2 custom-scrollbar">
-                                        {inProgressTasks.length > 0 ? (
-                                            inProgressTasks.map(task => (
-                                                <TaskListItem key={task.id} task={task} color="text-blue-600" />
-                                            ))
-                                        ) : (
-                                            <div className="text-center py-8 text-gray-400 text-xs">
-                                                Sin pruebas activas
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-
-                                {/* Col 3: Prioridad */}
-                                <div className="bg-gray-50/50 dark:bg-gray-800/30 rounded-xl p-4 border border-dashed border-gray-200 dark:border-gray-700">
-                                    <h3 className="text-sm font-bold text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
-                                        <FaExclamationCircle className="text-red-500" /> Prioritario / Urgente
-                                    </h3>
-                                    <div className="space-y-3 max-h-[240px] overflow-y-auto pr-2 custom-scrollbar">
-                                        {priorityTasks.length > 0 ? (
-                                            priorityTasks.map(task => (
-                                                <TaskListItem key={task.id} task={task} color="text-red-600" />
-                                            ))
-                                        ) : (
-                                            <div className="text-center py-8 text-gray-400 text-xs">
-                                                Todo bajo control
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-                            </div>
-                        </CardContent>
-                    </Card>
+                    <TodayPanel ideas={ideas} inProgress={inProgress} urgent={urgent} />
+                    <div className="mt-8">
+                        <CreativeWeekPanel data={creativeWeekData} />
+                    </div>
                 </div>
 
                 {/* 5. Activity Timeline */}
