@@ -1,7 +1,7 @@
 import React from 'react';
 import { Auth } from 'firebase/auth';
 import { Recipe, PizarronTask, Ingredient, ViewName } from '../../types';
-import { useApp } from '../../App';
+import { useApp } from '../context/AppContext';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '../components/ui/Card';
 import { FaBook, FaBolt } from 'react-icons/fa';
 import { ResponsiveContainer, AreaChart, CartesianGrid, XAxis, YAxis, Tooltip, Area, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar } from 'recharts';
