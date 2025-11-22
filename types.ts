@@ -15,7 +15,8 @@ export type ViewName =
   'zeroWaste' | 
   'makeMenu' | 
   'colegium' | 
-  'personal';
+  'personal' |
+  'lab';
 
 
 export interface Ingredient {
