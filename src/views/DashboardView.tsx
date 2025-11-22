@@ -31,7 +31,7 @@ import {
 } from 'recharts';
 import { useToday, TodayPanel } from '../features/today';
 import { useCreativeWeek, CreativeWeekPanel } from '../features/creative-week';
-import { useNextBestAction, NBACard } from '../features/next-best-action';
+import { useNextBestAction, HybridNBACard } from '../features/next-best-action';
 
 // Helper components for the new layout
 const ProgressBar: React.FC<{ value: number; color?: string }> = ({ value, color = "bg-primary" }) => (
@@ -307,7 +307,7 @@ const DashboardView: React.FC<{
                     
                     {nbaData && (
                         <div className="mt-8">
-                            <NBACard 
+                            <HybridNBACard 
                                 data={nbaData} 
                                 isLoading={isNBALoading} 
                                 onRefresh={refreshNBA} 
