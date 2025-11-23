@@ -54,7 +54,7 @@ export interface Recipe {
   storytelling?: string;
 }
 
-export type PizarronStatus = 'ideas' | 'pruebas' | 'aprobado';
+export type PizarronStatus = string; // Was 'ideas' | 'pruebas' | 'aprobado'. Changed to string for dynamic columns.
 export type TaskCategory = 'Ideas' | 'Desarrollo' | 'Marketing' | 'Admin' | 'Urgente';
 
 export interface Tag {
@@ -92,6 +92,11 @@ export interface PizarronBoard {
   themeColor?: string;
   icon?: string;
   description?: string;
+  columns?: string[];
+  automations?: string[];
+  linkedViews?: string[];
+  isTemplateBased?: boolean;
+  templateId?: string;
 }
 
 

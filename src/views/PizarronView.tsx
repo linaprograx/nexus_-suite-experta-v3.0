@@ -15,6 +15,8 @@ import { TopIdeasDrawer } from '../components/pizarron/TopIdeasDrawer';
 import { FiltersBar } from '../components/pizarron/FiltersBar';
 import { StatsDrawer } from '../components/pizarron/StatsDrawer';
 import { CreateBoardModal } from '../components/pizarron/CreateBoardModal';
+import { TemplateSelectorModal } from '../components/pizarron/TemplateSelectorModal';
+import { createBoardFromTemplate } from '../features/pizarron-templates/createBoard';
 import { useUI } from '../context/UIContext';
 import { PizarronTask, Recipe, PizarronBoard, PizarronStatus, UserProfile, Tag } from '../../types';
 
@@ -37,12 +39,13 @@ interface PizarronViewProps {
 
 const PizarronView: React.FC<PizarronViewProps> = ({ db, userId, appId, auth, storage, allPizarronTasks, taskToOpen, onTaskOpened, draggingRecipe, draggingTask, onDropEnd, onDragTaskStart, onAnalyze, userProfile }) => {
   const [showAddTaskModal, setShowAddTaskModal] = React.useState(false);
-  const [initialStatusForModal, setInitialStatusForModal] = React.useState<PizarronStatus>('ideas');
+  const [initialStatusForModal, setInitialStatusForModal] = React.useState<string>('ideas');
   const [selectedTask, setSelectedTask] = React.useState<PizarronTask | null>(null);
 
   const [boards, setBoards] = React.useState<PizarronBoard[]>([]);
   const [activeBoardId, setActiveBoardId] = React.useState<string | null>(null);
   const [showAddBoard, setShowAddBoard] = React.useState(false);
+  const [showTemplateSelector, setShowTemplateSelector] = React.useState(false);
   const [tags, setTags] = React.useState<Tag[]>([]);
 
   const [isLeftPanelOpen, setIsLeftPanelOpen] = React.useState(true);
@@ -81,11 +84,11 @@ const PizarronView: React.FC<PizarronViewProps> = ({ db, userId, appId, auth, st
     const unsub = onSnapshot(collection(db, boardsColPath), async (snap) => {
         const boardsData = snap.docs.map(d => ({
           id: d.id,
-          name: d.data().name || 'Tablero sin nombre',
-          filters: d.data().filters || {}
+          ...d.data()
         } as PizarronBoard));
+        
         if (boardsData.length === 0) {
-            await setDoc(doc(db, boardsColPath, 'general'), { name: 'General' });
+            await setDoc(doc(db, boardsColPath, 'general'), { name: 'General', columns: ['Ideas', 'Pruebas', 'Aprobado'] });
             return;
         }
         setBoards(boardsData);
@@ -109,11 +112,22 @@ const PizarronView: React.FC<PizarronViewProps> = ({ db, userId, appId, auth, st
     setShowAddBoard(false);
   };
 
+  const handleCreateFromTemplate = async (templateId: string) => {
+    try {
+      const newBoardId = await createBoardFromTemplate(db, appId, templateId);
+      setShowTemplateSelector(false);
+      setActiveBoardId(newBoardId);
+    } catch (error) {
+      console.error("Error creating board from template:", error);
+      alert("Error al crear el tablero desde la plantilla.");
+    }
+  };
+
   const handleDragStart = (e: React.DragEvent, taskId: string) => {
     onDragTaskStart(taskId);
   };
 
-  const handleDropOnColumn = async (newStatus: 'ideas' | 'pruebas' | 'aprobado') => {
+  const handleDropOnColumn = async (newStatus: string) => {
     if (draggingTask) {
         const taskDocRef = doc(db, pizarronColPath, draggingTask);
         await updateDoc(taskDocRef, { status: newStatus });
@@ -235,32 +249,43 @@ const PizarronView: React.FC<PizarronViewProps> = ({ db, userId, appId, auth, st
                     <Button key={board.id} variant={activeBoardId === board.id ? "secondary" : "ghost"} className={`w-full justify-start mb-1 ${activeBoardId === board.id ? 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-300' : ''}`} onClick={() => setActiveBoardId(board.id)}>{board.name}</Button>
                 ))}
                 <Button size="sm" variant="outline" className="w-full mt-2 border-dashed border-slate-300 dark:border-slate-700 text-slate-500" onClick={() => setShowAddBoard(true)}><Icon svg={ICONS.plus} className="h-4 w-4 mr-2"/>Nuevo Tablero</Button>
+                <Button size="sm" variant="ghost" className="w-full mt-1 text-indigo-500 hover:text-indigo-600 dark:text-indigo-400" onClick={() => setShowTemplateSelector(true)}><Icon svg={ICONS.layout} className="h-4 w-4 mr-2"/>Desde Plantilla</Button>
             </div>
 
             <main className="flex-1 flex flex-col min-h-0 relative">
                 <div className="flex-1 flex p-4 gap-4 overflow-x-auto scroll-snap-x snap-mandatory">
-                    {(['ideas', 'pruebas', 'aprobado'] as const).map(status => {
-                        const isFocused = focusedColumn === status;
-                        const isHidden = focusMode && focusedColumn && !isFocused;
+                    {(() => {
+                        const activeBoard = boards.find(b => b.id === activeBoardId);
+                        const columns = activeBoard?.columns || ['Ideas', 'Pruebas', 'Aprobado'];
                         
-                        if (isHidden) return null;
+                        return columns.map(col => {
+                            // Normalize status for comparison/storage if needed, but for now using exact match
+                            // or maybe lowercased match if statuses in DB are inconsistent.
+                            // Assuming createBoard saves columns capitalized as in template.
+                            // Tasks will store this exact string.
+                            
+                            const isFocused = focusedColumn === col;
+                            const isHidden = focusMode && focusedColumn && !isFocused;
+                            
+                            if (isHidden) return null;
 
-                        return (
-                            <KanbanColumn
-                                key={status}
-                                title={status.charAt(0).toUpperCase() + status.slice(1)}
-                                status={status}
-                                tasks={filteredTasks.filter(t => t.status === status)}
-                                onAddTask={(s) => { setInitialStatusForModal(s); setShowAddTaskModal(true); }}
-                                onDragStart={handleDragStart}
-                                onDropOnColumn={handleDropOnColumn}
-                                onOpenTaskDetail={setSelectedTask}
-                                isFocused={isFocused}
-                                onHeaderClick={() => handleColumnHeaderClick(status)}
-                                allTags={tags}
-                            />
-                        );
-                    })}
+                            return (
+                                <KanbanColumn
+                                    key={col}
+                                    title={col}
+                                    status={col}
+                                    tasks={filteredTasks.filter(t => t.status === col || (col === 'Ideas' && t.status === 'ideas') || (col === 'Pruebas' && t.status === 'pruebas') || (col === 'Aprobado' && t.status === 'aprobado'))} // Fallback for legacy tasks
+                                    onAddTask={(s) => { setInitialStatusForModal(s); setShowAddTaskModal(true); }}
+                                    onDragStart={handleDragStart}
+                                    onDropOnColumn={handleDropOnColumn}
+                                    onOpenTaskDetail={setSelectedTask}
+                                    isFocused={isFocused}
+                                    onHeaderClick={() => handleColumnHeaderClick(col)}
+                                    allTags={tags}
+                                />
+                            );
+                        });
+                    })()}
                 </div>
                 <div className="border-t border-white/10 dark:border-slate-700/30 bg-white/40 dark:bg-slate-900/40 backdrop-blur-md z-10 transition-all duration-300">
                     <button onClick={() => setIsCalendarOpen(!isCalendarOpen)} className="w-full p-2 text-sm font-medium flex justify-center items-center gap-2 hover:bg-white/10 dark:hover:bg-slate-800/50 transition-colors">
@@ -280,6 +305,7 @@ const PizarronView: React.FC<PizarronViewProps> = ({ db, userId, appId, auth, st
         {showTopIdeasDrawer && <TopIdeasDrawer isOpen={showTopIdeasDrawer} onClose={() => setShowTopIdeasDrawer(false)} tasks={filteredTasks} onTaskClick={setSelectedTask} />}
         <StatsDrawer isOpen={showStatsDrawer} onClose={() => setShowStatsDrawer(false)} tasks={filteredTasks} />
         {showAddBoard && <CreateBoardModal isOpen={showAddBoard} onClose={() => setShowAddBoard(false)} onCreate={handleCreateBoard} />}
+        {showTemplateSelector && <TemplateSelectorModal isOpen={showTemplateSelector} onClose={() => setShowTemplateSelector(false)} onSelectTemplate={handleCreateFromTemplate} />}
     </div>
   );
 };

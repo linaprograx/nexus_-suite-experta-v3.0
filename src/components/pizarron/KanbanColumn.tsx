@@ -9,11 +9,11 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 interface KanbanColumnProps {
   title: string;
-  status: 'ideas' | 'pruebas' | 'aprobado';
+  status: string;
   tasks: PizarronTask[];
-  onAddTask: (status: 'ideas' | 'pruebas' | 'aprobado') => void;
+  onAddTask: (status: string) => void;
   onDragStart: (e: React.DragEvent, taskId: string) => void;
-  onDropOnColumn: (status: 'ideas' | 'pruebas' | 'aprobado') => void;
+  onDropOnColumn: (status: string) => void;
   onOpenTaskDetail: (task: PizarronTask) => void;
   isFocused?: boolean;
   onHeaderClick?: () => void;
@@ -23,22 +23,24 @@ interface KanbanColumnProps {
 export const KanbanColumn: React.FC<KanbanColumnProps> = ({ title, status, tasks, onAddTask, onDragStart, onDropOnColumn, onOpenTaskDetail, isFocused, onHeaderClick, allTags }) => {
   const { theme, focusMode, compactMode } = useUI();
 
-  const getGradient = () => {
-    switch(status) {
-      case 'ideas': return 'from-amber-100/50 to-orange-100/50 dark:from-amber-900/20 dark:to-orange-900/20 border-amber-200/50 dark:border-amber-700/30';
-      case 'pruebas': return 'from-blue-100/50 to-cyan-100/50 dark:from-blue-900/20 dark:to-cyan-900/20 border-blue-200/50 dark:border-blue-700/30';
-      case 'aprobado': return 'from-emerald-100/50 to-green-100/50 dark:from-emerald-900/20 dark:to-green-900/20 border-emerald-200/50 dark:border-emerald-700/30';
-      default: return '';
-    }
-  };
+  // Only used if we want to color the column body background based on status
+  // const getGradient = () => {
+  //   const s = status.toLowerCase();
+  //   if (s.includes('idea')) return 'from-amber-100/50 to-orange-100/50 dark:from-amber-900/20 dark:to-orange-900/20 border-amber-200/50 dark:border-amber-700/30';
+  //   if (s.includes('prueba') || s.includes('desarrollo') || s.includes('lab')) return 'from-blue-100/50 to-cyan-100/50 dark:from-blue-900/20 dark:to-cyan-900/20 border-blue-200/50 dark:border-blue-700/30';
+  //   if (s.includes('aprobado') || s.includes('final') || s.includes('ready')) return 'from-emerald-100/50 to-green-100/50 dark:from-emerald-900/20 dark:to-green-900/20 border-emerald-200/50 dark:border-emerald-700/30';
+  //   return '';
+  // };
 
   const getHeaderGradient = () => {
-     switch(status) {
-      case 'ideas': return 'bg-gradient-to-r from-amber-500 to-orange-500';
-      case 'pruebas': return 'bg-gradient-to-r from-blue-500 to-cyan-500';
-      case 'aprobado': return 'bg-gradient-to-r from-emerald-500 to-green-500';
-      default: return 'bg-slate-500';
-    }
+    const s = status.toLowerCase();
+    if (s.includes('idea')) return 'bg-gradient-to-r from-amber-500 to-orange-500';
+    if (s.includes('prueba') || s.includes('desarrollo') || s.includes('lab')) return 'bg-gradient-to-r from-blue-500 to-cyan-500';
+    if (s.includes('aprobado') || s.includes('final') || s.includes('ready')) return 'bg-gradient-to-r from-emerald-500 to-green-500';
+    if (s.includes('costeo')) return 'bg-gradient-to-r from-yellow-500 to-amber-500';
+    if (s.includes('foto')) return 'bg-gradient-to-r from-pink-500 to-rose-500';
+    if (s.includes('residuo')) return 'bg-gradient-to-r from-red-500 to-orange-500';
+    return 'bg-slate-500';
   };
 
   return (

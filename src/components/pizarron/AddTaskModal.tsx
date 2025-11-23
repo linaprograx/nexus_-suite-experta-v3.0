@@ -24,7 +24,7 @@ interface AddTaskModalProps {
   appId: string;
   userId: string;
   auth: Auth;
-  initialStatus: 'ideas' | 'pruebas' | 'aprobado';
+  initialStatus: string;
   activeBoardId: string | null;
   userProfile: Partial<UserProfile>;
 }
