@@ -57,6 +57,7 @@ export const ContentView: React.FC<ContentViewProps> = (props) => {
             allRecipes={rest.allRecipes}
             onOpenRecipeModal={rest.onOpenRecipeModal}
             onDragRecipeStart={rest.onDragRecipeStart}
+            setCurrentView={props.setCurrentView}
         />;
       case 'pizarron':
         return <PizarronView db={rest.db} userId={rest.userId} appId={rest.appId} auth={rest.auth} storage={rest.storage} allPizarronTasks={rest.allPizarronTasks} taskToOpen={rest.taskToOpen} onTaskOpened={rest.onTaskOpened} draggingRecipe={rest.draggingRecipe} draggingTask={rest.draggingTask} onDropEnd={rest.onDropEnd} onDragTaskStart={rest.onDragTaskStart} onAnalyze={rest.onAnalyze} userProfile={rest.userProfile} />;
