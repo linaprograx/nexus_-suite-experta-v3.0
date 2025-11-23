@@ -75,27 +75,32 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ tasks, onDropTask, o
   }, [currentDate]);
 
   return (
-    <div className="bg-card p-2 h-full flex flex-col">
-        <div className="flex justify-between items-center mb-2">
+    <div className="bg-card p-2 h-full flex flex-col overflow-hidden">
+        <div className="flex justify-between items-center mb-2 flex-shrink-0">
             <Button variant="ghost" size="icon" onClick={() => setCurrentDate(new Date(currentDate.setMonth(currentDate.getMonth() - 1)))}><Icon svg={ICONS.chevronLeft} /></Button>
             <h3 className="font-semibold">{currentDate.toLocaleString('default', { month: 'long', year: 'numeric' })}</h3>
             <Button variant="ghost" size="icon" onClick={() => setCurrentDate(new Date(currentDate.setMonth(currentDate.getMonth() + 1)))}><Icon svg={ICONS.chevronRight} /></Button>
         </div>
-        <div className="grid grid-cols-7 text-xs font-bold text-center border-l border-t border-r">
-            {DAYS_OF_WEEK.map(day => <div key={day} className="p-1">{day}</div>)}
-        </div>
-        <div className="flex-1 grid grid-cols-7 grid-rows-6 border-l">
-            {calendarGrid.flat().map((date, index) => 
-                date ? (
-                    <DayCell 
-                        key={index}
-                        date={date}
-                        tasks={tasks.filter(t => t.dueDate && isSameDay(t.dueDate.toDate(), date))}
-                        onDropTask={onDropTask}
-                        onTaskClick={onTaskClick}
-                    />
-                ) : <div key={index} className="border-t border-r dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50" />
-            )}
+        
+        <div className="flex-1 overflow-auto">
+            <div className="min-w-[900px] h-full flex flex-col">
+                <div className="grid grid-cols-7 text-xs font-bold text-center border-l border-t border-r flex-shrink-0">
+                    {DAYS_OF_WEEK.map(day => <div key={day} className="p-1">{day}</div>)}
+                </div>
+                <div className="flex-1 grid grid-cols-7 grid-rows-6 border-l">
+                    {calendarGrid.flat().map((date, index) => 
+                        date ? (
+                            <DayCell 
+                                key={index}
+                                date={date}
+                                tasks={tasks.filter(t => t.dueDate && isSameDay(t.dueDate.toDate(), date))}
+                                onDropTask={onDropTask}
+                                onTaskClick={onTaskClick}
+                            />
+                        ) : <div key={index} className="border-t border-r dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50" />
+                    )}
+                </div>
+            </div>
         </div>
     </div>
   );

@@ -48,10 +48,11 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({ title, status, tasks
       layout
       className={`
         rounded-xl flex flex-col flex-shrink-0 transition-all duration-300
-        ${isFocused ? 'w-full max-w-4xl mx-auto' : compactMode ? 'w-64' : 'w-80'}
+        ${isFocused ? 'w-full max-w-4xl mx-auto' : compactMode ? 'w-64 shrink-0' : 'w-[360px] shrink-0'}
         ${compactMode ? 'h-full' : 'h-full'}
-        bg-white/40 dark:bg-slate-900/40 backdrop-blur-md
-        border border-white/20 dark:border-slate-700/30 shadow-sm
+        bg-white/50 dark:bg-white/10 backdrop-blur-xl
+        border border-white/20 dark:border-white/10 shadow-lg
+        rounded-2xl
         snap-center
       `}
       onDragOver={(e) => e.preventDefault()}
@@ -61,7 +62,7 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({ title, status, tasks
       }}
     >
       <div 
-        className={`p-3 rounded-t-xl cursor-pointer select-none group relative overflow-hidden`}
+        className={`p-3 rounded-t-2xl cursor-pointer select-none group relative overflow-hidden`}
         onClick={onHeaderClick}
       >
         <div className={`absolute inset-0 opacity-10 ${getHeaderGradient()}`} />
@@ -96,7 +97,7 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({ title, status, tasks
         </AnimatePresence>
       </div>
       
-      <div className="p-2 border-t border-white/10 dark:border-slate-700/30 bg-white/20 dark:bg-slate-800/20 backdrop-blur-sm rounded-b-xl">
+      <div className="p-2 border-t border-white/10 dark:border-white/10 bg-white/20 dark:bg-white/5 backdrop-blur-sm rounded-b-2xl">
         <Button variant="ghost" size="sm" className="w-full justify-center text-slate-500 hover:text-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-900/20" onClick={() => onAddTask(status)}>
             <Icon svg={ICONS.plus} className="mr-2 h-4 w-4" /> Añadir Tarea
         </Button>

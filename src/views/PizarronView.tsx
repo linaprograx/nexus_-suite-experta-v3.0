@@ -4,21 +4,24 @@ import { Auth } from 'firebase/auth';
 import { FirebaseStorage } from 'firebase/storage';
 import { Button } from '../components/ui/Button';
 import { Icon } from '../components/ui/Icon';
-import { Input } from '../components/ui/Input';
 import { Spinner } from '../components/ui/Spinner';
 import { ICONS } from '../components/ui/icons';
 import { AddTaskModal } from '../components/pizarron/AddTaskModal';
 import { TaskDetailModal } from '../components/pizarron/TaskDetailModal';
-import { KanbanColumn } from '../components/pizarron/KanbanColumn';
 import { PizarronCalendarView } from './PizarronCalendarView';
 import { TopIdeasDrawer } from '../components/pizarron/TopIdeasDrawer';
-import { FiltersBar } from '../components/pizarron/FiltersBar';
 import { StatsDrawer } from '../components/pizarron/StatsDrawer';
 import { CreateBoardModal } from '../components/pizarron/CreateBoardModal';
 import { TemplateSelectorModal } from '../components/pizarron/TemplateSelectorModal';
 import { createBoardFromTemplate } from '../features/pizarron-templates/createBoard';
 import { useUI } from '../context/UIContext';
-import { PizarronTask, Recipe, PizarronBoard, PizarronStatus, UserProfile, Tag } from '../../types';
+import { PizarronTask, Recipe, PizarronBoard, UserProfile, Tag } from '../../types';
+import { BoardColumns } from '../features/pizarron/ui/BoardColumns';
+import { BoardTopbar } from '../features/pizarron/ui/BoardTopbar';
+import { SmartViewPanel } from '../features/pizarron/ui/SmartViewPanel';
+import { ListView } from '../features/pizarron/views/ListView';
+import { TimelineView } from '../features/pizarron/views/TimelineView';
+import { DocumentView } from '../features/pizarron/views/DocumentView';
 
 interface PizarronViewProps {
   db: Firestore;
@@ -52,9 +55,22 @@ const PizarronView: React.FC<PizarronViewProps> = ({ db, userId, appId, auth, st
   const [isCalendarOpen, setIsCalendarOpen] = React.useState(false);
   const [showTopIdeasDrawer, setShowTopIdeasDrawer] = React.useState(false);
   const [showStatsDrawer, setShowStatsDrawer] = React.useState(false);
+  const [showSmartView, setShowSmartView] = React.useState(false);
   const [filters, setFilters] = React.useState<any>({});
   const [searchQuery, setSearchQuery] = React.useState("");
   const [focusedColumn, setFocusedColumn] = React.useState<string | null>(null);
+  
+  const [currentView, setCurrentView] = React.useState<'kanban' | 'list' | 'timeline' | 'document'>(() => {
+      if (typeof window !== 'undefined') {
+          return localStorage.getItem('nexus_pizarron_default_view') as any || 'kanban';
+      }
+      return 'kanban';
+  });
+
+  const handleViewChange = (view: 'kanban' | 'list' | 'timeline' | 'document') => {
+      setCurrentView(view);
+      localStorage.setItem('nexus_pizarron_default_view', view);
+  };
 
   const { compactMode, toggleCompactMode, focusMode, toggleFocusMode } = useUI();
   
@@ -198,46 +214,33 @@ const PizarronView: React.FC<PizarronViewProps> = ({ db, userId, appId, auth, st
     }
   };
 
+  const activeBoard = boards.find(b => b.id === activeBoardId);
+  const columns = activeBoard?.columns || ['Ideas', 'Pruebas', 'Aprobado'];
+
   if (!db || !userId || !auth || !storage) return <Spinner />;
 
   return (
-    <div className="flex flex-col h-[calc(100vh-6rem)] overflow-hidden bg-slate-50 dark:bg-slate-950">
-        {/* Top Header */}
-        <div className="flex flex-col md:flex-row justify-between items-center mb-4 px-4 lg:px-6 py-2 gap-4 border-b border-white/10 bg-white/40 dark:bg-slate-900/40 backdrop-blur-md sticky top-0 z-10">
-            <div className="flex items-center gap-4 w-full md:w-auto">
-                {!isLeftPanelOpen && <Button size="icon" variant="ghost" onClick={() => setIsLeftPanelOpen(true)}><Icon svg={ICONS.chevronRight} /></Button>}
-                <h1 className="text-2xl font-bold bg-gradient-to-r from-indigo-500 to-purple-600 bg-clip-text text-transparent">Pizarrón</h1>
-            </div>
-
-            <div className="flex items-center gap-3 w-full md:w-auto flex-1 justify-center max-w-xl">
-               <div className="relative w-full">
-                  <Icon svg={ICONS.search} className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                  <Input 
-                    placeholder="Buscar tareas..." 
-                    className="pl-9 bg-white/50 dark:bg-slate-800/50 border-white/20 dark:border-slate-700/30 backdrop-blur-sm focus:ring-2 focus:ring-purple-500/50" 
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                  />
-               </div>
-            </div>
-
-            <div className="flex gap-2 w-full md:w-auto justify-end items-center">
-                <FiltersBar filters={filters} setFilters={setFilters} db={db} userId={userId} tags={tags} />
-                <div className="h-6 w-px bg-slate-200 dark:bg-slate-700 mx-1" />
-                <Button variant={compactMode ? "secondary" : "ghost"} size="sm" onClick={toggleCompactMode} title="Modo Compacto">
-                    <Icon svg={ICONS.list} className="h-4 w-4" />
-                </Button>
-                <Button variant={focusMode ? "secondary" : "ghost"} size="sm" onClick={toggleFocusMode} title="Modo Focus">
-                    <Icon svg={ICONS.eye} className="h-4 w-4" />
-                </Button>
-                <Button variant="ghost" size="icon" onClick={() => setShowStatsDrawer(true)}>
-                    <Icon svg={ICONS.chart} className="h-5 w-5" />
-                </Button>
-                 <Button variant="ghost" size="icon" onClick={() => setShowTopIdeasDrawer(true)}>
-                    <Icon svg={ICONS.trendingUp} className="h-5 w-5" />
-                </Button>
-            </div>
-        </div>
+    <div className="flex flex-col h-[calc(100vh-6rem)] bg-slate-50 dark:bg-slate-950">
+        <BoardTopbar 
+            isLeftPanelOpen={isLeftPanelOpen}
+            onToggleLeftPanel={() => setIsLeftPanelOpen(!isLeftPanelOpen)}
+            searchQuery={searchQuery}
+            onSearchChange={setSearchQuery}
+            filters={filters}
+            setFilters={setFilters}
+            db={db}
+            userId={userId}
+            tags={tags}
+            compactMode={compactMode}
+            onToggleCompactMode={toggleCompactMode}
+            focusMode={focusMode}
+            onToggleFocusMode={toggleFocusMode}
+            onShowStats={() => setShowStatsDrawer(true)}
+            onShowTopIdeas={() => setShowTopIdeasDrawer(true)}
+            onShowSmartView={() => setShowSmartView(true)}
+            currentView={currentView}
+            onViewChange={handleViewChange}
+        />
 
         <div className="flex flex-1 min-h-0 relative">
             <div className={`bg-white/30 dark:bg-slate-900/30 backdrop-blur-md border-r border-white/10 dark:border-slate-700/30 overflow-y-auto flex-shrink-0 transition-all duration-300 ${isLeftPanelOpen ? 'w-64 p-4' : 'w-0 p-0 hidden'}`}>
@@ -253,40 +256,39 @@ const PizarronView: React.FC<PizarronViewProps> = ({ db, userId, appId, auth, st
             </div>
 
             <main className="flex-1 flex flex-col min-h-0 relative">
-                <div className="flex-1 flex p-4 gap-4 overflow-x-auto scroll-snap-x snap-mandatory">
-                    {(() => {
-                        const activeBoard = boards.find(b => b.id === activeBoardId);
-                        const columns = activeBoard?.columns || ['Ideas', 'Pruebas', 'Aprobado'];
-                        
-                        return columns.map(col => {
-                            // Normalize status for comparison/storage if needed, but for now using exact match
-                            // or maybe lowercased match if statuses in DB are inconsistent.
-                            // Assuming createBoard saves columns capitalized as in template.
-                            // Tasks will store this exact string.
-                            
-                            const isFocused = focusedColumn === col;
-                            const isHidden = focusMode && focusedColumn && !isFocused;
-                            
-                            if (isHidden) return null;
-
-                            return (
-                                <KanbanColumn
-                                    key={col}
-                                    title={col}
-                                    status={col}
-                                    tasks={filteredTasks.filter(t => t.status === col || (col === 'Ideas' && t.status === 'ideas') || (col === 'Pruebas' && t.status === 'pruebas') || (col === 'Aprobado' && t.status === 'aprobado'))} // Fallback for legacy tasks
-                                    onAddTask={(s) => { setInitialStatusForModal(s); setShowAddTaskModal(true); }}
-                                    onDragStart={handleDragStart}
-                                    onDropOnColumn={handleDropOnColumn}
-                                    onOpenTaskDetail={setSelectedTask}
-                                    isFocused={isFocused}
-                                    onHeaderClick={() => handleColumnHeaderClick(col)}
-                                    allTags={tags}
-                                />
-                            );
-                        });
-                    })()}
-                </div>
+                {currentView === 'kanban' && (
+                    <BoardColumns 
+                        activeBoard={activeBoard}
+                        filteredTasks={filteredTasks}
+                        focusedColumn={focusedColumn}
+                        focusMode={focusMode}
+                        tags={tags}
+                        onAddTask={(s) => { setInitialStatusForModal(s); setShowAddTaskModal(true); }}
+                        onDragStart={handleDragStart}
+                        onDropOnColumn={handleDropOnColumn}
+                        onOpenTaskDetail={setSelectedTask}
+                        onColumnHeaderClick={handleColumnHeaderClick}
+                    />
+                )}
+                {currentView === 'list' && (
+                    <ListView 
+                        tasks={filteredTasks} 
+                        onTaskClick={setSelectedTask} 
+                    />
+                )}
+                {currentView === 'timeline' && (
+                    <TimelineView 
+                        tasks={filteredTasks} 
+                        onTaskClick={setSelectedTask} 
+                    />
+                )}
+                {currentView === 'document' && (
+                    <DocumentView 
+                        tasks={filteredTasks} 
+                        columns={columns} 
+                        onTaskClick={setSelectedTask} 
+                    />
+                )}
                 <div className="border-t border-white/10 dark:border-slate-700/30 bg-white/40 dark:bg-slate-900/40 backdrop-blur-md z-10 transition-all duration-300">
                     <button onClick={() => setIsCalendarOpen(!isCalendarOpen)} className="w-full p-2 text-sm font-medium flex justify-center items-center gap-2 hover:bg-white/10 dark:hover:bg-slate-800/50 transition-colors">
                         <Icon svg={ICONS.calendar} className="h-5 w-5" /> Calendario Inteligente {isCalendarOpen && <span className="text-xs bg-indigo-500 text-white px-1.5 rounded-full">AI</span>} <Icon svg={isCalendarOpen ? ICONS.chevronDown : ICONS.upArrow} className="h-4 w-4" />
@@ -306,6 +308,7 @@ const PizarronView: React.FC<PizarronViewProps> = ({ db, userId, appId, auth, st
         <StatsDrawer isOpen={showStatsDrawer} onClose={() => setShowStatsDrawer(false)} tasks={filteredTasks} />
         {showAddBoard && <CreateBoardModal isOpen={showAddBoard} onClose={() => setShowAddBoard(false)} onCreate={handleCreateBoard} />}
         {showTemplateSelector && <TemplateSelectorModal isOpen={showTemplateSelector} onClose={() => setShowTemplateSelector(false)} onSelectTemplate={handleCreateFromTemplate} />}
+        <SmartViewPanel isOpen={showSmartView} onClose={() => setShowSmartView(false)} tasks={filteredTasks} columns={columns} />
     </div>
   );
 };
