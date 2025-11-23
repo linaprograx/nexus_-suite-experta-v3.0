@@ -30,7 +30,7 @@ import {
   Radar 
 } from 'recharts';
 import { useToday, TodayPanel } from '../features/today';
-import { useCreativeWeek, CreativeWeekPanel } from '../features/creative-week';
+import { useCreativeWeekPro, CreativeWeekPanel } from '../features/creative-week-pro';
 import { useNextBestAction, HybridNBACard } from '../features/next-best-action';
 
 // Helper components for the new layout
@@ -114,7 +114,6 @@ const DashboardView: React.FC<{
     ];
 
     const { ideas, inProgress, urgent } = useToday(allPizarronTasks, userProfile);
-    const creativeWeekData = useCreativeWeek(allPizarronTasks);
     const { data: nbaData, isLoading: isNBALoading, refresh: refreshNBA } = useNextBestAction(
         allRecipes, 
         allPizarronTasks, 
@@ -305,7 +304,7 @@ const DashboardView: React.FC<{
                 <div className="xl:col-span-3">
                     <TodayPanel ideas={ideas} inProgress={inProgress} urgent={urgent} />
                     <div className="mt-8">
-                        <CreativeWeekPanel data={creativeWeekData} />
+                        <CreativeWeekPanel tasks={allPizarronTasks} userName={userProfile?.displayName || 'Usuario'} />
                     </div>
                     
                     {nbaData?.action && (
