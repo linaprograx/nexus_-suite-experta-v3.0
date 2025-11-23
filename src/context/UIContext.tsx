@@ -43,6 +43,7 @@ export const UIProvider: React.FC<{ children: React.ReactNode }> = ({ children }
     return false;
   });
   const [compactMode, setCompactMode] = React.useState<boolean>(false);
+  const [focusMode, setFocusMode] = React.useState<boolean>(false);
 
   React.useEffect(() => {
     applyTheme(theme);
@@ -54,9 +55,10 @@ export const UIProvider: React.FC<{ children: React.ReactNode }> = ({ children }
 
   const toggleSidebar = () => setIsSidebarCollapsed(prev => !prev);
   const toggleCompactMode = () => setCompactMode(prev => !prev);
+  const toggleFocusMode = () => setFocusMode(prev => !prev);
 
   return (
-    <UIContext.Provider value={{ theme, setTheme, isSidebarCollapsed, toggleSidebar, compactMode, toggleCompactMode }}>
+    <UIContext.Provider value={{ theme, setTheme, isSidebarCollapsed, toggleSidebar, compactMode, toggleCompactMode, focusMode, toggleFocusMode }}>
       {children}
     </UIContext.Provider>
   );

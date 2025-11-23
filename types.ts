@@ -57,6 +57,12 @@ export interface Recipe {
 export type PizarronStatus = 'ideas' | 'pruebas' | 'aprobado';
 export type TaskCategory = 'Ideas' | 'Desarrollo' | 'Marketing' | 'Admin' | 'Urgente';
 
+export interface Tag {
+  id: string;
+  name: string;
+  color: string;
+}
+
 export interface PizarronTask {
   id: string;
   texto: string;
@@ -67,6 +73,7 @@ export interface PizarronTask {
   // --- NUEVOS CAMPOS (Iteración 7) ---
   boardId: string; // ID del tablero al que pertenece la tarea
   labels: string[]; // Etiquetas inteligentes
+  tags: string[]; // Etiquetas de usuario (colores)
   priority: 'baja' | 'media' | 'alta';
   upvotes: string[]; // Array de UserIDs que han votado
   starRating: Record<string, number>; // { [userId]: rating (1-5) }
@@ -81,6 +88,10 @@ export interface PizarronBoard {
   id: string;
   name: string;
   filters: any;
+  category?: 'creativo' | 'operativo' | 'carta' | 'producción' | 'general';
+  themeColor?: string;
+  icon?: string;
+  description?: string;
 }
 
 
@@ -162,6 +173,8 @@ export interface UIContextType {
   toggleSidebar: () => void;
   compactMode: boolean;
   toggleCompactMode: () => void;
+  focusMode: boolean;
+  toggleFocusMode: () => void;
 }
 
 export interface AppContextType {

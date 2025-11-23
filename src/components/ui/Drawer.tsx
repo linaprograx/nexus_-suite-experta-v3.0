@@ -10,9 +10,10 @@ interface DrawerProps {
   title?: string;
   children: React.ReactNode;
   className?: string;
+  side?: 'left' | 'right';
 }
 
-export const Drawer: React.FC<DrawerProps> = ({ isOpen, onClose, title, children, className }) => {
+export const Drawer: React.FC<DrawerProps> = ({ isOpen, onClose, title, children, className, side = 'right' }) => {
   const drawerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -33,8 +34,12 @@ export const Drawer: React.FC<DrawerProps> = ({ isOpen, onClose, title, children
 
   if (!isOpen) return null;
 
+  const alignmentClass = side === 'left' ? 'justify-start' : 'justify-end';
+  const borderClass = side === 'left' ? 'border-r' : 'border-l';
+  const animationClass = side === 'left' ? 'slide-in-from-left' : 'slide-in-from-right';
+
   return createPortal(
-    <div className="fixed inset-0 z-[100] flex justify-end">
+    <div className={`fixed inset-0 z-[100] flex ${alignmentClass}`}>
       {/* Backdrop */}
       <div 
         className="absolute inset-0 bg-black/20 dark:bg-black/40 backdrop-blur-sm transition-opacity" 
@@ -47,10 +52,10 @@ export const Drawer: React.FC<DrawerProps> = ({ isOpen, onClose, title, children
         className={`
           relative w-full max-w-md h-full 
           bg-white/80 dark:bg-slate-900/80 
-          backdrop-blur-xl border-l border-white/20 dark:border-slate-700/30
+          backdrop-blur-xl ${borderClass} border-white/20 dark:border-slate-700/30
           shadow-2xl transform transition-transform duration-300 ease-in-out
           flex flex-col
-          animate-in slide-in-from-right
+          animate-in ${animationClass}
           ${className || ''}
         `}
       >
