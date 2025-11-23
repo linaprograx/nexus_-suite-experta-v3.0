@@ -10,9 +10,9 @@ import { ICONS } from '../components/ui/icons';
 import { AddTaskModal } from '../components/pizarron/AddTaskModal';
 import { TaskDetailModal } from '../components/pizarron/TaskDetailModal';
 import { KanbanColumn } from '../components/pizarron/KanbanColumn';
-import { CalendarView } from '../components/pizarron/CalendarView';
+import { PizarronCalendarView } from './PizarronCalendarView';
 import { TopIdeasDrawer } from '../components/pizarron/TopIdeasDrawer';
-import { FiltersDrawer } from '../components/pizarron/FiltersDrawer';
+import { FiltersBar } from '../components/pizarron/FiltersBar';
 import { StatsDrawer } from '../components/pizarron/StatsDrawer';
 import { CreateBoardModal } from '../components/pizarron/CreateBoardModal';
 import { useUI } from '../context/UIContext';
@@ -48,7 +48,6 @@ const PizarronView: React.FC<PizarronViewProps> = ({ db, userId, appId, auth, st
   const [isLeftPanelOpen, setIsLeftPanelOpen] = React.useState(true);
   const [isCalendarOpen, setIsCalendarOpen] = React.useState(false);
   const [showTopIdeasDrawer, setShowTopIdeasDrawer] = React.useState(false);
-  const [showFiltersDrawer, setShowFiltersDrawer] = React.useState(false);
   const [showStatsDrawer, setShowStatsDrawer] = React.useState(false);
   const [filters, setFilters] = React.useState<any>({});
   const [searchQuery, setSearchQuery] = React.useState("");
@@ -147,6 +146,12 @@ const PizarronView: React.FC<PizarronViewProps> = ({ db, userId, appId, auth, st
       await updateDoc(taskDocRef, { dueDate: date });
       onDropEnd();
   };
+
+  const handleSuggestSlots = () => {
+    // Placeholder for AI Suggestion Logic
+    alert("CerebrIty AI: Analizando patrones de trabajo para sugerir slots óptimos...");
+    // Here we would call the Gemini API to analyze task distribution and suggest dates
+  };
   
   const filteredTasks = React.useMemo(() => {
       if (!activeBoardId) return [];
@@ -165,6 +170,9 @@ const PizarronView: React.FC<PizarronViewProps> = ({ db, userId, appId, auth, st
       }
       if (filters.priorities && filters.priorities.length > 0) {
         tasks = tasks.filter(t => filters.priorities.includes(t.priority || 'media'));
+      }
+      if (filters.tags && filters.tags.length > 0) {
+        tasks = tasks.filter(t => t.tags?.some(tagId => filters.tags.includes(tagId)));
       }
 
       return tasks;
@@ -199,10 +207,9 @@ const PizarronView: React.FC<PizarronViewProps> = ({ db, userId, appId, auth, st
                </div>
             </div>
 
-            <div className="flex gap-2 w-full md:w-auto justify-end">
-                <Button variant={showFiltersDrawer ? "secondary" : "ghost"} size="sm" onClick={() => setShowFiltersDrawer(true)}>
-                    <Icon svg={ICONS.filter} className="h-4 w-4 mr-2" /> Filtros
-                </Button>
+            <div className="flex gap-2 w-full md:w-auto justify-end items-center">
+                <FiltersBar filters={filters} setFilters={setFilters} db={db} userId={userId} tags={tags} />
+                <div className="h-6 w-px bg-slate-200 dark:bg-slate-700 mx-1" />
                 <Button variant={compactMode ? "secondary" : "ghost"} size="sm" onClick={toggleCompactMode} title="Modo Compacto">
                     <Icon svg={ICONS.list} className="h-4 w-4" />
                 </Button>
@@ -255,13 +262,13 @@ const PizarronView: React.FC<PizarronViewProps> = ({ db, userId, appId, auth, st
                         );
                     })}
                 </div>
-                <div className="border-t border-white/10 dark:border-slate-700/30 bg-white/40 dark:bg-slate-900/40 backdrop-blur-md z-10">
+                <div className="border-t border-white/10 dark:border-slate-700/30 bg-white/40 dark:bg-slate-900/40 backdrop-blur-md z-10 transition-all duration-300">
                     <button onClick={() => setIsCalendarOpen(!isCalendarOpen)} className="w-full p-2 text-sm font-medium flex justify-center items-center gap-2 hover:bg-white/10 dark:hover:bg-slate-800/50 transition-colors">
-                        <Icon svg={ICONS.calendar} className="h-5 w-5" /> Calendario <Icon svg={isCalendarOpen ? ICONS.chevronDown : ICONS.upArrow} className="h-4 w-4" />
+                        <Icon svg={ICONS.calendar} className="h-5 w-5" /> Calendario Inteligente {isCalendarOpen && <span className="text-xs bg-indigo-500 text-white px-1.5 rounded-full">AI</span>} <Icon svg={isCalendarOpen ? ICONS.chevronDown : ICONS.upArrow} className="h-4 w-4" />
                     </button>
                     {isCalendarOpen && (
-                        <div className="h-96">
-                            <CalendarView tasks={filteredTasks} onDropTask={handleDropOnCalendar} onTaskClick={setSelectedTask} />
+                        <div className="h-[500px]">
+                            <PizarronCalendarView tasks={filteredTasks} onDropTask={handleDropOnCalendar} onTaskClick={setSelectedTask} onSuggestSlots={handleSuggestSlots} />
                         </div>
                     )}
                 </div>
@@ -271,8 +278,7 @@ const PizarronView: React.FC<PizarronViewProps> = ({ db, userId, appId, auth, st
         {showAddTaskModal && activeBoardId && <AddTaskModal isOpen={showAddTaskModal} onClose={() => setShowAddTaskModal(false)} db={db} appId={appId} userId={userId} auth={auth} initialStatus={initialStatusForModal} activeBoardId={activeBoardId} userProfile={userProfile} />}
         {selectedTask && <TaskDetailModal task={selectedTask} onClose={() => setSelectedTask(null)} db={db} userId={userId} appId={appId} auth={auth} storage={storage} onAnalyze={onAnalyze} />}
         {showTopIdeasDrawer && <TopIdeasDrawer isOpen={showTopIdeasDrawer} onClose={() => setShowTopIdeasDrawer(false)} tasks={filteredTasks} onTaskClick={setSelectedTask} />}
-        <FiltersDrawer isOpen={showFiltersDrawer} onClose={() => setShowFiltersDrawer(false)} filters={filters} setFilters={setFilters} />
-        <StatsDrawer isOpen={showStatsDrawer} onClose={() => setShowStatsDrawer(false)} />
+        <StatsDrawer isOpen={showStatsDrawer} onClose={() => setShowStatsDrawer(false)} tasks={filteredTasks} />
         {showAddBoard && <CreateBoardModal isOpen={showAddBoard} onClose={() => setShowAddBoard(false)} onCreate={handleCreateBoard} />}
     </div>
   );

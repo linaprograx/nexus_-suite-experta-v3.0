@@ -101,6 +101,25 @@ export interface PizarronComment {
   userName: string;
   text: string;
   createdAt: any;
+  mentions?: { userId: string, userName: string }[];
+}
+
+export interface PizarronActivity {
+  id?: string;
+  taskId: string;
+  type: 'creation' | 'status_change' | 'edit' | 'priority_change' | 'comment' | 'mention';
+  details: string;
+  userId: string;
+  userName: string;
+  timestamp: any;
+}
+
+export interface PizarronSavedView {
+  id?: string;
+  name: string;
+  userId: string;
+  filters: any;
+  createdAt: any;
 }
 
 export interface AppNotification {
