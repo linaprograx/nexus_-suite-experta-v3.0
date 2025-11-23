@@ -8,9 +8,6 @@ import { Select } from '../ui/Select';
 import { Textarea } from '../ui/Textarea';
 import { Spinner } from '../ui/Spinner';
 import { Alert } from '../ui/Alert';
-import { Icon } from '../ui/Icon';
-import { ICONS } from '../ui/icons';
-import { CerebrityHistorySidebar } from './CerebrityHistorySidebar';
 
 interface CreativityTabProps {
     db: Firestore;
@@ -27,123 +24,84 @@ interface CreativityTabProps {
     error: string | null;
     result: CerebrityResult | null;
     setResult: (result: CerebrityResult | null) => void;
-    showHistory: boolean;
-    setShowHistory: (show: boolean) => void;
     onOpenRecipeModal: (recipe: Partial<Recipe> | null) => void;
 }
 
-export const CreativityTab: React.FC<CreativityTabProps> = ({ db, userId, appId, allRecipes, selectedRecipe, setSelectedRecipe, rawInput, setRawInput, handleGenerate, loading, imageLoading, error, result, setResult, showHistory, setShowHistory, onOpenRecipeModal }) => (
-    <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
-        <div className="lg:col-span-2">
-            <Card>
-                <CardHeader className="flex flex-row justify-between items-center">
-                    <CardTitle>Generador Creativo</CardTitle>
-                    <Button variant="outline" onClick={() => setShowHistory(true)}>Ver Historial</Button>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                    <div>
-                        <Label htmlFor="recipe-select">Elegir Receta Existente</Label>
-                        <Select id="recipe-select" value={selectedRecipe?.id || ''} onChange={e => setSelectedRecipe(allRecipes.find(r => r.id === e.target.value) || null)}>
-                            <option value="">Seleccionar una receta...</option>
-                            {allRecipes.map(r => <option key={r.id} value={r.id}>{r.nombre}</option>)}
-                        </Select>
-                    </div>
-                    <div>
-                       <Label htmlFor="raw-input">O introduce ingredientes crudos</Label>
-                       <Textarea id="raw-input" placeholder="Ej: Ginebra, tónica, piel de limón, romero" value={rawInput} onChange={e => setRawInput(e.target.value)} />
-                    </div>
-                    <Button className="w-full" onClick={handleGenerate} disabled={loading || imageLoading}>
-                        {(loading || imageLoading) && <Spinner className="mr-2"/>}
-                        {loading ? 'Generando Texto...' : imageLoading ? 'Generando Imagen...' : 'Generar'}
-                    </Button>
-                </CardContent>
-            </Card>
-        </div>
-        <div className="lg:col-span-3 space-y-6">
-            {loading && !result && <div className="flex justify-center items-center h-64"><Spinner className="w-12 h-12"/></div>}
-            {error && <Alert variant="destructive" title="Error" description={error} />}
-            {result && (
-                <>
-                    <div className="space-y-4">
-                        <Card>
-                            <CardContent className="p-2">
-                                <div className="h-64 bg-secondary rounded-md flex items-center justify-center">
-                                    {imageLoading ? <Spinner className="w-10 h-10"/> :
-                                     result.imageUrl ? <img src={result.imageUrl} alt="Receta generada" className="w-full h-full object-cover rounded-md"/> :
-                                     <Icon svg={ICONS.galeria} className="w-16 h-16 text-muted-foreground"/>}
-                                </div>
-                            </CardContent>
-                        </Card>
-                         <Card>
-                            <CardHeader><CardTitle>Mejora Táctica</CardTitle></CardHeader>
-                            <CardContent>{result && <p className="text-sm">{result.mejora}</p>}</CardContent>
-                        </Card>
-                         <Card>
-                            <CardHeader><CardTitle>Garnish de Alto Nivel</CardTitle></CardHeader>
-                            <CardContent>{result && <p className="text-sm">{result.garnishComplejo}</p>}</CardContent>
-                        </Card>
-                         <Card>
-                            <CardHeader><CardTitle>Storytelling</CardTitle></CardHeader>
-                            <CardContent>{result && <p className="text-sm">{result.storytelling}</p>}</CardContent>
-                        </Card>
-                    </div>
-                    <div className="flex gap-4">
-                        <Button className="w-full" onClick={async () => {
-                          if (!result) return;
-                          try {
-                            const dataToSave: Partial<Recipe> = {
-                              preparacion: result.mejora || '',
-                              garnish: result.garnishComplejo || '',
-                              storytelling: result.storytelling || '',
-                              ...(result.imageUrl && { imageUrl: result.imageUrl })
-                            };
-                        
-                            if (selectedRecipe) {
-                              const recipeDoc = doc(db, `users/${userId}/grimorio`, selectedRecipe.id);
-                              await updateDoc(recipeDoc, dataToSave);
-                              alert("Receta actualizada con éxito.");
-                            } else {
-                              onOpenRecipeModal({
-                                nombre: 'Nueva Receta (Editar)',
-                                ...dataToSave
-                              });
-                            }
-                          } catch (e) {
-                            console.error("Error guardando en Receta: ", e);
-                            alert("Error al guardar en la receta.");
-                          }
-                        }}>Guardar en Recetas</Button>
-                        <Button className="w-full" variant="outline" onClick={async () => {
-                            if (!result) return;
-                            try {
-                              const taskText = `[CerebrIty] ${result.storytelling || result.mejora}`.substring(0, 500);
-                              await addDoc(collection(db, `artifacts/${appId}/public/data/pizarron-tasks`), {
-                                content: taskText,
-                                status: 'Ideas',
-                                category: 'Ideas',
-                                createdAt: serverTimestamp(),
-                                boardId: 'general'
-                              });
-                              alert("Idea guardada en el Pizarrón.");
-                            } catch (e) {
-                              console.error("Error guardando en Pizarrón: ", e);
-                              alert("Error al guardar en el Pizarrón.");
-                            }
-                          }}>Guardar en Pizarrón</Button>
-                    </div>
-                </>
-            )}
-        </div>
-        {showHistory && (
-            <CerebrityHistorySidebar
-                db={db}
-                userId={userId}
-                onLoadHistory={(item) => {
-                    setResult(item);
-                    setShowHistory(false);
-                }}
-                onClose={() => setShowHistory(false)}
-            />
+export const CreativityTab: React.FC<CreativityTabProps> = ({ db, userId, appId, allRecipes, selectedRecipe, setSelectedRecipe, rawInput, setRawInput, handleGenerate, loading, imageLoading, error, result, onOpenRecipeModal }) => (
+    <div className="h-full flex flex-col gap-6">
+        <Card className="flex-shrink-0 backdrop-blur-xl bg-white/40 dark:bg-slate-900/40 border border-white/20 shadow-lg rounded-xl">
+            <CardHeader>
+                <CardTitle className="text-violet-800 dark:text-violet-200">Generador Creativo</CardTitle>
+                <p className="text-sm text-slate-500">Inicia con una receta o ingredientes crudos para desatar la innovación.</p>
+            </CardHeader>
+            <CardContent className="space-y-4 px-6 pb-6">
+                <div>
+                    <Label htmlFor="recipe-select">Elegir Receta Existente</Label>
+                    <Select id="recipe-select" value={selectedRecipe?.id || ''} onChange={e => setSelectedRecipe(allRecipes.find(r => r.id === e.target.value) || null)}>
+                        <option value="">Seleccionar una receta...</option>
+                        {allRecipes.map(r => <option key={r.id} value={r.id}>{r.nombre}</option>)}
+                    </Select>
+                </div>
+                <div>
+                   <Label htmlFor="raw-input">O introduce ingredientes crudos</Label>
+                   <Textarea id="raw-input" placeholder="Ej: Ginebra, tónica, piel de limón, romero" value={rawInput} onChange={e => setRawInput(e.target.value)} />
+                </div>
+                <Button className="mt-3 w-full rounded-xl bg-violet-500 hover:bg-violet-600 text-white font-semibold py-2.5 shadow-md transition-all" onClick={handleGenerate} disabled={loading || imageLoading}>
+                    {(loading || imageLoading) && <Spinner className="mr-2"/>}
+                    {loading ? 'Generando...' : 'Generar'}
+                </Button>
+            </CardContent>
+            {error && <div className="px-6 pb-6"><Alert variant="destructive" title="Error" description={error} /></div>}
+        </Card>
+
+        {loading && !result && <div className="flex justify-center items-center h-64"><Spinner className="w-12 h-12 text-violet-500"/></div>}
+       
+        {result && (
+            <div className="space-y-6">
+                {result.imageUrl && (
+                    <Card className="aspect-video rounded-2xl overflow-hidden shadow-lg bg-slate-100 dark:bg-slate-800 backdrop-blur-xl bg-white/40 dark:bg-slate-900/40 border border-white/20">
+                         <div className="h-full w-full flex items-center justify-center">
+                            {imageLoading ? <Spinner className="w-10 h-10"/> :
+                             <img src={result.imageUrl} alt="Receta generada" className="w-full h-full object-cover"/>}
+                         </div>
+                    </Card>
+                )}
+                
+                <Card className="backdrop-blur-xl bg-white/40 dark:bg-slate-900/40 border border-white/20 shadow-lg rounded-xl">
+                    <CardHeader><CardTitle>Mejora Táctica</CardTitle></CardHeader>
+                    <CardContent className="px-7 pb-7"><p className="text-base leading-relaxed">{result.mejora}</p></CardContent>
+                </Card>
+                <Card className="backdrop-blur-xl bg-white/40 dark:bg-slate-900/40 border border-white/20 shadow-lg rounded-xl">
+                    <CardHeader><CardTitle>Garnish de Alto Nivel</CardTitle></CardHeader>
+                    <CardContent className="px-7 pb-7"><p className="text-base leading-relaxed">{result.garnishComplejo}</p></CardContent>
+                </Card>
+                <Card className="backdrop-blur-xl bg-white/40 dark:bg-slate-900/40 border border-white/20 shadow-lg rounded-xl">
+                    <CardHeader><CardTitle>Storytelling</CardTitle></CardHeader>
+                    <CardContent className="px-7 pb-7"><p className="text-base leading-relaxed">{result.storytelling}</p></CardContent>
+                </Card>
+                
+                <div className="flex gap-4 pt-2">
+                    <Button className="w-full" onClick={async () => {
+                      if (!result) return;
+                      try {
+                        const dataToSave: Partial<Recipe> = { preparacion: result.mejora || '', garnish: result.garnishComplejo || '', storytelling: result.storytelling || '', ...(result.imageUrl && { imageUrl: result.imageUrl }) };
+                        if (selectedRecipe) {
+                          const recipeDoc = doc(db, `users/${userId}/grimorio`, selectedRecipe.id);
+                          await updateDoc(recipeDoc, dataToSave);
+                        } else {
+                          onOpenRecipeModal({ nombre: 'Nueva Receta (Editar)', ...dataToSave });
+                        }
+                      } catch (e) { console.error("Error guardando en Receta: ", e); }
+                    }}>Guardar en Recetas</Button>
+                    <Button className="w-full" variant="outline" onClick={async () => {
+                        if (!result) return;
+                        try {
+                          const taskText = `[CerebrIty] ${result.storytelling || result.mejora}`.substring(0, 500);
+                          await addDoc(collection(db, `artifacts/${appId}/public/data/pizarron-tasks`), { content: taskText, status: 'Ideas', category: 'Ideas', createdAt: serverTimestamp(), boardId: 'general' });
+                        } catch (e) { console.error("Error guardando en Pizarrón: ", e); }
+                      }}>Guardar en Pizarrón</Button>
+                </div>
+            </div>
         )}
     </div>
 );

@@ -64,7 +64,7 @@ export const ContentView: React.FC<ContentViewProps> = (props) => {
       case 'cerebrIty':
         return <CerebrityView {...rest} initialText={rest.initialText} onAnalysisDone={rest.onAnalysisDone}/>;
       case 'lab':
-        return <LabView db={rest.db} userId={rest.userId} appId={rest.appId} allIngredients={rest.allIngredients} allRecipes={rest.allRecipes} />;
+        return <LabView db={rest.db} userId={rest.userId} appId={rest.appId} allIngredients={rest.allIngredients} allRecipes={rest.allRecipes} labResult={null} setLabResult={() => {}} labInputs={[]} setLabInputs={() => {}} onLoadHistory={() => {}} />;
       case 'escandallator':
         return <EscandallatorView {...rest} />;
       case 'trendLocator':

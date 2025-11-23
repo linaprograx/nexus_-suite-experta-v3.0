@@ -3,7 +3,10 @@ import { Firestore, collection, addDoc, serverTimestamp } from 'firebase/firesto
 import { FirebaseStorage, ref, uploadString, getDownloadURL } from 'firebase/storage';
 import { Recipe, Ingredient, CerebrityResult } from '../../types';
 import { CreativityTab } from '../components/cerebrity/CreativityTab';
-import TheLabTab from './LabView';
+import { CerebrityHistorySidebar } from '../components/cerebrity/CerebrityHistorySidebar';
+import { TheLabHistorySidebar } from '../components/cerebrity/TheLabHistorySidebar';
+import { PowerTreePanel } from '../components/cerebrity/PowerTreePanel';
+import LabView from './LabView';
 import { callGeminiApi, generateImage } from '../utils/gemini';
 import { Type } from "@google/genai";
 
@@ -21,21 +24,20 @@ interface CerebrityViewProps {
 
 const CerebrityView: React.FC<CerebrityViewProps> = ({ db, userId, storage, appId, allRecipes, allIngredients, onOpenRecipeModal, initialText, onAnalysisDone }) => {
     const [activeTab, setActiveTab] = React.useState<'creativity' | 'lab'>('creativity');
-
-    // --- Cerebrity State ---
     const [selectedRecipe, setSelectedRecipe] = React.useState<Recipe | null>(null);
     const [rawInput, setRawInput] = React.useState("");
     const [loading, setLoading] = React.useState(false);
     const [imageLoading, setImageLoading] = React.useState(false);
     const [error, setError] = React.useState<string | null>(null);
     const [result, setResult] = React.useState<CerebrityResult | null>(null);
-    const [showHistory, setShowHistory] = React.useState(false);
-    
+    const [labResult, setLabResult] = React.useState<any | null>(null);
+    const [labInputs, setLabInputs] = React.useState<(Recipe | Ingredient)[]>([]);
+
     React.useEffect(() => {
         if (initialText) {
-          setRawInput(initialText); // Pone el texto en el textarea
-          setActiveTab('creativity'); // Asegura que la pestaña correcta esté activa
-          onAnalysisDone(); // Limpia el trigger
+          setRawInput(initialText);
+          setActiveTab('creativity');
+          onAnalysisDone();
         }
     }, [initialText, onAnalysisDone]);
 
@@ -43,115 +45,86 @@ const CerebrityView: React.FC<CerebrityViewProps> = ({ db, userId, storage, appI
         setLoading(true);
         setError(null);
         setResult(null);
-
         if (!selectedRecipe && !rawInput.trim()) {
             setError("Por favor, seleccione una receta o introduzca ingredientes.");
             setLoading(false);
             return;
         }
-        
-        const promptBase = selectedRecipe
-            ? `Receta: ${selectedRecipe.nombre}. Ingredientes: ${selectedRecipe.ingredientes?.map(i => i.nombre).join(', ')}`
-            : `Ingredientes crudos: ${rawInput}`;
-        
-        let textResult: Omit<CerebrityResult, 'imageUrl' | 'createdAt'>;
-
+        const promptBase = selectedRecipe ? `Receta: ${selectedRecipe.nombre}. Ingredientes: ${selectedRecipe.ingredientes?.map(i => i.nombre).join(', ')}` : `Ingredientes crudos: ${rawInput}`;
         try {
-            const response = await callGeminiApi(`Analiza la siguiente base y genera las mejoras: ${promptBase}`, "Eres un director creativo de mixología, nivel 3 estrellas Michelin. Tu objetivo es la innovación extrema. Responde únicamente con el objeto JSON solicitado.", {
+            const response = await callGeminiApi(`Analiza la siguiente base y genera las mejoras: ${promptBase}`, "Eres un director creativo de mixología...", {
                 responseMimeType: "application/json",
-                responseSchema: {
-                    type: Type.OBJECT,
-                    properties: {
-                        mejora: { type: Type.STRING, description: "Una Técnica de alta cocina o elaboración compleja para el líquido." },
-                        garnishComplejo: { type: Type.STRING, description: "Un garnish compuesto por 2 o más sub-garnishes, descrito en detalle." },
-                        storytelling: { type: Type.STRING, description: "Breve storytelling con gancho emocional sobre el cóctel." },
-                        promptImagen: { type: Type.STRING, description: "Un prompt detallado en inglés para un generador de imágenes hiperrealista basado en el garnish complejo." },
-                    }
-                }
+                responseSchema: { type: Type.OBJECT, properties: { mejora: { type: Type.STRING }, garnishComplejo: { type: Type.STRING }, storytelling: { type: Type.STRING }, promptImagen: { type: Type.STRING } } }
             });
-            
-            const responseText = response.text;
-            const cleanJsonString = responseText.replace(/^```json\s*/, '').replace(/```$/, '');
-            const parsedResult = JSON.parse(cleanJsonString);
-            textResult = {
-                mejora: parsedResult.mejora,
-                garnishComplejo: parsedResult.garnishComplejo,
-                storytelling: parsedResult.storytelling,
-                promptImagen: parsedResult.promptImagen,
-            };
+            const textResult = JSON.parse(response.text.replace(/^```json\s*/, '').replace(/```$/, ''));
             setResult({ ...textResult, imageUrl: null });
-        } catch (textError: any) {
-            console.error("Error en API de Texto:", textError);
-            setError("Error al generar texto. Revisa la API Key de Gemini y la entrada.");
-            setLoading(false);
-            return;
-        }
 
-        let downloadURL: string | null = null;
-        try {
             setImageLoading(true);
             const imageResponse = await generateImage(textResult.promptImagen);
             const base64Data = imageResponse.predictions[0].bytesBase64Encoded;
             const storageRef = ref(storage, `users/${userId}/recipe-images/${Date.now()}.jpg`);
             await uploadString(storageRef, base64Data, 'base64', { contentType: 'image/jpeg' });
-            downloadURL = await getDownloadURL(storageRef);
+            const downloadURL = await getDownloadURL(storageRef);
             setResult(prev => prev ? ({ ...prev, imageUrl: downloadURL }) : null);
-        } catch (imageError: any) {
-            console.error("Error en API de Imagen:", imageError);
-            setError("Texto generado con éxito, pero la imagen falló. " + imageError.message);
+            await addDoc(collection(db, `users/${userId}/cerebrity-history`), { ...textResult, imageUrl: downloadURL, createdAt: serverTimestamp() });
+        } catch (e: any) {
+            setError("Error en la generación. " + e.message);
         } finally {
+            setLoading(false);
             setImageLoading(false);
         }
-        
-        try {
-            const historyItem = { ...textResult, imageUrl: downloadURL, createdAt: serverTimestamp() };
-            await addDoc(collection(db, `users/${userId}/cerebrity-history`), historyItem);
-        } catch (historyError) {
-            console.error("Error guardando en historial:", historyError);
-        }
-
-        setLoading(false);
     };
     
+    const handleSaveLabResultToPizarron = async (title: string, content: string) => {
+        if (!labResult) return;
+        const combination = labInputs.map(i => i.nombre).join(', ');
+        const taskContent = `[The Lab: ${combination}] ${title} - ${content}`.substring(0, 500);
+        try {
+            await addDoc(collection(db, `artifacts/${appId}/public/data/pizarron-tasks`), {
+                content: taskContent, status: 'Ideas', category: 'Ideas', createdAt: serverTimestamp(), boardId: 'general'
+            });
+            alert("Idea guardada en el Pizarrón.");
+        } catch (e) {
+            console.error("Error guardando en Pizarrón: ", e);
+        }
+    };
+
+    const backgroundClass = activeTab === 'creativity'
+        ? "from-[#EDE9FE] to-white dark:from-[#1E1B2A] dark:to-slate-950"
+        : "from-[#CCFBF1] to-white dark:from-[#1A2A29] dark:to-slate-950";
+
     return (
-        <div className="p-6 lg:p-8 h-full overflow-y-auto">
-             <div className="flex border-b mb-6">
-                <button onClick={() => setActiveTab('creativity')} className={`py-2 px-6 text-sm font-medium ${activeTab === 'creativity' ? 'border-b-2 border-primary text-primary' : 'text-muted-foreground'}`}>
-                    CerebrIty (Creativo)
-                </button>
-                 <button onClick={() => setActiveTab('lab')} className={`py-2 px-6 text-sm font-medium ${activeTab === 'lab' ? 'border-b-2 border-primary text-primary' : 'text-muted-foreground'}`}>
-                    The Lab (Científico)
-                </button>
+        <div className="h-[calc(100vh-80px)] w-full flex flex-col px-4 lg:px-8 py-6">
+             <div className="flex-shrink-0 mb-4">
+                <div className="flex items-center gap-2 bg-slate-100/80 dark:bg-slate-900/80 p-1 rounded-full w-fit">
+                    <button onClick={() => setActiveTab('creativity')} className={`py-2 px-5 text-sm font-semibold rounded-full transition-all duration-300 ${activeTab === 'creativity' ? 'bg-violet-600 text-white shadow-md' : 'text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-800'}`}>CerebrIty</button>
+                    <button onClick={() => setActiveTab('lab')} className={`py-2 px-5 text-sm font-semibold rounded-full transition-all duration-300 ${activeTab === 'lab' ? 'bg-cyan-600 text-white shadow-md' : 'text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-800'}`}>The Lab</button>
+                </div>
             </div>
-            {activeTab === 'creativity' ? (
-                <CreativityTab
-                    db={db}
-                    userId={userId}
-                    appId={appId}
-                    allRecipes={allRecipes}
-                    selectedRecipe={selectedRecipe}
-                    setSelectedRecipe={setSelectedRecipe}
-                    rawInput={rawInput}
-                    setRawInput={setRawInput}
-                    handleGenerate={handleGenerate}
-                    loading={loading}
-                    imageLoading={imageLoading}
-                    error={error}
-                    result={result}
-                    setResult={setResult}
-                    showHistory={showHistory}
-                    setShowHistory={setShowHistory}
-                    onOpenRecipeModal={onOpenRecipeModal}
-                />
-            ) : (
-                <TheLabTab
-                    db={db}
-                    userId={userId}
-                    appId={appId}
-                    allIngredients={allIngredients}
-                    allRecipes={allRecipes}
-                />
-            )}
+            <div className={`flex-1 grid grid-cols-1 lg:grid-cols-[310px,minmax(0,1fr),320px] gap-6 overflow-hidden rounded-3xl bg-gradient-to-b ${backgroundClass} p-6`}>
+               <div className="h-full min-h-0 overflow-y-auto">
+                   {activeTab === 'creativity' ? (
+                       <CerebrityHistorySidebar db={db} userId={userId} onLoadHistory={(item) => setResult(item)} />
+                   ) : (
+                       <TheLabHistorySidebar db={db} historyPath={`users/${userId}/the-lab-history`} onLoadHistory={(item) => setLabResult(item.result)} />
+                   )}
+               </div>
+                <div className="h-full min-h-0 overflow-y-auto">
+                    {activeTab === 'creativity' ? (
+                        <CreativityTab db={db} userId={userId} appId={appId} allRecipes={allRecipes} selectedRecipe={selectedRecipe} setSelectedRecipe={setSelectedRecipe} rawInput={rawInput} setRawInput={setRawInput} handleGenerate={handleGenerate} loading={loading} imageLoading={imageLoading} error={error} result={result} setResult={setResult} onOpenRecipeModal={onOpenRecipeModal} />
+                    ) : (
+                        <LabView db={db} userId={userId} appId={appId} allIngredients={allIngredients} allRecipes={allRecipes} labResult={labResult} setLabResult={setLabResult} labInputs={labInputs} setLabInputs={setLabInputs} />
+                    )}
+                </div>
+               <div className="h-full min-h-0 overflow-y-auto">
+                   <PowerTreePanel 
+                        color={activeTab === 'creativity' ? 'violet' : 'cyan'} 
+                        result={activeTab === 'creativity' ? result : labResult} 
+                        onOpenRecipeModal={onOpenRecipeModal}
+                        onSendToPizarron={handleSaveLabResultToPizarron}
+                    />
+               </div>
+            </div>
         </div>
     );
 };

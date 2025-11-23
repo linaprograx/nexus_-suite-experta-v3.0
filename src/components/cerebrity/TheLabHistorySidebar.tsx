@@ -1,17 +1,13 @@
 import * as React from 'react';
 import { Firestore, collection, query, orderBy, limit, onSnapshot } from 'firebase/firestore';
-import { Button } from '../ui/Button';
-import { Card, CardContent } from '../ui/Card';
-import { Icon } from '../ui/Icon';
-import { ICONS } from '../ui/icons';
 
 interface TheLabHistorySidebarProps {
     db: Firestore;
     historyPath: string;
-    onClose: () => void;
+    onLoadHistory: (item: any) => void;
 }
 
-export const TheLabHistorySidebar: React.FC<TheLabHistorySidebarProps> = ({ db, historyPath, onClose }) => {
+export const TheLabHistorySidebar: React.FC<TheLabHistorySidebarProps> = ({ db, historyPath, onLoadHistory }) => {
     const [history, setHistory] = React.useState<any[]>([]);
     const [loading, setLoading] = React.useState(true);
 
@@ -30,26 +26,28 @@ export const TheLabHistorySidebar: React.FC<TheLabHistorySidebarProps> = ({ db, 
     }, [db, historyPath]);
 
     return (
-        <>
-            <div className="fixed inset-0 bg-black/50 z-40" onClick={onClose} />
-            <div className="fixed top-0 right-0 h-full w-96 bg-card p-4 z-50 flex flex-col border-l">
-                <div className="flex justify-between items-center mb-4">
-                    <h3 className="text-lg font-semibold">Historial del Laboratorio</h3>
-                    <Button variant="ghost" size="icon" onClick={onClose}><Icon svg={ICONS.x} /></Button>
-                </div>
-                <div className="flex-1 overflow-y-auto space-y-3">
-                    {loading && <p>Cargando historial...</p>}
-                    {!loading && history.length === 0 && <p>No hay historial.</p>}
-                    {history.map(item => (
-                        <Card key={item.id}>
-                           <CardContent className="p-3">
-                                <p className="font-semibold text-sm">Análisis de: {item.ingredient || item.combination}</p>
-                                <p className="text-xs text-muted-foreground truncate">{item.result?.perfil}</p>
-                           </CardContent>
-                        </Card>
-                    ))}
-                </div>
+        <div className="h-full flex flex-col backdrop-blur-xl bg-white/40 dark:bg-slate-900/40 border border-white/20 shadow-lg rounded-xl p-4">
+            <div className="flex-shrink-0 mb-4">
+                <h3 className="text-sm font-bold text-slate-800 dark:text-slate-200">Historial del Laboratorio</h3>
             </div>
-        </>
+
+            <div className="flex-1 overflow-y-auto space-y-3 pr-2">
+                {loading && <div className="p-4 text-center text-sm text-slate-500">Cargando...</div>}
+                {!loading && history.length === 0 && <div className="p-4 text-center text-sm text-slate-500">No hay historial.</div>}
+                {history.map(item => (
+                    <div 
+                        key={item.id}
+                        onClick={() => onLoadHistory(item)}
+                        className="p-3 rounded-lg bg-white/60 dark:bg-slate-800/60 border border-white/30 shadow-sm hover:shadow-md hover:scale-[1.02] transition-all duration-200 cursor-pointer"
+                    >
+                        <p className="font-semibold text-xs text-slate-800 dark:text-slate-200 truncate">Análisis de: {item.combination}</p>
+                        <p className="text-xs text-slate-500 dark:text-slate-400 truncate mt-1">{item.result?.perfil}</p>
+                         <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-2">
+                            {item.createdAt?.toDate ? item.createdAt.toDate().toLocaleDateString() : 'Reciente'}
+                        </p>
+                    </div>
+                ))}
+            </div>
+        </div>
     );
-}
+};
