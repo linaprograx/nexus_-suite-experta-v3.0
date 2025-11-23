@@ -7,7 +7,6 @@ import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Icon } from '../components/ui/Icon';
 import { Modal } from '../components/ui/Modal';
-import { FAB } from '../components/ui/FAB';
 import { ICONS } from '../components/ui/icons';
 import { IngredientFormModal } from '../components/grimorium/IngredientFormModal';
 import { RecipeCard } from '../components/grimorium/RecipeCard';
@@ -367,15 +366,6 @@ const GrimoriumView: React.FC<{
                     </div>
                 </div>
             </Modal>
-
-            <FAB 
-                actions={[
-                    { label: 'Nueva Receta', icon: ICONS.book, onClick: () => onOpenRecipeModal(null) },
-                    { label: 'Nuevo Ingrediente', icon: ICONS.flask, onClick: () => { setEditingIngredient(null); setShowIngredientModal(true); } },
-                    { label: 'Herramientas', icon: ICONS.settings, onClick: () => setShowIngredientsManager(true) } // Opening Ingredients Manager as placeholder for tools
-                ]}
-                hidden={isToolOpen}
-            />
 
             {showIngredientModal && (
                 <IngredientFormModal

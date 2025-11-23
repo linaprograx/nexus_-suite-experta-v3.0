@@ -16,9 +16,9 @@ import { NotificationsDrawer } from './src/components/dashboard/NotificationsDra
 import { ChatbotWidget } from './src/components/ui/ChatbotWidget';
 import { AuthComponent } from './src/components/auth/AuthComponent';
 import { PrintStyles } from './src/components/ui/PrintStyles';
-import { FAB } from './src/components/ui/FAB';
 import { ICONS } from './src/components/ui/icons';
 import { AddTaskModal } from './src/components/pizarron/AddTaskModal';
+import { safeNormalizeTask } from './src/utils/taskHelpers';
 
 // --- MAIN APP COMPONENT ---
 const MainAppContent = () => {
@@ -49,7 +49,7 @@ const MainAppContent = () => {
         if (!db || !userId) return;
         const recipeUnsub = onSnapshot(query(collection(db, `users/${userId}/grimorio`), orderBy('nombre')), snap => setAllRecipes(snap.docs.map(d => ({ ...d.data(), id: d.id } as Recipe))));
         const ingredientUnsub = onSnapshot(query(collection(db, `artifacts/${appId}/users/${userId}/grimorio-ingredients`), orderBy('nombre')), snap => setAllIngredients(snap.docs.map(d => ({ ...d.data(), id: d.id } as Ingredient))));
-        const taskUnsub = onSnapshot(query(collection(db, `artifacts/${appId}/public/data/pizarron-tasks`), orderBy('createdAt', 'desc')), snap => setAllPizarronTasks(snap.docs.map(d => ({ ...d.data(), id: d.id } as PizarronTask))));
+        const taskUnsub = onSnapshot(query(collection(db, `artifacts/${appId}/public/data/pizarron-tasks`), orderBy('createdAt', 'desc')), snap => setAllPizarronTasks(snap.docs.map(d => safeNormalizeTask({ ...d.data(), id: d.id }))));
         
         const notifPath = `artifacts/${appId}/users/${userId}/notifications`;
         const q = query(collection(db, notifPath), orderBy('createdAt', 'desc'), limit(20));
@@ -131,14 +131,6 @@ const MainAppContent = () => {
                     />
                 </main>
             </div>
-
-            {/* Floating Action Button */}
-            <FAB actions={[
-                { label: "Nueva Receta", icon: ICONS.plus, onClick: () => handleOpenRecipeModal(null) },
-                { label: "Nueva Tarea", icon: ICONS.edit, onClick: () => setShowAddTaskModal(true) },
-                { label: "Abrir Grimorio", icon: ICONS.book, onClick: () => setCurrentView('grimorium') },
-                { label: "Abrir Pizarrón", icon: ICONS.layout, onClick: () => setCurrentView('pizarron') }
-            ]} />
 
             {showRecipeModal && <RecipeFormModal isOpen={showRecipeModal} onClose={() => setShowRecipeModal(false)} db={db} userId={userId} initialData={recipeToEdit} allIngredients={allIngredients}/>}
             {showAddTaskModal && activeBoardId && <AddTaskModal isOpen={showAddTaskModal} onClose={() => setShowAddTaskModal(false)} db={db} appId={appId} userId={userId} auth={auth} initialStatus="ideas" activeBoardId={activeBoardId} userProfile={userProfile || {}} />}

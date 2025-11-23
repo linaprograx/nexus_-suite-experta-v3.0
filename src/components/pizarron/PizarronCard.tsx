@@ -5,6 +5,8 @@ import { ICONS } from '../ui/icons';
 import { PizarronTask, Tag } from '../../../types';
 import { getCategoryColor, getPriorityIcon } from './helpers';
 import { useUI } from '../../context/UIContext';
+import { useApp } from '../../context/AppContext';
+import { doc, deleteDoc } from 'firebase/firestore';
 import { motion } from 'framer-motion';
 
 interface PizarronCardProps {
@@ -16,7 +18,19 @@ interface PizarronCardProps {
 
 export const PizarronCard: React.FC<PizarronCardProps> = ({ task, onDragStart, onOpenDetail, allTags }) => {
   const { compactMode, theme } = useUI();
+  const { db, appId } = useApp();
   const { icon: priorityIcon, color: priorityColor } = getPriorityIcon(task.priority);
+
+  const handleDelete = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (confirm("¿Eliminar tarea?")) {
+        try {
+            await deleteDoc(doc(db, `artifacts/${appId}/public/data/pizarron-tasks`, task.id));
+        } catch (error) {
+            console.error("Error deleting task:", error);
+        }
+    }
+  };
 
   const averageRating = React.useMemo(() => {
     const ratings = Object.values(task.starRating || {});
@@ -47,6 +61,14 @@ export const PizarronCard: React.FC<PizarronCardProps> = ({ task, onDragStart, o
       onClick={onOpenDetail}
     >
       <div className={`absolute inset-0 bg-gradient-to-br ${getCategoryColor(task.category)} opacity-5 rounded-xl pointer-events-none`} />
+
+      <button
+        onClick={handleDelete}
+        className="absolute top-2 right-2 z-20 p-1.5 rounded-md bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-100 dark:hover:bg-red-500/20"
+        title="Eliminar"
+      >
+        <Icon svg={ICONS.trash} className="w-[14px] h-[14px]" />
+      </button>
 
       {/* Task Text */}
       <p className={`font-medium text-slate-800 dark:text-slate-100 mb-2 line-clamp-3 ${compactMode ? 'text-xs' : 'text-sm'}`}>

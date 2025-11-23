@@ -1,5 +1,5 @@
 import React from 'react';
-import { Firestore, collection, addDoc, serverTimestamp, doc, query, orderBy, onSnapshot, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
+import { Firestore, collection, addDoc, serverTimestamp, doc, query, orderBy, onSnapshot, updateDoc, arrayUnion, arrayRemove, deleteDoc } from 'firebase/firestore';
 import { Auth } from 'firebase/auth';
 import { FirebaseStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { Modal } from '../ui/Modal';
@@ -11,8 +11,10 @@ import { Label } from '../ui/Label';
 import { Icon } from '../ui/Icon';
 import { ICONS } from '../ui/icons';
 import { PizarronTask, PizarronComment } from '../../../types';
-import { CommentsPanel } from './CommentsPanel';
+import { CommentsPanel } from '../../features/pizarron/ui/comments/CommentsPanel';
+import { HistoryPanel } from '../../features/pizarron/ui/history/HistoryPanel';
 import { TaskActivity } from './TaskActivity';
+import { safeNormalizeTask } from '../../utils/taskHelpers';
 
 interface TaskDetailModalProps {
   task: PizarronTask;
@@ -27,10 +29,23 @@ interface TaskDetailModalProps {
 
 export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({ task, onClose, db, userId, appId, auth, storage, onAnalyze }) => {
   const [newLabel, setNewLabel] = React.useState("");
-  const [taskText, setTaskText] = React.useState(task.texto);
+  const [taskText, setTaskText] = React.useState(task.texto || '');
+  const [activeTab, setActiveTab] = React.useState<'comments' | 'history'>('comments');
 
   const pizarronColPath = `artifacts/${appId}/public/data/pizarron-tasks`;
   const taskDocRef = doc(db, pizarronColPath, task.id);
+
+  // Check for incomplete data
+  const isTaskIncomplete = !task.texto || !task.status || !task.category;
+
+  const handleRestore = async () => {
+      const normalized = safeNormalizeTask(task);
+      // We need to pass the properties, excluding id if it's in the object but updateDoc doesn't care about extra fields mostly, but better be safe
+      // safeNormalizeTask returns PizarronTask which includes id.
+      // We should probably strip id or just pass the fields.
+      const { id, ...dataToUpdate } = normalized;
+      await updateDoc(taskDocRef, dataToUpdate);
+  };
 
   const handleUpdate = async (field: string, value: any) => {
     try {
@@ -53,6 +68,35 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({ task, onClose,
     await updateDoc(taskDocRef, { attachments: arrayUnion(newAttachment) });
   };
   
+  if (isTaskIncomplete) {
+      return (
+          <Modal isOpen={true} onClose={onClose}>
+              <div className="p-8 flex flex-col items-center justify-center text-center h-64">
+                  <div className="bg-red-100 dark:bg-red-900/20 p-4 rounded-full mb-4">
+                      <Icon svg={ICONS.bell} className="w-8 h-8 text-red-500" />
+                  </div>
+                  <h3 className="text-xl font-bold text-slate-800 dark:text-slate-100 mb-2">Esta tarea tiene datos incompletos</h3>
+                  <p className="text-slate-500 dark:text-slate-400 mb-6 max-w-md">
+                      La estructura de datos de esta tarea no es válida. Puedes intentar restaurarla a un estado seguro o eliminarla permanentemente.
+                  </p>
+                  <div className="flex gap-4">
+                      <Button variant="outline" onClick={async () => {
+                          if (confirm("¿Eliminar tarea permanentemente?")) {
+                              await deleteDoc(taskDocRef);
+                              onClose();
+                          }
+                      }} className="text-red-500 hover:text-red-600 border-red-200 hover:bg-red-50">
+                          Eliminar
+                      </Button>
+                      <Button onClick={handleRestore} className="bg-indigo-500 hover:bg-indigo-600 text-white">
+                          Restaurar Tarea
+                      </Button>
+                  </div>
+              </div>
+          </Modal>
+      );
+  }
+
   return (
     <Modal isOpen={true} onClose={onClose} size="3xl">
        <div className="grid grid-cols-3 gap-6">
@@ -62,8 +106,28 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({ task, onClose,
             </div>
             
             <div className="flex-1 min-h-0 flex flex-col gap-4">
-                <div className="flex-1 min-h-0">
-                    <CommentsPanel taskId={task.id} db={db} auth={auth} userId={userId} appId={appId} />
+                <div className="flex-1 min-h-0 flex flex-col bg-white/40 dark:bg-slate-900/40 rounded-2xl border border-white/20 dark:border-slate-800/40 overflow-hidden">
+                    <div className="flex border-b border-white/10 dark:border-slate-700/30 p-2 gap-2">
+                        <button 
+                          onClick={() => setActiveTab('comments')}
+                          className={`px-4 py-2 rounded-xl text-sm font-medium transition-colors ${activeTab === 'comments' ? 'bg-white dark:bg-slate-800 shadow-sm text-indigo-600 dark:text-indigo-400' : 'text-slate-500 hover:bg-white/10 dark:hover:bg-slate-800/50'}`}
+                        >
+                          Comentarios
+                        </button>
+                        <button 
+                          onClick={() => setActiveTab('history')}
+                          className={`px-4 py-2 rounded-xl text-sm font-medium transition-colors ${activeTab === 'history' ? 'bg-white dark:bg-slate-800 shadow-sm text-indigo-600 dark:text-indigo-400' : 'text-slate-500 hover:bg-white/10 dark:hover:bg-slate-800/50'}`}
+                        >
+                          Historial
+                        </button>
+                    </div>
+                    <div className="flex-1 overflow-hidden p-4">
+                        {activeTab === 'comments' ? (
+                            <CommentsPanel taskId={task.id} db={db} appId={appId} user={{ uid: userId, displayName: auth.currentUser?.displayName || 'Usuario', photoURL: auth.currentUser?.photoURL || '' }} />
+                        ) : (
+                            <HistoryPanel taskId={task.id} db={db} appId={appId} />
+                        )}
+                    </div>
                 </div>
                 
                 <div className="bg-white/50 dark:bg-slate-800/50 p-4 rounded-xl border border-white/20 dark:border-slate-700/30">
@@ -103,6 +167,21 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({ task, onClose,
              
              <div className="pt-4 border-t border-slate-200 dark:border-slate-700">
                 <TaskActivity taskId={task.id} db={db} appId={appId} />
+             </div>
+             
+             <div className="flex justify-end pt-2">
+                <button 
+                    onClick={async () => {
+                        if (confirm("¿Eliminar tarea permanentemente?")) {
+                            await deleteDoc(taskDocRef);
+                            onClose();
+                        }
+                    }}
+                    className="p-2 rounded-lg text-slate-400 hover:bg-red-50 dark:hover:bg-red-500/10 hover:text-red-600 transition-colors"
+                    title="Eliminar tarea"
+                >
+                    <Icon svg={ICONS.trash} className="w-[18px] h-[18px]" />
+                </button>
              </div>
         </div>
        </div>

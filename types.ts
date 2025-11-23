@@ -66,9 +66,11 @@ export interface Tag {
 export interface PizarronTask {
   id: string;
   texto: string;
+  description?: string; // Added field
   status: PizarronStatus;
   category: string;
   createdAt: any;
+  updatedAt?: any; // Added field
 
   // --- NUEVOS CAMPOS (Iteración 7) ---
   boardId: string; // ID del tablero al que pertenece la tarea
@@ -82,6 +84,31 @@ export interface PizarronTask {
   dueDate: any; // Timestamp (para el Calendario)
   authorName?: string;
   authorPhotoURL?: string;
+  history?: any[]; // Added field for embedded history if needed
+}
+
+export interface Attachment {
+  id: string;
+  type: 'image' | 'video' | 'audio' | 'pdf' | 'file';
+  url: string;
+  name: string;
+  size?: number;
+  metadata?: any;
+}
+
+export interface TaskComment {
+  id: string;
+  taskId: string;
+  authorId: string;
+  authorName: string;
+  authorAvatar?: string;
+  message: string;
+  mentions: string[];
+  attachments?: Attachment[];
+  createdAt: number;
+  updatedAt?: number;
+  isSystem?: boolean;
+  reactions?: Record<string, string[]>; // emoji -> array of userIds
 }
 
 export interface PizarronBoard {
@@ -117,6 +144,16 @@ export interface PizarronActivity {
   userId: string;
   userName: string;
   timestamp: any;
+}
+
+export interface TaskHistoryItem {
+  id: string;
+  taskId: string;
+  type: string;
+  authorId: string;
+  authorName: string; 
+  description: string;
+  createdAt: number;
 }
 
 export interface PizarronSavedView {
