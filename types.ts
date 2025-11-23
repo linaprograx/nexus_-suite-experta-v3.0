@@ -159,6 +159,8 @@ export interface UIContextType {
   setTheme: React.Dispatch<React.SetStateAction<string>>;
   isSidebarCollapsed: boolean;
   toggleSidebar: () => void;
+  compactMode: boolean;
+  toggleCompactMode: () => void;
 }
 
 export interface AppContextType {

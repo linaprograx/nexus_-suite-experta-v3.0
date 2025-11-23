@@ -35,7 +35,7 @@ export const WeekChart: React.FC<WeekChartProps> = ({ tasksByDay }) => {
   };
 
   return (
-    <Card className="p-6 bg-white dark:bg-gray-800 shadow-sm h-[300px]">
+    <Card className="p-6 bg-white dark:bg-gray-800 shadow-sm h-[300px] transition-all duration-300 hover:shadow-xl hover:-translate-y-1 dark:shadow-slate-900/60">
       <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-6">Actividad Diaria</h3>
       <div className="h-[200px] w-full">
         <ResponsiveContainer width="100%" height="100%">

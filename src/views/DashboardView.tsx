@@ -2,6 +2,7 @@ import React from 'react';
 import { Auth } from 'firebase/auth';
 import { Recipe, PizarronTask, Ingredient, ViewName } from '../../types';
 import { useApp } from '../context/AppContext';
+import { useUI } from '../context/UIContext';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '../components/ui/Card';
 import { 
   FaBook, 
@@ -29,8 +30,16 @@ import {
   PolarRadiusAxis, 
   Radar 
 } from 'recharts';
+import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import { useToday, TodayPanel } from '../features/today';
-import { useCreativeWeekPro, CreativeWeekPanel } from '../features/creative-week-pro';
+import { 
+  useCreativeWeekPro, 
+  SummaryCards, 
+  WeekChart, 
+  WeeklySummary, 
+  KeyInsights,
+} from '../features/creative-week-pro';
+import { RecommendedAction } from '../features/creative-week-pro/ui/RecommendedAction';
 import { useNextBestAction, HybridNBACard } from '../features/next-best-action';
 
 // Helper components for the new layout
@@ -59,6 +68,7 @@ const DashboardView: React.FC<{
   setCurrentView: (view: ViewName) => void;
 }> = ({ allRecipes, allPizarronTasks, allIngredients, auth, setCurrentView }) => {
     const { userProfile } = useApp();
+    const { compactMode } = useUI();
 
     // --- 1. Metrics & Data Processing ---
 
@@ -119,6 +129,24 @@ const DashboardView: React.FC<{
         allPizarronTasks, 
         userProfile?.displayName || 'Usuario'
     );
+    const { summary, insights, recommendation, stats } = useCreativeWeekPro(allPizarronTasks, userProfile?.displayName || 'Usuario');
+
+    const [widgetOrder, setWidgetOrder] = React.useState<string[]>(() => {
+        if (typeof window !== 'undefined') {
+            const saved = localStorage.getItem('dashboard_layout_order');
+            return saved ? JSON.parse(saved) : ['weekly_creative', 'weekly_summary', 'insights', 'recommended_action', 'next_best_action', 'recent_activity'];
+        }
+        return ['weekly_creative', 'weekly_summary', 'insights', 'recommended_action', 'next_best_action', 'recent_activity'];
+    });
+
+    const onDragEnd = (result: any) => {
+        if (!result.destination) return;
+        const items = Array.from(widgetOrder);
+        const [reorderedItem] = items.splice(result.source.index, 1);
+        items.splice(result.destination.index, 0, reorderedItem);
+        setWidgetOrder(items);
+        localStorage.setItem('dashboard_layout_order', JSON.stringify(items));
+    };
 
     // DEBUG: NBA
     console.log("NBA DEBUG:", nbaData);
@@ -126,9 +154,9 @@ const DashboardView: React.FC<{
     // --- Components ---
 
     const KpiCard = ({ title, value, icon, trend, colorClass }: any) => (
-        <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-shadow duration-200">
-            <div className="flex items-center justify-between mb-4">
-                <div className={`p-3 rounded-lg ${colorClass} bg-opacity-10 text-current`}>
+        <div className={`bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-shadow duration-200 ${compactMode ? 'p-3' : 'p-6'}`}>
+            <div className={`flex items-center justify-between ${compactMode ? 'mb-2' : 'mb-4'}`}>
+                <div className={`rounded-lg ${colorClass} bg-opacity-10 text-current ${compactMode ? 'p-2' : 'p-3'}`}>
                     {icon}
                 </div>
                 {trend && (
@@ -137,8 +165,8 @@ const DashboardView: React.FC<{
                     </span>
                 )}
             </div>
-            <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">{title}</h3>
-            <p className="text-3xl font-bold text-gray-900 dark:text-white mt-1">{value}</p>
+            <h3 className={`font-medium text-gray-500 dark:text-gray-400 ${compactMode ? 'text-xs' : 'text-sm'}`}>{title}</h3>
+            <p className={`font-bold text-gray-900 dark:text-white mt-1 ${compactMode ? 'text-xl' : 'text-3xl'}`}>{value}</p>
         </div>
     );
 
@@ -160,26 +188,26 @@ const DashboardView: React.FC<{
     );
 
     return (
-        <div className="h-full overflow-y-auto bg-gray-50 dark:bg-gray-900 p-6 lg:p-10 space-y-8 pb-32">
+        <div className={`h-full overflow-y-auto bg-gray-50 dark:bg-gray-900 pb-32 ${compactMode ? 'p-3 space-y-4' : 'p-6 lg:p-10 space-y-8'}`}>
             
             {/* 1. Hero Section */}
-            <section className="flex flex-col md:flex-row items-start md:items-center justify-between bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700">
-                <div className="flex items-center gap-4 mb-4 md:mb-0">
+            <section className={`flex flex-col md:flex-row items-start md:items-center justify-between bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 ${compactMode ? 'p-3' : 'p-6'}`}>
+                <div className={`flex items-center gap-4 mb-4 md:mb-0 ${compactMode ? 'gap-2' : 'gap-4'}`}>
                     <div className="relative">
                         {userProfile?.photoURL ? (
-                            <img src={userProfile.photoURL} alt="Profile" className="w-16 h-16 rounded-full object-cover border-4 border-indigo-50 dark:border-indigo-900" />
+                            <img src={userProfile.photoURL} alt="Profile" className={`${compactMode ? 'w-10 h-10' : 'w-16 h-16'} rounded-full object-cover border-4 border-indigo-50 dark:border-indigo-900`} />
                         ) : (
-                            <div className="w-16 h-16 rounded-full bg-gradient-to-r from-indigo-500 to-purple-500 flex items-center justify-center text-white text-2xl font-bold border-4 border-indigo-50 dark:border-indigo-900">
+                            <div className={`${compactMode ? 'w-10 h-10 text-lg' : 'w-16 h-16 text-2xl'} rounded-full bg-gradient-to-r from-indigo-500 to-purple-500 flex items-center justify-center text-white font-bold border-4 border-indigo-50 dark:border-indigo-900`}>
                                 {userProfile?.displayName?.[0] || auth.currentUser?.email?.[0] || 'U'}
                             </div>
                         )}
                         <div className="absolute bottom-0 right-0 w-4 h-4 bg-green-500 border-2 border-white dark:border-gray-800 rounded-full"></div>
                     </div>
                     <div>
-                        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+                        <h1 className={`font-bold text-gray-900 dark:text-white ${compactMode ? 'text-lg' : 'text-2xl'}`}>
                             Bienvenido, {userProfile?.displayName || auth.currentUser?.email?.split('@')[0]}
                         </h1>
-                        <p className="text-gray-500 dark:text-gray-400">Tu centro de control diario</p>
+                        <p className="text-gray-500 dark:text-gray-400 text-sm">Tu centro de control diario</p>
                     </div>
                 </div>
                 <div className="w-full md:w-1/3">
@@ -193,7 +221,7 @@ const DashboardView: React.FC<{
             </section>
 
             {/* 2. KPI Grid */}
-            <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            <section className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 ${compactMode ? 'gap-3' : 'gap-6'}`}>
                 <div onClick={() => setCurrentView('grimorium')} className="cursor-pointer">
                     <KpiCard 
                         title="Total Recetas" 
@@ -228,10 +256,10 @@ const DashboardView: React.FC<{
             </section>
 
             {/* 3. Charts Grid */}
-            <section className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <section className={`grid grid-cols-1 lg:grid-cols-3 ${compactMode ? 'gap-4' : 'gap-8'}`}>
                 <Card className="lg:col-span-2 shadow-md border border-gray-200 dark:border-gray-700">
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
+                    <CardHeader className={compactMode ? 'p-3' : 'p-6'}>
+                        <CardTitle className={`flex items-center gap-2 ${compactMode ? 'text-base' : 'text-lg'}`}>
                             <FaChartLine className="text-indigo-500" /> Actividad Creativa
                         </CardTitle>
                         <CardDescription>Flujo de trabajo en los últimos 7 días</CardDescription>
@@ -297,60 +325,103 @@ const DashboardView: React.FC<{
                 </Card>
             </section>
 
-            {/* 4. "Lo que debes hacer hoy" & 5. Actividad Reciente */}
-            <section className="grid grid-cols-1 xl:grid-cols-4 gap-8">
-                
-                {/* To-Do Board (Takes 3 cols on large screens) */}
-                <div className="xl:col-span-3">
-                    <TodayPanel ideas={ideas} inProgress={inProgress} urgent={urgent} />
-                    <div className="mt-8">
-                        <CreativeWeekPanel tasks={allPizarronTasks} userName={userProfile?.displayName || 'Usuario'} />
-                    </div>
-                    
-                    {nbaData?.action && (
-                        <div className="mt-8">
-                            <HybridNBACard 
-                                data={nbaData} 
-                                isLoading={isNBALoading} 
-                                onRefresh={refreshNBA} 
-                            />
+            {/* 4. "Lo que debes hacer hoy" */}
+            <section className="mb-8">
+                 <TodayPanel ideas={ideas} inProgress={inProgress} urgent={urgent} />
+            </section>
+
+            {/* 5. Reorderable Widgets */}
+            <DragDropContext onDragEnd={onDragEnd}>
+                <Droppable droppableId="dashboard-widgets" direction="vertical">
+                    {(provided) => (
+                        <div 
+                            ref={provided.innerRef} 
+                            {...provided.droppableProps}
+                            className={`grid grid-cols-1 xl:grid-cols-4 ${compactMode ? 'gap-4' : 'gap-8'}`}
+                        >
+                            {widgetOrder.map((widgetId, index) => {
+                                let content = null;
+                                let colSpan = "xl:col-span-2";
+
+                                switch(widgetId) {
+                                    case 'weekly_creative':
+                                        colSpan = "xl:col-span-4";
+                                        content = (
+                                            <div className="space-y-6">
+                                                <SummaryCards stats={stats} />
+                                                <WeekChart tasksByDay={stats?.tasksByDay} />
+                                            </div>
+                                        );
+                                        break;
+                                    case 'weekly_summary':
+                                        content = <WeeklySummary summary={summary} />;
+                                        break;
+                                    case 'insights':
+                                        content = <KeyInsights insights={insights} />;
+                                        break;
+                                    case 'recommended_action':
+                                        content = recommendation ? <RecommendedAction recommendation={recommendation} /> : null;
+                                        break;
+                                    case 'next_best_action':
+                                        content = nbaData?.action ? <HybridNBACard data={nbaData} isLoading={isNBALoading} onRefresh={refreshNBA} /> : null;
+                                        break;
+                                    case 'recent_activity':
+                                        colSpan = "xl:col-span-2";
+                                        content = (
+                                            <Card className="h-full shadow-md border border-gray-200 dark:border-gray-700">
+                                                <CardHeader>
+                                                    <CardTitle>Actividad Reciente</CardTitle>
+                                                </CardHeader>
+                                                <CardContent>
+                                                    <div className="relative pl-4 border-l-2 border-gray-100 dark:border-gray-700 space-y-8">
+                                                        {[
+                                                            { text: "Nueva receta creada", time: "Hace 2h", icon: <FaBook size={12} />, color: "bg-blue-500" },
+                                                            { text: "Escandallo actualizado", time: "Hace 5h", icon: <FaChartLine size={12} />, color: "bg-green-500" },
+                                                            { text: "Menú de temporada aprobado", time: "Ayer", icon: <FaCalendarAlt size={12} />, color: "bg-purple-500" },
+                                                            { text: "Inventario revisado", time: "Ayer", icon: <FaBolt size={12} />, color: "bg-amber-500" }
+                                                        ].map((item, idx) => (
+                                                            <div key={idx} className="relative">
+                                                                <div className={`absolute -left-[21px] top-0 w-8 h-8 rounded-full border-4 border-white dark:border-gray-900 ${item.color} flex items-center justify-center text-white`}>
+                                                                    {item.icon}
+                                                                </div>
+                                                                <div>
+                                                                    <p className="text-sm font-medium text-gray-800 dark:text-gray-200">{item.text}</p>
+                                                                    <span className="text-xs text-gray-400">{item.time}</span>
+                                                                </div>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                    <button className="w-full mt-8 text-sm text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 py-2 border border-gray-200 dark:border-gray-700 rounded-lg transition-colors">
+                                                        Ver historial completo
+                                                    </button>
+                                                </CardContent>
+                                            </Card>
+                                        );
+                                        break;
+                                }
+
+                                if (!content) return null;
+
+                                return (
+                                    <Draggable key={widgetId} draggableId={widgetId} index={index}>
+                                        {(provided) => (
+                                            <div
+                                                ref={provided.innerRef}
+                                                {...provided.draggableProps}
+                                                {...provided.dragHandleProps}
+                                                className={`${colSpan} h-full`}
+                                            >
+                                                {content}
+                                            </div>
+                                        )}
+                                    </Draggable>
+                                );
+                            })}
+                            {provided.placeholder}
                         </div>
                     )}
-                </div>
-
-                {/* 5. Activity Timeline */}
-                <div className="xl:col-span-1">
-                    <Card className="h-full shadow-md border border-gray-200 dark:border-gray-700">
-                        <CardHeader>
-                            <CardTitle>Actividad Reciente</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="relative pl-4 border-l-2 border-gray-100 dark:border-gray-700 space-y-8">
-                                {/* Placeholder Timeline Items */}
-                                {[
-                                    { text: "Nueva receta creada", time: "Hace 2h", icon: <FaBook size={12} />, color: "bg-blue-500" },
-                                    { text: "Escandallo actualizado", time: "Hace 5h", icon: <FaChartLine size={12} />, color: "bg-green-500" },
-                                    { text: "Menú de temporada aprobado", time: "Ayer", icon: <FaCalendarAlt size={12} />, color: "bg-purple-500" },
-                                    { text: "Inventario revisado", time: "Ayer", icon: <FaBolt size={12} />, color: "bg-amber-500" }
-                                ].map((item, idx) => (
-                                    <div key={idx} className="relative">
-                                        <div className={`absolute -left-[21px] top-0 w-8 h-8 rounded-full border-4 border-white dark:border-gray-900 ${item.color} flex items-center justify-center text-white`}>
-                                            {item.icon}
-                                        </div>
-                                        <div>
-                                            <p className="text-sm font-medium text-gray-800 dark:text-gray-200">{item.text}</p>
-                                            <span className="text-xs text-gray-400">{item.time}</span>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                            <button className="w-full mt-8 text-sm text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 py-2 border border-gray-200 dark:border-gray-700 rounded-lg transition-colors">
-                                Ver historial completo
-                            </button>
-                        </CardContent>
-                    </Card>
-                </div>
-            </section>
+                </Droppable>
+            </DragDropContext>
 
         </div>
     );

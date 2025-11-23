@@ -36,6 +36,7 @@ export const ICONS = {
     chevronRight: '<polyline points="9 18 15 12 9 6" />',
     chevronLeft: '<polyline points="15 18 9 12 15 6" />',
     sliders: '<line x1="4" y1="21" x2="4" y2="14" /><line x1="4" y1="10" x2="4" y2="3" /><line x1="12" y1="21" x2="12" y2="12" /><line x1="12" y1="8" x2="12" y2="3" /><line x1="20" y1="21" x2="20" y2="16" /><line x1="20" y1="12" x2="20" y2="3" /><line x1="1" y1="14" x2="7" y2="14" /><line x1="9" y1="8" x2="15" y2="8" /><line x1="17" y1="16" x2="23" y2="16" />',
+    slidersHorizontal: '<line x1="21" y1="4" x2="14" y2="4" /><line x1="10" y1="4" x2="3" y2="4" /><line x1="21" y1="12" x2="12" y2="12" /><line x1="8" y1="12" x2="3" y2="12" /><line x1="21" y1="20" x2="16" y2="20" /><line x1="12" y1="20" x2="3" y2="20" /><line x1="14" y1="2" x2="14" y2="6" /><line x1="8" y1="10" x2="8" y2="14" /><line x1="16" y1="18" x2="16" y2="22" />',
     arrowUp: '<path d="M12 5l-6 6h12l-6-6" />',
     chevronsUp: '<path d="M17 11l-5-5-5 5M17 18l-5-5-5 5" />',
     minus: '<line x1="5" y1="12" x2="19" y2="12" />',

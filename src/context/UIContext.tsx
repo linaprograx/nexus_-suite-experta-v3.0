@@ -42,6 +42,7 @@ export const UIProvider: React.FC<{ children: React.ReactNode }> = ({ children }
     }
     return false;
   });
+  const [compactMode, setCompactMode] = React.useState<boolean>(false);
 
   React.useEffect(() => {
     applyTheme(theme);
@@ -52,9 +53,10 @@ export const UIProvider: React.FC<{ children: React.ReactNode }> = ({ children }
   }, [isSidebarCollapsed]);
 
   const toggleSidebar = () => setIsSidebarCollapsed(prev => !prev);
+  const toggleCompactMode = () => setCompactMode(prev => !prev);
 
   return (
-    <UIContext.Provider value={{ theme, setTheme, isSidebarCollapsed, toggleSidebar }}>
+    <UIContext.Provider value={{ theme, setTheme, isSidebarCollapsed, toggleSidebar, compactMode, toggleCompactMode }}>
       {children}
     </UIContext.Provider>
   );

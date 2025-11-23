@@ -18,7 +18,7 @@ export const HybridNBACard: React.FC<HybridNBACardProps> = ({ data, isLoading, o
   const { action = "Revisa tus tareas", reason = "", impact = "medium", time = 10 } = data || {};
 
   return (
-    <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/10 dark:to-indigo-900/10 border-blue-100 dark:border-blue-900/30">
+    <Card className="backdrop-blur-md bg-white/40 dark:bg-slate-900/20 ring-1 ring-white/30 dark:ring-slate-800/40 rounded-xl transition-all duration-300 hover:shadow-xl hover:-translate-y-1 dark:shadow-slate-900/60">
       <CardContent className="p-4 sm:p-5">
         <div className="flex items-start justify-between gap-4">
           <div className="flex-1 space-y-2">

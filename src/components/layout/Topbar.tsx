@@ -2,6 +2,7 @@ import React from 'react';
 import { Icon } from '../ui/Icon';
 import { ICONS } from '../ui/icons';
 import { Button } from '../ui/Button';
+import { useUI } from '../../context/UIContext';
 
 interface TopbarProps {
   onToggleMobileSidebar: () => void;
@@ -16,8 +17,19 @@ export const Topbar: React.FC<TopbarProps> = ({
   unreadNotifications = false,
   title = "Nexus Suite"
 }) => {
+  const { toggleCompactMode, compactMode } = useUI();
+  const [isCompactHeader, setIsCompactHeader] = React.useState(false);
+
+  React.useEffect(() => {
+    const handleScroll = () => {
+      setIsCompactHeader(window.scrollY > 10);
+    };
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
   return (
-    <header className="sticky top-0 z-30 flex h-16 items-center justify-between bg-white/70 backdrop-blur-xl border-b border-slate-200 shadow-sm dark:bg-slate-950/60 dark:border-slate-800 dark:shadow-[0_0_20px_rgba(0,0,0,0.4)] px-4">
+    <header className={`sticky top-0 z-30 flex items-center justify-between bg-white/70 border-b border-slate-200 shadow-sm dark:bg-slate-950/60 dark:border-slate-800 dark:shadow-[0_0_20px_rgba(0,0,0,0.4)] px-4 transition-all duration-300 ${isCompactHeader ? 'h-12 backdrop-blur-xl shadow-md' : 'h-16 backdrop-blur'}`}>
       {/* Left: Workspace Badge / Title */}
       <div className="flex items-center gap-3">
         {/* Mobile Hamburger */}
@@ -39,6 +51,16 @@ export const Topbar: React.FC<TopbarProps> = ({
 
       {/* Right: Actions */}
       <div className="flex items-center gap-2">
+        <Button
+          variant="ghost"
+          size="icon"
+          className={`text-slate-400 hover:text-slate-200 hover:bg-slate-800/50 ${compactMode ? 'text-blue-400' : ''}`}
+          onClick={toggleCompactMode}
+          title="Modo Compacto"
+        >
+          <Icon svg={ICONS.slidersHorizontal} className="h-5 w-5" />
+        </Button>
+
         <Button 
           variant="ghost" 
           size="icon" 
