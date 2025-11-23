@@ -5,10 +5,13 @@ import { Recipe, Ingredient, CerebrityResult } from '../../types';
 import { CreativityTab } from '../components/cerebrity/CreativityTab';
 import { CerebrityHistorySidebar } from '../components/cerebrity/CerebrityHistorySidebar';
 import { TheLabHistorySidebar } from '../components/cerebrity/TheLabHistorySidebar';
-import { PowerTreePanel } from '../components/cerebrity/PowerTreePanel';
+import PowerTreeColumn from '../components/cerebrity/PowerTreeColumn';
 import LabView from './LabView';
 import { callGeminiApi, generateImage } from '../utils/gemini';
 import { Type } from "@google/genai";
+import { Modal } from '../components/ui/Modal';
+import { Button } from '../components/ui/Button';
+import { Spinner } from '../components/ui/Spinner';
 
 interface CerebrityViewProps {
     db: Firestore;
@@ -32,6 +35,141 @@ const CerebrityView: React.FC<CerebrityViewProps> = ({ db, userId, storage, appI
     const [result, setResult] = React.useState<CerebrityResult | null>(null);
     const [labResult, setLabResult] = React.useState<any | null>(null);
     const [labInputs, setLabInputs] = React.useState<(Recipe | Ingredient)[]>([]);
+    const [powerResult, setPowerResult] = React.useState<{ title: string; content: React.ReactNode } | null>(null);
+    const [isPowerModalOpen, setIsPowerModalOpen] = React.useState(false);
+    const [powerLoading, setPowerLoading] = React.useState(false);
+
+    const allPowers = [
+      { name: 'Intensidad Creativa', description: 'Analiza la creatividad de la receta.', locked: false, size: 'square_md' as const },
+      { name: 'Coherencia Técnica', description: 'Detecta conflictos técnicos.', locked: false, size: 'rect_vertical' as const },
+      { name: 'Optimización del Garnish', description: 'Sugiere 3 tipos de garnish.', locked: false, size: 'square_sm' as const },
+      { name: 'Mejora de Storytelling', description: 'Crea 2 variaciones de storytelling.', locked: false, size: 'rect_horizontal' as const },
+      { name: 'Creative Booster Avanzado', description: 'Genera nuevas ideas de cócteles.', locked: true, size: 'square_lg' as const },
+      { name: 'Analizador de Storytelling', description: 'Analiza el storytelling existente.', locked: true, size: 'square_md' as const },
+      { name: 'Identificador de Rarezas', description: 'Identifica ingredientes inusuales.', locked: true, size: 'square_sm' as const },
+      { name: 'Harmony Optimizer', description: 'Propone mejoras de sabor.', locked: true, size: 'rect_vertical' as const },
+      { name: 'Mapa Sensorial Dinámico', description: 'Construye un radar sensorial.', locked: true, size: 'square_sm' as const },
+    ];
+
+    const handlePowerClick = async (powerName: string) => {
+      if (powerLoading) return;
+    
+      const currentContext = activeTab === 'creativity' ? (selectedRecipe ? `la receta "${selectedRecipe.nombre}"` : (rawInput ? `los ingredientes: ${rawInput}` : null)) : (labInputs.length > 0 ? `la combinación de The Lab` : null);
+    
+      if (!currentContext) {
+        setPowerResult({ title: "Error", content: "Necesitas seleccionar una receta, introducir ingredientes o tener una combinación en The Lab para usar un superpoder." });
+        setIsPowerModalOpen(true);
+        return;
+      }
+    
+      setPowerLoading(true);
+      setIsPowerModalOpen(true);
+      setPowerResult({ title: `Analizando con ${powerName}...`, content: <div className="flex justify-center items-center p-8"><Spinner /></div> });
+    
+      try {
+        let prompt = "";
+        let responseSchema = {};
+    
+        switch (powerName) {
+          case 'Intensidad Creativa':
+            prompt = `Analiza la creatividad de ${currentContext}. Devuelve un score de 0 a 100 y una explicación concisa de por qué.`;
+            responseSchema = { type: Type.OBJECT, properties: { score: { type: Type.NUMBER }, explanation: { type: Type.STRING } } };
+            break;
+          case 'Coherencia Técnica':
+            prompt = `Analiza ${currentContext} y detecta posibles combinaciones conflictivas, errores técnicos o técnicas incompatibles. Devuelve un listado de problemas encontrados.`;
+            responseSchema = { type: Type.OBJECT, properties: { issues: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { issue: { type: Type.STRING }, suggestion: { type: Type.STRING } } } } } };
+            break;
+          case 'Optimización del Garnish':
+            prompt = `Basado en ${currentContext}, genera 3 propuestas de garnish: una simple, una avanzada y una premium.`;
+            responseSchema = { type: Type.OBJECT, properties: { simple: { type: Type.STRING }, advanced: { type: Type.STRING }, premium: { type: Type.STRING } } };
+            break;
+          case 'Mejora de Storytelling':
+            prompt = `Crea 2 variaciones y una versión premium del storytelling para ${currentContext}, coherentes con un estilo de marca premium y evocador.`;
+            responseSchema = { type: Type.OBJECT, properties: { variation1: { type: Type.STRING }, variation2: { type: Type.STRING }, premium: { type: Type.STRING } } };
+            break;
+          default:
+            throw new Error("Superpoder no implementado.");
+        }
+    
+        const response = await callGeminiApi(prompt, "Eres un experto en mixología y creatividad.", { responseMimeType: "application/json", responseSchema });
+        const data = JSON.parse(response.text.replace(/^```json\s*/, '').replace(/```$/, ''));
+    
+        switch (powerName) {
+          case 'Intensidad Creativa':
+            setPowerResult({
+              title: "Análisis de Intensidad Creativa",
+              content: (
+                <div>
+                  <div className="text-7xl font-bold text-center text-violet-600 mb-4">{data.score}</div>
+                  <p className="text-slate-600">{data.explanation}</p>
+                </div>
+              ),
+            });
+            break;
+          case 'Coherencia Técnica':
+            setPowerResult({
+              title: "Análisis de Coherencia Técnica",
+              content: (
+                <ul className="space-y-3">
+                  {data.issues.map((item: any, index: number) => (
+                    <li key={index} className="p-3 bg-slate-100 rounded-lg">
+                      <p className="font-semibold text-slate-800">{item.issue}</p>
+                      <p className="text-slate-600">{item.suggestion}</p>
+                    </li>
+                  ))}
+                </ul>
+              ),
+            });
+            break;
+          case 'Optimización del Garnish':
+            setPowerResult({
+              title: "Optimización del Garnish",
+              content: (
+                <div className="space-y-4">
+                  <div>
+                    <h3 className="font-bold text-lg text-violet-600">Simple</h3>
+                    <p>{data.simple}</p>
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-lg text-violet-600">Avanzado</h3>
+                    <p>{data.advanced}</p>
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-lg text-violet-600">Premium</h3>
+                    <p>{data.premium}</p>
+                  </div>
+                </div>
+              ),
+            });
+            break;
+          case 'Mejora de Storytelling':
+            setPowerResult({
+              title: "Mejora de Storytelling",
+              content: (
+                <div className="space-y-4">
+                  <div>
+                    <h3 className="font-bold text-lg text-cyan-600">Variación 1</h3>
+                    <p>{data.variation1}</p>
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-lg text-cyan-600">Variación 2</h3>
+                    <p>{data.variation2}</p>
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-lg text-cyan-600">Premium</h3>
+                    <p>{data.premium}</p>
+                  </div>
+                </div>
+              ),
+            });
+            break;
+        }
+      } catch (e: any) {
+        setPowerResult({ title: "Error", content: `Hubo un error al usar el superpoder: ${e.message}` });
+      } finally {
+        setPowerLoading(false);
+      }
+    };
 
     React.useEffect(() => {
         if (initialText) {
@@ -116,15 +254,24 @@ const CerebrityView: React.FC<CerebrityViewProps> = ({ db, userId, storage, appI
                         <LabView db={db} userId={userId} appId={appId} allIngredients={allIngredients} allRecipes={allRecipes} labResult={labResult} setLabResult={setLabResult} labInputs={labInputs} setLabInputs={setLabInputs} />
                     )}
                 </div>
-               <div className="h-full min-h-0 overflow-y-auto">
-                   <PowerTreePanel 
-                        color={activeTab === 'creativity' ? 'violet' : 'cyan'} 
-                        result={activeTab === 'creativity' ? result : labResult} 
-                        onOpenRecipeModal={onOpenRecipeModal}
-                        onSendToPizarron={handleSaveLabResultToPizarron}
-                    />
+               <div className="h-full min-h-0 overflow-hidden">
+                   <PowerTreeColumn
+                     mode={activeTab === 'creativity' ? 'cerebrity' : 'lab'}
+                     powers={allPowers}
+                     onClickPower={handlePowerClick}
+                   />
                </div>
             </div>
+            {isPowerModalOpen && (
+                <Modal title={powerResult?.title || ''} isOpen={isPowerModalOpen} onClose={() => setIsPowerModalOpen(false)}>
+                    <div className="p-4">
+                        {powerResult?.content}
+                    </div>
+                    <div className="p-4 flex justify-end">
+                        <Button onClick={() => setIsPowerModalOpen(false)} variant="secondary">Cerrar</Button>
+                    </div>
+                </Modal>
+            )}
         </div>
     );
 };
