@@ -8,6 +8,7 @@ import { useUI } from '../../context/UIContext';
 import { useApp } from '../../context/AppContext';
 import { doc, deleteDoc } from 'firebase/firestore';
 import { motion } from 'framer-motion';
+import { optimizedThumbnail } from '../../utils/optimizedThumbnail';
 
 interface PizarronCardProps {
   task: PizarronTask;
@@ -41,6 +42,18 @@ export const PizarronCard: React.FC<PizarronCardProps> = ({ task, onDragStart, o
 
   const isUrgent = task.priority === 'alta' || task.category === 'Urgente';
 
+  const thumbnailAttachment = React.useMemo(() => {
+    if (!task.attachments || task.attachments.length === 0) return null;
+    const image = task.attachments.find(a => a.type === 'image');
+    if (image) return { ...image, renderType: 'image' };
+    // Assuming 'video' type exists or inferring from extensions if needed, but sticking to explicit type + basic inference if missing
+    const video = task.attachments.find(a => a.type === 'video' || (a.url && a.url.match(/\.(mp4|mov|webm)$/i)));
+    if (video) return { ...video, renderType: 'video' };
+    const pdf = task.attachments.find(a => a.type === 'pdf' || (a.url && a.url.match(/\.pdf$/i)));
+    if (pdf) return { ...pdf, renderType: 'pdf' };
+    return null;
+  }, [task.attachments]);
+
   return (
     <motion.div
       layout
@@ -69,6 +82,26 @@ export const PizarronCard: React.FC<PizarronCardProps> = ({ task, onDragStart, o
       >
         <Icon svg={ICONS.trash} className="w-[14px] h-[14px]" />
       </button>
+
+      {/* Smart Thumbnail */}
+      {thumbnailAttachment && !compactMode && (
+        <div className="mb-3 w-16 h-16 rounded-xl overflow-hidden bg-slate-100 dark:bg-slate-700 flex items-center justify-center border border-slate-200 dark:border-slate-600 shrink-0">
+          {thumbnailAttachment.renderType === 'image' && (
+            <img 
+              src={optimizedThumbnail(thumbnailAttachment.url)} 
+              alt={thumbnailAttachment.name} 
+              className="w-full h-full object-cover" 
+              loading="lazy"
+            />
+          )}
+          {thumbnailAttachment.renderType === 'video' && (
+             <Icon svg={ICONS.video} className="w-8 h-8 text-slate-400" />
+          )}
+          {thumbnailAttachment.renderType === 'pdf' && (
+             <Icon svg={ICONS.fileText} className="w-8 h-8 text-slate-400" />
+          )}
+        </div>
+      )}
 
       {/* Task Text */}
       <p className={`font-medium text-slate-800 dark:text-slate-100 mb-2 line-clamp-3 ${compactMode ? 'text-xs' : 'text-sm'}`}>

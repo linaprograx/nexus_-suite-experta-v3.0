@@ -60,8 +60,8 @@ export const BoardColumns: React.FC<BoardColumnsProps> = ({
         <div 
             ref={containerRef}
             onScroll={checkScroll}
-            className="flex flex-row gap-6 overflow-x-auto overflow-y-hidden whitespace-nowrap no-scrollbar px-4 pb-6 h-full scroll-snap-x snap-mandatory scroll-smooth"
-            style={{ minWidth: '100%', display: 'inline-flex' }}
+            className="flex flex-row gap-6 overflow-x-auto overflow-y-hidden px-2 pb-6 no-scrollbar min-h-full"
+            style={{ scrollBehavior: 'smooth' }}
         >
             {columns.map(col => {
                 const isFocused = focusedColumn === col;
@@ -77,7 +77,7 @@ export const BoardColumns: React.FC<BoardColumnsProps> = ({
                 );
 
                 return (
-                    <div key={col} className="inline-flex h-full align-top">
+                    <div key={col} className="flex-shrink-0 w-[380px] h-full">
                         <KanbanColumn
                             title={col}
                             status={col}

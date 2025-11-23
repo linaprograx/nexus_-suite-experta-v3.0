@@ -22,6 +22,8 @@ import { SmartViewPanel } from '../features/pizarron/ui/SmartViewPanel';
 import { ListView } from '../features/pizarron/views/ListView';
 import { TimelineView } from '../features/pizarron/views/TimelineView';
 import { DocumentView } from '../features/pizarron/views/DocumentView';
+import { createDraftRecipeFromTask, runAutomations } from '../features/automations/pizarronAutomations';
+import { usePizarraStore } from '../store/pizarraStore';
 
 interface PizarronViewProps {
   db: Firestore;
@@ -72,7 +74,8 @@ const PizarronView: React.FC<PizarronViewProps> = ({ db, userId, appId, auth, st
       localStorage.setItem('nexus_pizarron_default_view', view);
   };
 
-  const { compactMode, toggleCompactMode, focusMode, toggleFocusMode } = useUI();
+  const { compactMode, toggleCompactMode } = useUI();
+  const { focusMode } = usePizarraStore();
   
   const pizarronColPath = `artifacts/${appId}/public/data/pizarron-tasks`;
   const boardsColPath = `artifacts/${appId}/public/data/pizarron-boards`;
@@ -146,7 +149,21 @@ const PizarronView: React.FC<PizarronViewProps> = ({ db, userId, appId, auth, st
   const handleDropOnColumn = async (newStatus: string) => {
     if (draggingTask) {
         const taskDocRef = doc(db, pizarronColPath, draggingTask);
+        
+        const task = allPizarronTasks.find(t => t.id === draggingTask);
+        const sourceColumn = task?.status;
+
         await updateDoc(taskDocRef, { status: newStatus });
+
+        // Automation: Create draft recipe if moved to 'Aprobado'
+        if (newStatus === 'Aprobado') {
+            createDraftRecipeFromTask(db, userId, draggingTask, appId);
+        }
+
+        const { automationsEnabled } = usePizarraStore.getState();
+        if (automationsEnabled && task && sourceColumn) {
+            runAutomations(task, sourceColumn, newStatus);
+        }
     } else if (draggingRecipe) {
         const newTask: Omit<PizarronTask, 'id'> = {
             texto: `TESTEO: ${draggingRecipe.nombre}`,
@@ -187,6 +204,11 @@ const PizarronView: React.FC<PizarronViewProps> = ({ db, userId, appId, auth, st
       if (!activeBoardId) return [];
       
       let tasks = allPizarronTasks.filter(task => task.boardId === activeBoardId);
+
+      // Focus Mode
+      if (focusMode) {
+        tasks = tasks.filter(t => t.assignees?.includes(userId));
+      }
 
       // Search
       if (searchQuery) {
@@ -233,8 +255,6 @@ const PizarronView: React.FC<PizarronViewProps> = ({ db, userId, appId, auth, st
             tags={tags}
             compactMode={compactMode}
             onToggleCompactMode={toggleCompactMode}
-            focusMode={focusMode}
-            onToggleFocusMode={toggleFocusMode}
             onShowStats={() => setShowStatsDrawer(true)}
             onShowTopIdeas={() => setShowTopIdeasDrawer(true)}
             onShowSmartView={() => setShowSmartView(true)}

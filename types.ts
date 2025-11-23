@@ -79,7 +79,7 @@ export interface PizarronTask {
   priority: 'baja' | 'media' | 'alta';
   upvotes: string[]; // Array de UserIDs que han votado
   starRating: Record<string, number>; // { [userId]: rating (1-5) }
-  attachments: { name: string, url: string, type: 'image' | 'pdf' | 'link' }[];
+  attachments: { name: string, url: string, type: 'image' | 'pdf' | 'link' | 'video' }[];
   assignees: string[]; // Array de UserIDs
   dueDate: any; // Timestamp (para el Calendario)
   authorName?: string;

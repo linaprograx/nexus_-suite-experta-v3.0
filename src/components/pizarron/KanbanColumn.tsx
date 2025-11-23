@@ -5,6 +5,7 @@ import { ICONS } from '../ui/icons';
 import { PizarronTask, Tag } from '../../../types';
 import { PizarronCard } from './PizarronCard';
 import { useUI } from '../../context/UIContext';
+import { usePizarraStore } from '../../store/pizarraStore';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface KanbanColumnProps {
@@ -21,7 +22,12 @@ interface KanbanColumnProps {
 }
 
 export const KanbanColumn: React.FC<KanbanColumnProps> = ({ title, status, tasks, onAddTask, onDragStart, onDropOnColumn, onOpenTaskDetail, isFocused, onHeaderClick, allTags }) => {
-  const { theme, focusMode, compactMode } = useUI();
+  const { theme, focusMode: uiFocusMode, compactMode } = useUI();
+  const { focusMode } = usePizarraStore();
+
+  const currentUserId = 'Lian Alviz';
+  let visibleTasks = tasks;
+  if (focusMode) visibleTasks = tasks.filter(t => t.assignees?.includes(currentUserId));
 
   // Only used if we want to color the column body background based on status
   // const getGradient = () => {
@@ -74,7 +80,7 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({ title, status, tasks
                     {tasks.length}
                 </span>
             </h2>
-             {focusMode && (
+             {uiFocusMode && (
                 <Icon 
                     svg={isFocused ? ICONS.collapse : ICONS.layoutGrid} 
                     className="h-4 w-4 text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity" 
@@ -85,7 +91,7 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({ title, status, tasks
 
       <div className={`flex-1 overflow-y-auto ${compactMode ? 'p-1 space-y-1' : 'p-2 space-y-3'} custom-scrollbar`}>
         <AnimatePresence>
-            {tasks.map(task => (
+            {visibleTasks.map(task => (
                 <PizarronCard 
                     key={task.id} 
                     task={task} 
