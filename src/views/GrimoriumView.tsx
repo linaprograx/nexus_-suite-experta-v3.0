@@ -7,6 +7,7 @@ import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Icon } from '../components/ui/Icon';
 import { Modal } from '../components/ui/Modal';
+import { FAB } from '../components/ui/FAB';
 import { ICONS } from '../components/ui/icons';
 import { IngredientFormModal } from '../components/grimorium/IngredientFormModal';
 import { RecipeCard } from '../components/grimorium/RecipeCard';
@@ -51,6 +52,7 @@ const GrimoriumView: React.FC<{
     // New State for Layout
     const [selectedRecipeId, setSelectedRecipeId] = React.useState<string | null>(null);
     const [filters, setFilters] = React.useState({ category: 'all', status: 'all' });
+    const [isToolOpen, setIsToolOpen] = React.useState(false);
 
     const ingredientsColPath = `artifacts/${appId}/users/${userId}/grimorio-ingredients`;
 
@@ -292,14 +294,13 @@ const GrimoriumView: React.FC<{
                     <div className={`h-full ${selectedRecipe ? 'p-4 lg:p-0 animate-in slide-in-from-bottom lg:animate-none' : ''}`}>
                         <RecipeDetailPanel 
                             recipe={selectedRecipe}
+                            allIngredients={allIngredients}
                             onEdit={(r) => onOpenRecipeModal(r)}
                             onDelete={(r) => handleDeleteRecipe(r.id)}
                             onDuplicate={handleDuplicateRecipe}
+                            onToolToggle={setIsToolOpen}
                             onNavigate={(view, data) => {
                                 if (data) {
-                                    // Since we can't easily pass props to other views without context or router state,
-                                    // we'll use a temporary storage mechanism or just navigate.
-                                    // For now, just navigate. Ideally, we'd use a global state store.
                                     console.log("Navigating to", view, "with data", data);
                                 }
                                 setCurrentView(view);
@@ -367,11 +368,14 @@ const GrimoriumView: React.FC<{
                 </div>
             </Modal>
 
-            <div className="fixed bottom-4 right-4 lg:hidden">
-                 <Button size="lg" className="rounded-full shadow-lg" onClick={() => onOpenRecipeModal(null)}>
-                    <Icon svg={ICONS.plus} className="mr-2 h-5 w-5" /> Nueva Receta
-                 </Button>
-            </div>
+            <FAB 
+                actions={[
+                    { label: 'Nueva Receta', icon: ICONS.book, onClick: () => onOpenRecipeModal(null) },
+                    { label: 'Nuevo Ingrediente', icon: ICONS.flask, onClick: () => { setEditingIngredient(null); setShowIngredientModal(true); } },
+                    { label: 'Herramientas', icon: ICONS.settings, onClick: () => setShowIngredientsManager(true) } // Opening Ingredients Manager as placeholder for tools
+                ]}
+                hidden={isToolOpen}
+            />
 
             {showIngredientModal && (
                 <IngredientFormModal

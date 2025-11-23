@@ -2,50 +2,70 @@ import React, { useState } from 'react';
 import { Icon } from './Icon';
 import { ICONS } from './icons';
 
-interface FABAction {
+export interface FABAction {
   label: string;
   icon: any; // SVG string
   onClick: () => void;
 }
 
 interface FABProps {
-  actions: FABAction[];
+  actions?: FABAction[];
+  onMainClick?: () => void; // If no actions, main click works
+  mainIcon?: any;
+  hidden?: boolean;
+  className?: string;
 }
 
-export const FAB: React.FC<FABProps> = ({ actions }) => {
+export const FAB: React.FC<FABProps> = ({ actions = [], onMainClick, mainIcon = ICONS.plus, hidden = false, className }) => {
   const [isOpen, setIsOpen] = useState(false);
 
-  const toggleOpen = () => setIsOpen(!isOpen);
+  const toggleOpen = () => {
+    if (actions.length > 0) {
+      setIsOpen(!isOpen);
+    } else if (onMainClick) {
+      onMainClick();
+    }
+  };
+
+  if (hidden) return null;
 
   return (
-    <div className="fixed bottom-8 right-8 z-50 flex flex-col items-end gap-4">
+    <div className={`fixed bottom-6 right-6 z-50 flex flex-col items-end gap-3 transition-all duration-300 ${className || ''}`}>
       {/* Radial Menu Items */}
-      <div className={`flex flex-col gap-3 transition-all duration-300 ${isOpen ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10 pointer-events-none'}`}>
+      <div className={`flex flex-col gap-3 transition-all duration-300 origin-bottom-right ${isOpen ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-90 translate-y-4 pointer-events-none'}`}>
         {actions.map((action, index) => (
-          <div key={index} className="flex items-center gap-3 group">
-            <span className="bg-gray-900/80 text-white px-2 py-1 rounded text-xs font-medium shadow-sm opacity-0 group-hover:opacity-100 transition-opacity">
+          <button
+            key={index}
+            onClick={() => {
+              action.onClick();
+              setIsOpen(false);
+            }}
+            className="group flex items-center gap-3 justify-end w-full"
+          >
+            <span className="bg-slate-800/90 text-white px-3 py-1.5 rounded-lg text-xs font-medium shadow-xl backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-all -translate-x-2 group-hover:translate-x-0">
               {action.label}
             </span>
-            <button
-              onClick={() => {
-                action.onClick();
-                setIsOpen(false);
-              }}
-              className="w-12 h-12 rounded-full bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 shadow-lg hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center justify-center transition-all hover:scale-110 ring-1 ring-gray-200 dark:ring-gray-700"
-              title={action.label}
-            >
-              <Icon svg={action.icon} className="w-5 h-5" />
-            </button>
-          </div>
+            <div className="w-10 h-10 rounded-full bg-white/90 dark:bg-slate-800/90 text-slate-600 dark:text-slate-300 shadow-lg backdrop-blur-md flex items-center justify-center transition-transform hover:scale-110 border border-slate-200/50 dark:border-slate-700/50">
+              <Icon svg={action.icon} className="w-4 h-4" />
+            </div>
+          </button>
         ))}
       </div>
 
       {/* Main Button */}
       <button
         onClick={toggleOpen}
-        className={`w-14 h-14 rounded-full bg-blue-600 hover:bg-blue-700 text-white shadow-xl flex items-center justify-center transition-all duration-300 hover:scale-105 hover:shadow-blue-600/30 ${isOpen ? 'rotate-45' : 'rotate-0'}`}
+        className={`
+            w-[42px] h-[42px] rounded-full 
+            bg-indigo-500/90 hover:bg-indigo-600/90 text-white 
+            shadow-xl shadow-indigo-500/20 backdrop-blur-md
+            flex items-center justify-center 
+            transition-all duration-300 
+            hover:scale-105 active:scale-95
+            ${isOpen ? 'rotate-45 bg-slate-700/90 hover:bg-slate-800/90' : 'rotate-0'}
+        `}
       >
-        <Icon svg={ICONS.plus} className="w-8 h-8" />
+        <Icon svg={mainIcon} className="w-5 h-5" />
       </button>
     </div>
   );

@@ -1,11 +1,12 @@
 import React from 'react';
-import { Recipe } from '../../../types';
+import { Recipe, Ingredient } from '../../../types';
 import { Card } from '../ui/Card';
 import { Button } from '../ui/Button';
 import { Icon } from '../ui/Icon';
 import { ICONS } from '../ui/icons';
 import { useUI } from '../../context/UIContext';
-import { RecipeActionsPanel } from './RecipeActionsPanel';
+import { RecipeActionsPanel } from '../../features/recipes/ui/RecipeActionsPanel';
+import { RecipeCostCard } from '../../features/recipes/ui/RecipeCostCard';
 import { ViewName } from '../../../types';
 
 // Simple utility for class names if not available
@@ -15,18 +16,22 @@ const cnLocal = (...classes: (string | undefined | null | false)[]) => {
 
 interface RecipeDetailPanelProps {
   recipe: Recipe | null;
+  allIngredients: Ingredient[];
   onEdit: (recipe: Recipe) => void;
   onDelete: (recipe: Recipe) => void;
   onDuplicate: (recipe: Recipe) => void;
   onNavigate: (view: ViewName, data?: any) => void;
+  onToolToggle?: (isOpen: boolean) => void;
 }
 
 export const RecipeDetailPanel: React.FC<RecipeDetailPanelProps> = ({
   recipe,
+  allIngredients,
   onEdit,
   onDelete,
   onDuplicate,
   onNavigate,
+  onToolToggle,
 }) => {
   const { compactMode } = useUI();
 
@@ -89,52 +94,45 @@ export const RecipeDetailPanel: React.FC<RecipeDetailPanelProps> = ({
         {/* Content */}
         <div className={`px-4 lg:px-6 pb-6 space-y-6`}>
             {/* Stats / Info */}
-            <div className="grid grid-cols-2 gap-4">
-               <div className="p-3 bg-white/50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-700">
-                  <span className="text-xs text-slate-500 uppercase tracking-wide block mb-1">Costo</span>
-                  <span className="font-semibold text-slate-900 dark:text-white">
-                    {recipe.costoReceta ? `€${recipe.costoReceta.toFixed(2)}` : '—'}
-                  </span>
+            <div className="grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-6">
+               <div>
+                  {/* Ingredients */}
+                  <h3 className={`font-semibold text-slate-900 dark:text-white mb-3 flex items-center gap-2 ${compactMode ? 'text-sm' : 'text-base'}`}>
+                    <div className="p-1.5 rounded-lg bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400">
+                        <Icon svg={ICONS.flask} className="w-4 h-4" />
+                    </div>
+                    Ingredientes
+                  </h3>
+                  <div className="bg-white/40 dark:bg-slate-800/40 rounded-2xl p-4 border border-slate-100 dark:border-slate-800">
+                      {recipe.ingredientes && recipe.ingredientes.length > 0 ? (
+                        <ul className="space-y-3 text-sm text-slate-600 dark:text-slate-300">
+                          {recipe.ingredientes.map((ing, i) => (
+                            <li key={i} className="flex justify-between items-center py-1 border-b border-slate-100 dark:border-slate-700/50 last:border-0 last:pb-0">
+                              <span className="font-medium text-slate-700 dark:text-slate-200">{ing.nombre}</span>
+                              <span className="text-slate-500 font-mono">{ing.cantidad} {ing.unidad}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <p className="text-sm text-slate-400 italic">
+                            {recipe.ingredientesTexto ? 'Ver texto de ingredientes' : 'Sin ingredientes estructurados'}
+                        </p>
+                      )}
+                      
+                      {recipe.ingredientesTexto && (
+                        <div className="mt-4 pt-3 border-t border-slate-200 dark:border-slate-700 text-sm text-slate-600 dark:text-slate-400 whitespace-pre-line leading-relaxed">
+                            {recipe.ingredientesTexto}
+                        </div>
+                      )}
+                  </div>
                </div>
-               <div className="p-3 bg-white/50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-700">
-                  <span className="text-xs text-slate-500 uppercase tracking-wide block mb-1">Precio Venta</span>
-                  <span className="font-semibold text-slate-900 dark:text-white">
-                    {recipe.precioVenta ? `€${recipe.precioVenta.toFixed(2)}` : '—'}
-                  </span>
+
+               <div>
+                  <RecipeCostCard recipe={recipe} allIngredients={allIngredients} />
                </div>
             </div>
 
-            {/* Ingredients */}
-            <div>
-              <h3 className={`font-semibold text-slate-900 dark:text-white mb-3 flex items-center gap-2 ${compactMode ? 'text-sm' : 'text-base'}`}>
-                <div className="p-1.5 rounded-lg bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400">
-                     <Icon svg={ICONS.flask} className="w-4 h-4" />
-                </div>
-                Ingredientes
-              </h3>
-              <div className="bg-white/40 dark:bg-slate-800/40 rounded-2xl p-4 border border-slate-100 dark:border-slate-800">
-                  {recipe.ingredientes && recipe.ingredientes.length > 0 ? (
-                    <ul className="space-y-3 text-sm text-slate-600 dark:text-slate-300">
-                      {recipe.ingredientes.map((ing, i) => (
-                        <li key={i} className="flex justify-between items-center py-1 border-b border-slate-100 dark:border-slate-700/50 last:border-0 last:pb-0">
-                          <span className="font-medium text-slate-700 dark:text-slate-200">{ing.nombre}</span>
-                          <span className="text-slate-500 font-mono">{ing.cantidad} {ing.unidad}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  ) : (
-                    <p className="text-sm text-slate-400 italic">
-                        {recipe.ingredientesTexto ? 'Ver texto de ingredientes' : 'Sin ingredientes estructurados'}
-                    </p>
-                  )}
-                  
-                  {recipe.ingredientesTexto && (
-                     <div className="mt-4 pt-3 border-t border-slate-200 dark:border-slate-700 text-sm text-slate-600 dark:text-slate-400 whitespace-pre-line leading-relaxed">
-                        {recipe.ingredientesTexto}
-                     </div>
-                  )}
-              </div>
-            </div>
+            {/* Ingredients section removed from here and moved up into grid layout */}
 
             {/* Preparacion */}
             {recipe.preparacion && (
@@ -158,7 +156,13 @@ export const RecipeDetailPanel: React.FC<RecipeDetailPanelProps> = ({
        {/* Footer Actions */}
        <div className="p-4 border-t border-slate-200 dark:border-slate-800 bg-white/40 dark:bg-slate-900/40 backdrop-blur-sm">
             <h4 className="text-xs font-bold text-slate-400 uppercase mb-3">Acciones Avanzadas</h4>
-            <RecipeActionsPanel recipe={recipe} onNavigate={onNavigate} onDuplicate={onDuplicate} />
+            <RecipeActionsPanel 
+              recipe={recipe} 
+              allIngredients={allIngredients}
+              onNavigate={onNavigate} 
+              onDuplicate={onDuplicate} 
+              onToolToggle={onToolToggle}
+            />
         </div>
 
     </Card>

@@ -28,6 +28,7 @@ export interface Ingredient {
   standardUnit: 'g' | 'ml' | 'und' | ''; // La unidad base (gramo, mililitro, unidad)
   standardQuantity: number; // ej. 700 (ml), 1000 (g)
   standardPrice: number; // El precio calculado (ej. precioCompra / standardQuantity)
+  wastePercentage?: number; // Merma (0-100)
 }
 
 export interface IngredientLineItem {
