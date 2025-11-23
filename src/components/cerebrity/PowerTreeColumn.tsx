@@ -1,10 +1,14 @@
 import React from 'react';
+import { Icon } from '../ui/Icon';
+import { ICONS } from '../ui/icons';
 
 type Power = {
   name: string;
   description: string;
   locked: boolean;
-  size: 'square_sm' | 'square_md' | 'rect_vertical' | 'rect_horizontal' | 'square_lg';
+  size: 'small square' | 'medium square' | 'horizontal' | 'vertical' | 'large square';
+  color: 'purple' | 'cyan' | 'green' | 'orange' | 'gray';
+  icon: string;
 };
 
 type PowerTreeColumnProps = {
@@ -13,53 +17,58 @@ type PowerTreeColumnProps = {
   onClickPower: (powerName: string) => void;
 };
 
-const cardSizes = {
-  square_sm: 'w-24 h-24 md:w-28 md:h-28 lg:w-32 lg:h-32',
-  square_md: 'w-32 h-32 md:w-36 md:h-36 lg:w-40 lg:h-40',
-  rect_vertical: 'w-28 h-48 md:w-32 md:h-56 lg:w-36 lg:h-64',
-  rect_horizontal: 'w-48 h-24 md:w-56 md:h-28 lg:w-64 lg:h-32',
-  square_lg: 'w-40 h-40 md:w-48 md:h-48 lg:w-56 lg:h-56',
-};
-
-const modeStyles = {
-  cerebrity: {
-    background: 'bg-gradient-to-b from-[#EDE3FF] to-[#F7F2FF]',
-    card: 'bg-white/50 border-[#B388FF]/30 text-[#4C2889]',
-    cardHover: 'hover:bg-white/80 hover:border-[#B388FF]/80',
-    locked: 'bg-gray-200/30 border-gray-300/30 text-gray-400',
+const cardStyles = {
+  size: {
+    'small square': 'col-span-1 row-span-1',
+    'medium square': 'col-span-1 row-span-1 aspect-square',
+    'horizontal': 'col-span-2 row-span-1',
+    'vertical': 'col-span-1 row-span-2',
+    'large square': 'col-span-2 row-span-2',
   },
-  lab: {
-    background: 'bg-gradient-to-b from-[#D9FAF3] to-[#E6FFFB]',
-    card: 'bg-white/50 border-[#8AE6DA]/30 text-[#005A4D]',
-    cardHover: 'hover:bg-white/80 hover:border-[#8AE6DA]/80',
-    locked: 'bg-gray-200/30 border-gray-300/30 text-gray-400',
-  },
+  color: {
+    cerebrity: {
+      purple: 'bg-violet-100/80 border-violet-200/90',
+      cyan: 'bg-cyan-100/80 border-cyan-200/90',
+      green: 'bg-emerald-100/80 border-emerald-200/90',
+      orange: 'bg-orange-100/80 border-orange-200/90',
+      gray: 'bg-slate-200/80 border-slate-300/90',
+    },
+    lab: {
+      purple: 'bg-violet-100/70 border-violet-200/80',
+      cyan: 'bg-cyan-100/70 border-cyan-200/80',
+      green: 'bg-emerald-100/70 border-emerald-200/80',
+      orange: 'bg-orange-100/70 border-orange-200/80',
+      gray: 'bg-slate-200/70 border-slate-300/80',
+    }
+  }
 };
 
 const PowerTreeColumn: React.FC<PowerTreeColumnProps> = ({ mode, powers, onClickPower }) => {
-  const styles = modeStyles[mode];
-
   return (
-    <div className={`h-full w-full p-4 overflow-y-auto ${styles.background}`}>
-      <div className="grid grid-cols-2 gap-4 auto-rows-min">
+    <div className="h-full w-full p-4 overflow-y-auto">
+      <div className="grid grid-cols-2 grid-flow-row-dense gap-4">
         {powers.map((power) => (
           <div
             key={power.name}
             className={`
-              rounded-2xl p-3 flex items-center justify-center text-center
-              backdrop-blur-md border shadow-soft transition-all duration-300
-              ${cardSizes[power.size]}
-              ${power.locked 
-                ? `${styles.locked} cursor-not-allowed` 
-                : `${styles.card} ${styles.cardHover} cursor-pointer`
-              }
+              ${cardStyles.size[power.size]}
+              ${cardStyles.color[mode][power.color]}
+              rounded-2xl p-4 flex flex-col justify-between
+              border backdrop-blur-md shadow-soft
+              transition-all duration-300
+              ${power.locked ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer hover:shadow-lg hover:scale-[1.02]'}
             `}
             onClick={() => !power.locked && onClickPower(power.name)}
-            style={{
-              boxShadow: '0 4px 14px rgba(0,0,0,0.07)',
-            }}
           >
-            <p className="font-medium text-sm md:text-base leading-tight">{power.name}</p>
+            <div className="flex justify-between items-start">
+              <h3 className="font-semibold text-sm leading-tight text-slate-800" style={{ fontSize: '85%', lineHeight: '1.4' }}>
+                {power.name}
+              </h3>
+              <Icon svg={ICONS[power.icon as keyof typeof ICONS]} className="w-5 h-5 text-slate-600" />
+            </div>
+            <p className="text-xs text-slate-500 mt-2" style={{ fontSize: '85%', lineHeight: '1.4' }}>
+              {power.description}
+            </p>
           </div>
         ))}
       </div>
