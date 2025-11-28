@@ -7,6 +7,12 @@ import { CerebrityHistorySidebar } from '../components/cerebrity/CerebrityHistor
 import { TheLabHistorySidebar } from '../components/cerebrity/TheLabHistorySidebar';
 import PowerTreeColumn from '../components/cerebrity/PowerTreeColumn';
 import LabView from './LabView';
+import {
+  powerCreativeBooster,
+  powerStorytellingAnalyzer,
+  powerRarenessIdentifier,
+  powerHarmonyOptimizer
+} from '../modules/cerebrity/powers';
 import { callGeminiApi, generateImage } from '../utils/gemini';
 import { Type } from "@google/genai";
 import { Modal } from '../components/ui/Modal';
@@ -35,19 +41,126 @@ const CerebrityView: React.FC<CerebrityViewProps> = ({ db, userId, storage, appI
     const [result, setResult] = React.useState<CerebrityResult | null>(null);
     const [labResult, setLabResult] = React.useState<any | null>(null);
     const [labInputs, setLabInputs] = React.useState<(Recipe | Ingredient)[]>([]);
-    const [powerResult, setPowerResult] = React.useState<{ title: string; content: React.ReactNode } | null>(null);
+    const [powerModalState, setPowerModalState] = React.useState<{ title: string; content?: React.ReactNode } | null>(null);
+    const [powerOutput, setPowerOutput] = React.useState<any>(null);
     const [isPowerModalOpen, setIsPowerModalOpen] = React.useState(false);
     const [powerLoading, setPowerLoading] = React.useState(false);
+    // --- Helper fun/ti/ -fee renuernctontructur d pr rerrcsdlrl ------
+    const renderPowerContent = (data: any) => {
+        if (!data) return null;
+
+        // Case 1: Intensidad Creativa (old power)
+        if (typeof data.explanation === "string" && typeof data.score === "number") {
+            return (
+                <>
+                    <p>{data.explanation}</p>
+                    <p><strong>Puntuación creativa:</strong> {data.score} / 100</p>
+                </>
+            );
+        }
+
+        // Case 2: Optimización del Garnish (old power)
+        if (data.simple || data.premium || data.advanced) {
+            return (
+                <ul>
+                    {data.simple && (
+                        <li>
+                            <strong>Simple:</strong> {data.simple}
+                        </li>
+                    )}
+                    {data.premium && (
+                        <li>
+                            <strong>Premium:</strong> {data.premium}
+                        </li>
+                    )}
+                    {data.advanced && (
+                        <li>
+                            <strong>Avanzado:</strong> {data.advanced}
+                        </li>
+                    )}
+                </ul>
+            );
+        }
+        
+        // Case 3: New generic schema
+        if (data.summary || Array.isArray(data.sections) || Array.isArray(data.lists) || Array.isArray(data.tables)) {
+            return (
+                <div className="power-structured-result">
+                    {data.summary && <p>{data.summary}</p>}
+
+                    {Array.isArray(data.sections) && data.sections.length > 0 && (
+                        <div className="power-sections">
+                            {data.sections.map((section: any, idx: number) => (
+                                <section key={idx}>
+                                    {section.heading && <h4>{section.heading}</h4>}
+                                    {section.content && <p>{section.content}</p>}
+                                </section>
+                            ))}
+                        </div>
+                    )}
+
+                    {Array.isArray(data.lists) && data.lists.length > 0 && (
+                        <div className="power-lists">
+                            {data.lists.map((list: any, idx: number) => (
+                                <div key={idx}>
+                                    {list.heading && <h4>{list.heading}</h4>}
+                                    {Array.isArray(list.items) && (
+                                        <ul>
+                                            {list.items.map((item: string, i: number) => (
+                                                <li key={i}>{item}</li>
+                                            ))}
+                                        </ul>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+                    )}
+
+                    {Array.isArray(data.tables) && data.tables.length > 0 && (
+                        <div className="power-tables">
+                            {data.tables.map((table: any, idx: number) => (
+                                <div key={idx}>
+                                    {table.heading && <h4>{table.heading}</h4>}
+                                    <table>
+                                        <thead>
+                                            <tr>
+                                                {Array.isArray(table.columns) &&
+                                                    table.columns.map((col: string, i: number) => <th key={i}>{col}</th>)}
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {Array.isArray(table.rows) &&
+                                                table.rows.map((row: string[], rIdx: number) => (
+                                                    <tr key={rIdx}>
+                                                        {row.map((cell: string, cIdx: number) => (
+                                                            <td key={cIdx}>{cell}</td>
+                                                        ))}
+                                                    </tr>
+                                                ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            );
+        }
+
+        // Fallback: unknown shape -> show JSON as before
+        return <pre>{JSON.stringify(data, null, 2)}</pre>;
+    }
+
 
     const allPowers = [
         { name: 'Intensidad Creativa', description: 'Analiza la creatividad de la receta.', locked: false, size: 'medium square' as const, color: 'purple' as const, icon: 'sparkles' },
         { name: 'Coherencia Técnica', description: 'Detecta conflictos técnicos.', locked: false, size: 'vertical' as const, color: 'cyan' as const, icon: 'lab' },
         { name: 'Optimización del Garnish', description: 'Sugiere 3 tipos de garnish.', locked: false, size: 'small square' as const, color: 'green' as const, icon: 'leaf' },
         { name: 'Mejora de Storytelling', description: 'Crea 2 variaciones de storytelling.', locked: false, size: 'horizontal' as const, color: 'purple' as const, icon: 'book' },
-        { name: 'Creative Booster Avanzado', description: 'Genera nuevas ideas de cócteles.', locked: true, size: 'large square' as const, color: 'gray' as const, icon: 'sparkles' },
-        { name: 'Analizador de Storytelling', description: 'Analiza el storytelling existente.', locked: true, size: 'medium square' as const, color: 'gray' as const, icon: 'book' },
-        { name: 'Identificador de Rarezas', description: 'Identifica ingredientes inusuales.', locked: true, size: 'small square' as const, color: 'orange' as const, icon: 'alert' },
-        { name: 'Harmony Optimizer', description: 'Propone mejoras de sabor.', locked: true, size: 'vertical' as const, color: 'gray' as const, icon: 'wave' },
+        { name: 'Creative Booster Avanzado', description: 'Genera nuevas ideas de cócteles.', locked: false, size: 'large square' as const, color: 'purple' as const, icon: 'sparkles' },
+        { name: 'Analizador de Storytelling', description: 'Analiza el storytelling existente.', locked: false, size: 'medium square' as const, color: 'cyan' as const, icon: 'book' },
+        { name: 'Identificador de Rarezas', description: 'Identifica ingredientes inusuales.', locked: false, size: 'small square' as const, color: 'orange' as const, icon: 'alert' },
+        { name: 'Harmony Optimizer', description: 'Propone mejoras de sabor.', locked: false, size: 'vertical' as const, color: 'green' as const, icon: 'wave' },
     ];
 
     const handlePowerClick = async (powerName: string) => {
@@ -56,50 +169,108 @@ const CerebrityView: React.FC<CerebrityViewProps> = ({ db, userId, storage, appI
       const currentContext = activeTab === 'creativity' ? (selectedRecipe ? `la receta "${selectedRecipe.nombre}"` : (rawInput ? `los ingredientes: ${rawInput}` : null)) : (labInputs.length > 0 ? `la combinación de The Lab` : null);
     
       if (!currentContext) {
-        setPowerResult({ title: "Error", content: "Necesitas seleccionar una receta, introducir ingredientes o tener una combinación en The Lab para usar un superpoder." });
+        setPowerModalState({ title: "Error", content: "Necesitas seleccionar una receta, introducir ingredientes o tener una combinación en The Lab para usar un superpoder." });
+        setPowerOutput(null);
         setIsPowerModalOpen(true);
         return;
       }
     
       setPowerLoading(true);
       setIsPowerModalOpen(true);
-      setPowerResult({ title: `Analizando con ${powerName}...`, content: <div className="flex justify-center items-center p-8"><Spinner /></div> });
-    
+      setPowerModalState({ title: `Activando ${powerName}...`, content: <div className="flex justify-center items-center p-8"><Spinner /></div> });
+      setPowerOutput(null);
+
       try {
-        let prompt = "";
-        let responseSchema = {};
-    
-        switch (powerName) {
-          case 'Intensidad Creativa':
-            prompt = `Analiza la creatividad de ${currentContext}. Devuelve un score de 0 a 100 y una explicación concisa de por qué.`;
-            responseSchema = { type: Type.OBJECT, properties: { score: { type: Type.NUMBER }, explanation: { type: Type.STRING } } };
-            break;
-          case 'Coherencia Técnica':
-            prompt = `Analiza ${currentContext} y detecta posibles combinaciones conflictivas, errores técnicos o técnicas incompatibles. Devuelve un listado de problemas encontrados.`;
-            responseSchema = { type: Type.OBJECT, properties: { issues: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { issue: { type: Type.STRING }, suggestion: { type: Type.STRING } } } } } };
-            break;
-          case 'Optimización del Garnish':
-            prompt = `Basado en ${currentContext}, genera 3 propuestas de garnish: una simple, una avanzada y una premium.`;
-            responseSchema = { type: Type.OBJECT, properties: { simple: { type: Type.STRING }, advanced: { type: Type.STRING }, premium: { type: Type.STRING } } };
-            break;
-          case 'Mejora de Storytelling':
-            prompt = `Crea 2 variaciones y una versión premium del storytelling para ${currentContext}, coherentes con un estilo de marca premium y evocador.`;
-            responseSchema = { type: Type.OBJECT, properties: { variation1: { type: Type.STRING }, variation2: { type: Type.STRING }, premium: { type: Type.STRING } } };
-            break;
-          default:
-            throw new Error("Superpoder no implementado.");
+        let run: ((ingredients: string[]) => Promise<any>) | null = null;
+        const ingredients = activeTab === 'creativity' 
+            ? (selectedRecipe?.ingredientes?.map(i => i.nombre) || rawInput.split(',').map(s => s.trim()))
+            : labInputs.map(i => i.nombre);
+
+        if (ingredients.length === 0) {
+            throw new Error("No hay ingredientes suficientes para activar el poder.");
         }
-    
-        const response = await callGeminiApi(prompt, "Eres un experto en mixología y creatividad.", { responseMimeType: "application/json", responseSchema });
-        const data = JSON.parse(response.text.replace(/^```json\s*/, '').replace(/```$/, ''));
-    
-        // ... (resto de la lógica de handlePowerClick)
+
+        switch (powerName) {
+            case 'Creative Booster Avanzado':
+                run = powerCreativeBooster;
+                break;
+            case 'Analizador de Storytelling':
+                run = powerStorytellingAnalyzer;
+                break;
+            case 'Identificador de Rarezas':
+                run = powerRarenessIdentifier;
+                break;
+            case 'Harmony Optimizer':
+                run = powerHarmonyOptimizer;
+                break;
+            // TODO: Migrar los poderes antiguos al nuevo sistema.
+            default:
+                 // Mantener la lógica anterior para los poderes no migrados
+                const oldPowerPrompt = getOldPowerPrompt(powerName, currentContext);
+                if (!oldPowerPrompt) {
+                    setPowerModalState({ title: "Poder no implementado", content: "Este poder aún no ha sido conectado al nuevo sistema."});
+                    setPowerOutput(null);
+                    setPowerLoading(false);
+                    return;
+                }
+                const response = await callGeminiApi(oldPowerPrompt.prompt, "Eres un experto en mixología y creatividad.", { responseMimeType: "application/json", responseSchema: oldPowerPrompt.responseSchema });
+                const data = JSON.parse(response.text.replace(/^```json\s*/, '').replace(/```$/, ''));
+                setPowerModalState({ title: powerName });
+                setPowerOutput(data);
+                setPowerLoading(false);
+                return;
+        }
+        
+        const rawData = await run(ingredients);
+        
+        if (rawData?.error) {
+          throw new Error(rawData.message || "La respuesta del modelo contenía un error.");
+        }
+        
+        const data = typeof rawData === 'string' ? JSON.parse(rawData) : rawData;
+
+        // Validar estructura básica
+        if (!data.title || !data.summary) {
+             throw new Error("La respuesta del modelo no tiene el formato JSON esperado.");
+        }
+        
+        setPowerModalState({ title: data.title });
+        setPowerOutput(data);
+
       } catch (e: any) {
-        setPowerResult({ title: "Error", content: `Hubo un error al usar el superpoder: ${e.message}` });
+        setPowerModalState({ title: "Error", content: `Error procesando el poder. Intenta de nuevo.` });
+        setPowerOutput(null);
       } finally {
         setPowerLoading(false);
       }
     };
+
+    const getOldPowerPrompt = (powerName: string, context: string) => {
+        switch (powerName) {
+          case 'Intensidad Creativa':
+            return {
+              prompt: `Analiza la creatividad de ${context}. Devuelve un score de 0 a 100 y una explicación concisa de por qué.`,
+              responseSchema: { type: Type.OBJECT, properties: { score: { type: Type.NUMBER }, explanation: { type: Type.STRING } } }
+            };
+          case 'Coherencia Técnica':
+            return {
+              prompt: `Analiza ${context} y detecta posibles combinaciones conflictivas, errores técnicos o técnicas incompatibles. Devuelve un listado de problemas encontrados.`,
+              responseSchema: { type: Type.OBJECT, properties: { issues: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { issue: { type: Type.STRING }, suggestion: { type: Type.STRING } } } } } }
+            };
+          case 'Optimización del Garnish':
+            return {
+              prompt: `Basado en ${context}, genera 3 propuestas de garnish: una simple, una avanzada y una premium.`,
+              responseSchema: { type: Type.OBJECT, properties: { simple: { type: Type.STRING }, advanced: { type: Type.STRING }, premium: { type: Type.STRING } } }
+            };
+          case 'Mejora de Storytelling':
+            return {
+              prompt: `Crea 2 variaciones y una versión premium del storytelling para ${context}, coherentes con un estilo de marca premium y evocador.`,
+              responseSchema: { type: Type.OBJECT, properties: { variation1: { type: Type.STRING }, variation2: { type: Type.STRING }, premium: { type: Type.STRING } } }
+            };
+          default:
+            return null;
+        }
+    }
 
     React.useEffect(() => {
         if (initialText) {
@@ -108,6 +279,25 @@ const CerebrityView: React.FC<CerebrityViewProps> = ({ db, userId, storage, appI
           onAnalysisDone();
         }
     }, [initialText, onAnalysisDone]);
+
+    // Automatic Test for Phase 6
+    React.useEffect(() => {
+        const testPower = async () => {
+            console.log("--- STARTING AUTOMATED TEST ---");
+            // Set mock ingredients
+            setRawInput("pomelo, canela");
+            
+            // Allow state to update before calling the handler
+            await new Promise(resolve => setTimeout(resolve, 100));
+
+            // Call the power click handler
+            await handlePowerClick("Creative Booster Avanzado");
+            console.log("--- AUTOMATED TEST COMPLETE ---");
+        };
+
+        // Run the test once on mount
+        // testPower(); // Temporarily disabled to avoid unwanted side effects on every load.
+    }, []);
 
     const handleGenerate = async () => {
         setLoading(true);
@@ -193,9 +383,9 @@ const CerebrityView: React.FC<CerebrityViewProps> = ({ db, userId, storage, appI
                </div>
             </div>
             {isPowerModalOpen && (
-                <Modal title={powerResult?.title || ''} isOpen={isPowerModalOpen} onClose={() => setIsPowerModalOpen(false)}>
+                <Modal title={powerModalState?.title || ''} isOpen={isPowerModalOpen} onClose={() => setIsPowerModalOpen(false)}>
                     <div className="p-4">
-                        {powerResult?.content}
+                        {powerModalState?.content ? powerModalState.content : renderPowerContent(powerOutput)}
                     </div>
                     <div className="p-4 flex justify-end">
                         <Button onClick={() => setIsPowerModalOpen(false)} variant="secondary">Cerrar</Button>
