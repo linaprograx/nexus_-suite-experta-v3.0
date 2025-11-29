@@ -102,48 +102,98 @@ const CerebrityView: React.FC<CerebrityViewProps> = ({ db, userId, storage, appI
 
     // --- Helper fun/ti/ -fee renuernctontructur d pr rerrcsdlrl ------
     const renderPowerContent = (data: any) => {
-        if (!data) return null;
+      if (!data) return null;
 
-        const renderContent = () => {
-            if (typeof data.explanation === "string" && typeof data.score === "number") {
-                return <><p>{data.explanation}</p><p><strong>Puntuación:</strong> {data.score}/100</p></>;
-            }
-            if (data.simple || data.avanzado || data.experto) {
-                return (
-                    <ul>
-                        {data.simple && <li><strong>Simple:</strong> {data.simple}</li>}
-                        {data.avanzado && <li><strong>Avanzado:</strong> {data.avanzado}</li>}
-                        {data.experto && <li><strong>Experto:</strong> {data.experto}</li>}
-                    </ul>
-                );
-            }
-            if (data.summary || data.sections || data.lists || data.tables) {
-                return (
-                    <div className="space-y-4">
-                        {data.summary && <p className="mb-4">{data.summary}</p>}
-                        {data.sections?.map((s: any, i: number) => <section key={i} className="mb-4"><h4>{s.heading}</h4><p>{s.content}</p></section>)}
-                        {data.lists?.map((l: any, i: number) => <div key={i} className="mb-4"><h4>{l.heading}</h4><ul>{l.items?.map((item: string, j: number) => <li key={j}>{item}</li>)}</ul></div>)}
-                        {data.tables?.map((t: any, i: number) => (
-                            <div key={i} className="mb-4">
-                                <h4>{t.heading}</h4>
-                                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                                    <thead>
-                                        <tr>{t.columns?.map((col: string, j: number) => <th key={j} style={{ padding: '8px', fontWeight: 600, textAlign: 'left' }}>{col}</th>)}</tr>
-                                    </thead>
-                                    <tbody>
-                                        {t.rows?.map((row: string[], r: number) => <tr key={r}>{row.map((cell, c) => <td key={c} style={{ padding: '8px', verticalAlign: 'top' }}>{cell}</td>)}</tr>)}
-                                    </tbody>
-                                </table>
-                            </div>
+      return (
+        <div className="space-y-8 text-gray-800 dark:text-gray-200">
+
+          {data.title && (
+            <h2 className="text-2xl font-bold tracking-tight text-center mb-6 text-gray-900 dark:text-gray-100">
+              {data.title}
+            </h2>
+          )}
+
+          {data.summary && (
+            <p className="text-lg leading-relaxed text-center opacity-90">
+              {data.summary}
+            </p>
+          )}
+
+          {data.sections && (
+            <div className="space-y-6">
+              {data.sections.map((section: any, i: number) => (
+                <div key={i} className="p-5 rounded-xl bg-white/5 dark:bg-black/20 border border-white/10 shadow-sm">
+                  <h3 className="text-xl font-semibold mb-3 text-violet-600 dark:text-violet-400">
+                    {section.heading}
+                  </h3>
+                  <p className="leading-relaxed text-gray-700 dark:text-gray-300">
+                    {section.content}
+                  </p>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {data.lists && (
+            <div className="space-y-6">
+              {data.lists.map((list: any, i: number) => (
+                <div key={i} className="p-5 rounded-xl bg-white/5 dark:bg-black/20 border border-white/10">
+                  <h3 className="text-xl font-semibold mb-3 text-cyan-600 dark:text-cyan-400">
+                    {list.heading}
+                  </h3>
+
+                  <ul className="space-y-3">
+                    {list.items.map((item: string, j: number) => (
+                      <li key={j} className="leading-relaxed text-gray-700 dark:text-gray-300">
+                        {item}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {data.tables && (
+            <div className="space-y-10">
+              {data.tables.map((table: any, i: number) => (
+                <div key={i} className="space-y-4">
+                  <h3 className="text-xl font-semibold text-emerald-600 dark:text-emerald-400">
+                    {table.heading}
+                  </h3>
+                  
+                  <div className="overflow-x-auto rounded-xl border border-white/10">
+                    <table className="min-w-full border-collapse backdrop-blur bg-white/5 dark:bg-black/20">
+                      <thead>
+                        <tr className="text-left bg-white/10 dark:bg-white/5">
+                          {table.columns.map((col: string, j: number) => (
+                            <th key={j} className="px-4 py-3 font-semibold border-b border-white/10">
+                              {col}
+                            </th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {table.rows.map((row: string[], r: number) => (
+                          <tr key={r} className="border-b border-white/5 hover:bg-white/5 transition">
+                            {row.map((cell: string, c: number) => (
+                              <td key={c} className="px-4 py-3 align-top">
+                                {cell}
+                              </td>
+                            ))}
+                          </tr>
                         ))}
-                    </div>
-                );
-            }
-            return <pre>{JSON.stringify(data, null, 2)}</pre>;
-        };
-        return <div className="power-structured-result">{renderContent()}</div>;
-    }
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
 
+        </div>
+      );
+    };
 
     const allPowers = [
         { name: 'Intensidad Creativa', description: 'Analiza la creatividad de la receta.', locked: false, size: 'medium square' as const, color: 'purple' as const, icon: 'sparkles' },
