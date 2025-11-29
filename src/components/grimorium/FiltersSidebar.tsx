@@ -26,6 +26,7 @@ interface FiltersSidebarProps {
   onOpenIngredients: () => void;
   onImportRecipes: () => void;
   onImportIngredients: () => void;
+  onImportPdf: () => void;
 }
 
 export const FiltersSidebar: React.FC<FiltersSidebarProps> = ({
@@ -37,6 +38,7 @@ export const FiltersSidebar: React.FC<FiltersSidebarProps> = ({
   onOpenIngredients,
   onImportRecipes,
   onImportIngredients,
+  onImportPdf,
 }) => {
   const { compactMode } = useUI();
 
@@ -113,12 +115,16 @@ export const FiltersSidebar: React.FC<FiltersSidebarProps> = ({
           <Icon svg={ICONS.flask} className="mr-2 h-4 w-4" />
           Ver Ingredientes
         </Button>
-        <div className="grid grid-cols-2 gap-2">
+         <Button variant="outline" className="w-full justify-start" onClick={onImportPdf}>
+          <Icon svg={ICONS.fileText} className="mr-2 h-4 w-4" />
+          Importar PDF PRO
+        </Button>
+        <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-200/50 dark:border-slate-700/50">
             <Button variant="ghost" size="sm" className="justify-start text-xs" onClick={onImportRecipes}>
-                <Icon svg={ICONS.upload} className="mr-2 h-3 w-3" /> Imp. Recetas
+                <Icon svg={ICONS.upload} className="mr-2 h-3 w-3" /> Imp. TXT
             </Button>
             <Button variant="ghost" size="sm" className="justify-start text-xs" onClick={onImportIngredients}>
-                <Icon svg={ICONS.upload} className="mr-2 h-3 w-3" /> Imp. Ingred.
+                <Icon svg={ICONS.upload} className="mr-2 h-3 w-3" /> Imp. CSV
             </Button>
         </div>
       </div>

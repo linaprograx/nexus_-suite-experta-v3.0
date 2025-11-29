@@ -1,6 +1,9 @@
 import * as React from 'react';
 import { collection, doc, addDoc, deleteDoc, writeBatch, Firestore, setDoc } from 'firebase/firestore';
 import { Ingredient, Recipe } from '../../types';
+import { parseMultipleRecipes } from '../utils/recipeImporter'; // Importar el nuevo parser
+import { importPdfRecipes } from '../modules/pdf/importPdfRecipes';
+import { useApp } from '../context/AppContext';
 import { parseEuroNumber } from "../utils/parseEuroNumber";
 import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
@@ -34,6 +37,7 @@ const GrimoriumView: React.FC<{
     onDragRecipeStart: (recipe: Recipe) => void;
     setCurrentView: (view: ViewName) => void;
 }> = ({ db, userId, appId, allIngredients, allRecipes, onOpenRecipeModal, onDragRecipeStart, setCurrentView }) => {
+    const { storage } = useApp();
     const [loading, setLoading] = React.useState(false);
     const { compactMode } = useUI();
     const [recipeSearch, setRecipeSearch] = React.useState("");
@@ -43,6 +47,7 @@ const GrimoriumView: React.FC<{
     const [selectedIngredients, setSelectedIngredients] = React.useState<string[]>([]);
     const [showCsvImportModal, setShowCsvImportModal] = React.useState(false);
     const [showTxtImportModal, setShowTxtImportModal] = React.useState(false);
+    const [showPdfImportModal, setShowPdfImportModal] = React.useState(false);
     const [showIngredientsManager, setShowIngredientsManager] = React.useState(false); // Keeping for backward compatibility if needed, or remove?
     
     // Tabs
@@ -97,32 +102,69 @@ const GrimoriumView: React.FC<{
         const file = event.target.files?.[0];
         if (!file || !db || !userId) return;
         setLoading(true);
-        const text = await file.text();
-        const recipesText = text.split('---').filter(t => t.trim());
-        
-        const batch = writeBatch(db);
-        recipesText.forEach(recipeText => {
-            const newDocRef = doc(collection(db, `users/${userId}/grimorio`));
-            const newRecipe = {
-                nombre: parseSimpleBlock(recipeText, 'Nombre') || 'Sin Nombre',
-                categorias: parseSimpleBlock(recipeText, 'Categorias')?.split(',').map(c => c.trim()) || [],
-                ingredientesTexto: parseSimpleBlock(recipeText, 'Ingredientes'),
-                preparacion: parseSimpleBlock(recipeText, 'Preparacion'),
-                garnish: parseSimpleBlock(recipeText, 'Garnish'),
-            };
-            batch.set(newDocRef, newRecipe);
-        });
-        
+
         try {
+            const text = await file.text();
+            const newRecipes = parseMultipleRecipes(text, allIngredients);
+
+            if (newRecipes.length === 0) {
+                alert("No se encontraron recetas válidas en el archivo.");
+                return;
+            }
+
+            const batch = writeBatch(db);
+            const recipesCollection = collection(db, `users/${userId}/grimorio`);
+
+            newRecipes.forEach(recipe => {
+                const newDocRef = doc(recipesCollection);
+                batch.set(newDocRef, recipe);
+            });
+
             await batch.commit();
-            alert(`${recipesText.length} recetas importadas.`);
+            alert(`${newRecipes.length} recetas importadas exitosamente.`);
+
         } catch (error) {
-            console.error("Error importing TXT:", error);
-            alert("Error al importar el archivo.");
+            console.error("Error al importar recetas desde TXT:", error);
+            alert("Ocurrió un error durante la importación. Revisa la consola para más detalles.");
         } finally {
             setLoading(false);
             setShowTxtImportModal(false);
-            event.target.value = ''; 
+            if (event.target) {
+                event.target.value = '';
+            }
+        }
+    };
+
+    const handlePdfImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (!file || !db || !userId || !storage) return;
+        setLoading(true);
+
+        try {
+            const newRecipes = await importPdfRecipes(file, db, storage, userId, allIngredients);
+
+            if (newRecipes.length === 0) {
+                alert("No se pudieron extraer recetas del PDF.");
+                return;
+            }
+
+            const batch = writeBatch(db);
+            const recipesCollection = collection(db, `users/${userId}/grimorio`);
+            newRecipes.forEach(recipe => {
+                const newDocRef = doc(recipesCollection);
+                batch.set(newDocRef, recipe);
+            });
+
+            await batch.commit();
+            alert(`${newRecipes.length} recetas importadas exitosamente desde el PDF.`);
+
+        } catch (error) {
+            console.error("Error al importar recetas desde PDF:", error);
+            alert("Ocurrió un error durante la importación del PDF. Revisa la consola.");
+        } finally {
+            setLoading(false);
+            setShowPdfImportModal(false);
+            if (event.target) event.target.value = '';
         }
     };
 
@@ -236,6 +278,7 @@ const GrimoriumView: React.FC<{
                         onOpenIngredients={() => setActiveTab('ingredients')}
                         onImportRecipes={() => setShowTxtImportModal(true)}
                         onImportIngredients={() => setShowCsvImportModal(true)}
+                        onImportPdf={() => setShowPdfImportModal(true)}
                     />
                 </div>
 
@@ -408,6 +451,18 @@ const GrimoriumView: React.FC<{
                     <Button as="label" htmlFor="txt-upload" className="w-full">
                         <Icon svg={ICONS.upload} className="mr-2 h-4 w-4" />
                         Seleccionar archivo TXT
+                    </Button>
+                </div>
+            </Modal>
+
+            <Modal isOpen={showPdfImportModal} onClose={() => setShowPdfImportModal(false)} title="Importar Recetas desde PDF PRO">
+                <div className="space-y-4">
+                    <p className="text-sm text-muted-foreground">Selecciona un archivo PDF (como FENOMENO-EXPAND.pdf) para importar recetas automáticamente.</p>
+                    <p className="text-sm">El sistema extraerá texto, imágenes e ingredientes.</p>
+                    <Input type="file" accept=".pdf" onChange={handlePdfImport} className="hidden" id="pdf-upload" />
+                    <Button as="label" htmlFor="pdf-upload" className="w-full">
+                        <Icon svg={ICONS.upload} className="mr-2 h-4 w-4" />
+                        Seleccionar archivo PDF
                     </Button>
                 </div>
             </Modal>

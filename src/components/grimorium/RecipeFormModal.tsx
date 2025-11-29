@@ -6,6 +6,7 @@ import { Textarea } from '../ui/Textarea';
 import { Select } from '../ui/Select';
 import { Button } from '../ui/Button';
 import { Icon } from '../ui/Icon';
+import { Autocomplete } from '../ui/Autocomplete';
 import { ICONS } from '../ui/icons';
 import { Recipe, Ingredient, IngredientLineItem } from '../../../types';
 
@@ -78,10 +79,14 @@ export const RecipeFormModal: React.FC<RecipeFormModalProps> = ({ isOpen, onClos
                     <div className="space-y-2 max-h-48 overflow-y-auto pr-2">
                         {lineItems.map((item, index) => (
                             <div key={index} className="grid grid-cols-12 gap-2 items-center">
-                                <Select className="col-span-6" value={item.ingredientId || ''} onChange={e => updateLineItem(index, 'ingredientId', e.target.value)}>
-                                    <option value="">Seleccionar ingrediente</option>
-                                    {allIngredients.map(i => <option key={i.id} value={i.id}>{i.nombre}</option>)}
-                                </Select>
+                                <div className="col-span-6">
+                                    <Autocomplete
+                                        items={allIngredients}
+                                        selectedId={item.ingredientId}
+                                        onSelect={(id) => updateLineItem(index, 'ingredientId', id)}
+                                        placeholder="Buscar ingrediente..."
+                                    />
+                                </div>
                                 <Input className="col-span-2" type="number" step="0.1" value={item.cantidad} onChange={e => updateLineItem(index, 'cantidad', parseFloat(e.target.value))} placeholder="Cant." />
                                 <Select className="col-span-3" value={item.unidad} onChange={e => updateLineItem(index, 'unidad', e.target.value)}>
                                     <option>ml</option><option>g</option><option>und</option>

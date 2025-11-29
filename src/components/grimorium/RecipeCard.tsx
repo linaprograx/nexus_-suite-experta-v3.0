@@ -2,8 +2,13 @@ import React from 'react';
 import { Recipe } from '../../../types';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '../ui/Card';
 import { Button } from '../ui/Button';
+import { calculatePricing } from '../../modules/costing/pricingEngine';
+import { formatCost } from '../../modules/costing/costFormatter';
 
-export const RecipeCard: React.FC<{ recipe: Recipe; onEdit: () => void; onDragStart: (e: React.DragEvent, recipe: Recipe) => void; }> = ({ recipe, onEdit, onDragStart }) => (
+export const RecipeCard: React.FC<{ recipe: Recipe; onEdit: () => void; onDragStart: (e: React.DragEvent, recipe: Recipe) => void; }> = ({ recipe, onEdit, onDragStart }) => {
+    const pricing = calculatePricing(recipe.costoReceta || 0);
+
+    return (
     <Card 
       className="overflow-hidden cursor-grab"
       draggable="true"
@@ -22,15 +27,16 @@ export const RecipeCard: React.FC<{ recipe: Recipe; onEdit: () => void; onDragSt
         <CardContent>
             <div className="flex justify-between text-sm">
                 <span>Costo:</span>
-                <span className="font-bold">€{(recipe.costoReceta || 0).toFixed(2)}</span>
+                <span className="font-bold">{formatCost(recipe.costoReceta)}</span>
             </div>
-            <div className="flex justify-between text-sm">
-                <span>PVP:</span>
-                <span className="font-bold">€{(recipe.precioVenta || 0).toFixed(2)}</span>
+            <div className="flex justify-between text-sm text-blue-600 dark:text-blue-400">
+                <span>PVP Rec.:</span>
+                <span className="font-bold">{formatCost(pricing.precioRecomendado)}</span>
             </div>
         </CardContent>
         <CardFooter>
             <Button variant="outline" className="w-full" onClick={onEdit}>Ver / Editar</Button>
         </CardFooter>
     </Card>
-);
+    );
+};
