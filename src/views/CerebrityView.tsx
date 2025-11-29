@@ -7,12 +7,6 @@ import { CerebrityHistorySidebar } from '../components/cerebrity/CerebrityHistor
 import { TheLabHistorySidebar } from '../components/cerebrity/TheLabHistorySidebar';
 import PowerTreeColumn from '../components/cerebrity/PowerTreeColumn';
 import LabView from './LabView';
-import {
-  powerCreativeBooster,
-  powerStorytellingAnalyzer,
-  powerRarenessIdentifier,
-  powerHarmonyOptimizer
-} from '../modules/cerebrity/powers';
 import { callGeminiApi, generateImage } from '../utils/gemini';
 import { Type } from "@google/genai";
 import { Modal } from '../components/ui/Modal';
@@ -45,6 +39,67 @@ const CerebrityView: React.FC<CerebrityViewProps> = ({ db, userId, storage, appI
     const [powerOutput, setPowerOutput] = React.useState<any>(null);
     const [isPowerModalOpen, setIsPowerModalOpen] = React.useState(false);
     const [powerLoading, setPowerLoading] = React.useState(false);
+    const [storytellingTheme, setStorytellingTheme] = React.useState("");
+    const [saveModalState, setSaveModalState] = React.useState<{ isOpen: boolean; options: any[]; powerName: string; }>({ isOpen: false, options: [], powerName: '' });
+
+    const safeJsonParse = (raw: string): any => {
+      try {
+        return JSON.parse(raw);
+      } catch {
+        try {
+          const cleaned = raw.replace(/```json/g, "").replace(/```/g, "").trim();
+          return JSON.parse(cleaned);
+        } catch {
+          try {
+            // Fallback for more complex cases, not implemented yet.
+            return { summary: raw };
+          } catch {
+            return { summary: "Error irrecuperable al parsear la respuesta." };
+          }
+        }
+      }
+    };
+
+    const runStorytellingImprovement = async () => {
+      const storytellingSource = result?.storytelling || rawInput;
+      if (!storytellingSource || !storytellingSource.trim()) {
+          setPowerModalState({
+              title: "Error",
+              content: "Necesitas un storytelling generado o un texto en el input principal.",
+          });
+          setIsPowerModalOpen(true);
+          return;
+      }
+
+      setIsPowerModalOpen(false); // Close input modal
+      await new Promise(resolve => setTimeout(resolve, 100)); // Allow UI to update
+
+      setPowerLoading(true);
+      setPowerModalState({ title: 'Mejorando Storytelling...' });
+      setPowerOutput(null);
+      setIsPowerModalOpen(true); // Reopen as loading modal
+
+      try {
+          const powerPrompt = getPowerPrompt('Mejora de Storytelling', storytellingSource, storytellingTheme);
+          if (!powerPrompt) throw new Error("Poder no implementado.");
+
+          const response = await callGeminiApi(
+              powerPrompt.prompt,
+              powerPrompt.systemInstruction,
+              { responseMimeType: "application/json", responseSchema: powerPrompt.responseSchema }
+          );
+
+          const data = safeJsonParse(response.text);
+          setPowerModalState({ title: 'Mejora de Storytelling' });
+          setPowerOutput(data);
+      } catch (err: any) {
+          setPowerModalState({ title: "Error", content: err.message || "Error al procesar el poder." });
+          setPowerOutput(null);
+      } finally {
+          setPowerLoading(false);
+      }
+  };
+
     // --- Helper fun/ti/ -fee renuernctontructur d pr rerrcsdlrl ------
     const renderPowerContent = (data: any) => {
         if (!data) return null;
@@ -161,116 +216,177 @@ const CerebrityView: React.FC<CerebrityViewProps> = ({ db, userId, storage, appI
         { name: 'Analizador de Storytelling', description: 'Analiza el storytelling existente.', locked: false, size: 'medium square' as const, color: 'cyan' as const, icon: 'book' },
         { name: 'Identificador de Rarezas', description: 'Identifica ingredientes inusuales.', locked: false, size: 'small square' as const, color: 'orange' as const, icon: 'alert' },
         { name: 'Harmony Optimizer', description: 'Propone mejoras de sabor.', locked: false, size: 'vertical' as const, color: 'green' as const, icon: 'wave' },
+        { name: 'Mapeo de Sabores', description: 'Analiza perfil y familias aromáticas.', locked: false, size: 'medium square' as const, color: 'orange' as const, icon: 'map' },
     ];
 
     const handlePowerClick = async (powerName: string) => {
-      if (powerLoading) return;
-    
-      const currentContext = activeTab === 'creativity' ? (selectedRecipe ? `la receta "${selectedRecipe.nombre}"` : (rawInput ? `los ingredientes: ${rawInput}` : null)) : (labInputs.length > 0 ? `la combinación de The Lab` : null);
-    
+      const hasCreativityContext = selectedRecipe || rawInput.trim().length > 0;
+      const hasLabContext = labInputs.length > 0;
+      const currentContext = activeTab === 'creativity' ? (hasCreativityContext ? 'contexto' : null) : (hasLabContext ? 'contexto' : null);
+
       if (!currentContext) {
-        setPowerModalState({ title: "Error", content: "Necesitas seleccionar una receta, introducir ingredientes o tener una combinación en The Lab para usar un superpoder." });
-        setPowerOutput(null);
+        setPowerModalState({ title: "Error", content: "Necesitas seleccionar una receta, ingredientes o una combinación en The Lab." });
         setIsPowerModalOpen(true);
         return;
       }
-    
+
+      if (powerName === 'Mejora de Storytelling') {
+        setIsPowerModalOpen(true);
+        setPowerModalState({ title: 'Mejora de Storytelling', content: undefined });
+        setPowerOutput(null);
+        return;
+      }
+
       setPowerLoading(true);
       setIsPowerModalOpen(true);
-      setPowerModalState({ title: `Activando ${powerName}...`, content: <div className="flex justify-center items-center p-8"><Spinner /></div> });
+      setPowerModalState({ title: `Activando ${powerName}...`, content: undefined });
       setPowerOutput(null);
 
       try {
-        let run: ((ingredients: string[]) => Promise<any>) | null = null;
-        const ingredients = activeTab === 'creativity' 
-            ? (selectedRecipe?.ingredientes?.map(i => i.nombre) || rawInput.split(',').map(s => s.trim()))
+        const ingredientNames = activeTab === 'creativity'
+            ? (selectedRecipe?.ingredientes?.map(i => i.nombre) || rawInput.split(',').map(s => s.trim()).filter(Boolean))
             : labInputs.map(i => i.nombre);
 
-        if (ingredients.length === 0) {
-            throw new Error("No hay ingredientes suficientes para activar el poder.");
+        let contextText = '';
+        if (powerName === 'Analizador de Storytelling') {
+          contextText = result?.storytelling || rawInput;
+        } else if (selectedRecipe) {
+          contextText = `Receta: ${selectedRecipe.nombre}. Ingredientes: ${ingredientNames.join(', ')}`;
+        } else {
+          contextText = `Ingredientes: ${ingredientNames.join(', ')}`;
         }
 
-        switch (powerName) {
-            case 'Creative Booster Avanzado':
-                run = powerCreativeBooster;
-                break;
-            case 'Analizador de Storytelling':
-                run = powerStorytellingAnalyzer;
-                break;
-            case 'Identificador de Rarezas':
-                run = powerRarenessIdentifier;
-                break;
-            case 'Harmony Optimizer':
-                run = powerHarmonyOptimizer;
-                break;
-            // TODO: Migrar los poderes antiguos al nuevo sistema.
-            default:
-                 // Mantener la lógica anterior para los poderes no migrados
-                const oldPowerPrompt = getOldPowerPrompt(powerName, currentContext);
-                if (!oldPowerPrompt) {
-                    setPowerModalState({ title: "Poder no implementado", content: "Este poder aún no ha sido conectado al nuevo sistema."});
-                    setPowerOutput(null);
-                    setPowerLoading(false);
-                    return;
-                }
-                const response = await callGeminiApi(oldPowerPrompt.prompt, "Eres un experto en mixología y creatividad.", { responseMimeType: "application/json", responseSchema: oldPowerPrompt.responseSchema });
-                const data = JSON.parse(response.text.replace(/^```json\s*/, '').replace(/```$/, ''));
-                setPowerModalState({ title: powerName });
-                setPowerOutput(data);
-                setPowerLoading(false);
-                return;
-        }
-        
-        const rawData = await run(ingredients);
-        
-        if (rawData?.error) {
-          throw new Error(rawData.message || "La respuesta del modelo contenía un error.");
-        }
-        
-        const data = typeof rawData === 'string' ? JSON.parse(rawData) : rawData;
+        const powerPrompt = getPowerPrompt(powerName, contextText);
+        if (!powerPrompt) throw new Error("Poder no implementado.");
 
-        // Validar estructura básica
-        if (!data.title || !data.summary) {
-             throw new Error("La respuesta del modelo no tiene el formato JSON esperado.");
-        }
-        
-        setPowerModalState({ title: data.title });
+        const response = await callGeminiApi(
+          powerPrompt.prompt,
+          powerPrompt.systemInstruction || "Eres un experto en mixología y creatividad.",
+          { responseMimeType: "application/json", responseSchema: powerPrompt.responseSchema }
+        );
+
+        const data = safeJsonParse(response.text);
+        setPowerModalState({ title: powerName });
         setPowerOutput(data);
-
       } catch (e: any) {
-        setPowerModalState({ title: "Error", content: `Error procesando el poder. Intenta de nuevo.` });
+        setPowerModalState({ title: "Error", content: e.message || "Error procesando el poder." });
         setPowerOutput(null);
       } finally {
         setPowerLoading(false);
       }
     };
 
-    const getOldPowerPrompt = (powerName: string, context: string) => {
-        switch (powerName) {
-          case 'Intensidad Creativa':
-            return {
-              prompt: `Analiza la creatividad de ${context}. Devuelve un score de 0 a 100 y una explicación concisa de por qué.`,
-              responseSchema: { type: Type.OBJECT, properties: { score: { type: Type.NUMBER }, explanation: { type: Type.STRING } } }
-            };
-          case 'Coherencia Técnica':
-            return {
-              prompt: `Analiza ${context} y detecta posibles combinaciones conflictivas, errores técnicos o técnicas incompatibles. Devuelve un listado de problemas encontrados.`,
-              responseSchema: { type: Type.OBJECT, properties: { issues: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { issue: { type: Type.STRING }, suggestion: { type: Type.STRING } } } } } }
-            };
-          case 'Optimización del Garnish':
-            return {
-              prompt: `Basado en ${context}, genera 3 propuestas de garnish: una simple, una avanzada y una premium.`,
-              responseSchema: { type: Type.OBJECT, properties: { simple: { type: Type.STRING }, advanced: { type: Type.STRING }, premium: { type: Type.STRING } } }
-            };
-          case 'Mejora de Storytelling':
-            return {
-              prompt: `Crea 2 variaciones y una versión premium del storytelling para ${context}, coherentes con un estilo de marca premium y evocador.`,
-              responseSchema: { type: Type.OBJECT, properties: { variation1: { type: Type.STRING }, variation2: { type: Type.STRING }, premium: { type: Type.STRING } } }
-            };
-          default:
-            return null;
+    const getPowerPrompt = (powerName: string, context: string, theme?: string) => {
+      const genericSchema = {
+        type: Type.OBJECT,
+        properties: {
+          summary: { type: Type.STRING },
+          sections: {
+            type: Type.ARRAY,
+            items: {
+              type: Type.OBJECT,
+              properties: {
+                heading: { type: Type.STRING },
+                content: { type: Type.STRING }
+              }
+            }
+          },
+          lists: {
+            type: Type.ARRAY,
+            items: {
+              type: Type.OBJECT,
+              properties: {
+                heading: { type: Type.STRING },
+                items: { type: Type.ARRAY, items: { type: Type.STRING } }
+              }
+            }
+          },
+          tables: {
+            type: Type.ARRAY,
+            items: {
+              type: Type.OBJECT,
+              properties: {
+                heading: { type: Type.STRING },
+                columns: { type: Type.ARRAY, items: { type: Type.STRING } },
+                rows: {
+                  type: Type.ARRAY,
+                  items: { type: Type.ARRAY, items: { type: Type.STRING } }
+                }
+              }
+            }
+          },
+          // Campos antiguos para compatibilidad con casos 1 y 2 de renderPowerContent
+          score: { type: Type.NUMBER },
+          explanation: { type: Type.STRING },
+          simple: { type: Type.STRING },
+          advanced: { type: Type.STRING },
+          premium: { type: Type.STRING },
+          variation1: { type: Type.STRING },
+          variation2: { type: Type.STRING },
         }
-    }
+      };
+
+      switch (powerName) {
+        case 'Intensidad Creativa':
+          return {
+            prompt: `Analiza la creatividad de ${context}. Devuelve un JSON con un 'summary' breve y, si procede, 'score' (0-100) y 'explanation'.`,
+            systemInstruction: 'Eres un director creativo de coctelería de alto nivel.',
+            responseSchema: genericSchema
+          };
+        case 'Coherencia Técnica':
+          return {
+            prompt: `Analiza ${context} y detecta posibles conflictos técnicos, técnicas incompatibles y riesgos. Devuelve un 'summary' y al menos una lista ('lists') con fortalezas y otra con posibles problemas.`,
+            systemInstruction: 'Eres un experto técnico en coctelería y procesos de bar.',
+            responseSchema: genericSchema
+          };
+        case 'Optimización del Garnish':
+          return {
+            prompt: `Eres un mixólogo experto. Basado en la receta: \"${context}\", genera EXACTAMENTE tres propuestas de garnish.\n\nREGLAS:\n1. Cada garnish debe ser breve: máximo 40–60 palabras.\n2. Deben escalar en complejidad: simple → avanzado → premium.\n3. Premium debe incluir un toque moderno o multisensorial.\n4. Explica brevemente por qué funciona cada uno.\n\nFormato JSON obligatorio:\n{\n  \"simple\": \"texto...\",\n  \"avanzado\": \"texto...\",\n  \"premium\": \"texto...\"\n}`,
+            systemInstruction: 'Eres un experto en garnish creativo para coctelería.',
+            responseSchema: genericSchema
+          };
+        case 'Mejora de Storytelling': {
+            const themePrompt = theme ? ` y el tema creativo adicional: \"${theme}\"` : '';
+            return {
+                prompt: `Eres un experto en storytelling para mixología y creatividad. A partir del siguiente texto base: \"${context}\"${themePrompt}, genera EXACTAMENTE tres versiones de storytelling para este cóctel.\n\nREGLAS ESTRICTAS:\n1. Cada versión debe tener entre 120 y 180 palabras.\n2. Cada versión debe tener máximo 5 párrafos cortos.\n3. NO repitas ideas, NO generes texto infinito, NO divagues.\n4. El tono debe ser emocional, entusiasta, atractivo, contagioso.\n5. Incluye SIEMPRE:\n   • Gancho emocional inicial.\n   • Breve inspiración del cóctel.\n   • Historia o mito breve asociado.\n   • Por qué los sabores funcionan juntos.\n   • Cierre evocador de marca premium.\n\nDEVUELVE OBLIGATORIAMENTE ESTE JSON:\n{\n  \"variation1\": \"texto...\",\n  \"variation2\": \"texto...\",\n  \"premium\": \"texto...\"\n}\n\nNO añadas ningún texto fuera del JSON.\nNO escribas explicaciones adicionales.\nNO superes las longitudes indicadas.`,
+                systemInstruction: 'Eres un copywriter experto en storytelling para coctelería de alto nivel.',
+                responseSchema: genericSchema
+            };
+        }
+        case 'Creative Booster Avanzado':
+          return {
+            prompt: `A partir de ${context}, genera 3 nuevas ideas de cócteles. Cada idea debe tener nombre, concepto, base alcohólica y twist. Devuelve un 'summary' general y una tabla en 'tables' con columnas ['Nombre', 'Concepto', 'Base alcohólica', 'Twist'] y 3 filas (una por idea).`,
+            systemInstruction: 'Eres un creador de cócteles innovador.',
+            responseSchema: genericSchema
+          };
+        case 'Analizador de Storytelling':
+          return {
+            prompt: `Analiza el siguiente storytelling: \"${context}\". Devuelve un 'summary' con el diagnóstico general y varias 'lists': una con fortalezas, otra con debilidades y otra con sugerencias concretas de mejora.`,
+            systemInstruction: 'Eres un editor experto en storytelling para coctelería.',
+            responseSchema: genericSchema
+          };
+        case 'Identificador de Rarezas':
+          return {
+            prompt: `Analiza los ingredientes de ${context} y detecta cuáles son poco usuales o raros en coctelería clásica. Devuelve un 'summary' y una tabla en 'tables' con columnas ['Ingrediente', 'Motivo', 'Nivel de rareza (baja/media/alta)'].`,
+            systemInstruction: 'Eres un historiador de coctelería y analista de tendencias de ingredientes.',
+            responseSchema: genericSchema
+          };
+        case 'Harmony Optimizer':
+          return {
+            prompt: `Analiza ${context} en términos de equilibrio dulce/ácido/amargo/alcohólico/aromático. Devuelve un 'summary', una lista con diagnóstico y otra lista con cambios propuestos muy concretos (qué subir, qué bajar, qué añadir o quitar), y una breve descripción de la versión optimizada.`,
+            systemInstruction: 'Eres un experto en balance de sabores en coctelería.',
+            responseSchema: genericSchema
+          };
+        case 'Mapeo de Sabores':
+          return {
+            prompt: `A partir de los ingredientes de ${context}, realiza un mapeo de sabores: agrupa en familias (cítrico, herbal, floral, especiado, tostado, lácteo, umami, etc.), asigna una intensidad de 1 a 10 y menciona qué ingredientes componen cada familia. Devuelve un 'summary' y una tabla en 'tables' con columnas ['Familia', 'Intensidad (1-10)', 'Ingredientes'].`,
+            systemInstruction: 'Eres un sommelier de sabores especializado en coctelería.',
+            responseSchema: genericSchema
+          };
+        default:
+          return null;
+      }
+    };
 
     React.useEffect(() => {
         if (initialText) {
@@ -347,6 +463,52 @@ const CerebrityView: React.FC<CerebrityViewProps> = ({ db, userId, storage, appI
         }
     };
 
+    const confirmSave = async (content: string, destination: 'pizarron' | 'recetas', powerName: string) => {
+        try {
+            if (destination === 'pizarron') {
+                await addDoc(collection(db, `artifacts/${appId}/public/data/pizarron-tasks`), {
+                    content: `[Cerebrity: ${powerName}] ${content}`.substring(0, 500), status: 'Ideas', category: 'Ideas', createdAt: serverTimestamp(), boardId: 'general'
+                });
+                alert("Guardado en Pizarrón.");
+            } else {
+                 onOpenRecipeModal({ nombre: `[${powerName}] Idea`, storytelling: content });
+            }
+            setSaveModalState({ isOpen: false, options: [], powerName: '' });
+        } catch (err) {
+            console.error("Error al guardar:", err);
+            setError("No se pudo guardar el resultado.");
+        }
+    };
+
+    const handleSavePowerResult = (powerName: string, output: any) => {
+        let options: { label: string, value: string }[] = [];
+
+        if (powerName === 'Creative Booster Avanzado' && output.tables?.[0]?.rows) {
+            options = output.tables[0].rows.map((row: string[]) => ({ label: row[0] || 'Idea', value: row.join('\n') }));
+        } else if (powerName === 'Mejora de Storytelling' && (output.variation1 || output.lists)) {
+             options = [
+                { label: 'Variación 1', value: output.variation1 },
+                { label: 'Variación 2', value: output.variation2 },
+                { label: 'Premium', value: output.premium },
+            ].filter(opt => opt.value);
+        } else if (powerName === 'Optimización del Garnish' && output.simple) {
+            options = [
+                { label: 'Simple', value: output.simple },
+                { label: 'Avanzado', value: output.advanced },
+                { label: 'Premium', value: output.premium },
+            ].filter(opt => opt.value);
+        }
+
+        if (options.length > 1) {
+            setSaveModalState({ isOpen: true, options, powerName });
+        } else {
+            const contentToSave = JSON.stringify(output, null, 2);
+            // For single result, we could ask with a simpler modal or save directly.
+            // For now, let's just use Pizarron as default for single complex objects.
+            confirmSave(contentToSave, 'pizarron', powerName);
+        }
+    };
+
     const backgroundClass = activeTab === 'creativity'
         ? "from-[#EDE9FE] to-white dark:from-[#1E1B2A] dark:to-slate-950"
         : "from-[#CCFBF1] to-white dark:from-[#1A2A29] dark:to-slate-950";
@@ -383,17 +545,110 @@ const CerebrityView: React.FC<CerebrityViewProps> = ({ db, userId, storage, appI
                </div>
             </div>
             {isPowerModalOpen && (
-                <Modal title={powerModalState?.title || ''} isOpen={isPowerModalOpen} onClose={() => setIsPowerModalOpen(false)}>
-                    <div className="p-4">
-                        {powerModalState?.content ? powerModalState.content : renderPowerContent(powerOutput)}
+                <Modal title={powerModalState?.title || ''} isOpen={isPowerModalOpen} onClose={() => { setIsPowerModalOpen(false); setStorytellingTheme(''); }}>
+                    <div className="p-4 max-h-[70vh] overflow-y-auto">
+                        {powerLoading ? (
+                          <div className="flex justify-center items-center p-8"><Spinner /></div>
+                        ) : (
+                          <>
+                            {powerModalState?.title === 'Mejora de Storytelling' && !powerOutput && (
+                              <div className="mb-4">
+                                <label htmlFor="storytelling-theme" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Tema (Opcional)</label>
+                                <input
+                                  id="storytelling-theme"
+                                  type="text"
+                                  value={storytellingTheme}
+                                  onChange={(e) => setStorytellingTheme(e.target.value)}
+                                  className="w-full px-3 py-2 bg-white dark:bg-slate-800 border rounded-md"
+                                />
+                              </div>
+                            )}
+                            {powerModalState?.content ? powerModalState.content : renderPowerContent(powerOutput)}
+                          </>
+                        )}
                     </div>
-                    <div className="p-4 flex justify-end">
-                        <Button onClick={() => setIsPowerModalOpen(false)} variant="secondary">Cerrar</Button>
+                    <div className="p-4 flex justify-between items-center border-t">
+                        <div>
+                            {powerModalState?.title === 'Mejora de Storytelling' && !powerOutput && !powerLoading && (
+                                <Button onClick={runStorytellingImprovement}>Activar Poder</Button>
+                            )}
+                            {!powerLoading && powerOutput && (
+                                <Button onClick={() => handleSavePowerResult(powerModalState?.title || 'Resultado', powerOutput)}>Guardar</Button>
+                            )}
+                        </div>
+                        <Button onClick={() => { setIsPowerModalOpen(false); setStorytellingTheme(''); }} variant="secondary">Cerrar</Button>
                     </div>
                 </Modal>
+            )}
+
+            {saveModalState.isOpen && (
+                <SaveModal 
+                    isOpen={saveModalState.isOpen}
+                    onClose={() => setSaveModalState({ isOpen: false, options: [], powerName: '' })}
+                    options={saveModalState.options}
+                    powerName={saveModalState.powerName}
+                    onConfirm={confirmSave}
+                />
             )}
         </div>
     );
 };
+
+const SaveModal = ({ isOpen, onClose, options, powerName, onConfirm }: { isOpen: boolean; onClose: () => void; options: {label: string, value: string}[]; powerName: string; onConfirm: (content: string, destination: 'pizarron' | 'recetas', powerName: string) => void; }) => {
+    const [selectedOption, setSelectedOption] = React.useState(options[0]?.value || '');
+    const [destination, setDestination] = React.useState<'pizarron' | 'recetas'>('pizarron');
+
+    React.useEffect(() => {
+        if (options.length > 0) {
+            setSelectedOption(options[0].value);
+        }
+    }, [options]);
+
+    const handleConfirm = () => {
+        if (!selectedOption) {
+            // Maybe show an alert here
+            return;
+        }
+        onConfirm(selectedOption, destination, powerName);
+        onClose();
+    };
+
+    return (
+        <Modal title={`Guardar resultado de ${powerName}`} isOpen={isOpen} onClose={onClose}>
+            <div className="p-4 space-y-4">
+                <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Selecciona la idea a guardar:</label>
+                    <div className="mt-2 space-y-2">
+                        {options.map(option => (
+                            <div key={option.label} className="flex items-center">
+                                <input 
+                                    type="radio"
+                                    id={option.label}
+                                    name="save-option"
+                                    value={option.value}
+                                    checked={selectedOption === option.value}
+                                    onChange={() => setSelectedOption(option.value)}
+                                    className="h-4 w-4 text-violet-600 border-gray-300 focus:ring-violet-500"
+                                />
+                                <label htmlFor={option.label} className="ml-3 block text-sm text-gray-800 dark:text-gray-200">{option.label}</label>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+                <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Destino:</label>
+                    <div className="mt-2 flex gap-4">
+                         <Button onClick={() => setDestination('pizarron')} variant={destination === 'pizarron' ? 'default' : 'secondary'}>Pizarrón</Button>
+                         <Button onClick={() => setDestination('recetas')} variant={destination === 'recetas' ? 'default' : 'secondary'}>Recetas</Button>
+                    </div>
+                </div>
+            </div>
+            <div className="p-4 flex justify-end gap-2">
+                <Button onClick={onClose} variant="secondary">Cancelar</Button>
+                <Button onClick={handleConfirm}>Confirmar Guardado</Button>
+            </div>
+        </Modal>
+    )
+}
 
 export default CerebrityView;
