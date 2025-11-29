@@ -104,106 +104,44 @@ const CerebrityView: React.FC<CerebrityViewProps> = ({ db, userId, storage, appI
     const renderPowerContent = (data: any) => {
         if (!data) return null;
 
-        // Case 1: Intensidad Creativa (old power)
-        if (typeof data.explanation === "string" && typeof data.score === "number") {
-            return (
-                <>
-                    <p>{data.explanation}</p>
-                    <p><strong>Puntuación creativa:</strong> {data.score} / 100</p>
-                </>
-            );
-        }
-
-        // Case 2: Optimización del Garnish (old power)
-        if (data.simple || data.premium || data.advanced) {
-            return (
-                <ul>
-                    {data.simple && (
-                        <li>
-                            <strong>Simple:</strong> {data.simple}
-                        </li>
-                    )}
-                    {data.premium && (
-                        <li>
-                            <strong>Premium:</strong> {data.premium}
-                        </li>
-                    )}
-                    {data.advanced && (
-                        <li>
-                            <strong>Avanzado:</strong> {data.advanced}
-                        </li>
-                    )}
-                </ul>
-            );
-        }
-        
-        // Case 3: New generic schema
-        if (data.summary || Array.isArray(data.sections) || Array.isArray(data.lists) || Array.isArray(data.tables)) {
-            return (
-                <div className="power-structured-result">
-                    {data.summary && <p>{data.summary}</p>}
-
-                    {Array.isArray(data.sections) && data.sections.length > 0 && (
-                        <div className="power-sections">
-                            {data.sections.map((section: any, idx: number) => (
-                                <section key={idx}>
-                                    {section.heading && <h4>{section.heading}</h4>}
-                                    {section.content && <p>{section.content}</p>}
-                                </section>
-                            ))}
-                        </div>
-                    )}
-
-                    {Array.isArray(data.lists) && data.lists.length > 0 && (
-                        <div className="power-lists">
-                            {data.lists.map((list: any, idx: number) => (
-                                <div key={idx}>
-                                    {list.heading && <h4>{list.heading}</h4>}
-                                    {Array.isArray(list.items) && (
-                                        <ul>
-                                            {list.items.map((item: string, i: number) => (
-                                                <li key={i}>{item}</li>
-                                            ))}
-                                        </ul>
-                                    )}
-                                </div>
-                            ))}
-                        </div>
-                    )}
-
-                    {Array.isArray(data.tables) && data.tables.length > 0 && (
-                        <div className="power-tables">
-                            {data.tables.map((table: any, idx: number) => (
-                                <div key={idx}>
-                                    {table.heading && <h4>{table.heading}</h4>}
-                                    <table>
-                                        <thead>
-                                            <tr>
-                                                {Array.isArray(table.columns) &&
-                                                    table.columns.map((col: string, i: number) => <th key={i}>{col}</th>)}
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {Array.isArray(table.rows) &&
-                                                table.rows.map((row: string[], rIdx: number) => (
-                                                    <tr key={rIdx}>
-                                                        {row.map((cell: string, cIdx: number) => (
-                                                            <td key={cIdx}>{cell}</td>
-                                                        ))}
-                                                    </tr>
-                                                ))}
-                                        </tbody>
-                                    </table>
-                                </div>
-                            ))}
-                        </div>
-                    )}
-                </div>
-            );
-        }
-
-        // Fallback: unknown shape -> show JSON as before
-        return <pre>{JSON.stringify(data, null, 2)}</pre>;
+        const renderContent = () => {
+            if (typeof data.explanation === "string" && typeof data.score === "number") {
+                return <><p>{data.explanation}</p><p><strong>Puntuación:</strong> {data.score}/100</p></>;
+            }
+            if (data.simple || data.avanzado || data.experto) {
+                return (
+                    <ul>
+                        {data.simple && <li><strong>Simple:</strong> {data.simple}</li>}
+                        {data.avanzado && <li><strong>Avanzado:</strong> {data.avanzado}</li>}
+                        {data.experto && <li><strong>Experto:</strong> {data.experto}</li>}
+                    </ul>
+                );
+            }
+            if (data.summary || data.sections || data.lists || data.tables) {
+                return (
+                    <div className="space-y-4">
+                        {data.summary && <p className="mb-4">{data.summary}</p>}
+                        {data.sections?.map((s: any, i: number) => <section key={i} className="mb-4"><h4>{s.heading}</h4><p>{s.content}</p></section>)}
+                        {data.lists?.map((l: any, i: number) => <div key={i} className="mb-4"><h4>{l.heading}</h4><ul>{l.items?.map((item: string, j: number) => <li key={j}>{item}</li>)}</ul></div>)}
+                        {data.tables?.map((t: any, i: number) => (
+                            <div key={i} className="mb-4">
+                                <h4>{t.heading}</h4>
+                                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                                    <thead>
+                                        <tr>{t.columns?.map((col: string, j: number) => <th key={j} style={{ padding: '8px', fontWeight: 600, textAlign: 'left' }}>{col}</th>)}</tr>
+                                    </thead>
+                                    <tbody>
+                                        {t.rows?.map((row: string[], r: number) => <tr key={r}>{row.map((cell, c) => <td key={c} style={{ padding: '8px', verticalAlign: 'top' }}>{cell}</td>)}</tr>)}
+                                    </tbody>
+                                </table>
+                            </div>
+                        ))}
+                    </div>
+                );
+            }
+            return <pre>{JSON.stringify(data, null, 2)}</pre>;
+        };
+        return <div className="power-structured-result">{renderContent()}</div>;
     }
 
 
@@ -341,17 +279,17 @@ const CerebrityView: React.FC<CerebrityViewProps> = ({ db, userId, storage, appI
           };
         case 'Optimización del Garnish':
           return {
-            prompt: `Eres un mixólogo experto. Basado en la receta: \"${context}\", genera EXACTAMENTE tres propuestas de garnish.\n\nREGLAS:\n1. Cada garnish debe ser breve: máximo 40–60 palabras.\n2. Deben escalar en complejidad: simple → avanzado → premium.\n3. Premium debe incluir un toque moderno o multisensorial.\n4. Explica brevemente por qué funciona cada uno.\n\nFormato JSON obligatorio:\n{\n  \"simple\": \"texto...\",\n  \"avanzado\": \"texto...\",\n  \"premium\": \"texto...\"\n}`,
-            systemInstruction: 'Eres un experto en garnish creativo para coctelería.',
+            prompt: `Basado en ${context}, genera 3 propuestas de garnish: simple (60-90 palabras), avanzado (80-120 palabras) y experto (100-140 palabras). Experto debe ser multisensorial. Devuelve JSON con simple, avanzado, experto.`,
+            systemInstruction: 'Eres un experto en garnish creativo.',
             responseSchema: genericSchema
           };
         case 'Mejora de Storytelling': {
-            const themePrompt = theme ? ` y el tema creativo adicional: \"${theme}\"` : '';
-            return {
-                prompt: `Eres un experto en storytelling para mixología y creatividad. A partir del siguiente texto base: \"${context}\"${themePrompt}, genera EXACTAMENTE tres versiones de storytelling para este cóctel.\n\nREGLAS ESTRICTAS:\n1. Cada versión debe tener entre 120 y 180 palabras.\n2. Cada versión debe tener máximo 5 párrafos cortos.\n3. NO repitas ideas, NO generes texto infinito, NO divagues.\n4. El tono debe ser emocional, entusiasta, atractivo, contagioso.\n5. Incluye SIEMPRE:\n   • Gancho emocional inicial.\n   • Breve inspiración del cóctel.\n   • Historia o mito breve asociado.\n   • Por qué los sabores funcionan juntos.\n   • Cierre evocador de marca premium.\n\nDEVUELVE OBLIGATORIAMENTE ESTE JSON:\n{\n  \"variation1\": \"texto...\",\n  \"variation2\": \"texto...\",\n  \"premium\": \"texto...\"\n}\n\nNO añadas ningún texto fuera del JSON.\nNO escribas explicaciones adicionales.\nNO superes las longitudes indicadas.`,
-                systemInstruction: 'Eres un copywriter experto en storytelling para coctelería de alto nivel.',
-                responseSchema: genericSchema
-            };
+          const themePrompt = theme ? `Integrando el tema creativo: "${theme}".` : '';
+          return {
+            prompt: `A partir de: "${context}", ${themePrompt} genera un JSON con title, summary, y 5 sections: 'Versión Base Mejorada', 'Variación 1', 'Variación 2', 'Premium', y 'Tagline Final'. Cada sección no debe superar las 200 palabras.`,
+            systemInstruction: 'Eres un copywriter experto en storytelling para coctelería.',
+            responseSchema: genericSchema
+          };
         }
         case 'Creative Booster Avanzado':
           return {
@@ -485,21 +423,17 @@ const CerebrityView: React.FC<CerebrityViewProps> = ({ db, userId, storage, appI
 
         if (powerName === 'Creative Booster Avanzado' && output.tables?.[0]?.rows) {
             options = output.tables[0].rows.map((row: string[]) => ({ label: row[0] || 'Idea', value: row.join('\n') }));
-        } else if (powerName === 'Mejora de Storytelling' && (output.variation1 || output.lists)) {
-             options = [
-                { label: 'Variación 1', value: output.variation1 },
-                { label: 'Variación 2', value: output.variation2 },
-                { label: 'Premium', value: output.premium },
-            ].filter(opt => opt.value);
-        } else if (powerName === 'Optimización del Garnish' && output.simple) {
+        } else if (powerName === 'Mejora de Storytelling' && output.sections) {
+            options = output.sections.map((s: any) => ({ label: s.heading, value: s.content })).filter((opt: any) => opt.value);
+        } else if (powerName === 'Optimización del Garnish' && (output.simple || output.avanzado || output.experto)) {
             options = [
                 { label: 'Simple', value: output.simple },
-                { label: 'Avanzado', value: output.advanced },
-                { label: 'Premium', value: output.premium },
+                { label: 'Avanzado', value: output.avanzado },
+                { label: 'Experto', value: output.experto },
             ].filter(opt => opt.value);
         }
-
-        if (options.length > 1) {
+        
+        if (options.length > 0) {
             setSaveModalState({ isOpen: true, options, powerName });
         } else {
             const contentToSave = JSON.stringify(output, null, 2);
@@ -546,7 +480,7 @@ const CerebrityView: React.FC<CerebrityViewProps> = ({ db, userId, storage, appI
             </div>
             {isPowerModalOpen && (
                 <Modal title={powerModalState?.title || ''} isOpen={isPowerModalOpen} onClose={() => { setIsPowerModalOpen(false); setStorytellingTheme(''); }}>
-                    <div className="p-4 max-h-[70vh] overflow-y-auto">
+                    <div className="p-4 max-h-[55vh] overflow-y-auto pr-2">
                         {powerLoading ? (
                           <div className="flex justify-center items-center p-8"><Spinner /></div>
                         ) : (
