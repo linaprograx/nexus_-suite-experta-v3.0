@@ -8,6 +8,7 @@ import { parseEuroNumber } from "../utils/parseEuroNumber";
 import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
+import { Label } from '../components/ui/Label';
 import { Icon } from '../components/ui/Icon';
 import { Modal } from '../components/ui/Modal';
 import { ICONS } from '../components/ui/icons';
@@ -48,6 +49,7 @@ const GrimoriumView: React.FC<{
     const [showCsvImportModal, setShowCsvImportModal] = React.useState(false);
     const [showTxtImportModal, setShowTxtImportModal] = React.useState(false);
     const [showPdfImportModal, setShowPdfImportModal] = React.useState(false);
+    const [useOcr, setUseOcr] = React.useState(false);
     const [showIngredientsManager, setShowIngredientsManager] = React.useState(false); // Keeping for backward compatibility if needed, or remove?
     
     // Tabs
@@ -141,7 +143,7 @@ const GrimoriumView: React.FC<{
         setLoading(true);
 
         try {
-            const newRecipes = await importPdfRecipes(file, db, storage, userId, allIngredients);
+            const newRecipes = await importPdfRecipes(file, db, storage, userId, allIngredients, useOcr);
 
             if (newRecipes.length === 0) {
                 alert("No se pudieron extraer recetas del PDF.");
@@ -266,7 +268,7 @@ const GrimoriumView: React.FC<{
         <div className={`flex flex-col h-full ${compactMode ? 'gap-3 p-3' : 'gap-6 p-6 lg:p-8'}`}>
             {/* Header (Optional, usually Topbar handles this, but keeping context if needed) */}
             
-            <div className={`flex-1 grid grid-cols-1 lg:grid-cols-[18rem_minmax(0,1fr)_22rem] ${compactMode ? 'gap-3' : 'gap-6'}`}>
+            <div className="flex-1 grid grid-cols-1 lg:grid-cols-[18rem_minmax(0,1fr)_22rem] gap-6 h-full min-h-0">
                 {/* Left: Filters */}
                 <div className="h-full">
                     <FiltersSidebar 
@@ -457,8 +459,12 @@ const GrimoriumView: React.FC<{
 
             <Modal isOpen={showPdfImportModal} onClose={() => setShowPdfImportModal(false)} title="Importar Recetas desde PDF PRO">
                 <div className="space-y-4">
-                    <p className="text-sm text-muted-foreground">Selecciona un archivo PDF (como FENOMENO-EXPAND.pdf) para importar recetas automáticamente.</p>
-                    <p className="text-sm">El sistema extraerá texto, imágenes e ingredientes.</p>
+                    <p className="text-sm text-muted-foreground">Selecciona un archivo PDF para importar recetas automáticamente.</p>
+                    <div className="flex items-center space-x-2">
+                        <input type="checkbox" id="ocr-toggle" checked={useOcr} onChange={() => setUseOcr(!useOcr)} />
+                        <Label htmlFor="ocr-toggle">Usar OCR Avanzado (más lento)</Label>
+                    </div>
+                    <p className="text-xs text-slate-500">Activa esta opción si las imágenes del PDF contienen el nombre de la receta para un mapeo más preciso.</p>
                     <Input type="file" accept=".pdf" onChange={handlePdfImport} className="hidden" id="pdf-upload" />
                     <Button as="label" htmlFor="pdf-upload" className="w-full">
                         <Icon svg={ICONS.upload} className="mr-2 h-4 w-4" />

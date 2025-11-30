@@ -44,7 +44,8 @@ export const RecipeList: React.FC<RecipeListProps> = ({
   }
 
   return (
-    <div className="h-full flex flex-col overflow-y-auto pr-2">
+    <div className="h-full flex flex-col">
+        <div className="flex-1 overflow-y-auto custom-scrollbar pr-2">
       {recipes.map((recipe) => {
         const mainCategory = recipe.categorias?.[0] || 'General';
         const isIdea = recipe.categorias?.includes('Idea');
@@ -106,6 +107,7 @@ export const RecipeList: React.FC<RecipeListProps> = ({
           </div>
         );
       })}
+      </div>
     </div>
   );
 };

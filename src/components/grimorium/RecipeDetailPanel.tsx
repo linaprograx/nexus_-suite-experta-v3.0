@@ -46,8 +46,8 @@ export const RecipeDetailPanel: React.FC<{
   const margin = recipe.precioVenta ? ((recipe.precioVenta - costData.costoTotal) / recipe.precioVenta) * 100 : 0;
 
   return (
-    <Card className="h-full flex flex-col bg-white/60 dark:bg-slate-900/30 backdrop-blur-md border border-slate-200/70 dark:border-slate-800/70 overflow-hidden">
-      <div className="flex-1 overflow-y-auto custom-scrollbar p-4 lg:p-6">
+    <Card className="h-full min-h-0 flex flex-col bg-white/60 dark:bg-slate-900/30 backdrop-blur-md border border-slate-200/70 dark:border-slate-800/70 overflow-hidden">
+      <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar p-4 lg:p-6">
         {recipe.imageUrl ? (
           <img src={recipe.imageUrl} alt={recipe.nombre} className="w-full h-56 rounded-2xl object-cover mb-4 shadow-sm" />
         ) : (
@@ -63,7 +63,10 @@ export const RecipeDetailPanel: React.FC<{
                     {recipe.categorias?.map((cat) => <span key={cat} className="px-2 py-0.5 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-full text-xs font-medium border border-slate-200 dark:border-slate-700">{cat}</span>)}
                 </div>
             </div>
-             <Button variant="outline" size="sm" onClick={() => onEdit(recipe)}><Icon svg={ICONS.edit} className="mr-2 w-3.5 h-3.5" /> Editar</Button>
+            <div className="flex gap-2">
+                <Button variant="outline" size="sm" onClick={() => onEdit(recipe)}><Icon svg={ICONS.edit} className="mr-2 w-3.5 h-3.5" /> Editar</Button>
+                <Button variant="destructive" size="sm" onClick={() => onDelete(recipe)}><Icon svg={ICONS.trash} className="mr-2 w-3.5 h-3.5" /> Eliminar</Button>
+            </div>
         </div>
         
         <div className="space-y-6 mt-6">

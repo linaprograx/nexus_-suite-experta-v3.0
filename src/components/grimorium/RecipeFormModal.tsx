@@ -1,5 +1,6 @@
 import React from 'react';
 import { Firestore, updateDoc, addDoc, collection, doc } from 'firebase/firestore';
+import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { Modal } from '../ui/Modal';
 import { Input } from '../ui/Input';
 import { Textarea } from '../ui/Textarea';
@@ -9,6 +10,7 @@ import { Icon } from '../ui/Icon';
 import { Autocomplete } from '../ui/Autocomplete';
 import { ICONS } from '../ui/icons';
 import { Recipe, Ingredient, IngredientLineItem } from '../../../types';
+import { useApp } from '../../context/AppContext';
 
 interface RecipeFormModalProps {
     isOpen: boolean;
@@ -20,8 +22,10 @@ interface RecipeFormModalProps {
 }
 
 export const RecipeFormModal: React.FC<RecipeFormModalProps> = ({ isOpen, onClose, db, userId, initialData, allIngredients }) => {
+    const { storage } = useApp();
     const [recipe, setRecipe] = React.useState<Partial<Recipe>>({});
     const [lineItems, setLineItems] = React.useState<IngredientLineItem[]>([]);
+    const [isUploading, setIsUploading] = React.useState(false);
 
     React.useEffect(() => {
         setRecipe(initialData || {});
@@ -30,6 +34,24 @@ export const RecipeFormModal: React.FC<RecipeFormModalProps> = ({ isOpen, onClos
 
     const handleRecipeChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         setRecipe(prev => ({...prev, [e.target.name]: e.target.value }));
+    };
+
+    const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file || !recipe || !storage) return;
+
+        setIsUploading(true);
+        try {
+            const storageRef = ref(storage, `recipes/${recipe.id || Date.now()}.jpg`);
+            await uploadBytes(storageRef, file);
+            const imageUrl = await getDownloadURL(storageRef);
+            setRecipe(prev => ({ ...prev, imageUrl }));
+        } catch (error) {
+            console.error("Error uploading image:", error);
+            alert("Error al subir la imagen.");
+        } finally {
+            setIsUploading(false);
+        }
     };
 
     const addLineItem = () => setLineItems(prev => [...prev, { ingredientId: null, nombre: '', cantidad: 0, unidad: 'ml' }]);
@@ -69,6 +91,17 @@ export const RecipeFormModal: React.FC<RecipeFormModalProps> = ({ isOpen, onClos
     return (
         <Modal isOpen={isOpen} onClose={onClose} title={recipe.id ? "Editar Receta" : "Nueva Receta"} size="2xl">
             <form onSubmit={handleSubmit} className="space-y-4">
+                {recipe.imageUrl && (
+                    <div className="mb-4">
+                        <img src={recipe.imageUrl} alt="Vista previa" className="w-full h-48 object-cover rounded-lg" />
+                    </div>
+                )}
+                <div className="text-sm">
+                    <label htmlFor="photo-upload" className="font-medium text-gray-700 dark:text-gray-300">Cambiar Foto</label>
+                    <Input id="photo-upload" name="photo" type="file" accept="image/*" onChange={handleImageUpload} disabled={isUploading} />
+                    {isUploading && <p className="text-xs text-blue-500 mt-1">Subiendo imagen...</p>}
+                </div>
+
                 <Input name="nombre" value={recipe.nombre || ''} onChange={handleRecipeChange} placeholder="Nombre de la Receta" required />
                 <Input name="categorias" value={recipe.categorias?.join(', ') || ''} onChange={e => setRecipe(r => ({...r, categorias: e.target.value.split(',').map(c => c.trim())}))} placeholder="Categorías (separadas por coma)" />
                 <Textarea name="preparacion" value={recipe.preparacion || ''} onChange={handleRecipeChange} placeholder="Preparación" />

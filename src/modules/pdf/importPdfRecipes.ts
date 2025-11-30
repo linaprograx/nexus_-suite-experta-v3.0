@@ -7,6 +7,8 @@ import { parsePdfRecipeBlocks } from './parsePdfRecipeBlocks';
 import { parseIngredient } from '../ingredients/ingredientParser';
 import { findBestMatch } from '../ingredients/ingredientMatcher';
 import { calculateRecipeCost } from '../costing/costCalculator';
+import { classifyIngredient } from '../ingredients/families';
+import { mapImagesToRecipesOCR } from '../images/pdfImageMapper';
 
 const uploadImage = async (storage: FirebaseStorage, userId: string, imageBase64: string): Promise<string> => {
     const storageRef = ref(storage, `users/${userId}/recipe_images/${Date.now()}-${Math.random()}.jpg`);
@@ -19,10 +21,11 @@ export const importPdfRecipes = async (
     db: Firestore,
     storage: FirebaseStorage,
     userId: string,
-    allIngredients: Ingredient[]
+    allIngredients: Ingredient[],
+    useOCR: boolean = false
 ): Promise<Partial<Recipe>[]> => {
 
-    console.log("Starting PDF import process with PRO ingredient matching...");
+    console.log(`Starting PDF import process (OCR mode: ${useOCR})...`);
 
     const [pagesText, pagesImages] = await Promise.all([
         extractTextFromPdf(file),
@@ -96,10 +99,17 @@ export const importPdfRecipes = async (
         }
 
         let imageUrl: string | null = null;
+        let imageBase64: string | null = null;
+        
+        // Page-based image matching (default)
         const pageImage = pagesImages.find(pi => pi.pageNumber === block.pageNumber);
         if (pageImage && pageImage.imageBase64) {
-            try {
-                imageUrl = await uploadImage(storage, userId, pageImage.imageBase64);
+            imageBase64 = pageImage.imageBase64;
+        }
+
+        if (imageBase64) {
+             try {
+                imageUrl = await uploadImage(storage, userId, imageBase64);
             } catch (error) {
                 console.error(`Failed to upload image for recipe "${block.nombre}":`, error);
             }

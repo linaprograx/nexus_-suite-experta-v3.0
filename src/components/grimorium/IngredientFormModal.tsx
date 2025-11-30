@@ -7,6 +7,7 @@ import { Input } from '../ui/Input';
 import { Select } from '../ui/Select';
 import { Label } from '../ui/Label';
 import { calculateIngredientPrice } from '../../utils/costCalculator';
+import { classifyIngredient } from '../../modules/ingredients/families';
 
 export const IngredientFormModal: React.FC<{isOpen: boolean, onClose: () => void, db: Firestore, userId: string, appId: string, editingIngredient: Ingredient | null}> = 
   ({ isOpen, onClose, db, userId, appId, editingIngredient }) => {
@@ -43,6 +44,14 @@ export const IngredientFormModal: React.FC<{isOpen: boolean, onClose: () => void
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
+    
+    // Auto-classify category when name changes
+    if (e.target.name === 'nombre' && e.target.value.length > 2) {
+        const family = classifyIngredient(e.target.value);
+        if (family !== 'Unknown') {
+            setFormData(prev => ({ ...prev, categoria: family }));
+        }
+    }
   };
 
   const handleSubmit = async () => {
