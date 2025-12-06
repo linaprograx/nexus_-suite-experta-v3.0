@@ -45,7 +45,7 @@ const PersonalView: React.FC<PersonalViewProps> = ({ db, userId, storage, auth, 
                 });
             }
         });
-        
+
         const resultsPath = `users/${userId}/colegium-results`;
         const q = query(collection(db, resultsPath), orderBy('createdAt', 'desc'), limit(10));
         const unsubQuiz = onSnapshot(q, (snap) => {

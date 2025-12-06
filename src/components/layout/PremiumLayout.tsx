@@ -1,6 +1,6 @@
 import React from 'react';
 
-type GradientTheme = 'violet' | 'cyan' | 'emerald' | 'amber' | 'rose' | 'indigo' | 'slate' | 'blue';
+type GradientTheme = 'violet' | 'cyan' | 'emerald' | 'amber' | 'rose' | 'indigo' | 'slate' | 'blue' | 'colegium';
 
 interface PremiumLayoutProps {
     children?: React.ReactNode; // Fallback for flexibility
@@ -29,7 +29,8 @@ export const PremiumLayout: React.FC<PremiumLayoutProps> = ({
         rose: "from-[#FFE4E6] to-white dark:from-[#4C0519] dark:to-slate-950",    // Make Menu (Aesthetics)
         indigo: "from-[#E0E7FF] to-white dark:from-[#1E1B4B] dark:to-slate-950",  // Grimorium (Archive)
         slate: "from-[#F1F5F9] to-white dark:from-[#0F172A] dark:to-slate-950",   // Neutral/Fallback
-        blue: "from-[#DBEAFE] to-white dark:from-[#172554] dark:to-slate-950"     // Colegium (Learning)
+        blue: "from-[#DBEAFE] to-white dark:from-[#172554] dark:to-slate-950",     // Colegium (Learning)
+        colegium: "from-[#DBEAFE] to-white dark:from-[#172554] dark:to-slate-950"  // Alias
     };
 
     const activeGradient = gradients[gradientTheme];
@@ -42,7 +43,7 @@ export const PremiumLayout: React.FC<PremiumLayoutProps> = ({
     return (
         <div className={`h-[calc(100vh-80px)] w-full flex flex-col px-4 lg:px-8 py-6 ${className}`}>
             {/* Main Container with Rounded Corners and Gradient */}
-            <div className={`flex-1 grid grid-cols-1 lg:grid-cols-[310px,minmax(0,1fr),320px] gap-6 overflow-hidden rounded-3xl bg-gradient-to-b ${activeGradient} p-6 shadow-sm ring-1 ring-black/5 dark:ring-white/5`}>
+            <div className={`flex-1 grid grid-cols-1 lg:grid-cols-[250px,minmax(0,1fr),320px] gap-6 overflow-hidden rounded-3xl bg-gradient-to-b ${activeGradient} p-6 shadow-sm ring-1 ring-black/5 dark:ring-white/5`}>
 
                 {/* Left Sidebar Column */}
                 <div className="h-full min-h-0 overflow-hidden flex flex-col">

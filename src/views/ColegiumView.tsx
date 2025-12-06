@@ -10,6 +10,9 @@ import { GameModeSelector } from '../components/colegium/GameModeSelector';
 import { QuizSetup } from '../components/colegium/QuizSetup';
 import { QuizInProgress } from '../components/colegium/QuizInProgress';
 import { QuizResult } from '../components/colegium/QuizResult';
+import { PremiumLayout } from '../components/layout/PremiumLayout';
+import ColegiumProfileSidebar from '../components/colegium/ColegiumProfileSidebar';
+import ColegiumContextSidebar from '../components/colegium/ColegiumContextSidebar';
 
 interface ColegiumViewProps {
     db: Firestore;
@@ -69,7 +72,7 @@ const ColegiumView: React.FC<ColegiumViewProps> = ({ db, userId, allRecipes, all
         }
 
         const systemPrompt = "Eres un educador y maestro de coctelería de élite. Tu respuesta debe ser estrictamente un array JSON válido.";
-        
+
         let userQuery = "";
 
         switch (quizSettings.topic) {
@@ -119,7 +122,7 @@ const ColegiumView: React.FC<ColegiumViewProps> = ({ db, userId, allRecipes, all
 
     const handleAnswer = (selectedIndex: number) => {
         if (answerFeedback !== null) return;
-        
+
         if (selectedIndex === quizData[currentQuestionIndex].correctAnswerIndex) {
             setScore(s => s + 1);
         }
@@ -135,48 +138,70 @@ const ColegiumView: React.FC<ColegiumViewProps> = ({ db, userId, allRecipes, all
             }
         }, 1200);
     };
-    
+
     const handleSelectMode = (mode: string) => {
         setQuizSettings(s => ({ ...s, topic: mode }));
         setQuizPhase('setup');
     };
 
     return (
-         <div className="flex flex-col h-full p-4 lg:p-8 gap-4 items-center justify-center">
-            {loading && <Spinner className="w-10 h-10"/>}
-            {!loading && error && <Alert variant="destructive" title="Error" description={error} />}
-            {!loading && !error && (
-                <>
-                    {quizPhase === 'dashboard' && <ProgressDashboard onStart={() => setQuizPhase('selection')} />}
-                    {quizPhase === 'selection' && <GameModeSelector onSelectMode={handleSelectMode} />}
-                    {quizPhase === 'setup' && (
-                        <QuizSetup
-                            quizSettings={quizSettings}
-                            setQuizSettings={setQuizSettings}
-                            handleStartQuiz={handleStartQuiz}
-                            onBack={() => setQuizPhase('selection')}
-                        />
+        <PremiumLayout
+            gradientTheme="colegium"
+            leftSidebar={
+                <ColegiumProfileSidebar
+                    level="Mixólogo Senior" // Placeholder, logic to be added
+                    totalScore={1250} // Placeholder
+                    gamesPlayed={42} // Placeholder
+                />
+            }
+            rightSidebar={
+                <ColegiumContextSidebar
+                    phase={quizPhase}
+                    timer={timer}
+                    currentQuestion={currentQuestionIndex}
+                    totalQuestions={quizData.length}
+                    score={score}
+                />
+            }
+            mainContent={
+                <div className="h-full flex items-center justify-center relative">
+                    {loading && <Spinner className="w-12 h-12 text-blue-500 absolute z-50" />}
+                    {!loading && error && <Alert variant="destructive" title="Error" description={error} className="w-full max-w-lg" />}
+
+                    {!loading && !error && (
+                        <>
+                            {quizPhase === 'dashboard' && <ProgressDashboard onStart={() => setQuizPhase('selection')} />}
+                            {quizPhase === 'selection' && <GameModeSelector onSelectMode={handleSelectMode} />}
+                            {quizPhase === 'setup' && (
+                                <QuizSetup
+                                    quizSettings={quizSettings}
+                                    setQuizSettings={setQuizSettings}
+                                    handleStartQuiz={handleStartQuiz}
+                                    onBack={() => setQuizPhase('selection')}
+                                />
+                            )}
+                            {quizPhase === 'quiz' && quizData.length > 0 && (
+                                <QuizInProgress
+                                    quizData={quizData}
+                                    currentQuestionIndex={currentQuestionIndex}
+                                    quizSettings={quizSettings}
+                                    timer={timer}
+                                    answerFeedback={answerFeedback}
+                                    handleAnswer={handleAnswer}
+                                />
+                            )}
+                            {quizPhase === 'result' && (
+                                <QuizResult
+                                    score={score}
+                                    total={quizData.length}
+                                    onBack={() => setQuizPhase('dashboard')}
+                                />
+                            )}
+                        </>
                     )}
-                    {quizPhase === 'quiz' && quizData.length > 0 && (
-                        <QuizInProgress
-                            quizData={quizData}
-                            currentQuestionIndex={currentQuestionIndex}
-                            quizSettings={quizSettings}
-                            timer={timer}
-                            answerFeedback={answerFeedback}
-                            handleAnswer={handleAnswer}
-                        />
-                    )}
-                    {quizPhase === 'result' && (
-                        <QuizResult
-                            score={score}
-                            total={quizData.length}
-                            onBack={() => setQuizPhase('dashboard')}
-                        />
-                    )}
-                </>
-            )}
-        </div>
+                </div>
+            }
+        />
     );
 };
 

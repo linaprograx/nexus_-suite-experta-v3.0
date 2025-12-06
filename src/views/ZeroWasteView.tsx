@@ -4,15 +4,13 @@ import { Ingredient, Recipe, ZeroWasteResult } from '../../types';
 import { Type } from "@google/genai";
 import { callGeminiApi } from '../utils/gemini';
 import ZeroWasteResultCard from '../components/zero-waste/ZeroWasteResultCard';
-import { Card, CardContent } from '../components/ui/Card';
-import { Label } from '../components/ui/Label';
-import { Checkbox } from '../components/ui/Checkbox';
-import { Textarea } from '../components/ui/Textarea';
-import { Button } from '../components/ui/Button';
+import ZeroWasteControls from '../components/zero-waste/ZeroWasteControls';
+import ZeroWasteHistorySidebar from '../components/zero-waste/ZeroWasteHistorySidebar';
+import { PremiumLayout } from '../components/layout/PremiumLayout'; // Assuming standard import path
 import { Spinner } from '../components/ui/Spinner';
 import { Alert } from '../components/ui/Alert';
-import { Icon } from '../components/ui/Icon';
 import { ICONS } from '../components/ui/icons';
+import { Icon } from '../components/ui/Icon';
 
 interface ZeroWasteViewProps {
     db: Firestore;
@@ -22,12 +20,13 @@ interface ZeroWasteViewProps {
     onOpenRecipeModal: (recipe: Partial<Recipe>) => void;
 }
 
-const ZeroWasteView: React.FC<ZeroWasteViewProps> = ({ db, userId, appId, allIngredients, onOpenRecipeModal }) => {
+const ZeroWasteView: React.FC<ZeroWasteViewProps> = ({ db, userId, appId, allIngredients }) => {
     const [selectedIngredients, setSelectedIngredients] = useState<string[]>([]);
     const [rawIngredients, setRawIngredients] = useState("");
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [recipeResults, setRecipeResults] = useState<ZeroWasteResult[]>([]);
+    const [history, setHistory] = useState<ZeroWasteResult[]>([]);
 
     const handleIngredientToggle = (ingredientName: string) => {
         setSelectedIngredients(prev =>
@@ -69,7 +68,9 @@ const ZeroWasteView: React.FC<ZeroWasteViewProps> = ({ db, userId, appId, allIng
 
         try {
             const response = await callGeminiApi(userQuery, systemPrompt, generationConfig);
-            setRecipeResults(JSON.parse(response.text));
+            const results = JSON.parse(response.text) as ZeroWasteResult[];
+            setRecipeResults(results);
+            setHistory(prev => [...results, ...prev]);
         } catch (e: any) {
             setError(e.message || 'An unknown error occurred');
             console.error(e);
@@ -77,64 +78,82 @@ const ZeroWasteView: React.FC<ZeroWasteViewProps> = ({ db, userId, appId, allIng
             setLoading(false);
         }
     };
-    
+
+    // Function to handle viewing a history item (sets it as the current result)
+    const handleHistorySelect = (result: ZeroWasteResult) => {
+        setRecipeResults([result]);
+    };
+
     return (
-        <div className="flex flex-col h-full p-4 lg:p-8 gap-4">
-            <Card>
-                <CardContent className="p-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
-                        <div className="space-y-2">
-                            <Label>Ingredientes del Grimorium</Label>
-                            <div className="border rounded-md p-2 h-32 overflow-y-auto space-y-1 text-sm">
-                                {allIngredients.map(ing => (
-                                    <div key={ing.id} className="flex items-center gap-2">
-                                        <Checkbox
-                                            id={`zw-${ing.id}`}
-                                            checked={selectedIngredients.includes(ing.nombre)}
-                                            onChange={() => handleIngredientToggle(ing.nombre)}
-                                        />
-                                        <Label htmlFor={`zw-${ing.id}`} className="font-normal">{ing.nombre}</Label>
-                                    </div>
+        <PremiumLayout
+            gradientTheme="cyan"
+            leftSidebar={
+                <ZeroWasteHistorySidebar
+                    history={history}
+                    onSelect={handleHistorySelect}
+                />
+            }
+            rightSidebar={
+                <ZeroWasteControls
+                    allIngredients={allIngredients}
+                    selectedIngredients={selectedIngredients}
+                    rawIngredients={rawIngredients}
+                    loading={loading}
+                    onToggleIngredient={handleIngredientToggle}
+                    onRawIngredientsChange={setRawIngredients}
+                    onGenerate={handleGenerateRecipes}
+                />
+            }
+            mainContent={
+                <div className="h-full flex flex-col gap-6">
+                    {/* Header */}
+                    <div className="flex flex-col gap-2">
+                        <h1 className="text-3xl font-light text-slate-800 dark:text-slate-100 flex items-center gap-3">
+                            <span className="p-2 bg-white/50 rounded-xl shadow-sm border border-white/20"><Icon svg={ICONS.recycle} className="w-6 h-6 text-cyan-600" /></span>
+                            The Lab: Zero Waste
+                        </h1>
+                        <p className="text-slate-600 dark:text-slate-400 max-w-2xl text-lg">
+                            Transforma sobras en ingredientes premium.
+                        </p>
+                    </div>
+
+                    {/* Content Area */}
+                    <div className="flex-1 overflow-y-auto custom-scrollbar pr-2">
+                        {loading && (
+                            <div className="flex flex-col items-center justify-center h-64 animate-pulse">
+                                <Spinner className="w-12 h-12 text-cyan-500 mb-4" />
+                                <p className="text-slate-500 font-medium">Diseñando elaboraciones...</p>
+                            </div>
+                        )}
+
+                        {error && <Alert variant="destructive" title="Error de Generación" description={error} className="mb-4" />}
+
+                        {!loading && recipeResults.length === 0 && (
+                            <div className="flex flex-col items-center justify-center h-64 text-slate-400 border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-2xl bg-white/20 dark:bg-slate-900/10">
+                                <Icon svg={ICONS.flask} className="w-12 h-12 mb-3 opacity-40" />
+                                <p className="text-lg font-light">Selecciona ingredientes y genera nuevas ideas</p>
+                            </div>
+                        )}
+
+                        {recipeResults.length > 0 && (
+                            <div className="grid grid-cols-1 gap-6 pb-6">
+                                {recipeResults.map((recipe, index) => (
+                                    <ZeroWasteResultCard
+                                        key={index}
+                                        recipe={recipe}
+                                        db={db}
+                                        userId={userId}
+                                        appId={appId}
+                                    />
                                 ))}
                             </div>
-                        </div>
-                        <div className="space-y-2">
-                            <Label htmlFor="raw-ingredients">Otros Ingredientes (sobras, etc.)</Label>
-                            <Textarea
-                                id="raw-ingredients"
-                                value={rawIngredients}
-                                onChange={e => setRawIngredients(e.target.value)}
-                                placeholder="Ej: Pieles de cítricos, restos de sirope, pulpa de fruta..."
-                                rows={4}
-                            />
-                        </div>
+                        )}
                     </div>
-                    <Button onClick={handleGenerateRecipes} disabled={loading} className="mt-4 w-full">
-                         {loading ? <Spinner className="w-4 h-4 mr-2"/> : <Icon svg={ICONS.recycle} className="w-4 h-4 mr-2"/>}
-                        Generar Elaboraciones
-                    </Button>
-                </CardContent>
-            </Card>
-
-            <div className="flex-1 overflow-y-auto space-y-4">
-                {loading && <div className="flex justify-center p-8"><Spinner className="w-8 h-8"/></div>}
-                {error && <Alert variant="destructive" title="Error de Generación" description={error} />}
-                {recipeResults && recipeResults.length > 0 && (
-                    <div className="space-y-4">
-                        {recipeResults.map((recipe, index) => (
-                            <ZeroWasteResultCard
-                                key={index}
-                                recipe={recipe}
-                                db={db}
-                                userId={userId}
-                                appId={appId}
-                            />
-                        ))}
-                    </div>
-                )}
-            </div>
-        </div>
+                </div>
+            }
+        />
     );
 };
 
 export default ZeroWasteView;
+
