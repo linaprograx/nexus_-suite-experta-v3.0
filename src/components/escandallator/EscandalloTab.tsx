@@ -1,92 +1,86 @@
 import React from 'react';
-import { Firestore, addDoc, collection, serverTimestamp } from 'firebase/firestore';
 import { Recipe, Ingredient } from '../../../types';
 import { Card, CardContent } from '../ui/Card';
 import { Label } from '../ui/Label';
 import { Select } from '../ui/Select';
 import { Input } from '../ui/Input';
 import { Button } from '../ui/Button';
-import EscandalloSummaryCard from './EscandalloSummaryCard';
-import EscandalloHistorySidebar from './EscandalloHistorySidebar';
 
 interface EscandalloTabProps {
-    db: Firestore;
-    userId: string;
     allRecipes: Recipe[];
-    allIngredients: Ingredient[];
+    selectedRecipe: Recipe | null;
+    precioVenta: number;
+    onSelectRecipe: (recipe: Recipe | null) => void;
+    onPriceChange: (price: number) => void;
 }
 
-const EscandalloTab: React.FC<EscandalloTabProps> = ({ db, userId, allRecipes, allIngredients }) => {
-    const [selectedRecipe, setSelectedRecipe] = React.useState<Recipe | null>(null);
-    const [precioVenta, setPrecioVenta] = React.useState<number>(0);
-    const [showHistory, setShowHistory] = React.useState(false);
-    const escandallosColPath = `users/${userId}/escandallo-history`;
+const EscandalloTab: React.FC<EscandalloTabProps> = ({
+    allRecipes,
+    selectedRecipe,
+    precioVenta,
+    onSelectRecipe,
+    onPriceChange
+}) => {
 
-    const handleSaveToHistory = async (reportData: any) => {
-        if (!selectedRecipe) return;
-        
-        const { baseImponible, ...dataToSave} = reportData;
-        const newEscandallo = {
-            recipeId: selectedRecipe.id,
-            recipeName: selectedRecipe.nombre,
-            ...dataToSave,
-            createdAt: serverTimestamp()
-        };
-        await addDoc(collection(db, escandallosColPath), newEscandallo);
-        alert('Escandallo guardado en el historial.');
-    };
-    
     return (
-        <div className="space-y-4">
-            <Card>
-                <CardContent className="p-4">
-                    <div className="flex flex-wrap gap-4 items-end">
-                        <div className="flex-grow space-y-1 min-w-[200px]">
-                            <Label htmlFor="recipe-select-esc">Seleccionar Receta</Label>
-                            <Select id="recipe-select-esc" value={selectedRecipe?.id || ''} onChange={e => {
-                                const recipe = allRecipes.find(r => r.id === e.target.value) || null;
-                                setSelectedRecipe(recipe);
-                                setPrecioVenta(recipe?.precioVenta || 0);
-                            }}>
-                                <option value="">Seleccionar...</option>
+        <div className="space-y-6 max-w-2xl mx-auto mt-8">
+            <Card className="bg-white/60 dark:bg-slate-900/30 backdrop-blur-sm border-white/20 dark:border-white/5 shadow-sm">
+                <CardContent className="p-6 space-y-6">
+                    <div className="text-center mb-6">
+                        <h2 className="text-2xl font-light text-slate-800 dark:text-slate-100">Calculadora de Rentabilidad</h2>
+                        <p className="text-slate-500 dark:text-slate-400 text-sm">Selecciona una receta y define su precio de venta</p>
+                    </div>
+
+                    <div className="space-y-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="recipe-select-esc" className="text-base">Seleccionar Receta</Label>
+                            <Select
+                                id="recipe-select-esc"
+                                value={selectedRecipe?.id || ''}
+                                onChange={e => {
+                                    const recipe = allRecipes.find(r => r.id === e.target.value) || null;
+                                    onSelectRecipe(recipe);
+                                }}
+                                className="h-12 text-lg bg-white/50 dark:bg-slate-800/50"
+                            >
+                                <option value="">-- Seleccionar --</option>
                                 {allRecipes.map(r => <option key={r.id} value={r.id}>{r.nombre}</option>)}
                             </Select>
                         </div>
-                        <div className="space-y-1">
-                            <Label htmlFor="pvp-input">Precio de Venta (PVP)</Label>
-                            <Input id="pvp-input" type="number" placeholder="Ej: 12.50" value={precioVenta || ''} onChange={e => setPrecioVenta(parseFloat(e.target.value) || 0)} />
+
+                        <div className="space-y-2">
+                            <Label htmlFor="pvp-input" className="text-base">Precio de Venta (PVP)</Label>
+                            <div className="relative">
+                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">€</span>
+                                <Input
+                                    id="pvp-input"
+                                    type="number"
+                                    placeholder="0.00"
+                                    value={precioVenta || ''}
+                                    onChange={e => onPriceChange(parseFloat(e.target.value) || 0)}
+                                    className="pl-8 h-12 text-lg font-medium bg-white/50 dark:bg-slate-800/50"
+                                />
+                            </div>
                         </div>
-                        <Button variant="outline" onClick={() => setShowHistory(true)}>Ver Historial</Button>
                     </div>
                 </CardContent>
             </Card>
 
-            {selectedRecipe && precioVenta > 0 ? (() => {
-                const IVA_RATE = 0.21;
-                const costo = selectedRecipe.costoReceta || 0;
-                const baseImponible = precioVenta > 0 ? precioVenta / (1 + IVA_RATE) : 0;
-                const ivaSoportado = precioVenta - baseImponible;
-                const margenBruto = baseImponible - costo;
-                const rentabilidad = baseImponible > 0 ? (margenBruto / baseImponible) * 100 : 0;
-                const reportData = { costo, precioVenta, baseImponible, ivaSoportado, margenBruto, rentabilidad };
-
-                const pieData = [{ name: 'Costo', value: reportData.costo }, { name: 'Margen', value: reportData.margenBruto }, { name: 'IVA', value: reportData.ivaSoportado }];
-
-                return (
-                    <EscandalloSummaryCard
-                        recipeName={selectedRecipe.nombre}
-                        reportData={reportData}
-                        pieData={pieData}
-                        onSaveHistory={handleSaveToHistory}
-                        onExport={() => window.print()}
-                    />
-                );
-            })() : (
-                <Card className="flex-1 flex items-center justify-center min-h-[300px]"><CardContent className="p-4 text-center text-muted-foreground"><p>Selecciona una receta e introduce un PVP.</p></CardContent></Card>
+            {selectedRecipe && (
+                <div className="grid grid-cols-2 gap-4">
+                    <Card className="bg-emerald-50/50 dark:bg-emerald-900/10 border-emerald-100 dark:border-emerald-800/30 p-4 text-center">
+                        <p className="text-sm text-slate-500 mb-1">Costo Receta</p>
+                        <p className="text-xl font-semibold text-slate-700 dark:text-slate-300">€{selectedRecipe.costoReceta?.toFixed(2) || '0.00'}</p>
+                    </Card>
+                    <Card className="bg-slate-50/50 dark:bg-slate-800/30 border-slate-100 dark:border-slate-700/30 p-4 text-center">
+                        <p className="text-sm text-slate-500 mb-1">Ingredientes</p>
+                        <p className="text-xl font-semibold text-slate-700 dark:text-slate-300">{selectedRecipe.ingredientes?.length || 0}</p>
+                    </Card>
+                </div>
             )}
-            {showHistory && <EscandalloHistorySidebar db={db} escandallosColPath={escandallosColPath} onLoadHistory={(item) => { setSelectedRecipe(allRecipes.find(r => r.id === item.recipeId) || null); setPrecioVenta(item.precioVenta); setShowHistory(false); }} onClose={() => setShowHistory(false)} />}
         </div>
     );
 };
 
 export default EscandalloTab;
+

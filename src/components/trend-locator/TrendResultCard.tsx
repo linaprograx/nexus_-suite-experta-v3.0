@@ -1,7 +1,6 @@
 import React from 'react';
 import { Firestore, addDoc, collection, serverTimestamp } from 'firebase/firestore';
 import { TrendResult } from '../../../types';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '../ui/Card';
 import { Button } from '../ui/Button';
 
 interface TrendResultCardProps {
@@ -15,7 +14,7 @@ interface TrendResultCardProps {
 export const TrendResultCard: React.FC<TrendResultCardProps> = ({ item, db, userId, appId, trendHistoryPath }) => {
 
     const handleSaveToPizarron = async () => {
-        if(!db || !userId) return;
+        if (!db || !userId) return;
         const taskText = `[Trend] ${item.titulo}: ${item.resumen}`.substring(0, 500);
         await addDoc(collection(db, `artifacts/${appId}/public/data/pizarron-tasks`), {
             content: taskText, status: 'Ideas', category: 'Ideas', createdAt: serverTimestamp(), boardId: 'general'
@@ -24,24 +23,33 @@ export const TrendResultCard: React.FC<TrendResultCardProps> = ({ item, db, user
     };
 
     const handleSaveToHistory = async () => {
-        if(!db || !userId) return;
+        if (!db || !userId) return;
         await addDoc(collection(db, trendHistoryPath), { ...item, createdAt: serverTimestamp() });
         alert("Tendencia guardada en el historial.");
     };
-    
+
     return (
-        <Card>
-            <CardHeader>
-                <CardTitle>{item.titulo}</CardTitle>
-                <CardDescription>Fuente: {item.fuente}</CardDescription>
-            </CardHeader>
-            <CardContent>
-                <p className="text-sm">{item.resumen}</p>
-            </CardContent>
-            <CardFooter className="gap-4">
-                <Button size="sm" onClick={handleSaveToPizarron}>Guardar en Pizarrón</Button>
-                <Button size="sm" variant="outline" onClick={handleSaveToHistory}>Guardar en Historial</Button>
-            </CardFooter>
-        </Card>
+        <div className="bg-white/60 dark:bg-slate-900/40 backdrop-blur-sm rounded-xl border border-white/20 dark:border-white/5 p-5 shadow-sm hover:shadow-md transition-all flex flex-col h-full">
+            <div className="mb-4">
+                <h3 className="font-bold text-lg text-slate-900 dark:text-white mb-1 leading-tight">{item.titulo}</h3>
+                <span className="inline-block px-2 py-0.5 rounded text-[10px] uppercase font-bold tracking-wider bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400">
+                    {item.fuente}
+                </span>
+            </div>
+
+            <p className="text-sm text-slate-600 dark:text-slate-300 mb-6 flex-grow leading-relaxed">
+                {item.resumen}
+            </p>
+
+            <div className="flex gap-2 pt-4 border-t border-slate-200/50 dark:border-slate-700/50 mt-auto">
+                <Button size="sm" onClick={handleSaveToPizarron} className="flex-1 bg-slate-900 text-white dark:bg-white dark:text-slate-900 hover:bg-slate-800 dark:hover:bg-slate-200">
+                    Pizarrón
+                </Button>
+                <Button size="sm" variant="outline" onClick={handleSaveToHistory} className="flex-1 border-slate-200 dark:border-slate-700">
+                    Historial
+                </Button>
+            </div>
+        </div>
     );
 };
+
