@@ -1,39 +1,26 @@
-import React, { useState, useMemo } from 'react';
+import React from 'react';
 import { Ingredient } from '../../../types';
 import { Card } from '../ui/Card';
-import { Button } from '../ui/Button';
 import { Icon } from '../ui/Icon';
 import { ICONS } from '../ui/icons';
-import { useUI } from '../../context/UIContext';
-import { Input } from '../ui/Input';
-import { Select } from '../ui/Select';
-import { AromaticFamily } from '../../modules/ingredients/families';
-
-const cnLocal = (...classes: (string | undefined | null | false)[]) => {
-  return classes.filter(Boolean).join(' ');
-};
-
-const FAMILY_COLORS: { [key in AromaticFamily]: string } = {
-  'Citrus': 'bg-yellow-200 text-yellow-800', 'Fruits': 'bg-pink-200 text-pink-800',
-  'Herbs': 'bg-green-200 text-green-800', 'Spices': 'bg-orange-200 text-orange-800',
-  'Floral': 'bg-purple-200 text-purple-800', 'Vegetal': 'bg-teal-200 text-teal-800',
-  'Toasted': 'bg-amber-300 text-amber-900', 'Umami': 'bg-gray-300 text-gray-800',
-  'Sweeteners': 'bg-rose-200 text-rose-800', 'Fermented': 'bg-indigo-200 text-indigo-800',
-  'Alcohol Base': 'bg-red-200 text-red-800', 'Bitters': 'bg-stone-300 text-stone-800',
-  'Syrups': 'bg-cyan-200 text-cyan-800', 'Cordials': 'bg-lime-200 text-lime-800',
-  'Infusions': 'bg-blue-200 text-blue-800', 'Unknown': 'bg-slate-200 text-slate-800',
-};
+import { Button } from '../ui/Button';
 
 interface IngredientListPanelProps {
   ingredients: Ingredient[];
   selectedIngredientIds: string[];
-  viewingIngredientId?: string | null;
+  viewingIngredientId: string | null;
   onToggleSelection: (id: string) => void;
-  onSelectAll: (checked: boolean) => void;
+  onSelectAll: (select: boolean) => void;
   onDeleteSelected: () => void;
   onImportCSV: () => void;
-  onEditIngredient: (ingredient: Ingredient) => void;
+  onEditIngredient: (ingredient: Ingredient) => void; // Used for "viewing"
   onNewIngredient: () => void;
+
+  // Search & Filter Props
+  ingredientSearchTerm: string;
+  onIngredientSearchChange: (val: string) => void;
+  ingredientFilters: { category: string; status: string };
+  onIngredientFilterChange: (key: string, value: string) => void;
 }
 
 export const IngredientListPanel: React.FC<IngredientListPanelProps> = ({
@@ -43,134 +30,163 @@ export const IngredientListPanel: React.FC<IngredientListPanelProps> = ({
   onToggleSelection,
   onSelectAll,
   onDeleteSelected,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   onImportCSV,
   onEditIngredient,
   onNewIngredient,
+
+  ingredientSearchTerm,
+  onIngredientSearchChange,
+  ingredientFilters,
+  onIngredientFilterChange
 }) => {
-  const { compactMode } = useUI();
-  const [familyFilter, setFamilyFilter] = useState<AromaticFamily | 'all'>('all');
-
-  const filteredIngredients = useMemo(() => {
-    if (familyFilter === 'all') return ingredients;
-    return ingredients.filter(ing => ing.categoria === familyFilter);
-  }, [ingredients, familyFilter]);
-
-  const allSelected = filteredIngredients.length > 0 && selectedIngredientIds.length === filteredIngredients.length;
-  const someSelected = selectedIngredientIds.length > 0 && selectedIngredientIds.length < filteredIngredients.length;
 
   return (
-    <div className="h-full flex flex-col bg-transparent border-none shadow-none overflow-hidden">
-      <div className="p-4 pb-0 flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
-            {selectedIngredientIds.length > 0
-              ? `${selectedIngredientIds.length} seleccionados`
-              : `${filteredIngredients.length} de ${ingredients.length} ingredientes`
-            }
-          </p>
-          <Select value={familyFilter} onChange={(e) => setFamilyFilter(e.target.value as any)} className="text-xs h-8">
-            <option value="all">Todas las Familias</option>
-            {Object.keys(FAMILY_COLORS).map(f => <option key={f} value={f}>{f}</option>)}
-          </Select>
-        </div>
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={onImportCSV}>
-            <Icon svg={ICONS.upload} className="mr-2 h-3.5 w-3.5" /> Importar CSV
-          </Button>
-          <Button variant="destructive" size="sm" disabled={selectedIngredientIds.length === 0} onClick={onDeleteSelected}>
-            <Icon svg={ICONS.trash} className="mr-2 h-3.5 w-3.5" /> Eliminar
-          </Button>
-        </div>
-      </div>
-
-      <div className="px-4 py-2 mt-2 grid grid-cols-[auto_1fr_1fr_auto] gap-4 items-center border-b border-slate-200/50 dark:border-slate-800/50 text-xs font-semibold text-slate-500 uppercase tracking-wider">
-        <div className="flex items-center justify-center w-8">
-          <input type="checkbox" className="rounded border-slate-300 text-primary focus:ring-primary h-4 w-4"
-            checked={allSelected}
-            ref={input => { if (input) input.indeterminate = someSelected; }}
-            onChange={(e) => onSelectAll(e.target.checked)}
+    <Card className="h-full flex flex-col bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm border-slate-100 dark:border-slate-800 shadow-sm overflow-hidden">
+      {/* Unique Integrated Header */}
+      <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex flex-nowrap items-center gap-3">
+        {/* 1. Search Bar - Expands */}
+        <div className="relative flex-1 group min-w-[120px]">
+          <Icon svg={ICONS.search} className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-emerald-400 group-focus-within:text-emerald-500 transition-colors" />
+          <input
+            type="text"
+            value={ingredientSearchTerm}
+            onChange={(e) => onIngredientSearchChange(e.target.value)}
+            placeholder="Buscar..."
+            className="w-full pl-9 pr-4 py-2 rounded-xl bg-emerald-50/50 dark:bg-emerald-900/10 border border-emerald-100 dark:border-emerald-800/50 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 hover:bg-emerald-50/80 dark:hover:bg-emerald-900/20 transition-all text-sm font-bold text-emerald-900 dark:text-emerald-100 placeholder:text-emerald-400/70"
           />
         </div>
-        <div>Detalles</div>
-        <div>Familia</div>
-        <div className="text-right">Precio / Unidad</div>
-      </div>
 
-      <div className="flex-1 overflow-y-auto p-4 pt-2 space-y-2 custom-scrollbar">
-        {filteredIngredients.map((ingredient) => {
-          const isChecked = selectedIngredientIds.includes(ingredient.id);
-          const isActive = viewingIngredientId === ingredient.id;
-          const familyColor = FAMILY_COLORS[ingredient.categoria as AromaticFamily] || FAMILY_COLORS.Unknown;
+        {/* 2. Family Filter */}
+        <div className="relative shrink-0">
+          <select
+            value={ingredientFilters.category}
+            onChange={(e) => onIngredientFilterChange('category', e.target.value)}
+            className="appearance-none w-32 pl-3 pr-8 py-2 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-800/50 text-emerald-700 dark:text-emerald-300 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-emerald-500/50 cursor-pointer hover:bg-emerald-100 dark:hover:bg-emerald-900/30 transition-colors"
+          >
+            <option value="all">Familia</option>
+            <option value="Alcohol Base">Bases</option>
+            <option value="Citrus">Cítricos</option>
+            <option value="Fruits">Frutas</option>
+            <option value="Herbs">Hierbas</option>
+            <option value="Sweeteners">Dulces</option>
+            <option value="Spices">Especias</option>
+            <option value="General">Otros</option>
+          </select>
+          <Icon svg={ICONS.chevronDown} className="absolute right-3 top-1/2 -translate-y-1/2 w-3 h-3 text-emerald-500 pointer-events-none" />
+        </div>
 
-          // Extract bg color class for the strip (hacky but works if classes are simple 'bg-color-200...')
-          // Or just use the familyColor class directly on a badge. 
-          // Let's use a colored left border strip.
+        {/* 3. Stock Filter */}
+        <div className="relative shrink-0 hidden sm:block">
+          <select
+            value={ingredientFilters.status}
+            onChange={(e) => onIngredientFilterChange('status', e.target.value)}
+            className="appearance-none w-28 pl-3 pr-8 py-2 rounded-xl bg-teal-50 dark:bg-teal-900/20 border border-teal-100 dark:border-teal-800/50 text-teal-700 dark:text-teal-300 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-teal-500/50 cursor-pointer hover:bg-teal-100 dark:hover:bg-teal-900/30 transition-colors"
+          >
+            <option value="all">Stock</option>
+            <option value="ok">Alto</option>
+            <option value="low">Bajo</option>
+            <option value="out">Agotado</option>
+          </select>
+          <Icon svg={ICONS.chevronDown} className="absolute right-3 top-1/2 -translate-y-1/2 w-3 h-3 text-teal-500 pointer-events-none" />
+        </div>
 
-          return (
-            <div key={ingredient.id} onClick={() => onEditIngredient(ingredient)}
-              className={cnLocal("relative grid grid-cols-[auto_1fr_auto] gap-4 items-center rounded-2xl px-4 py-3 transition-all duration-300 cursor-pointer group mb-2 overflow-hidden",
-                isActive
-                  ? "bg-emerald-600 shadow-emerald-500/30 shadow-lg scale-[1.01] ring-0"
-                  : "bg-white/30 dark:bg-slate-900/30 hover:bg-white/50 dark:hover:bg-slate-800/50 hover:shadow-lg backdrop-blur-md border border-white/10"
-              )}>
-
-              {/* Category Strip (only if not active, to preserve clean look? or always?) */}
-              {!isActive && (
-                <div className={`absolute left-0 top-0 bottom-0 w-1.5 ${familyColor.split(' ')[0]}`} />
-              )}
-
-              <div className="flex items-center justify-center w-8 z-10" onClick={(e) => e.stopPropagation()}>
-                <input type="checkbox" className="rounded-md border-slate-300 text-emerald-600 focus:ring-emerald-500 h-5 w-5 cursor-pointer bg-white/50"
-                  checked={isChecked} onChange={() => onToggleSelection(ingredient.id)}
-                />
-              </div>
-
-              <div className="flex flex-col min-w-0 z-10">
-                <div className="flex items-center gap-2">
-                  <span className={cnLocal("font-bold text-base truncate transition-colors", isActive ? "text-white" : "text-slate-800 dark:text-slate-200")}>
-                    {ingredient.nombre}
-                  </span>
-                  {!isActive && (
-                    <span className={`px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded-full ${familyColor} bg-opacity-50`}>
-                      {ingredient.categoria}
-                    </span>
-                  )}
-                </div>
-                <div className="flex items-center gap-2 text-xs mt-0.5">
-                  <span className={cnLocal("transition-colors", isActive ? "text-emerald-100" : "text-slate-500")}>
-                    {ingredient.marca || 'Generico'}
-                  </span>
-                  {isActive && (
-                    <span className="text-emerald-100">• {ingredient.categoria}</span>
-                  )}
-                </div>
-              </div>
-
-              <div className="flex flex-col items-end z-10">
-                <span className={cnLocal("font-bold text-lg tabular-nums transition-colors", isActive ? "text-white" : "text-slate-800 dark:text-slate-100")}>
-                  {ingredient.precioCompra > 0 ? `€${ingredient.precioCompra.toFixed(2)}` : '-'}
-                </span>
-                <span className={cnLocal("text-xs font-medium transition-colors", isActive ? "text-emerald-200" : "text-slate-400 capitalize")}>
-                  {ingredient.unidadCompra}
-                </span>
-              </div>
-            </div>
-          );
-        })}
-
-        {ingredients.length === 0 && (
-          <div className="text-center py-10 text-slate-500">
-            <p>No hay ingredientes.</p>
-            <Button variant="link" onClick={onImportCSV}>Importar desde CSV</Button>
-          </div>
+        {/* 4. Delete Action */}
+        {selectedIngredientIds.length > 0 && (
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={onDeleteSelected}
+            className="bg-red-50 text-red-600 hover:bg-red-100 border border-red-100 shrink-0 w-9 h-9 rounded-lg"
+            title="Eliminar seleccionados"
+          >
+            <Icon svg={ICONS.trash} className="w-4 h-4" />
+          </Button>
         )}
       </div>
 
-      <div className="p-4 border-t border-slate-200/70 dark:border-slate-800/70 bg-white/40 dark:bg-slate-900/40 backdrop-blur-sm">
-        <Button variant="outline" size="sm" onClick={onNewIngredient} className="w-full">
-          <Icon svg={ICONS.plus} className="mr-2 h-4 w-4" /> Nuevo ingrediente
+      {/* List Header (Column Names) */}
+      <div className="px-4 py-2 bg-slate-50/50 dark:bg-slate-800/50 border-b border-slate-100 dark:border-slate-800 flex items-center text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+        <div className="w-8 shrink-0 flex justify-center">
+          <input
+            type="checkbox"
+            checked={selectedIngredientIds.length === ingredients.length && ingredients.length > 0}
+            onChange={(e) => onSelectAll(e.target.checked)}
+            className="rounded border-slate-300 text-emerald-500 focus:ring-emerald-500/50"
+          />
+        </div>
+        <div className="flex-1 px-4">Detalles</div>
+        <div className="w-32 hidden sm:block">Familia</div>
+        <div className="w-24 text-right">Precio / Unidad</div>
+      </div>
+
+      {/* List Body */}
+      <div className="flex-1 overflow-y-auto custom-scrollbar p-2 space-y-2">
+        {ingredients.map(ing => (
+          <div
+            key={ing.id}
+            onClick={() => onEditIngredient(ing)}
+            className={`group relative flex items-center p-3 rounded-xl border transition-all duration-200 cursor-pointer hover:shadow-md
+                            ${viewingIngredientId === ing.id
+                ? 'bg-emerald-50/50 border-emerald-200 dark:bg-emerald-900/20 dark:border-emerald-800'
+                : 'bg-white border-transparent hover:border-emerald-100 dark:bg-slate-800 dark:hover:border-emerald-900'
+              }
+                        `}
+          >
+            {/* Selection Checkbox (Stop propagation to prevent opening details when selecting) */}
+            <div className="w-8 shrink-0 flex justify-center z-10" onClick={(e) => e.stopPropagation()}>
+              <input
+                type="checkbox"
+                checked={selectedIngredientIds.includes(ing.id)}
+                onChange={() => onToggleSelection(ing.id)}
+                className="rounded border-slate-200 dark:border-slate-700 text-emerald-500 focus:ring-emerald-500/50 cursor-pointer"
+              />
+            </div>
+
+            {/* Content */}
+            <div className="flex-1 px-4 min-w-0">
+              <div className="font-bold text-slate-800 dark:text-slate-200 truncate">{ing.nombre}</div>
+              <div className="text-xs text-slate-400 truncate">{ing.categoria}</div>
+            </div>
+
+            {/* Family Badge */}
+            <div className="w-32 hidden sm:block">
+              <span className="px-2 py-1 rounded-md bg-slate-100 dark:bg-slate-800 text-[10px] font-bold text-slate-500 uppercase">
+                {ing.categoria.slice(0, 10)}
+              </span>
+            </div>
+
+            {/* Price */}
+            <div className="w-24 text-right">
+              <div className="font-bold text-slate-700 dark:text-slate-300">€{ing.precioCompra.toFixed(2)}</div>
+              <div className="text-[10px] text-slate-400 uppercase">{ing.unidadCompra || 'Und'}</div>
+            </div>
+
+            {/* Viewing Indicator Bar */}
+            {viewingIngredientId === ing.id && (
+              <div className="absolute left-0 top-2 bottom-2 w-1 bg-emerald-500 rounded-r-full" />
+            )}
+          </div>
+        ))}
+
+        {/* Empty State */}
+        {ingredients.length === 0 && (
+          <div className="h-full flex flex-col items-center justify-center text-slate-400 p-8 text-center opacity-60">
+            <Icon svg={ICONS.search} className="w-12 h-12 mb-2" />
+            <p>No se encontraron ingredientes</p>
+          </div>
+        )}
+
+        <div className="h-12" /> {/* Bottom spacer for FAB */}
+      </div>
+
+      {/* Floating Action Button for New Ingredient */}
+      <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20">
+        <Button onClick={onNewIngredient} className="rounded-full shadow-lg bg-emerald-600 hover:bg-emerald-700 text-white px-6">
+          <Icon svg={ICONS.plus} className="w-4 h-4 mr-2" />
+          Nuevo ingrediente
         </Button>
       </div>
-    </div>
+    </Card>
   );
 };

@@ -19,6 +19,8 @@ import { IngredientListPanel } from '../components/grimorium/IngredientListPanel
 import { IngredientDetailPanel } from '../components/grimorium/IngredientDetailPanel'; // NEW
 import { PremiumLayout } from '../components/layout/PremiumLayout'; // NEW
 import { useDebounce } from '../hooks/useDebounce'; // NEW
+import { RecipeToolbar } from '../components/grimorium/RecipeToolbar';
+import { IngredientToolbar } from '../components/grimorium/IngredientToolbar';
 
 interface GrimoriumViewProps {
     db: Firestore;
@@ -40,7 +42,8 @@ const GrimoriumView: React.FC<GrimoriumViewProps> = ({ db, userId, appId, allIng
     const [recipeSearch, setRecipeSearch] = React.useState("");
     const [ingredientSearch, setIngredientSearch] = React.useState("");
     const [selectedRecipeId, setSelectedRecipeId] = React.useState<string | null>(null);
-    const [filters, setFilters] = React.useState({ category: 'all', status: 'all' });
+    const [filters, setFilters] = React.useState({ category: 'all', status: 'all' }); // Recipe filters
+    const [ingredientFilters, setIngredientFilters] = React.useState({ category: 'all', status: 'all' }); // Ingredient filters
     const [selectedIngredients, setSelectedIngredients] = React.useState<string[]>([]);
 
     // Modals
@@ -220,8 +223,20 @@ const GrimoriumView: React.FC<GrimoriumViewProps> = ({ db, userId, appId, allIng
 
     // --- Memos ---
     const filteredIngredients = React.useMemo(() => {
-        return allIngredients.filter(ing => ing.nombre.toLowerCase().includes(debouncedIngredientSearch.toLowerCase()));
-    }, [allIngredients, debouncedIngredientSearch]);
+        return allIngredients.filter(ing => {
+            const matchesSearch = ing.nombre.toLowerCase().includes(debouncedIngredientSearch.toLowerCase());
+            const matchesCategory = ingredientFilters.category === 'all' || ing.categoria === ingredientFilters.category;
+
+            // Stock Status Logic
+            const stock = (ing as any).stockActual || 0; // Legacy cast
+            let matchesStatus = true;
+            if (ingredientFilters.status === 'low') matchesStatus = stock > 0 && stock < 3; // Example threshold
+            else if (ingredientFilters.status === 'out') matchesStatus = stock <= 0;
+            else if (ingredientFilters.status === 'ok') matchesStatus = stock >= 3;
+
+            return matchesSearch && matchesCategory && matchesStatus;
+        });
+    }, [allIngredients, debouncedIngredientSearch, ingredientFilters]);
 
     const filteredRecipes = React.useMemo(() => {
         return allRecipes.filter(rec => {
@@ -264,38 +279,58 @@ const GrimoriumView: React.FC<GrimoriumViewProps> = ({ db, userId, appId, allIng
     return (
         <PremiumLayout
             gradientTheme={activeTab === 'ingredients' ? 'emerald' : 'indigo'}
-            className="lg:!grid-cols-[180px,minmax(0,1fr),320px]" // Shrink left sidebar to 180px
+            className="lg:!grid-cols-[200px,minmax(0,1fr),320px]" // Increase left slightly for dashboard cards
             leftSidebar={
                 <FiltersSidebar
-                    searchTerm={activeTab === 'recipes' ? recipeSearch : ingredientSearch}
-                    onSearchChange={activeTab === 'recipes' ? setRecipeSearch : setIngredientSearch}
-                    filters={filters}
-                    onFilterChange={(k, v) => setFilters(prev => ({ ...prev, [k]: v }))}
-                    stats={stats}
-                    onOpenIngredients={() => setActiveTab('ingredients')}
+                    activeTab={activeTab}
+                    // Recipe Dashboard Logic
+                    allRecipes={allRecipes}
+                    selectedRecipe={selectedRecipe}
+
+                    // Ingredient Dashboard Logic
+                    allIngredients={allIngredients}
+                    selectedIngredient={selectedIngredient}
+
+                    // Actions
                     onImportRecipes={() => setShowTxtImportModal(true)}
-                    onImportIngredients={() => setShowCsvImportModal(true)}
                     onImportPdf={() => setShowPdfImportModal(true)}
+                    onOpenIngredients={() => setActiveTab('ingredients')}
+                    onImportIngredients={() => setShowCsvImportModal(true)}
+
+                    // unused props can be empty or omitted if interface allows optional
+                    ingredientSearchTerm=""
+                    onIngredientSearchChange={() => { }}
+                    ingredientFilters={{}}
+                    onIngredientFilterChange={() => { }}
+                    stats={stats}
                 />
             }
             mainContent={
-                <div className="h-full flex flex-col bg-transparent p-0"> {/* Transparent container */}
-                    {/* Tab Switcher (Visual only inside Main Area) */}
-                    <div className="flex items-center justify-between mb-4 flex-shrink-0">
-                        <div className="flex items-center gap-2 bg-slate-200/50 dark:bg-slate-800/50 p-1 rounded-full">
-                            <button
-                                className={`px-4 py-1.5 text-sm rounded-full transition-all duration-300 font-medium ${activeTab === 'recipes' ? 'bg-white text-indigo-600 shadow-sm dark:bg-slate-700 dark:text-white' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400'}`}
-                                onClick={() => setActiveTab('recipes')}
-                            >
-                                Recetas
-                            </button>
-                            <button
-                                className={`px-4 py-1.5 text-sm rounded-full transition-all duration-300 font-medium ${activeTab === 'ingredients' ? 'bg-white text-emerald-600 shadow-sm dark:bg-slate-700 dark:text-white' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400'}`}
-                                onClick={() => setActiveTab('ingredients')}
-                            >
-                                Ingredientes
-                            </button>
+                <div className="h-full flex flex-col bg-transparent p-0">
+                    {/* Top Row: Tab Switcher & (if recipes) Toolbar */}
+                    <div className="flex flex-col gap-4 mb-4 flex-shrink-0">
+                        {/* 1. Tab Switcher aligned left or center? User said "Toolbar ... just below recipes/ingredients buttons". 
+                           Let's keep Tabs at top.
+                        */}
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2 bg-slate-200/50 dark:bg-slate-800/50 p-1 rounded-full">
+                                <button
+                                    className={`px-4 py-1.5 text-sm rounded-full transition-all duration-300 font-medium ${activeTab === 'recipes' ? 'bg-white text-indigo-600 shadow-sm dark:bg-slate-700 dark:text-white' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400'}`}
+                                    onClick={() => setActiveTab('recipes')}
+                                >
+                                    Recetas
+                                </button>
+                                <button
+                                    className={`px-4 py-1.5 text-sm rounded-full transition-all duration-300 font-medium ${activeTab === 'ingredients' ? 'bg-white text-emerald-600 shadow-sm dark:bg-slate-700 dark:text-white' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400'}`}
+                                    onClick={() => setActiveTab('ingredients')}
+                                >
+                                    Ingredientes
+                                </button>
+                            </div>
                         </div>
+
+                        {/* 2. Recipe Toolbar (Only visible in Recipes Tab) */}
+                        {/* Toolbars now integrated into Lists */}
                     </div>
 
                     {activeTab === 'recipes' ? (
@@ -305,18 +340,32 @@ const GrimoriumView: React.FC<GrimoriumViewProps> = ({ db, userId, appId, allIng
                             onSelectRecipe={(r) => setSelectedRecipeId(r.id)}
                             onAddRecipe={() => onOpenRecipeModal(null)}
                             onDragStart={onDragRecipeStart ? (e, r) => onDragRecipeStart(r) : undefined}
+
+                            searchTerm={recipeSearch}
+                            onSearchChange={setRecipeSearch}
+                            selectedCategory={filters.category}
+                            onCategoryChange={(cat) => setFilters(prev => ({ ...prev, category: cat }))}
+                            availableCategories={['Coctel', 'Mocktail', 'Preparacion', 'Otro', ...new Set(allRecipes.flatMap(r => r.categorias || []).filter(c => !['Coctel', 'Mocktail', 'Preparacion', 'Otro'].includes(c)))]}
+                            selectedStatus={filters.status}
+                            onStatusChange={(stat) => setFilters(prev => ({ ...prev, status: stat }))}
+                            onDelete={() => selectedRecipeId && handleDeleteRecipe(selectedRecipeId)}
                         />
                     ) : (
                         <IngredientListPanel
                             ingredients={filteredIngredients}
                             selectedIngredientIds={selectedIngredients}
-                            viewingIngredientId={selectedIngredientId} // Pass active ID
+                            viewingIngredientId={selectedIngredientId}
                             onToggleSelection={handleSelectIngredient}
                             onSelectAll={(selected) => setSelectedIngredients(selected ? filteredIngredients.map(i => i.id) : [])}
                             onDeleteSelected={handleDeleteSelectedIngredients}
                             onImportCSV={() => setShowCsvImportModal(true)}
-                            onEditIngredient={(ing) => setSelectedIngredientId(ing.id)} // Now maps to selection
+                            onEditIngredient={(ing) => setSelectedIngredientId(ing.id)}
                             onNewIngredient={() => { setEditingIngredient(null); setShowIngredientModal(true); }}
+
+                            ingredientSearchTerm={ingredientSearch}
+                            onIngredientSearchChange={setIngredientSearch}
+                            ingredientFilters={ingredientFilters}
+                            onIngredientFilterChange={(k, v) => setIngredientFilters(prev => ({ ...prev, [k]: v }))}
                         />
                     )}
                 </div>

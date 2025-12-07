@@ -12,6 +12,8 @@ import { classifyIngredient } from '../../modules/ingredients/families';
 export const IngredientFormModal: React.FC<{ isOpen: boolean, onClose: () => void, db: Firestore, userId: string, appId: string, editingIngredient: Ingredient | null }> =
   ({ isOpen, onClose, db, userId, appId, editingIngredient }) => {
 
+    const predefinedCategories = ['General', 'Citrus', 'Fruits', 'Herbs', 'Spices', 'Floral', 'Vegetal', 'Toasted', 'Umami', 'Sweeteners', 'Fermented', 'Alcohol Base', 'Bitters', 'Syrups', 'Cordials', 'Infusions', 'Unknown'];
+
     const [formData, setFormData] = React.useState({
       nombre: '',
       categoria: 'General',
@@ -120,10 +122,30 @@ export const IngredientFormModal: React.FC<{ isOpen: boolean, onClose: () => voi
                 <Input name="nombre" value={formData.nombre} onChange={handleChange} className="bg-white/50 dark:bg-slate-800/50" placeholder="Ej. Vodka Absolute" />
               </div>
 
-              <div className="space-y-1">
+              <div className="flex justify-between items-center mt-2">
                 <Label className="text-xs uppercase tracking-wider text-slate-500">Categoría</Label>
-                <Input name="categoria" value={formData.categoria} onChange={handleChange} className="bg-white/50 dark:bg-slate-800/50" placeholder="Ej. Destilados" />
+                <button
+                  type="button"
+                  className="text-[10px] text-emerald-500 hover:text-emerald-600 font-bold uppercase"
+                  onClick={() => {
+                    const newCat = prompt("Nombre de la nueva familia:");
+                    if (newCat && newCat.trim()) {
+                      setFormData(prev => ({ ...prev, categoria: newCat.trim() }));
+                    }
+                  }}
+                >
+                  + Nueva
+                </button>
               </div>
+              <Select name="categoria" value={formData.categoria} onChange={handleChange} className="bg-white/50 dark:bg-slate-800/50">
+                {/* Add current if not in list, basic handling */}
+                {!predefinedCategories.includes(formData.categoria) && (
+                  <option value={formData.categoria}>{formData.categoria}</option>
+                )}
+                {predefinedCategories.map(cat => (
+                  <option key={cat} value={cat}>{cat}</option>
+                ))}
+              </Select>
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
@@ -133,6 +155,15 @@ export const IngredientFormModal: React.FC<{ isOpen: boolean, onClose: () => voi
                 <div className="space-y-1">
                   <Label className="text-xs uppercase tracking-wider text-slate-500">Unidad de Compra</Label>
                   <Input name="unidadCompra" value={formData.unidadCompra} onChange={handleChange} className="bg-white/50 dark:bg-slate-800/50" placeholder="Ej. Botella 700ml" />
+                </div>
+                {/* New Fields */}
+                <div className="space-y-1">
+                  <Label className="text-xs uppercase tracking-wider text-slate-500">Stock Actual</Label>
+                  <Input name="stockActual" type="number" value={formData.stockActual} onChange={handleChange} placeholder="0" className="bg-white/50 dark:bg-slate-800/50" />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs uppercase tracking-wider text-slate-500">Cant. Últ. Compra</Label>
+                  <Input name="cantidadComprada" type="number" value={formData.cantidadComprada} onChange={handleChange} placeholder="0" className="bg-white/50 dark:bg-slate-800/50" />
                 </div>
               </div>
 

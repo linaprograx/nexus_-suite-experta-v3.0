@@ -135,9 +135,75 @@ export const RecipeFormModal: React.FC<RecipeFormModalProps> = ({ isOpen, onClos
                                     <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Nombre</label>
                                     <Input name="nombre" value={recipe.nombre || ''} onChange={handleRecipeChange} placeholder="Ej. Margarita" className="text-lg font-medium" required />
                                 </div>
+                                {/* Status Field */}
+                                <div className="space-y-1">
+                                    <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Estado</label>
+                                    <Select
+                                        name="estado"
+                                        value={recipe.categorias?.find(c => ['Idea', 'En pruebas', 'Terminado', 'Archivada'].includes(c)) || 'Idea'}
+                                        onChange={e => {
+                                            const newStatus = e.target.value;
+                                            setRecipe(r => {
+                                                const cats = r.categorias?.filter(c => !['Idea', 'En pruebas', 'Terminado', 'Archivada'].includes(c)) || [];
+                                                return { ...r, categorias: [...cats, newStatus] };
+                                            });
+                                        }}
+                                        className="bg-white/50 dark:bg-slate-800/50"
+                                    >
+                                        <option value="Idea">Idea</option>
+                                        <option value="En pruebas">En pruebas</option>
+                                        <option value="Terminado">Terminado (Carta)</option>
+                                        <option value="Archivada">Archivada</option>
+                                    </Select>
+                                </div>
+
+                                {/* Multi-Category Field with "Create New" */}
                                 <div className="space-y-1">
                                     <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Categorías</label>
-                                    <Input name="categorias" value={recipe.categorias?.join(', ') || ''} onChange={e => setRecipe(r => ({ ...r, categorias: e.target.value.split(',').map(c => c.trim()) }))} placeholder="Clásico, Refrescante..." />
+
+                                    {/* Selected Tags */}
+                                    <div className="flex flex-wrap gap-2 mb-2">
+                                        {recipe.categorias?.filter(c => !['Idea', 'En pruebas', 'Terminado', 'Archivada'].includes(c)).map(cat => (
+                                            <span key={cat} className="px-2 py-1 rounded-md bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 text-xs font-bold flex items-center gap-1">
+                                                {cat}
+                                                <button type="button" onClick={() => setRecipe(r => ({ ...r, categorias: r.categorias?.filter(c => c !== cat) }))} className="hover:text-indigo-900 dark:hover:text-indigo-100">×</button>
+                                            </span>
+                                        ))}
+                                    </div>
+
+                                    {/* Selection Row with Inline Button */}
+                                    <div className="flex gap-2">
+                                        <Select
+                                            value=""
+                                            onChange={e => {
+                                                if (e.target.value && !recipe.categorias?.includes(e.target.value)) {
+                                                    setRecipe(r => ({ ...r, categorias: [...(r.categorias || []), e.target.value] }));
+                                                }
+                                            }}
+                                            className="bg-white/50 dark:bg-slate-800/50 text-sm flex-1"
+                                        >
+                                            <option value="">Añadir existente...</option>
+                                            <option value="Coctel">Cóctel</option>
+                                            <option value="Mocktail">Mocktail</option>
+                                            <option value="Preparacion">Preparación</option>
+                                            <option value="Otro">Otro</option>
+                                            <option value="Citrico">Cítrico</option>
+                                            <option value="Dulce">Dulce</option>
+                                            <option value="Amargo">Amargo</option>
+                                        </Select>
+                                        <button
+                                            type="button"
+                                            className="px-3 py-2 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-600 font-bold text-xs uppercase tracking-wider border border-indigo-100 transition-colors"
+                                            onClick={() => {
+                                                const newCat = prompt("Nombre de la nueva categoría:");
+                                                if (newCat && newCat.trim()) {
+                                                    setRecipe(r => ({ ...r, categorias: [...(r.categorias || []), newCat.trim()] }));
+                                                }
+                                            }}
+                                        >
+                                            + Nueva
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         </div>
