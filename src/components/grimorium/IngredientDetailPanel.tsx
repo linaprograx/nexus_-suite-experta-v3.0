@@ -30,9 +30,10 @@ interface IngredientDetailPanelProps {
     onEdit: (ingredient: Ingredient) => void;
     onDelete: (ingredient: Ingredient) => void;
     onClose: () => void;
+    onSendToZeroWaste?: (ingredient: Ingredient) => void;
 }
 
-export const IngredientDetailPanel: React.FC<IngredientDetailPanelProps> = ({ ingredient, onEdit, onDelete, onClose }) => {
+export const IngredientDetailPanel: React.FC<IngredientDetailPanelProps> = ({ ingredient, onEdit, onDelete, onClose, onSendToZeroWaste }) => {
     if (!ingredient) {
         return (
             <Card className="h-full flex flex-col items-center justify-center bg-white/60 dark:bg-slate-900/30 backdrop-blur-md border border-slate-200/70 dark:border-slate-800/70 p-8 text-center">
@@ -101,11 +102,16 @@ export const IngredientDetailPanel: React.FC<IngredientDetailPanelProps> = ({ in
             </div>
 
             <div className="p-4 border-t border-slate-200 dark:border-slate-800 bg-white/40 dark:bg-slate-900/40 backdrop-blur-sm flex gap-3">
+                {onSendToZeroWaste && (
+                    <Button variant="secondary" className="flex-1" onClick={() => onSendToZeroWaste(ingredient)} title="Crear receta Zero Waste">
+                        <Icon svg={ICONS.recycle} className="w-4 h-4 mr-2" /> <span className="hidden sm:inline">Zero Waste</span>
+                    </Button>
+                )}
                 <Button variant="outline" className="flex-1" onClick={() => onEdit(ingredient)}>
-                    <Icon svg={ICONS.edit} className="mr-2 w-4 h-4" /> Editar
+                    <Icon svg={ICONS.edit} className="mr-2 w-4 h-4" /> <span className="hidden sm:inline">Editar</span>
                 </Button>
                 <Button variant="destructive" className="flex-1" onClick={() => onDelete(ingredient)}>
-                    <Icon svg={ICONS.trash} className="mr-2 w-4 h-4" /> Eliminar
+                    <Icon svg={ICONS.trash} className="mr-2 w-4 h-4" /> <span className="hidden sm:inline">Eliminar</span>
                 </Button>
             </div>
         </Card>

@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { collection, doc, addDoc, deleteDoc, writeBatch, Firestore, serverTimestamp } from 'firebase/firestore';
-import { Ingredient, Recipe, ViewName } from '../../types';
+import { Ingredient, Recipe, ViewName, ZeroWasteResult } from '../../types';
 import { parseMultipleRecipes } from '../utils/recipeImporter';
 import { importPdfRecipes } from '../modules/pdf/importPdfRecipes';
 import { useApp } from '../context/AppContext';
@@ -23,6 +23,10 @@ import { RecipeToolbar } from '../components/grimorium/RecipeToolbar';
 import { IngredientToolbar } from '../components/grimorium/IngredientToolbar';
 import { exportToCSV } from '../utils/exportToCSV';
 import { Card, CardContent } from '../components/ui/Card';
+import { callGeminiApi } from '../utils/gemini';
+import { Type } from "@google/genai";
+import { Alert } from '../components/ui/Alert';
+import { Spinner } from '../components/ui/Spinner';
 
 // Escandallator Imports
 import EscandalloTab from '../components/escandallator/EscandalloTab';
@@ -32,6 +36,11 @@ import EscandalloHistorySidebar from '../components/escandallator/EscandalloHist
 import EscandalloSummaryCard from '../components/escandallator/EscandalloSummaryCard';
 import BatcherSidebar from '../components/escandallator/BatcherSidebar';
 import StockSidebar from '../components/escandallator/StockSidebar';
+
+// Zero Waste Imports
+import ZeroWasteResultCard from '../components/zero-waste/ZeroWasteResultCard';
+import ZeroWasteControls from '../components/zero-waste/ZeroWasteControls';
+import ZeroWasteHistorySidebar from '../components/zero-waste/ZeroWasteHistorySidebar';
 
 interface GrimoriumViewProps {
     db: Firestore;
@@ -49,7 +58,7 @@ const GrimoriumView: React.FC<GrimoriumViewProps> = ({ db, userId, appId, allIng
     const [loading, setLoading] = React.useState(false);
 
     // --- State ---
-    const [activeTab, setActiveTab] = React.useState<'recipes' | 'ingredients' | 'escandallo' | 'batcher' | 'stock'>('recipes');
+    const [activeTab, setActiveTab] = React.useState<'recipes' | 'ingredients' | 'escandallo' | 'batcher' | 'stock' | 'zerowaste'>('recipes');
 
     // Grimorium State
     const [recipeSearch, setRecipeSearch] = React.useState("");
@@ -255,13 +264,81 @@ const GrimoriumView: React.FC<GrimoriumViewProps> = ({ db, userId, appId, allIng
         alert("Tarea de batch guardada en el Pizarrón.");
     };
 
+    // --- Zero Waste State ---
+    const [zwSelectedIngredients, setZwSelectedIngredients] = React.useState<string[]>([]);
+    const [zwRawIngredients, setZwRawIngredients] = React.useState("");
+    const [zwLoading, setZwLoading] = React.useState(false);
+    const [zwError, setZwError] = React.useState<string | null>(null);
+    const [zwRecipeResults, setZwRecipeResults] = React.useState<ZeroWasteResult[]>([]);
+    const [zwHistory, setZwHistory] = React.useState<ZeroWasteResult[]>([]);
+
+    // --- Zero Waste Logic ---
+    const handleZwIngredientToggle = (ingredientName: string) => {
+        setZwSelectedIngredients(prev => prev.includes(ingredientName) ? prev.filter(name => name !== ingredientName) : [...prev, ingredientName]);
+    };
+
+    const handleSendToZeroWaste = (ing: Ingredient) => {
+        setZwSelectedIngredients(prev => prev.includes(ing.nombre) ? prev : [...prev, ing.nombre]);
+        setActiveTab('zerowaste');
+        setSelectedIngredientId(null); // Close panel
+    };
+
+    const handleGenerateZeroWasteRecipes = async () => {
+        setZwLoading(true);
+        setZwError(null);
+        setZwRecipeResults([]);
+
+        const promptIngredients = [...zwSelectedIngredients, zwRawIngredients].filter(Boolean).join(', ');
+        if (!promptIngredients) {
+            setZwError("Por favor, seleccione o introduzca al menos un ingrediente.");
+            setZwLoading(false);
+            return;
+        }
+
+        const systemPrompt = "Eres un chef de I+D 'zero waste' de élite. NO eres un bartender. Tu foco es crear *elaboraciones complejas* (cordiales, siropes, polvos, aceites, shrubs) a partir de desperdicios, para que *luego* un bartender las use. NO generes un cóctel completo. Tu respuesta debe ser estrictamente un array JSON.";
+        const userQuery = `Usando estos ingredientes: ${promptIngredients}. Genera de 3 a 5 elaboraciones 'zero waste'. Devuelve un array JSON. Cada objeto debe tener: 'nombre' (string), 'ingredientes' (string con markdown para una lista de viñetas), 'preparacion' (string con markdown para una lista numerada).`;
+
+        const generationConfig = {
+            responseMimeType: "application/json",
+            responseSchema: {
+                type: Type.ARRAY,
+                items: {
+                    type: Type.OBJECT,
+                    properties: {
+                        nombre: { type: Type.STRING },
+                        ingredientes: { type: Type.STRING },
+                        preparacion: { type: Type.STRING },
+                    },
+                },
+            },
+        };
+
+        try {
+            const response = await callGeminiApi(userQuery, systemPrompt, generationConfig);
+            const results = JSON.parse(response.text) as ZeroWasteResult[];
+            setZwRecipeResults(results);
+            setZwHistory(prev => [...results, ...prev]);
+        } catch (e: any) {
+            setZwError(e.message || 'An unknown error occurred');
+            console.error(e);
+        } finally {
+            setZwLoading(false);
+        }
+    };
+
+    const handleZwHistorySelect = (result: ZeroWasteResult) => {
+        setZwRecipeResults([result]);
+        setActiveTab('zerowaste'); // Ensure tab is active
+    };
+
     // --- Dynamic Props Calculation ---
     // Calculate colors and gradient based on activeTab
     const currentGradient = activeTab === 'recipes' ? 'indigo' :
         activeTab === 'ingredients' ? 'emerald' :
             activeTab === 'escandallo' ? 'red' :
                 activeTab === 'batcher' ? 'yellow' :
-                    activeTab === 'stock' ? 'ice' : 'slate';
+                    activeTab === 'stock' ? 'ice' :
+                        activeTab === 'zerowaste' ? 'lime' : 'slate';
 
     return (
         <PremiumLayout
@@ -274,6 +351,7 @@ const GrimoriumView: React.FC<GrimoriumViewProps> = ({ db, userId, appId, allIng
                     <button onClick={() => setActiveTab('escandallo')} className={`flex-shrink-0 py-2 px-5 text-sm font-semibold rounded-full transition-all duration-300 ${activeTab === 'escandallo' ? 'bg-red-500 text-white shadow-md' : 'text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-800'}`}>Escandallo</button>
                     <button onClick={() => setActiveTab('batcher')} className={`flex-shrink-0 py-2 px-5 text-sm font-semibold rounded-full transition-all duration-300 ${activeTab === 'batcher' ? 'bg-amber-500 text-white shadow-md' : 'text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-800'}`}>Batcher</button>
                     <button onClick={() => setActiveTab('stock')} className={`flex-shrink-0 py-2 px-5 text-sm font-semibold rounded-full transition-all duration-300 ${activeTab === 'stock' ? 'bg-sky-500 text-white shadow-md' : 'text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-800'}`}>Stock</button>
+                    <button onClick={() => setActiveTab('zerowaste')} className={`flex-shrink-0 py-2 px-5 text-sm font-semibold rounded-full transition-all duration-300 ${activeTab === 'zerowaste' ? 'bg-lime-500 text-white shadow-md' : 'text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-800'}`}>Zero Waste</button>
                 </div>
             }
             leftSidebar={
@@ -301,6 +379,7 @@ const GrimoriumView: React.FC<GrimoriumViewProps> = ({ db, userId, appId, allIng
                     )}
                     {activeTab === 'batcher' && <BatcherSidebar />}
                     {activeTab === 'stock' && <StockSidebar />}
+                    {activeTab === 'zerowaste' && <ZeroWasteHistorySidebar history={zwHistory} onSelect={handleZwHistorySelect} />}
                 </>
             }
             mainContent={
@@ -355,11 +434,44 @@ const GrimoriumView: React.FC<GrimoriumViewProps> = ({ db, userId, appId, allIng
                         {activeTab === 'stock' && (
                             <StockManagerTab allRecipes={allRecipes} allIngredients={allIngredients} setShoppingList={setShoppingList} />
                         )}
+                        {activeTab === 'zerowaste' && (
+                            <div className="h-full overflow-y-auto custom-scrollbar p-1">
+                                {zwLoading && (
+                                    <div className="flex flex-col items-center justify-center h-64 animate-pulse">
+                                        <Spinner className="w-12 h-12 text-lime-500 mb-4" />
+                                        <p className="text-slate-500 font-medium">Diseñando elaboraciones...</p>
+                                    </div>
+                                )}
+
+                                {zwError && <Alert variant="destructive" title="Error de Generación" description={zwError} className="mb-4" />}
+
+                                {!zwLoading && zwRecipeResults.length === 0 && (
+                                    <div className="flex flex-col items-center justify-center h-64 text-slate-400 border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-2xl bg-white/20 dark:bg-slate-900/10">
+                                        <Icon svg={ICONS.flask} className="w-12 h-12 mb-3 opacity-40" />
+                                        <p className="text-lg font-light">Selecciona ingredientes y genera ideas Zero Waste</p>
+                                    </div>
+                                )}
+
+                                {zwRecipeResults.length > 0 && (
+                                    <div className="grid grid-cols-1 gap-6 pb-6">
+                                        {zwRecipeResults.map((recipe, index) => (
+                                            <ZeroWasteResultCard
+                                                key={index}
+                                                recipe={recipe}
+                                                db={db}
+                                                userId={userId}
+                                                appId={appId}
+                                            />
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        )}
                     </div>
                 </div>
             }
             rightSidebar={
-                <div className={`h-full ${((activeTab === 'recipes' && selectedRecipe) || (activeTab === 'ingredients' && selectedIngredient) || activeTab === 'escandallo' || activeTab === 'batcher' || activeTab === 'stock') ? '' : 'hidden lg:block opacity-50 pointer-events-none'}`}>
+                <div className={`h-full ${((activeTab === 'recipes' && selectedRecipe) || (activeTab === 'ingredients' && selectedIngredient) || activeTab === 'escandallo' || activeTab === 'batcher' || activeTab === 'stock' || activeTab === 'zerowaste') ? '' : 'hidden lg:block opacity-50 pointer-events-none'}`}>
                     {/* RECIPES DETAIL */}
                     {activeTab === 'recipes' && selectedRecipe && (
                         <RecipeDetailPanel
@@ -382,6 +494,7 @@ const GrimoriumView: React.FC<GrimoriumViewProps> = ({ db, userId, appId, allIng
                             onEdit={(ing) => { setEditingIngredient(ing); setShowIngredientModal(true); }}
                             onDelete={(ing) => handleDeleteIngredient(ing)}
                             onClose={() => setSelectedIngredientId(null)}
+                            onSendToZeroWaste={handleSendToZeroWaste}
                         />
                     )}
 
@@ -466,6 +579,19 @@ const GrimoriumView: React.FC<GrimoriumViewProps> = ({ db, userId, appId, allIng
                         </div>
                     )}
 
+                    {/* ZERO WASTE CONTROLS */}
+                    {activeTab === 'zerowaste' && (
+                        <ZeroWasteControls
+                            allIngredients={allIngredients}
+                            selectedIngredients={zwSelectedIngredients}
+                            rawIngredients={zwRawIngredients}
+                            loading={zwLoading}
+                            onToggleIngredient={handleZwIngredientToggle}
+                            onRawIngredientsChange={setZwRawIngredients}
+                            onGenerate={handleGenerateZeroWasteRecipes}
+                        />
+                    )}
+
                     {/* Empty State Fallback for Recipes/Ingredients when nothing selected */}
                     {(!selectedRecipe && activeTab === 'recipes') && (
                         <div className="h-full flex items-center justify-center text-slate-400 text-center p-8">
@@ -496,7 +622,7 @@ const GrimoriumView: React.FC<GrimoriumViewProps> = ({ db, userId, appId, allIng
             {selectedIngredient && activeTab === 'ingredients' && (
                 <div className="lg:hidden fixed inset-0 z-50 bg-white dark:bg-slate-950 p-4 overflow-y-auto">
                     <Button size="icon" variant="ghost" onClick={() => setSelectedIngredientId(null)} className="absolute top-4 right-4"><Icon svg={ICONS.x} /></Button>
-                    <IngredientDetailPanel ingredient={selectedIngredient} onEdit={(ing) => { setEditingIngredient(ing); setShowIngredientModal(true); }} onDelete={(ing) => handleDeleteIngredient(ing)} onClose={() => setSelectedIngredientId(null)} />
+                    <IngredientDetailPanel ingredient={selectedIngredient} onEdit={(ing) => { setEditingIngredient(ing); setShowIngredientModal(true); }} onDelete={(ing) => handleDeleteIngredient(ing)} onClose={() => setSelectedIngredientId(null)} onSendToZeroWaste={handleSendToZeroWaste} />
                 </div>
             )}
 

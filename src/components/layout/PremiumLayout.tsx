@@ -1,6 +1,6 @@
 import React from 'react';
 
-type GradientTheme = 'violet' | 'cyan' | 'emerald' | 'amber' | 'rose' | 'indigo' | 'slate' | 'blue' | 'colegium' | 'red' | 'yellow' | 'ice';
+type GradientTheme = 'violet' | 'cyan' | 'emerald' | 'amber' | 'rose' | 'indigo' | 'slate' | 'blue' | 'colegium' | 'red' | 'yellow' | 'ice' | 'lime';
 
 interface PremiumLayoutProps {
     children?: React.ReactNode; // Fallback for flexibility
@@ -35,7 +35,8 @@ export const PremiumLayout: React.FC<PremiumLayoutProps> = ({
         colegium: "from-[#DBEAFE] to-white dark:from-[#172554] dark:to-slate-950",  // Alias
         red: "from-[#FEE2E2] to-white dark:from-[#450A0A] dark:to-slate-950",       // Escandallo (New)
         yellow: "from-[#FEF9C3] to-white dark:from-[#422006] dark:to-slate-950",    // Batcher (New)
-        ice: "from-[#E0F2FE] to-white dark:from-[#082F49] dark:to-slate-950"        // Stock (New)
+        ice: "from-[#E0F2FE] to-white dark:from-[#082F49] dark:to-slate-950",        // Stock (New)
+        lime: "from-[#ECFCCB] to-white dark:from-[#365314] dark:to-slate-950"        // Zero Waste (Eco - New)
     };
 
     const activeGradient = gradients[gradientTheme];
