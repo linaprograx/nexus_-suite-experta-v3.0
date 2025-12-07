@@ -3,6 +3,7 @@ import { Button } from '../../../components/ui/Button';
 import { Icon } from '../../../components/ui/Icon';
 import { Input } from '../../../components/ui/Input';
 import { ICONS } from '../../../components/ui/icons';
+import { ViewsMenu } from '../../../components/pizarron/ViewsMenu';
 import { FiltersBar } from '../../../components/pizarron/FiltersBar';
 import { Firestore } from 'firebase/firestore';
 import { Tag } from '../../../../types';
@@ -61,47 +62,16 @@ export const BoardTopbar: React.FC<BoardTopbarProps> = ({
                 </div>
             </div>
 
-            {/* View Switcher & Actions Unified */}
-            <div className="flex items-center gap-1 md:gap-2">
-                <Button
-                    variant="ghost"
-                    size="sm"
-                    className={`rounded-xl transition-all duration-200 ${currentView === 'kanban' ? 'text-orange-600 bg-orange-50/80 dark:bg-orange-900/20' : 'text-slate-500 hover:text-orange-500 hover:bg-white/40 dark:hover:bg-slate-800/40'}`}
-                    onClick={() => onViewChange('kanban')}
-                    title="Canvas"
-                >
-                    <Icon svg={ICONS.layoutGrid} className="h-5 w-5" />
-                </Button>
-                <Button
-                    variant="ghost"
-                    size="sm"
-                    className={`rounded-xl transition-all duration-200 ${currentView === 'list' ? 'text-orange-600 bg-orange-50/80 dark:bg-orange-900/20' : 'text-slate-500 hover:text-orange-500 hover:bg-white/40 dark:hover:bg-slate-800/40'}`}
-                    onClick={() => onViewChange('list')}
-                    title="Lista"
-                >
-                    <Icon svg={ICONS.list} className="h-5 w-5" />
-                </Button>
-                <Button
-                    variant="ghost"
-                    size="sm"
-                    className={`rounded-xl transition-all duration-200 ${currentView === 'timeline' ? 'text-orange-600 bg-orange-50/80 dark:bg-orange-900/20' : 'text-slate-500 hover:text-orange-500 hover:bg-white/40 dark:hover:bg-slate-800/40'}`}
-                    onClick={() => onViewChange('timeline')}
-                    title="Timeline"
-                >
-                    <Icon svg={ICONS.chart} className="h-5 w-5" />
-                </Button>
-                <Button
-                    variant="ghost"
-                    size="sm"
-                    className={`rounded-xl transition-all duration-200 ${currentView === 'document' ? 'text-orange-600 bg-orange-50/80 dark:bg-orange-900/20' : 'text-slate-500 hover:text-orange-500 hover:bg-white/40 dark:hover:bg-slate-800/40'}`}
-                    onClick={() => onViewChange('document')}
-                    title="Documento"
-                >
-                    <Icon svg={ICONS.book} className="h-5 w-5" />
-                </Button>
-
-                <div className="h-4 w-px bg-slate-200 dark:bg-slate-700 mx-2" />
-
+            <div className="flex gap-2 w-full md:w-auto justify-end items-center">
+                <ViewsMenu
+                    currentView={currentView}
+                    onViewChange={onViewChange}
+                    db={db}
+                    userId={userId}
+                    filters={filters}
+                    setFilters={setFilters}
+                />
+                <div className="h-6 w-px bg-slate-200 dark:bg-slate-700 mx-1" />
                 <FiltersBar filters={filters} setFilters={setFilters} db={db} userId={userId} tags={tags} />
             </div>
 

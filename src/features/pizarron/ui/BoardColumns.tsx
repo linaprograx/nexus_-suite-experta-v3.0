@@ -59,7 +59,7 @@ export const BoardColumns: React.FC<BoardColumnsProps> = ({
         <div
           ref={containerRef}
           onScroll={checkScroll}
-          className="flex flex-row gap-4 overflow-x-auto overflow-y-hidden px-4 pb-6 no-scrollbar min-h-full items-start"
+          className="flex flex-row gap-4 overflow-x-auto overflow-y-hidden px-4 pb-6 no-scrollbar h-full"
           style={{ scrollBehavior: 'smooth' }}
         >
           {columns.map(col => {

@@ -209,10 +209,24 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({ task, onClose,
                         </div>
                     </div>
 
-                    <Button variant="outline" onClick={() => onAnalyze(taskText)} className="w-full border-indigo-200 text-indigo-700 hover:bg-indigo-50 dark:border-indigo-800 dark:text-indigo-300 dark:hover:bg-indigo-900/30">
-                        <Icon svg={ICONS.brain} className="h-4 w-4 mr-2" />
-                        Analizar en CerebrIty
-                    </Button>
+                    <div className="grid grid-cols-2 gap-2">
+                        <Button variant="outline" onClick={() => onAnalyze(taskText)} className="border-indigo-200 text-indigo-700 hover:bg-indigo-50 dark:border-indigo-800 dark:text-indigo-300 dark:hover:bg-indigo-900/30">
+                            <Icon svg={ICONS.brain} className="h-4 w-4 mr-2" />
+                            CerebrIty
+                        </Button>
+                        <Button variant="outline" className="border-amber-200 text-amber-700 hover:bg-amber-50 dark:border-amber-800 dark:text-amber-300 dark:hover:bg-amber-900/30">
+                            <Icon svg={ICONS.sparkles} className="h-4 w-4 mr-2" />
+                            Super Poderes
+                        </Button>
+                        <Button variant="outline" className="border-emerald-200 text-emerald-700 hover:bg-emerald-50 dark:border-emerald-800 dark:text-emerald-300 dark:hover:bg-emerald-900/30">
+                            <Icon svg={ICONS.leaf} className="h-4 w-4 mr-2" />
+                            Zero Waste
+                        </Button>
+                        <Button variant="outline" className="border-blue-200 text-blue-700 hover:bg-blue-50 dark:border-blue-800 dark:text-blue-300 dark:hover:bg-blue-900/30">
+                            <Icon svg={ICONS.calculator} className="h-4 w-4 mr-2" />
+                            Costeo
+                        </Button>
+                    </div>
 
                     <div className="pt-4 border-t border-slate-200 dark:border-slate-700">
                         <TaskActivity taskId={task.id} db={db} appId={appId} />

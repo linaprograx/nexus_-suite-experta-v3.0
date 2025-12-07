@@ -126,8 +126,6 @@ export const PizarronSidebar: React.FC<PizarronSidebarProps> = ({
                 >
                     <div className="bg-slate-900 text-white text-xs font-medium px-3 py-1.5 rounded-lg shadow-xl flex items-center gap-2 animate-in fade-in slide-in-from-left-2 duration-200 border border-white/10">
                         {hoveredItem.text}
-                        <div className="w-px h-3 bg-white/20 mx-1"></div>
-                        <span className="text-[10px] opacity-70">Clic para ver</span>
                     </div>
                 </div>,
                 document.body

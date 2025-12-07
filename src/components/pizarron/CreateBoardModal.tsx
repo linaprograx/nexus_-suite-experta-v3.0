@@ -26,8 +26,10 @@ export const CreateBoardModal: React.FC<CreateBoardModalProps> = ({ isOpen, onCl
 
   const AVAILABLE_TOOLS = [
     { id: 'cerebrity', name: 'Cerebrity (IA)', icon: 'brain' },
-    { id: 'thelab', name: 'The Lab', icon: 'flask' }, // Using 'flask' as 'beaker' is not in ICONS
+    { id: 'thelab', name: 'The Lab', icon: 'beaker' },
+    { id: 'make_menu', name: 'Make Menu', icon: 'menu' }, // Assuming 'menu' exists or finding closest
     { id: 'grimorium', name: 'Grimorium', icon: 'book' },
+    { id: 'zero_waste', name: 'Zero Waste Chef', icon: 'leaf' },
     { id: 'costeo', name: 'Costeo', icon: 'calculator' },
   ];
 
