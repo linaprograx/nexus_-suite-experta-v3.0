@@ -268,7 +268,7 @@ const GrimoriumView: React.FC<GrimoriumViewProps> = ({ db, userId, appId, allIng
             gradientTheme={currentGradient}
             className="lg:!grid-cols-[200px,minmax(0,1fr),320px]"
             header={
-                <div className="flex items-center gap-2 bg-slate-100/80 dark:bg-slate-900/80 p-1 rounded-full w-fit max-w-full overflow-x-auto no-scrollbar shadow-sm border border-slate-200 dark:border-slate-800">
+                <div className="flex items-center gap-2 w-fit max-w-full overflow-x-auto no-scrollbar">
                     <button onClick={() => setActiveTab('recipes')} className={`flex-shrink-0 py-2 px-5 text-sm font-semibold rounded-full transition-all duration-300 ${activeTab === 'recipes' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-800'}`}>Recetas</button>
                     <button onClick={() => setActiveTab('ingredients')} className={`flex-shrink-0 py-2 px-5 text-sm font-semibold rounded-full transition-all duration-300 ${activeTab === 'ingredients' ? 'bg-emerald-600 text-white shadow-md' : 'text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-800'}`}>Ingredientes</button>
                     <button onClick={() => setActiveTab('escandallo')} className={`flex-shrink-0 py-2 px-5 text-sm font-semibold rounded-full transition-all duration-300 ${activeTab === 'escandallo' ? 'bg-red-500 text-white shadow-md' : 'text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-800'}`}>Escandallo</button>
@@ -370,6 +370,8 @@ const GrimoriumView: React.FC<GrimoriumViewProps> = ({ db, userId, appId, allIng
                             onDuplicate={handleDuplicateRecipe}
                             onToolToggle={setIsToolOpen}
                             onNavigate={(view, data) => setCurrentView(view)}
+                            onEscandallo={() => { setSelectedEscandalloRecipe(selectedRecipe); setActiveTab('escandallo'); }}
+                            onBatcher={() => {  /* Ideally switch to batcher and select recipe, but BatcherTab needs logic for that */ setActiveTab('batcher'); }}
                         />
                     )}
 
@@ -385,77 +387,83 @@ const GrimoriumView: React.FC<GrimoriumViewProps> = ({ db, userId, appId, allIng
 
                     {/* ESCANDALLO RESULTS */}
                     {activeTab === 'escandallo' && (
-                        escandalloData ? (
-                            <EscandalloSummaryCard
-                                recipeName={selectedEscandalloRecipe?.nombre || 'Receta'}
-                                reportData={escandalloData.report}
-                                pieData={escandalloData.pie}
-                                onSaveHistory={handleSaveToHistory}
-                                onExport={() => window.print()}
-                            />
-                        ) : (
-                            <EmptyState icon={ICONS.chart} text="Resultados" subtext="Selecciona una receta para ver el análisis." />
-                        )
+                        <div className="h-full overflow-y-auto custom-scrollbar">
+                            {escandalloData ? (
+                                <EscandalloSummaryCard
+                                    recipeName={selectedEscandalloRecipe?.nombre || 'Receta'}
+                                    reportData={escandalloData.report}
+                                    pieData={escandalloData.pie}
+                                    onSaveHistory={handleSaveToHistory}
+                                    onExport={() => window.print()}
+                                />
+                            ) : (
+                                <EmptyState icon={ICONS.chart} text="Resultados" subtext="Selecciona una receta para ver el análisis." />
+                            )}
+                        </div>
                     )}
 
                     {/* BATCHER RESULTS */}
                     {activeTab === 'batcher' && (
-                        batchResult ? (
-                            <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                                <div className="bg-white/60 dark:bg-slate-900/40 backdrop-blur-md rounded-2xl border border-white/20 dark:border-white/5 p-4 flex justify-between items-center shadow-sm">
-                                    <div>
-                                        <h3 className="font-semibold text-slate-800 dark:text-slate-200">Total Batch</h3>
-                                        <p className="text-xs text-slate-500 dark:text-slate-400">{batchResult.meta.targetQuantity} {batchResult.meta.targetUnit}</p>
-                                    </div>
-                                    <Button size="sm" onClick={handleSaveBatchToPizarron} className="bg-emerald-600 hover:bg-emerald-700 text-white"><Icon svg={ICONS.check} className="w-4 h-4" /></Button>
-                                </div>
-                                <div className="flex flex-col gap-3">
-                                    {batchResult.data.map((row: any, i: number) => (
-                                        <div key={i} className="flex items-center justify-between p-4 rounded-xl bg-white/80 dark:bg-slate-900/70 backdrop-blur-md border border-white/20 dark:border-white/5 shadow-sm">
-                                            <span className="font-medium text-sm text-slate-800 dark:text-slate-200">{row.ingredient}</span>
-                                            <span className="block text-lg font-bold text-emerald-600 dark:text-emerald-400 tabular-nums">{row.batchQty}</span>
+                        <div className="h-full overflow-y-auto custom-scrollbar">
+                            {batchResult ? (
+                                <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                                    <div className="bg-white/60 dark:bg-slate-900/40 backdrop-blur-md rounded-2xl border border-white/20 dark:border-white/5 p-4 flex justify-between items-center shadow-sm">
+                                        <div>
+                                            <h3 className="font-semibold text-slate-800 dark:text-slate-200">Total Batch</h3>
+                                            <p className="text-xs text-slate-500 dark:text-slate-400">{batchResult.meta.targetQuantity} {batchResult.meta.targetUnit}</p>
                                         </div>
-                                    ))}
+                                        <Button size="sm" onClick={handleSaveBatchToPizarron} className="bg-emerald-600 hover:bg-emerald-700 text-white"><Icon svg={ICONS.check} className="w-4 h-4" /></Button>
+                                    </div>
+                                    <div className="flex flex-col gap-3">
+                                        {batchResult.data.map((row: any, i: number) => (
+                                            <div key={i} className="flex items-center justify-between p-4 rounded-xl bg-white/80 dark:bg-slate-900/70 backdrop-blur-md border border-white/20 dark:border-white/5 shadow-sm">
+                                                <span className="font-medium text-sm text-slate-800 dark:text-slate-200">{row.ingredient}</span>
+                                                <span className="block text-lg font-bold text-emerald-600 dark:text-emerald-400 tabular-nums">{row.batchQty}</span>
+                                            </div>
+                                        ))}
+                                    </div>
                                 </div>
-                            </div>
-                        ) : (
-                            <Card className="h-full flex items-center justify-center p-6 bg-white/40 dark:bg-slate-900/20 border-white/20 dark:border-white/5">
-                                <CardContent className="text-center text-muted-foreground flex flex-col items-center">
-                                    <Icon svg={ICONS.layers} className="w-12 h-12 mb-4 opacity-20" />
-                                    <p>Configura el batch para ver resultados.</p>
-                                </CardContent>
-                            </Card>
-                        )
+                            ) : (
+                                <Card className="h-full flex items-center justify-center p-6 bg-white/40 dark:bg-slate-900/20 border-white/20 dark:border-white/5">
+                                    <CardContent className="text-center text-muted-foreground flex flex-col items-center">
+                                        <Icon svg={ICONS.layers} className="w-12 h-12 mb-4 opacity-20" />
+                                        <p>Configura el batch para ver resultados.</p>
+                                    </CardContent>
+                                </Card>
+                            )}
+                        </div>
                     )}
 
                     {/* STOCK RESULTS */}
                     {activeTab === 'stock' && (
-                        shoppingList ? (
-                            <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                                <div className="flex justify-between items-center px-2">
-                                    <h3 className="font-semibold text-slate-800 dark:text-slate-200">Lista de Compra</h3>
-                                    <Button variant="outline" size="sm" onClick={() => exportToCSV(shoppingList, 'lista_compra')} className="text-xs bg-white/50 backdrop-blur-sm border-white/20 hover:bg-white/80"><Icon svg={ICONS.fileText} className="mr-2 h-4 w-4" /> CSV</Button>
-                                </div>
-                                <div className="flex flex-col gap-3">
-                                    {shoppingList.map((item, index) => (
-                                        <div key={index} className="p-4 rounded-xl bg-white/70 dark:bg-slate-900/60 backdrop-blur-md border border-white/20 dark:border-white/5 shadow-sm">
-                                            <div className="flex justify-between items-start mb-2">
-                                                <p className="font-bold text-slate-800 dark:text-slate-100 text-sm">{item['Ingrediente']}</p>
-                                                <span className="text-xl font-bold text-emerald-600 dark:text-emerald-400 tabular-nums">{item['Botellas a Pedir']}</span>
+                        <div className="h-full overflow-y-auto custom-scrollbar">
+                            {shoppingList ? (
+                                <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                                    <div className="flex justify-between items-center px-2">
+                                        <h3 className="font-semibold text-slate-800 dark:text-slate-200">Lista de Compra</h3>
+                                        <Button variant="outline" size="sm" onClick={() => exportToCSV(shoppingList, 'lista_compra')} className="text-xs bg-white/50 backdrop-blur-sm border-white/20 hover:bg-white/80"><Icon svg={ICONS.fileText} className="mr-2 h-4 w-4" /> CSV</Button>
+                                    </div>
+                                    <div className="flex flex-col gap-3">
+                                        {shoppingList.map((item, index) => (
+                                            <div key={index} className="p-4 rounded-xl bg-white/70 dark:bg-slate-900/60 backdrop-blur-md border border-white/20 dark:border-white/5 shadow-sm">
+                                                <div className="flex justify-between items-start mb-2">
+                                                    <p className="font-bold text-slate-800 dark:text-slate-100 text-sm">{item['Ingrediente']}</p>
+                                                    <span className="text-xl font-bold text-emerald-600 dark:text-emerald-400 tabular-nums">{item['Botellas a Pedir']}</span>
+                                                </div>
+                                                <p className="text-xs text-slate-500 dark:text-slate-400 text-right">{item['Unidades (Compra)']}</p>
                                             </div>
-                                            <p className="text-xs text-slate-500 dark:text-slate-400 text-right">{item['Unidades (Compra)']}</p>
-                                        </div>
-                                    ))}
+                                        ))}
+                                    </div>
                                 </div>
-                            </div>
-                        ) : (
-                            <Card className="h-full flex items-center justify-center p-6 bg-white/40 dark:bg-slate-900/20 border-white/20 dark:border-white/5">
-                                <CardContent className="text-center text-muted-foreground flex flex-col items-center">
-                                    <Icon svg={ICONS.box} className="w-12 h-12 mb-4 opacity-20" />
-                                    <p>Genera una proyección.</p>
-                                </CardContent>
-                            </Card>
-                        )
+                            ) : (
+                                <Card className="h-full flex items-center justify-center p-6 bg-white/40 dark:bg-slate-900/20 border-white/20 dark:border-white/5">
+                                    <CardContent className="text-center text-muted-foreground flex flex-col items-center">
+                                        <Icon svg={ICONS.box} className="w-12 h-12 mb-4 opacity-20" />
+                                        <p>Genera una proyección.</p>
+                                    </CardContent>
+                                </Card>
+                            )}
+                        </div>
                     )}
 
                     {/* Empty State Fallback for Recipes/Ingredients when nothing selected */}
