@@ -55,6 +55,7 @@ export interface PizarronBoard {
     icon: string;
     description: string;
     columns?: string[];
+    enabledTools?: string[];
     createdAt?: any;
 }
 

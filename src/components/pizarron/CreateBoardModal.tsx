@@ -89,7 +89,7 @@ export const CreateBoardModal: React.FC<CreateBoardModalProps> = ({ isOpen, onCl
         {boardToEdit ? "Editar Tablero" : "Crear Nuevo Tablero"}
       </span>
     }>
-      <div className="space-y-6 px-1">
+      <div className="space-y-6 px-1 max-h-[70vh] overflow-y-auto custom-scrollbar">
         <div>
           <Label className="text-slate-700 dark:text-slate-300 font-semibold mb-1.5 block">Nombre del Tablero <span className="text-red-500">*</span></Label>
           <Input
@@ -165,6 +165,33 @@ export const CreateBoardModal: React.FC<CreateBoardModalProps> = ({ isOpen, onCl
             placeholder="¿Cuál es el objetivo de este tablero?"
             className="min-h-[80px] border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 rounded-xl focus:ring-orange-500/20 focus:border-orange-500"
           />
+        </div>
+
+        <div className="space-y-2">
+          <Label className="text-slate-700 dark:text-slate-300 font-semibold mb-2 block">Habilidades del Tablero</Label>
+          <div className="grid grid-cols-2 gap-3">
+            {AVAILABLE_TOOLS.map(tool => (
+              <div
+                key={tool.id}
+                onClick={() => handleToggleTool(tool.id)}
+                className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all duration-200 ${selectedTools.includes(tool.id)
+                  ? 'border-orange-500 bg-orange-50 dark:bg-orange-900/20 shadow-sm'
+                  : 'border-slate-200 dark:border-slate-700 hover:border-orange-200 dark:hover:border-orange-800 bg-white dark:bg-slate-800/50'
+                  }`}
+              >
+                <div className={`p-2 rounded-lg ${selectedTools.includes(tool.id) ? 'bg-orange-500 text-white' : 'bg-slate-100 dark:bg-slate-700 text-slate-500'}`}>
+                  <Icon svg={(ICONS as any)[tool.icon] || ICONS.sparkles} className="w-5 h-5" />
+                </div>
+                <span className={`text-sm font-medium ${selectedTools.includes(tool.id) ? 'text-slate-800 dark:text-slate-200' : 'text-slate-500'}`}>
+                  {tool.name}
+                </span>
+                {selectedTools.includes(tool.id) && (
+                  <Icon svg={ICONS.check} className="w-4 h-4 text-orange-500 ml-auto" />
+                )}
+              </div>
+            ))}
+          </div>
+          <p className="text-xs text-slate-500 mt-1">Selecciona las herramientas que estarán activas en este tablero.</p>
         </div>
 
         <div className="pt-4 flex justify-end gap-3 border-t border-slate-100 dark:border-slate-800 mt-6">
