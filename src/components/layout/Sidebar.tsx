@@ -7,15 +7,15 @@ import { ICONS } from '../ui/icons';
 import { Button } from '../ui/Button';
 
 const APP_ROUTES: { view: ViewName; label: string; icon: string }[] = [
-    { view: 'dashboard', label: 'Dashboard', icon: ICONS.grid },
-    { view: 'grimorium', label: 'Grimorium', icon: ICONS.book },
-    { view: 'pizarron', label: 'Pizarrón', icon: ICONS.layoutGrid },
-    { view: 'cerebrIty', label: 'CerebrIty', icon: ICONS.brain },
-    { view: 'escandallator', label: 'Escandallator', icon: ICONS.calculator },
-    { view: 'trendLocator', label: 'Trend Locator', icon: ICONS.trending },
-    { view: 'zeroWaste', label: 'Zero Waste Chef', icon: ICONS.recycle },
-    { view: 'makeMenu', label: 'MakeMenu', icon: ICONS.menu },
-    { view: 'colegium', label: 'Colegium', icon: ICONS.school },
+  { view: 'dashboard', label: 'Dashboard', icon: ICONS.grid },
+  { view: 'grimorium', label: 'Grimorium', icon: ICONS.book },
+  { view: 'pizarron', label: 'Pizarrón', icon: ICONS.layoutGrid },
+  { view: 'cerebrIty', label: 'CerebrIty', icon: ICONS.brain },
+  { view: 'escandallator', label: 'Escandallator', icon: ICONS.calculator },
+  { view: 'trendLocator', label: 'Trend Locator', icon: ICONS.trending },
+  { view: 'zeroWaste', label: 'Zero Waste Chef', icon: ICONS.recycle },
+  { view: 'makeMenu', label: 'MakeMenu', icon: ICONS.menu },
+  { view: 'colegium', label: 'Colegium', icon: ICONS.school },
 ];
 
 interface NavLinkProps {
@@ -29,15 +29,15 @@ interface NavLinkProps {
 
 const NavLink: React.FC<NavLinkProps> = ({ view, label, icon, currentView, setCurrentView, isCollapsed }) => {
   const isActive = currentView === view;
-  
+
   // Tech Futurista Styles
   const baseClasses = "group flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium transition-all duration-300 relative overflow-hidden";
-  
-  const activeClasses = 
+
+  const activeClasses =
     "bg-slate-200 text-slate-900 dark:bg-gradient-to-r dark:from-indigo-500 dark:via-fuchsia-500 dark:to-emerald-400 " +
     "dark:text-slate-50 dark:shadow-[0_0_25px_rgba(129,140,248,0.45)] border border-white/60 dark:border-white/10";
-    
-  const inactiveClasses = 
+
+  const inactiveClasses =
     "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/60 hover:text-slate-900 dark:hover:text-white " +
     "dark:hover:shadow-[0_0_20px_rgba(15,23,42,0.6)]";
 
@@ -63,17 +63,17 @@ interface SidebarProps {
   onCloseMobile: () => void;
 }
 
-export const Sidebar: React.FC<SidebarProps> = ({ 
-  currentView, 
-  setCurrentView, 
-  onShowNotifications, 
+export const Sidebar: React.FC<SidebarProps> = ({
+  currentView,
+  setCurrentView,
+  onShowNotifications,
   unreadNotifications,
   isMobileOpen,
   onCloseMobile
 }) => {
   const { auth, userProfile } = useApp();
   const { theme, setTheme, isSidebarCollapsed, toggleSidebar } = useUI();
-  
+
   if (!auth) return null;
 
   // Common content for both Desktop and Mobile
@@ -84,7 +84,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         <div className={`flex items-center gap-3 ${isSidebarCollapsed ? 'justify-center w-full' : ''}`}>
           {/* Logo Circular */}
           <div className="w-9 h-9 rounded-2xl bg-gradient-to-br from-indigo-500 via-fuchsia-500 to-emerald-400 shadow-lg flex-shrink-0 animate-pulse" />
-          
+
           {!isSidebarCollapsed && (
             <div className="flex flex-col overflow-hidden">
               <span className="font-bold text-slate-800 dark:text-slate-100 whitespace-nowrap">Nexus Suite</span>
@@ -95,59 +95,59 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
         {/* Toggle Button (Desktop only) */}
         <div className="hidden md:block">
-            {!isSidebarCollapsed && (
-                <Button variant="ghost" size="icon" onClick={toggleSidebar} className="text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white">
-                    <Icon svg={ICONS.chevronLeft} />
-                </Button>
-            )}
+          {!isSidebarCollapsed && (
+            <Button variant="ghost" size="icon" onClick={toggleSidebar} className="text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white">
+              <Icon svg={ICONS.chevronLeft} />
+            </Button>
+          )}
         </div>
       </div>
-      
+
       {/* If collapsed, show expand button at top/center */}
       {isSidebarCollapsed && (
         <div className="hidden md:flex justify-center mb-4">
-            <Button variant="ghost" size="icon" onClick={toggleSidebar} className="text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white">
-                <Icon svg={ICONS.chevronRight} />
-            </Button>
+          <Button variant="ghost" size="icon" onClick={toggleSidebar} className="text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white">
+            <Icon svg={ICONS.chevronRight} />
+          </Button>
         </div>
       )}
 
       {/* Nav Items */}
       <nav className="flex-1 px-3 space-y-2 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-transparent">
         {APP_ROUTES.map(route => (
-          <NavLink 
-            key={route.view} 
-            {...route} 
-            currentView={currentView} 
+          <NavLink
+            key={route.view}
+            {...route}
+            currentView={currentView}
             setCurrentView={(v) => {
-                setCurrentView(v);
-                onCloseMobile(); // Close mobile drawer on selection
-            }} 
-            isCollapsed={isSidebarCollapsed} 
+              setCurrentView(v);
+              onCloseMobile(); // Close mobile drawer on selection
+            }}
+            isCollapsed={isSidebarCollapsed}
           />
         ))}
       </nav>
 
       {/* Footer */}
       <div className="p-3 mt-2 space-y-1 bg-white/40 dark:bg-slate-950/40 backdrop-blur-xl border-t border-slate-200 dark:border-slate-800">
-        <NavLink 
-            view="personal" 
-            label={userProfile?.displayName || "Mi Perfil"} 
-            icon={ICONS.user} 
-            currentView={currentView} 
-            setCurrentView={(v) => {
-                setCurrentView(v);
-                onCloseMobile();
-            }} 
-            isCollapsed={isSidebarCollapsed} 
+        <NavLink
+          view="personal"
+          label={userProfile?.displayName || "Mi Perfil"}
+          icon={ICONS.user}
+          currentView={currentView}
+          setCurrentView={(v) => {
+            setCurrentView(v);
+            onCloseMobile();
+          }}
+          isCollapsed={isSidebarCollapsed}
         />
-        
-        {/* Custom Footer Buttons mimicking NavLink style */}
+
         <button
           onClick={() => { onShowNotifications(); onCloseMobile(); }}
-          className={`w-full flex items-center gap-3 rounded-xl py-2 text-sm font-medium transition text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/60 hover:text-slate-900 dark:hover:text-white dark:hover:shadow-[0_0_20px_rgba(15,23,42,0.6)] ${isSidebarCollapsed ? 'justify-center px-0' : 'px-3'}`}
+          className={`w-full flex items-center gap-3 rounded-xl py-2 text-sm font-medium transition text-slate-600 dark:text-slate-300 hover:bg-white/50 dark:hover:bg-white/10 hover:text-slate-900 dark:hover:text-white dark:hover:shadow-[0_0_20px_rgba(15,23,42,0.6)] ${isSidebarCollapsed ? 'justify-center px-0' : 'px-3'}`}
+          title={isSidebarCollapsed ? "Notificaciones" : ""}
         >
-          <div className="relative">
+          <div className="relative flex items-center justify-center">
             <Icon svg={ICONS.bell} className="h-5 w-5 text-slate-500 group-hover:text-slate-900 dark:group-hover:text-slate-200" />
             {unreadNotifications && <span className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full shadow-sm" />}
           </div>
@@ -156,17 +156,23 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
         <button
           onClick={() => setTheme(prevTheme => prevTheme === 'dark' ? 'light' : 'dark')}
-          className={`w-full flex items-center gap-3 rounded-xl py-2 text-sm font-medium transition text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/60 hover:text-slate-900 dark:hover:text-white dark:hover:shadow-[0_0_20px_rgba(15,23,42,0.6)] ${isSidebarCollapsed ? 'justify-center px-0' : 'px-3'}`}
+          className={`w-full flex items-center gap-3 rounded-xl py-2 text-sm font-medium transition text-slate-600 dark:text-slate-300 hover:bg-white/50 dark:hover:bg-white/10 hover:text-slate-900 dark:hover:text-white dark:hover:shadow-[0_0_20px_rgba(15,23,42,0.6)] ${isSidebarCollapsed ? 'justify-center px-0' : 'px-3'}`}
+          title={isSidebarCollapsed ? "Cambiar Tema" : ""}
         >
-          <Icon svg={theme === 'dark' ? ICONS.sun : ICONS.moon} className="h-5 w-5 text-slate-500 group-hover:text-slate-900 dark:group-hover:text-slate-200" />
+          <div className="flex items-center justify-center">
+            <Icon svg={theme === 'dark' ? ICONS.sun : ICONS.moon} className="h-5 w-5 text-slate-500 group-hover:text-slate-900 dark:group-hover:text-slate-200" />
+          </div>
           {!isSidebarCollapsed && <span>{theme === 'dark' ? 'Modo Claro' : 'Modo Oscuro'}</span>}
         </button>
 
         <button
           onClick={() => auth.signOut()}
-          className={`w-full flex items-center gap-3 rounded-xl py-2 text-sm font-medium transition text-red-400 hover:bg-red-900/20 hover:text-red-300 ${isSidebarCollapsed ? 'justify-center px-0' : 'px-3'}`}
+          className={`w-full flex items-center gap-3 rounded-xl py-2 text-sm font-medium transition text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-600 ${isSidebarCollapsed ? 'justify-center px-0' : 'px-3'}`}
+          title={isSidebarCollapsed ? "Cerrar Sesión" : ""}
         >
-          <Icon svg={ICONS.logOut} className="h-5 w-5" />
+          <div className="flex items-center justify-center">
+            <Icon svg={ICONS.logOut} className="h-5 w-5" />
+          </div>
           {!isSidebarCollapsed && <span>Cerrar Sesión</span>}
         </button>
       </div>
@@ -176,11 +182,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
   return (
     <>
       {/* DESKTOP SIDEBAR */}
-      <aside 
+      <aside
         className={`
             hidden md:flex flex-col fixed left-0 top-0 h-screen z-40
-            bg-white/75 backdrop-blur-xl border-r border-slate-200 shadow-[0_4px_20px_rgba(0,0,0,0.04)]
-            dark:bg-slate-950/70 dark:backdrop-blur-xl dark:border-slate-800 dark:shadow-[0_0_40px_rgba(15,23,42,0.85)]
+            bg-gradient-to-br from-indigo-100 via-fuchsia-100 via-amber-100 to-emerald-100 backdrop-blur-xl border-r border-indigo-200/50 shadow-[0_4px_20px_rgba(0,0,0,0.04)]
+            dark:bg-gradient-to-br dark:from-[#1a1b3a] dark:via-[#4a1232] dark:via-[#4a2d12] dark:to-[#092e21] dark:backdrop-blur-xl dark:border-white/5 dark:shadow-[0_0_40px_rgba(15,23,42,0.85)]
             transition-all duration-300 ease-in-out
             ${isSidebarCollapsed ? 'w-20' : 'w-64'}
         `}
@@ -191,18 +197,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
       {/* MOBILE SIDEBAR (DRAWER) */}
       {/* Overlay */}
       {isMobileOpen && (
-        <div 
-            className="md:hidden fixed inset-0 z-40 bg-black/60 backdrop-blur-sm transition-opacity"
-            onClick={onCloseMobile}
+        <div
+          className="md:hidden fixed inset-0 z-40 bg-black/60 backdrop-blur-sm transition-opacity"
+          onClick={onCloseMobile}
         />
       )}
-      
+
       {/* Drawer Panel */}
-      <div 
+      <div
         className={`
-            md:hidden fixed inset-y-0 left-0 z-50 w-64 
-            bg-white/75 backdrop-blur-xl border-r border-slate-200 shadow-[0_4px_20px_rgba(0,0,0,0.04)]
-            dark:bg-slate-950/70 dark:backdrop-blur-xl dark:border-slate-800 dark:shadow-[0_0_40px_rgba(15,23,42,0.85)]
+            md:hidden fixed inset-y-0 left-0 z-50 w-64
+            bg-gradient-to-br from-indigo-100 via-fuchsia-100 via-amber-100 to-emerald-100 backdrop-blur-xl border-r border-indigo-200/50 shadow-[0_4px_20px_rgba(0,0,0,0.04)]
+            dark:bg-gradient-to-br dark:from-[#1a1b3a] dark:via-[#4a1232] dark:via-[#4a2d12] dark:to-[#092e21] dark:backdrop-blur-xl dark:border-white/5 dark:shadow-[0_0_40px_rgba(15,23,42,0.85)]
             transform transition-transform duration-300 ease-in-out
             ${isMobileOpen ? 'translate-x-0' : '-translate-x-full'}
         `}

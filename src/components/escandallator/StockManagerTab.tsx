@@ -10,11 +10,11 @@ import { exportToCSV } from '../../utils/exportToCSV';
 interface StockManagerTabProps {
     allRecipes: Recipe[];
     allIngredients: Ingredient[];
+    setShoppingList: (list: any) => void;
 }
 
-const StockManagerTab: React.FC<StockManagerTabProps> = ({ allRecipes, allIngredients }) => {
+const StockManagerTab: React.FC<StockManagerTabProps> = ({ allRecipes, allIngredients, setShoppingList }) => {
     const [ventaQuantities, setVentaQuantities] = React.useState<Record<string, string>>({});
-    const [shoppingList, setShoppingList] = React.useState<{ 'Ingrediente': string; 'Total (L/KG)': string; 'Unidades (Compra)': string; 'Botellas a Pedir': number }[] | null>(null);
 
     const handleGenerate = () => {
         const totalIngredientNeeds: Record<string, number> = {};
@@ -48,6 +48,7 @@ const StockManagerTab: React.FC<StockManagerTabProps> = ({ allRecipes, allIngred
                 'Botellas a Pedir': bottlesToOrder,
             };
         });
+
         setShoppingList(finalList);
     };
 
@@ -93,49 +94,6 @@ const StockManagerTab: React.FC<StockManagerTabProps> = ({ allRecipes, allIngred
                     ))}
                 </div>
             </div>
-
-            {/* Step 2: Shopping List Results */}
-            {shoppingList && (
-                <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                    <div className="flex justify-between items-center px-2">
-                        <h3 className="font-semibold text-slate-800 dark:text-slate-200 text-lg">Lista de Compra Generada</h3>
-                        <Button variant="outline" size="sm" onClick={() => exportToCSV(shoppingList, 'lista_compra')} className="text-xs bg-white/50 backdrop-blur-sm border-white/20 hover:bg-white/80">
-                            <Icon svg={ICONS.fileText} className="mr-2 h-4 w-4" /> Exportar CSV
-                        </Button>
-                    </div>
-
-                    <div className="flex flex-col gap-3">
-                        {shoppingList.map((item, index) => (
-                            <div key={index} className="flex items-center justify-between p-4 rounded-xl bg-white/70 dark:bg-slate-900/60 backdrop-blur-md border border-white/20 dark:border-white/5 shadow-sm hover:shadow-md transition-all group">
-                                <div className="flex items-center gap-4">
-                                    <div className="w-10 h-10 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center text-emerald-600 dark:text-emerald-400 group-hover:scale-110 transition-transform">
-                                        <Icon svg={ICONS.box} className="w-5 h-5" />
-                                    </div>
-                                    <div>
-                                        <p className="font-bold text-slate-800 dark:text-slate-100">{item['Ingrediente']}</p>
-                                        <p className="text-xs text-slate-500 dark:text-slate-400">Total Necesario: {item['Total (L/KG)']} L/Kg</p>
-                                    </div>
-                                </div>
-                                <div className="text-right">
-                                    <span className="block text-2xl font-bold text-emerald-600 dark:text-emerald-400 tabular-nums">
-                                        {item['Botellas a Pedir']}
-                                    </span>
-                                    <span className="text-xs font-medium text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded-full">
-                                        {item['Unidades (Compra)'].replace(/^[0-9]+ x /, '')} / ud
-                                    </span>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            )}
-
-            {!shoppingList && (
-                <div className="flex flex-col items-center justify-center py-12 text-slate-400 opacity-50 border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-2xl">
-                    <Icon svg={ICONS.list} className="w-12 h-12 mb-3" />
-                    <p className="text-sm">Configura la proyección arriba para ver resultados</p>
-                </div>
-            )}
         </div>
     );
 };

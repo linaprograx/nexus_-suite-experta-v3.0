@@ -1,6 +1,7 @@
 import React from 'react';
 import { Icon } from '../ui/Icon';
 import { Button } from '../ui/Button';
+import { ICONS } from '../ui/icons';
 
 interface GameCardProps {
     title: string;
@@ -64,7 +65,7 @@ export const GameCard: React.FC<GameCardProps> = ({
                         {locked ? 'Bloqueado' : 'Jugar Ahora'}
                     </span>
                     <Button size="icon" className={`rounded-full bg-gradient-to-r ${color} text-white shadow-lg`}>
-                        <Icon svg={locked ? "lock" : "arrowRight"} className="w-4 h-4" />
+                        <Icon svg={locked ? ICONS.lock : ICONS.arrowRight} className="w-4 h-4" />
                     </Button>
                 </div>
             </div>

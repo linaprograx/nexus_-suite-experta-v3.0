@@ -6,19 +6,25 @@ interface ColegiumProfileSidebarProps {
     level: string;
     totalScore: number;
     gamesPlayed: number;
+    userName?: string;
+    userPhoto?: string | null;
 }
 
-const ColegiumProfileSidebar: React.FC<ColegiumProfileSidebarProps> = ({ level, totalScore, gamesPlayed }) => {
+const ColegiumProfileSidebar: React.FC<ColegiumProfileSidebarProps> = ({ level, totalScore, gamesPlayed, userName = "Usuario Nexus", userPhoto }) => {
     return (
         <div className="bg-white/60 dark:bg-slate-900/30 backdrop-blur-md rounded-2xl border border-white/20 dark:border-white/5 h-full flex flex-col overflow-hidden shadow-sm">
             {/* User Header */}
             <div className="p-6 flex flex-col items-center border-b border-white/10 dark:border-white/5 bg-gradient-to-b from-blue-50/50 to-transparent dark:from-blue-900/20 dark:to-transparent">
                 <div className="w-24 h-24 rounded-full bg-gradient-to-br from-blue-400 to-indigo-600 p-[2px] mb-4 shadow-lg shadow-blue-500/20">
                     <div className="w-full h-full rounded-full bg-white dark:bg-slate-900 flex items-center justify-center overflow-hidden">
-                        <Icon svg={ICONS.user} className="w-10 h-10 text-slate-400" />
+                        {userPhoto ? (
+                            <img src={userPhoto} alt={userName} className="w-full h-full object-cover" />
+                        ) : (
+                            <Icon svg={ICONS.user} className="w-10 h-10 text-slate-400" />
+                        )}
                     </div>
                 </div>
-                <h3 className="text-xl font-bold text-slate-800 dark:text-white text-center">Usuario Nexus</h3>
+                <h3 className="text-xl font-bold text-slate-800 dark:text-white text-center">{userName}</h3>
                 <span className="inline-block mt-2 px-3 py-1 rounded-full bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 text-xs font-semibold tracking-wide uppercase border border-blue-200 dark:border-blue-800">
                     {level}
                 </span>

@@ -1,3 +1,4 @@
+import React from 'react';
 import { doc, onSnapshot, Firestore, addDoc, collection, serverTimestamp } from 'firebase/firestore';
 import { Type } from "@google/genai";
 import { callGeminiApi } from '../utils/gemini';
@@ -13,6 +14,7 @@ import ColegiumProfileSidebar from '../components/colegium/ColegiumProfileSideba
 import ColegiumContextSidebar from '../components/colegium/ColegiumContextSidebar';
 import { GameCard } from '../components/colegium/GameCard';
 import { ICONS } from '../components/ui/icons';
+import { Icon } from '../components/ui/Icon';
 import { AreaChart, Area, ResponsiveContainer, XAxis, Tooltip } from 'recharts'; // For Stats Card
 
 interface ColegiumViewProps {
@@ -180,31 +182,28 @@ const ColegiumView: React.FC<ColegiumViewProps> = ({ db, userId, allRecipes, all
                 {/* Grid - Adjusted for better spacing: 3 Columns max */}
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 auto-rows-[220px]">
 
-                    {/* 1. Statistics / Progress / User Profile (Tall Card - Left) */}
+                    {/* 1. Statistics / Progress (Tall Card - Left) - Anonymous Stats now */}
                     <div className="row-span-2 col-span-1 rounded-3xl p-6 bg-gradient-to-br from-indigo-500 to-purple-700 text-white shadow-xl relative overflow-hidden group hover:scale-[1.02] transition-transform duration-500 flex flex-col justify-between">
                         <div className="absolute top-0 right-0 w-40 h-40 bg-white/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
 
                         <div className="relative z-10">
-                            <div className="flex items-center gap-4 mb-4">
-                                <img
-                                    src={profile.photoURL || `https://ui-avatars.com/api/?name=${profile.displayName || 'U'}&background=random`}
-                                    alt="Profile"
-                                    className="w-16 h-16 rounded-full border-2 border-white/30 shadow-lg object-cover"
-                                />
-                                <div>
-                                    <h3 className="text-sm font-bold opacity-80 uppercase tracking-widest">Agente</h3>
-                                    <div className="text-xl font-bold truncate max-w-[120px]">{profile.displayName || 'Usuario'}</div>
+                            <div className="flex items-center gap-3 mb-6 opacity-80">
+                                <div className="p-2 bg-white/20 rounded-lg">
+                                    <Icon svg={ICONS.trendingUp} className="w-6 h-6 text-white" />
                                 </div>
+                                <span className="text-sm font-bold uppercase tracking-widest">Tu Progreso</span>
                             </div>
 
-                            <div className="mt-2">
+                            <div className="mt-2 text-center">
                                 <h3 className="text-lg font-bold opacity-90 mb-1">Nivel Actual</h3>
-                                <div className="text-5xl font-bold mb-2">Lvl. 12</div>
-                                <p className="text-xs opacity-70">Mixólogo Senior</p>
+                                <div className="text-6xl font-bold mb-2 tracking-tighter">12</div>
+                                <div className="inline-block px-3 py-1 rounded-full bg-white/20 backdrop-blur-md text-xs font-semibold border border-white/30">
+                                    Mixólogo Senior
+                                </div>
                             </div>
                         </div>
 
-                        <div className="relative z-10 w-full h-32 mt-4">
+                        <div className="relative z-10 w-full h-32 mt-6">
                             <ResponsiveContainer width="100%" height="100%">
                                 <AreaChart data={[{ v: 30 }, { v: 45 }, { v: 35 }, { v: 60 }, { v: 55 }, { v: 80 }, { v: 75 }]}>
                                     <defs>
@@ -216,6 +215,7 @@ const ColegiumView: React.FC<ColegiumViewProps> = ({ db, userId, allRecipes, all
                                     <Area type="monotone" dataKey="v" stroke="#fff" strokeWidth={3} fill="url(#chartG)" />
                                 </AreaChart>
                             </ResponsiveContainer>
+                            <p className="text-center text-xs opacity-60 mt-2">Actividad últimos 7 días</p>
                         </div>
                     </div>
 
@@ -293,6 +293,8 @@ const ColegiumView: React.FC<ColegiumViewProps> = ({ db, userId, allRecipes, all
                     level="Mixólogo Senior"
                     totalScore={1250}
                     gamesPlayed={42}
+                    userName={profile.displayName || 'Usuario Nexus'}
+                    userPhoto={profile.photoURL}
                 />
             }
             rightSidebar={
