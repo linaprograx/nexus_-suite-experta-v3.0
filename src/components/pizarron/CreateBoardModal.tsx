@@ -53,67 +53,116 @@ export const CreateBoardModal: React.FC<CreateBoardModalProps> = ({ isOpen, onCl
     // actually parent closes on onCreate success usually. But here we can safe-guard.
   };
 
-  const colors = ['#FBBF24', '#60A5FA', '#34D399', '#F472B6', '#A78BFA', '#F97316', '#EF4444', '#8B5CF6'];
-  const availableIcons = ['layout', 'grid', 'brain', 'book', 'calculator', 'school', 'flask', 'layers', 'box', 'trending', 'star', 'rocket'];
+  const colors = [
+    '#FBBF24', '#60A5FA', '#34D399', '#F472B6', '#A78BFA', '#F97316', '#EF4444', '#8B5CF6',
+    '#EC4899', '#D946EF', '#84CC16', '#10B981', '#06B6D4', '#6366F1', '#3B82F6', '#14B8A6',
+    '#F59E0B', '#EA580C', '#78716C', '#64748B', '#1E293B', '#FCA5A5', '#FCD34D', '#BEF264'
+  ];
+  const availableIcons = [
+    'layout', 'grid', 'brain', 'book', 'calculator', 'school', 'flask', 'layers', 'box', 'trending', 'star', 'rocket',
+    'home', 'briefcase', 'coffee', 'flag', 'map', 'globe', 'music', 'monitor', 'smartphone', 'shield', 'heart',
+    'smile', 'award', 'gift', 'bookmark', 'tool', 'database', 'cloud', 'zap', 'activity', 'sparkles', 'calendar', 'clock'
+  ];
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title={boardToEdit ? "Editar Tablero" : "Crear Nuevo Tablero"}>
-      <div className="space-y-4">
+    <Modal isOpen={isOpen} onClose={onClose} title={
+      <span className="font-extrabold text-2xl bg-gradient-to-r from-orange-500 to-amber-600 bg-clip-text text-transparent">
+        {boardToEdit ? "Editar Tablero" : "Crear Nuevo Tablero"}
+      </span>
+    }>
+      <div className="space-y-6 px-1">
         <div>
-          <Label>Nombre del Tablero *</Label>
-          <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Ej. Campaña Verano" />
+          <Label className="text-slate-700 dark:text-slate-300 font-semibold mb-1.5 block">Nombre del Tablero <span className="text-red-500">*</span></Label>
+          <Input
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="Ej. Campaña Verano"
+            className="h-11 text-lg border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all rounded-xl"
+            autoFocus
+          />
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <Label>Categoría</Label>
-            <Select value={category} onChange={(e) => setCategory(e.target.value)}>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="space-y-2">
+            <Label className="text-slate-700 dark:text-slate-300 font-semibold">Categoría</Label>
+            <Select
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+              className="h-10 border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 rounded-xl"
+            >
               <option value="general">General</option>
               <option value="creativo">Creativo</option>
               <option value="operativo">Operativo</option>
               <option value="carta">Carta</option>
               <option value="producción">Producción</option>
+              <option value="marketing">Marketing</option>
+              <option value="finanzas">Finanzas</option>
+              <option value="rrhh">RRHH</option>
             </Select>
+            <p className="text-xs text-slate-500 ml-1">Organiza tus tableros por áreas.</p>
           </div>
-          <div>
-            <Label>Icono</Label>
-            <div className="grid grid-cols-4 gap-2 mt-2 max-h-32 overflow-y-auto p-1">
+
+          <div className="space-y-2">
+            <Label className="text-slate-700 dark:text-slate-300 font-semibold">Icono Identificativo</Label>
+            <div className="grid grid-cols-6 gap-2 h-[140px] overflow-y-auto p-2 custom-scrollbar border border-slate-200 dark:border-slate-700 rounded-xl bg-slate-50/50 dark:bg-slate-800/50">
               {availableIcons.map(ic => (
                 <button
                   key={ic}
                   onClick={() => setIcon(ic)}
-                  className={`p-2 rounded-md border flex justify-center items-center transition-all ${icon === ic ? 'bg-indigo-100 border-indigo-500 shadow-sm ring-1 ring-indigo-500' : 'border-gray-200 hover:bg-gray-50'}`}
+                  className={`aspect-square rounded-lg flex justify-center items-center transition-all duration-200 hover:scale-105 ${icon === ic ? 'bg-gradient-to-br from-orange-400 to-amber-500 text-white shadow-md shadow-orange-500/30' : 'text-slate-500 hover:bg-white hover:shadow-sm dark:hover:bg-slate-700'}`}
                   title={ic}
                 >
-                  <Icon svg={(ICONS as any)[ic] || ICONS.layout} className="w-5 h-5 text-slate-600" />
+                  <Icon svg={(ICONS as any)[ic] || ICONS.layout} className="w-5 h-5" />
                 </button>
               ))}
             </div>
           </div>
         </div>
 
-        <div>
-          <Label>Color del Tema</Label>
-          <div className="flex flex-wrap gap-3 mt-2">
+        <div className="space-y-2">
+          <Label className="text-slate-700 dark:text-slate-300 font-semibold flex items-center justify-between">
+            Color del Tema
+            <span className="text-xs font-normal text-slate-500" style={{ color: themeColor }}>Vista Previa</span>
+          </Label>
+          <div className="grid grid-cols-8 sm:grid-cols-10 md:grid-cols-12 gap-3 h-[100px] overflow-y-auto p-3 custom-scrollbar border border-slate-200 dark:border-slate-700 rounded-xl bg-slate-50/50 dark:bg-slate-800/50">
             {colors.map(c => (
               <button
                 key={c}
                 onClick={() => setThemeColor(c)}
-                className={`w-8 h-8 rounded-full transition-transform hover:scale-110 shadow-sm ${themeColor === c ? 'ring-2 ring-offset-2 ring-gray-400 scale-110' : ''}`}
+                className={`w-8 h-8 rounded-full transition-all duration-300 hover:scale-110 shadow-sm flex items-center justify-center ${themeColor === c ? 'ring-2 ring-offset-2 ring-slate-400 scale-110 shadow-md' : 'hover:shadow'}`}
                 style={{ backgroundColor: c }}
-              />
+              >
+                {themeColor === c && <Icon svg={ICONS.check} className="w-4 h-4 text-white drop-shadow-md" />}
+              </button>
             ))}
           </div>
         </div>
 
-        <div>
-          <Label>Descripción Corta</Label>
-          <Textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="¿Cuál es el objetivo de este tablero?" />
+        <div className="space-y-2">
+          <Label className="text-slate-700 dark:text-slate-300 font-semibold">Descripción Corta</Label>
+          <Textarea
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            placeholder="¿Cuál es el objetivo de este tablero?"
+            className="min-h-[80px] border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 rounded-xl focus:ring-orange-500/20 focus:border-orange-500"
+          />
         </div>
 
-        <div className="flex justify-end gap-2 mt-6">
-          <Button variant="ghost" onClick={onClose}>Cancelar</Button>
-          <Button onClick={handleSubmit} disabled={!name.trim()}>{boardToEdit ? "Guardar Cambios" : "Crear Tablero"}</Button>
+        <div className="pt-4 flex justify-end gap-3 border-t border-slate-100 dark:border-slate-800 mt-6">
+          <Button
+            variant="ghost"
+            onClick={onClose}
+            className="hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 rounded-xl"
+          >
+            Cancelar
+          </Button>
+          <Button
+            onClick={handleSubmit}
+            disabled={!name.trim()}
+            className="bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white shadow-lg shadow-orange-500/30 border-0 rounded-xl px-6 font-medium transition-all hover:scale-[1.02] active:scale-95"
+          >
+            {boardToEdit ? "Guardar Cambios" : "Crear Tablero"}
+          </Button>
         </div>
       </div>
     </Modal>

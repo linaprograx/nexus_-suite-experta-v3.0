@@ -56,7 +56,7 @@ export const PremiumLayout: React.FC<PremiumLayoutProps> = ({
             )}
 
             {/* Main Container with Rounded Corners and Gradient */}
-            <div className={`flex-1 grid grid-cols-1 lg:grid-cols-[250px,minmax(0,1fr),320px] gap-6 overflow-hidden rounded-3xl bg-gradient-to-b ${activeGradient} p-6 shadow-sm ring-1 ring-black/5 dark:ring-white/5 ${className}`}>
+            <div className={`flex-1 grid grid-cols-1 lg:grid-cols-[100px,minmax(0,1fr),100px] gap-4 overflow-hidden rounded-3xl bg-gradient-to-b ${activeGradient} p-4 shadow-sm ring-1 ring-black/5 dark:ring-white/5 ${className}`}>
 
                 {/* Left Sidebar Column */}
                 <div className="h-full min-h-0 flex flex-col relative z-20">

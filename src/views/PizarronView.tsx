@@ -15,6 +15,7 @@ import { StatsDrawer } from '../components/pizarron/StatsDrawer';
 import { CreateBoardModal } from '../components/pizarron/CreateBoardModal';
 import { PizarronSidebar } from '../components/pizarron/PizarronSidebar';
 import { PizarronControls } from '../components/pizarron/PizarronControls';
+import { GlobalSearchModal } from '../components/pizarron/GlobalSearchModal';
 import { TemplateSelectorModal } from '../components/pizarron/TemplateSelectorModal';
 import { createBoardFromTemplate } from '../features/pizarron-templates/createBoard';
 import { useUI } from '../context/UIContext';
@@ -61,6 +62,7 @@ const PizarronView: React.FC<PizarronViewProps> = ({ db, userId, appId, auth, st
   const [showTopIdeasDrawer, setShowTopIdeasDrawer] = React.useState(false);
   const [showStatsDrawer, setShowStatsDrawer] = React.useState(false);
   const [showSmartView, setShowSmartView] = React.useState(false);
+  const [showGlobalSearch, setShowGlobalSearch] = React.useState(false);
   const [filters, setFilters] = React.useState<any>({});
   const [searchQuery, setSearchQuery] = React.useState("");
   const [focusedColumn, setFocusedColumn] = React.useState<string | null>(null);
@@ -275,6 +277,7 @@ const PizarronView: React.FC<PizarronViewProps> = ({ db, userId, appId, auth, st
 
   const activeBoard = boards.find(b => b.id === activeBoardId);
   const columns = activeBoard?.columns || ['Ideas', 'Pruebas', 'Aprobado'];
+  const boardThemeColor = activeBoard?.themeColor || '#60A5FA';
 
   if (!db || !userId || !auth || !storage) return <Spinner />;
 
@@ -298,7 +301,10 @@ const PizarronView: React.FC<PizarronViewProps> = ({ db, userId, appId, auth, st
         ) : null
       }
       mainContent={
-        <div className="flex flex-col h-full">
+        <div
+          className="flex flex-col h-full rounded-tl-3xl transition-colors duration-500"
+          style={{ background: `linear-gradient(to bottom, ${boardThemeColor}15, ${boardThemeColor}05, transparent)` }}
+        >
           <BoardTopbar
             isLeftPanelOpen={isLeftPanelOpen}
             onToggleLeftPanel={() => setIsLeftPanelOpen(!isLeftPanelOpen)}
@@ -316,6 +322,8 @@ const PizarronView: React.FC<PizarronViewProps> = ({ db, userId, appId, auth, st
             onShowSmartView={() => setShowSmartView(true)}
             currentView={currentView}
             onViewChange={handleViewChange}
+            boardName={activeBoard?.name || 'Pizarrón'}
+            boardDescription={activeBoard?.description}
           />
 
           <div className="flex-1 flex flex-col min-h-0 relative mt-4">
@@ -331,6 +339,7 @@ const PizarronView: React.FC<PizarronViewProps> = ({ db, userId, appId, auth, st
                 onDropOnColumn={onDropEnd}
                 onOpenTaskDetail={setSelectedTask}
                 onColumnHeaderClick={handleColumnHeaderClick}
+                boardThemeColor={boardThemeColor}
               />
             )}
             {currentView === 'list' && (
@@ -357,7 +366,7 @@ const PizarronView: React.FC<PizarronViewProps> = ({ db, userId, appId, auth, st
                 <Icon svg={ICONS.calendar} className="h-5 w-5" /> Calendario Inteligente {isCalendarOpen && <span className="text-xs bg-indigo-500 text-white px-1.5 rounded-full">AI</span>} <Icon svg={isCalendarOpen ? ICONS.chevronDown : ICONS.upArrow} className="h-4 w-4" />
               </button>
               {isCalendarOpen && (
-                <div className="h-[500px]">
+                <div className="h-[500px] overflow-y-auto custom-scrollbar">
                   <PizarronCalendarView tasks={filteredTasks} onDropTask={handleDropOnCalendar} onTaskClick={setSelectedTask} onSuggestSlots={handleSuggestSlots} />
                 </div>
               )}
@@ -377,9 +386,11 @@ const PizarronView: React.FC<PizarronViewProps> = ({ db, userId, appId, auth, st
           onShowStats={() => setShowStatsDrawer(true)}
           onShowTopIdeas={() => setShowTopIdeasDrawer(true)}
           onShowSmartView={() => setShowSmartView(true)}
+          onGlobalSearch={() => setShowGlobalSearch(true)}
         />
       }
     >
+      {showGlobalSearch && <GlobalSearchModal isOpen={showGlobalSearch} onClose={() => setShowGlobalSearch(false)} db={db} appId={appId} onOpenTask={(t) => setSelectedTask(t)} />}
       {showAddTaskModal && activeBoardId && <AddTaskModal isOpen={showAddTaskModal} onClose={() => setShowAddTaskModal(false)} db={db} appId={appId} userId={userId} auth={auth} initialStatus={initialStatusForModal} activeBoardId={activeBoardId} userProfile={userProfile} />}
       {selectedTask && <TaskDetailModal task={selectedTask} onClose={() => setSelectedTask(null)} db={db} userId={userId} appId={appId} auth={auth} storage={storage} onAnalyze={onAnalyze} />}
       {showTopIdeasDrawer && <TopIdeasDrawer isOpen={showTopIdeasDrawer} onClose={() => setShowTopIdeasDrawer(false)} tasks={filteredTasks} onTaskClick={setSelectedTask} />}

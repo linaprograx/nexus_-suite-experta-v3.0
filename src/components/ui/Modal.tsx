@@ -4,7 +4,7 @@ import { Button } from './Button';
 import { Icon } from './Icon';
 import { ICONS } from './icons';
 
-export const Modal: React.FC<{isOpen: boolean, onClose: () => void, title?: string, children: React.ReactNode, className?: string, size?: 'default' | 'lg' | 'xl' | '2xl' | '3xl' | '4xl'}> = ({ isOpen, onClose, title, children, className, size = 'default' }) => {
+export const Modal: React.FC<{ isOpen: boolean, onClose: () => void, title?: React.ReactNode, children: React.ReactNode, className?: string, size?: 'default' | 'lg' | 'xl' | '2xl' | '3xl' | '4xl' }> = ({ isOpen, onClose, title, children, className, size = 'default' }) => {
     if (!isOpen) return null;
     const sizes = {
         default: 'max-w-lg',
@@ -19,7 +19,7 @@ export const Modal: React.FC<{isOpen: boolean, onClose: () => void, title?: stri
             <div className={`relative w-full ${sizes[size]} ${className}`} onClick={e => e.stopPropagation()}>
                 <Card className="m-4">
                     <CardHeader className="flex flex-row items-center justify-between">
-                        {title && <CardTitle>{title}</CardTitle>}
+                        {title && <CardTitle className="text-xl">{title}</CardTitle>}
                         <Button variant="ghost" size="icon" onClick={onClose} className="ml-auto"><Icon svg={ICONS.x} /></Button>
                     </CardHeader>
                     <CardContent>

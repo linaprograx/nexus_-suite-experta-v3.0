@@ -15,9 +15,10 @@ interface PizarronCardProps {
   onDragStart: (e: React.DragEvent) => void;
   onOpenDetail: () => void;
   allTags?: Tag[];
+  borderColor?: string;
 }
 
-export const PizarronCard: React.FC<PizarronCardProps> = ({ task, onDragStart, onOpenDetail, allTags }) => {
+export const PizarronCard: React.FC<PizarronCardProps> = ({ task, onDragStart, onOpenDetail, allTags, borderColor }) => {
   const { compactMode, theme } = useUI();
   const { db, appId } = useApp();
   const { icon: priorityIcon, color: priorityColor } = getPriorityIcon(task.priority);
@@ -25,11 +26,11 @@ export const PizarronCard: React.FC<PizarronCardProps> = ({ task, onDragStart, o
   const handleDelete = async (e: React.MouseEvent) => {
     e.stopPropagation();
     if (confirm("¿Eliminar tarea?")) {
-        try {
-            await deleteDoc(doc(db, `artifacts/${appId}/public/data/pizarron-tasks`, task.id));
-        } catch (error) {
-            console.error("Error deleting task:", error);
-        }
+      try {
+        await deleteDoc(doc(db, `artifacts/${appId}/public/data/pizarron-tasks`, task.id));
+      } catch (error) {
+        console.error("Error deleting task:", error);
+      }
     }
   };
 
@@ -72,6 +73,7 @@ export const PizarronCard: React.FC<PizarronCardProps> = ({ task, onDragStart, o
       draggable="true"
       onDragStart={onDragStart as any}
       onClick={onOpenDetail}
+      style={{ borderColor: borderColor ? `${borderColor}40` : undefined }}
     >
       <div className={`absolute inset-0 bg-gradient-to-br ${getCategoryColor(task.category)} opacity-5 rounded-xl pointer-events-none`} />
 
@@ -87,18 +89,18 @@ export const PizarronCard: React.FC<PizarronCardProps> = ({ task, onDragStart, o
       {thumbnailAttachment && !compactMode && (
         <div className="mb-3 w-16 h-16 rounded-xl overflow-hidden bg-slate-100 dark:bg-slate-700 flex items-center justify-center border border-slate-200 dark:border-slate-600 shrink-0">
           {thumbnailAttachment.renderType === 'image' && (
-            <img 
-              src={optimizedThumbnail(thumbnailAttachment.url)} 
-              alt={thumbnailAttachment.name} 
-              className="w-full h-full object-cover" 
+            <img
+              src={optimizedThumbnail(thumbnailAttachment.url)}
+              alt={thumbnailAttachment.name}
+              className="w-full h-full object-cover"
               loading="lazy"
             />
           )}
           {thumbnailAttachment.renderType === 'video' && (
-             <Icon svg={ICONS.video} className="w-8 h-8 text-slate-400" />
+            <Icon svg={ICONS.video} className="w-8 h-8 text-slate-400" />
           )}
           {thumbnailAttachment.renderType === 'pdf' && (
-             <Icon svg={ICONS.fileText} className="w-8 h-8 text-slate-400" />
+            <Icon svg={ICONS.fileText} className="w-8 h-8 text-slate-400" />
           )}
         </div>
       )}
@@ -111,26 +113,26 @@ export const PizarronCard: React.FC<PizarronCardProps> = ({ task, onDragStart, o
       {/* Labels & Tags */}
       {!compactMode && (
         <div className="flex flex-wrap gap-1 mb-3">
-            {/* Smart Labels */}
-            {task.labels?.slice(0, 2).map(label => (
+          {/* Smart Labels */}
+          {task.labels?.slice(0, 2).map(label => (
             <span key={label} className="text-[10px] font-medium bg-slate-100/50 dark:bg-slate-700/50 text-slate-600 dark:text-slate-300 px-2 py-0.5 rounded-full border border-slate-200/50 dark:border-slate-600/50">
-                {label}
+              {label}
             </span>
-            ))}
-            {/* Dynamic Tags */}
-            {task.tags?.map(tagId => {
-                const tag = allTags?.find(t => t.id === tagId);
-                if (!tag) return null;
-                return (
-                    <span 
-                        key={tag.id} 
-                        className="text-[10px] font-medium px-2 py-0.5 rounded-full text-white shadow-sm hover:scale-105 transition-transform"
-                        style={{ backgroundColor: tag.color }}
-                    >
-                        {tag.name}
-                    </span>
-                );
-            })}
+          ))}
+          {/* Dynamic Tags */}
+          {task.tags?.map(tagId => {
+            const tag = allTags?.find(t => t.id === tagId);
+            if (!tag) return null;
+            return (
+              <span
+                key={tag.id}
+                className="text-[10px] font-medium px-2 py-0.5 rounded-full text-white shadow-sm hover:scale-105 transition-transform"
+                style={{ backgroundColor: tag.color }}
+              >
+                {tag.name}
+              </span>
+            );
+          })}
         </div>
       )}
 
@@ -147,7 +149,7 @@ export const PizarronCard: React.FC<PizarronCardProps> = ({ task, onDragStart, o
             </span>
           )}
         </div>
-        
+
         <div className="flex items-center gap-2">
           {task.upvotes?.length > 0 && (
             <span className="flex items-center gap-1 text-xs text-blue-500 bg-blue-500/10 px-1.5 py-0.5 rounded-full">
@@ -156,14 +158,14 @@ export const PizarronCard: React.FC<PizarronCardProps> = ({ task, onDragStart, o
             </span>
           )}
           {averageRating > 0 && (
-             <span className="flex items-center gap-1 text-xs text-amber-500 bg-amber-500/10 px-1.5 py-0.5 rounded-full">
+            <span className="flex items-center gap-1 text-xs text-amber-500 bg-amber-500/10 px-1.5 py-0.5 rounded-full">
               <Icon svg={ICONS.star} className={compactMode ? "h-3 w-3" : "h-3 w-3"} />
               <span className="font-semibold">{averageRating.toFixed(1)}</span>
             </span>
           )}
         </div>
       </div>
-      
+
       {!compactMode && task.authorName && (
         <div className="flex items-center gap-2 pt-2 border-t border-slate-200/50 dark:border-slate-700/50 mt-2">
           <img src={task.authorPhotoURL || `https://ui-avatars.com/api/?name=${task.authorName}&background=random`} alt={task.authorName} className="w-5 h-5 rounded-full ring-2 ring-white dark:ring-slate-800" />

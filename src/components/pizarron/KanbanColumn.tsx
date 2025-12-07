@@ -19,9 +19,10 @@ interface KanbanColumnProps {
   isFocused?: boolean;
   onHeaderClick?: () => void;
   allTags?: Tag[];
+  boardThemeColor?: string;
 }
 
-export const KanbanColumn: React.FC<KanbanColumnProps> = ({ title, status, tasks, onAddTask, onDragStart, onDropOnColumn, onOpenTaskDetail, isFocused, onHeaderClick, allTags }) => {
+export const KanbanColumn: React.FC<KanbanColumnProps> = ({ title, status, tasks, onAddTask, onDragStart, onDropOnColumn, onOpenTaskDetail, isFocused, onHeaderClick, allTags, boardThemeColor }) => {
   const { theme, focusMode: uiFocusMode, compactMode } = useUI();
   const { focusMode } = usePizarraStore();
 
@@ -98,6 +99,7 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({ title, status, tasks
               onDragStart={(e) => onDragStart(e, task.id)}
               onOpenDetail={() => onOpenTaskDetail(task)}
               allTags={allTags}
+              borderColor={boardThemeColor}
             />
           ))}
         </AnimatePresence>

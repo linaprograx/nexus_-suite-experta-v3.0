@@ -23,7 +23,7 @@ export const PizarronSidebar: React.FC<PizarronSidebarProps> = ({
     onEditBoard,
     onDeleteBoard
 }) => {
-    const [hoveredBoard, setHoveredBoard] = React.useState<{ name: string; top: number } | null>(null);
+    const [hoveredItem, setHoveredItem] = React.useState<{ text: string; top: number } | null>(null);
 
     return (
         <div className="h-full flex flex-col bg-white/40 dark:bg-slate-900/40 backdrop-blur-xl rounded-2xl border border-white/20 dark:border-white/5 p-2 items-center shadow-sm relative overflow-visible group/sidebar">
@@ -45,9 +45,9 @@ export const PizarronSidebar: React.FC<PizarronSidebarProps> = ({
                             className="relative group/item w-full flex justify-center perspective-1000"
                             onMouseEnter={(e) => {
                                 const rect = e.currentTarget.getBoundingClientRect();
-                                setHoveredBoard({ name: board.name, top: rect.top + (rect.height / 2) });
+                                setHoveredItem({ text: board.name, top: rect.top + (rect.height / 2) });
                             }}
-                            onMouseLeave={() => setHoveredBoard(null)}
+                            onMouseLeave={() => setHoveredItem(null)}
                         >
                             <Button
                                 variant={isActive ? "secondary" : "ghost"}
@@ -61,8 +61,8 @@ export const PizarronSidebar: React.FC<PizarronSidebarProps> = ({
                                 )}
                             </Button>
 
-                            {/* Hover Edit/Delete Buttons - Better Positioning and Visibility */}
-                            <div className="absolute -bottom-3 -right-3 opacity-0 group-hover/item:opacity-100 transition-opacity z-50 flex gap-1">
+                            {/* Hover Edit/Delete Buttons - Centered Below */}
+                            <div className="absolute -bottom-5 left-1/2 transform -translate-x-1/2 opacity-0 group-hover/item:opacity-100 transition-opacity z-50 flex gap-1 pt-1">
                                 {onEditBoard && (
                                     <button
                                         onClick={(e) => { e.stopPropagation(); onEditBoard(board); }}
@@ -88,7 +88,13 @@ export const PizarronSidebar: React.FC<PizarronSidebarProps> = ({
             </div>
 
             <div className="absolute bottom-4 left-0 right-0 flex flex-col items-center space-y-3 z-20 bg-gradient-to-t from-white/80 via-white/50 to-transparent dark:from-slate-900/80 dark:via-slate-900/50 pt-6 pb-2 rounded-b-2xl">
-                <div className="group relative">
+                <div className="group relative"
+                    onMouseEnter={(e) => {
+                        const rect = e.currentTarget.getBoundingClientRect();
+                        setHoveredItem({ text: "Nuevo Tablero", top: rect.top + (rect.height / 2) });
+                    }}
+                    onMouseLeave={() => setHoveredItem(null)}
+                >
                     <Button
                         size="icon"
                         className="w-12 h-12 rounded-full bg-gradient-to-r from-orange-400 to-orange-600 text-white shadow-lg shadow-orange-500/40 hover:scale-110 transition-transform duration-300 border-2 border-white dark:border-slate-800"
@@ -98,7 +104,13 @@ export const PizarronSidebar: React.FC<PizarronSidebarProps> = ({
                     </Button>
                 </div>
 
-                <div className="group relative">
+                <div className="group relative"
+                    onMouseEnter={(e) => {
+                        const rect = e.currentTarget.getBoundingClientRect();
+                        setHoveredItem({ text: "Plantillas", top: rect.top + (rect.height / 2) });
+                    }}
+                    onMouseLeave={() => setHoveredItem(null)}
+                >
                     <Button size="icon" variant="ghost" className="w-8 h-8 rounded-full text-slate-400 hover:text-orange-500 hover:bg-orange-50 dark:hover:bg-orange-900/30" onClick={onSelectTemplate}>
                         <Icon svg={ICONS.grid} className="h-4 w-4" />
                     </Button>
@@ -106,13 +118,13 @@ export const PizarronSidebar: React.FC<PizarronSidebarProps> = ({
             </div>
 
             {/* Fixed Tooltip Portal */}
-            {hoveredBoard && (
+            {hoveredItem && (
                 <div
-                    className="fixed left-[90px] z-[100] pointer-events-none transform -translate-y-1/2"
-                    style={{ top: hoveredBoard.top }}
+                    className="fixed left-[80px] z-[100] pointer-events-none transform -translate-y-1/2"
+                    style={{ top: hoveredItem.top }}
                 >
                     <div className="bg-slate-900 text-white text-xs font-medium px-3 py-1.5 rounded-lg shadow-xl flex items-center gap-2 animate-in fade-in slide-in-from-left-2 duration-200 border border-white/10">
-                        {hoveredBoard.name}
+                        {hoveredItem.text}
                         <div className="w-px h-3 bg-white/20 mx-1"></div>
                         <span className="text-[10px] opacity-70">Clic para ver</span>
                     </div>

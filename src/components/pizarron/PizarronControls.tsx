@@ -23,13 +23,15 @@ interface PizarronControlsProps {
     onShowStats: () => void;
     onShowTopIdeas: () => void;
     onShowSmartView: () => void;
+    onGlobalSearch: () => void;
 }
 
 export const PizarronControls: React.FC<PizarronControlsProps> = ({
     searchQuery, onSearchChange,
     filters, setFilters,
     db, userId, tags,
-    onShowStats, onShowTopIdeas, onShowSmartView
+    onShowStats, onShowTopIdeas, onShowSmartView,
+    onGlobalSearch
 }) => {
     const { focusMode, toggleFocusMode, automationsEnabled, toggleAutomationsEnabled } = usePizarraStore();
     const { compactMode, toggleCompactMode } = useUI();
@@ -54,29 +56,14 @@ export const PizarronControls: React.FC<PizarronControlsProps> = ({
             {/* Search Top */}
             <div className="mb-6 relative w-full flex justify-center z-50">
                 <Button
-                    variant={searchQuery ? "secondary" : "ghost"}
+                    variant="ghost"
                     size="icon"
-                    className={`w-10 h-10 rounded-xl transition-all ${searchQuery ? 'bg-orange-100 text-orange-700' : 'text-slate-600 dark:text-slate-400 hover:bg-white/50'}`}
-                    onClick={() => setShowSearch(!showSearch)}
+                    className="w-10 h-10 rounded-xl transition-all text-slate-600 dark:text-slate-400 hover:bg-white/50 hover:text-orange-500"
+                    onClick={onGlobalSearch}
+                    title="Búsqueda Global"
                 >
                     <Icon svg={ICONS.search} className="w-5 h-5" />
                 </Button>
-
-                {(showSearch || searchQuery) && (
-                    <div className="absolute right-full mr-3 top-0 w-56 bg-white dark:bg-slate-800 p-2 rounded-xl shadow-2xl border border-indigo-100 dark:border-slate-700 z-[100] animate-in fade-in slide-in-from-right-4">
-                        <div className="flex items-center gap-2 mb-1">
-                            <Icon svg={ICONS.search} className="w-3 h-3 text-slate-400" />
-                            <span className="text-[10px] uppercase font-bold text-slate-400">Buscar Tarea</span>
-                        </div>
-                        <Input
-                            autoFocus
-                            placeholder="Escribe para filtrar..."
-                            className="w-full text-sm h-9 bg-slate-50 border-0 focus:ring-1 focus:ring-orange-500"
-                            value={searchQuery}
-                            onChange={(e) => onSearchChange(e.target.value)}
-                        />
-                    </div>
-                )}
             </div>
 
             {/* Main Tools - Better Distributed */}
