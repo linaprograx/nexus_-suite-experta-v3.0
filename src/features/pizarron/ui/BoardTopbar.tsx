@@ -61,53 +61,55 @@ export const BoardTopbar: React.FC<BoardTopbarProps> = ({
                 </div>
             </div>
 
-            {/* View Switcher */}
-            <div className="hidden md:flex bg-slate-100/50 dark:bg-slate-800/50 p-1 rounded-lg backdrop-blur-sm border border-white/10">
+            {/* View Switcher & Actions Unified */}
+            <div className="flex items-center gap-1 md:gap-2">
                 <Button
-                    variant={currentView === 'kanban' ? 'secondary' : 'ghost'}
-                    size="icon"
-                    className={`h-8 w-8 ${currentView === 'kanban' ? 'bg-white dark:bg-slate-700 shadow-sm' : ''}`}
+                    variant="ghost"
+                    size="sm"
+                    className={`rounded-xl transition-all duration-200 ${currentView === 'kanban' ? 'text-orange-600 bg-orange-50/80 dark:bg-orange-900/20' : 'text-slate-500 hover:text-orange-500 hover:bg-white/40 dark:hover:bg-slate-800/40'}`}
                     onClick={() => onViewChange('kanban')}
-                    title="Kanban"
+                    title="Canvas"
                 >
-                    <Icon svg={ICONS.layoutGrid} className="h-4 w-4" />
+                    <Icon svg={ICONS.layoutGrid} className="h-5 w-5" />
                 </Button>
                 <Button
-                    variant={currentView === 'list' ? 'secondary' : 'ghost'}
-                    size="icon"
-                    className={`h-8 w-8 ${currentView === 'list' ? 'bg-white dark:bg-slate-700 shadow-sm' : ''}`}
+                    variant="ghost"
+                    size="sm"
+                    className={`rounded-xl transition-all duration-200 ${currentView === 'list' ? 'text-orange-600 bg-orange-50/80 dark:bg-orange-900/20' : 'text-slate-500 hover:text-orange-500 hover:bg-white/40 dark:hover:bg-slate-800/40'}`}
                     onClick={() => onViewChange('list')}
                     title="Lista"
                 >
-                    <Icon svg={ICONS.list} className="h-4 w-4" />
+                    <Icon svg={ICONS.list} className="h-5 w-5" />
                 </Button>
                 <Button
-                    variant={currentView === 'timeline' ? 'secondary' : 'ghost'}
-                    size="icon"
-                    className={`h-8 w-8 ${currentView === 'timeline' ? 'bg-white dark:bg-slate-700 shadow-sm' : ''}`}
+                    variant="ghost"
+                    size="sm"
+                    className={`rounded-xl transition-all duration-200 ${currentView === 'timeline' ? 'text-orange-600 bg-orange-50/80 dark:bg-orange-900/20' : 'text-slate-500 hover:text-orange-500 hover:bg-white/40 dark:hover:bg-slate-800/40'}`}
                     onClick={() => onViewChange('timeline')}
                     title="Timeline"
                 >
-                    <Icon svg={ICONS.chart} className="h-4 w-4" />
+                    <Icon svg={ICONS.chart} className="h-5 w-5" />
                 </Button>
                 <Button
-                    variant={currentView === 'document' ? 'secondary' : 'ghost'}
-                    size="icon"
-                    className={`h-8 w-8 ${currentView === 'document' ? 'bg-white dark:bg-slate-700 shadow-sm' : ''}`}
+                    variant="ghost"
+                    size="sm"
+                    className={`rounded-xl transition-all duration-200 ${currentView === 'document' ? 'text-orange-600 bg-orange-50/80 dark:bg-orange-900/20' : 'text-slate-500 hover:text-orange-500 hover:bg-white/40 dark:hover:bg-slate-800/40'}`}
                     onClick={() => onViewChange('document')}
                     title="Documento"
                 >
-                    <Icon svg={ICONS.book} className="h-4 w-4" />
+                    <Icon svg={ICONS.book} className="h-5 w-5" />
                 </Button>
+
+                <div className="h-4 w-px bg-slate-200 dark:bg-slate-700 mx-2" />
+
+                <FiltersBar filters={filters} setFilters={setFilters} db={db} userId={userId} tags={tags} />
             </div>
 
             {/* Search removed as it is in the right sidebar now */}
             <div className="flex-1" />
 
 
-            <div className="flex gap-2 w-full md:w-auto justify-end items-center">
-                <FiltersBar filters={filters} setFilters={setFilters} db={db} userId={userId} tags={tags} />
-            </div>
+
         </div>
     );
 };

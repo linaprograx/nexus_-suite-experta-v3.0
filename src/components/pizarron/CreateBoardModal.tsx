@@ -22,6 +22,14 @@ export const CreateBoardModal: React.FC<CreateBoardModalProps> = ({ isOpen, onCl
   const [themeColor, setThemeColor] = React.useState('#60A5FA');
   const [icon, setIcon] = React.useState('layout');
   const [description, setDescription] = React.useState('');
+  const [selectedTools, setSelectedTools] = React.useState<string[]>([]);
+
+  const AVAILABLE_TOOLS = [
+    { id: 'cerebrity', name: 'Cerebrity (IA)', icon: 'brain' },
+    { id: 'thelab', name: 'The Lab', icon: 'flask' }, // Using 'flask' as 'beaker' is not in ICONS
+    { id: 'grimorium', name: 'Grimorium', icon: 'book' },
+    { id: 'costeo', name: 'Costeo', icon: 'calculator' },
+  ];
 
   React.useEffect(() => {
     if (boardToEdit) {
@@ -30,14 +38,22 @@ export const CreateBoardModal: React.FC<CreateBoardModalProps> = ({ isOpen, onCl
       setThemeColor(boardToEdit.themeColor);
       setIcon(boardToEdit.icon);
       setDescription(boardToEdit.description || '');
+      setSelectedTools(boardToEdit.enabledTools || []);
     } else {
       setName('');
       setCategory('general');
       setThemeColor('#60A5FA');
       setIcon('layout');
       setDescription('');
+      setSelectedTools([]);
     }
   }, [boardToEdit, isOpen]);
+
+  const handleToggleTool = (toolId: string) => {
+    setSelectedTools(prev =>
+      prev.includes(toolId) ? prev.filter(id => id !== toolId) : [...prev, toolId]
+    );
+  };
 
   const handleSubmit = () => {
     if (!name.trim()) return;
@@ -47,7 +63,8 @@ export const CreateBoardModal: React.FC<CreateBoardModalProps> = ({ isOpen, onCl
       category: category as any,
       themeColor,
       icon,
-      description
+      description,
+      enabledTools: selectedTools, // Add selected tools to the payload
     });
     // onClose is handled by parent usually, but we can call it if parent doesn't auto-close
     // actually parent closes on onCreate success usually. But here we can safe-guard.

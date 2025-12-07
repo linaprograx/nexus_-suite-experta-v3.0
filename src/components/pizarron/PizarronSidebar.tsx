@@ -1,5 +1,6 @@
 import React from 'react';
 import { Button } from '../ui/Button';
+import ReactDOM from 'react-dom';
 import { Icon } from '../ui/Icon';
 import { ICONS } from '../ui/icons';
 import { PizarronBoard } from '../../types';
@@ -118,9 +119,9 @@ export const PizarronSidebar: React.FC<PizarronSidebarProps> = ({
             </div>
 
             {/* Fixed Tooltip Portal */}
-            {hoveredItem && (
+            {hoveredItem && ReactDOM.createPortal(
                 <div
-                    className="fixed left-[80px] z-[100] pointer-events-none transform -translate-y-1/2"
+                    className="fixed left-[80px] z-[9999] pointer-events-none transform -translate-y-1/2"
                     style={{ top: hoveredItem.top }}
                 >
                     <div className="bg-slate-900 text-white text-xs font-medium px-3 py-1.5 rounded-lg shadow-xl flex items-center gap-2 animate-in fade-in slide-in-from-left-2 duration-200 border border-white/10">
@@ -128,7 +129,8 @@ export const PizarronSidebar: React.FC<PizarronSidebarProps> = ({
                         <div className="w-px h-3 bg-white/20 mx-1"></div>
                         <span className="text-[10px] opacity-70">Clic para ver</span>
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
         </div>
     );

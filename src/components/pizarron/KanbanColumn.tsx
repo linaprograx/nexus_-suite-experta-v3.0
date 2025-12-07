@@ -55,7 +55,7 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({ title, status, tasks
       layout
       className={`
         rounded-xl flex flex-col flex-shrink-0 transition-all duration-300
-        ${isFocused ? 'w-full max-w-4xl mx-auto' : compactMode ? 'w-64 shrink-0' : 'w-[360px] shrink-0'}
+        ${isFocused ? 'w-full max-w-4xl mx-auto' : 'w-full'}
         ${compactMode ? 'h-full' : 'h-full'}
         bg-white/50 dark:bg-white/10 backdrop-blur-xl
         border border-white/20 dark:border-white/10 shadow-lg
