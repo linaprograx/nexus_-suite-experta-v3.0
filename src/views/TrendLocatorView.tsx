@@ -100,9 +100,9 @@ const TrendLocatorView: React.FC<TrendLocatorViewProps> = ({ db, userId, appId }
                                 <p className="text-lg">Configura los filtros a la derecha y busca inspiración.</p>
                             </div>
                         ) : (
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pb-4">
+                            <div className="flex flex-col gap-4 pb-4">
                                 {trendResults.map((item, index) => (
-                                    <div key={index} className="h-full">
+                                    <div key={index} className="w-full">
                                         <TrendResultCard item={item} db={db} userId={userId} appId={appId} trendHistoryPath={trendHistoryPath} />
                                     </div>
                                 ))}

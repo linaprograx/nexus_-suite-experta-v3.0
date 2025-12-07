@@ -43,25 +43,27 @@ export const PremiumLayout: React.FC<PremiumLayoutProps> = ({
     return (
         <div className={`h-[calc(100vh-80px)] w-full flex flex-col px-4 lg:px-8 py-6 ${className}`}>
             {/* Main Container with Rounded Corners and Gradient */}
-            <div className={`flex-1 grid grid-cols-1 lg:grid-cols-[250px,minmax(0,1fr),320px] gap-6 overflow-hidden rounded-3xl bg-gradient-to-b ${activeGradient} p-6 shadow-sm ring-1 ring-black/5 dark:ring-white/5`}>
+            <div className={`flex-1 grid grid-cols-1 lg:grid-cols-[250px,minmax(0,1fr),320px] gap-6 overflow-hidden rounded-3xl bg-gradient-to-b ${activeGradient} p-6 shadow-sm ring-1 ring-black/5 dark:ring-white/5 ${className}`}>
 
                 {/* Left Sidebar Column */}
-                <div className="h-full min-h-0 overflow-hidden flex flex-col">
+                <div className="h-full min-h-0 overflow-hidden flex flex-col relative z-20">
                     {leftSidebar}
                 </div>
 
                 {/* Main Content Column */}
-                <div className="h-full min-h-0 overflow-hidden flex flex-col relative rounded-2xl">
+                <div className="h-full min-h-0 overflow-hidden flex flex-col relative rounded-2xl z-20">
                     {/* If children is provided instead of slots, render children here (migration ease) */}
-                    {mainContent || children}
+                    {mainContent}
                 </div>
 
                 {/* Right Sidebar Column */}
-                <div className="h-full min-h-0 overflow-hidden flex flex-col">
+                <div className="h-full min-h-0 overflow-hidden flex flex-col relative z-20">
                     {rightSidebar}
                 </div>
 
             </div>
+            {/* Render children (Modals, Overlays) independent of slots */}
+            {children}
         </div>
     );
 };

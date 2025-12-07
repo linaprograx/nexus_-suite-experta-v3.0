@@ -56,81 +56,86 @@ const BatcherTab: React.FC<BatcherTabProps> = ({ db, appId, allRecipes }) => {
     };
 
     return (
-        <div className="space-y-6 max-w-3xl mx-auto mt-8">
-            {/* Configuration Card */}
-            <div className="bg-white/60 dark:bg-slate-900/30 backdrop-blur-sm rounded-xl border border-white/20 dark:border-white/5 p-6 shadow-sm">
-                <div className="text-center mb-6">
-                    <h2 className="text-2xl font-light text-slate-800 dark:text-slate-100">Batcher: Producción Masiva</h2>
-                    <p className="text-slate-500 dark:text-slate-400 text-sm">Calcula ingredientes para producción a gran escala</p>
-                </div>
+        <div className="flex flex-col gap-6 max-w-4xl mx-auto mt-4 pb-20">
+            <div className="text-center">
+                <h2 className="text-2xl font-light text-slate-800 dark:text-slate-100 flex items-center justify-center gap-2">
+                    <Icon svg={ICONS.layers} className="w-6 h-6 text-emerald-600" />
+                    Batcher
+                </h2>
+                <p className="text-slate-500 dark:text-slate-400 text-sm">Calculadora de producción masiva</p>
+            </div>
 
-                <div className="space-y-4">
+            {/* Configuration Card */}
+            <div className="bg-white/60 dark:bg-slate-900/40 backdrop-blur-md rounded-2xl border border-white/20 dark:border-white/5 p-6 shadow-sm">
+                <div className="space-y-6">
                     <div className="space-y-2">
-                        <Label htmlFor="batch-recipe" className="text-base">Receta</Label>
-                        <Select id="batch-recipe" value={batchSelectedRecipeId} onChange={e => setBatchSelectedRecipeId(e.target.value)} className="h-12 text-lg bg-white/50 dark:bg-slate-800/50">
-                            <option value="">-- Seleccionar --</option>
+                        <Label htmlFor="batch-recipe" className="text-base font-medium text-slate-700 dark:text-slate-300">Seleccionar Receta</Label>
+                        <Select id="batch-recipe" value={batchSelectedRecipeId} onChange={e => setBatchSelectedRecipeId(e.target.value)} className="h-12 text-lg bg-white/50 dark:bg-slate-800/50 rounded-xl border-white/20">
+                            <option value="">-- Elige un cóctel --</option>
                             {allRecipes.map(r => <option key={r.id} value={r.id}>{r.nombre}</option>)}
                         </Select>
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
-                            <Label htmlFor="batch-qty" className="text-base">Cantidad</Label>
-                            <Input id="batch-qty" type="number" value={targetQuantityStr} onChange={e => setTargetQuantityStr(e.target.value)} min="1" className="h-12 text-lg bg-white/50 dark:bg-slate-800/50" />
+                            <Label htmlFor="batch-qty" className="text-sm font-medium text-slate-700 dark:text-slate-300">Cantidad Objetivo</Label>
+                            <Input id="batch-qty" type="number" value={targetQuantityStr} onChange={e => setTargetQuantityStr(e.target.value)} min="0.1" step="0.1" className="h-12 text-lg bg-white/50 dark:bg-slate-800/50 rounded-xl border-white/20" />
                         </div>
                         <div className="space-y-2">
-                            <Label htmlFor="batch-unit" className="text-base">Unidad</Label>
-                            <Select id="batch-unit" value={targetUnit} onChange={e => setTargetUnit(e.target.value as any)} className="h-12 text-lg bg-white/50 dark:bg-slate-800/50">
-                                <option>Litros</option>
-                                <option>Botellas</option>
+                            <Label htmlFor="batch-unit" className="text-sm font-medium text-slate-700 dark:text-slate-300">Unidad</Label>
+                            <Select id="batch-unit" value={targetUnit} onChange={e => setTargetUnit(e.target.value as any)} className="h-12 text-lg bg-white/50 dark:bg-slate-800/50 rounded-xl border-white/20">
+                                <option value="Litros">Litros (L)</option>
+                                <option value="Botellas">Botellas (700ml)</option>
                             </Select>
                         </div>
                     </div>
 
-                    <div className="flex items-center space-x-2 pt-2">
-                        <Checkbox id="dilution" checked={includeDilution} onChange={e => setIncludeDilution(e.target.checked)} />
-                        <Label htmlFor="dilution" className="text-sm">Incluir Dilución (20%)</Label>
+                    <div className="flex items-center space-x-3 p-3 bg-emerald-50/50 dark:bg-emerald-900/10 rounded-xl border border-emerald-100 dark:border-emerald-800/20">
+                        <Checkbox id="dilution" checked={includeDilution} onChange={e => setIncludeDilution(e.target.checked)} className="border-emerald-500 text-emerald-600 focus:ring-emerald-500" />
+                        <Label htmlFor="dilution" className="text-sm cursor-pointer select-none text-slate-700 dark:text-slate-300">Incluir Dilución (20% Agua)</Label>
                     </div>
 
-                    <Button onClick={handleCalculateBatch} disabled={!batchSelectedRecipeId} className="w-full h-12 text-base bg-emerald-600 hover:bg-emerald-700 text-white">
-                        <Icon svg={ICONS.layers} className="mr-2 h-5 w-5" />Calcular Batch
+                    <Button onClick={handleCalculateBatch} disabled={!batchSelectedRecipeId} className="w-full h-12 text-base bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-600/20 transition-all hover:scale-[1.01]">
+                        <Icon svg={ICONS.calculator} className="mr-2 h-5 w-5" />Calcular Producción
                     </Button>
                 </div>
             </div>
 
-            {/* Results Table */}
+            {/* Results */}
             {batchResult && (
-                <div className="bg-white/60 dark:bg-slate-900/30 backdrop-blur-sm rounded-xl border border-white/20 dark:border-white/5 overflow-hidden shadow-sm">
-                    <div className="p-4 border-b border-white/10 dark:border-white/5 bg-white/40 dark:bg-slate-900/40">
-                        <h3 className="font-semibold text-slate-800 dark:text-slate-200">Hoja de Producción: {allRecipes.find(r => r.id === batchSelectedRecipeId)?.nombre}</h3>
-                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Objetivo: {targetQuantityStr} {targetUnit}</p>
+                <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                    <div className="bg-white/60 dark:bg-slate-900/40 backdrop-blur-md rounded-2xl border border-white/20 dark:border-white/5 p-4 flex justify-between items-center shadow-sm">
+                        <div>
+                            <h3 className="font-semibold text-slate-800 dark:text-slate-200">Resultados del Batch</h3>
+                            <p className="text-xs text-slate-500 dark:text-slate-400">Total: {targetQuantityStr} {targetUnit}</p>
+                        </div>
+                        <div className="flex gap-2">
+                            <Button variant="outline" size="sm" onClick={() => window.print()} className="bg-white/50 border-white/20">
+                                <Icon svg={ICONS.copy} className="w-4 h-4" />
+                            </Button>
+                            <Button size="sm" onClick={handleSaveToPizarron} className="bg-emerald-600 hover:bg-emerald-700 text-white">
+                                <Icon svg={ICONS.check} className="mr-2 w-4 h-4" /> Guardar
+                            </Button>
+                        </div>
                     </div>
 
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-sm">
-                            <thead className="bg-emerald-50/50 dark:bg-emerald-900/20 border-b border-white/10">
-                                <tr>
-                                    <th className="px-6 py-3 text-left text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">Ingrediente</th>
-                                    <th className="px-6 py-3 text-left text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">Cant. Original</th>
-                                    <th className="px-6 py-3 text-left text-xs font-bold text-emerald-700 dark:text-emerald-400 uppercase tracking-wider">Cant. Batch</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-white/10">
-                                {batchResult.map((row, index) => (
-                                    <tr key={index} className="hover:bg-white/20 dark:hover:bg-slate-800/20 transition-colors">
-                                        <td className="px-6 py-4 font-medium text-slate-900 dark:text-slate-100">{row.ingredient}</td>
-                                        <td className="px-6 py-4 text-slate-600 dark:text-slate-400">{row.originalQty}</td>
-                                        <td className="px-6 py-4 font-bold text-emerald-700 dark:text-emerald-400">{row.batchQty}</td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
+                    <div className="flex flex-col gap-3">
+                        {batchResult.map((row, index) => (
+                            <div key={index} className="flex items-center justify-between p-4 rounded-xl bg-white/80 dark:bg-slate-900/70 backdrop-blur-md border border-white/20 dark:border-white/5 shadow-sm hover:shadow-md transition-all">
+                                <span className="font-medium text-slate-800 dark:text-slate-200">{row.ingredient}</span>
+                                <div className="text-right">
+                                    <span className="block text-xl font-bold text-emerald-600 dark:text-emerald-400 tabular-nums">{row.batchQty}</span>
+                                    <span className="text-xs text-slate-400 block">Base: {row.originalQty}</span>
+                                </div>
+                            </div>
+                        ))}
                     </div>
-
-                    <div className="p-4 border-t border-white/10 dark:border-white/5 flex gap-2 bg-white/30 dark:bg-slate-900/20">
-                        <Button variant="outline" onClick={() => window.print()} className="flex-1">Imprimir</Button>
-                        <Button variant="secondary" onClick={handleSaveToPizarron} className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white">Guardar en Pizarrón</Button>
-                    </div>
+                </div>
+            )}
+            {!batchResult && (
+                <div className="flex flex-col items-center justify-center py-12 text-slate-400 opacity-50 border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-2xl">
+                    <Icon svg={ICONS.beaker} className="w-12 h-12 mb-3" />
+                    <p className="text-sm">Selecciona una receta para calcular</p>
                 </div>
             )}
         </div>

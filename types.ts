@@ -5,16 +5,16 @@ import { Auth, User } from 'firebase/auth';
 import { Firestore } from 'firebase/firestore';
 import { FirebaseStorage } from 'firebase/storage';
 
-export type ViewName = 
-  'dashboard' | 
-  'grimorium' | 
-  'pizarron' | 
-  'cerebrIty' | 
-  'escandallator' | 
-  'trendLocator' | 
-  'zeroWaste' | 
-  'makeMenu' | 
-  'colegium' | 
+export type ViewName =
+  'dashboard' |
+  'grimorium' |
+  'pizarron' |
+  'cerebrIty' |
+  'escandallator' |
+  'trendLocator' |
+  'zeroWaste' |
+  'makeMenu' |
+  'colegium' |
   'personal' |
   'lab';
 
@@ -29,6 +29,9 @@ export interface Ingredient {
   standardQuantity: number; // ej. 700 (ml), 1000 (g)
   standardPrice: number; // El precio calculado (ej. precioCompra / standardQuantity)
   wastePercentage?: number; // Merma (0-100)
+  merma?: number; // Alias for wastePercentage
+  proveedor?: string;
+  marca?: string;
 }
 
 export interface IngredientLineItem {
@@ -151,7 +154,7 @@ export interface TaskHistoryItem {
   taskId: string;
   type: string;
   authorId: string;
-  authorName: string; 
+  authorName: string;
   description: string;
   createdAt: number;
 }

@@ -46,67 +46,96 @@ export const RecipeList: React.FC<RecipeListProps> = ({
   return (
     <div className="h-full flex flex-col">
       <div className="flex-1 overflow-y-auto custom-scrollbar pr-2">
-        {recipes.map((recipe) => {
-          const mainCategory = recipe.categorias?.[0] || 'General';
-          const isIdea = recipe.categorias?.includes('Idea');
-          const isTesting = recipe.categorias?.includes('Pruebas') || recipe.categorias?.includes('En pruebas');
-          const isDone = recipe.categorias?.includes('Carta') || recipe.categorias?.includes('Terminado');
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          {recipes.map((recipe) => {
+            const mainCategory = recipe.categorias?.[0] || 'General';
+            const isDone = recipe.categorias?.includes('Carta') || recipe.categorias?.includes('Terminado');
 
-          let statusLabel = 'Borrador';
-          let statusColor = 'bg-slate-50 text-slate-700 dark:bg-slate-800 dark:text-slate-200';
+            let statusLabel = 'Borrador';
+            let statusColor = 'bg-slate-100 text-slate-600';
 
-          if (isDone) { statusLabel = 'Activa'; statusColor = 'bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-400 border-green-200 dark:border-green-800'; }
-          else if (isTesting) { statusLabel = 'En pruebas'; statusColor = 'bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 border-blue-200 dark:border-blue-800'; }
-          else if (isIdea) { statusLabel = 'Idea'; statusColor = 'bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 border-amber-200 dark:border-amber-800'; }
+            if (isDone) { statusLabel = 'Activa'; statusColor = 'bg-emerald-100 text-emerald-700 border-emerald-200'; }
 
-          const isSelected = selectedRecipeId === recipe.id;
+            const isSelected = selectedRecipeId === recipe.id;
 
-          return (
-            <div
-              key={recipe.id}
-              onClick={() => onSelectRecipe(recipe)}
-              draggable={!!onDragStart}
-              onDragStart={(e) => onDragStart && onDragStart(e, recipe)}
-              className={cn(
-                "flex items-center gap-4 rounded-2xl border bg-white/40 dark:bg-slate-900/40 backdrop-blur-md px-4 py-3 mb-3 cursor-pointer shadow-sm hover:shadow-md hover:bg-white/60 dark:hover:bg-slate-900/60 transition-all",
-                isSelected ? "border-indigo-500/50 bg-indigo-50/50 dark:bg-indigo-900/20 ring-1 ring-indigo-500/30" : "border-white/10 dark:border-white/5"
-              )}
-            >
-              {/* Thumbnail */}
-              <div className="relative shrink-0">
-                {recipe.imageUrl ? (
-                  <img
-                    src={recipe.imageUrl}
-                    alt={recipe.nombre}
-                    className="h-12 w-12 sm:h-14 sm:w-14 rounded-xl object-cover shadow-sm bg-slate-100 dark:bg-slate-800"
-                  />
-                ) : (
-                  <div className="h-12 w-12 sm:h-14 sm:w-14 rounded-xl bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 flex items-center justify-center shadow-sm text-white font-bold text-lg">
-                    {recipe.nombre.substring(0, 2).toUpperCase()}
+            return (
+              <div
+                key={recipe.id}
+                onClick={() => onSelectRecipe(recipe)}
+                draggable={!!onDragStart}
+                onDragStart={(e) => onDragStart && onDragStart(e, recipe)}
+                className={cn(
+                  "relative flex flex-col gap-3 rounded-2xl p-4 cursor-pointer transition-all duration-300 group overflow-hidden",
+                  isSelected
+                    ? "bg-indigo-600 shadow-xl shadow-indigo-900/20 scale-[1.02] ring-0 z-10"
+                    : "bg-white/30 dark:bg-slate-900/30 border border-white/10 hover:bg-white/50 dark:hover:bg-slate-800/50 hover:shadow-lg hover:-translate-y-1 backdrop-blur-md"
+                )}
+              >
+                {/* Header: Thumb + Title */}
+                <div className="flex items-start gap-3">
+                  <div className="relative shrink-0">
+                    {recipe.imageUrl ? (
+                      <img
+                        src={recipe.imageUrl}
+                        alt={recipe.nombre}
+                        className="h-16 w-16 rounded-xl object-cover shadow-sm bg-slate-100 dark:bg-slate-800"
+                      />
+                    ) : (
+                      <div className="h-16 w-16 rounded-xl bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 flex items-center justify-center shadow-sm text-white font-bold text-xl">
+                        {recipe.nombre.substring(0, 2).toUpperCase()}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="min-w-0 flex-1">
+                    <p className={cn("font-bold text-lg truncate leading-tight mb-1",
+                      isSelected ? "text-white" : "text-slate-900 dark:text-white"
+                    )}>
+                      {recipe.nombre}
+                    </p>
+                    <div className="flex flex-wrap gap-1">
+                      <span className={cn("text-[10px] px-2 py-0.5 rounded-full uppercase font-bold tracking-wide",
+                        isSelected ? "bg-white/20 text-indigo-100" : "bg-slate-100 dark:bg-slate-800 text-slate-500"
+                      )}>
+                        {mainCategory}
+                      </span>
+                      {isDone && (
+                        <span className={cn("text-[10px] px-2 py-0.5 rounded-full uppercase font-bold tracking-wide",
+                          isSelected ? "bg-emerald-500/30 text-emerald-100" : "bg-emerald-100 text-emerald-700"
+                        )}>Carta</span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Footer: Financials (Compact) */}
+                <div className={cn("flex items-center justify-between pt-3 border-t mt-1",
+                  isSelected ? "border-white/20" : "border-slate-100 dark:border-slate-800"
+                )}>
+                  <div className="flex flex-col">
+                    <span className={cn("text-[10px] uppercase tracking-wider", isSelected ? "text-indigo-200" : "text-slate-400")}>Costo</span>
+                    <span className={cn("font-bold font-mono", isSelected ? "text-white" : "text-slate-700 dark:text-slate-300")}>
+                      €{(recipe.costoReceta || 0).toFixed(2)}
+                    </span>
+                  </div>
+                  <div className="flex flex-col text-right">
+                    <span className={cn("text-[10px] uppercase tracking-wider", isSelected ? "text-indigo-200" : "text-slate-400")}>Venta</span>
+                    <span className={cn("font-bold font-mono", isSelected ? "text-white" : "text-slate-900 dark:text-white")}>
+                      {recipe.precioVenta ? `€${recipe.precioVenta.toFixed(2)}` : '-'}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Selection Indicator Icon */}
+                {isSelected && (
+                  <div className="absolute top-2 right-2 text-white/20">
+                    <Icon svg={ICONS.check} className="w-12 h-12 -rotate-12" />
                   </div>
                 )}
               </div>
-
-              {/* Content */}
-              <div className="flex-1 min-w-0">
-                <p className={cn("font-bold text-slate-900 dark:text-white truncate", compactMode ? "text-sm" : "text-base")}>
-                  {recipe.nombre}
-                </p>
-                <p className="text-xs text-slate-500 dark:text-slate-400 truncate mt-0.5">
-                  {mainCategory} • {statusLabel}
-                </p>
-              </div>
-
-              {/* Status Badge */}
-              <span className={cn(
-                "hidden sm:inline-flex items-center rounded-full border px-2.5 py-0.5 text-[11px] font-medium shrink-0",
-                statusColor
-              )}>
-                {statusLabel}
-              </span>
-            </div>
-          );
-        })}
+            );
+          })}
+        </div>
       </div>
     </div>
   );

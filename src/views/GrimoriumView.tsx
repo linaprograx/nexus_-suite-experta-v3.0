@@ -16,6 +16,7 @@ import { FiltersSidebar } from '../components/grimorium/FiltersSidebar';
 import { RecipeList } from '../components/grimorium/RecipeList';
 import { RecipeDetailPanel } from '../components/grimorium/RecipeDetailPanel';
 import { IngredientListPanel } from '../components/grimorium/IngredientListPanel';
+import { IngredientDetailPanel } from '../components/grimorium/IngredientDetailPanel'; // NEW
 import { PremiumLayout } from '../components/layout/PremiumLayout'; // NEW
 import { useDebounce } from '../hooks/useDebounce'; // NEW
 
@@ -67,11 +68,28 @@ const GrimoriumView: React.FC<GrimoriumViewProps> = ({ db, userId, appId, allIng
         }
     };
 
-    const handleDeleteIngredient = async (id: string) => {
-        if (window.confirm("¿Seguro que quieres eliminar este ingrediente?")) {
-            await deleteDoc(doc(db, ingredientsColPath, id));
+    const handleDeleteIngredient = async (ing: Ingredient) => {
+        if (window.confirm(`¿Seguro que quieres eliminar ${ing.nombre}?`)) {
+            await deleteDoc(doc(db, ingredientsColPath, ing.id));
+            // Also remove from selected ingredients list if present
+            if (selectedIngredients.includes(ing.id)) {
+                handleSelectIngredient(ing.id); // Toggle off
+            }
+            // Also clear viewing selection if it was the one
+            if (selectedRecipeId === ing.id) { // Reusing selectedRecipeId state variable for ingredient ID when in ingredient mode might be confusing. Better separate them.
+                // Actually, let's look at the `selectedRecipe` memo. It derives from `selectedRecipeId`.
+                // We should add `selectedIngredientId` state.
+            }
         }
     };
+
+    const [selectedIngredientId, setSelectedIngredientId] = React.useState<string | null>(null);
+
+    // Effect to clear selections when switching tabs
+    React.useEffect(() => {
+        if (activeTab === 'recipes') setSelectedIngredientId(null);
+        else setSelectedRecipeId(null);
+    }, [activeTab]);
 
     const handleSelectIngredient = (id: string) => {
         setSelectedIngredients(prev =>
@@ -95,6 +113,7 @@ const GrimoriumView: React.FC<GrimoriumViewProps> = ({ db, userId, appId, allIng
             });
             await batch.commit();
             setSelectedIngredients([]);
+            setSelectedIngredientId(null);
         }
     };
 
@@ -217,6 +236,10 @@ const GrimoriumView: React.FC<GrimoriumViewProps> = ({ db, userId, appId, allIng
         allRecipes.find(r => r.id === selectedRecipeId) || null,
         [allRecipes, selectedRecipeId]);
 
+    const selectedIngredient = React.useMemo(() =>
+        allIngredients.find(i => i.id === selectedIngredientId) || null,
+        [allIngredients, selectedIngredientId]);
+
     const stats = React.useMemo(() => {
         return {
             total: allRecipes.length,
@@ -240,11 +263,12 @@ const GrimoriumView: React.FC<GrimoriumViewProps> = ({ db, userId, appId, allIng
 
     return (
         <PremiumLayout
-            gradientTheme="indigo"
+            gradientTheme={activeTab === 'ingredients' ? 'emerald' : 'indigo'}
+            className="lg:!grid-cols-[180px,minmax(0,1fr),320px]" // Shrink left sidebar to 180px
             leftSidebar={
                 <FiltersSidebar
-                    searchTerm={recipeSearch}
-                    onSearchChange={setRecipeSearch}
+                    searchTerm={activeTab === 'recipes' ? recipeSearch : ingredientSearch}
+                    onSearchChange={activeTab === 'recipes' ? setRecipeSearch : setIngredientSearch}
                     filters={filters}
                     onFilterChange={(k, v) => setFilters(prev => ({ ...prev, [k]: v }))}
                     stats={stats}
@@ -255,7 +279,7 @@ const GrimoriumView: React.FC<GrimoriumViewProps> = ({ db, userId, appId, allIng
                 />
             }
             mainContent={
-                <div className="h-full flex flex-col bg-slate-50/50 dark:bg-slate-900/50 backdrop-blur-sm rounded-2xl border border-white/20 dark:border-white/5 p-4">
+                <div className="h-full flex flex-col bg-transparent p-0"> {/* Transparent container */}
                     {/* Tab Switcher (Visual only inside Main Area) */}
                     <div className="flex items-center justify-between mb-4 flex-shrink-0">
                         <div className="flex items-center gap-2 bg-slate-200/50 dark:bg-slate-800/50 p-1 rounded-full">
@@ -266,7 +290,7 @@ const GrimoriumView: React.FC<GrimoriumViewProps> = ({ db, userId, appId, allIng
                                 Recetas
                             </button>
                             <button
-                                className={`px-4 py-1.5 text-sm rounded-full transition-all duration-300 font-medium ${activeTab === 'ingredients' ? 'bg-white text-indigo-600 shadow-sm dark:bg-slate-700 dark:text-white' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400'}`}
+                                className={`px-4 py-1.5 text-sm rounded-full transition-all duration-300 font-medium ${activeTab === 'ingredients' ? 'bg-white text-emerald-600 shadow-sm dark:bg-slate-700 dark:text-white' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400'}`}
                                 onClick={() => setActiveTab('ingredients')}
                             >
                                 Ingredientes
@@ -286,19 +310,20 @@ const GrimoriumView: React.FC<GrimoriumViewProps> = ({ db, userId, appId, allIng
                         <IngredientListPanel
                             ingredients={filteredIngredients}
                             selectedIngredientIds={selectedIngredients}
+                            viewingIngredientId={selectedIngredientId} // Pass active ID
                             onToggleSelection={handleSelectIngredient}
                             onSelectAll={(selected) => setSelectedIngredients(selected ? filteredIngredients.map(i => i.id) : [])}
                             onDeleteSelected={handleDeleteSelectedIngredients}
                             onImportCSV={() => setShowCsvImportModal(true)}
-                            onEditIngredient={(ing) => { setEditingIngredient(ing); setShowIngredientModal(true); }}
+                            onEditIngredient={(ing) => setSelectedIngredientId(ing.id)} // Now maps to selection
                             onNewIngredient={() => { setEditingIngredient(null); setShowIngredientModal(true); }}
                         />
                     )}
                 </div>
             }
             rightSidebar={
-                <div className={`h-full ${selectedRecipe ? '' : 'hidden lg:block opacity-50 pointer-events-none'}`}>
-                    {selectedRecipe ? (
+                <div className={`h-full ${selectedRecipe || selectedIngredient ? '' : 'hidden lg:block opacity-50 pointer-events-none'}`}>
+                    {activeTab === 'recipes' && selectedRecipe ? (
                         <RecipeDetailPanel
                             recipe={selectedRecipe}
                             allIngredients={allIngredients}
@@ -308,19 +333,26 @@ const GrimoriumView: React.FC<GrimoriumViewProps> = ({ db, userId, appId, allIng
                             onToolToggle={setIsToolOpen}
                             onNavigate={(view, data) => setCurrentView(view)}
                         />
+                    ) : activeTab === 'ingredients' && selectedIngredient ? (
+                        <IngredientDetailPanel
+                            ingredient={selectedIngredient}
+                            onEdit={(ing) => { setEditingIngredient(ing); setShowIngredientModal(true); }}
+                            onDelete={(ing) => handleDeleteIngredient(ing)}
+                            onClose={() => setSelectedIngredientId(null)}
+                        />
                     ) : (
                         <div className="h-full flex items-center justify-center text-slate-400 text-center p-8">
                             <div>
-                                <Icon svg={ICONS.book} className="w-12 h-12 mx-auto mb-2 opacity-50" />
-                                <p>Selecciona una receta para ver los detalles.</p>
+                                <Icon svg={activeTab === 'recipes' ? ICONS.book : ICONS.beaker} className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                                <p>Selecciona {activeTab === 'recipes' ? 'una receta' : 'un ingrediente'} para ver los detalles.</p>
                             </div>
                         </div>
                     )}
                 </div>
             }
         >
-            {/* Mobile Overlay for Detail */}
-            {selectedRecipe && (
+            {/* Mobile Overlay for Recipe Detail */}
+            {selectedRecipe && activeTab === 'recipes' && (
                 <div className="lg:hidden fixed inset-0 z-50 bg-white dark:bg-slate-950 p-4 overflow-y-auto">
                     <Button size="icon" variant="ghost" onClick={() => setSelectedRecipeId(null)} className="absolute top-4 right-4">
                         <Icon svg={ICONS.x} />
@@ -333,6 +365,17 @@ const GrimoriumView: React.FC<GrimoriumViewProps> = ({ db, userId, appId, allIng
                         onDuplicate={handleDuplicateRecipe}
                         onToolToggle={setIsToolOpen}
                         onNavigate={(view, data) => setCurrentView(view)}
+                    />
+                </div>
+            )}
+            {/* Mobile Overlay for Ingredient Detail */}
+            {selectedIngredient && activeTab === 'ingredients' && (
+                <div className="lg:hidden fixed inset-0 z-50 bg-white dark:bg-slate-950 p-4 overflow-y-auto">
+                    <IngredientDetailPanel
+                        ingredient={selectedIngredient}
+                        onEdit={(ing) => { setEditingIngredient(ing); setShowIngredientModal(true); }}
+                        onDelete={(ing) => handleDeleteIngredient(ing)}
+                        onClose={() => setSelectedIngredientId(null)}
                     />
                 </div>
             )}

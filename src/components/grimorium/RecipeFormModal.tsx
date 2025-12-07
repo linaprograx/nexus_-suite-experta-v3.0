@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useRef, useEffect } from 'react';
 import { Firestore, updateDoc, addDoc, collection, doc } from 'firebase/firestore';
-import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { Modal } from '../ui/Modal';
 import { Input } from '../ui/Input';
 import { Textarea } from '../ui/Textarea';
@@ -11,6 +11,7 @@ import { Autocomplete } from '../ui/Autocomplete';
 import { ICONS } from '../ui/icons';
 import { Recipe, Ingredient, IngredientLineItem } from '../../../types';
 import { useApp } from '../../context/AppContext';
+import { calculateRecipeCost } from '../../modules/costing/costCalculator';
 
 interface RecipeFormModalProps {
     isOpen: boolean;
@@ -27,13 +28,18 @@ export const RecipeFormModal: React.FC<RecipeFormModalProps> = ({ isOpen, onClos
     const [lineItems, setLineItems] = React.useState<IngredientLineItem[]>([]);
     const [isUploading, setIsUploading] = React.useState(false);
 
+    // Dynamic Cost Calculation using shared logic
+    const currentCost = React.useMemo(() => {
+        return calculateRecipeCost({ ...recipe, ingredientes: lineItems }, allIngredients).costoTotal;
+    }, [recipe, lineItems, allIngredients]);
+
     React.useEffect(() => {
         setRecipe(initialData || {});
         setLineItems(initialData?.ingredientes || []);
     }, [initialData]);
 
     const handleRecipeChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-        setRecipe(prev => ({...prev, [e.target.name]: e.target.value }));
+        setRecipe(prev => ({ ...prev, [e.target.name]: e.target.value }));
     };
 
     const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -55,7 +61,7 @@ export const RecipeFormModal: React.FC<RecipeFormModalProps> = ({ isOpen, onClos
     };
 
     const addLineItem = () => setLineItems(prev => [...prev, { ingredientId: null, nombre: '', cantidad: 0, unidad: 'ml' }]);
-    
+
     const updateLineItem = (index: number, field: keyof IngredientLineItem, value: any) => {
         const items = [...lineItems];
         if (field === 'ingredientId') {
@@ -69,17 +75,9 @@ export const RecipeFormModal: React.FC<RecipeFormModalProps> = ({ isOpen, onClos
 
     const removeLineItem = (index: number) => setLineItems(prev => prev.filter((_, i) => i !== index));
 
-    const calculateCost = React.useCallback(() => {
-        return lineItems.reduce((total, item) => {
-            const ingredient = allIngredients.find(i => i.id === item.ingredientId);
-            if (!ingredient || !ingredient.standardPrice) return total;
-            return total + (ingredient.standardPrice * item.cantidad);
-        }, 0);
-    }, [lineItems, allIngredients]);
-
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        const dataToSave = { ...recipe, ingredientes: lineItems, costoReceta: calculateCost() };
+        const dataToSave = { ...recipe, ingredientes: lineItems, costoReceta: currentCost }; // Use calculated cost
         if (dataToSave.id) {
             await updateDoc(doc(db, `users/${userId}/grimorio`, dataToSave.id), dataToSave);
         } else {
@@ -88,54 +86,174 @@ export const RecipeFormModal: React.FC<RecipeFormModalProps> = ({ isOpen, onClos
         onClose();
     };
 
+    if (!isOpen) return null;
+
     return (
-        <Modal isOpen={isOpen} onClose={onClose} title={recipe.id ? "Editar Receta" : "Nueva Receta"} size="2xl">
-            <form onSubmit={handleSubmit} className="space-y-4">
-                {recipe.imageUrl && (
-                    <div className="mb-4">
-                        <img src={recipe.imageUrl} alt="Vista previa" className="w-full h-48 object-cover rounded-lg" />
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            {/* Backdrop */}
+            <div className="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity" onClick={onClose} />
+
+            {/* Premium Gradient Modal Content */}
+            <div className="relative w-full max-w-4xl max-h-[90vh] flex flex-col bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/20 dark:border-white/5 overflow-hidden animate-in zoom-in-95 duration-200">
+                {/* Header with Gradient Background */}
+                <div className="relative p-6 border-b border-white/10 overflow-hidden">
+                    <div className="absolute inset-0 bg-gradient-to-r from-indigo-600 via-violet-600 to-indigo-600 opacity-100" />
+                    <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20" /> {/* Texture if possible, or just gradient */}
+
+                    <div className="relative flex items-center justify-between z-10">
+                        <h2 className="text-2xl font-bold text-white shadow-sm">
+                            {recipe.id ? "Editar Receta" : "Nueva Receta"}
+                        </h2>
+                        <Button variant="ghost" size="icon" onClick={onClose} className="rounded-full bg-white/10 hover:bg-white/20 text-white border border-white/10">
+                            <Icon svg={ICONS.x} />
+                        </Button>
                     </div>
-                )}
-                <div className="text-sm">
-                    <label htmlFor="photo-upload" className="font-medium text-gray-700 dark:text-gray-300">Cambiar Foto</label>
-                    <Input id="photo-upload" name="photo" type="file" accept="image/*" onChange={handleImageUpload} disabled={isUploading} />
-                    {isUploading && <p className="text-xs text-blue-500 mt-1">Subiendo imagen...</p>}
                 </div>
 
-                <Input name="nombre" value={recipe.nombre || ''} onChange={handleRecipeChange} placeholder="Nombre de la Receta" required />
-                <Input name="categorias" value={recipe.categorias?.join(', ') || ''} onChange={e => setRecipe(r => ({...r, categorias: e.target.value.split(',').map(c => c.trim())}))} placeholder="Categorías (separadas por coma)" />
-                <Textarea name="preparacion" value={recipe.preparacion || ''} onChange={handleRecipeChange} placeholder="Preparación" />
-                <Textarea name="garnish" value={recipe.garnish || ''} onChange={handleRecipeChange} placeholder="Garnish" />
-                
-                <div>
-                    <h4 className="font-semibold mb-2">Ingredientes</h4>
-                    <div className="space-y-2 max-h-48 overflow-y-auto pr-2">
-                        {lineItems.map((item, index) => (
-                            <div key={index} className="grid grid-cols-12 gap-2 items-center">
-                                <div className="col-span-6">
-                                    <Autocomplete
-                                        items={allIngredients}
-                                        selectedId={item.ingredientId}
-                                        onSelect={(id) => updateLineItem(index, 'ingredientId', id)}
-                                        placeholder="Buscar ingrediente..."
-                                    />
+                {/* Scrollable Content */}
+                <div className="flex-1 overflow-y-auto custom-scrollbar p-6 space-y-6">
+                    <form id="recipe-form" onSubmit={handleSubmit} className="space-y-6">
+                        {/* Image & Basic Info */}
+                        <div className="grid grid-cols-1 md:grid-cols-[200px_1fr] gap-6">
+                            <div className="space-y-2">
+                                <div className={`w-full aspect-square rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 relative group`}>
+                                    {recipe.imageUrl ? (
+                                        <img src={recipe.imageUrl} alt="Preview" className="w-full h-full object-cover" />
+                                    ) : (
+                                        <div className="w-full h-full flex items-center justify-center text-slate-300">
+                                            <Icon svg={ICONS.camera} className="w-8 h-8" />
+                                        </div>
+                                    )}
+                                    <label className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
+                                        <span className="text-white text-xs font-medium">Cambiar</span>
+                                        <input type="file" className="hidden" accept="image/*" onChange={handleImageUpload} disabled={isUploading} />
+                                    </label>
                                 </div>
-                                <Input className="col-span-2" type="number" step="0.1" value={item.cantidad} onChange={e => updateLineItem(index, 'cantidad', parseFloat(e.target.value))} placeholder="Cant." />
-                                <Select className="col-span-3" value={item.unidad} onChange={e => updateLineItem(index, 'unidad', e.target.value)}>
-                                    <option>ml</option><option>g</option><option>und</option>
-                                </Select>
-                                <Button type="button" variant="ghost" size="icon" onClick={() => removeLineItem(index)} className="col-span-1"><Icon svg={ICONS.trash} className="h-4 w-4"/></Button>
                             </div>
-                        ))}
-                    </div>
-                     <Button type="button" size="sm" variant="outline" onClick={addLineItem} className="mt-2">Añadir Ingrediente</Button>
+                            <div className="space-y-4">
+                                <div className="space-y-1">
+                                    <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Nombre</label>
+                                    <Input name="nombre" value={recipe.nombre || ''} onChange={handleRecipeChange} placeholder="Ej. Margarita" className="text-lg font-medium" required />
+                                </div>
+                                <div className="space-y-1">
+                                    <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Categorías</label>
+                                    <Input name="categorias" value={recipe.categorias?.join(', ') || ''} onChange={e => setRecipe(r => ({ ...r, categorias: e.target.value.split(',').map(c => c.trim()) }))} placeholder="Clásico, Refrescante..." />
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Prep & Garnish */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div className="space-y-1">
+                                <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Preparación</label>
+                                <Textarea name="preparacion" value={recipe.preparacion || ''} onChange={handleRecipeChange} placeholder="Pasos de la receta..." className="h-32" />
+                            </div>
+                            <div className="space-y-1">
+                                <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Garnish / Decoración</label>
+                                <Textarea name="garnish" value={recipe.garnish || ''} onChange={handleRecipeChange} placeholder="Detalles de presentación..." className="h-32" />
+                            </div>
+                        </div>
+
+                        {/* Ingredients Section - NOW WITHOUT OVERFLOW CLIPPING */}
+                        <div className="space-y-3">
+                            <div className="flex items-center justify-between">
+                                <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Ingredientes</label>
+                                <Button type="button" size="sm" variant="outline" onClick={addLineItem} className="h-8 text-xs">
+                                    <Icon svg={ICONS.plus} className="mr-1 h-3 w-3" /> Añadir
+                                </Button>
+                            </div>
+                            <div className="space-y-2 bg-slate-50/50 dark:bg-slate-800/30 p-4 rounded-xl border border-slate-200/50 dark:border-slate-700/50">
+                                {lineItems.length === 0 && (
+                                    <p className="text-sm text-slate-400 text-center py-4 italic">No hay ingredientes añadidos.</p>
+                                )}
+                                {lineItems.map((item, index) => (
+                                    <div key={index} className="grid grid-cols-12 gap-2 items-start relative z-auto"> {/* Removed z-index manipulation unless needed */}
+                                        <div className="col-span-6 relative">
+                                            {/* Z-Index for Autocomplete container to ensure it floats over subsequent rows if needed */}
+                                            <div style={{ zIndex: 50 - index, position: 'relative' }}>
+                                                <Autocomplete
+                                                    items={allIngredients}
+                                                    selectedId={item.ingredientId}
+                                                    onSelect={(id) => updateLineItem(index, 'ingredientId', id)}
+                                                    placeholder="Ingrediente"
+                                                />
+                                            </div>
+                                        </div>
+                                        <div className="col-span-2">
+                                            <Input type="number" step="0.01" value={item.cantidad || ''} onChange={e => updateLineItem(index, 'cantidad', parseFloat(e.target.value))} placeholder="0" className="bg-white dark:bg-slate-800" />
+                                        </div>
+                                        <div className="col-span-3">
+                                            <Select value={item.unidad} onChange={e => updateLineItem(index, 'unidad', e.target.value)} className="bg-white dark:bg-slate-800">
+                                                <option value="ml">ml</option>
+                                                <option value="cl">cl</option>
+                                                <option value="l">L</option>
+                                                <option value="g">g</option>
+                                                <option value="kg">kg</option>
+                                                <option value="und">und</option>
+                                                <option value="dash">dash</option>
+                                                <option value="tsp">tsp</option>
+                                            </Select>
+                                        </div>
+                                        <div className="col-span-1 flex justify-center">
+                                            <Button type="button" variant="ghost" size="icon" onClick={() => removeLineItem(index)} className="hover:bg-red-100 hover:text-red-500 dark:hover:bg-red-900/30">
+                                                <Icon svg={ICONS.trash} className="h-4 w-4" />
+                                            </Button>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </form>
                 </div>
 
-                <div className="flex justify-between items-center pt-4">
-                    <p>Costo Total: <span className="font-bold">€{calculateCost().toFixed(2)}</span></p>
-                    <Button type="submit">Guardar Receta</Button>
+                {/* Footer */}
+                {/* Footer with Cost & Margin Logic */}
+                <div className="p-6 border-t border-slate-200/50 dark:border-slate-700/50 bg-slate-50/50 dark:bg-slate-800/50">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                        {/* Helper for Margin */}
+                        {(() => {
+                            const costo = currentCost;
+                            const venta = parseFloat(String(recipe.precioVenta || 0));
+                            const iva = 0; // Assuming basic calc for now or user inputted Net Price? Let's assume Net for Grimorium fast calc.
+                            const margen = venta > 0 ? ((venta - costo) / venta) * 100 : 0;
+
+                            return (
+                                <>
+                                    <div className="p-3 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm">
+                                        <span className="text-xs text-slate-500 uppercase tracking-wider block mb-1">Costo Total</span>
+                                        <span className="text-2xl font-bold text-slate-800 dark:text-slate-100">€{costo.toFixed(2)}</span>
+                                    </div>
+                                    <div className="p-3 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm">
+                                        <span className="text-xs text-slate-500 uppercase tracking-wider block mb-1">Precio Venta (Neto)</span>
+                                        <div className="flex items-center">
+                                            <span className="text-lg font-medium text-slate-400 mr-1">€</span>
+                                            <input
+                                                type="number"
+                                                step="0.10"
+                                                className="w-full bg-transparent text-2xl font-bold text-slate-800 dark:text-slate-100 outline-none placeholder-slate-300"
+                                                placeholder="0.00"
+                                                value={recipe.precioVenta || ''}
+                                                onChange={e => setRecipe(prev => ({ ...prev, precioVenta: parseFloat(e.target.value) }))}
+                                            />
+                                        </div>
+                                    </div>
+                                    <div className={`p-3 rounded-xl border shadow-sm flex flex-col justify-center ${margen < 20 ? 'bg-red-50 border-red-200 text-red-700' : margen < 70 ? 'bg-amber-50 border-amber-200 text-amber-700' : 'bg-emerald-50 border-emerald-200 text-emerald-700'}`}>
+                                        <span className="text-xs uppercase tracking-wider block mb-1 opacity-80">Margen Bruto</span>
+                                        <span className="text-2xl font-bold">{margen.toFixed(1)}%</span>
+                                    </div>
+                                </>
+                            );
+                        })()}
+                    </div>
+
+                    <div className="flex justify-end gap-3">
+                        <Button variant="outline" onClick={onClose}>Cancelar</Button>
+                        <Button type="submit" form="recipe-form" className="bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-500/20 px-8">
+                            Guardar Receta
+                        </Button>
+                    </div>
                 </div>
-            </form>
-        </Modal>
+            </div>
+        </div>
     );
 };
