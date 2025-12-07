@@ -61,6 +61,7 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({ title, status, tasks
         border border-white/20 dark:border-white/10 shadow-lg
         rounded-2xl
         snap-center
+        min-h-0
       `}
       onDragOver={(e) => e.preventDefault()}
       onDrop={(e) => {
@@ -90,7 +91,7 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({ title, status, tasks
         </div>
       </div>
 
-      <div className={`flex-1 overflow-y-auto ${compactMode ? 'p-1 space-y-1' : 'p-2 space-y-3'} custom-scrollbar`}>
+      <div className={`flex-1 min-h-0 overflow-y-auto ${compactMode ? 'p-1 space-y-1' : 'p-2 space-y-3'} custom-scrollbar`}>
         <AnimatePresence>
           {visibleTasks.map(task => (
             <PizarronCard

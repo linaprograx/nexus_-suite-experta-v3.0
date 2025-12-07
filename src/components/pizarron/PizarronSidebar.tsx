@@ -24,7 +24,8 @@ export const PizarronSidebar: React.FC<PizarronSidebarProps> = ({
     onEditBoard,
     onDeleteBoard
 }) => {
-    const [hoveredItem, setHoveredItem] = React.useState<{ text: string; top: number } | null>(null);
+    // Change state to use 'right' for positioning to the left of the icon
+    const [hoveredItem, setHoveredItem] = React.useState<{ text: string; top: number; right: number } | null>(null);
 
     return (
         <div className="h-full flex flex-col bg-white/40 dark:bg-slate-900/40 backdrop-blur-xl rounded-2xl border border-white/20 dark:border-white/5 p-2 items-center shadow-sm relative overflow-visible group/sidebar">
@@ -46,7 +47,8 @@ export const PizarronSidebar: React.FC<PizarronSidebarProps> = ({
                             className="relative group/item w-full flex justify-center perspective-1000"
                             onMouseEnter={(e) => {
                                 const rect = e.currentTarget.getBoundingClientRect();
-                                setHoveredItem({ text: board.name, top: rect.top + (rect.height / 2) });
+                                // Position relative to viewport right edge to place it to the LEFT of the icon
+                                setHoveredItem({ text: board.name, top: rect.top + (rect.height / 2), right: window.innerWidth - rect.left + 6 });
                             }}
                             onMouseLeave={() => setHoveredItem(null)}
                         >
@@ -92,7 +94,7 @@ export const PizarronSidebar: React.FC<PizarronSidebarProps> = ({
                 <div className="group relative"
                     onMouseEnter={(e) => {
                         const rect = e.currentTarget.getBoundingClientRect();
-                        setHoveredItem({ text: "Nuevo Tablero", top: rect.top + (rect.height / 2) });
+                        setHoveredItem({ text: "Nuevo Tablero", top: rect.top + (rect.height / 2), right: window.innerWidth - rect.left + 6 });
                     }}
                     onMouseLeave={() => setHoveredItem(null)}
                 >
@@ -108,7 +110,7 @@ export const PizarronSidebar: React.FC<PizarronSidebarProps> = ({
                 <div className="group relative"
                     onMouseEnter={(e) => {
                         const rect = e.currentTarget.getBoundingClientRect();
-                        setHoveredItem({ text: "Plantillas", top: rect.top + (rect.height / 2) });
+                        setHoveredItem({ text: "Plantillas", top: rect.top + (rect.height / 2), right: window.innerWidth - rect.left + 6 });
                     }}
                     onMouseLeave={() => setHoveredItem(null)}
                 >
@@ -121,10 +123,10 @@ export const PizarronSidebar: React.FC<PizarronSidebarProps> = ({
             {/* Fixed Tooltip Portal */}
             {hoveredItem && ReactDOM.createPortal(
                 <div
-                    className="fixed left-[80px] z-[9999] pointer-events-none transform -translate-y-1/2"
-                    style={{ top: hoveredItem.top }}
+                    className="fixed z-[9999] pointer-events-none transform -translate-y-1/2"
+                    style={{ top: hoveredItem.top, right: hoveredItem.right }}
                 >
-                    <div className="bg-slate-900 text-white text-xs font-medium px-3 py-1.5 rounded-lg shadow-xl flex items-center gap-2 animate-in fade-in slide-in-from-left-2 duration-200 border border-white/10">
+                    <div className="bg-slate-900 text-white text-xs font-medium px-3 py-1.5 rounded-lg shadow-xl flex items-center gap-2 animate-in fade-in slide-in-from-right-2 duration-200 border border-white/10">
                         {hoveredItem.text}
                     </div>
                 </div>,
@@ -133,4 +135,3 @@ export const PizarronSidebar: React.FC<PizarronSidebarProps> = ({
         </div>
     );
 };
-
