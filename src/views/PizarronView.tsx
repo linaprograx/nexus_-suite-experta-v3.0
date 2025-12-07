@@ -65,6 +65,7 @@ const PizarronView: React.FC<PizarronViewProps> = ({ db, userId, appId, auth, st
   const [showGlobalSearch, setShowGlobalSearch] = React.useState(false);
   const [filters, setFilters] = React.useState<any>({});
   const [searchQuery, setSearchQuery] = React.useState("");
+
   const [focusedColumn, setFocusedColumn] = React.useState<string | null>(null);
 
   const [currentView, setCurrentView] = React.useState<'kanban' | 'list' | 'timeline' | 'document'>(() => {
@@ -126,37 +127,22 @@ const PizarronView: React.FC<PizarronViewProps> = ({ db, userId, appId, auth, st
   const [editingBoard, setEditingBoard] = React.useState<PizarronBoard | null>(null);
 
   const handleCreateBoard = async (boardData: Partial<PizarronBoard>) => {
-    if (!boardData.name) return;
+    try {
+      const boardDataToSave = {
+        ...boardData,
+        enabledTools: boardData.enabledTools || []
+      };
 
-    if (boardData.id) {
-      // Update
-      try {
-        await updateDoc(doc(db, boardsColPath, boardData.id), {
-          name: boardData.name,
-          category: boardData.category,
-          themeColor: boardData.themeColor,
-          icon: boardData.icon,
-          description: boardData.description,
-          ...(boardData.columns ? { columns: boardData.columns } : {})
-        });
-      } catch (e) {
-        console.error("Error updating board", e);
+      if (boardData.id) {
+        await updateDoc(doc(db, boardsColPath, boardData.id), boardDataToSave);
+      } else {
+        await addDoc(collection(db, boardsColPath), boardDataToSave);
       }
-    } else {
-      // Create
-      await addDoc(collection(db, boardsColPath), {
-        name: boardData.name,
-        filters: {},
-        category: boardData.category || 'general',
-        themeColor: boardData.themeColor || '#60A5FA',
-        icon: boardData.icon || 'layout',
-        description: boardData.description || '',
-        columns: boardData.columns || ['Ideas', 'Pruebas', 'Aprobado'],
-        createdAt: serverTimestamp()
-      });
+      setShowAddBoard(false);
+      setEditingBoard(null);
+    } catch (e) {
+      console.error("Error saving board", e);
     }
-    setShowAddBoard(false);
-    setEditingBoard(null);
   };
 
   const handleDeleteBoard = async (boardId: string) => {
@@ -324,6 +310,8 @@ const PizarronView: React.FC<PizarronViewProps> = ({ db, userId, appId, auth, st
             onViewChange={handleViewChange}
             boardName={activeBoard?.name || 'Pizarrón'}
             boardDescription={activeBoard?.description}
+            board={activeBoard}
+            users={[]}
           />
 
           <div className="flex-1 flex flex-col min-h-0 relative mt-4">
@@ -391,7 +379,7 @@ const PizarronView: React.FC<PizarronViewProps> = ({ db, userId, appId, auth, st
       }
     >
       {showGlobalSearch && <GlobalSearchModal isOpen={showGlobalSearch} onClose={() => setShowGlobalSearch(false)} db={db} appId={appId} onOpenTask={(t) => setSelectedTask(t)} />}
-      {showAddTaskModal && activeBoardId && <AddTaskModal isOpen={showAddTaskModal} onClose={() => setShowAddTaskModal(false)} db={db} appId={appId} userId={userId} auth={auth} initialStatus={initialStatusForModal} activeBoardId={activeBoardId} userProfile={userProfile} />}
+      {showAddTaskModal && activeBoardId && <AddTaskModal isOpen={showAddTaskModal} onClose={() => setShowAddTaskModal(false)} db={db} appId={appId} userId={userId} auth={auth} initialStatus={initialStatusForModal} activeBoardId={activeBoardId} userProfile={userProfile} enabledTools={activeBoard?.enabledTools} />}
       {selectedTask && <TaskDetailModal task={selectedTask} onClose={() => setSelectedTask(null)} db={db} userId={userId} appId={appId} auth={auth} storage={storage} onAnalyze={onAnalyze} enabledTools={activeBoard?.enabledTools} />}
       {showTopIdeasDrawer && <TopIdeasDrawer isOpen={showTopIdeasDrawer} onClose={() => setShowTopIdeasDrawer(false)} tasks={filteredTasks} onTaskClick={setSelectedTask} />}
       <StatsDrawer isOpen={showStatsDrawer} onClose={() => setShowStatsDrawer(false)} tasks={filteredTasks} />

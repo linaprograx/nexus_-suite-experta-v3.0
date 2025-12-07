@@ -6,7 +6,7 @@ import { ICONS } from '../../../components/ui/icons';
 import { ViewsMenu } from '../../../components/pizarron/ViewsMenu';
 import { FiltersBar } from '../../../components/pizarron/FiltersBar';
 import { Firestore } from 'firebase/firestore';
-import { Tag } from '../../../../types';
+import { Tag, PizarronTask, PizarronBoard, UserProfile } from '../../../../types';
 import { usePizarraStore } from '../../../store/pizarraStore';
 
 interface BoardTopbarProps {
@@ -23,8 +23,11 @@ interface BoardTopbarProps {
     onToggleCompactMode: () => void;
     currentView: 'kanban' | 'list' | 'timeline' | 'document';
     onViewChange: (view: 'kanban' | 'list' | 'timeline' | 'document') => void;
-    boardName: string;
-    boardDescription?: string;
+    tasks?: PizarronTask[];
+    board?: PizarronBoard;
+    appId: string;
+    users?: UserProfile[];
+    onAddTask: () => void;
 }
 
 export const BoardTopbar: React.FC<BoardTopbarProps> = ({
@@ -41,46 +44,96 @@ export const BoardTopbar: React.FC<BoardTopbarProps> = ({
     onToggleCompactMode,
     currentView,
     onViewChange,
-    boardName,
-    boardDescription
+    tasks,
+    board,
+    appId,
+    users,
+    onAddTask
 }) => {
     const { focusMode, toggleFocusMode, automationsEnabled, toggleAutomationsEnabled } = usePizarraStore();
 
+    const handleExportCSV = () => {
+        if (!tasks || tasks.length === 0) {
+            alert("No hay tareas para exportar.");
+            return;
+        }
+
+        const headers = ['ID', 'Tarea', 'Estado', 'Categoría', 'Prioridad', 'Etiquetas', 'Asignados', 'Fecha Creación'];
+        const csvContent = [
+            headers.join(','),
+            ...tasks.map(t => {
+                const row = [
+                    t.id,
+                    `"${t.texto.replace(/"/g, '""')}"`,
+                    t.status,
+                    t.category,
+                    t.priority,
+                    `"${(t.labels || []).join(';')}"`,
+                    `"${(t.assignees || []).join(';')}"`,
+                    t.createdAt?.seconds ? new Date(t.createdAt.seconds * 1000).toISOString() : ''
+                ];
+                return row.join(',');
+            })
+        ].join('\n');
+
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.setAttribute('href', url);
+        link.setAttribute('download', `${board?.name || 'tablero'}_export.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
+
     return (
-        <div className="flex flex-col md:flex-row justify-between items-center mb-4 px-4 lg:px-6 py-2 gap-4 border-b border-white/10 bg-white/40 dark:bg-slate-900/40 backdrop-blur-md sticky top-0 z-10">
-            <div className="flex items-center gap-4 w-full md:w-auto">
-                {!isLeftPanelOpen && <Button size="icon" variant="ghost" onClick={onToggleLeftPanel}><Icon svg={ICONS.chevronRight} /></Button>}
-                <div className="flex flex-col">
-                    <h1 className="text-3xl font-extrabold bg-gradient-to-r from-orange-500 to-amber-600 bg-clip-text text-transparent leading-tight">
-                        {boardName}
+        <div className="h-16 flex items-center justify-between px-6 bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm border-b border-slate-200 dark:border-slate-800/60 sticky top-0 z-20">
+
+            {/* LEFT: Board Name Only */}
+            <div className="flex items-center gap-4 flex-1">
+                <div>
+                    <h1 className="text-2xl font-extrabold text-slate-800 dark:text-slate-100 leading-tight">
+                        {board?.name || 'Tablero'}
                     </h1>
-                    {boardDescription && (
-                        <p className="text-xs text-slate-500 dark:text-slate-400 font-medium leading-none mt-0.5">
-                            {boardDescription}
-                        </p>
+                    {board?.description && (
+                        <p className="text-xs font-medium text-slate-500 dark:text-slate-400 capitalize truncate max-w-[300px]">{board.description}</p>
                     )}
                 </div>
             </div>
 
-            <div className="flex gap-2 w-full md:w-auto justify-end items-center">
+            {/* RIGHT: Tools (Views, Filters, Export) */}
+            <div className="flex items-center gap-2">
+
+                {/* View Switcher & Filters */}
                 <ViewsMenu
                     currentView={currentView}
                     onViewChange={onViewChange}
                     db={db}
                     userId={userId}
+                    appId={appId}
                     filters={filters}
                     setFilters={setFilters}
                 />
-                <div className="h-6 w-px bg-slate-200 dark:bg-slate-700 mx-1" />
-                <FiltersBar filters={filters} setFilters={setFilters} db={db} userId={userId} tags={tags} />
+
+                <FiltersBar
+                    filters={filters}
+                    setFilters={setFilters}
+                    tags={tags}
+                    users={users}
+                    onClear={() => setFilters({})}
+                />
+
+                {/* Export CSV */}
+                <button
+                    onClick={handleExportCSV}
+                    className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all border border-transparent hover:border-slate-200 dark:hover:border-slate-700"
+                    title="Exportar a CSV"
+                >
+                    <Icon svg={ICONS.download} className="w-4 h-4" />
+                    <span className="hidden sm:inline">Exportar</span>
+                </button>
+
             </div>
-
-            {/* Search removed as it is in the right sidebar now */}
-            <div className="flex-1" />
-
-
-
         </div>
     );
 };
-

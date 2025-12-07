@@ -15,6 +15,7 @@ import { CommentsPanel } from '../../features/pizarron/ui/comments/CommentsPanel
 import { HistoryPanel } from '../../features/pizarron/ui/history/HistoryPanel';
 import { TaskActivity } from './TaskActivity';
 import { safeNormalizeTask } from '../../utils/taskHelpers';
+import { IngredientSelector } from './IngredientSelector';
 
 interface TaskDetailModalProps {
     task: PizarronTask;
@@ -29,16 +30,24 @@ interface TaskDetailModalProps {
 }
 
 export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({ task, onClose, db, userId, appId, auth, storage, onAnalyze, enabledTools = [] }) => {
-    // ... (rest of state logic same as before, no changes needed inside component body until render)
+    // State
+    const [title, setTitle] = React.useState(task.title || 'Sin título');
+    const [description, setDescription] = React.useState(task.description || '');
     const [newLabel, setNewLabel] = React.useState("");
-    const [taskText, setTaskText] = React.useState(task.texto || '');
+    const [taskText, setTaskText] = React.useState(task.texto || ''); // For backward compatibility if needed, though we use description now
     const [activeTab, setActiveTab] = React.useState<'comments' | 'history'>('comments');
 
     const pizarronColPath = `artifacts/${appId}/public/data/pizarron-tasks`;
     const taskDocRef = doc(db, pizarronColPath, task.id);
 
+    // Initial sync
+    React.useEffect(() => {
+        if (task.title) setTitle(task.title);
+        if (task.description) setDescription(task.description);
+    }, [task.title, task.description]);
+
     // Check for incomplete data
-    const isTaskIncomplete = !task.texto || !task.status || !task.category;
+    const isTaskIncomplete = !task.status || !task.category;
 
     const handleRestore = async () => {
         const normalized = safeNormalizeTask(task);
@@ -52,19 +61,18 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({ task, onClose,
         } catch (err) { console.error("Error actualizando: ", err); }
     };
 
+    const handleBlur = async (field: 'title' | 'description') => {
+        if (field === 'title' && title !== task.title) {
+            await handleUpdate('title', title);
+        }
+        if (field === 'description' && description !== task.description) {
+            await handleUpdate('description', description);
+        }
+    };
+
     const handleLabel = async (action: 'add' | 'remove', label: string) => {
         await updateDoc(taskDocRef, { labels: action === 'add' ? arrayUnion(label) : arrayRemove(label) });
         if (action === 'add') setNewLabel("");
-    };
-
-    const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (!file) return;
-        const storageRef = ref(storage, `${pizarronColPath}/${task.id}/attachments/${file.name}`);
-        const snapshot = await uploadBytes(storageRef, file);
-        const downloadURL = await getDownloadURL(snapshot.ref);
-        const newAttachment = { name: file.name, url: downloadURL, type: file.type.startsWith('image') ? 'image' : 'pdf' };
-        await updateDoc(taskDocRef, { attachments: arrayUnion(newAttachment) });
     };
 
     if (isTaskIncomplete) {
@@ -98,149 +106,220 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({ task, onClose,
 
     return (
         <Modal isOpen={true} onClose={onClose} size="3xl">
-            <div className="grid grid-cols-3 gap-6">
-                <div className="col-span-2 flex flex-col h-[80vh]">
-                    <div className="mb-4">
-                        <Textarea value={taskText} onChange={(e) => setTaskText(e.target.value)} onBlur={() => handleUpdate('texto', taskText)} className="text-xl font-bold border-none p-0 focus-visible:ring-0 h-auto resize-none bg-transparent" />
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 min-h-[600px]">
+
+                {/* -----------------------------
+                   LEFT COLUMN (NARROW - 1 Col)
+                   Content: Activity, Comments, History
+                   ----------------------------- */}
+                <div className="md:col-span-1 border-r border-slate-100 dark:border-slate-800 pr-6 flex flex-col h-full bg-slate-50/50 dark:bg-slate-900/50 -ml-2 pl-4 py-2 rounded-l-xl">
+                    <div className="flex items-center justify-between mb-4">
+                        <h3 className="text-sm font-bold text-slate-700 dark:text-slate-300 flex items-center gap-2">
+                            <Icon svg={ICONS.activity} className="w-4 h-4" />
+                            Actividad
+                        </h3>
                     </div>
 
-                    <div className="flex-1 min-h-0 flex flex-col gap-4">
-                        <div className="flex-1 min-h-0 flex flex-col bg-white/40 dark:bg-slate-900/40 rounded-2xl border border-white/20 dark:border-slate-800/40 overflow-hidden">
-                            <div className="flex border-b border-white/10 dark:border-slate-700/30 p-2 gap-2">
-                                <button
-                                    onClick={() => setActiveTab('comments')}
-                                    className={`px-4 py-2 rounded-xl text-sm font-medium transition-colors ${activeTab === 'comments' ? 'bg-white dark:bg-slate-800 shadow-sm text-indigo-600 dark:text-indigo-400' : 'text-slate-500 hover:bg-white/10 dark:hover:bg-slate-800/50'}`}
-                                >
-                                    Comentarios
-                                </button>
-                                <button
-                                    onClick={() => setActiveTab('history')}
-                                    className={`px-4 py-2 rounded-xl text-sm font-medium transition-colors ${activeTab === 'history' ? 'bg-white dark:bg-slate-800 shadow-sm text-indigo-600 dark:text-indigo-400' : 'text-slate-500 hover:bg-white/10 dark:hover:bg-slate-800/50'}`}
-                                >
-                                    Historial
-                                </button>
-                            </div>
-                            <div className="flex-1 overflow-hidden p-4">
-                                {activeTab === 'comments' ? (
-                                    <CommentsPanel taskId={task.id} db={db} appId={appId} user={{ uid: userId, displayName: auth.currentUser?.displayName || 'Usuario', photoURL: auth.currentUser?.photoURL || '' }} />
-                                ) : (
-                                    <HistoryPanel taskId={task.id} db={db} appId={appId} />
-                                )}
-                            </div>
-                        </div>
+                    <div className="flex-1 overflow-y-auto max-h-[500px] custom-scrollbar mb-4">
+                        <TaskActivity taskId={task.id} db={db} appId={appId} />
 
-                        <div className="bg-white/50 dark:bg-slate-800/50 p-4 rounded-xl border border-white/20 dark:border-slate-700/30">
-                            <h3 className="font-semibold mb-2 flex items-center gap-2 text-slate-700 dark:text-slate-300">
-                                <Icon svg={ICONS.paperclip} className="h-4 w-4" /> Adjuntos
-                            </h3>
-                            <div className="flex flex-wrap gap-2 mb-2">
-                                {task.attachments.map((att, i) => (
-                                    <a key={i} href={att.url} target="_blank" rel="noopener noreferrer" className="text-xs bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 px-3 py-1.5 rounded-full hover:bg-orange-200 transition-colors flex items-center gap-1">
-                                        <Icon svg={ICONS.paperclip} className="h-3 w-3" /> {att.name}
-                                    </a>
-                                ))}
-                            </div>
-                            <label className="cursor-pointer inline-flex items-center gap-2 text-sm text-slate-500 hover:text-orange-600 transition-colors bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-3 py-2 rounded-lg hover:shadow-sm">
-                                <Icon svg={ICONS.upload} className="h-4 w-4" />
-                                <span>Subir archivo...</span>
-                                <input type="file" onChange={handleFileUpload} className="hidden" />
-                            </label>
+                        {/* Placeholder visual IF no activity - TaskActivity handles real logic */}
+                        <div className="mt-8 text-center opacity-50 hidden">
+                            <Icon svg={ICONS.messageSquare} className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                            <p className="text-xs">No hay más actividad.</p>
+                        </div>
+                    </div>
+
+                    {/* Simple Comment Input Area */}
+                    <div className="mt-auto pt-4 border-t border-slate-200 dark:border-slate-700">
+                        <textarea
+                            className="w-full text-sm bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg p-3 min-h-[80px] focus:ring-2 focus:ring-orange-500/20 outline-none resize-none mb-2"
+                            placeholder="Añadir comentario..."
+                        />
+                        <div className="flex justify-end">
+                            <Button size="sm" className="bg-orange-500 text-white hover:bg-orange-600">
+                                Enviar
+                            </Button>
                         </div>
                     </div>
                 </div>
-                <div className="col-span-1 space-y-6 h-full overflow-y-auto pl-2 custom-scrollbar">
-                    <div className="space-y-4 bg-slate-50 dark:bg-slate-800/50 p-4 rounded-xl border border-slate-100 dark:border-slate-700">
-                        <div>
-                            <Label className="text-xs uppercase tracking-wider text-slate-400 font-bold mb-1 block">Estado</Label>
-                            <Select value={task.status} onChange={(e) => handleUpdate('status', e.target.value)} className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-600 focus:ring-orange-500/20 focus:border-orange-500">
-                                <option value="ideas">💡 Ideas</option>
-                                <option value="pruebas">🧪 Pruebas</option>
-                                <option value="aprobado">✅ Aprobado</option>
-                            </Select>
+
+
+                {/* -----------------------------
+                   RIGHT COLUMN (WIDE - 2 Cols)
+                   Content: Title, Desc, Tools, Metadata
+                   ----------------------------- */}
+                <div className="md:col-span-2 space-y-6 pl-2 pb-6">
+
+                    {/* Header: Title */}
+                    <div>
+                        <Input
+                            value={title}
+                            onChange={(e) => setTitle(e.target.value)}
+                            className="text-2xl font-bold border-none px-0 py-2 h-auto focus:ring-0 bg-transparent placeholder:text-gray-300 w-full text-slate-800 dark:text-slate-100"
+                            placeholder="Título de la tarea"
+                            onBlur={() => handleBlur('title')}
+                        />
+                    </div>
+
+                    {/* Description */}
+                    <div>
+                        <Label className="text-xs uppercase tracking-wider text-gray-400 font-bold mb-2 block">
+                            Descripción
+                        </Label>
+                        <textarea
+                            value={description}
+                            onChange={(e) => setDescription(e.target.value)}
+                            className="w-full min-h-[100px] bg-slate-50 dark:bg-slate-900/50 border-transparent rounded-xl p-4 text-sm text-slate-600 focus:bg-white focus:ring-2 focus:ring-orange-500/20 transition-all resize-none"
+                            placeholder="Añade una descripción detallada..."
+                            onBlur={() => handleBlur('description')}
+                        />
+                    </div>
+
+                    {/* Metadata Grid (Status, Category, Priority) */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div className="bg-white dark:bg-slate-800 p-3 rounded-xl border border-gray-100 dark:border-slate-700 shadow-sm">
+                            <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1 block">Estado</span>
+                            <select
+                                value={task.status}
+                                onChange={(e) => handleUpdate('status', e.target.value)}
+                                className="w-full appearance-none bg-transparent font-medium text-slate-700 dark:text-slate-200 outline-none cursor-pointer"
+                            >
+                                {['ideas', 'pruebas', 'aprobado'].map(col => <option key={col} value={col}>{col.charAt(0).toUpperCase() + col.slice(1)}</option>)}
+                            </select>
                         </div>
-                        <div>
-                            <Label className="text-xs uppercase tracking-wider text-slate-400 font-bold mb-1 block">Categoría</Label>
-                            <Select value={task.category} onChange={(e) => handleUpdate('category', e.target.value)} className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-600 focus:ring-orange-500/20 focus:border-orange-500">
+
+                        <div className="bg-white dark:bg-slate-800 p-3 rounded-xl border border-gray-100 dark:border-slate-700 shadow-sm">
+                            <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1 block">Categoría</span>
+                            <select
+                                value={task.category}
+                                onChange={(e) => handleUpdate('category', e.target.value)}
+                                className="w-full appearance-none bg-transparent font-medium text-slate-700 dark:text-slate-200 outline-none cursor-pointer"
+                            >
                                 <option value="Ideas">Ideas</option>
                                 <option value="Desarrollo">Desarrollo</option>
                                 <option value="Marketing">Marketing</option>
                                 <option value="Admin">Admin</option>
                                 <option value="Urgente">Urgente</option>
-                            </Select>
+                            </select>
                         </div>
-                        <div>
-                            <Label className="text-xs uppercase tracking-wider text-slate-400 font-bold mb-1 block">Prioridad</Label>
-                            <div className="flex bg-white dark:bg-slate-900 rounded-lg p-1 border border-slate-200 dark:border-slate-700">
-                                {['baja', 'media', 'alta'].map(p => (
+
+                        <div className="bg-white dark:bg-slate-800 p-3 rounded-xl border border-gray-100 dark:border-slate-700 shadow-sm">
+                            <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1 block">Prioridad</span>
+                            <div className="flex gap-2 mt-1">
+                                {['baja', 'media', 'alta'].map((p) => (
                                     <button
                                         key={p}
                                         onClick={() => handleUpdate('priority', p)}
-                                        className={`flex-1 text-xs font-bold uppercase py-1.5 rounded-md transition-all ${task.priority === p ? (p === 'alta' ? 'bg-red-500 text-white shadow-sm' : p === 'media' ? 'bg-orange-500 text-white shadow-sm' : 'bg-slate-500 text-white shadow-sm') : 'text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'}`}
-                                    >
-                                        {p}
-                                    </button>
+                                        className={`w-6 h-6 rounded-full flex items-center justify-center border transition-all ${task.priority === p ? 'ring-2 ring-offset-1 ring-blue-500 scale-110' : 'opacity-40 hover:opacity-100'}`}
+                                        style={{ backgroundColor: p === 'alta' ? '#EF4444' : p === 'media' ? '#F59E0B' : '#10B981' }}
+                                        title={p}
+                                    />
                                 ))}
                             </div>
                         </div>
                     </div>
 
-                    <div className="space-y-2">
-                        <Label className="text-xs uppercase tracking-wider text-slate-400 font-bold flex items-center gap-2">
-                            <Icon svg={ICONS.tag} className="w-3 h-3" /> Etiquetas
-                        </Label>
+                    {/* Tags Section */}
+                    <div className="bg-white dark:bg-slate-800 p-4 rounded-xl border border-gray-100 dark:border-slate-700 shadow-sm">
+                        <div className="flex justify-between items-center mb-2">
+                            <span className="text-xs font-semibold text-gray-400 uppercase">Etiquetas</span>
+                        </div>
                         <div className="flex flex-wrap gap-2 mb-2">
-                            {task.labels.map(label => (
-                                <span key={label} className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 text-xs font-medium px-2 py-1 rounded-lg flex items-center gap-1 shadow-sm">
-                                    {label}
-                                    <button onClick={() => handleLabel('remove', label)} className="text-slate-400 hover:text-red-500 transition-colors ml-1"><Icon svg={ICONS.x} className="w-3 h-3" /></button>
+                            {task.labels && task.labels.length > 0 ? task.labels.map(label => (
+                                <span key={label} className="px-2 py-1 bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-gray-300 text-xs rounded-md flex items-center gap-1">
+                                    #{label}
+                                    <button onClick={() => handleLabel('remove', label)} className="hover:text-red-500"><Icon svg={ICONS.x} className="w-3 h-3" /></button>
                                 </span>
-                            ))}
-                            {task.labels.length === 0 && <span className="text-xs text-slate-400 italic">Sin etiquetas</span>}
+                            )) : <span className="text-gray-400 text-xs italic">Sin etiquetas</span>}
                         </div>
                         <div className="flex gap-2">
                             <Input
                                 value={newLabel}
                                 onChange={e => setNewLabel(e.target.value)}
-                                placeholder="Añadir..."
-                                className="h-8 text-xs bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 focus:border-orange-500"
+                                placeholder="Añadir etiqueta..."
+                                className="h-8 text-xs bg-gray-50 border-gray-200"
                             />
                             <Button size="sm" onClick={() => handleLabel('add', newLabel)} className="h-8 bg-slate-800 hover:bg-slate-700 text-white"><Icon svg={ICONS.plus} className="w-3 h-3" /></Button>
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-2">
+                    {/* GRIMORIUM SECTION */}
+                    {enabledTools.includes('grimorium') && (
+                        <div className="space-y-4 pt-4 border-t border-slate-100 dark:border-slate-800">
+                            <Label className="text-xs uppercase tracking-wider text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-2">
+                                <Icon svg={ICONS.book} className="w-3 h-3" /> Grimorium: Herramientas
+                            </Label>
+
+                            {/* Grimorium Quick Actions */}
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                                <button className="flex flex-col items-center justify-center p-3 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 transition-colors gap-2">
+                                    <Icon svg={ICONS.book} className="w-5 h-5" />
+                                    <span className="text-xs font-medium">Recetas</span>
+                                </button>
+                                <button className="flex flex-col items-center justify-center p-3 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 transition-colors gap-2">
+                                    <Icon svg={ICONS.leaf} className="w-5 h-5" />
+                                    <span className="text-xs font-medium">Ingredientes</span>
+                                </button>
+                                <button className="flex flex-col items-center justify-center p-3 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-700 transition-colors gap-2">
+                                    <Icon svg={ICONS.dollarSign} className="w-5 h-5" />
+                                    <span className="text-xs font-medium">Escandallo</span>
+                                </button>
+                                <button className="flex flex-col items-center justify-center p-3 rounded-lg bg-teal-50 hover:bg-teal-100 text-teal-700 transition-colors gap-2">
+                                    <Icon svg={ICONS.refreshCw} className="w-5 h-5" />
+                                    <span className="text-xs font-medium">Zero Waste</span>
+                                </button>
+                            </div>
+
+                            <Label className="text-xs font-bold text-slate-500 block">Buscador de Ingredientes</Label>
+
+                            {/* Ingredient Selector Component */}
+                            <IngredientSelector
+                                appId={appId}
+                                selectedIds={task.linkedIngredients || []}
+                                onToggle={async (id) => {
+                                    const current = task.linkedIngredients || [];
+                                    const next = current.includes(id)
+                                        ? current.filter(x => x !== id)
+                                        : [...current, id];
+                                    await handleUpdate('linkedIngredients', next);
+                                }}
+                            />
+                        </div>
+                    )}
+
+                    {/* ACTIONS & BOARD POWERS */}
+                    <div className="grid grid-cols-2 gap-3 pt-4 border-t border-slate-100 dark:border-slate-800">
+                        {/* CerebrIty (Always available or conditionally toggled) */}
                         {(enabledTools.includes('cerebrity') || enabledTools.length === 0) && (
-                            <Button variant="outline" onClick={() => onAnalyze(taskText)} className="border-indigo-200 text-indigo-700 hover:bg-indigo-50 dark:border-indigo-800 dark:text-indigo-300 dark:hover:bg-indigo-900/30">
+                            <Button variant="outline" onClick={() => onAnalyze(description || taskText)} className="border-indigo-200 text-indigo-700 hover:bg-indigo-50 dark:border-indigo-800 dark:text-indigo-300 dark:hover:bg-indigo-900/30 justify-start">
                                 <Icon svg={ICONS.brain} className="h-4 w-4 mr-2" />
                                 CerebrIty
                             </Button>
                         )}
 
-                        <Button variant="outline" className="border-amber-200 text-amber-700 hover:bg-amber-50 dark:border-amber-800 dark:text-amber-300 dark:hover:bg-amber-900/30">
+                        <Button variant="outline" className="border-amber-200 text-amber-700 hover:bg-amber-50 dark:border-amber-800 dark:text-amber-300 dark:hover:bg-amber-900/30 justify-start">
                             <Icon svg={ICONS.sparkles} className="h-4 w-4 mr-2" />
                             Super Poderes
                         </Button>
 
                         {enabledTools.includes('zero_waste') && (
-                            <Button variant="outline" className="border-emerald-200 text-emerald-700 hover:bg-emerald-50 dark:border-emerald-800 dark:text-emerald-300 dark:hover:bg-emerald-900/30">
+                            <Button variant="outline" className="border-emerald-200 text-emerald-700 hover:bg-emerald-50 dark:border-emerald-800 dark:text-emerald-300 dark:hover:bg-emerald-900/30 justify-start">
                                 <Icon svg={ICONS.leaf} className="h-4 w-4 mr-2" />
                                 Zero Waste
                             </Button>
                         )}
 
                         {enabledTools.includes('costeo') && (
-                            <Button variant="outline" className="border-blue-200 text-blue-700 hover:bg-blue-50 dark:border-blue-800 dark:text-blue-300 dark:hover:bg-blue-900/30">
+                            <Button variant="outline" className="border-blue-200 text-blue-700 hover:bg-blue-50 dark:border-blue-800 dark:text-blue-300 dark:hover:bg-blue-900/30 justify-start">
                                 <Icon svg={ICONS.calculator} className="h-4 w-4 mr-2" />
                                 Costeo
                             </Button>
                         )}
                     </div>
 
-                    <div className="pt-4 border-t border-slate-200 dark:border-slate-700">
-                        <TaskActivity taskId={task.id} db={db} appId={appId} />
-                    </div>
-
-                    <div className="flex justify-end pt-2">
+                    {/* Delete & Footer Zone */}
+                    <div className="flex justify-end pt-6">
                         <button
                             onClick={async () => {
                                 if (confirm("¿Eliminar tarea permanentemente?")) {
@@ -248,12 +327,14 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({ task, onClose,
                                     onClose();
                                 }
                             }}
-                            className="p-2 rounded-lg text-slate-400 hover:bg-red-50 dark:hover:bg-red-500/10 hover:text-red-600 transition-colors"
+                            className="flex items-center gap-2 px-3 py-2 rounded-lg text-slate-400 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-600 transition-colors text-xs font-medium"
                             title="Eliminar tarea"
                         >
-                            <Icon svg={ICONS.trash} className="w-[18px] h-[18px]" />
+                            <Icon svg={ICONS.trash} className="w-4 h-4" />
+                            Eliminar Tarea
                         </button>
                     </div>
+
                 </div>
             </div>
         </Modal>

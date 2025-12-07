@@ -7,6 +7,7 @@ export interface Ingredient {
     costo: number;
     unidad: string;
     stock?: number;
+    emoji?: string;
     minStock?: number;
     proveedor?: string;
     createdAt?: any;
@@ -67,6 +68,7 @@ export interface PizarronTask {
     category?: string;
     priority?: 'low' | 'medium' | 'high' | 'urgent';
     tags?: string[];
+    linkedIngredients?: string[]; // IDs of ingredients from Grimorium
     createdAt?: any;
     dueDate?: any;
     assignee?: string;

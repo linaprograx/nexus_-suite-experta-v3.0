@@ -10,6 +10,7 @@ import { Label } from '../ui/Label';
 import { Icon } from '../ui/Icon';
 import { ICONS } from '../ui/icons';
 import { PizarronTask, TaskCategory, UserProfile } from '../../../types';
+import { IngredientSelector } from './IngredientSelector';
 
 interface Tag {
   id: string;
@@ -27,13 +28,17 @@ interface AddTaskModalProps {
   initialStatus: string;
   activeBoardId: string | null;
   userProfile: Partial<UserProfile>;
+  enabledTools?: string[];
 }
 
-export const AddTaskModal: React.FC<AddTaskModalProps> = ({ isOpen, onClose, db, appId, userId, auth, initialStatus, activeBoardId, userProfile }) => {
+export const AddTaskModal: React.FC<AddTaskModalProps> = ({ isOpen, onClose, db, appId, userId, auth, initialStatus, activeBoardId, userProfile, enabledTools = [] }) => {
   const [texto, setTexto] = React.useState('');
   const [category, setCategory] = React.useState<TaskCategory>('Ideas');
   const [priority, setPriority] = React.useState<'baja' | 'media' | 'alta'>('media');
   const [labels, setLabels] = React.useState('');
+
+  // Grimorium Integration
+  const [selectedIngredients, setSelectedIngredients] = React.useState<string[]>([]);
 
   // Tag system
   const [availableTags, setAvailableTags] = React.useState<Tag[]>([]);
@@ -93,7 +98,8 @@ export const AddTaskModal: React.FC<AddTaskModalProps> = ({ isOpen, onClose, db,
       assignees: [auth.currentUser?.email || userId],
       dueDate: null,
       authorName: userProfile.displayName || 'Unknown Author',
-      authorPhotoURL: userProfile.photoURL || ''
+      authorPhotoURL: userProfile.photoURL || '',
+      linkedIngredients: selectedIngredients
     };
 
     try {
@@ -104,6 +110,7 @@ export const AddTaskModal: React.FC<AddTaskModalProps> = ({ isOpen, onClose, db,
       setPriority('media');
       setLabels('');
       setSelectedTags([]);
+      setSelectedIngredients([]);
     } catch (err) {
       console.error("Error al añadir tarea: ", err);
     }
@@ -111,129 +118,109 @@ export const AddTaskModal: React.FC<AddTaskModalProps> = ({ isOpen, onClose, db,
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={
-      <div className="flex items-center gap-2">
-        <div className="bg-orange-100 dark:bg-orange-900/30 p-2 rounded-xl text-orange-600">
+      <div className="flex items-center gap-3">
+        <div className="bg-orange-600/10 p-2.5 rounded-xl text-orange-600">
           <Icon svg={ICONS.plus} className="w-5 h-5" />
         </div>
-        <span className="font-bold text-xl text-slate-800 dark:text-slate-100">Nueva Tarea</span>
+        <div>
+          <span className="font-bold text-xl text-slate-900 dark:text-slate-100 block leading-tight">Nueva Tarea</span>
+          <span className="text-xs text-slate-500 font-medium">Capture your idea quickly</span>
+        </div>
       </div>
     }>
       <div className="space-y-6">
+
+        {/* Main Input */}
         <div className="relative group">
           <Textarea
-            placeholder="¿Qué tienes en mente?"
+            placeholder="Escribe tu idea aquí..."
             value={texto}
             onChange={(e) => setTexto(e.target.value)}
-            className="h-32 text-xl font-medium resize-none bg-slate-50 dark:bg-slate-800/50 border-transparent focus:bg-white dark:focus:bg-slate-800 focus:border-orange-500/50 focus:ring-4 focus:ring-orange-500/10 p-4 rounded-2xl transition-all placeholder:text-slate-300 dark:placeholder:text-slate-600"
+            className="w-full h-32 text-xl font-medium bg-slate-50 hover:bg-slate-100 dark:bg-slate-800/50 dark:hover:bg-slate-800 focus:bg-white dark:focus:bg-slate-900 border-none focus:ring-2 focus:ring-orange-500/20 rounded-2xl p-5 transition-all resize-none placeholder:text-slate-400"
             autoFocus
           />
-          <div className="absolute bottom-3 right-3 text-xs text-slate-300">Enter para siguiente línea</div>
+          <div className="absolute bottom-4 right-4 text-[10px] text-slate-400 font-medium opacity-0 group-hover:opacity-100 transition-opacity">Press Enter to skip</div>
         </div>
 
+        {/* Metadata Grid */}
         <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-1.5">
-            <Label className="text-xs font-bold uppercase tracking-wider text-slate-400 ml-1">Categoría</Label>
+          {/* Category */}
+          <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-1 flex items-center">
+            <div className="p-2 text-slate-400"><Icon svg={ICONS.tag} className="w-4 h-4" /></div>
             <Select
               value={category}
               onChange={(e) => setCategory(e.target.value as any)}
-              className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 h-11 rounded-xl focus:ring-orange-500/20 focus:border-orange-500"
+              className="border-none bg-transparent h-9 text-sm font-medium focus:ring-0 w-full"
             >
-              <option value="Ideas">💡 Ideas</option>
-              <option value="Desarrollo">🔨 Desarrollo</option>
-              <option value="Marketing">📢 Marketing</option>
-              <option value="Admin">💼 Admin</option>
-              <option value="Urgente">🔥 Urgente</option>
+              <option value="Ideas">Ideas</option>
+              <option value="Desarrollo">Desarrollo</option>
+              <option value="Marketing">Marketing</option>
+              <option value="Admin">Admin</option>
+              <option value="Urgente">Urgente</option>
             </Select>
           </div>
-          <div className="space-y-1.5">
-            <Label className="text-xs font-bold uppercase tracking-wider text-slate-400 ml-1">Prioridad</Label>
-            <div className="flex p-1 bg-slate-100 dark:bg-slate-800 rounded-xl h-11">
-              {(['baja', 'media', 'alta'] as const).map(p => (
-                <button
-                  key={p}
-                  onClick={() => setPriority(p)}
-                  className={`flex-1 rounded-lg text-xs font-bold uppercase transition-all ${priority === p ?
-                    (p === 'alta' ? 'bg-red-500 text-white shadow-md shadow-red-500/20' :
-                      p === 'media' ? 'bg-orange-500 text-white shadow-md shadow-orange-500/20' :
-                        'bg-slate-500 text-white shadow-md shadow-slate-500/20')
-                    : 'text-slate-500 hover:bg-white/50'}`}
-                >
-                  {p}
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
 
-        {/* Dynamic Tags */}
-        <div className="bg-slate-50 dark:bg-slate-800/30 p-4 rounded-2xl border border-slate-100 dark:border-slate-800">
-          <div className="flex justify-between items-center mb-3">
-            <Label className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-2">
-              <Icon svg={ICONS.tag} className="w-3 h-3" /> Etiquetas
-            </Label>
-            <Button size="sm" variant="ghost" className="h-6 px-2 text-xs hover:text-orange-500 hover:bg-orange-50" onClick={() => setShowTagInput(!showTagInput)}>
-              <Icon svg={ICONS.plus} className="h-3 w-3 mr-1" /> Nueva
-            </Button>
-          </div>
-
-          {showTagInput && (
-            <div className="flex flex-col gap-3 mb-4 bg-white dark:bg-slate-800 p-3 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm animate-in fade-in slide-in-from-top-2">
-              <div className="flex gap-2">
-                <Input
-                  value={newTagName}
-                  onChange={(e) => setNewTagName(e.target.value)}
-                  placeholder="Nombre de la etiqueta..."
-                  className="h-9 text-sm border-slate-200 focus:border-orange-500"
-                />
-                <Button size="sm" className="h-9 px-3 bg-slate-800 text-white hover:bg-slate-700" onClick={handleCreateTag}>Crear</Button>
-              </div>
-              <div className="flex gap-2 items-center overflow-x-auto pb-1">
-                <span className="text-xs text-slate-400 whitespace-nowrap">Color:</span>
-                {tagColors.map(c => (
-                  <button
-                    key={c}
-                    onClick={() => setNewTagColor(c)}
-                    className={`w-6 h-6 rounded-full shrink-0 transition-transform ${newTagColor === c ? 'scale-110 ring-2 ring-offset-2 ring-slate-300' : 'hover:scale-105 opacity-70 hover:opacity-100'}`}
-                    style={{ backgroundColor: c }}
-                  />
-                ))}
-              </div>
-            </div>
-          )}
-
-          <div className="flex flex-wrap gap-2 min-h-[30px]">
-            {availableTags.map(tag => (
+          {/* Priority */}
+          <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-1 flex">
+            {(['baja', 'media', 'alta'] as const).map(p => (
               <button
-                key={tag.id}
-                onClick={() => toggleTag(tag.id)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all border ${selectedTags.includes(tag.id) ? 'ring-2 ring-offset-1 border-transparent shadow-sm scale-105' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-500 hover:border-slate-300'}`}
-                style={{
-                  backgroundColor: selectedTags.includes(tag.id) ? tag.color : undefined,
-                  color: selectedTags.includes(tag.id) ? '#fff' : undefined,
-                  borderColor: !selectedTags.includes(tag.id) ? undefined : tag.color
-                }}
+                key={p}
+                onClick={() => setPriority(p)}
+                className={`flex-1 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all h-9 ${priority === p
+                    ? (p === 'alta' ? 'bg-red-50 text-red-600' : p === 'media' ? 'bg-orange-50 text-orange-600' : 'bg-emerald-50 text-emerald-600')
+                    : 'text-slate-400 hover:bg-slate-50'
+                  }`}
               >
-                {tag.name}
+                {p}
               </button>
             ))}
-            {availableTags.length === 0 && <span className="text-xs text-slate-400 italic py-1">No hay etiquetas disponibles.</span>}
           </div>
         </div>
 
-        <div>
-          <Label className="text-xs font-bold uppercase tracking-wider text-slate-400 ml-1 mb-1.5 block">Keywords (IA)</Label>
-          <Input
-            placeholder="Ej: innovación, verano (separado por comas)"
-            value={labels}
-            onChange={(e) => setLabels(e.target.value)}
-            className="text-sm h-10 border-slate-200 rounded-xl focus:border-orange-500"
-          />
-        </div>
+        {/* POWERS SECTION (DYNAMIC) */}
+        {enabledTools.length > 0 && (
+          <div className="space-y-3">
+            <div className="flex items-center gap-2">
+              <div className="h-px bg-slate-200 dark:bg-slate-800 flex-1"></div>
+              <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Board Powers</span>
+              <div className="h-px bg-slate-200 dark:bg-slate-800 flex-1"></div>
+            </div>
+
+            {/* Grimorium Power */}
+            {enabledTools.includes('grimorium') && (
+              <div className="bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-900/10 dark:to-teal-900/10 rounded-2xl border border-emerald-100 dark:border-emerald-800/20 overflow-hidden">
+                <div className="px-4 py-3 bg-emerald-100/50 dark:bg-emerald-900/20 border-b border-emerald-100 dark:border-emerald-800/10 flex justify-between items-center">
+                  <span className="text-xs font-bold text-emerald-700 dark:text-emerald-400 flex items-center gap-2">
+                    <Icon svg={ICONS.book} className="w-3.5 h-3.5" /> Grimorium
+                  </span>
+                  <span className="text-[10px] text-emerald-600/70">{selectedIngredients.length} linked</span>
+                </div>
+                <div className="p-4">
+                  <IngredientSelector
+                    appId={appId}
+                    selectedIds={selectedIngredients}
+                    onToggle={(id) => {
+                      setSelectedIngredients(prev =>
+                        prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
+                      );
+                    }}
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Action Button */}
         <div className="pt-2">
-          <Button onClick={handleAddTask} className="w-full h-12 text-lg font-bold bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 shadow-xl shadow-orange-500/20 rounded-xl transition-all hover:scale-[1.01] active:scale-95">
-            Guardar Tarea
+          <Button
+            onClick={handleAddTask}
+            className="w-full h-14 text-lg font-bold bg-slate-900 dark:bg-white text-white dark:text-slate-900 hover:scale-[1.01] active:scale-95 transition-all rounded-2xl shadow-xl shadow-slate-900/10"
+          >
+            Create Task
           </Button>
         </div>
+
       </div>
     </Modal>
   );
