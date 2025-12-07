@@ -1,0 +1,94 @@
+import { Timestamp } from 'firebase/firestore';
+
+export interface Ingredient {
+    id: string;
+    nombre: string;
+    familia?: string;
+    costo: number;
+    unidad: string;
+    stock?: number;
+    minStock?: number;
+    proveedor?: string;
+    createdAt?: any;
+}
+
+export interface Recipe {
+    id: string;
+    nombre: string;
+    ingredientes: Ingredient[];
+    instrucciones?: string;
+    storytelling?: string;
+    imageUrl?: string | null;
+    costoTotal?: number;
+    precioVenta?: number;
+    margen?: number;
+    createdAt?: any;
+    glassware?: string;
+    ice?: string;
+    garnish?: string;
+    technique?: string;
+    abv?: number;
+}
+
+export interface CerebrityResult {
+    storytelling: string;
+    mejora: string;
+    garnishComplejo: string;
+    promptImagen: string;
+    imageUrl: string | null;
+    createdAt?: any;
+}
+
+export interface TrendResult {
+    titulo: string;
+    resumen: string;
+    fuente: string;
+    url?: string;
+    date?: string;
+}
+
+export interface PizarronBoard {
+    id: string;
+    name: string;
+    category: 'general' | 'creativo' | 'operativo' | 'carta' | 'producción' | 'marketing';
+    themeColor: string;
+    icon: string;
+    description: string;
+    columns?: string[];
+    createdAt?: any;
+}
+
+export interface PizarronTask {
+    id: string;
+    content: string;
+    status: string;
+    boardId: string;
+    category?: string;
+    priority?: 'low' | 'medium' | 'high' | 'urgent';
+    tags?: string[];
+    createdAt?: any;
+    dueDate?: any;
+    assignee?: string;
+}
+
+export interface Tag {
+    id: string;
+    label: string;
+    color: string;
+}
+
+export interface UserProfile {
+    uid: string;
+    displayName: string | null;
+    email: string | null;
+    photoURL: string | null;
+    role?: string;
+}
+
+export interface ZeroWasteResult {
+    recipeName: string;
+    description: string;
+    ingredientsUsed: string[];
+    savings: string;
+    difficulty: 'Fácil' | 'Media' | 'Avanzada';
+}

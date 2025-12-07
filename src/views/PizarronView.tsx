@@ -1,10 +1,11 @@
 import React from 'react';
-import { Firestore, collection, onSnapshot, addDoc, doc, updateDoc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { Firestore, collection, onSnapshot, addDoc, doc, updateDoc, setDoc, deleteDoc, serverTimestamp } from 'firebase/firestore';
 import { Auth } from 'firebase/auth';
 import { FirebaseStorage } from 'firebase/storage';
 import { Button } from '../components/ui/Button';
 import { Icon } from '../components/ui/Icon';
 import { Spinner } from '../components/ui/Spinner';
+import { PremiumLayout } from '../components/layout/PremiumLayout';
 import { ICONS } from '../components/ui/icons';
 import { AddTaskModal } from '../components/pizarron/AddTaskModal';
 import { TaskDetailModal } from '../components/pizarron/TaskDetailModal';
@@ -12,6 +13,8 @@ import { PizarronCalendarView } from './PizarronCalendarView';
 import { TopIdeasDrawer } from '../components/pizarron/TopIdeasDrawer';
 import { StatsDrawer } from '../components/pizarron/StatsDrawer';
 import { CreateBoardModal } from '../components/pizarron/CreateBoardModal';
+import { PizarronSidebar } from '../components/pizarron/PizarronSidebar';
+import { PizarronControls } from '../components/pizarron/PizarronControls';
 import { TemplateSelectorModal } from '../components/pizarron/TemplateSelectorModal';
 import { createBoardFromTemplate } from '../features/pizarron-templates/createBoard';
 import { useUI } from '../context/UIContext';
@@ -61,22 +64,22 @@ const PizarronView: React.FC<PizarronViewProps> = ({ db, userId, appId, auth, st
   const [filters, setFilters] = React.useState<any>({});
   const [searchQuery, setSearchQuery] = React.useState("");
   const [focusedColumn, setFocusedColumn] = React.useState<string | null>(null);
-  
+
   const [currentView, setCurrentView] = React.useState<'kanban' | 'list' | 'timeline' | 'document'>(() => {
-      if (typeof window !== 'undefined') {
-          return localStorage.getItem('nexus_pizarron_default_view') as any || 'kanban';
-      }
-      return 'kanban';
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('nexus_pizarron_default_view') as any || 'kanban';
+    }
+    return 'kanban';
   });
 
   const handleViewChange = (view: 'kanban' | 'list' | 'timeline' | 'document') => {
-      setCurrentView(view);
-      localStorage.setItem('nexus_pizarron_default_view', view);
+    setCurrentView(view);
+    localStorage.setItem('nexus_pizarron_default_view', view);
   };
 
   const { compactMode, toggleCompactMode } = useUI();
   const { focusMode } = usePizarraStore();
-  
+
   const pizarronColPath = `artifacts/${appId}/public/data/pizarron-tasks`;
   const boardsColPath = `artifacts/${appId}/public/data/pizarron-boards`;
   const tagsColPath = `labels/${userId}/tags`;
@@ -101,34 +104,68 @@ const PizarronView: React.FC<PizarronViewProps> = ({ db, userId, appId, auth, st
 
   React.useEffect(() => {
     const unsub = onSnapshot(collection(db, boardsColPath), async (snap) => {
-        const boardsData = snap.docs.map(d => ({
-          id: d.id,
-          ...d.data()
-        } as PizarronBoard));
-        
-        if (boardsData.length === 0) {
-            await setDoc(doc(db, boardsColPath, 'general'), { name: 'General', columns: ['Ideas', 'Pruebas', 'Aprobado'] });
-            return;
-        }
-        setBoards(boardsData);
-        if (!activeBoardId && boardsData.length > 0) {
-            setActiveBoardId(boardsData[0].id);
-        }
+      const boardsData = snap.docs.map(d => ({
+        id: d.id,
+        ...d.data()
+      } as PizarronBoard));
+
+      if (boardsData.length === 0) {
+        await setDoc(doc(db, boardsColPath, 'general'), { name: 'General', columns: ['Ideas', 'Pruebas', 'Aprobado'] });
+        return;
+      }
+      setBoards(boardsData);
+      if (!activeBoardId && boardsData.length > 0) {
+        setActiveBoardId(boardsData[0].id);
+      }
     });
     return () => unsub();
   }, [db, boardsColPath, activeBoardId]);
-  
+
+  const [editingBoard, setEditingBoard] = React.useState<PizarronBoard | null>(null);
+
   const handleCreateBoard = async (boardData: Partial<PizarronBoard>) => {
     if (!boardData.name) return;
-    await addDoc(collection(db, boardsColPath), {
-      name: boardData.name,
-      filters: {},
-      category: boardData.category || 'general',
-      themeColor: boardData.themeColor || '#60A5FA',
-      icon: boardData.icon || 'layout',
-      description: boardData.description || ''
-    });
+
+    if (boardData.id) {
+      // Update
+      try {
+        await updateDoc(doc(db, boardsColPath, boardData.id), {
+          name: boardData.name,
+          category: boardData.category,
+          themeColor: boardData.themeColor,
+          icon: boardData.icon,
+          description: boardData.description,
+          ...(boardData.columns ? { columns: boardData.columns } : {})
+        });
+      } catch (e) {
+        console.error("Error updating board", e);
+      }
+    } else {
+      // Create
+      await addDoc(collection(db, boardsColPath), {
+        name: boardData.name,
+        filters: {},
+        category: boardData.category || 'general',
+        themeColor: boardData.themeColor || '#60A5FA',
+        icon: boardData.icon || 'layout',
+        description: boardData.description || '',
+        columns: boardData.columns || ['Ideas', 'Pruebas', 'Aprobado'],
+        createdAt: serverTimestamp()
+      });
+    }
     setShowAddBoard(false);
+    setEditingBoard(null);
+  };
+
+  const handleDeleteBoard = async (boardId: string) => {
+    if (confirm("¿Estás seguro de eliminar este tablero?")) {
+      try {
+        await deleteDoc(doc(db, boardsColPath, boardId));
+        if (activeBoardId === boardId) setActiveBoardId(null);
+      } catch (e) {
+        console.error("Error deleting board", e);
+      }
+    }
   };
 
   const handleCreateFromTemplate = async (templateId: string) => {
@@ -148,50 +185,50 @@ const PizarronView: React.FC<PizarronViewProps> = ({ db, userId, appId, auth, st
 
   const handleDropOnColumn = async (newStatus: string) => {
     if (draggingTask) {
-        const taskDocRef = doc(db, pizarronColPath, draggingTask);
-        
-        const task = allPizarronTasks.find(t => t.id === draggingTask);
-        const sourceColumn = task?.status;
+      const taskDocRef = doc(db, pizarronColPath, draggingTask);
 
-        await updateDoc(taskDocRef, { status: newStatus });
+      const task = allPizarronTasks.find(t => t.id === draggingTask);
+      const sourceColumn = task?.status;
 
-        // Automation: Create draft recipe if moved to 'Aprobado'
-        if (newStatus === 'Aprobado') {
-            createDraftRecipeFromTask(db, userId, draggingTask, appId);
-        }
+      await updateDoc(taskDocRef, { status: newStatus });
 
-        const { automationsEnabled } = usePizarraStore.getState();
-        if (automationsEnabled && task && sourceColumn) {
-            runAutomations(task, sourceColumn, newStatus);
-        }
+      // Automation: Create draft recipe if moved to 'Aprobado'
+      if (newStatus === 'Aprobado') {
+        createDraftRecipeFromTask(db, userId, draggingTask, appId);
+      }
+
+      const { automationsEnabled } = usePizarraStore.getState();
+      if (automationsEnabled && task && sourceColumn) {
+        runAutomations(task, sourceColumn, newStatus);
+      }
     } else if (draggingRecipe) {
-        const newTask: Omit<PizarronTask, 'id'> = {
-            texto: `TESTEO: ${draggingRecipe.nombre}`,
-            status: newStatus,
-            category: 'Desarrollo',
-            createdAt: serverTimestamp(),
-            boardId: activeBoardId || 'general',
-            labels: ['Grimorio', ...(draggingRecipe.categorias || [])],
-            tags: [],
-            priority: 'media',
-            upvotes: [],
-            starRating: {},
-            attachments: draggingRecipe.imageUrl ? [{ name: 'Imagen de referencia', url: draggingRecipe.imageUrl, type: 'image' }] : [],
-            assignees: [userId],
-            dueDate: null,
-            authorName: userProfile.displayName || 'Unknown Author',
-            authorPhotoURL: userProfile.photoURL || ''
-        };
-        await addDoc(collection(db, pizarronColPath), newTask);
+      const newTask: Omit<PizarronTask, 'id'> = {
+        texto: `TESTEO: ${draggingRecipe.nombre}`,
+        status: newStatus,
+        category: 'Desarrollo',
+        createdAt: serverTimestamp(),
+        boardId: activeBoardId || 'general',
+        labels: ['Grimorio', ...(draggingRecipe.categorias || [])],
+        tags: [],
+        priority: 'media',
+        upvotes: [],
+        starRating: {},
+        attachments: draggingRecipe.imageUrl ? [{ name: 'Imagen de referencia', url: draggingRecipe.imageUrl, type: 'image' }] : [],
+        assignees: [userId],
+        dueDate: null,
+        authorName: userProfile.displayName || 'Unknown Author',
+        authorPhotoURL: userProfile.photoURL || ''
+      };
+      await addDoc(collection(db, pizarronColPath), newTask);
     }
     onDropEnd();
   };
-  
+
   const handleDropOnCalendar = async (date: Date) => {
-      if (!draggingTask) return;
-      const taskDocRef = doc(db, pizarronColPath, draggingTask);
-      await updateDoc(taskDocRef, { dueDate: date });
-      onDropEnd();
+    if (!draggingTask) return;
+    const taskDocRef = doc(db, pizarronColPath, draggingTask);
+    await updateDoc(taskDocRef, { dueDate: date });
+    onDropEnd();
   };
 
   const handleSuggestSlots = () => {
@@ -199,35 +236,35 @@ const PizarronView: React.FC<PizarronViewProps> = ({ db, userId, appId, auth, st
     alert("CerebrIty AI: Analizando patrones de trabajo para sugerir slots óptimos...");
     // Here we would call the Gemini API to analyze task distribution and suggest dates
   };
-  
+
   const filteredTasks = React.useMemo(() => {
-      if (!activeBoardId) return [];
-      
-      let tasks = allPizarronTasks.filter(task => task.boardId === activeBoardId);
+    if (!activeBoardId) return [];
 
-      // Focus Mode
-      if (focusMode) {
-        tasks = tasks.filter(t => t.assignees?.includes(userId));
-      }
+    let tasks = allPizarronTasks.filter(task => task.boardId === activeBoardId);
 
-      // Search
-      if (searchQuery) {
-        const query = searchQuery.toLowerCase();
-        tasks = tasks.filter(t => t.texto.toLowerCase().includes(query) || t.category.toLowerCase().includes(query));
-      }
+    // Focus Mode
+    if (focusMode) {
+      tasks = tasks.filter(t => t.assignees?.includes(userId));
+    }
 
-      // Filters
-      if (filters.categories && filters.categories.length > 0) {
-        tasks = tasks.filter(t => filters.categories.includes(t.category));
-      }
-      if (filters.priorities && filters.priorities.length > 0) {
-        tasks = tasks.filter(t => filters.priorities.includes(t.priority || 'media'));
-      }
-      if (filters.tags && filters.tags.length > 0) {
-        tasks = tasks.filter(t => t.tags?.some(tagId => filters.tags.includes(tagId)));
-      }
+    // Search
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      tasks = tasks.filter(t => t.texto.toLowerCase().includes(query) || t.category.toLowerCase().includes(query));
+    }
 
-      return tasks;
+    // Filters
+    if (filters.categories && filters.categories.length > 0) {
+      tasks = tasks.filter(t => filters.categories.includes(t.category));
+    }
+    if (filters.priorities && filters.priorities.length > 0) {
+      tasks = tasks.filter(t => filters.priorities.includes(t.priority || 'media'));
+    }
+    if (filters.tags && filters.tags.length > 0) {
+      tasks = tasks.filter(t => t.tags?.some(tagId => filters.tags.includes(tagId)));
+    }
+
+    return tasks;
   }, [allPizarronTasks, activeBoardId, searchQuery, filters]);
 
   const handleColumnHeaderClick = (status: string) => {
@@ -242,8 +279,27 @@ const PizarronView: React.FC<PizarronViewProps> = ({ db, userId, appId, auth, st
   if (!db || !userId || !auth || !storage) return <Spinner />;
 
   return (
-    <div className="flex flex-col h-[calc(100vh-6rem)] bg-slate-50 dark:bg-slate-950">
-        <BoardTopbar 
+    <PremiumLayout
+      gradientTheme="amber"
+      leftSidebar={
+        isLeftPanelOpen ? (
+          <PizarronSidebar
+            boards={boards}
+            activeBoardId={activeBoardId}
+            setActiveBoardId={setActiveBoardId}
+            onAddBoard={() => setShowAddBoard(true)}
+            onSelectTemplate={() => setShowTemplateSelector(true)}
+            onEditBoard={(board) => {
+              setEditingBoard(board);
+              setShowAddBoard(true);
+            }}
+            onDeleteBoard={handleDeleteBoard}
+          />
+        ) : null
+      }
+      mainContent={
+        <div className="flex flex-col h-full">
+          <BoardTopbar
             isLeftPanelOpen={isLeftPanelOpen}
             onToggleLeftPanel={() => setIsLeftPanelOpen(!isLeftPanelOpen)}
             searchQuery={searchQuery}
@@ -260,76 +316,78 @@ const PizarronView: React.FC<PizarronViewProps> = ({ db, userId, appId, auth, st
             onShowSmartView={() => setShowSmartView(true)}
             currentView={currentView}
             onViewChange={handleViewChange}
-        />
+          />
 
-        <div className="flex flex-1 min-h-0 relative">
-            <div className={`bg-white/30 dark:bg-slate-900/30 backdrop-blur-md border-r border-white/10 dark:border-slate-700/30 overflow-y-auto flex-shrink-0 transition-all duration-300 ${isLeftPanelOpen ? 'w-64 p-4' : 'w-0 p-0 hidden'}`}>
-                <div className="flex justify-between items-center mb-4">
-                  <h2 className="font-semibold text-slate-800 dark:text-slate-100">Tableros</h2>
-                  <Button size="icon" variant="ghost" onClick={() => setIsLeftPanelOpen(false)}><Icon svg={ICONS.chevronLeft} /></Button>
+          <div className="flex-1 flex flex-col min-h-0 relative mt-4">
+            {currentView === 'kanban' && (
+              <BoardColumns
+                activeBoard={activeBoard}
+                filteredTasks={filteredTasks}
+                focusedColumn={focusedColumn}
+                focusMode={focusMode}
+                tags={tags}
+                onAddTask={(s) => { setInitialStatusForModal(s); setShowAddTaskModal(true); }}
+                onDragStart={(e, taskId) => onDragTaskStart(taskId)}
+                onDropOnColumn={onDropEnd}
+                onOpenTaskDetail={setSelectedTask}
+                onColumnHeaderClick={handleColumnHeaderClick}
+              />
+            )}
+            {currentView === 'list' && (
+              <ListView
+                tasks={filteredTasks}
+                onTaskClick={setSelectedTask}
+              />
+            )}
+            {currentView === 'timeline' && (
+              <TimelineView
+                tasks={filteredTasks}
+                onTaskClick={setSelectedTask}
+              />
+            )}
+            {currentView === 'document' && (
+              <DocumentView
+                tasks={filteredTasks}
+                columns={columns}
+                onTaskClick={setSelectedTask}
+              />
+            )}
+            <div className="border-t border-white/10 dark:border-slate-700/30 bg-white/40 dark:bg-slate-900/40 backdrop-blur-md z-10 transition-all duration-300 mt-auto">
+              <button onClick={() => setIsCalendarOpen(!isCalendarOpen)} className="w-full p-2 text-sm font-medium flex justify-center items-center gap-2 hover:bg-white/10 dark:hover:bg-slate-800/50 transition-colors">
+                <Icon svg={ICONS.calendar} className="h-5 w-5" /> Calendario Inteligente {isCalendarOpen && <span className="text-xs bg-indigo-500 text-white px-1.5 rounded-full">AI</span>} <Icon svg={isCalendarOpen ? ICONS.chevronDown : ICONS.upArrow} className="h-4 w-4" />
+              </button>
+              {isCalendarOpen && (
+                <div className="h-[500px]">
+                  <PizarronCalendarView tasks={filteredTasks} onDropTask={handleDropOnCalendar} onTaskClick={setSelectedTask} onSuggestSlots={handleSuggestSlots} />
                 </div>
-                {boards.map(board => (
-                    <Button key={board.id} variant={activeBoardId === board.id ? "secondary" : "ghost"} className={`w-full justify-start mb-1 ${activeBoardId === board.id ? 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-300' : ''}`} onClick={() => setActiveBoardId(board.id)}>{board.name}</Button>
-                ))}
-                <Button size="sm" variant="outline" className="w-full mt-2 border-dashed border-slate-300 dark:border-slate-700 text-slate-500" onClick={() => setShowAddBoard(true)}><Icon svg={ICONS.plus} className="h-4 w-4 mr-2"/>Nuevo Tablero</Button>
-                <Button size="sm" variant="ghost" className="w-full mt-1 text-indigo-500 hover:text-indigo-600 dark:text-indigo-400" onClick={() => setShowTemplateSelector(true)}><Icon svg={ICONS.layout} className="h-4 w-4 mr-2"/>Desde Plantilla</Button>
+              )}
             </div>
-
-            <main className="flex-1 flex flex-col min-h-0 relative">
-                {currentView === 'kanban' && (
-                    <BoardColumns 
-                        activeBoard={activeBoard}
-                        filteredTasks={filteredTasks}
-                        focusedColumn={focusedColumn}
-                        focusMode={focusMode}
-                        tags={tags}
-                        onAddTask={(s) => { setInitialStatusForModal(s); setShowAddTaskModal(true); }}
-                        onDragStart={handleDragStart}
-                        onDropOnColumn={handleDropOnColumn}
-                        onOpenTaskDetail={setSelectedTask}
-                        onColumnHeaderClick={handleColumnHeaderClick}
-                    />
-                )}
-                {currentView === 'list' && (
-                    <ListView 
-                        tasks={filteredTasks} 
-                        onTaskClick={setSelectedTask} 
-                    />
-                )}
-                {currentView === 'timeline' && (
-                    <TimelineView 
-                        tasks={filteredTasks} 
-                        onTaskClick={setSelectedTask} 
-                    />
-                )}
-                {currentView === 'document' && (
-                    <DocumentView 
-                        tasks={filteredTasks} 
-                        columns={columns} 
-                        onTaskClick={setSelectedTask} 
-                    />
-                )}
-                <div className="border-t border-white/10 dark:border-slate-700/30 bg-white/40 dark:bg-slate-900/40 backdrop-blur-md z-10 transition-all duration-300">
-                    <button onClick={() => setIsCalendarOpen(!isCalendarOpen)} className="w-full p-2 text-sm font-medium flex justify-center items-center gap-2 hover:bg-white/10 dark:hover:bg-slate-800/50 transition-colors">
-                        <Icon svg={ICONS.calendar} className="h-5 w-5" /> Calendario Inteligente {isCalendarOpen && <span className="text-xs bg-indigo-500 text-white px-1.5 rounded-full">AI</span>} <Icon svg={isCalendarOpen ? ICONS.chevronDown : ICONS.upArrow} className="h-4 w-4" />
-                    </button>
-                    {isCalendarOpen && (
-                        <div className="h-[500px]">
-                            <PizarronCalendarView tasks={filteredTasks} onDropTask={handleDropOnCalendar} onTaskClick={setSelectedTask} onSuggestSlots={handleSuggestSlots} />
-                        </div>
-                    )}
-                </div>
-            </main>
+          </div>
         </div>
-
-        {showAddTaskModal && activeBoardId && <AddTaskModal isOpen={showAddTaskModal} onClose={() => setShowAddTaskModal(false)} db={db} appId={appId} userId={userId} auth={auth} initialStatus={initialStatusForModal} activeBoardId={activeBoardId} userProfile={userProfile} />}
-        {selectedTask && <TaskDetailModal task={selectedTask} onClose={() => setSelectedTask(null)} db={db} userId={userId} appId={appId} auth={auth} storage={storage} onAnalyze={onAnalyze} />}
-        {showTopIdeasDrawer && <TopIdeasDrawer isOpen={showTopIdeasDrawer} onClose={() => setShowTopIdeasDrawer(false)} tasks={filteredTasks} onTaskClick={setSelectedTask} />}
-        <StatsDrawer isOpen={showStatsDrawer} onClose={() => setShowStatsDrawer(false)} tasks={filteredTasks} />
-        {showAddBoard && <CreateBoardModal isOpen={showAddBoard} onClose={() => setShowAddBoard(false)} onCreate={handleCreateBoard} />}
-        {showTemplateSelector && <TemplateSelectorModal isOpen={showTemplateSelector} onClose={() => setShowTemplateSelector(false)} onSelectTemplate={handleCreateFromTemplate} />}
-        <SmartViewPanel isOpen={showSmartView} onClose={() => setShowSmartView(false)} tasks={filteredTasks} columns={columns} />
-    </div>
+      }
+      rightSidebar={
+        <PizarronControls
+          searchQuery={searchQuery}
+          onSearchChange={setSearchQuery}
+          filters={filters}
+          setFilters={setFilters}
+          db={db}
+          userId={userId}
+          tags={tags}
+          onShowStats={() => setShowStatsDrawer(true)}
+          onShowTopIdeas={() => setShowTopIdeasDrawer(true)}
+          onShowSmartView={() => setShowSmartView(true)}
+        />
+      }
+    >
+      {showAddTaskModal && activeBoardId && <AddTaskModal isOpen={showAddTaskModal} onClose={() => setShowAddTaskModal(false)} db={db} appId={appId} userId={userId} auth={auth} initialStatus={initialStatusForModal} activeBoardId={activeBoardId} userProfile={userProfile} />}
+      {selectedTask && <TaskDetailModal task={selectedTask} onClose={() => setSelectedTask(null)} db={db} userId={userId} appId={appId} auth={auth} storage={storage} onAnalyze={onAnalyze} />}
+      {showTopIdeasDrawer && <TopIdeasDrawer isOpen={showTopIdeasDrawer} onClose={() => setShowTopIdeasDrawer(false)} tasks={filteredTasks} onTaskClick={setSelectedTask} />}
+      <StatsDrawer isOpen={showStatsDrawer} onClose={() => setShowStatsDrawer(false)} tasks={filteredTasks} />
+      {showAddBoard && <CreateBoardModal isOpen={showAddBoard} onClose={() => { setShowAddBoard(false); setEditingBoard(null); }} onCreate={handleCreateBoard} boardToEdit={editingBoard} />}
+      {showTemplateSelector && <TemplateSelectorModal isOpen={showTemplateSelector} onClose={() => setShowTemplateSelector(false)} onSelectTemplate={handleCreateFromTemplate} />}
+      <SmartViewPanel isOpen={showSmartView} onClose={() => setShowSmartView(false)} tasks={filteredTasks} columns={columns} />
+    </PremiumLayout>
   );
 };
 

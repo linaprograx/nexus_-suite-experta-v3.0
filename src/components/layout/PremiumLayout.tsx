@@ -27,7 +27,7 @@ export const PremiumLayout: React.FC<PremiumLayoutProps> = ({
         violet: "from-[#EDE9FE] to-white dark:from-[#1E1B2A] dark:to-slate-950", // CerebrIty Creativity
         cyan: "from-[#CCFBF1] to-white dark:from-[#162A29] dark:to-slate-950",   // CerebrIty Lab
         emerald: "from-[#D1FAE5] to-white dark:from-[#064E3B] dark:to-slate-950", // Escandallator (Money/Freshness)
-        amber: "from-[#FEF3C7] to-white dark:from-[#451A03] dark:to-slate-950",   // Trend Locator (Fire/Ideas)
+        amber: "from-orange-500/15 via-orange-100/10 to-transparent",   // Pizarron Special Theme
         rose: "from-[#FFE4E6] to-white dark:from-[#4C0519] dark:to-slate-950",    // Make Menu (Aesthetics)
         indigo: "from-[#E0E7FF] to-white dark:from-[#1E1B4B] dark:to-slate-950",  // Grimorium (Archive)
         slate: "from-[#F1F5F9] to-white dark:from-[#0F172A] dark:to-slate-950",   // Neutral/Fallback
@@ -59,7 +59,7 @@ export const PremiumLayout: React.FC<PremiumLayoutProps> = ({
             <div className={`flex-1 grid grid-cols-1 lg:grid-cols-[250px,minmax(0,1fr),320px] gap-6 overflow-hidden rounded-3xl bg-gradient-to-b ${activeGradient} p-6 shadow-sm ring-1 ring-black/5 dark:ring-white/5 ${className}`}>
 
                 {/* Left Sidebar Column */}
-                <div className="h-full min-h-0 overflow-hidden flex flex-col relative z-20">
+                <div className="h-full min-h-0 flex flex-col relative z-20">
                     {leftSidebar}
                 </div>
 
@@ -70,7 +70,7 @@ export const PremiumLayout: React.FC<PremiumLayoutProps> = ({
                 </div>
 
                 {/* Right Sidebar Column */}
-                <div className="h-full min-h-0 overflow-hidden flex flex-col relative z-20">
+                <div className="h-full min-h-0 flex flex-col relative z-20">
                     {rightSidebar}
                 </div>
 

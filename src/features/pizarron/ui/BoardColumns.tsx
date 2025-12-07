@@ -49,51 +49,51 @@ export const BoardColumns: React.FC<BoardColumnsProps> = ({
 
   return (
     <div className="relative flex-1 min-h-0 w-full">
-        {/* Shadow Indicators */}
-        <div 
-            className={`absolute left-0 top-0 bottom-0 w-8 z-10 pointer-events-none transition-opacity duration-300 bg-gradient-to-r from-black/10 to-transparent ${showLeftShadow ? 'opacity-100' : 'opacity-0'}`} 
-        />
-        <div 
-            className={`absolute right-0 top-0 bottom-0 w-8 z-10 pointer-events-none transition-opacity duration-300 bg-gradient-to-l from-black/10 to-transparent ${showRightShadow ? 'opacity-100' : 'opacity-0'}`} 
-        />
+      {/* Shadow Indicators */}
+      <div
+        className={`absolute left-0 top-0 bottom-0 w-8 z-10 pointer-events-none transition-opacity duration-300 bg-gradient-to-r from-black/10 to-transparent ${showLeftShadow ? 'opacity-100' : 'opacity-0'}`}
+      />
+      <div
+        className={`absolute right-0 top-0 bottom-0 w-8 z-10 pointer-events-none transition-opacity duration-300 bg-gradient-to-l from-black/10 to-transparent ${showRightShadow ? 'opacity-100' : 'opacity-0'}`}
+      />
 
-        <div 
-            ref={containerRef}
-            onScroll={checkScroll}
-            className="flex flex-row gap-6 overflow-x-auto overflow-y-hidden px-2 pb-6 no-scrollbar min-h-full"
-            style={{ scrollBehavior: 'smooth' }}
-        >
-            {columns.map(col => {
-                const isFocused = focusedColumn === col;
-                const isHidden = focusMode && focusedColumn && !isFocused;
-                
-                if (isHidden) return null;
+      <div
+        ref={containerRef}
+        onScroll={checkScroll}
+        className="flex flex-row gap-6 overflow-x-auto overflow-y-hidden px-2 pb-6 no-scrollbar min-h-full"
+        style={{ scrollBehavior: 'smooth' }}
+      >
+        {columns.map(col => {
+          const isFocused = focusedColumn === col;
+          const isHidden = focusMode && focusedColumn && !isFocused;
 
-                const columnTasks = filteredTasks.filter(t => 
-                    t.status === col || 
-                    (col === 'Ideas' && t.status === 'ideas') || 
-                    (col === 'Pruebas' && t.status === 'pruebas') || 
-                    (col === 'Aprobado' && t.status === 'aprobado')
-                );
+          if (isHidden) return null;
 
-                return (
-                    <div key={col} className="flex-shrink-0 w-[380px] h-full">
-                        <KanbanColumn
-                            title={col}
-                            status={col}
-                            tasks={columnTasks}
-                            onAddTask={onAddTask}
-                            onDragStart={onDragStart}
-                            onDropOnColumn={onDropOnColumn}
-                            onOpenTaskDetail={onOpenTaskDetail}
-                            isFocused={isFocused}
-                            onHeaderClick={() => onColumnHeaderClick(col)}
-                            allTags={tags}
-                        />
-                    </div>
-                );
-            })}
-        </div>
+          const columnTasks = filteredTasks.filter(t =>
+            t.status === col ||
+            (col === 'Ideas' && t.status === 'ideas') ||
+            (col === 'Pruebas' && t.status === 'pruebas') ||
+            (col === 'Aprobado' && t.status === 'aprobado')
+          );
+
+          return (
+            <div key={col} className="flex-shrink-0 w-[360px] h-full">
+              <KanbanColumn
+                title={col}
+                status={col}
+                tasks={columnTasks}
+                onAddTask={onAddTask}
+                onDragStart={onDragStart}
+                onDropOnColumn={onDropOnColumn}
+                onOpenTaskDetail={onOpenTaskDetail}
+                isFocused={isFocused}
+                onHeaderClick={() => onColumnHeaderClick(col)}
+                allTags={tags}
+              />
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 };

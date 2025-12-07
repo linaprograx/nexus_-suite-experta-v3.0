@@ -50,7 +50,7 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({ title, status, tasks
   };
 
   return (
-    <motion.div 
+    <motion.div
       layout
       className={`
         rounded-xl flex flex-col flex-shrink-0 transition-all duration-300
@@ -67,45 +67,45 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({ title, status, tasks
         onDropOnColumn(status);
       }}
     >
-      <div 
+      <div
         className={`p-3 rounded-t-2xl cursor-pointer select-none group relative overflow-hidden`}
         onClick={onHeaderClick}
       >
         <div className={`absolute inset-0 opacity-10 ${getHeaderGradient()}`} />
         <div className="relative flex justify-between items-center">
-            <h2 className="text-base font-semibold text-slate-700 dark:text-slate-200 flex items-center gap-2">
-                <span className={`w-2 h-2 rounded-full ${getHeaderGradient()}`}></span>
-                {title}
-                <span className="text-xs font-normal text-slate-500 ml-2 bg-white/50 dark:bg-black/20 px-2 py-0.5 rounded-full">
-                    {tasks.length}
-                </span>
-            </h2>
-             {uiFocusMode && (
-                <Icon 
-                    svg={isFocused ? ICONS.collapse : ICONS.layoutGrid} 
-                    className="h-4 w-4 text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity" 
-                />
-            )}
+          <h2 className="text-base font-semibold text-slate-700 dark:text-slate-200 flex items-center gap-2">
+            <span className={`w-2 h-2 rounded-full ${getHeaderGradient()}`}></span>
+            {title}
+            <span className="text-xs font-normal text-slate-500 ml-2 bg-white/50 dark:bg-black/20 px-2 py-0.5 rounded-full">
+              {tasks.length}
+            </span>
+          </h2>
+          {uiFocusMode && (
+            <Icon
+              svg={isFocused ? ICONS.collapse : ICONS.grid}
+              className="h-4 w-4 text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity"
+            />
+          )}
         </div>
       </div>
 
       <div className={`flex-1 overflow-y-auto ${compactMode ? 'p-1 space-y-1' : 'p-2 space-y-3'} custom-scrollbar`}>
         <AnimatePresence>
-            {visibleTasks.map(task => (
-                <PizarronCard 
-                    key={task.id} 
-                    task={task} 
-                    onDragStart={(e) => onDragStart(e, task.id)} 
-                    onOpenDetail={() => onOpenTaskDetail(task)} 
-                    allTags={allTags}
-                />
-            ))}
+          {visibleTasks.map(task => (
+            <PizarronCard
+              key={task.id}
+              task={task}
+              onDragStart={(e) => onDragStart(e, task.id)}
+              onOpenDetail={() => onOpenTaskDetail(task)}
+              allTags={allTags}
+            />
+          ))}
         </AnimatePresence>
       </div>
-      
+
       <div className="p-2 border-t border-white/10 dark:border-white/10 bg-white/20 dark:bg-white/5 backdrop-blur-sm rounded-b-2xl">
         <Button variant="ghost" size="sm" className="w-full justify-center text-slate-500 hover:text-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-900/20" onClick={() => onAddTask(status)}>
-            <Icon svg={ICONS.plus} className="mr-2 h-4 w-4" /> Añadir Tarea
+          <Icon svg={ICONS.plus} className="mr-2 h-4 w-4" /> Añadir Tarea
         </Button>
       </div>
     </motion.div>
