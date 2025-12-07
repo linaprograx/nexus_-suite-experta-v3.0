@@ -1,12 +1,13 @@
 import React from 'react';
 
-type GradientTheme = 'violet' | 'cyan' | 'emerald' | 'amber' | 'rose' | 'indigo' | 'slate' | 'blue' | 'colegium';
+type GradientTheme = 'violet' | 'cyan' | 'emerald' | 'amber' | 'rose' | 'indigo' | 'slate' | 'blue' | 'colegium' | 'red' | 'yellow' | 'ice';
 
 interface PremiumLayoutProps {
     children?: React.ReactNode; // Fallback for flexibility
     leftSidebar?: React.ReactNode;
     mainContent?: React.ReactNode;
     rightSidebar?: React.ReactNode;
+    header?: React.ReactNode; // Content to render above the main grid (e.g. Navigation Pills)
     gradientTheme?: GradientTheme;
     className?: string;
 }
@@ -16,6 +17,7 @@ export const PremiumLayout: React.FC<PremiumLayoutProps> = ({
     leftSidebar,
     mainContent,
     rightSidebar,
+    header,
     gradientTheme = 'indigo',
     className = ''
 }) => {
@@ -30,7 +32,10 @@ export const PremiumLayout: React.FC<PremiumLayoutProps> = ({
         indigo: "from-[#E0E7FF] to-white dark:from-[#1E1B4B] dark:to-slate-950",  // Grimorium (Archive)
         slate: "from-[#F1F5F9] to-white dark:from-[#0F172A] dark:to-slate-950",   // Neutral/Fallback
         blue: "from-[#DBEAFE] to-white dark:from-[#172554] dark:to-slate-950",     // Colegium (Learning)
-        colegium: "from-[#DBEAFE] to-white dark:from-[#172554] dark:to-slate-950"  // Alias
+        colegium: "from-[#DBEAFE] to-white dark:from-[#172554] dark:to-slate-950",  // Alias
+        red: "from-[#FEE2E2] to-white dark:from-[#450A0A] dark:to-slate-950",       // Escandallo (New)
+        yellow: "from-[#FEF9C3] to-white dark:from-[#422006] dark:to-slate-950",    // Batcher (New)
+        ice: "from-[#E0F2FE] to-white dark:from-[#082F49] dark:to-slate-950"        // Stock (New)
     };
 
     const activeGradient = gradients[gradientTheme];
@@ -42,6 +47,13 @@ export const PremiumLayout: React.FC<PremiumLayoutProps> = ({
 
     return (
         <div className={`h-[calc(100vh-80px)] w-full flex flex-col px-4 lg:px-8 py-6 ${className}`}>
+            {/* Header / Navbar Area */}
+            {header && (
+                <div className="flex-shrink-0 mb-4 z-30 relative">
+                    {header}
+                </div>
+            )}
+
             {/* Main Container with Rounded Corners and Gradient */}
             <div className={`flex-1 grid grid-cols-1 lg:grid-cols-[250px,minmax(0,1fr),320px] gap-6 overflow-hidden rounded-3xl bg-gradient-to-b ${activeGradient} p-6 shadow-sm ring-1 ring-black/5 dark:ring-white/5 ${className}`}>
 
