@@ -1,11 +1,9 @@
-import React from 'react';
-import { Firestore, addDoc, collection, serverTimestamp } from 'firebase/firestore';
+import { doc, onSnapshot, Firestore, addDoc, collection, serverTimestamp } from 'firebase/firestore';
 import { Type } from "@google/genai";
 import { callGeminiApi } from '../utils/gemini';
-import { Recipe, PizarronTask, QuizQuestion, ColegiumResult } from '../../types';
+import { Recipe, PizarronTask, QuizQuestion, ColegiumResult, UserProfile } from '../../types';
 import { Spinner } from '../components/ui/Spinner';
 import { Alert } from '../components/ui/Alert';
-import { ProgressDashboard } from '../components/colegium/ProgressDashboard';
 import { GameModeSelector } from '../components/colegium/GameModeSelector';
 import { QuizSetup } from '../components/colegium/QuizSetup';
 import { QuizInProgress } from '../components/colegium/QuizInProgress';
@@ -13,6 +11,9 @@ import { QuizResult } from '../components/colegium/QuizResult';
 import { PremiumLayout } from '../components/layout/PremiumLayout';
 import ColegiumProfileSidebar from '../components/colegium/ColegiumProfileSidebar';
 import ColegiumContextSidebar from '../components/colegium/ColegiumContextSidebar';
+import { GameCard } from '../components/colegium/GameCard';
+import { ICONS } from '../components/ui/icons';
+import { AreaChart, Area, ResponsiveContainer, XAxis, Tooltip } from 'recharts'; // For Stats Card
 
 interface ColegiumViewProps {
     db: Firestore;
@@ -22,8 +23,11 @@ interface ColegiumViewProps {
 }
 
 const ColegiumView: React.FC<ColegiumViewProps> = ({ db, userId, allRecipes, allPizarronTasks }) => {
-    const [quizPhase, setQuizPhase] = React.useState<'dashboard' | 'selection' | 'setup' | 'quiz' | 'result'>('dashboard');
-    const [quizSettings, setQuizSettings] = React.useState({ topic: 'Quiz Clásico', difficulty: 'Fácil', numQuestions: 5 });
+    // Phases: 'menu' (Bento Grid) -> 'selection' (Old selector, maybe skip?) -> 'setup' -> 'quiz' -> 'result'
+    // Let's map Bento Cards directly to 'setup' or 'quiz' depending on game.
+    const [quizPhase, setQuizPhase] = React.useState<'menu' | 'selection' | 'setup' | 'quiz' | 'result'>('menu');
+    const [quizSettings, setQuizSettings] = React.useState({ topic: 'Quiz Clásico', difficulty: 'Normal', numQuestions: 5 });
+    const [profile, setProfile] = React.useState<Partial<UserProfile>>({});
     const [quizData, setQuizData] = React.useState<QuizQuestion[]>([]);
     const [currentQuestionIndex, setCurrentQuestionIndex] = React.useState(0);
     const [score, setScore] = React.useState(0);
@@ -32,9 +36,22 @@ const ColegiumView: React.FC<ColegiumViewProps> = ({ db, userId, allRecipes, all
     const [answerFeedback, setAnswerFeedback] = React.useState<number | null>(null);
     const [timer, setTimer] = React.useState(30);
 
+    // Fetch Profile
+    React.useEffect(() => {
+        if (!userId) return;
+        const profileDocRef = doc(db, `users/${userId}/profile`, 'main');
+        const unsubscribe = onSnapshot(profileDocRef, (doc) => {
+            if (doc.exists()) {
+                setProfile(doc.data());
+            }
+        });
+        return () => unsubscribe();
+    }, [userId, db]);
+
+    // Timer Logic
     React.useEffect(() => {
         let interval: NodeJS.Timeout;
-        if (quizPhase === 'quiz' && quizSettings.topic === 'Speed Round') {
+        if (quizPhase === 'quiz' && (quizSettings.topic === 'Speed Round' || quizSettings.topic === 'Mixology Speed Run')) {
             interval = setInterval(() => {
                 setTimer(prev => {
                     if (prev <= 1) {
@@ -60,33 +77,41 @@ const ColegiumView: React.FC<ColegiumViewProps> = ({ db, userId, allRecipes, all
         await addDoc(collection(db, `users/${userId}/colegium-results`), resultData);
     };
 
-    const handleStartQuiz = async () => {
+    const handleStartQuiz = async (topicOverride?: string, difficultyOverride?: string) => {
         setLoading(true);
         setError(null);
 
+        const topic = topicOverride || quizSettings.topic;
+        const difficulty = difficultyOverride || quizSettings.difficulty;
+
+        // Context Preparation
         let dataContext = "";
-        if (quizSettings.topic === 'Recetas') {
+        if (topic === 'Recetas' || topic === 'Flavor Pairing') {
             dataContext = JSON.stringify(allRecipes.map(r => ({ nombre: r.nombre, categoria: r.categorias, ingredientes: r.ingredientes?.map(i => i.nombre) })));
-        } else if (quizSettings.topic === 'Pizarrón') {
+        } else if (topic === 'Pizarrón') {
             dataContext = JSON.stringify(allPizarronTasks.map(t => ({ content: t.texto, category: t.category, status: t.status })));
         }
 
         const systemPrompt = "Eres un educador y maestro de coctelería de élite. Tu respuesta debe ser estrictamente un array JSON válido.";
-
         let userQuery = "";
 
-        switch (quizSettings.topic) {
+        // Game Mode Prompts
+        switch (topic) {
             case 'Speed Round':
-                userQuery = `Basado en este contexto: ${dataContext}. Genera un quiz de ${quizSettings.numQuestions} preguntas de dificultad ${quizSettings.difficulty}. Devuelve un array JSON de objetos. Cada objeto debe tener: 'question', 'type' ('multiple-choice' o 'true-false'), 'options' (array de 4 strings para 'multiple-choice', o 2 para 'true-false'), 'correctAnswerIndex' (número 0-3 o 0-1). Incluye al menos un 'true-false'.`;
+            case 'Mixology Speed Run':
+                userQuery = `Modo Speed Run. Genera ${quizSettings.numQuestions} preguntas rápidas y directas sobre coctelería clásica. Dificultad: ${difficulty}. Formato JSON: [{question, type='multiple-choice', options=[4 strings], correctAnswerIndex=int}].`;
                 break;
             case 'Cata a Ciegas':
-                userQuery = `Genera ${quizSettings.numQuestions} preguntas para una 'Cata a Ciegas'. Cada pregunta debe ser la descripción del sabor y aroma de un cóctel clásico, sin revelar su nombre. Las opciones deben ser nombres de cócteles. Formato: array JSON de objetos con 'question', 'options' (4 nombres de cócteles, uno correcto), y 'correctAnswerIndex'.`;
+                userQuery = `Modo Cata a Ciegas. Genera ${quizSettings.numQuestions} preguntas donde describes el sabor, aroma y apariencia de un cóctel clásico SIN decir su nombre. Las opciones deben ser 4 nombres de cócteles. Formato JSON estándar.`;
+                break;
+            case 'Flavor Pairing':
+                userQuery = `Modo Flavor Pairing. Contexto: ${dataContext}. Genera ${quizSettings.numQuestions} preguntas sobre maridaje o combinación de ingredientes. Ejemplo: "¿Qué ingrediente combina mejor con Ginebra y Pepino?". Opciones: 4 ingredientes. Formato JSON estándar.`;
                 break;
             case 'Verdadero o Falso':
-                userQuery = `Basado en este contexto: ${dataContext}. Genera un quiz de ${quizSettings.numQuestions} preguntas de tipo 'Verdadero o Falso' sobre coctelería, con dificultad ${quizSettings.difficulty}. Formato: array JSON de objetos con 'question', 'options' (siempre ['Verdadero', 'Falso']), y 'correctAnswerIndex' (0 para Verdadero, 1 para Falso).`;
+                userQuery = `Modo Verdadero/Falso. Genera ${quizSettings.numQuestions} afirmaciones sobre coctelería. Formato JSON: options=['Verdadero', 'Falso'], correctAnswerIndex=0 o 1.`;
                 break;
-            default: // Quiz Clásico
-                userQuery = `Basado en este contexto: ${dataContext}. Genera un quiz de ${quizSettings.numQuestions} preguntas de dificultad ${quizSettings.difficulty}. Devuelve un array JSON de objetos. Cada objeto debe tener: 'question', 'type' ('multiple-choice' o 'true-false'), 'options' (array de 4 strings para 'multiple-choice', o 2 para 'true-false'), 'correctAnswerIndex' (número 0-3 o 0-1). Incluye al menos un 'true-false'.`;
+            default: // Clásico, Recetas, Pizarrón
+                userQuery = `Quiz sobre: ${topic}. Contexto opcional: ${dataContext}. Genera ${quizSettings.numQuestions} preguntas de dificultad ${difficulty}. Formato JSON estándar.`;
                 break;
         }
 
@@ -111,10 +136,11 @@ const ColegiumView: React.FC<ColegiumViewProps> = ({ db, userId, allRecipes, all
             setQuizData(JSON.parse(response.text));
             setCurrentQuestionIndex(0);
             setScore(0);
-            setTimer(30); // Reset timer
+            setTimer(30);
+            setQuizSettings(prev => ({ ...prev, topic, difficulty })); // Update state to match running game
             setQuizPhase('quiz');
         } catch (e: any) {
-            setError(e.message || 'An unknown error occurred');
+            setError(e.message || 'Error generando el quiz. Intenta de nuevo.');
         } finally {
             setLoading(false);
         }
@@ -139,24 +165,139 @@ const ColegiumView: React.FC<ColegiumViewProps> = ({ db, userId, allRecipes, all
         }, 1200);
     };
 
-    const handleSelectMode = (mode: string) => {
-        setQuizSettings(s => ({ ...s, topic: mode }));
-        setQuizPhase('setup');
-    };
+    // Bento Menu Component
+    const BentoMenu = () => (
+        <div className="h-full overflow-y-auto custom-scrollbar p-6">
+            <div className="max-w-5xl mx-auto space-y-8">
+                {/* Header */}
+                <div className="text-center mb-10">
+                    <h2 className="text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 mb-2">
+                        Nexus Colegium
+                    </h2>
+                    <p className="text-slate-500 dark:text-slate-400">Escoge tu desafío de hoy</p>
+                </div>
+
+                {/* Grid - Adjusted for better spacing: 3 Columns max */}
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 auto-rows-[220px]">
+
+                    {/* 1. Statistics / Progress / User Profile (Tall Card - Left) */}
+                    <div className="row-span-2 col-span-1 rounded-3xl p-6 bg-gradient-to-br from-indigo-500 to-purple-700 text-white shadow-xl relative overflow-hidden group hover:scale-[1.02] transition-transform duration-500 flex flex-col justify-between">
+                        <div className="absolute top-0 right-0 w-40 h-40 bg-white/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
+
+                        <div className="relative z-10">
+                            <div className="flex items-center gap-4 mb-4">
+                                <img
+                                    src={profile.photoURL || `https://ui-avatars.com/api/?name=${profile.displayName || 'U'}&background=random`}
+                                    alt="Profile"
+                                    className="w-16 h-16 rounded-full border-2 border-white/30 shadow-lg object-cover"
+                                />
+                                <div>
+                                    <h3 className="text-sm font-bold opacity-80 uppercase tracking-widest">Agente</h3>
+                                    <div className="text-xl font-bold truncate max-w-[120px]">{profile.displayName || 'Usuario'}</div>
+                                </div>
+                            </div>
+
+                            <div className="mt-2">
+                                <h3 className="text-lg font-bold opacity-90 mb-1">Nivel Actual</h3>
+                                <div className="text-5xl font-bold mb-2">Lvl. 12</div>
+                                <p className="text-xs opacity-70">Mixólogo Senior</p>
+                            </div>
+                        </div>
+
+                        <div className="relative z-10 w-full h-32 mt-4">
+                            <ResponsiveContainer width="100%" height="100%">
+                                <AreaChart data={[{ v: 30 }, { v: 45 }, { v: 35 }, { v: 60 }, { v: 55 }, { v: 80 }, { v: 75 }]}>
+                                    <defs>
+                                        <linearGradient id="chartG" x1="0" y1="0" x2="0" y2="1">
+                                            <stop offset="5%" stopColor="#fff" stopOpacity={0.5} />
+                                            <stop offset="95%" stopColor="#fff" stopOpacity={0} />
+                                        </linearGradient>
+                                    </defs>
+                                    <Area type="monotone" dataKey="v" stroke="#fff" strokeWidth={3} fill="url(#chartG)" />
+                                </AreaChart>
+                            </ResponsiveContainer>
+                        </div>
+                    </div>
+
+                    {/* 2. Main Game (Wide - Top Right) */}
+                    <div className="col-span-1 lg:col-span-2 row-span-1">
+                        <GameCard
+                            title="Quiz Clásico"
+                            description="Modo estándar para subir de nivel. 5 Preguntas diarias."
+                            icon={ICONS.book}
+                            color="from-indigo-500 to-purple-500"
+                            stats="Diario: 5/5"
+                            onPlay={() => { setQuizSettings({ topic: 'Quiz Clásico', difficulty: 'Normal', numQuestions: 5 }); setQuizPhase('setup'); }}
+                            delay={100}
+                        />
+                    </div>
+
+                    {/* 3. Speed Run */}
+                    <div className="col-span-1 row-span-1">
+                        <GameCard
+                            title="Speed Run"
+                            description="30 segs. ¿Cuántas aciertas?"
+                            icon={ICONS.clock}
+                            color="from-rose-400 to-red-500"
+                            onPlay={() => handleStartQuiz('Speed Round', 'Normal')}
+                            delay={200}
+                        />
+                    </div>
+
+                    {/* 4. Cata a Ciegas */}
+                    <div className="col-span-1 row-span-1">
+                        <GameCard
+                            title="Cata a Ciegas"
+                            description="Adivina el cóctel."
+                            icon={ICONS.eye}
+                            color="from-sky-400 to-blue-500"
+                            onPlay={() => handleStartQuiz('Cata a Ciegas', 'Normal')}
+                            delay={250}
+                        />
+                    </div>
+
+                    {/* 5. Flavor Pairing (Wide Bottom) */}
+                    <div className="col-span-1 lg:col-span-2 row-span-1">
+                        <GameCard
+                            title="Flavor Pairing"
+                            description="Combina sabores y domina el arte del maridaje molecular."
+                            icon={ICONS.wand}
+                            color="from-emerald-400 to-teal-500"
+                            onPlay={() => handleStartQuiz('Flavor Pairing', 'Difícil')}
+                            delay={300}
+                        />
+                    </div>
+
+                    {/* 6. Desafío (Small) */}
+                    <div className="col-span-1 row-span-1">
+                        <GameCard
+                            title="Desafío Diario"
+                            description="XP x2 Hoy."
+                            icon={ICONS.star}
+                            color="from-amber-400 to-orange-500"
+                            onPlay={() => handleStartQuiz('Quiz Clásico', 'Difícil')}
+                            delay={350}
+                        />
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    );
 
     return (
         <PremiumLayout
             gradientTheme="colegium"
             leftSidebar={
                 <ColegiumProfileSidebar
-                    level="Mixólogo Senior" // Placeholder, logic to be added
-                    totalScore={1250} // Placeholder
-                    gamesPlayed={42} // Placeholder
+                    level="Mixólogo Senior"
+                    totalScore={1250}
+                    gamesPlayed={42}
                 />
             }
             rightSidebar={
                 <ColegiumContextSidebar
-                    phase={quizPhase}
+                    phase={quizPhase === 'menu' ? 'dashboard' : quizPhase}
                     timer={timer}
                     currentQuestion={currentQuestionIndex}
                     totalQuestions={quizData.length}
@@ -164,20 +305,30 @@ const ColegiumView: React.FC<ColegiumViewProps> = ({ db, userId, allRecipes, all
                 />
             }
             mainContent={
-                <div className="h-full flex items-center justify-center relative">
-                    {loading && <Spinner className="w-12 h-12 text-blue-500 absolute z-50" />}
-                    {!loading && error && <Alert variant="destructive" title="Error" description={error} className="w-full max-w-lg" />}
+                <div className="h-full w-full relative">
+                    {loading && (
+                        <div className="absolute inset-0 z-50 flex items-center justify-center bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm">
+                            <Spinner className="w-12 h-12 text-indigo-500" />
+                        </div>
+                    )}
+
+                    {!loading && error && (
+                        <div className="absolute inset-0 z-50 flex items-center justify-center p-4">
+                            <Alert variant="destructive" title="Error" description={error} className="w-full max-w-lg shadow-2xl" />
+                            <button onClick={() => setError(null)} className="absolute top-4 right-4 text-slate-500">✕</button>
+                        </div>
+                    )}
 
                     {!loading && !error && (
                         <>
-                            {quizPhase === 'dashboard' && <ProgressDashboard onStart={() => setQuizPhase('selection')} />}
-                            {quizPhase === 'selection' && <GameModeSelector onSelectMode={handleSelectMode} />}
+                            {quizPhase === 'menu' && <BentoMenu />}
+                            {quizPhase === 'selection' && <GameModeSelector onSelectMode={(m) => { setQuizSettings(s => ({ ...s, topic: m })); setQuizPhase('setup'); }} />}
                             {quizPhase === 'setup' && (
                                 <QuizSetup
                                     quizSettings={quizSettings}
                                     setQuizSettings={setQuizSettings}
-                                    handleStartQuiz={handleStartQuiz}
-                                    onBack={() => setQuizPhase('selection')}
+                                    handleStartQuiz={() => handleStartQuiz()}
+                                    onBack={() => setQuizPhase('menu')}
                                 />
                             )}
                             {quizPhase === 'quiz' && quizData.length > 0 && (
@@ -194,7 +345,7 @@ const ColegiumView: React.FC<ColegiumViewProps> = ({ db, userId, allRecipes, all
                                 <QuizResult
                                     score={score}
                                     total={quizData.length}
-                                    onBack={() => setQuizPhase('dashboard')}
+                                    onBack={() => setQuizPhase('menu')}
                                 />
                             )}
                         </>
