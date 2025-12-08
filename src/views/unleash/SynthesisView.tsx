@@ -6,9 +6,9 @@ interface SynthesisViewProps {
 }
 
 const UnleashColumn = ({ title, children }: { title: string, children?: React.ReactNode }) => (
-    <div className="h-full min-h-0 flex flex-col rounded-2xl border border-white/10 overflow-hidden bg-white/5 backdrop-blur-sm">
-        <div className="p-4 border-b border-white/10 bg-white/5">
-            <h3 className="font-bold text-white tracking-wide text-sm uppercase">{title}</h3>
+    <div className="h-full min-h-0 flex flex-col rounded-2xl border border-violet-200/50 overflow-hidden bg-white/40 backdrop-blur-md shadow-sm">
+        <div className="p-4 border-b border-violet-100 bg-white/50">
+            <h3 className="font-bold text-violet-900 tracking-wide text-sm uppercase">{title}</h3>
         </div>
         <div className="flex-1 overflow-y-auto p-4 custom-scrollbar space-y-4">
             {children}
@@ -17,8 +17,8 @@ const UnleashColumn = ({ title, children }: { title: string, children?: React.Re
 );
 
 const SectionBlock = ({ title, children }: { title: string, children?: React.ReactNode }) => (
-    <div className="bg-white/5 p-4 rounded-xl border border-white/10">
-        <h4 className="text-violet-300 font-semibold mb-3 text-sm uppercase tracking-wider">{title}</h4>
+    <div className="bg-white/60 p-4 rounded-xl border border-violet-100 shadow-sm">
+        <h4 className="text-violet-700 font-bold mb-3 text-xs uppercase tracking-wider">{title}</h4>
         {children}
     </div>
 );
@@ -26,6 +26,13 @@ const SectionBlock = ({ title, children }: { title: string, children?: React.Rea
 const SynthesisView: React.FC<SynthesisViewProps> = ({ allRecipes }) => {
     const [selectedRecipeId, setSelectedRecipeId] = React.useState<string>('');
     const [concept, setConcept] = React.useState('');
+    // State for generated result
+    const [result, setResult] = React.useState<{
+        name: string;
+        tagline: string;
+        story: string;
+        sensory: { icon: string; label: string; desc: string }[];
+    } | null>(null);
 
     const handleRecipeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
         const recipeId = e.target.value;
@@ -38,13 +45,30 @@ const SynthesisView: React.FC<SynthesisViewProps> = ({ allRecipes }) => {
         }
     };
 
+    const handleGenerate = () => {
+        if (!selectedRecipeId && selectedRecipeId !== 'new') return;
+
+        // Mock generation logic - In production, this would call Gemini API
+        setResult({
+            name: concept ? `The ${concept} Protocol` : "Nebula Essence",
+            tagline: "Un viaje sensorial a través de la memoria.",
+            story: "Este cóctel no es solo una bebida, es una cápsula del tiempo. Sus notas ahumadas evocan la nostalgia de una biblioteca antigua, mientras que el toque cítrico final nos devuelve al presente con una chispa de esperanza.",
+            sensory: [
+                { icon: "👁️", label: "Vista", desc: "Violeta profundo con destellos dorados." },
+                { icon: "👃", label: "Olfato", desc: "Madera quemada, lavanda seca y lluvia." },
+                { icon: "👅", label: "Gusto", desc: "Aterciopelado, inicio dulce y final amargo." },
+                { icon: "🔊", label: "Oído", desc: "El crepitar del hielo tallado al romperse." }
+            ]
+        });
+    };
+
     return (
         <div className="h-full grid grid-cols-1 lg:grid-cols-[320px,minmax(0,1fr),320px] gap-6">
             {/* Column 1: Brief & Inputs */}
             <UnleashColumn title="Brief & Inputs">
                 <SectionBlock title="Selección de Cóctel">
                     <select
-                        className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-white text-sm focus:ring-2 focus:ring-violet-500 outline-none"
+                        className="w-full bg-white border border-violet-200 rounded-lg p-2 text-slate-800 text-sm focus:ring-2 focus:ring-violet-500 outline-none"
                         value={selectedRecipeId}
                         onChange={handleRecipeChange}
                     >
@@ -61,26 +85,64 @@ const SynthesisView: React.FC<SynthesisViewProps> = ({ allRecipes }) => {
                         <input
                             type="text"
                             placeholder="Concepto Central (ej. Nostalgia)"
-                            className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-white text-sm"
+                            className="w-full bg-white border border-violet-200 rounded-lg p-2 text-slate-800 text-sm placeholder:text-slate-400"
                             value={concept}
                             onChange={(e) => setConcept(e.target.value)}
                         />
-                        <input type="text" placeholder="Emoción Deseada" className="w-full bg-slate-800 border-slate-700 rounded-lg p-2 text-white text-sm" />
-                        <input type="text" placeholder="Perfil de Cliente" className="w-full bg-slate-800 border-slate-700 rounded-lg p-2 text-white text-sm" />
-                        <textarea placeholder="Restricciones o Notas" className="w-full bg-slate-800 border-slate-700 rounded-lg p-2 text-white text-sm h-20 resize-none"></textarea>
+                        <input type="text" placeholder="Emoción Deseada" className="w-full bg-white border border-violet-200 rounded-lg p-2 text-slate-800 text-sm placeholder:text-slate-400" />
+                        <input type="text" placeholder="Perfil de Cliente" className="w-full bg-white border border-violet-200 rounded-lg p-2 text-slate-800 text-sm placeholder:text-slate-400" />
+                        <textarea placeholder="Restricciones o Notas" className="w-full bg-white border border-violet-200 rounded-lg p-2 text-slate-800 text-sm h-20 resize-none placeholder:text-slate-400"></textarea>
                     </div>
                 </SectionBlock>
 
-                <button className="w-full py-3 bg-violet-600 hover:bg-violet-500 text-white font-bold rounded-xl shadow-lg shadow-violet-900/40 transition-all">
+                <button
+                    onClick={handleGenerate}
+                    disabled={!selectedRecipeId}
+                    className={`w-full py-3 font-bold rounded-xl shadow-lg transition-all ${selectedRecipeId
+                        ? 'bg-violet-600 hover:bg-violet-500 text-white shadow-violet-900/30'
+                        : 'bg-slate-200 text-slate-400 cursor-not-allowed'
+                        }`}
+                >
                     GENERAR CONCEPTO
                 </button>
             </UnleashColumn>
 
             {/* Column 2: Resultados Creativos */}
             <UnleashColumn title="Resultados Creativos">
-                <div className="text-white/30 text-center italic text-sm mt-10">
-                    {selectedRecipeId ? "Genera un concepto para ver resultados." : "Selecciona un cóctel para empezar."}
-                </div>
+                {!result ? (
+                    <div className="h-full flex flex-col items-center justify-center text-slate-400 opacity-60">
+                        <div className="text-4xl mb-4 text-violet-300">✨</div>
+                        <p className="text-sm italic font-medium">Define el brief y genera tu concepto.</p>
+                    </div>
+                ) : (
+                    <div className="space-y-6 animate-fadeIn">
+                        {/* Title Card */}
+                        <div className="relative bg-gradient-to-br from-violet-600 to-violet-800 p-6 rounded-2xl shadow-lg shadow-violet-900/20 overflow-hidden text-white">
+                            <div className="absolute top-0 right-0 p-4 opacity-20 text-9xl mix-blend-overlay">⚡</div>
+                            <h2 className="text-3xl font-bold mb-2 relative z-10">{result.name}</h2>
+                            <p className="text-violet-100 italic text-lg relative z-10 opacity-90">"{result.tagline}"</p>
+                        </div>
+
+                        {/* Storytelling */}
+                        <div className="bg-white/60 p-6 rounded-2xl border border-violet-100">
+                            <h4 className="text-xs uppercase tracking-widest text-violet-700 mb-3 font-bold">Narrativa</h4>
+                            <p className="text-slate-700 leading-relaxed text-sm font-medium">{result.story}</p>
+                        </div>
+
+                        {/* Sensory Grid */}
+                        <div className="grid grid-cols-2 gap-4">
+                            {result.sensory.map((s, i) => (
+                                <div key={i} className="bg-white/80 p-4 rounded-xl border border-violet-100 hover:border-violet-300 transition-colors group shadow-sm">
+                                    <div className="flex items-center gap-3 mb-2">
+                                        <span className="text-2xl group-hover:scale-110 transition-transform">{s.icon}</span>
+                                        <span className="text-xs font-bold text-slate-500 uppercase">{s.label}</span>
+                                    </div>
+                                    <p className="text-xs text-slate-700 font-medium">{s.desc}</p>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
             </UnleashColumn>
 
             {/* Column 3: AI Panel & Control */}
