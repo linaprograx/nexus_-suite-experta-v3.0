@@ -4,8 +4,13 @@ export interface Ingredient {
     id: string;
     nombre: string;
     familia?: string;
+    categoria?: string; // Added
     costo: number;
     unidad: string;
+    unidadCompra?: string; // Added
+    precioCompra?: number; // Added
+    standardUnit?: string; // Added
+    standardQuantity?: number; // Added
     stock?: number;
     emoji?: string;
     recipe?: {
@@ -28,6 +33,7 @@ export interface Ingredient {
 export interface Recipe {
     id: string;
     nombre: string;
+    categorias?: string[]; // Added
     ingredientes: Ingredient[];
     instrucciones?: string;
     storytelling?: string;
@@ -53,11 +59,27 @@ export interface CerebrityResult {
 }
 
 export interface TrendResult {
-    titulo: string;
-    resumen: string;
-    fuente: string;
+    id?: string; // Added optional ID
+    titulo?: string; // Legacy
+    resumen?: string; // Legacy
+    fuente?: string; // Legacy
     url?: string;
     date?: string;
+
+    // New AI Fields
+    conceptName?: string;
+    trendScore?: number;
+    description?: string;
+    ingredientsKey?: string[];
+    popularityRegion?: string;
+    visualStyle?: string;
+}
+
+export interface MenuLayout {
+    themeName: string;
+    description: string;
+    suggestedTypography: string;
+    htmlContent: string;
 }
 
 export interface PizarronBoard {

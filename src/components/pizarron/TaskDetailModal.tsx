@@ -18,6 +18,11 @@ import { RecipeBuilder } from './tools/RecipeBuilder';
 import { CostingView } from './tools/CostingView';
 import { ZeroWasteView } from './tools/ZeroWasteView';
 import { CerebrityPowers } from './powers/CerebrityPowers';
+import { PowerPanel } from './PowerPanel';
+import { BatcherPower } from './powers/BatcherPower';
+import { StockPower } from './powers/StockPower';
+import { TrendPower } from './powers/TrendPower';
+import { MenuPower } from './powers/MenuPower';
 
 interface TaskDetailModalProps {
     task: PizarronTask;
@@ -44,20 +49,31 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({ task, onClose,
     const [activeTool, setActiveTool] = React.useState<'details' | 'cerebrity' | 'grimorium_recipes' | 'grimorium_ingredients' | 'grimorium_costing' | 'grimorium_zerowaste' | 'batcher' | 'stock' | 'trend_locator' | 'make_menu'>('details');
 
     const [allIngredients, setAllIngredients] = React.useState<any[]>([]);
+    const [allRecipes, setAllRecipes] = React.useState<any[]>([]);
 
     const pizarronColPath = `artifacts/${appId}/public/data/pizarron-tasks`;
     const taskDocRef = doc(db, pizarronColPath, task.id);
 
-    // Fetch Ingredients shared by tools
+    // Fetch Ingredients and Recipes shared by tools
     React.useEffect(() => {
         if (!userId || !appId) return;
-        const path = `artifacts/${appId}/users/${userId}/grimorio-ingredients`;
-        const q = query(collection(db, path), orderBy('nombre'));
-        const unsubscribe = onSnapshot(q, (snapshot) => {
+        const ingPath = `artifacts/${appId}/users/${userId}/grimorio-ingredients`;
+        const recPath = `artifacts/${appId}/users/${userId}/grimorio-recipes`;
+
+        const unsubIng = onSnapshot(query(collection(db, ingPath), orderBy('nombre')), (snapshot) => {
             const loaded = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
             setAllIngredients(loaded as any[]);
         });
-        return () => unsubscribe();
+
+        const unsubRec = onSnapshot(query(collection(db, recPath), orderBy('nombre')), (snapshot) => {
+            const loaded = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            setAllRecipes(loaded as any[]);
+        });
+
+        return () => {
+            unsubIng();
+            unsubRec();
+        };
     }, [db, appId, userId]);
 
     // Check for incomplete data
@@ -205,13 +221,13 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({ task, onClose,
 
                         {/* CEREBRITY */}
                         {activeTool === 'cerebrity' && (
-                            <div className="bg-violet-50 dark:bg-violet-900/10 p-4 rounded-2xl border border-violet-100 dark:border-violet-800/30 animate-in fade-in zoom-in-95 mb-6">
-                                <div className="flex justify-between items-center mb-4">
-                                    <h4 className="font-bold text-violet-700 dark:text-violet-300 flex items-center gap-2">
-                                        <Icon svg={ICONS.brain} className="w-5 h-5" /> CerebrIty AI
-                                    </h4>
-                                    <Button size="sm" variant="ghost" onClick={() => setActiveTool('details')}>Cerrar</Button>
-                                </div>
+                            <PowerPanel
+                                title="CerebrIty AI"
+                                subtitle="Asistente Creativo Inteligente"
+                                icon={ICONS.brain}
+                                theme="violet"
+                                onClose={() => setActiveTool('details')}
+                            >
                                 <CerebrityPowers
                                     contextText={title + "\n" + description}
                                     onApplyResult={async (res) => {
@@ -220,39 +236,38 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({ task, onClose,
                                         await handleUpdate('description', newDesc);
                                     }}
                                 />
-                            </div>
+                            </PowerPanel>
                         )}
 
                         {/* GRIMORIUM: RECIPES */}
                         {activeTool === 'grimorium_recipes' && (
-                            <div className="bg-emerald-50 dark:bg-emerald-900/10 p-4 rounded-2xl border border-emerald-100 dark:border-emerald-800/30 animate-in fade-in zoom-in-95 mb-6">
-                                <div className="flex justify-between items-center mb-4">
-                                    <h4 className="font-bold text-emerald-700 dark:text-emerald-300 flex items-center gap-2">
-                                        <Icon svg={ICONS.book} className="w-5 h-5" /> Recetas
-                                    </h4>
-                                    <Button size="sm" variant="ghost" onClick={() => setActiveTool('details')}>Cerrar</Button>
-                                </div>
+                            <PowerPanel
+                                title="Recetas Grimorium"
+                                subtitle="Gestión y vinculación de fichas técnicas"
+                                icon={ICONS.book}
+                                theme="emerald"
+                                onClose={() => setActiveTool('details')}
+                            >
                                 <RecipeBuilder
                                     task={task}
                                     appId={appId}
                                     db={db}
                                     onUpdate={async (data) => await handleUpdate('recipe', data.recipe)}
-                                    // Removed onBack since we use setActiveTool('details') to close
                                     onBack={() => setActiveTool('details')}
                                     onExport={handleExportRecipe}
                                 />
-                            </div>
+                            </PowerPanel>
                         )}
 
                         {/* GRIMORIUM: INGREDIENTS */}
                         {activeTool === 'grimorium_ingredients' && (
-                            <div className="bg-lime-50 dark:bg-lime-900/10 p-4 rounded-2xl border border-lime-100 dark:border-lime-800/30 animate-in fade-in zoom-in-95 mb-6">
-                                <div className="flex justify-between items-center mb-4">
-                                    <h4 className="font-bold text-lime-700 dark:text-lime-300 flex items-center gap-2">
-                                        <Icon svg={ICONS.leaf} className="w-5 h-5" /> Selección de Ingredientes
-                                    </h4>
-                                    <Button size="sm" variant="ghost" onClick={() => setActiveTool('details')}>Cerrar</Button>
-                                </div>
+                            <PowerPanel
+                                title="Selección de Ingredientes"
+                                subtitle="Vincula materia prima desde el inventario"
+                                icon={ICONS.leaf}
+                                theme="lime"
+                                onClose={() => setActiveTool('details')}
+                            >
                                 <IngredientSelector
                                     appId={appId}
                                     db={db}
@@ -282,105 +297,107 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({ task, onClose,
                                         });
                                     }}
                                 />
-                            </div>
+                            </PowerPanel>
                         )}
 
                         {/* GRIMORIUM: COSTING */}
                         {activeTool === 'grimorium_costing' && (
-                            <div className="bg-amber-50 dark:bg-amber-900/10 p-4 rounded-2xl border border-amber-100 dark:border-amber-800/30 animate-in fade-in zoom-in-95 mb-6">
-                                <div className="flex justify-between items-center mb-4">
-                                    <h4 className="font-bold text-amber-700 dark:text-amber-300 flex items-center gap-2">
-                                        <Icon svg={ICONS.dollarSign} className="w-5 h-5" /> Escandallo
-                                    </h4>
-                                    <Button size="sm" variant="ghost" onClick={() => setActiveTool('details')}>Cerrar</Button>
-                                </div>
+                            <PowerPanel
+                                title="Escandallo & Costes"
+                                subtitle="Análisis de rentabilidad y precios"
+                                icon={ICONS.dollarSign}
+                                theme="amber"
+                                onClose={() => setActiveTool('details')}
+                            >
                                 <CostingView
                                     task={task}
                                     ingredientsData={allIngredients}
                                     onBack={() => setActiveTool('details')}
                                 />
-                            </div>
+                            </PowerPanel>
                         )}
 
                         {/* GRIMORIUM: ZERO WASTE */}
                         {activeTool === 'grimorium_zerowaste' && (
-                            <div className="bg-teal-50 dark:bg-teal-900/10 p-4 rounded-2xl border border-teal-100 dark:border-teal-800/30 animate-in fade-in zoom-in-95 mb-6">
-                                <div className="flex justify-between items-center mb-4">
-                                    <h4 className="font-bold text-teal-700 dark:text-teal-300 flex items-center gap-2">
-                                        <Icon svg={ICONS.refreshCw} className="w-5 h-5" /> Zero Waste
-                                    </h4>
-                                    <Button size="sm" variant="ghost" onClick={() => setActiveTool('details')}>Cerrar</Button>
-                                </div>
+                            <PowerPanel
+                                title="Zero Waste Chef"
+                                subtitle="Optimización de mermas y sostenibilidad"
+                                icon={ICONS.refreshCw}
+                                theme="teal"
+                                onClose={() => setActiveTool('details')}
+                            >
                                 <ZeroWasteView
                                     task={task}
                                     onBack={() => setActiveTool('details')}
                                 />
-                            </div>
+                            </PowerPanel>
                         )}
 
 
-                        {/* BATCHER (Placeholder) */}
                         {activeTool === 'batcher' && (
-                            <div className="bg-blue-50 dark:bg-blue-900/10 p-4 rounded-2xl border border-blue-100 dark:border-blue-800/30 animate-in fade-in zoom-in-95 mb-6">
-                                <div className="flex justify-between items-center mb-4">
-                                    <h4 className="font-bold text-blue-700 dark:text-blue-300 flex items-center gap-2">
-                                        <Icon svg={ICONS.layers} className="w-5 h-5" /> Batcher & Production
-                                    </h4>
-                                    <Button size="sm" variant="ghost" onClick={() => setActiveTool('details')}>Cerrar</Button>
-                                </div>
-                                <div className="p-8 text-center text-slate-500">
-                                    <Icon svg={ICONS.layers} className="w-12 h-12 mx-auto mb-2 opacity-50" />
-                                    <p>Planificación de lotes y producción próximamente.</p>
-                                </div>
-                            </div>
+                            <PowerPanel
+                                title="Batcher & Production"
+                                subtitle="Planificación de producción y lotes"
+                                icon={ICONS.layers}
+                                theme="blue"
+                                onClose={() => setActiveTool('details')}
+                            >
+                                <BatcherPower
+                                    db={db}
+                                    appId={appId}
+                                    allRecipes={allRecipes}
+                                />
+                            </PowerPanel>
                         )}
 
-                        {/* STOCK (Placeholder) */}
                         {activeTool === 'stock' && (
-                            <div className="bg-orange-50 dark:bg-orange-900/10 p-4 rounded-2xl border border-orange-100 dark:border-orange-800/30 animate-in fade-in zoom-in-95 mb-6">
-                                <div className="flex justify-between items-center mb-4">
-                                    <h4 className="font-bold text-orange-700 dark:text-orange-300 flex items-center gap-2">
-                                        <Icon svg={ICONS.box} className="w-5 h-5" /> Stock & Inventory
-                                    </h4>
-                                    <Button size="sm" variant="ghost" onClick={() => setActiveTool('details')}>Cerrar</Button>
-                                </div>
-                                <div className="p-8 text-center text-slate-500">
-                                    <Icon svg={ICONS.box} className="w-12 h-12 mx-auto mb-2 opacity-50" />
-                                    <p>Gestión de stock en tiempo real próximamente.</p>
-                                </div>
-                            </div>
+                            <PowerPanel
+                                title="Stock & Inventory"
+                                subtitle="Gestión de existencias en tiempo real"
+                                icon={ICONS.box}
+                                theme="orange"
+                                onClose={() => setActiveTool('details')}
+                            >
+                                <StockPower
+                                    allRecipes={allRecipes}
+                                    allIngredients={allIngredients}
+                                />
+                            </PowerPanel>
                         )}
 
-                        {/* MAKE MENU (Placeholder) */}
-                        {activeTool === 'make_menu' && (
-                            <div className="bg-pink-50 dark:bg-pink-900/10 p-4 rounded-2xl border border-pink-100 dark:border-pink-800/30 animate-in fade-in zoom-in-95 mb-6">
-                                <div className="flex justify-between items-center mb-4">
-                                    <h4 className="font-bold text-pink-700 dark:text-pink-300 flex items-center gap-2">
-                                        <Icon svg={ICONS.menu} className="w-5 h-5" /> Make Menu
-                                    </h4>
-                                    <Button size="sm" variant="ghost" onClick={() => setActiveTool('details')}>Cerrar</Button>
-                                </div>
-                                <div className="p-8 text-center text-slate-500">
-                                    <Icon svg={ICONS.menu} className="w-12 h-12 mx-auto mb-2 opacity-50" />
-                                    <p>Diseñador de menús inteligente próximamente.</p>
-                                </div>
-                            </div>
-                        )}
-
-                        {/* TREND LOCATOR (Placeholder) */}
                         {activeTool === 'trend_locator' && (
-                            <div className="bg-purple-50 dark:bg-purple-900/10 p-4 rounded-2xl border border-purple-100 dark:border-purple-800/30 animate-in fade-in zoom-in-95 mb-6">
-                                <div className="flex justify-between items-center mb-4">
-                                    <h4 className="font-bold text-purple-700 dark:text-purple-300 flex items-center gap-2">
-                                        <Icon svg={ICONS.trending} className="w-5 h-5" /> Trend Locator
-                                    </h4>
-                                    <Button size="sm" variant="ghost" onClick={() => setActiveTool('details')}>Cerrar</Button>
-                                </div>
-                                <div className="p-8 text-center text-slate-500">
-                                    <Icon svg={ICONS.trending} className="w-12 h-12 mx-auto mb-2 opacity-50" />
-                                    <p>Análisis de tendencias de mercado próximamente.</p>
-                                </div>
-                            </div>
+                            <PowerPanel
+                                title="Trend Locator"
+                                subtitle="Análisis de tendencias de mercado"
+                                icon={ICONS.trending}
+                                theme="purple"
+                                onClose={() => setActiveTool('details')}
+                            >
+                                <TrendPower
+                                    db={db}
+                                    appId={appId}
+                                    userId={userId}
+                                />
+                            </PowerPanel>
+                        )}
+
+                        {activeTool === 'make_menu' && (
+                            <PowerPanel
+                                title="Make Menu"
+                                subtitle="Diseño inteligente de cartas y menús"
+                                icon={ICONS.menu}
+                                theme="pink"
+                                onClose={() => setActiveTool('details')}
+                            >
+                                <MenuPower
+                                    db={db}
+                                    appId={appId}
+                                    userId={userId}
+                                    allRecipes={allRecipes}
+                                    allPizarronTasks={[]} // Would ideally pass all tasks, simplified for now
+                                    currentTaskId={task.id}
+                                />
+                            </PowerPanel>
                         )}
 
 

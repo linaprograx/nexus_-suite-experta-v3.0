@@ -12,6 +12,11 @@ import { ICONS } from '../ui/icons';
 import { PizarronTask, TaskCategory, UserProfile } from '../../../types';
 import { IngredientSelector } from './IngredientSelector';
 import { CerebrityPowers } from './powers/CerebrityPowers';
+import { PowerPanel } from './PowerPanel';
+import { BatcherPower } from './powers/BatcherPower';
+import { StockPower } from './powers/StockPower';
+import { TrendPower } from './powers/TrendPower';
+import { MenuPower } from './powers/MenuPower';
 import { Spinner } from '../ui/Spinner';
 
 interface Tag {
@@ -41,10 +46,12 @@ export const AddTaskModal: React.FC<AddTaskModalProps> = ({ isOpen, onClose, db,
   const [labels, setLabels] = React.useState('');
   const [initialComment, setInitialComment] = React.useState('');
   const [isSaving, setIsSaving] = React.useState(false);
-  const [activeTool, setActiveTool] = React.useState<'details' | 'cerebrity' | 'grimorium_recipes' | 'grimorium_ingredients' | 'grimorium_costing' | 'grimorium_zerowaste'>('details');
+  const [activeTool, setActiveTool] = React.useState<'details' | 'cerebrity' | 'grimorium_recipes' | 'grimorium_ingredients' | 'grimorium_costing' | 'grimorium_zerowaste' | 'batcher' | 'stock' | 'trend_locator' | 'make_menu'>('details');
 
   // Grimorium Integration
   const [selectedIngredients, setSelectedIngredients] = React.useState<string[]>([]);
+  const [allIngredients, setAllIngredients] = React.useState<any[]>([]);
+  const [allRecipes, setAllRecipes] = React.useState<any[]>([]);
 
   // Tag system
   const [availableTags, setAvailableTags] = React.useState<Tag[]>([]);
@@ -65,6 +72,29 @@ export const AddTaskModal: React.FC<AddTaskModalProps> = ({ isOpen, onClose, db,
     });
     return () => unsub();
   }, [db, tagsColPath]);
+
+  // Fetch Ingredients and Recipes
+  React.useEffect(() => {
+    if (!userId || !appId) return;
+    const ingPath = `artifacts/${appId}/users/${userId}/grimorio-ingredients`;
+    const recPath = `artifacts/${appId}/users/${userId}/grimorio-recipes`;
+
+    const unsubIng = onSnapshot(collection(db, ingPath), (snapshot) => {
+      const loaded = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setAllIngredients(loaded as any[]);
+    });
+
+    const unsubRec = onSnapshot(collection(db, recPath), (snapshot) => {
+      const loaded = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setAllRecipes(loaded as any[]);
+    });
+
+    return () => {
+      unsubIng();
+      unsubRec();
+    };
+  }, [db, appId, userId]);
+
 
   const handleCreateTag = async () => {
     if (!newTagName.trim()) return;
@@ -148,7 +178,7 @@ export const AddTaskModal: React.FC<AddTaskModalProps> = ({ isOpen, onClose, db,
       <div className="flex h-[85vh] bg-white dark:bg-slate-900 overflow-hidden rounded-lg">
 
         {/* LEFT COLUMN: ACTIVITY / NOTES */}
-        <div className="w-1/3 min-w-[300px] border-r border-slate-100 dark:border-slate-800 flex flex-col bg-slate-50 dark:bg-slate-900/50">
+        <div className="w-[300px] min-w-[300px] border-r border-slate-100 dark:border-slate-800 flex flex-col bg-slate-50 dark:bg-slate-900/50">
           <div className="p-4 border-b border-slate-100/50 dark:border-slate-800/50">
             <h3 className="text-sm font-bold text-slate-700 dark:text-slate-300 flex items-center gap-2">
               <Icon svg={ICONS.activity} className="w-4 h-4" />
@@ -157,7 +187,7 @@ export const AddTaskModal: React.FC<AddTaskModalProps> = ({ isOpen, onClose, db,
           </div>
 
           <div className="flex-1 p-4 flex flex-col justify-center items-center text-slate-400 opacity-60">
-            <Icon svg={ICONS.messageSquare} className="w-12 h-12 mb-2" />
+            <Icon svg={ICONS.messageCircle} className="w-12 h-12 mb-2" />
             <p className="text-xs text-center">La actividad comenzará<br />cuando crees la tarea.</p>
           </div>
 
@@ -173,7 +203,7 @@ export const AddTaskModal: React.FC<AddTaskModalProps> = ({ isOpen, onClose, db,
         </div>
 
         {/* RIGHT COLUMN: MAIN CONTENT */}
-        <div className="flex-1 flex flex-col h-full relative overflow-hidden">
+        <div className="flex-1 flex flex-col h-full relative overflow-hidden bg-white dark:bg-slate-900">
 
           {/* HEADER */}
           <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-white dark:bg-slate-900 z-10">
@@ -182,42 +212,161 @@ export const AddTaskModal: React.FC<AddTaskModalProps> = ({ isOpen, onClose, db,
           </div>
 
           {/* SCROLLABLE BODY */}
-          <div className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar bg-white dark:bg-slate-900">
+          <div className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar">
 
             {/* TOOL: CEREBRITY */}
             {activeTool === 'cerebrity' && (
-              <div className="bg-violet-50 dark:bg-violet-900/10 p-4 rounded-2xl border border-violet-100 dark:border-violet-800/30 animate-in fade-in zoom-in-95">
-                <div className="flex justify-between items-center mb-4">
-                  <h4 className="font-bold text-violet-700 dark:text-violet-300 flex items-center gap-2">
-                    <Icon svg={ICONS.brain} className="w-5 h-5" /> CerebrIty AI
-                  </h4>
-                  <Button size="sm" variant="ghost" onClick={() => setActiveTool('details')}>Cerrar</Button>
-                </div>
+              <PowerPanel
+                title="CerebrIty AI"
+                subtitle="Asistente Creativo Inteligente"
+                icon={ICONS.brain}
+                theme="violet"
+                onClose={() => setActiveTool('details')}
+              >
                 <CerebrityPowers
                   contextText={texto + "\n" + description}
                   onApplyResult={(res) => setDescription(prev => prev + "\n" + res)}
                 />
-              </div>
+              </PowerPanel>
             )}
 
-            {/* TOOL: GRIMORIUM INGREDIENTS */}
-            {activeTool === 'grimorium_ingredients' && (
-              <div className="bg-emerald-50 dark:bg-emerald-900/10 p-4 rounded-2xl border border-emerald-100 dark:border-emerald-800/30 animate-in fade-in zoom-in-95">
-                <div className="flex justify-between items-center mb-4">
-                  <h4 className="font-bold text-emerald-700 dark:text-emerald-300 flex items-center gap-2">
-                    <Icon svg={ICONS.leaf} className="w-5 h-5" /> Selección de Ingredientes
-                  </h4>
-                  <Button size="sm" variant="ghost" onClick={() => setActiveTool('details')}>Cerrar</Button>
+            {/* GRIMORIUM RECIPES */}
+            {activeTool === 'grimorium_recipes' && (
+              <PowerPanel
+                title="Recetas Grimorium"
+                subtitle="Gestión y vinculación de fichas técnicas"
+                icon={ICONS.book}
+                theme="emerald"
+                onClose={() => setActiveTool('details')}
+              >
+                <div className="p-8 text-center text-slate-500">
+                  <Icon svg={ICONS.book} className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                  <p>Funcionalidad de recetas disponible en el detalle de la tarea tras crearla.</p>
                 </div>
+              </PowerPanel>
+            )}
+
+            {/* GRIMORIUM INGREDIENTS */}
+            {activeTool === 'grimorium_ingredients' && (
+              <PowerPanel
+                title="Selección de Ingredientes"
+                subtitle="Vincula materia prima desde el inventario"
+                icon={ICONS.leaf}
+                theme="lime"
+                onClose={() => setActiveTool('details')}
+              >
                 <IngredientSelector
                   appId={appId}
                   db={db}
-                  allIngredients={[]} // Prevents crash. Needs proper integration.
                   selectedIds={selectedIngredients}
+                  allIngredients={allIngredients || []}
                   onSelect={(ing) => setSelectedIngredients(prev => [...prev, ing.id])}
                   onRemove={(id) => setSelectedIngredients(prev => prev.filter(i => i !== id))}
                 />
-              </div>
+                <p className="text-center text-xs text-slate-400 mt-4">La vinculación completa estará disponible al guardar la tarea.</p>
+              </PowerPanel>
+            )}
+
+            {/* GRIMORIUM COSTING */}
+            {activeTool === 'grimorium_costing' && (
+              <PowerPanel
+                title="Escandallo & Costes"
+                subtitle="Análisis de rentabilidad y precios"
+                icon={ICONS.dollarSign}
+                theme="amber"
+                onClose={() => setActiveTool('details')}
+              >
+                <div className="p-8 text-center text-slate-500">
+                  <Icon svg={ICONS.dollarSign} className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                  <p>El escandallo se calcula sobre la receta guardada, disponible en detalle.</p>
+                </div>
+              </PowerPanel>
+            )}
+
+            {/* GRIMORIUM ZERO WASTE */}
+            {activeTool === 'grimorium_zerowaste' && (
+              <PowerPanel
+                title="Zero Waste Chef"
+                subtitle="Optimización de mermas y sostenibilidad"
+                icon={ICONS.refreshCw}
+                theme="teal"
+                onClose={() => setActiveTool('details')}
+              >
+                <div className="p-8 text-center text-slate-500">
+                  <Icon svg={ICONS.refreshCw} className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                  <p>Disponible tras guardar receta e ingredientes.</p>
+                </div>
+              </PowerPanel>
+            )}
+
+            {/* BATCHER */}
+            {activeTool === 'batcher' && (
+              <PowerPanel
+                title="Batcher & Production"
+                subtitle="Planificación de producción y lotes"
+                icon={ICONS.layers}
+                theme="blue"
+                onClose={() => setActiveTool('details')}
+              >
+                <BatcherPower
+                  db={db}
+                  appId={appId}
+                  allRecipes={allRecipes}
+                />
+              </PowerPanel>
+            )}
+
+            {/* STOCK */}
+            {activeTool === 'stock' && (
+              <PowerPanel
+                title="Stock & Inventory"
+                subtitle="Gestión de existencias en tiempo real"
+                icon={ICONS.box}
+                theme="orange"
+                onClose={() => setActiveTool('details')}
+              >
+                <StockPower
+                  allRecipes={allRecipes}
+                  allIngredients={allIngredients}
+                />
+              </PowerPanel>
+            )}
+
+            {/* TREND LOCATOR */}
+            {activeTool === 'trend_locator' && (
+              <PowerPanel
+                title="Trend Locator"
+                subtitle="Análisis de tendencias de mercado"
+                icon={ICONS.trending}
+                theme="purple"
+                onClose={() => setActiveTool('details')}
+              >
+                <TrendPower
+                  db={db}
+                  appId={appId}
+                  userId={userId}
+                />
+              </PowerPanel>
+            )}
+
+            {/* MAKE MENU */}
+            {activeTool === 'make_menu' && (
+              <PowerPanel
+                title="Make Menu"
+                subtitle="Diseño inteligente de cartas y menús"
+                icon={ICONS.menu}
+                theme="pink"
+                onClose={() => setActiveTool('details')}
+              >
+                <MenuPower
+                  db={db}
+                  appId={appId}
+                  userId={userId}
+                  allRecipes={allRecipes}
+                  allPizarronTasks={[]} // Empty for new task
+                  currentTaskId={undefined}
+                />
+              </PowerPanel>
             )}
 
 
@@ -302,12 +451,34 @@ export const AddTaskModal: React.FC<AddTaskModalProps> = ({ isOpen, onClose, db,
                       </div>
                     )}
 
-                    {/* OTHER TOOLS PLACEHOLDERS */}
-                    <div className="flex gap-2 overflow-x-auto py-2">
-                      {enabledTools.includes('batcher') && <span className="px-2 py-1 text-xs bg-slate-100 rounded text-slate-500">Batcher (Próximamente)</span>}
-                      {enabledTools.includes('stock') && <span className="px-2 py-1 text-xs bg-slate-100 rounded text-slate-500">Stock (Próximamente)</span>}
-                    </div>
-
+                    {/* BATCHER, STOCK, TRENDS, MENU */}
+                    {(enabledTools.includes('batcher') || enabledTools.includes('stock') || enabledTools.includes('trend_locator') || enabledTools.includes('make_menu')) && (
+                      <div className="mb-4">
+                        <span className="text-xs font-bold text-blue-600 mb-2 block flex items-center gap-1"><Icon svg={ICONS.layers} className="w-3 h-3" /> Producción & Gestión</span>
+                        <div className="grid grid-cols-4 gap-2">
+                          {enabledTools.includes('batcher') && (
+                            <button onClick={() => setActiveTool('batcher')} className="flex flex-col items-center justify-center p-3 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 transition-colors gap-2 hover:scale-105 transform duration-200 border border-blue-100/50">
+                              <Icon svg={ICONS.layers} className="w-5 h-5" /> <span className="text-xs font-medium">Batcher</span>
+                            </button>
+                          )}
+                          {enabledTools.includes('stock') && (
+                            <button onClick={() => setActiveTool('stock')} className="flex flex-col items-center justify-center p-3 rounded-lg bg-orange-50 hover:bg-orange-100 text-orange-700 transition-colors gap-2 hover:scale-105 transform duration-200 border border-orange-100/50">
+                              <Icon svg={ICONS.box} className="w-5 h-5" /> <span className="text-xs font-medium">Stock</span>
+                            </button>
+                          )}
+                          {enabledTools.includes('trend_locator') && (
+                            <button onClick={() => setActiveTool('trend_locator')} className="flex flex-col items-center justify-center p-3 rounded-lg bg-purple-50 hover:bg-purple-100 text-purple-700 transition-colors gap-2 hover:scale-105 transform duration-200 border border-purple-100/50">
+                              <Icon svg={ICONS.trending} className="w-5 h-5" /> <span className="text-xs font-medium">Trends</span>
+                            </button>
+                          )}
+                          {enabledTools.includes('make_menu') && (
+                            <button onClick={() => setActiveTool('make_menu')} className="flex flex-col items-center justify-center p-3 rounded-lg bg-pink-50 hover:bg-pink-100 text-pink-700 transition-colors gap-2 hover:scale-105 transform duration-200 border border-pink-100/50">
+                              <Icon svg={ICONS.menu} className="w-5 h-5" /> <span className="text-xs font-medium">Menu</span>
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>

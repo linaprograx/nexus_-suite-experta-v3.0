@@ -77,7 +77,6 @@ export const CreateBoardModal: React.FC<CreateBoardModalProps> = ({ isOpen, onCl
         description,
         enabledTools: selectedTools,
       });
-      // Parent component (PizarronSidebar) usually handles closing, but we ensure button feedback
     } catch (error: any) {
       console.error("Error creating board:", error);
       alert("Error al guardar tablero: " + error.message);
@@ -98,30 +97,29 @@ export const CreateBoardModal: React.FC<CreateBoardModalProps> = ({ isOpen, onCl
   ];
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title={
+    <Modal isOpen={isOpen} onClose={onClose} size="4xl" title={
       <span className="font-extrabold text-2xl bg-gradient-to-r from-orange-500 to-amber-600 bg-clip-text text-transparent">
-        {boardToEdit ? "Editar Tablero" : "Crear Nuevo Tablero"}
+        {boardToEdit ? "Editar Tablero" : "Diseñar Nuevo Tablero"}
       </span>
     }>
-      <div className="space-y-6 px-1 max-h-[70vh] overflow-y-auto custom-scrollbar">
-        <div>
-          <Label className="text-slate-700 dark:text-slate-300 font-semibold mb-1.5 block">Nombre del Tablero <span className="text-red-500">*</span></Label>
-          <Input
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="Ej. Campaña Verano"
-            className="h-11 text-lg border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all rounded-xl"
-            autoFocus
-          />
-        </div>
+      <div className="flex flex-col md:flex-row h-[70vh] overflow-hidden rounded-xl border border-slate-100 dark:border-slate-800">
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="space-y-2">
-            <Label className="text-slate-700 dark:text-slate-300 font-semibold">Categoría</Label>
+        {/* LEFT COLUMN: BASIC SETTINGS (Narrower) */}
+        <div className="w-full md:w-[320px] bg-slate-50 dark:bg-slate-900/50 p-6 overflow-y-auto custom-scrollbar border-r border-slate-100 dark:border-slate-800 flex flex-col gap-6">
+
+          <div>
+            <Label className="text-slate-700 dark:text-slate-300 font-bold mb-2 block">Identidad</Label>
+            <Input
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Nombre del tablero"
+              className="mb-4 bg-white dark:bg-slate-800"
+              autoFocus
+            />
             <Select
               value={category}
               onChange={(e) => setCategory(e.target.value)}
-              className="h-10 border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 rounded-xl"
+              className="bg-white dark:bg-slate-800"
             >
               <option value="general">General</option>
               <option value="creativo">Creativo</option>
@@ -132,98 +130,104 @@ export const CreateBoardModal: React.FC<CreateBoardModalProps> = ({ isOpen, onCl
               <option value="finanzas">Finanzas</option>
               <option value="rrhh">RRHH</option>
             </Select>
-            <p className="text-xs text-slate-500 ml-1">Organiza tus tableros por áreas.</p>
           </div>
 
-          <div className="space-y-2">
-            <Label className="text-slate-700 dark:text-slate-300 font-semibold">Icono Identificativo</Label>
-            <div className="grid grid-cols-6 gap-2 h-[140px] overflow-y-auto p-2 custom-scrollbar border border-slate-200 dark:border-slate-700 rounded-xl bg-slate-50/50 dark:bg-slate-800/50">
+          <div>
+            <Label className="text-slate-700 dark:text-slate-300 font-bold mb-2 block">Icono</Label>
+            <div className="grid grid-cols-5 gap-2 bg-white dark:bg-slate-800 p-3 rounded-lg border border-slate-200 dark:border-slate-700 h-32 overflow-y-auto custom-scrollbar">
               {availableIcons.map(ic => (
                 <button
                   key={ic}
                   onClick={() => setIcon(ic)}
-                  className={`aspect-square rounded-lg flex justify-center items-center transition-all duration-200 hover:scale-105 ${icon === ic ? 'bg-gradient-to-br from-orange-400 to-amber-500 text-white shadow-md shadow-orange-500/30' : 'text-slate-500 hover:bg-white hover:shadow-sm dark:hover:bg-slate-700'}`}
-                  title={ic}
+                  className={`aspect-square rounded flex justify-center items-center transition-all hover:bg-slate-100 dark:hover:bg-slate-700 ${icon === ic ? 'bg-orange-100 text-orange-600 ring-2 ring-orange-500' : 'text-slate-400'}`}
                 >
                   <Icon svg={(ICONS as any)[ic] || ICONS.layout} className="w-5 h-5" />
                 </button>
               ))}
             </div>
           </div>
-        </div>
 
-        <div className="space-y-2">
-          <Label className="text-slate-700 dark:text-slate-300 font-semibold flex items-center justify-between">
-            Color del Tema
-            <span className="text-xs font-normal text-slate-500" style={{ color: themeColor }}>Vista Previa</span>
-          </Label>
-          <div className="grid grid-cols-8 sm:grid-cols-10 md:grid-cols-12 gap-3 h-[100px] overflow-y-auto p-3 custom-scrollbar border border-slate-200 dark:border-slate-700 rounded-xl bg-slate-50/50 dark:bg-slate-800/50">
-            {colors.map(c => (
-              <button
-                key={c}
-                onClick={() => setThemeColor(c)}
-                className={`w-8 h-8 rounded-full transition-all duration-300 hover:scale-110 shadow-sm flex items-center justify-center ${themeColor === c ? 'ring-2 ring-offset-2 ring-slate-400 scale-110 shadow-md' : 'hover:shadow'}`}
-                style={{ backgroundColor: c }}
-              >
-                {themeColor === c && <Icon svg={ICONS.check} className="w-4 h-4 text-white drop-shadow-md" />}
-              </button>
-            ))}
+          <div>
+            <Label className="text-slate-700 dark:text-slate-300 font-bold mb-2 block">Color</Label>
+            <div className="flex flex-wrap gap-2">
+              {colors.slice(0, 12).map(c => (
+                <button
+                  key={c}
+                  onClick={() => setThemeColor(c)}
+                  className={`w-6 h-6 rounded-full ${themeColor === c ? 'ring-2 ring-offset-1 ring-slate-400' : ''}`}
+                  style={{ backgroundColor: c }}
+                />
+              ))}
+            </div>
           </div>
+
+          <div className="flex-1"></div>
+
+          <div className="pt-4 border-t border-slate-200 dark:border-slate-700">
+            <Button
+              onClick={handleSubmit}
+              disabled={!name.trim() || isSaving}
+              className="w-full bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white shadow-lg shadow-orange-500/30"
+            >
+              {isSaving ? <Spinner className="w-5 h-5 border-white" /> : (boardToEdit ? "Guardar" : "Crear Ahora")}
+            </Button>
+          </div>
+
         </div>
 
-        <div className="space-y-2">
-          <Label className="text-slate-700 dark:text-slate-300 font-semibold">Descripción Corta</Label>
-          <Textarea
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            placeholder="¿Cuál es el objetivo de este tablero?"
-            className="min-h-[80px] border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 rounded-xl focus:ring-orange-500/20 focus:border-orange-500"
-          />
-        </div>
+        {/* RIGHT COLUMN: PREVIEW & TOOLS (Wider) */}
+        <div className="flex-1 bg-white dark:bg-slate-900 p-8 overflow-y-auto custom-scrollbar flex flex-col">
 
-        <div className="space-y-2">
-          <Label className="text-slate-700 dark:text-slate-300 font-semibold mb-2 block">Habilidades del Tablero</Label>
-          <div className="grid grid-cols-2 gap-3">
-            {AVAILABLE_TOOLS.map(tool => (
-              <div
-                key={tool.id}
-                onClick={() => handleToggleTool(tool.id)}
-                className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all duration-200 ${selectedTools.includes(tool.id)
-                  ? 'border-orange-500 bg-orange-50 dark:bg-orange-900/20 shadow-sm'
-                  : 'border-slate-200 dark:border-slate-700 hover:border-orange-200 dark:hover:border-orange-800 bg-white dark:bg-slate-800/50'
-                  }`}
-              >
-                <div className={`p-2 rounded-lg ${selectedTools.includes(tool.id) ? 'bg-orange-500 text-white' : 'bg-slate-100 dark:bg-slate-700 text-slate-500'}`}>
-                  <Icon svg={(ICONS as any)[tool.icon] || ICONS.sparkles} className="w-5 h-5" />
+          <div className="mb-8 p-6 rounded-2xl bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-800 dark:to-slate-900 border border-slate-100 dark:border-slate-700 flex items-center gap-6 shadow-sm">
+            <div className="w-20 h-20 rounded-2xl flex items-center justify-center text-white shadow-xl" style={{ backgroundColor: themeColor }}>
+              <Icon svg={(ICONS as any)[icon] || ICONS.layout} className="w-10 h-10" />
+            </div>
+            <div>
+              <h2 className="text-3xl font-extrabold text-slate-800 dark:text-slate-100 mb-1">{name || "Nuevo Tablero"}</h2>
+              <p className="text-slate-500 text-lg">{description || "Visualiza tus proyectos y organiza tus ideas con potencia."}</p>
+            </div>
+          </div>
+
+          <div className="mb-6">
+            <Label className="text-slate-700 dark:text-slate-300 font-bold mb-2 block">Descripción Detallada</Label>
+            <Textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Describe el propósito de este tablero..."
+              className="resize-none bg-slate-50 dark:bg-slate-800/50 border-0 rounded-xl"
+            />
+          </div>
+
+          <div>
+            <Label className="text-slate-700 dark:text-slate-300 font-bold mb-4 block flex items-center gap-2">
+              <Icon svg={ICONS.zap} className="w-5 h-5 text-amber-500" /> Power Tools & Integrations
+            </Label>
+            <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
+              {AVAILABLE_TOOLS.map(tool => (
+                <div
+                  key={tool.id}
+                  onClick={() => handleToggleTool(tool.id)}
+                  className={`relative p-4 rounded-xl border-2 cursor-pointer transition-all duration-200 group ${selectedTools.includes(tool.id)
+                      ? 'border-orange-500 bg-orange-50/50 dark:bg-orange-900/10'
+                      : 'border-slate-100 dark:border-slate-800 hover:border-orange-200 dark:hover:border-slate-600 bg-white dark:bg-slate-800'
+                    }`}
+                >
+                  <div className={`p-3 rounded-lg inline-flex mb-3 ${selectedTools.includes(tool.id) ? 'bg-orange-100 text-orange-600' : 'bg-slate-100 dark:bg-slate-700 text-slate-500'}`}>
+                    <Icon svg={(ICONS as any)[tool.icon] || ICONS.sparkles} className="w-6 h-6" />
+                  </div>
+                  <h4 className={`font-bold ${selectedTools.includes(tool.id) ? 'text-slate-900 dark:text-slate-100' : 'text-slate-600 dark:text-slate-400'}`}>{tool.name}</h4>
+                  {selectedTools.includes(tool.id) && (
+                    <div className="absolute top-3 right-3 w-6 h-6 bg-orange-500 rounded-full flex items-center justify-center text-white shadow-md">
+                      <Icon svg={ICONS.check} className="w-3 h-3" />
+                    </div>
+                  )}
                 </div>
-                <span className={`text-sm font-medium ${selectedTools.includes(tool.id) ? 'text-slate-800 dark:text-slate-200' : 'text-slate-500'}`}>
-                  {tool.name}
-                </span>
-                {selectedTools.includes(tool.id) && (
-                  <Icon svg={ICONS.check} className="w-4 h-4 text-orange-500 ml-auto" />
-                )}
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
-          <p className="text-xs text-slate-500 mt-1">Selecciona las herramientas que estarán activas en este tablero.</p>
+
         </div>
 
-        <div className="pt-4 flex justify-end gap-3 border-t border-slate-100 dark:border-slate-800 mt-6">
-          <Button
-            variant="ghost"
-            onClick={onClose}
-            className="hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 rounded-xl"
-          >
-            Cancelar
-          </Button>
-          <Button
-            onClick={handleSubmit}
-            disabled={!name.trim() || isSaving}
-            className="bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white shadow-lg shadow-orange-500/30 border-0 rounded-xl px-6 font-medium transition-all hover:scale-[1.02] active:scale-95 flex items-center gap-2"
-          >
-            {isSaving ? <Spinner className="w-5 h-5 border-white" /> : (boardToEdit ? "Guardar Cambios" : "Crear Tablero")}
-          </Button>
-        </div>
       </div>
     </Modal>
   );
