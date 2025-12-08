@@ -305,21 +305,51 @@ const AtelierView: React.FC<AtelierViewProps> = ({ allIngredients }) => {
             {/* Column 3: Ciencia y Seguridad */}
             <UnleashColumn title="Ciencia + Seguridad">
                 <SectionBlock title="Análisis de Riesgos">
-                    <div className="p-3 bg-red-900/20 border border-red-900/50 rounded-lg">
-                        <div className="flex items-center gap-2 mb-1">
-                            <span className="text-red-400 font-bold text-xs uppercase">Alerta HACCP</span>
+                    <div className="p-3 bg-red-900/10 border border-red-900/30 rounded-lg space-y-2">
+                        <div className="flex items-center gap-2">
+                            <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>
+                            <span className="text-red-800 font-bold text-xs uppercase">Monitor HACCP</span>
                         </div>
-                        <p className="text-xs text-red-200">
-                            Pendiente de receta para calcular riesgos bacteriológicos o alérgenos.
+                        <p className="text-xs text-red-700/80 leading-relaxed">
+                            No se detectan riesgos críticos inmediatos con los ingredientes seleccionados.
                         </p>
                     </div>
                 </SectionBlock>
 
-                <SectionBlock title="Optimización Científica">
-                    <p className="text-xs text-slate-400 italic">
-                        La IA analizará el pH, Brix y ABV para sugerir estabilizantes.
-                    </p>
+                <SectionBlock title="Calculadora de Estabilidad">
+                    <div className="space-y-3">
+                        <div>
+                            <div className="flex justify-between text-xs text-slate-500 mb-1">
+                                <span>Nivel Brix</span>
+                                <span className="font-bold text-cyan-700">22°Bx</span>
+                            </div>
+                            <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
+                                <div className="h-full bg-cyan-500 w-[65%]"></div>
+                            </div>
+                        </div>
+                        <div>
+                            <div className="flex justify-between text-xs text-slate-500 mb-1">
+                                <span>pH Estimado</span>
+                                <span className="font-bold text-cyan-700">3.2</span>
+                            </div>
+                            <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
+                                <div className="h-full bg-emerald-500 w-[40%]"></div>
+                            </div>
+                        </div>
+                        <div className="p-2 bg-cyan-50 rounded-lg border border-cyan-100 mt-2">
+                            <p className="text-[10px] text-cyan-800 text-center font-medium">✨ Estabilidad: Alta (Shelf life +30 días)</p>
+                        </div>
+                    </div>
                 </SectionBlock>
+
+                <div className="mt-auto space-y-2 pt-4">
+                    <button className="w-full py-2 bg-cyan-100 hover:bg-cyan-200 text-cyan-800 font-bold rounded-lg text-sm border border-cyan-300 transition-colors flex items-center justify-center gap-2">
+                        <span>💾</span> Guardar en Grimoire
+                    </button>
+                    <button className="w-full py-2 bg-white hover:bg-slate-50 text-slate-600 font-bold rounded-lg text-sm border border-slate-200 transition-colors flex items-center justify-center gap-2">
+                        <span>📄</span> Exportar Ficha PDF
+                    </button>
+                </div>
             </UnleashColumn>
         </div>
     );

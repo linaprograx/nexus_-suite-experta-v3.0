@@ -42,8 +42,9 @@ const MakeMenuView: React.FC<MakeMenuViewProps> = ({ db, userId, appId, allRecip
         const selectedTasks = pizarronAprobado.filter(t => selectedTaskIds.includes(t.id)).map(t => t.texto);
 
         const promptData = `Recetas: ${selectedRecipes.join(', ')}. Ideas Aprobadas: ${selectedTasks.join('. ')}`;
-        const systemPrompt = "Eres un diseñador gráfico de élite y director de arte para bares de lujo. Tu trabajo es generar 3 opciones *completamente distintas* en concepto, tipografía y estructura. Tu respuesta debe ser estrictamente un array JSON válido, sin ningún texto adicional o markdown.";
-        const userQuery = `Usando estas recetas e ideas: ${promptData}. Genera 3 maquetas de menú únicas...`;
+        // Optimized prompt for speed: asking for 'concise' and 'brief' to reduce output tokens
+        const systemPrompt = "Eres un diseñador gráfico de menús. Genera 3 opciones de diseño distintas. Sé CONCISO. Descripción breve (max 15 palabras). JSON array estricto.";
+        const userQuery = `Recetas: ${promptData}. 3 layouts únicos.`;
 
         const generationConfig = {
             responseMimeType: "application/json",

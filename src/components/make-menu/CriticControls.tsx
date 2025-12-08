@@ -55,14 +55,38 @@ const CriticControls: React.FC<CriticControlsProps> = ({
                 </div>
             </div>
 
-            <div className="p-4 border-t border-white/10 dark:border-white/5 bg-white/30 dark:bg-slate-900/20">
+            <div className="p-4 border-t border-white/10 dark:border-white/5 bg-white/30 dark:bg-slate-900/20 space-y-3">
+                <div className="grid grid-cols-2 gap-2 mb-2">
+                    <button className="text-[10px] font-medium bg-amber-50 hover:bg-amber-100 text-amber-800 py-2 rounded-lg border border-amber-200 transition-colors">
+                        🔍 Detectar Alérgenos
+                    </button>
+                    <button className="text-[10px] font-medium bg-amber-50 hover:bg-amber-100 text-amber-800 py-2 rounded-lg border border-amber-200 transition-colors">
+                        🎨 Evaluar Diseño
+                    </button>
+                    <button className="text-[10px] font-medium bg-amber-50 hover:bg-amber-100 text-amber-800 py-2 rounded-lg border border-amber-200 transition-colors">
+                        💰 Revisar Precios
+                    </button>
+                    <button className="text-[10px] font-medium bg-amber-50 hover:bg-amber-100 text-amber-800 py-2 rounded-lg border border-amber-200 transition-colors">
+                        📝 Corregir Textos
+                    </button>
+                </div>
+
                 <Button
                     onClick={onInvoke}
                     disabled={loading}
-                    className="w-full bg-amber-600 hover:bg-amber-700 text-white shadow-lg shadow-amber-500/20"
+                    className="w-full bg-amber-600 hover:bg-amber-700 text-white shadow-lg shadow-amber-500/20 py-3"
                 >
-                    {loading ? <Spinner className="w-4 h-4 mr-2" /> : <Icon svg={ICONS.critic} className="w-4 h-4 mr-2" />}
-                    Invocar Crítica
+                    {loading ? (
+                        <span className="flex items-center gap-2">
+                            <Spinner className="w-4 h-4" />
+                            <span className="animate-pulse">Analizando carta...</span>
+                        </span>
+                    ) : (
+                        <span className="flex items-center gap-2">
+                            <Icon svg={ICONS.critic} className="w-4 h-4" />
+                            <span>Invocar al Crítico</span>
+                        </span>
+                    )}
                 </Button>
             </div>
         </div>
