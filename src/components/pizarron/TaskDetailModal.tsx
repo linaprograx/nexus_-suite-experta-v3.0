@@ -40,7 +40,7 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({ task, onClose,
     const [labels, setLabels] = React.useState<string[]>(task.labels || []);
     const [newLabel, setNewLabel] = React.useState("");
     const [commentText, setCommentText] = React.useState("");
-    const [activeTool, setActiveTool] = React.useState<'details' | 'recipes' | 'costing' | 'zerowaste'>('details');
+    const [activeTool, setActiveTool] = React.useState<'details' | 'recipes' | 'ingredients' | 'costing' | 'zerowaste'>('details');
 
     // ... (rest of state)
 
@@ -189,52 +189,103 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({ task, onClose,
     return (
         <Modal isOpen={true} onClose={onClose} size="3xl">
             {/* Content Grid - Global Scroll Enabled */}
-            <div className="flex-1 overflow-y-auto max-h-[85vh] p-0 grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-slate-100 dark:divide-slate-800 custom-scrollbar">
+            <div className={`flex-1 overflow-y-auto max-h-[85vh] p-0 grid grid-cols-1 ${activeTool === 'details' ? 'md:grid-cols-3 divide-y md:divide-y-0 md:divide-x' : 'md:grid-cols-1'} divide-slate-100 dark:divide-slate-800 custom-scrollbar`}>
 
                 {/* -----------------------------
                    LEFT COLUMN (Component: TaskActivity) 
                    History, Logs, Chat
                    ----------------------------- */}
-                <div className="bg-slate-50 dark:bg-slate-900/30 flex flex-col h-full min-h-[500px] border-r border-slate-100 dark:border-slate-800 pr-6 -ml-2 pl-4 py-2 rounded-l-xl">
-                    <div className="flex items-center justify-between mb-4">
-                        <h3 className="text-sm font-bold text-slate-700 dark:text-slate-300 flex items-center gap-2">
-                            <Icon svg={ICONS.activity} className="w-4 h-4" />
-                            Actividad
-                        </h3>
-                    </div>
+                {activeTool === 'details' && (
+                    <div className="bg-slate-50 dark:bg-slate-900/30 flex flex-col h-full min-h-[500px] border-r border-slate-100 dark:border-slate-800 pr-6 -ml-2 pl-4 py-2 rounded-l-xl">
+                        <div className="flex items-center justify-between mb-4">
+                            <h3 className="text-sm font-bold text-slate-700 dark:text-slate-300 flex items-center gap-2">
+                                <Icon svg={ICONS.activity} className="w-4 h-4" />
+                                Actividad
+                            </h3>
+                        </div>
 
-                    <div className="flex-1 overflow-y-auto max-h-[500px] custom-scrollbar mb-4">
-                        <TaskActivity taskId={task.id} db={db} appId={appId} />
+                        <div className="flex-1 overflow-y-auto max-h-[500px] custom-scrollbar mb-4">
+                            <TaskActivity taskId={task.id} db={db} appId={appId} />
 
-                        {/* Placeholder visual IF no activity - TaskActivity handles real logic */}
-                        <div className="mt-8 text-center opacity-50 hidden">
-                            <Icon svg={ICONS.messageSquare} className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                            <p className="text-xs">No hay más actividad.</p>
+                            {/* Placeholder visual IF no activity - TaskActivity handles real logic */}
+                            <div className="mt-8 text-center opacity-50 hidden">
+                                <Icon svg={ICONS.messageSquare} className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                                <p className="text-xs">No hay más actividad.</p>
+                            </div>
+                        </div>
+
+                        {/* Simple Comment Input Area */}
+                        <div className="mt-auto pt-4 border-t border-slate-200 dark:border-slate-700">
+                            <textarea
+                                value={commentText}
+                                onChange={(e) => setCommentText(e.target.value)}
+                                className="w-full text-sm bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg p-3 min-h-[80px] focus:ring-2 focus:ring-orange-500/20 outline-none resize-none mb-2"
+                                placeholder="Añadir comentario..."
+                            />
+                            <div className="flex justify-end">
+                                <Button size="sm" onClick={handleSendComment} className="bg-orange-500 text-white hover:bg-orange-600">
+                                    Enviar
+                                </Button>
+                            </div>
                         </div>
                     </div>
-
-                    {/* Simple Comment Input Area */}
-                    <div className="mt-auto pt-4 border-t border-slate-200 dark:border-slate-700">
-                        <textarea
-                            value={commentText}
-                            onChange={(e) => setCommentText(e.target.value)}
-                            className="w-full text-sm bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg p-3 min-h-[80px] focus:ring-2 focus:ring-orange-500/20 outline-none resize-none mb-2"
-                            placeholder="Añadir comentario..."
-                        />
-                        <div className="flex justify-end">
-                            <Button size="sm" onClick={handleSendComment} className="bg-orange-500 text-white hover:bg-orange-600">
-                                Enviar
-                            </Button>
-                        </div>
-                    </div>
-                </div>
+                )}
 
 
                 {/* -----------------------------
                    RIGHT COLUMN (WIDE - 2 Cols)
                    Content: Title, Desc, Tools, Metadata
                    ----------------------------- */}
-                <div className="md:col-span-2 space-y-6 pl-2 pb-6 relative">
+                <div className={`${activeTool === 'details' ? 'md:col-span-2' : 'md:col-span-1'} space-y-6 pl-2 pb-6 relative`}>
+
+
+                    {/* INGREDIENTS TOOL VIEW (Mini Fixed Window) */}
+                    {activeTool === 'ingredients' && (
+                        <div className="h-full flex flex-col items-center justify-center py-10">
+                            <div className="w-full max-w-md bg-white dark:bg-slate-800 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-700 overflow-hidden flex flex-col h-[500px]">
+                                {/* Header */}
+                                <div className="p-4 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between bg-lime-50 dark:bg-lime-900/20">
+                                    <h3 className="font-bold text-lime-700 dark:text-lime-400 flex items-center gap-2">
+                                        <Icon svg={ICONS.leaf} className="w-5 h-5" />
+                                        Catálogo de Ingredientes
+                                    </h3>
+                                    <Button variant="ghost" size="sm" onClick={() => setActiveTool('details')} className="text-slate-500 hover:text-slate-700">
+                                        <Icon svg={ICONS.x} className="w-5 h-5" />
+                                    </Button>
+                                </div>
+
+                                {/* Body - Mini Search */}
+                                <div className="p-4 flex-1 flex flex-col overflow-hidden">
+                                    {/* This search is purely local for viewing */}
+                                    <IngredientSelector
+                                        appId={appId}
+                                        db={db}
+                                        selectedIds={[]} // View mode only, no selection highlights needed or maybe we show them but don't allow action? User said "no se podran editar... solo ver"
+                                        allIngredients={allIngredients}
+                                        onSelect={() => { }} // No-op
+                                        onRemove={() => { }} // No-op
+                                    />
+
+                                    <div className="mt-4 flex-1 overflow-y-auto custom-scrollbar border-t border-slate-100 dark:border-slate-800 pt-2">
+                                        <p className="text-xs text-slate-400 mb-2 italic text-center">Vista de solo lectura ({allIngredients.length} total)</p>
+                                        <div className="space-y-2">
+                                            {allIngredients.slice(0, 50).map(ing => (
+                                                <div key={ing.id} className="p-2 bg-slate-50 dark:bg-slate-700/50 rounded flex justify-between items-center text-sm">
+                                                    <div>
+                                                        <div className="font-medium text-slate-700 dark:text-slate-200">{ing.name || ing.nombre}</div>
+                                                        <div className="text-xs text-slate-500">{ing.categoria || 'Sin categoría'}</div>
+                                                    </div>
+                                                    <div className="font-mono text-emerald-600 dark:text-emerald-400 text-xs">
+                                                        {ing.costo ? `${ing.costo}€` : '-'}
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
 
                     {activeTool === 'recipes' ? (
                         <RecipeBuilder
@@ -353,6 +404,31 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({ task, onClose,
                                 </div>
                             </div>
 
+
+                            {/* RECIPE SUMMARY IN DETAILS VIEW */}
+                            {task.recipe && task.recipe.ingredients && task.recipe.ingredients.length > 0 && (
+                                <div className="mb-4 p-3 bg-emerald-50 dark:bg-emerald-900/20 rounded-lg border border-emerald-100 dark:border-emerald-800">
+                                    <Label className="text-xs font-bold text-emerald-700 dark:text-emerald-400 mb-2 flex items-center gap-2">
+                                        <Icon svg={ICONS.book} className="w-3 h-3" />
+                                        Resumen de Receta
+                                    </Label>
+                                    <div className="space-y-1">
+                                        {task.recipe.ingredients.map((ing, idx) => (
+                                            <div key={idx} className="flex justify-between text-sm text-emerald-900 dark:text-emerald-100 border-b border-emerald-100/50 last:border-0 pb-1 last:pb-0">
+                                                <span>{ing.name}</span>
+                                                <span className="font-mono text-xs opacity-80">{ing.quantity} {ing.unit}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                    <button
+                                        onClick={() => setActiveTool('recipes')}
+                                        className="mt-2 text-xs text-emerald-600 hover:text-emerald-800 underline w-full text-right"
+                                    >
+                                        Editar en Recetas
+                                    </button>
+                                </div>
+                            )}
+
                             {/* GRIMORIUM SECTION */}
                             {enabledTools.includes('grimorium') && (
                                 <div className="space-y-4 pt-4 border-t border-slate-100 dark:border-slate-800">
@@ -368,7 +444,7 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({ task, onClose,
                                         </button>
 
                                         <button
-                                            onClick={() => document.getElementById('ingredients-section')?.scrollIntoView({ behavior: 'smooth', block: 'center' })}
+                                            onClick={() => setActiveTool('ingredients')}
                                             className="flex flex-col items-center justify-center p-3 rounded-lg bg-lime-50 hover:bg-lime-100 text-lime-700 transition-colors gap-2 hover:scale-105 transform duration-200 shadow-sm border border-lime-100/50"
                                         >
                                             <Icon svg={ICONS.leaf} className="w-5 h-5" />
@@ -385,10 +461,8 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({ task, onClose,
                                         </button>
                                     </div>
 
-
-                                    <Label className="text-xs font-bold text-slate-500 block mt-4" id="ingredients-section">Buscador de Ingredientes</Label>
-
-                                    {/* Ingredient Selector Component */}
+                                    {/* Main Search Bar Restored Here */}
+                                    <Label className="text-xs font-bold text-slate-500 block mt-4" id="ingredients-section">Buscador y Añadidor de Ingredientes</Label>
                                     <IngredientSelector
                                         appId={appId}
                                         db={db}
@@ -397,15 +471,12 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({ task, onClose,
                                         onSelect={async (ing, qty, unit) => {
                                             // 1. Update Linked Ingredients (Tags)
                                             const currentLinked = task.linkedIngredients || [];
-                                            if (!currentLinked.includes(ing.id)) {
-                                                await handleUpdate('linkedIngredients', [...currentLinked, ing.id]);
-                                            }
+                                            const nextLinked = currentLinked.includes(ing.id) ? currentLinked : [...currentLinked, ing.id];
 
                                             // 2. Update Recipe Ingredients (Detailed)
                                             const currentRecipe = task.recipe || { ingredients: [] };
                                             const currentIngredients = currentRecipe.ingredients || [];
 
-                                            // Check if already in recipe to avoid dupes (or maybe user wants dupes? assume singular for now)
                                             if (!currentIngredients.find(i => i.id === ing.id)) {
                                                 const newIngredient = {
                                                     id: ing.id,
@@ -413,24 +484,28 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({ task, onClose,
                                                     quantity: qty,
                                                     unit: unit
                                                 };
-                                                await handleUpdate('recipe', {
-                                                    ...currentRecipe,
-                                                    ingredients: [...currentIngredients, newIngredient]
+
+                                                await updateDoc(taskDocRef, {
+                                                    linkedIngredients: nextLinked,
+                                                    recipe: {
+                                                        ...currentRecipe,
+                                                        ingredients: [...currentIngredients, newIngredient]
+                                                    }
                                                 });
                                             }
                                         }}
                                         onRemove={async (id) => {
-                                            // Remove from Linked
                                             const currentLinked = task.linkedIngredients || [];
-                                            await handleUpdate('linkedIngredients', currentLinked.filter(x => x !== id));
+                                            const currentRecipe = task.recipe || { ingredients: [] };
+                                            const newIngredients = currentRecipe.ingredients ? currentRecipe.ingredients.filter(i => i.id !== id) : [];
 
-                                            // Remove from Recipe
-                                            if (task.recipe && task.recipe.ingredients) {
-                                                const newIngredients = task.recipe.ingredients.filter(i => i.id !== id);
-                                                await handleUpdate('recipe', { ...task.recipe, ingredients: newIngredients });
-                                            }
+                                            await updateDoc(taskDocRef, {
+                                                linkedIngredients: currentLinked.filter(x => x !== id),
+                                                recipe: { ...currentRecipe, ingredients: newIngredients }
+                                            });
                                         }}
                                     />
+
                                 </div>
                             )}
 

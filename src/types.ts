@@ -84,6 +84,18 @@ export interface PizarronTask {
     createdAt?: any;
     dueDate?: any;
     assignee?: string;
+    recipe?: {
+        yield?: number;
+        yieldUnit?: string;
+        prepTime?: number;
+        ingredients?: {
+            id: string;
+            name: string;
+            quantity: number;
+            unit: string;
+        }[];
+        steps?: string[];
+    };
 }
 
 export interface Tag {
