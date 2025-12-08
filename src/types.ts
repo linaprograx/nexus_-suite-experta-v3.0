@@ -152,3 +152,5 @@ export interface ZeroWasteResult {
     savings: string;
     difficulty: 'Fácil' | 'Media' | 'Avanzada';
 }
+
+export type ViewName = 'dashboard' | 'grimorium' | 'cerebrIty' | 'unleash' | 'pizarron' | 'colegium' | 'personal' | 'makeMenu' | 'avatar' | 'trendLocator';

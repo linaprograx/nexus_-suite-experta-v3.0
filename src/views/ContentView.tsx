@@ -15,6 +15,7 @@ import MakeMenuView from './MakeMenuView';
 import ColegiumView from './ColegiumView';
 import PersonalView from './PersonalView';
 import UnleashView from './UnleashView';
+import AvatarView from './AvatarView';
 import { PlaceholderView } from '../components/ui/PlaceholderView';
 
 interface ContentViewProps {
@@ -51,6 +52,8 @@ export const ContentView: React.FC<ContentViewProps> = (props) => {
         return <DashboardView allRecipes={rest.allRecipes} allPizarronTasks={rest.allPizarronTasks} allIngredients={rest.allIngredients} auth={rest.auth} setCurrentView={props.setCurrentView} />;
       case 'unleash':
         return <UnleashView allRecipes={rest.allRecipes} allIngredients={rest.allIngredients} db={rest.db} userId={rest.userId} />;
+      case 'avatar':
+        return <AvatarView />;
       case 'grimorium':
         return <GrimoriumView
           db={rest.db}
