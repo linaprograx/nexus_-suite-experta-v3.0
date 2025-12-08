@@ -9,11 +9,9 @@ import { Button } from '../ui/Button';
 const APP_ROUTES: { view: ViewName; label: string; icon: string }[] = [
   { view: 'dashboard', label: 'Dashboard', icon: ICONS.grid },
   { view: 'grimorium', label: 'Grimorium', icon: ICONS.book },
-  { view: 'pizarron', label: 'Pizarrón', icon: ICONS.layoutGrid },
   { view: 'cerebrIty', label: 'CerebrIty', icon: ICONS.brain },
-  { view: 'escandallator', label: 'Escandallator', icon: ICONS.calculator },
-  { view: 'trendLocator', label: 'Trend Locator', icon: ICONS.trending },
-  { view: 'zeroWaste', label: 'Zero Waste Chef', icon: ICONS.recycle },
+  { view: 'unleash', label: 'Unleash', icon: ICONS.zap }, // New Section
+  { view: 'pizarron', label: 'Pizarrón', icon: ICONS.layoutGrid },
   { view: 'makeMenu', label: 'MakeMenu', icon: ICONS.menu },
   { view: 'colegium', label: 'Colegium', icon: ICONS.school },
 ];

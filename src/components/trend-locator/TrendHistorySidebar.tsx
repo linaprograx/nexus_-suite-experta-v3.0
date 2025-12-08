@@ -7,9 +7,10 @@ interface TrendHistorySidebarProps {
     db: Firestore;
     trendHistoryPath: string;
     onClose?: () => void;
+    onLoadHistory: (item: TrendResult) => void;
 }
 
-export const TrendHistorySidebar: React.FC<TrendHistorySidebarProps> = ({ db, trendHistoryPath }) => {
+export const TrendHistorySidebar: React.FC<TrendHistorySidebarProps> = ({ db, trendHistoryPath, onLoadHistory }) => {
     const [history, setHistory] = React.useState<TrendResult[]>([]);
     const [loading, setLoading] = React.useState(true);
 
@@ -36,7 +37,7 @@ export const TrendHistorySidebar: React.FC<TrendHistorySidebarProps> = ({ db, tr
                 {loading && <p className="p-4 text-center text-sm text-muted-foreground">Cargando...</p>}
                 {!loading && history.length === 0 && <p className="p-4 text-center text-sm text-muted-foreground">No hay historial.</p>}
                 {history.map(item => (
-                    <div key={item.id} className="cursor-pointer hover:bg-amber-50 dark:hover:bg-amber-900/20 p-3 rounded-xl border border-transparent hover:border-amber-200 dark:hover:border-amber-800 transition-all">
+                    <div key={item.id} onClick={() => onLoadHistory(item)} className="cursor-pointer hover:bg-amber-50 dark:hover:bg-amber-900/20 p-3 rounded-xl border border-transparent hover:border-amber-200 dark:hover:border-amber-800 transition-all">
                         <p className="font-semibold text-sm text-slate-900 dark:text-slate-100 line-clamp-2">{item.titulo}</p>
                         <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{item.fuente}</p>
                     </div>

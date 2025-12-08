@@ -16,6 +16,7 @@ export type ViewName =
   'makeMenu' |
   'colegium' |
   'personal' |
+  'unleash' |
   'lab';
 
 

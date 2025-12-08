@@ -14,6 +14,7 @@ import EscandallatorView from './EscandallatorView';
 import MakeMenuView from './MakeMenuView';
 import ColegiumView from './ColegiumView';
 import PersonalView from './PersonalView';
+import UnleashView from './UnleashView';
 import { PlaceholderView } from '../components/ui/PlaceholderView';
 
 interface ContentViewProps {
@@ -48,36 +49,32 @@ export const ContentView: React.FC<ContentViewProps> = (props) => {
     switch (currentView) {
       case 'dashboard':
         return <DashboardView allRecipes={rest.allRecipes} allPizarronTasks={rest.allPizarronTasks} allIngredients={rest.allIngredients} auth={rest.auth} setCurrentView={props.setCurrentView} />;
+      case 'unleash':
+        return <UnleashView />;
       case 'grimorium':
-        return <GrimoriumView 
-            db={rest.db}
-            userId={rest.userId}
-            appId={rest.appId}
-            allIngredients={rest.allIngredients}
-            allRecipes={rest.allRecipes}
-            onOpenRecipeModal={rest.onOpenRecipeModal}
-            onDragRecipeStart={rest.onDragRecipeStart}
-            setCurrentView={props.setCurrentView}
+        return <GrimoriumView
+          db={rest.db}
+          userId={rest.userId}
+          appId={rest.appId}
+          allIngredients={rest.allIngredients}
+          allRecipes={rest.allRecipes}
+          onOpenRecipeModal={rest.onOpenRecipeModal}
+          onDragRecipeStart={rest.onDragRecipeStart}
+          setCurrentView={props.setCurrentView}
         />;
       case 'pizarron':
         return <PizarronView db={rest.db} userId={rest.userId} appId={rest.appId} auth={rest.auth} storage={rest.storage} allPizarronTasks={rest.allPizarronTasks} taskToOpen={rest.taskToOpen} onTaskOpened={rest.onTaskOpened} draggingRecipe={rest.draggingRecipe} draggingTask={rest.draggingTask} onDropEnd={rest.onDropEnd} onDragTaskStart={rest.onDragTaskStart} onAnalyze={rest.onAnalyze} userProfile={rest.userProfile} />;
       case 'cerebrIty':
-        return <CerebrityView {...rest} initialText={rest.initialText} onAnalysisDone={rest.onAnalysisDone}/>;
-      case 'lab':
-        return <LabView db={rest.db} userId={rest.userId} appId={rest.appId} allIngredients={rest.allIngredients} allRecipes={rest.allRecipes} labResult={null} setLabResult={() => {}} labInputs={[]} setLabInputs={() => {}} onLoadHistory={() => {}} />;
-      case 'escandallator':
-        return <EscandallatorView {...rest} />;
-      case 'trendLocator':
-          return <TrendLocatorView db={rest.db} userId={rest.userId} appId={rest.appId} />;
-      case 'zeroWaste':
-          return <ZeroWasteView db={rest.db} userId={rest.userId} appId={rest.appId} allIngredients={rest.allIngredients} onOpenRecipeModal={rest.onOpenRecipeModal} />;
+        return <CerebrityView {...rest} initialText={rest.initialText} onAnalysisDone={rest.onAnalysisDone} />;
       case 'makeMenu':
-          return <MakeMenuView db={rest.db} userId={rest.userId} appId={rest.appId} allRecipes={rest.allRecipes} allPizarronTasks={rest.allPizarronTasks}/>;
+        return <MakeMenuView db={rest.db} userId={rest.userId} appId={rest.appId} allRecipes={rest.allRecipes} allPizarronTasks={rest.allPizarronTasks} />;
       case 'colegium':
-          return <ColegiumView db={rest.db} userId={rest.userId} allRecipes={rest.allRecipes} allPizarronTasks={rest.allPizarronTasks} />;
+        return <ColegiumView db={rest.db} userId={rest.userId} allRecipes={rest.allRecipes} allPizarronTasks={rest.allPizarronTasks} />;
       case 'personal':
-          return <PersonalView db={rest.db} userId={rest.userId} storage={rest.storage} auth={rest.auth} allRecipes={rest.allRecipes} allPizarronTasks={rest.allPizarronTasks} />;
+        return <PersonalView db={rest.db} userId={rest.userId} storage={rest.storage} auth={rest.auth} allRecipes={rest.allRecipes} allPizarronTasks={rest.allPizarronTasks} />;
       default:
+        // Handle sub-views or legacy cases safely
+        if (currentView === 'trendLocator') return <CerebrityView {...rest} initialText={rest.initialText} onAnalysisDone={rest.onAnalysisDone} />;
         return <PlaceholderView title={currentView} />;
     }
   };
