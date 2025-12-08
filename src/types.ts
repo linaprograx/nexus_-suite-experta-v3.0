@@ -8,6 +8,18 @@ export interface Ingredient {
     unidad: string;
     stock?: number;
     emoji?: string;
+    recipe?: {
+        yield: number;
+        yieldUnit: string;
+        prepTime: number;
+        steps: string[];
+        ingredients: {
+            id: string; // Grimorium ID
+            name: string;
+            quantity: number;
+            unit: string;
+        }[];
+    };
     minStock?: number;
     proveedor?: string;
     createdAt?: any;
