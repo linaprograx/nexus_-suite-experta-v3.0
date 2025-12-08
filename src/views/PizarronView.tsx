@@ -270,6 +270,7 @@ const PizarronView: React.FC<PizarronViewProps> = ({ db, userId, appId, auth, st
   return (
     <PremiumLayout
       gradientTheme="amber"
+      layoutMode="compact"
       leftSidebar={
         isLeftPanelOpen ? (
           <PizarronSidebar

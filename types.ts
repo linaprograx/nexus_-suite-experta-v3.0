@@ -88,6 +88,7 @@ export interface PizarronTask {
   authorName?: string;
   authorPhotoURL?: string;
   history?: any[]; // Added field for embedded history if needed
+  linkedIngredients?: string[]; // IDs of ingredients from Grimorium
 }
 
 export interface Attachment {
@@ -127,6 +128,7 @@ export interface PizarronBoard {
   linkedViews?: string[];
   isTemplateBased?: boolean;
   templateId?: string;
+  enabledTools?: string[]; // Tools enabled for this board (e.g. grimorium, cerebrity)
 }
 
 

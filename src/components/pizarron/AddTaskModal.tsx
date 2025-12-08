@@ -111,8 +111,9 @@ export const AddTaskModal: React.FC<AddTaskModalProps> = ({ isOpen, onClose, db,
       setLabels('');
       setSelectedTags([]);
       setSelectedIngredients([]);
-    } catch (err) {
+    } catch (err: any) {
       console.error("Error al añadir tarea: ", err);
+      alert("Error al guardar tarea: " + (err.message || err));
     }
   };
 
@@ -167,8 +168,8 @@ export const AddTaskModal: React.FC<AddTaskModalProps> = ({ isOpen, onClose, db,
                 key={p}
                 onClick={() => setPriority(p)}
                 className={`flex-1 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all h-9 ${priority === p
-                    ? (p === 'alta' ? 'bg-red-50 text-red-600' : p === 'media' ? 'bg-orange-50 text-orange-600' : 'bg-emerald-50 text-emerald-600')
-                    : 'text-slate-400 hover:bg-slate-50'
+                  ? (p === 'alta' ? 'bg-red-50 text-red-600' : p === 'media' ? 'bg-orange-50 text-orange-600' : 'bg-emerald-50 text-emerald-600')
+                  : 'text-slate-400 hover:bg-slate-50'
                   }`}
               >
                 {p}
@@ -198,11 +199,15 @@ export const AddTaskModal: React.FC<AddTaskModalProps> = ({ isOpen, onClose, db,
                 <div className="p-4">
                   <IngredientSelector
                     appId={appId}
+                    db={db}
+                    allIngredients={[]} // Prevents crash. Needs to be populated from App.
                     selectedIds={selectedIngredients}
-                    onToggle={(id) => {
-                      setSelectedIngredients(prev =>
-                        prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
-                      );
+                    onSelect={(ing) => {
+                      // Simplified adapter
+                      setSelectedIngredients(prev => [...prev, ing.id]);
+                    }}
+                    onRemove={(id) => {
+                      setSelectedIngredients(prev => prev.filter(i => i !== id));
                     }}
                   />
                 </div>

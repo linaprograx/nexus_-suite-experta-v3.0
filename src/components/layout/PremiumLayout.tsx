@@ -10,6 +10,7 @@ interface PremiumLayoutProps {
     header?: React.ReactNode; // Content to render above the main grid (e.g. Navigation Pills)
     gradientTheme?: GradientTheme;
     className?: string;
+    layoutMode?: 'standard' | 'compact';
 }
 
 export const PremiumLayout: React.FC<PremiumLayoutProps> = ({
@@ -19,7 +20,8 @@ export const PremiumLayout: React.FC<PremiumLayoutProps> = ({
     rightSidebar,
     header,
     gradientTheme = 'indigo',
-    className = ''
+    className = '',
+    layoutMode = 'standard'
 }) => {
 
     // Gradient definitions mapping
@@ -41,10 +43,10 @@ export const PremiumLayout: React.FC<PremiumLayoutProps> = ({
 
     const activeGradient = gradients[gradientTheme];
 
-    // Main layout container structure
-    // We aim for a layout that respects the CerebrIty 3-column "invisible" feel
-    // Default grid: fixed left, flexible center, fixed right. 
-    // Adapts to tablet/mobile.
+    // Grid Column Logic
+    const gridCols = layoutMode === 'compact'
+        ? 'grid-cols-1 lg:grid-cols-[100px,minmax(0,1fr),100px]'
+        : 'grid-cols-1 lg:grid-cols-[310px,minmax(0,1fr),320px]';
 
     return (
         <div className={`h-[calc(100vh-80px)] w-full flex flex-col px-4 lg:px-8 py-6 ${className}`}>
@@ -56,7 +58,7 @@ export const PremiumLayout: React.FC<PremiumLayoutProps> = ({
             )}
 
             {/* Main Container with Rounded Corners and Gradient */}
-            <div className={`flex-1 grid grid-cols-1 lg:grid-cols-[100px,minmax(0,1fr),100px] gap-4 overflow-hidden rounded-3xl bg-gradient-to-b ${activeGradient} p-4 shadow-sm ring-1 ring-black/5 dark:ring-white/5 ${className}`}>
+            <div className={`flex-1 grid ${gridCols} gap-4 overflow-hidden rounded-3xl bg-gradient-to-b ${activeGradient} p-4 shadow-sm ring-1 ring-black/5 dark:ring-white/5 ${className}`}>
 
                 {/* Left Sidebar Column */}
                 <div className="h-full min-h-0 flex flex-col relative z-20">
