@@ -36,9 +36,26 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({ task, onClose,
     // State
     const [title, setTitle] = React.useState(task.title || 'Sin título');
     const [description, setDescription] = React.useState(task.description || '');
+    const [priority, setPriority] = React.useState(task.priority || 'medium');
+    const [labels, setLabels] = React.useState<string[]>(task.labels || []);
     const [newLabel, setNewLabel] = React.useState("");
     const [commentText, setCommentText] = React.useState("");
     const [activeTool, setActiveTool] = React.useState<'details' | 'recipes' | 'costing' | 'zerowaste'>('details');
+
+    // ... (rest of state)
+
+    const handleLabel = async (action: 'add' | 'remove', label: string) => {
+        // Optimistic
+        if (action === 'add') {
+            if (labels.includes(label)) return;
+            setLabels([...labels, label]);
+            setNewLabel("");
+        } else {
+            setLabels(labels.filter(l => l !== label));
+        }
+
+        await updateDoc(taskDocRef, { labels: action === 'add' ? arrayUnion(label) : arrayRemove(label) });
+    };
     const [taskText, setTaskText] = React.useState(task.texto || ''); // For backward compatibility if needed, though we use description now
     const [activeTab, setActiveTab] = React.useState<'comments' | 'history'>('comments');
     const [allIngredients, setAllIngredients] = React.useState<any[]>([]); // Centralized ingredients for tools
@@ -48,12 +65,20 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({ task, onClose,
 
     // Fetch Ingredients shared by tools
     React.useEffect(() => {
-        const q = query(collection(db, `artifacts/${appId}/public/data/ingredients`));
+        if (!userId || !appId) return;
+        const path = `artifacts/${appId}/users/${userId}/grimorio-ingredients`;
+        console.log("Fetching ingredients from:", path);
+        const q = query(collection(db, path), orderBy('nombre')); // Added orderBy for consistency
         const unsubscribe = onSnapshot(q, (snapshot) => {
-            setAllIngredients(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+            console.log("Ingredients snapshot size:", snapshot.size);
+            const loaded = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            // console.log("First ingredient sample:", loaded[0]);
+            setAllIngredients(loaded as any[]);
+        }, (error) => {
+            console.error("Error fetching ingredients:", error);
         });
         return () => unsubscribe();
-    }, [db, appId]);
+    }, [db, appId, userId]);
 
     // Initial sync
     React.useEffect(() => {
@@ -71,9 +96,37 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({ task, onClose,
     };
 
     const handleUpdate = async (field: string, value: any) => {
+        // Optimistic Update
+        if (field === 'priority') setPriority(value);
+        if (field === 'title') setTitle(value);
+        if (field === 'description') setDescription(value);
+
         try {
             await updateDoc(taskDocRef, { [field]: value });
-        } catch (err) { console.error("Error actualizando: ", err); }
+        } catch (err) {
+            console.error("Error actualizando: ", err);
+            // Revert if needed (omitted for brevity, assume success or user refresh)
+        }
+    };
+
+    const handleExportRecipe = async () => {
+        if (!task.recipe) {
+            alert("No hay datos de receta para exportar. Crea una receta primero.");
+            return;
+        }
+        try {
+            await addDoc(collection(db, `artifacts/${appId}/public/data/recipes`), {
+                ...task.recipe,
+                name: title, // Use current title state
+                sourceTaskId: task.id,
+                createdAt: serverTimestamp(),
+                authorId: userId
+            });
+            alert("✅ Receta exportada al Grimorio exitosamente!");
+        } catch (e: any) {
+            console.error("Export Error:", e);
+            alert(`Error al exportar: ${e.message || "Error desconocido"}`);
+        }
     };
 
     const handleBlur = async (field: 'title' | 'description') => {
@@ -85,10 +138,7 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({ task, onClose,
         }
     };
 
-    const handleLabel = async (action: 'add' | 'remove', label: string) => {
-        await updateDoc(taskDocRef, { labels: action === 'add' ? arrayUnion(label) : arrayRemove(label) });
-        if (action === 'add') setNewLabel("");
-    };
+
 
     const handleSendComment = async () => {
         if (!commentText.trim()) return;
@@ -138,8 +188,8 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({ task, onClose,
 
     return (
         <Modal isOpen={true} onClose={onClose} size="3xl">
-            {/* Content Grid */}
-            <div className="flex-1 overflow-y-auto p-0 grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-slate-100 dark:divide-slate-800">
+            {/* Content Grid - Global Scroll Enabled */}
+            <div className="flex-1 overflow-y-auto max-h-[85vh] p-0 grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-slate-100 dark:divide-slate-800 custom-scrollbar">
 
                 {/* -----------------------------
                    LEFT COLUMN (Component: TaskActivity) 
@@ -195,6 +245,7 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({ task, onClose,
                                 await handleUpdate('recipe', data.recipe);
                             }}
                             onBack={() => setActiveTool('details')}
+                            onExport={handleExportRecipe}
                         />
                     ) : activeTool === 'costing' ? (
                         <CostingView
@@ -269,7 +320,7 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({ task, onClose,
                                             <button
                                                 key={p}
                                                 onClick={() => handleUpdate('priority', p)}
-                                                className={`w-6 h-6 rounded-full flex items-center justify-center border transition-all ${task.priority === p ? 'ring-2 ring-offset-1 ring-blue-500 scale-110' : 'opacity-40 hover:opacity-100'}`}
+                                                className={`w-6 h-6 rounded-full flex items-center justify-center border transition-all ${priority === p ? 'ring-2 ring-offset-1 ring-blue-500 scale-110' : 'opacity-40 hover:opacity-100'}`}
                                                 style={{ backgroundColor: p === 'alta' ? '#EF4444' : p === 'media' ? '#F59E0B' : '#10B981' }}
                                                 title={p}
                                             />
@@ -284,7 +335,7 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({ task, onClose,
                                     <span className="text-xs font-semibold text-gray-400 uppercase">Etiquetas</span>
                                 </div>
                                 <div className="flex flex-wrap gap-2 mb-2">
-                                    {task.labels && task.labels.length > 0 ? task.labels.map(label => (
+                                    {labels && labels.length > 0 ? labels.map(label => (
                                         <span key={label} className="px-2 py-1 bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-gray-300 text-xs rounded-md flex items-center gap-1">
                                             #{label}
                                             <button onClick={() => handleLabel('remove', label)} className="hover:text-red-500"><Icon svg={ICONS.x} className="w-3 h-3" /></button>
@@ -310,15 +361,20 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({ task, onClose,
                                     </Label>
 
                                     {/* Grimorium Quick Actions */}
-                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                                    <div className="grid grid-cols-4 gap-2">
                                         <button onClick={() => setActiveTool('recipes')} className="flex flex-col items-center justify-center p-3 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 transition-colors gap-2 hover:scale-105 transform duration-200 shadow-sm border border-emerald-100/50">
                                             <Icon svg={ICONS.book} className="w-5 h-5" />
                                             <span className="text-xs font-medium">Recetas</span>
                                         </button>
-                                        <button className="flex flex-col items-center justify-center p-3 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 transition-colors gap-2 hover:scale-105 transform duration-200 shadow-sm border border-blue-100/50">
+
+                                        <button
+                                            onClick={() => document.getElementById('ingredients-section')?.scrollIntoView({ behavior: 'smooth', block: 'center' })}
+                                            className="flex flex-col items-center justify-center p-3 rounded-lg bg-lime-50 hover:bg-lime-100 text-lime-700 transition-colors gap-2 hover:scale-105 transform duration-200 shadow-sm border border-lime-100/50"
+                                        >
                                             <Icon svg={ICONS.leaf} className="w-5 h-5" />
                                             <span className="text-xs font-medium">Ingredientes</span>
                                         </button>
+
                                         <button onClick={() => setActiveTool('costing')} className="flex flex-col items-center justify-center p-3 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-700 transition-colors gap-2 hover:scale-105 transform duration-200 shadow-sm border border-amber-100/50">
                                             <Icon svg={ICONS.dollarSign} className="w-5 h-5" />
                                             <span className="text-xs font-medium">Escandallo</span>
@@ -329,18 +385,50 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({ task, onClose,
                                         </button>
                                     </div>
 
-                                    <Label className="text-xs font-bold text-slate-500 block">Buscador de Ingredientes</Label>
+
+                                    <Label className="text-xs font-bold text-slate-500 block mt-4" id="ingredients-section">Buscador de Ingredientes</Label>
 
                                     {/* Ingredient Selector Component */}
                                     <IngredientSelector
                                         appId={appId}
+                                        db={db}
                                         selectedIds={task.linkedIngredients || []}
-                                        onToggle={async (id) => {
-                                            const current = task.linkedIngredients || [];
-                                            const next = current.includes(id)
-                                                ? current.filter(x => x !== id)
-                                                : [...current, id];
-                                            await handleUpdate('linkedIngredients', next);
+                                        allIngredients={allIngredients}
+                                        onSelect={async (ing, qty, unit) => {
+                                            // 1. Update Linked Ingredients (Tags)
+                                            const currentLinked = task.linkedIngredients || [];
+                                            if (!currentLinked.includes(ing.id)) {
+                                                await handleUpdate('linkedIngredients', [...currentLinked, ing.id]);
+                                            }
+
+                                            // 2. Update Recipe Ingredients (Detailed)
+                                            const currentRecipe = task.recipe || { ingredients: [] };
+                                            const currentIngredients = currentRecipe.ingredients || [];
+
+                                            // Check if already in recipe to avoid dupes (or maybe user wants dupes? assume singular for now)
+                                            if (!currentIngredients.find(i => i.id === ing.id)) {
+                                                const newIngredient = {
+                                                    id: ing.id,
+                                                    name: ing.name || ing.nombre,
+                                                    quantity: qty,
+                                                    unit: unit
+                                                };
+                                                await handleUpdate('recipe', {
+                                                    ...currentRecipe,
+                                                    ingredients: [...currentIngredients, newIngredient]
+                                                });
+                                            }
+                                        }}
+                                        onRemove={async (id) => {
+                                            // Remove from Linked
+                                            const currentLinked = task.linkedIngredients || [];
+                                            await handleUpdate('linkedIngredients', currentLinked.filter(x => x !== id));
+
+                                            // Remove from Recipe
+                                            if (task.recipe && task.recipe.ingredients) {
+                                                const newIngredients = task.recipe.ingredients.filter(i => i.id !== id);
+                                                await handleUpdate('recipe', { ...task.recipe, ingredients: newIngredients });
+                                            }
                                         }}
                                     />
                                 </div>
@@ -348,7 +436,7 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({ task, onClose,
 
                             {/* ACTIONS & BOARD POWERS */}
                             <div className="grid grid-cols-2 gap-3 pt-4 border-t border-slate-100 dark:border-slate-800">
-                                {/* CerebrIty (Always available or conditionally toggled) */}
+                                {/* CerebrIty */}
                                 {(enabledTools.includes('cerebrity') || enabledTools.length === 0) && (
                                     <Button variant="outline" onClick={() => onAnalyze(description || taskText)} className="border-indigo-200 text-indigo-700 hover:bg-indigo-50 dark:border-indigo-800 dark:text-indigo-300 dark:hover:bg-indigo-900/30 justify-start">
                                         <Icon svg={ICONS.brain} className="h-4 w-4 mr-2" />
@@ -356,25 +444,26 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({ task, onClose,
                                     </Button>
                                 )}
 
-                                <Button variant="outline" className="border-amber-200 text-amber-700 hover:bg-amber-50 dark:border-amber-800 dark:text-amber-300 dark:hover:bg-amber-900/30 justify-start">
-                                    <Icon svg={ICONS.sparkles} className="h-4 w-4 mr-2" />
-                                    Super Poderes
-                                </Button>
-
                                 {enabledTools.includes('zero_waste') && (
                                     <Button variant="outline" className="border-emerald-200 text-emerald-700 hover:bg-emerald-50 dark:border-emerald-800 dark:text-emerald-300 dark:hover:bg-emerald-900/30 justify-start">
                                         <Icon svg={ICONS.leaf} className="h-4 w-4 mr-2" />
                                         Zero Waste
                                     </Button>
                                 )}
-
                                 {enabledTools.includes('costeo') && (
                                     <Button variant="outline" className="border-blue-200 text-blue-700 hover:bg-blue-50 dark:border-blue-800 dark:text-blue-300 dark:hover:bg-blue-900/30 justify-start">
-                                        <Icon svg={ICONS.calculator} className="h-4 w-4 mr-2" />
-                                        Costeo
+                                        <Icon svg={ICONS.dollarSign} className="h-4 w-4 mr-2" />
+                                        Escandallo
                                     </Button>
                                 )}
                             </div>
+
+                            <div className="mt-6 flex justify-end pb-4">
+                                <Button onClick={onClose} className="bg-slate-900 text-white hover:bg-slate-800 px-6 shadow-lg hover:shadow-xl transition-all">
+                                    Guardar y Cerrar
+                                </Button>
+                            </div>
+
 
                             {/* Delete & Footer Zone */}
                             <div className="flex justify-end pt-6">
@@ -394,8 +483,9 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({ task, onClose,
                             </div>
                         </>
                     )}
+
                 </div>
             </div>
-        </Modal>
+        </Modal >
     );
 };

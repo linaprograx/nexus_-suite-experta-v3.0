@@ -13,6 +13,7 @@ interface RecipeBuilderProps {
     onBack: () => void;
     appId: string;
     db: Firestore;
+    onExport?: () => void;
 }
 
 interface RecipeIngredient {
@@ -22,7 +23,7 @@ interface RecipeIngredient {
     unit: string;
 }
 
-export const RecipeBuilder: React.FC<RecipeBuilderProps> = ({ task, onUpdate, onBack, appId, db }) => {
+export const RecipeBuilder: React.FC<RecipeBuilderProps> = ({ task, onUpdate, onBack, appId, db, onExport }) => {
     // Recipe Basic Info
     const [yieldAmount, setYieldAmount] = useState(task.recipe?.yield || 1);
     const [yieldUnit, setYieldUnit] = useState(task.recipe?.yieldUnit || 'porciones');
@@ -112,6 +113,12 @@ export const RecipeBuilder: React.FC<RecipeBuilderProps> = ({ task, onUpdate, on
                         Constructor de Recetas
                     </h3>
                 </div>
+                {onExport && (
+                    <Button variant="outline" size="sm" onClick={onExport} className="mr-2 text-emerald-600 border-emerald-200 hover:bg-emerald-50">
+                        <Icon svg={ICONS.upload} className="w-4 h-4 mr-2" />
+                        Exportar
+                    </Button>
+                )}
                 <Button onClick={handleSave} size="sm" className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-md">
                     Guardar
                 </Button>
