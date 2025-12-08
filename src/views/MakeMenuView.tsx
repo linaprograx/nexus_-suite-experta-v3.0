@@ -1,17 +1,14 @@
-import React, { useState, useMemo } from 'react';
-import { Firestore, addDoc, collection, serverTimestamp } from 'firebase/firestore';
+import React, { useState } from 'react';
+import { Firestore } from 'firebase/firestore';
 import { Type } from "@google/genai";
 import { Recipe, PizarronTask, MenuLayout } from '../../types';
 import { callGeminiApi } from '../utils/gemini';
-import { blobToBase64 } from '../utils/blobToBase64';
-import { PremiumLayout } from '../components/layout/PremiumLayout';
+// import { PremiumLayout } from '../components/layout/PremiumLayout';
 
 // Sub-components
 import MakeMenuSidebar from '../components/make-menu/MakeMenuSidebar';
 import DesignerControls from '../components/make-menu/DesignerControls';
-import CriticControls from '../components/make-menu/CriticControls';
 import DesignerResults from '../components/make-menu/DesignerResults';
-import CriticDashboard, { CriticResultType } from '../components/make-menu/CriticDashboard';
 
 interface MakeMenuViewProps {
     db: Firestore;
@@ -22,22 +19,12 @@ interface MakeMenuViewProps {
 }
 
 const MakeMenuView: React.FC<MakeMenuViewProps> = ({ db, userId, appId, allRecipes, allPizarronTasks }) => {
-    // Mode State
-    const [activeMode, setActiveMode] = useState<'designer' | 'critic'>('designer');
-
     // --- Designer State ---
     const [selectedRecipeIds, setSelectedRecipeIds] = useState<string[]>([]);
     const [selectedTaskIds, setSelectedTaskIds] = useState<string[]>([]);
     const [loadingDesigner, setLoadingDesigner] = useState(false);
     const [errorDesigner, setErrorDesigner] = useState<string | null>(null);
     const [menuResults, setMenuResults] = useState<MenuLayout[]>([]);
-
-    // --- Critic State ---
-    const [criticMenuText, setCriticMenuText] = useState('');
-    const [criticMenuImage, setCriticMenuImage] = useState<File | null>(null);
-    const [loadingCritic, setLoadingCritic] = useState(false);
-    const [errorCritic, setErrorCritic] = useState<string | null>(null);
-    const [criticResult, setCriticResult] = useState<CriticResultType | null>(null);
 
     // --- Designer Handlers ---
     const handleDesignerSelection = (id: string, type: 'recipe' | 'task') => {
@@ -76,111 +63,59 @@ const MakeMenuView: React.FC<MakeMenuViewProps> = ({ db, userId, appId, allRecip
 
         try {
             const response = await callGeminiApi(userQuery, systemPrompt, generationConfig);
-            const results: MenuLayout[] = JSON.parse(response.text);
+            if (!response.text) throw new Error("La IA no devolvió texto válido.");
+
+            // Allow for markdown code block wrapping
+            const cleanText = response.text.replace(/```json/g, '').replace(/```/g, '').trim();
+            const results: MenuLayout[] = JSON.parse(cleanText);
+
             setMenuResults(results);
         } catch (e: any) {
-            setErrorDesigner(e.message);
+            console.error("Designer Error:", e);
+            setErrorDesigner(e.message || "Error al generar menús");
         } finally {
             setLoadingDesigner(false);
         }
     };
 
-    // --- Critic Handlers ---
-    const handleInvokeCritic = async () => {
-        if (!criticMenuText.trim() && !criticMenuImage) return;
-        setLoadingCritic(true);
-        setErrorCritic(null);
-        setCriticResult(null);
-
-        const systemPrompt = "Eres un crítico de cócteles y consultor de marcas. Analiza el menú proporcionado. Devuelve un objeto JSON con un análisis DAFO: 'puntosFuertes', 'debilidades', 'oportunidades', y un 'feedback' estratégico.";
-
-        const parts = [];
-        if (criticMenuImage) {
-            const base64Data = await blobToBase64(criticMenuImage);
-            parts.push({ text: "Analiza la IMAGEN de este menú de cócteles. Si hay texto, analízalo. Si no, analiza el diseño, estilo y concepto." });
-            parts.push({ inlineData: { mimeType: criticMenuImage.type, data: base64Data } });
-        }
-        if (criticMenuText.trim()) {
-            parts.push({ text: `Analiza también (o en su lugar) este TEXTO de menú:\n\n${criticMenuText}` });
-        }
-
-        const userQueryPayload = { parts };
-        const generationConfig = {
-            responseMimeType: "application/json",
-            responseSchema: {
-                type: Type.OBJECT,
-                properties: {
-                    puntosFuertes: { type: Type.ARRAY, items: { type: Type.STRING } },
-                    debilidades: { type: Type.ARRAY, items: { type: Type.STRING } },
-                    oportunidades: { type: Type.ARRAY, items: { type: Type.STRING } },
-                    feedback: { type: Type.STRING },
-                },
-            }
-        };
-
-        try {
-            const response = await callGeminiApi(userQueryPayload, systemPrompt, generationConfig);
-            const parsedResult = JSON.parse(response.text);
-            setCriticResult(parsedResult);
-            // Optional: Save history logic moved to component or kept here?
-            // Keeping it simple for now, can add history later if needed.
-        } catch (e: any) {
-            setErrorCritic(e.message);
-        } finally {
-            setLoadingCritic(false);
-        }
-    };
-
     return (
-        <PremiumLayout
-            gradientTheme="rose"
-            leftSidebar={
+        <div className="h-full grid grid-cols-1 lg:grid-cols-[220px,minmax(0,1fr),220px] gap-6">
+            {/* Left Sidebar */}
+            <div className="h-full min-h-0 flex flex-col relative z-20">
                 <MakeMenuSidebar
-                    activeMode={activeMode}
-                    onModeChange={setActiveMode}
+                    activeMode={'designer'}
+                    onModeChange={() => { }}
                 />
-            }
-            rightSidebar={
-                activeMode === 'designer' ? (
-                    <DesignerControls
-                        allRecipes={allRecipes}
-                        allPizarronTasks={allPizarronTasks}
-                        selectedRecipeIds={selectedRecipeIds}
-                        selectedTaskIds={selectedTaskIds}
-                        loading={loadingDesigner}
-                        onSelectionChange={handleDesignerSelection}
-                        onGenerate={handleGenerateMenus}
-                    />
-                ) : (
-                    <CriticControls
-                        criticMenuText={criticMenuText}
-                        loading={loadingCritic}
-                        onTextChange={setCriticMenuText}
-                        onImageChange={setCriticMenuImage}
-                        onInvoke={handleInvokeCritic}
-                    />
-                )
-            }
-            mainContent={
-                activeMode === 'designer' ? (
-                    <DesignerResults
-                        results={menuResults}
-                        loading={loadingDesigner}
-                        error={errorDesigner}
-                        db={db}
-                        userId={userId}
-                        appId={appId}
-                    />
-                ) : (
-                    <CriticDashboard
-                        result={criticResult}
-                        loading={loadingCritic}
-                        error={errorCritic}
-                    />
-                )
-            }
-        />
+            </div>
+
+            {/* Main Content */}
+            <div className="h-full min-h-0 overflow-hidden flex flex-col relative rounded-2xl z-20">
+                <DesignerResults
+                    results={menuResults}
+                    loading={loadingDesigner}
+                    error={errorDesigner}
+                    db={db}
+                    userId={userId}
+                    appId={appId}
+                />
+            </div>
+
+            {/* Right Sidebar */}
+            <div className="h-full min-h-0 flex flex-col relative z-20">
+                <DesignerControls
+                    allRecipes={allRecipes}
+                    allPizarronTasks={allPizarronTasks}
+                    selectedRecipeIds={selectedRecipeIds}
+                    selectedTaskIds={selectedTaskIds}
+                    loading={loadingDesigner}
+                    onSelectionChange={handleDesignerSelection}
+                    onGenerate={handleGenerateMenus}
+                />
+            </div>
+        </div>
     );
 };
 
 export default MakeMenuView;
+
+

@@ -37,7 +37,7 @@ const CriticControls: React.FC<CriticControlsProps> = ({
                         rows={8}
                         value={criticMenuText}
                         onChange={(e) => onTextChange(e.target.value)}
-                        className="bg-white/40 dark:bg-slate-800/40 border-white/10 focus:border-rose-500 text-sm resize-none"
+                        className="bg-white/40 dark:bg-slate-800/40 border-white/10 focus:border-amber-500 text-sm resize-none"
                     />
                 </div>
 
@@ -48,7 +48,7 @@ const CriticControls: React.FC<CriticControlsProps> = ({
                             type="file"
                             accept=".txt,.jpg,.png,.jpeg"
                             onChange={(e) => onImageChange(e.target.files?.[0] || null)}
-                            className="bg-white/40 dark:bg-slate-800/40 border-white/10 text-xs file:bg-rose-100 file:text-rose-700 file:border-0 file:rounded-md file:px-2 file:py-1 file:mr-3 file:font-semibold hover:file:bg-rose-200 transition-all cursor-pointer"
+                            className="bg-white/40 dark:bg-slate-800/40 border-white/10 text-xs file:bg-amber-100 file:text-amber-700 file:border-0 file:rounded-md file:px-2 file:py-1 file:mr-3 file:font-semibold hover:file:bg-amber-200 transition-all cursor-pointer"
                         />
                     </div>
                     <p className="text-[10px] text-slate-400">Archivos soportados: JPG, PNG. El análisis de imagen consume más tokens.</p>
@@ -59,7 +59,7 @@ const CriticControls: React.FC<CriticControlsProps> = ({
                 <Button
                     onClick={onInvoke}
                     disabled={loading}
-                    className="w-full bg-rose-600 hover:bg-rose-700 text-white shadow-lg shadow-rose-500/20"
+                    className="w-full bg-amber-600 hover:bg-amber-700 text-white shadow-lg shadow-amber-500/20"
                 >
                     {loading ? <Spinner className="w-4 h-4 mr-2" /> : <Icon svg={ICONS.critic} className="w-4 h-4 mr-2" />}
                     Invocar Crítica

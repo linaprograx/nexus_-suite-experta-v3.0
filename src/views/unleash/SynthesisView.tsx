@@ -148,8 +148,8 @@ const SynthesisView: React.FC<SynthesisViewProps> = ({ allRecipes }) => {
             {/* Column 3: AI Panel & Control */}
             <UnleashColumn title="AI Panel & Control">
                 <SectionBlock title="Nivel de Creatividad">
-                    <input type="range" className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer" />
-                    <div className="flex justify-between text-xs text-slate-400 mt-1">
+                    <input type="range" className="w-full h-2 bg-violet-200 rounded-lg appearance-none cursor-pointer accent-violet-600" />
+                    <div className="flex justify-between text-xs text-violet-400 mt-1">
                         <span>Conservador</span>
                         <span>Disruptivo</span>
                     </div>
@@ -158,7 +158,7 @@ const SynthesisView: React.FC<SynthesisViewProps> = ({ allRecipes }) => {
                 <SectionBlock title="Tono Narrativo">
                     <div className="flex flex-wrap gap-2">
                         {['Elegante', 'Futurista', 'Oscuro', 'Místico', 'Divertido'].map(tag => (
-                            <span key={tag} className="px-3 py-1 bg-slate-800 rounded-full text-xs text-slate-300 border border-slate-700 cursor-pointer hover:border-violet-500 hover:text-white transition-colors">
+                            <span key={tag} className="px-3 py-1 bg-violet-50 rounded-full text-xs text-violet-700 border border-violet-200 font-medium cursor-pointer hover:bg-violet-100 hover:border-violet-300 transition-colors">
                                 {tag}
                             </span>
                         ))}
@@ -166,10 +166,10 @@ const SynthesisView: React.FC<SynthesisViewProps> = ({ allRecipes }) => {
                 </SectionBlock>
 
                 <div className="mt-auto pt-4 space-y-2">
-                    <button className="w-full py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 font-medium rounded-lg text-sm border border-slate-700 transition-colors">
+                    <button className="w-full py-2 bg-violet-600 hover:bg-violet-500 text-white font-bold rounded-lg text-sm shadow-md shadow-violet-900/20 transition-colors">
                         Exportar a Menu Design
                     </button>
-                    <button className="w-full py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 font-medium rounded-lg text-sm border border-slate-700 transition-colors">
+                    <button className="w-full py-2 bg-white hover:bg-violet-50 text-violet-700 font-bold rounded-lg text-sm border border-violet-200 transition-colors">
                         Guardar Preset
                     </button>
                 </div>

@@ -23,7 +23,73 @@ const SectionBlock = ({ title, children }: { title: string, children?: React.Rea
     </div>
 );
 
+const CustomIngredientSelector = ({ ingredients, onSelect, selectedIds }: { ingredients: any[], onSelect: (id: string) => void, selectedIds: string[] }) => {
+    const [isOpen, setIsOpen] = React.useState(false);
+    const [search, setSearch] = React.useState('');
+    const wrapperRef = React.useRef<HTMLDivElement>(null);
+
+    React.useEffect(() => {
+        function handleClickOutside(event: MouseEvent) {
+            if (wrapperRef.current && !wrapperRef.current.contains(event.target as Node)) {
+                setIsOpen(false);
+            }
+        }
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, [wrapperRef]);
+
+    const filtered = ingredients.filter(i => i.nombre.toLowerCase().includes(search.toLowerCase()));
+
+    return (
+        <div className="relative" ref={wrapperRef}>
+            <div
+                className="w-full bg-white border border-cyan-200 rounded-lg p-2 text-slate-800 text-sm focus:ring-2 focus:ring-cyan-500 cursor-pointer min-h-[42px] flex flex-wrap gap-1"
+                onClick={() => setIsOpen(!isOpen)}
+            >
+                {selectedIds.length === 0 && <span className="text-slate-400">Seleccionar ingredientes...</span>}
+                {selectedIds.map(id => {
+                    const ing = ingredients.find(i => i.id === id);
+                    return (
+                        <span key={id} className="bg-cyan-100 text-cyan-800 text-xs px-2 py-1 rounded-md flex items-center gap-1">
+                            {ing?.nombre}
+                            <span className="cursor-pointer hover:text-cyan-900" onClick={(e) => { e.stopPropagation(); onSelect(id); }}>×</span>
+                        </span>
+                    );
+                })}
+            </div>
+
+            {isOpen && (
+                <div className="absolute z-50 w-full mt-1 bg-white border border-cyan-200 rounded-lg shadow-xl max-h-[200px] overflow-hidden flex flex-col animate-fadeIn">
+                    <input
+                        type="text"
+                        placeholder="Buscar ingrediente..."
+                        className="p-2 border-b border-cyan-100 text-sm outline-none text-slate-700 bg-slate-50"
+                        value={search}
+                        onChange={(e) => setSearch(e.target.value)}
+                        autoFocus
+                    />
+                    <div className="overflow-y-auto flex-1 custom-scrollbar">
+                        {filtered.map(ing => (
+                            <div
+                                key={ing.id}
+                                className={`p-2 text-sm cursor-pointer hover:bg-cyan-50 text-slate-700 ${selectedIds.includes(ing.id) ? 'bg-cyan-50 text-cyan-700 font-bold' : ''}`}
+                                onClick={() => { onSelect(ing.id); }}
+                            >
+                                {ing.nombre}
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+};
+
 const AtelierView: React.FC<AtelierViewProps> = ({ allIngredients }) => {
+    const [selectedTechnique, setSelectedTechnique] = React.useState('Clarificado (Milk Punch)');
+    const [selectedIngredientIds, setSelectedIngredientIds] = React.useState<string[]>([]);
+    const [objective, setObjective] = React.useState('');
+
     const [techResult, setTechResult] = React.useState<{
         technique: string;
         steps: string[];
@@ -31,28 +97,115 @@ const AtelierView: React.FC<AtelierViewProps> = ({ allIngredients }) => {
         safety: string[];
     } | null>(null);
 
+    const handleToggleIngredient = (id: string) => {
+        if (selectedIngredientIds.includes(id)) {
+            setSelectedIngredientIds(selectedIngredientIds.filter(i => i !== id));
+        } else {
+            setSelectedIngredientIds([...selectedIngredientIds, id]);
+        }
+    };
+
     const handleGenerate = () => {
-        setTechResult({
-            technique: "Clarificación por Milk Punch",
-            steps: [
-                "Mezclar el 'batch' de espirituosas y cítricos en un recipiente.",
-                "Calentar la leche entera a 60°C (sin hervir) para facilitar el cuajado.",
-                "Verter el 'batch' SOBRE la leche (nunca al revés) realizando un movimiento circular.",
-                "Dejar reposar 24 horas en frío para que los sólidos se separen completamente.",
-                "Filtrar con filtro de café o superbag de 100 micras.",
-                "Repetir el filtrado usando los primeros cuajos como filtro natural."
-            ],
-            params: [
-                { label: "Tiempo Reposo", value: "24 Horas" },
-                { label: "Temperatura", value: "4°C - 60°C" },
-                { label: "Rendimiento", value: "85%" },
-                { label: "Shelf Life", value: "12 Meses" }
-            ],
-            safety: [
-                "Controlar cadena de frío durante el reposo (max 5°C).",
-                "Verificar alérgenos: Contiene Caseína (Lácteos)."
-            ]
-        });
+        if (selectedTechnique.includes("Milk Punch")) {
+            setTechResult({
+                technique: "Clarificación por Milk Punch",
+                steps: [
+                    "Mezclar el 'batch' de espirituosas y cítricos en un recipiente.",
+                    "Calentar la leche entera a 60°C (sin hervir).",
+                    "Verter el 'batch' SOBRE la leche (nunca al revés).",
+                    "Dejar reposar 24 horas en frío para separar los sólidos.",
+                    "Filtrar con filtro de café."
+                ],
+                params: [
+                    { label: "Tiempo Reposo", value: "24 Horas" },
+                    { label: "Temperatura", value: "4°C - 60°C" },
+                    { label: "Rendimiento", value: "85%" },
+                    { label: "Shelf Life", value: "12 Meses" }
+                ],
+                safety: ["Controlar cadena de frío.", "Alérgenos: Lácteos (Caseína)."]
+            });
+        } else if (selectedTechnique.includes("Espuma")) {
+            setTechResult({
+                technique: "Espuma Estable (Sifón)",
+                steps: [
+                    "Hidratar la gelatina o cargar las claras en la base líquida.",
+                    "Colar la mezcla muy fina para evitar obstrucciones.",
+                    "Llenar el sifón máximo 3/4 de su capacidad.",
+                    "Cargar 2 cargas de N2O, agitando vigorosamente entre cargas.",
+                    "Reposar en frío minimo 2 horas antes de usar."
+                ],
+                params: [
+                    { label: "Cargas N2O", value: "2 Unidades" },
+                    { label: "Estabilizante", value: "Gelatina/Claras" },
+                    { label: "Temp Servicio", value: "4°C - 8°C" },
+                    { label: "Densidad", value: "Aireada" }
+                ],
+                safety: ["Revisar estado de gomas del sifón.", "No exceder presión recomendada."]
+            });
+        } else if (selectedTechnique.includes("Fat Wash")) {
+            setTechResult({
+                technique: "Fat Washing Ochos",
+                steps: [
+                    "Fundir la materia grasa (mantequilla, aceite coco, bacon) a 60°C.",
+                    "Mezclar con el destilado en proporción 1:10 (grasa:alcohol).",
+                    "Dejar macerar a temperatura ambiente 4 horas agitando ocasionalmente.",
+                    "Congelar el recipiente (-18°C) durante 12 horas hasta que la grasa solidifique.",
+                    "Retirar la capa sólida de grasa y filtrar el líquido por filtro de café."
+                ],
+                params: [
+                    { label: "Ratio", value: "1:10" },
+                    { label: "Tiempo Congelado", value: "12 Horas" },
+                    { label: "Temp Maceración", value: "20°C (Ambiente)" },
+                    { label: "Pérdida", value: "~15%" }
+                ],
+                safety: ["Asegurar retirada total de sólidos grasos (enranciamiento).", "Etiquetar alérgenos si usa frutos secos/lácteos."]
+            });
+        } else if (selectedTechnique.includes("Sous-Vide")) {
+            setTechResult({
+                technique: "Infusión Controlada Sous-Vide",
+                steps: [
+                    "Envasar al vacío el destilado con los botánicos.",
+                    "Configurar el baño térmico a 55°C.",
+                    "Sumergir la bolsa y cocinar durante 2 horas.",
+                    "Enfriar rápidamente en baño de agua y hielo (choque térmico).",
+                    "Filtrar y embotellar."
+                ],
+                params: [
+                    { label: "Temperatura", value: "55°C" },
+                    { label: "Tiempo", value: "2 Horas" },
+                    { label: "Vacío", value: "Total (99%)" },
+                    { label: "Extracción", value: "Rápida/Intensa" }
+                ],
+                safety: ["Utilizar bolsas aptas para cocción.", "No superar graduación que evapore alcohol si no está sellado."]
+            });
+        } else if (selectedTechnique.includes("Esferificación")) {
+            setTechResult({
+                technique: "Esferificación Inversa (Estable)",
+                steps: [
+                    "Mezclar el ingrediente base con Lactato de Calcio (2%).",
+                    "Congelar en moldes semiesféricos para facilitar la inmersión.",
+                    "Preparar el baño de Alginato de Sodio (0.5%) en agua destilada.",
+                    "Baño: Triturar, reposar 12h para eliminar aire.",
+                    "Sumergir las esferas congeladas en el baño tibio (40°C) durante 3 min.",
+                    "Enjuagar en agua limpia y reservar en su propio líquido."
+                ],
+                params: [
+                    { label: "Baño Alginato", value: "0.5% (5g/L)" },
+                    { label: "Base Calcio", value: "2.0% (20g/L)" },
+                    { label: "PH Base", value: "> 4.0" },
+                    { label: "Tiempo Baño", value: "3 Minutos" }
+                ],
+                safety: ["El PH ácido (<4) impide la gelificación (usar citrato).", "Evitar exceso de calcio (amargor)."]
+            });
+        } else {
+            // Fallback
+            setTechResult({
+                technique: selectedTechnique,
+                steps: ["Protocolo estándar pendiente de generación."],
+                params: [{ label: "Estado", value: "Pendiente" }],
+                safety: ["Revisar bibliografía técnica."]
+            });
+        }
     };
 
     return (
@@ -60,7 +213,11 @@ const AtelierView: React.FC<AtelierViewProps> = ({ allIngredients }) => {
             {/* Column 1: Selector Técnico */}
             <UnleashColumn title="Selección Técnica">
                 <SectionBlock title="Tipo de Técnica">
-                    <select className="w-full bg-white border border-cyan-200 rounded-lg p-2 text-slate-800 text-sm focus:ring-2 focus:ring-cyan-500 outline-none">
+                    <select
+                        className="w-full bg-white border border-cyan-200 rounded-lg p-2 text-slate-800 text-sm focus:ring-2 focus:ring-cyan-500 outline-none"
+                        value={selectedTechnique}
+                        onChange={(e) => setSelectedTechnique(e.target.value)}
+                    >
                         <option>Espuma / Aire</option>
                         <option>Clarificado (Milk Punch)</option>
                         <option>Esferificación</option>
@@ -69,24 +226,21 @@ const AtelierView: React.FC<AtelierViewProps> = ({ allIngredients }) => {
                     </select>
                 </SectionBlock>
 
-                <SectionBlock title="Ingrediente Principal">
-                    <select className="w-full bg-white border border-cyan-200 rounded-lg p-2 text-slate-800 text-sm focus:ring-2 focus:ring-cyan-500 outline-none">
-                        <option value="">Seleccionar ingrediente...</option>
-                        {allIngredients.map(ing => (
-                            <option key={ing.id} value={ing.id}>{ing.nombre}</option>
-                        ))}
-                    </select>
+                <SectionBlock title="Ingredientes Clave">
+                    <CustomIngredientSelector
+                        ingredients={allIngredients}
+                        selectedIds={selectedIngredientIds}
+                        onSelect={handleToggleIngredient}
+                    />
                 </SectionBlock>
 
                 <SectionBlock title="Objetivo Técnico">
-                    <div className="space-y-2">
-                        {['Transparencia', 'Textura Aterciopelada', 'Intensidad Aromática', 'Estabilidad Visual'].map(goal => (
-                            <label key={goal} className="flex items-center space-x-2 cursor-pointer bg-white/50 p-2 rounded-lg border border-transparent hover:border-cyan-300 transition-colors">
-                                <input type="radio" name="tech-goal" className="text-cyan-600 focus:ring-cyan-500 bg-slate-100 border-slate-300" />
-                                <span className="text-sm text-slate-700 font-medium">{goal}</span>
-                            </label>
-                        ))}
-                    </div>
+                    <textarea
+                        className="w-full bg-white border border-cyan-200 rounded-lg p-2 text-slate-800 text-sm h-24 resize-none placeholder:text-slate-400 focus:ring-2 focus:ring-cyan-500 outline-none"
+                        placeholder="Describe el resultado buscado (ej. Textura sedosa, clarificación cristalina, sabor intenso a bacon...)"
+                        value={objective}
+                        onChange={(e) => setObjective(e.target.value)}
+                    ></textarea>
                 </SectionBlock>
 
                 <button

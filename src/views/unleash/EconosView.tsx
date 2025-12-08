@@ -33,14 +33,31 @@ const MOCK_PROVIDERS = [
 const EconosView: React.FC<EconosViewProps> = ({ allRecipes }) => {
     const [selectedRecipeId, setSelectedRecipeId] = React.useState('');
     const [selectedProvider, setSelectedProvider] = React.useState('');
-    const [costResult, setCostResult] = React.useState<{ cost: number, margin: number, breakdown: { name: string, cost: number, pct: number }[], savings: string[] } | null>(null);
+    const [costResult, setCostResult] = React.useState<{
+        cost: number;
+        margin: number;
+        costPct: number;
+        suggestedPrice: number;
+        profit: number;
+        breakEven: number;
+        breakdown: { name: string, cost: number, pct: number }[];
+        savings: string[];
+    } | null>(null);
 
     const handleCalculate = () => {
         if (!selectedRecipeId) return;
-        // Mock calculation
+        // Mock Super Analysis
+        const baseCost = 2.85;
+        const targetMargin = 0.78; // 78%
+        const suggPrice = baseCost / (1 - targetMargin);
+
         setCostResult({
-            cost: 2.85,
+            cost: baseCost,
             margin: 78,
+            costPct: 22,
+            suggestedPrice: 12.50,
+            profit: 9.65,
+            breakEven: 345, // Copas para amortizar
             breakdown: [
                 { name: 'Base Spirit', cost: 1.50, pct: 52 },
                 { name: 'Modifiers', cost: 0.80, pct: 28 },
@@ -121,16 +138,27 @@ const EconosView: React.FC<EconosViewProps> = ({ allRecipes }) => {
                     </div>
                 ) : (
                     <div className="space-y-6 animate-fadeIn">
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="bg-white/80 p-4 rounded-xl border border-emerald-100 text-center relative overflow-hidden group shadow-sm">
-                                <div className="absolute inset-0 bg-emerald-50/50 group-hover:bg-emerald-100/50 transition-colors"></div>
-                                <span className="text-xs text-emerald-600 uppercase tracking-wider block mb-1 font-bold">Coste x Copa</span>
-                                <span className="text-3xl font-bold text-slate-800 relative z-10">{costResult.cost.toFixed(2)} €</span>
+                        {/* Key Metrics Grid */}
+                        <div className="grid grid-cols-2 lg:grid-cols-2 gap-4">
+                            <div className="bg-white/80 p-4 rounded-xl border border-emerald-100 relative overflow-hidden shadow-sm group">
+                                <span className="text-[10px] text-slate-500 uppercase tracking-wider font-bold">Coste Materia Prima</span>
+                                <div className="text-2xl font-bold text-slate-800 mt-1">{costResult.cost.toFixed(2)} €</div>
+                                <div className="text-xs text-emerald-600 font-medium">{costResult.costPct}% del precio</div>
                             </div>
-                            <div className="bg-white/80 p-4 rounded-xl border border-emerald-100 text-center relative overflow-hidden group shadow-sm">
-                                <div className="absolute inset-0 bg-emerald-50/50 group-hover:bg-emerald-100/50 transition-colors"></div>
-                                <span className="text-xs text-emerald-600 uppercase tracking-wider block mb-1 font-bold">Margen Bruto</span>
-                                <span className="text-3xl font-bold text-emerald-600 relative z-10">{costResult.margin}%</span>
+                            <div className="bg-emerald-600 p-4 rounded-xl border border-emerald-500 relative overflow-hidden shadow-lg shadow-emerald-900/20 text-white">
+                                <span className="text-[10px] text-emerald-100 uppercase tracking-wider font-bold">Margen Contribución</span>
+                                <div className="text-2xl font-bold mt-1">{costResult.profit.toFixed(2)} €</div>
+                                <div className="text-xs text-emerald-100 font-medium">Beneficio Limpio</div>
+                            </div>
+                            <div className="bg-white/80 p-4 rounded-xl border border-emerald-100 relative overflow-hidden shadow-sm">
+                                <span className="text-[10px] text-slate-500 uppercase tracking-wider font-bold">P.V.P Sugerido</span>
+                                <div className="text-2xl font-bold text-slate-800 mt-1">{costResult.suggestedPrice.toFixed(2)} €</div>
+                                <div className="text-xs text-slate-400 font-medium">Para margen ideal</div>
+                            </div>
+                            <div className="bg-white/80 p-4 rounded-xl border border-emerald-100 relative overflow-hidden shadow-sm">
+                                <span className="text-[10px] text-slate-500 uppercase tracking-wider font-bold">Punto Equilibrio</span>
+                                <div className="text-2xl font-bold text-slate-800 mt-1">{costResult.breakEven} u.</div>
+                                <div className="text-xs text-slate-400 font-medium">Ventas para amortizar</div>
                             </div>
                         </div>
 
@@ -142,7 +170,8 @@ const EconosView: React.FC<EconosViewProps> = ({ allRecipes }) => {
                                     <div
                                         key={i}
                                         className="h-full transition-all hover:opacity-80 relative group/tooltip"
-                                        style={{ width: `${item.pct}%`, backgroundColor: ['#10b981', '#34d399', '#6ee7b7', '#a7f3d0'][i] }}
+                                        style={{ width: `${item.pct}%`, backgroundColor: ['#059669', '#10b981', '#34d399', '#6ee7b7'][i] }}
+                                        title={`${item.name}: ${item.pct}%`}
                                     >
                                     </div>
                                 ))}
@@ -151,7 +180,7 @@ const EconosView: React.FC<EconosViewProps> = ({ allRecipes }) => {
                                 {costResult.breakdown.map((item, i) => (
                                     <div key={i} className="flex justify-between text-xs text-slate-600 border-b border-white/50 pb-1 last:border-0">
                                         <div className="flex items-center gap-2">
-                                            <div className="w-2 h-2 rounded-full" style={{ backgroundColor: ['#10b981', '#34d399', '#6ee7b7', '#a7f3d0'][i] }}></div>
+                                            <div className="w-2 h-2 rounded-full" style={{ backgroundColor: ['#059669', '#10b981', '#34d399', '#6ee7b7'][i] }}></div>
                                             <span className="font-medium">{item.name}</span>
                                         </div>
                                         <div className="font-mono font-bold text-slate-800">{item.cost.toFixed(2)}€ ({item.pct}%)</div>
