@@ -74,16 +74,27 @@ export interface PizarronBoard {
 
 export interface PizarronTask {
     id: string;
-    content: string;
+    content?: string; // Legacy
+    texto?: string; // Legacy Title
+    title: string;
+    description?: string;
     status: string;
     boardId: string;
     category?: string;
-    priority?: 'low' | 'medium' | 'high' | 'urgent';
+    priority?: 'low' | 'medium' | 'high' | 'urgent' | 'baja' | 'media' | 'alta';
     tags?: string[];
+    labels?: string[];
     linkedIngredients?: string[]; // IDs of ingredients from Grimorium
     createdAt?: any;
     dueDate?: any;
-    assignee?: string;
+    assignee?: string; // Legacy
+    assignees?: string[];
+    authorName?: string;
+    authorPhotoURL?: string;
+    attachments?: any[];
+    upvotes?: string[];
+    starRating?: Record<string, number>;
+    history?: any[];
     recipe?: {
         yield?: number;
         yieldUnit?: string;

@@ -1,6 +1,7 @@
 import React from 'react';
 import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
+import { Spinner } from '../ui/Spinner';
 import { Input } from '../ui/Input';
 import { Label } from '../ui/Label';
 import { Textarea } from '../ui/Textarea';
@@ -27,10 +28,13 @@ export const CreateBoardModal: React.FC<CreateBoardModalProps> = ({ isOpen, onCl
   const AVAILABLE_TOOLS = [
     { id: 'cerebrity', name: 'Cerebrity (IA)', icon: 'brain' },
     { id: 'thelab', name: 'The Lab', icon: 'beaker' },
-    { id: 'make_menu', name: 'Make Menu', icon: 'menu' }, // Assuming 'menu' exists or finding closest
+    { id: 'make_menu', name: 'Make Menu', icon: 'menu' },
     { id: 'grimorium', name: 'Grimorium', icon: 'book' },
     { id: 'zero_waste', name: 'Zero Waste Chef', icon: 'leaf' },
-    { id: 'costeo', name: 'Costeo', icon: 'calculator' },
+    { id: 'costeo', name: 'Excelencia (Costeo)', icon: 'calculator' },
+    { id: 'batcher', name: 'Batcher', icon: 'layers' },
+    { id: 'stock', name: 'Stock & Inventory', icon: 'box' },
+    { id: 'trend_locator', name: 'Trend Locator', icon: 'trending' },
   ];
 
   React.useEffect(() => {
@@ -57,19 +61,29 @@ export const CreateBoardModal: React.FC<CreateBoardModalProps> = ({ isOpen, onCl
     );
   };
 
-  const handleSubmit = () => {
+  /* eslint-disable @typescript-eslint/no-unused-vars */
+  const [isSaving, setIsSaving] = React.useState(false);
+
+  const handleSubmit = async () => {
     if (!name.trim()) return;
-    onCreate({
-      ...(boardToEdit ? { id: boardToEdit.id } : {}),
-      name,
-      category: category as any,
-      themeColor,
-      icon,
-      description,
-      enabledTools: selectedTools, // Add selected tools to the payload
-    });
-    // onClose is handled by parent usually, but we can call it if parent doesn't auto-close
-    // actually parent closes on onCreate success usually. But here we can safe-guard.
+    setIsSaving(true);
+    try {
+      await onCreate({
+        ...(boardToEdit ? { id: boardToEdit.id } : {}),
+        name,
+        category: category as any,
+        themeColor,
+        icon,
+        description,
+        enabledTools: selectedTools,
+      });
+      // Parent component (PizarronSidebar) usually handles closing, but we ensure button feedback
+    } catch (error: any) {
+      console.error("Error creating board:", error);
+      alert("Error al guardar tablero: " + error.message);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const colors = [
@@ -204,10 +218,10 @@ export const CreateBoardModal: React.FC<CreateBoardModalProps> = ({ isOpen, onCl
           </Button>
           <Button
             onClick={handleSubmit}
-            disabled={!name.trim()}
-            className="bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white shadow-lg shadow-orange-500/30 border-0 rounded-xl px-6 font-medium transition-all hover:scale-[1.02] active:scale-95"
+            disabled={!name.trim() || isSaving}
+            className="bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white shadow-lg shadow-orange-500/30 border-0 rounded-xl px-6 font-medium transition-all hover:scale-[1.02] active:scale-95 flex items-center gap-2"
           >
-            {boardToEdit ? "Guardar Cambios" : "Crear Tablero"}
+            {isSaving ? <Spinner className="w-5 h-5 border-white" /> : (boardToEdit ? "Guardar Cambios" : "Crear Tablero")}
           </Button>
         </div>
       </div>
