@@ -103,7 +103,8 @@ export const RecipeBuilder: React.FC<RecipeBuilderProps> = ({ task, onUpdate, on
     return (
         <div className="h-full flex flex-col animate-in fade-in slide-in-from-right-4 duration-300">
             {/* Header */}
-            <div className="flex items-center gap-2 mb-6 pb-4 border-b border-slate-100 dark:border-slate-800">
+            {/* Header */}
+            <div className="flex items-center gap-2 mb-2 pb-4 border-b border-slate-100 dark:border-slate-800 shrink-0">
                 <Button variant="ghost" size="sm" onClick={onBack} className="-ml-2 text-slate-500 hover:text-slate-800">
                     <Icon svg={ICONS.arrowLeft} className="w-5 h-5" />
                 </Button>
@@ -113,31 +114,23 @@ export const RecipeBuilder: React.FC<RecipeBuilderProps> = ({ task, onUpdate, on
                         Constructor de Recetas
                     </h3>
                 </div>
-                {onExport && (
-                    <Button variant="outline" size="sm" onClick={onExport} className="mr-2 text-emerald-600 border-emerald-200 hover:bg-emerald-50">
-                        <Icon svg={ICONS.upload} className="w-4 h-4 mr-2" />
-                        Exportar
-                    </Button>
-                )}
-                <Button onClick={handleSave} size="sm" className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-md">
-                    Guardar
-                </Button>
             </div>
 
-            <div className="space-y-8 flex-1 overflow-y-auto px-1 custom-scrollbar">
+            {/* Scrollable Content */}
+            <div className="space-y-8 flex-1 overflow-y-auto px-4 custom-scrollbar pb-6">
                 {/* 1. Basic Info */}
                 <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-xl border border-slate-200 dark:border-slate-700">
                     <div className="grid grid-cols-2 gap-4">
                         <div>
                             <Label className="text-xs font-bold text-slate-500 mb-1 block">Rendimiento</Label>
                             <div className="flex gap-2">
-                                <Input type="number" value={yieldAmount} onChange={e => setYieldAmount(Number(e.target.value))} className="w-20 bg-white" />
-                                <Input value={yieldUnit} onChange={e => setYieldUnit(e.target.value)} placeholder="porciones" className="flex-1 bg-white" />
+                                <Input type="number" value={yieldAmount} onChange={e => setYieldAmount(Number(e.target.value))} className="w-24 bg-white dark:bg-slate-800" />
+                                <Input value={yieldUnit} onChange={e => setYieldUnit(e.target.value)} placeholder="porciones" className="flex-1 bg-white dark:bg-slate-800" />
                             </div>
                         </div>
                         <div>
                             <Label className="text-xs font-bold text-slate-500 mb-1 block">Tiempo (mins)</Label>
-                            <Input type="number" value={prepTime} onChange={e => setPrepTime(Number(e.target.value))} className="bg-white" />
+                            <Input type="number" value={prepTime} onChange={e => setPrepTime(Number(e.target.value))} className="bg-white dark:bg-slate-800 w-full" />
                         </div>
                     </div>
                 </div>
@@ -164,12 +157,12 @@ export const RecipeBuilder: React.FC<RecipeBuilderProps> = ({ task, onUpdate, on
                                         type="number"
                                         value={ing.quantity}
                                         onChange={e => updateIngredient(i, 'quantity', Number(e.target.value))}
-                                        className="h-8 text-right"
+                                        className="h-8 text-right bg-slate-50 dark:bg-slate-900"
                                     />
                                     <Input
                                         value={ing.unit}
                                         onChange={e => updateIngredient(i, 'unit', e.target.value)}
-                                        className="h-8 w-16"
+                                        className="h-8 w-16 bg-slate-50 dark:bg-slate-900"
                                     />
                                 </div>
                             </div>
@@ -212,6 +205,20 @@ export const RecipeBuilder: React.FC<RecipeBuilderProps> = ({ task, onUpdate, on
                         Añadir Nuevo Paso
                     </Button>
                 </div>
+            </div>
+
+            {/* Fixed Footer */}
+            <div className="p-4 border-t border-slate-100 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm mt-auto flex justify-between items-center z-10">
+                {onExport ? (
+                    <Button variant="outline" size="sm" onClick={onExport} className="text-emerald-600 border-emerald-200 hover:bg-emerald-50">
+                        <Icon svg={ICONS.upload} className="w-4 h-4 mr-2" />
+                        Exportar a Grimorio
+                    </Button>
+                ) : <div></div>}
+
+                <Button onClick={handleSave} className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-600/20 px-6">
+                    Guardar Receta
+                </Button>
             </div>
         </div>
     );
