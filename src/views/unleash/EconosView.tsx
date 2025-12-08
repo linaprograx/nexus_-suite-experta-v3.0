@@ -1,4 +1,9 @@
 import React from 'react';
+import { Recipe } from '../../types';
+
+interface EconosViewProps {
+    allRecipes: Recipe[];
+}
 
 const UnleashColumn = ({ title, children }: { title: string, children?: React.ReactNode }) => (
     <div className="h-full min-h-0 flex flex-col rounded-2xl border border-white/10 overflow-hidden bg-white/5 backdrop-blur-sm">
@@ -18,7 +23,7 @@ const SectionBlock = ({ title, children }: { title: string, children?: React.Rea
     </div>
 );
 
-const OcrMasterView: React.FC = () => {
+const EconosView: React.FC<EconosViewProps> = ({ allRecipes }) => {
     return (
         <div className="h-full grid grid-cols-1 lg:grid-cols-[320px,minmax(0,1fr),320px] gap-6">
             {/* Column 1: Selector Económico */}
@@ -26,13 +31,17 @@ const OcrMasterView: React.FC = () => {
                 <SectionBlock title="Receta a Analizar">
                     <select className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-white text-sm focus:ring-2 focus:ring-emerald-500 outline-none">
                         <option>Seleccionar Receta...</option>
+                        {allRecipes.map(recipe => (
+                            <option key={recipe.id} value={recipe.id}>{recipe.nombre}</option>
+                        ))}
                     </select>
                 </SectionBlock>
 
                 <SectionBlock title="Proveedor Base">
                     <select className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-white text-sm focus:ring-2 focus:ring-emerald-500 outline-none">
-                        <option>Proveedor Principal (Default)</option>
-                        <option>Comparativa Global</option>
+                        <option>Proveedor Principal</option>
+                        <option>Makro (Placeholder)</option>
+                        <option>Frutería Local (Placeholder)</option>
                     </select>
                 </SectionBlock>
 
@@ -76,4 +85,4 @@ const OcrMasterView: React.FC = () => {
     );
 };
 
-export default OcrMasterView;
+export default EconosView;

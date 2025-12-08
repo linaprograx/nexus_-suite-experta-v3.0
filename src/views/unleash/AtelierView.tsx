@@ -1,4 +1,9 @@
 import React from 'react';
+import { Ingredient } from '../../types';
+
+interface AtelierViewProps {
+    allIngredients: Ingredient[];
+}
 
 const UnleashColumn = ({ title, children }: { title: string, children?: React.ReactNode }) => (
     <div className="h-full min-h-0 flex flex-col rounded-2xl border border-white/10 overflow-hidden bg-white/5 backdrop-blur-sm">
@@ -18,11 +23,11 @@ const SectionBlock = ({ title, children }: { title: string, children?: React.Rea
     </div>
 );
 
-const LctProView: React.FC = () => {
+const AtelierView: React.FC<AtelierViewProps> = ({ allIngredients }) => {
     return (
         <div className="h-full grid grid-cols-1 lg:grid-cols-[320px,minmax(0,1fr),320px] gap-6">
             {/* Column 1: Selector Técnico */}
-            <UnleashColumn title="Selector Técnico">
+            <UnleashColumn title="Selección Técnica">
                 <SectionBlock title="Tipo de Técnica">
                     <select className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-white text-sm focus:ring-2 focus:ring-cyan-500 outline-none">
                         <option>Espuma / Aire</option>
@@ -30,6 +35,15 @@ const LctProView: React.FC = () => {
                         <option>Esferificación</option>
                         <option>Fat Wash</option>
                         <option>Infusión Sous-Vide</option>
+                    </select>
+                </SectionBlock>
+
+                <SectionBlock title="Ingrediente Principal">
+                    <select className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-white text-sm focus:ring-2 focus:ring-cyan-500 outline-none">
+                        <option value="">Seleccionar ingrediente...</option>
+                        {allIngredients.map(ing => (
+                            <option key={ing.id} value={ing.id}>{ing.nombre}</option>
+                        ))}
                     </select>
                 </SectionBlock>
 
@@ -50,14 +64,14 @@ const LctProView: React.FC = () => {
             </UnleashColumn>
 
             {/* Column 2: Ficha Técnica */}
-            <UnleashColumn title="Ficha Técnica Avanzada">
+            <UnleashColumn title="Ficha Técnica">
                 <div className="text-white/30 text-center italic text-sm mt-10">
                     Configura los parámetros para generar la ficha técnica.
                 </div>
             </UnleashColumn>
 
             {/* Column 3: Ciencia y Seguridad */}
-            <UnleashColumn title="Ciencia & Seguridad">
+            <UnleashColumn title="Ciencia + Seguridad">
                 <SectionBlock title="Análisis de Riesgos">
                     <div className="p-3 bg-red-900/20 border border-red-900/50 rounded-lg">
                         <div className="flex items-center gap-2 mb-1">
@@ -79,4 +93,4 @@ const LctProView: React.FC = () => {
     );
 };
 
-export default LctProView;
+export default AtelierView;

@@ -50,7 +50,7 @@ export const ContentView: React.FC<ContentViewProps> = (props) => {
       case 'dashboard':
         return <DashboardView allRecipes={rest.allRecipes} allPizarronTasks={rest.allPizarronTasks} allIngredients={rest.allIngredients} auth={rest.auth} setCurrentView={props.setCurrentView} />;
       case 'unleash':
-        return <UnleashView />;
+        return <UnleashView allRecipes={rest.allRecipes} allIngredients={rest.allIngredients} db={rest.db} userId={rest.userId} />;
       case 'grimorium':
         return <GrimoriumView
           db={rest.db}

@@ -1,4 +1,9 @@
 import React from 'react';
+import { Recipe } from '../../types';
+
+interface SynthesisViewProps {
+    allRecipes: Recipe[];
+}
 
 const UnleashColumn = ({ title, children }: { title: string, children?: React.ReactNode }) => (
     <div className="h-full min-h-0 flex flex-col rounded-2xl border border-white/10 overflow-hidden bg-white/5 backdrop-blur-sm">
@@ -18,21 +23,48 @@ const SectionBlock = ({ title, children }: { title: string, children?: React.Rea
     </div>
 );
 
-const CsaXView: React.FC = () => {
+const SynthesisView: React.FC<SynthesisViewProps> = ({ allRecipes }) => {
+    const [selectedRecipeId, setSelectedRecipeId] = React.useState<string>('');
+    const [concept, setConcept] = React.useState('');
+
+    const handleRecipeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+        const recipeId = e.target.value;
+        setSelectedRecipeId(recipeId);
+        const recipe = allRecipes.find(r => r.id === recipeId);
+        if (recipe) {
+            setConcept(`Concepto para: ${recipe.nombre}`);
+        } else {
+            setConcept('');
+        }
+    };
+
     return (
         <div className="h-full grid grid-cols-1 lg:grid-cols-[320px,minmax(0,1fr),320px] gap-6">
             {/* Column 1: Brief & Inputs */}
             <UnleashColumn title="Brief & Inputs">
                 <SectionBlock title="Selección de Cóctel">
-                    <select className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-white text-sm focus:ring-2 focus:ring-violet-500 outline-none">
-                        <option>Seleccionar desde Grimorio...</option>
-                        <option>Crear Nuevo (Manual)</option>
+                    <select
+                        className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-white text-sm focus:ring-2 focus:ring-violet-500 outline-none"
+                        value={selectedRecipeId}
+                        onChange={handleRecipeChange}
+                    >
+                        <option value="">Seleccionar desde Grimorio...</option>
+                        {allRecipes.map(recipe => (
+                            <option key={recipe.id} value={recipe.id}>{recipe.nombre}</option>
+                        ))}
+                        <option value="new">Crear Nuevo (Manual)</option>
                     </select>
                 </SectionBlock>
 
                 <SectionBlock title="Definición del Concepto">
                     <div className="space-y-3">
-                        <input type="text" placeholder="Concepto Central (ej. Nostalgia)" className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-white text-sm" />
+                        <input
+                            type="text"
+                            placeholder="Concepto Central (ej. Nostalgia)"
+                            className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-white text-sm"
+                            value={concept}
+                            onChange={(e) => setConcept(e.target.value)}
+                        />
                         <input type="text" placeholder="Emoción Deseada" className="w-full bg-slate-800 border-slate-700 rounded-lg p-2 text-white text-sm" />
                         <input type="text" placeholder="Perfil de Cliente" className="w-full bg-slate-800 border-slate-700 rounded-lg p-2 text-white text-sm" />
                         <textarea placeholder="Restricciones o Notas" className="w-full bg-slate-800 border-slate-700 rounded-lg p-2 text-white text-sm h-20 resize-none"></textarea>
@@ -47,7 +79,7 @@ const CsaXView: React.FC = () => {
             {/* Column 2: Resultados Creativos */}
             <UnleashColumn title="Resultados Creativos">
                 <div className="text-white/30 text-center italic text-sm mt-10">
-                    Genera un concepto para ver resultados aquí.
+                    {selectedRecipeId ? "Genera un concepto para ver resultados." : "Selecciona un cóctel para empezar."}
                 </div>
             </UnleashColumn>
 
@@ -84,4 +116,4 @@ const CsaXView: React.FC = () => {
     );
 };
 
-export default CsaXView;
+export default SynthesisView;
