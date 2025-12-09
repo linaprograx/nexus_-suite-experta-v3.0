@@ -33,6 +33,11 @@ const ChampionCard = ({ children, className = "", active = false }: { children: 
 );
 
 const ChampionModeView: React.FC = () => {
+    const handleStartChallenge = () => {
+        console.log('[Champion Mode] Starting design challenge...');
+        // Placeholder for contest start logic
+    };
+
     return (
         <div className="h-full grid grid-cols-1 lg:grid-cols-3 gap-6 text-lime-900">
 
@@ -85,7 +90,7 @@ const ChampionModeView: React.FC = () => {
                         Inicia el asistente de creación molecular para generar tu propuesta basada en los requisitos.
                     </p>
                     <button
-                        onClick={() => console.log('[Champion Mode] Comenzar diseño clicado')}
+                        onClick={handleStartChallenge}
                         className="mt-6 px-6 py-2 bg-lime-500 hover:bg-lime-400 text-white font-bold rounded-lg shadow-lg shadow-lime-500/20 transition-all text-xs uppercase tracking-wider"
                     >
                         Comenzar Diseño

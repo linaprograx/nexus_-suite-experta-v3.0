@@ -30,8 +30,8 @@ export const GradientShell: React.FC<GradientShellProps> = ({
 
   const backgroundClass =
     variant === "creativity"
-      ? "from-[#EDE9FE] to-white dark:from-[#1E1B2A] dark:to-slate-950"
-      : "from-[#CCFBF1] to-white dark:from-[#1A2A29] dark:to-slate-950";
+      ? "from-[#7C3AED] via-[#7C3AED]/45 to-transparent dark:from-[#4C1D95] dark:via-[#4C1D95]/40 dark:to-transparent"
+      : "from-[#06B6D4] via-[#06B6D4]/45 to-transparent dark:from-[#155E75] dark:via-[#155E75]/40 dark:to-transparent";
 
   return (
     <div

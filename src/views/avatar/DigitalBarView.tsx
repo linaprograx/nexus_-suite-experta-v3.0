@@ -327,7 +327,7 @@ const DigitalBarView: React.FC = () => {
                     <div className="mt-auto pt-6">
                         <h4 className="text-[10px] font-bold text-cyan-400 uppercase mb-3 text-center">CONECTIVIDAD</h4>
                         <button
-                            onClick={() => console.log('[Digital Bar] Enviar a visor VR')}
+                            onClick={handleOpenVR}
                             className="w-full py-3 bg-gradient-to-r from-fuchsia-500 to-indigo-500 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transition-all text-xs flex items-center justify-center gap-2 group"
                         >
                             <Icon svg={ICONS.monitor} className="w-4 h-4 group-hover:scale-110 transition-transform" />

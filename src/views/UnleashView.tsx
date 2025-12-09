@@ -18,14 +18,13 @@ const UnleashView: React.FC<UnleashViewProps> = ({ allRecipes, allIngredients, d
   const [activeTab, setActiveTab] = React.useState<'synthesis' | 'atelier' | 'econos' | 'makemenu' | 'critic'>('synthesis');
 
   // Dynamic Gradients per section (Soft, Vertical, Top-to-Bottom)
-  // Dynamic Gradients per section (Soft, Vertical, Top-to-Bottom)
   const getGradientStyle = () => {
     switch (activeTab) {
-      case 'synthesis': return { background: 'linear-gradient(180deg, #7C3AED 0%, rgba(124, 58, 237, 0.1) 45%, rgba(0,0,0,0) 100%)' };
-      case 'atelier': return { background: 'linear-gradient(180deg, #0891B2 0%, rgba(8, 145, 178, 0.1) 45%, rgba(0,0,0,0) 100%)' };
-      case 'econos': return { background: 'linear-gradient(180deg, #059669 0%, rgba(5, 150, 105, 0.1) 45%, rgba(0,0,0,0) 100%)' };
-      case 'makemenu': return { background: 'linear-gradient(180deg, #DC2626 0%, rgba(220, 38, 38, 0.1) 45%, rgba(0,0,0,0) 100%)' };
-      case 'critic': return { background: 'linear-gradient(180deg, #D97706 0%, rgba(217, 119, 6, 0.1) 45%, rgba(0,0,0,0) 100%)' };
+      case 'synthesis': return { background: 'linear-gradient(180deg, #7C3AED 0%, rgba(124, 58, 237, 0.35) 45%, rgba(0,0,0,0) 100%)' };
+      case 'atelier': return { background: 'linear-gradient(180deg, #06B6D4 0%, rgba(6, 182, 212, 0.35) 45%, rgba(0,0,0,0) 100%)' };
+      case 'econos': return { background: 'linear-gradient(180deg, #10B981 0%, rgba(16, 185, 129, 0.35) 45%, rgba(0,0,0,0) 100%)' };
+      case 'makemenu': return { background: 'linear-gradient(180deg, #EF4444 0%, rgba(239, 68, 68, 0.35) 45%, rgba(0,0,0,0) 100%)' };
+      case 'critic': return { background: 'linear-gradient(180deg, #F59E0B 0%, rgba(245, 158, 11, 0.35) 45%, rgba(0,0,0,0) 100%)' };
       default: return { background: 'none' };
     }
   };
@@ -79,7 +78,7 @@ const UnleashView: React.FC<UnleashViewProps> = ({ allRecipes, allIngredients, d
       </div>
 
       <div
-        className={`flex-1 overflow-hidden rounded-[2rem] p-6 shadow-xl ring-1 ring-white/10 border-b-0 relative transition-all duration-700 ${getBorderClass()}`}
+        className={`flex-1 overflow-hidden rounded-[2rem] p-6 shadow-xl ring-1 ring-white/10 border-b-0 border-transparent relative transition-all duration-700 ${getBorderClass()}`}
         style={getGradientStyle()}
       >
         {/* Background Glow */}

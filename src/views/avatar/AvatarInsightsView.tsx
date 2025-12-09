@@ -82,6 +82,11 @@ const AvatarInsightsView: React.FC = () => {
         { name: '00:00', uv: 3490, pv: 4300, amt: 2100 },
     ];
 
+    const handleOpenInsights = () => {
+        console.log('[Avatar Insights] Opening full analysis...');
+        // Placeholder for navigation or modal logic
+    };
+
     return (
         <div className="h-full grid grid-cols-1 lg:grid-cols-3 gap-6 text-slate-800">
 
@@ -225,7 +230,7 @@ const AvatarInsightsView: React.FC = () => {
                             "Se detecta un patrón de consumo inusual en 'Signature Cocktails' entre 21:00-23:00. Sugiero aumentar stock de guarniciones cítricas."
                         </p>
                         <button
-                            onClick={() => console.log('[Avatar Insights] Ver análisis completo clicado')}
+                            onClick={handleOpenInsights}
                             className="w-full py-3 bg-white text-orange-600 font-bold rounded-lg text-xs hover:bg-orange-50 transition-colors shadow-sm"
                         >
                             VER ANÁLISIS COMPLETO
