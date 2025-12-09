@@ -18,14 +18,26 @@ const UnleashView: React.FC<UnleashViewProps> = ({ allRecipes, allIngredients, d
   const [activeTab, setActiveTab] = React.useState<'synthesis' | 'atelier' | 'econos' | 'makemenu' | 'critic'>('synthesis');
 
   // Dynamic Gradients per section (Soft, Vertical, Top-to-Bottom)
-  const getGradient = () => {
+  // Dynamic Gradients per section (Soft, Vertical, Top-to-Bottom)
+  const getGradientStyle = () => {
     switch (activeTab) {
-      case 'synthesis': return 'bg-gradient-to-b from-violet-900/40 via-violet-950/10 to-transparent border-t border-violet-500/20';
-      case 'atelier': return 'bg-gradient-to-b from-cyan-900/40 via-cyan-950/10 to-transparent border-t border-cyan-500/20';
-      case 'econos': return 'bg-gradient-to-b from-emerald-900/40 via-emerald-950/10 to-transparent border-t border-emerald-500/20';
-      case 'makemenu': return 'bg-gradient-to-b from-red-900/40 via-red-950/10 to-transparent border-t border-red-500/20';
-      case 'critic': return 'bg-gradient-to-b from-amber-900/40 via-amber-950/10 to-transparent border-t border-amber-500/20';
-      default: return 'bg-slate-900/50';
+      case 'synthesis': return { background: 'linear-gradient(180deg, #7C3AED 0%, rgba(124, 58, 237, 0.1) 45%, rgba(0,0,0,0) 100%)' };
+      case 'atelier': return { background: 'linear-gradient(180deg, #0891B2 0%, rgba(8, 145, 178, 0.1) 45%, rgba(0,0,0,0) 100%)' };
+      case 'econos': return { background: 'linear-gradient(180deg, #059669 0%, rgba(5, 150, 105, 0.1) 45%, rgba(0,0,0,0) 100%)' };
+      case 'makemenu': return { background: 'linear-gradient(180deg, #DC2626 0%, rgba(220, 38, 38, 0.1) 45%, rgba(0,0,0,0) 100%)' };
+      case 'critic': return { background: 'linear-gradient(180deg, #D97706 0%, rgba(217, 119, 6, 0.1) 45%, rgba(0,0,0,0) 100%)' };
+      default: return { background: 'none' };
+    }
+  };
+
+  const getBorderClass = () => {
+    switch (activeTab) {
+      case 'synthesis': return 'border-t border-violet-500/30';
+      case 'atelier': return 'border-t border-cyan-500/30';
+      case 'econos': return 'border-t border-emerald-500/30';
+      case 'makemenu': return 'border-t border-red-500/30';
+      case 'critic': return 'border-t border-amber-500/30';
+      default: return 'border-t border-slate-700/20';
     }
   };
 
@@ -66,7 +78,10 @@ const UnleashView: React.FC<UnleashViewProps> = ({ allRecipes, allIngredients, d
         </div>
       </div>
 
-      <div className={`flex-1 overflow-hidden rounded-3xl ${getGradient()} p-6 shadow-xl ring-1 ring-white/20 border-b-0 relative transition-all duration-700`}>
+      <div
+        className={`flex-1 overflow-hidden rounded-[2rem] p-6 shadow-xl ring-1 ring-white/10 border-b-0 relative transition-all duration-700 ${getBorderClass()}`}
+        style={getGradientStyle()}
+      >
         {/* Background Glow */}
         <div className="absolute top-0 left-0 w-full h-full bg-noise opacity-[0.03] pointer-events-none"></div>
 

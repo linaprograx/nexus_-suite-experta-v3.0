@@ -201,9 +201,9 @@ const AvatarInsightsView: React.FC = () => {
             <AvatarColumn title="Centro de Comando" accentColor="bg-slate-800">
                 <div className="space-y-3">
                     {[
-                        { label: 'Exportar Reporte PDF', icon: ICONS.fileText || ICONS.book, color: 'bg-slate-800 text-white' },
-                        { label: 'Guardar Snapshot', icon: ICONS.camera, color: 'bg-slate-800 text-white' },
-                        { label: 'Configurar Alertas', icon: ICONS.bell || ICONS.alert, color: 'bg-slate-800 text-white' },
+                        { label: 'Exportar Reporte PDF', icon: ICONS.fileText || ICONS.book, color: 'bg-orange-500 text-white hover:bg-orange-600' },
+                        { label: 'Guardar Snapshot', icon: ICONS.camera, color: 'bg-orange-500 text-white hover:bg-orange-600' },
+                        { label: 'Configurar Alertas', icon: ICONS.bell || ICONS.alert, color: 'bg-orange-500 text-white hover:bg-orange-600' },
                     ].map((btn, i) => (
                         <button key={i} className={`w-full py-4 rounded-xl ${btn.color} shadow-lg shadow-slate-200 flex items-center justify-between px-6 transition-transform hover:scale-[1.02]`}>
                             <div className="flex items-center gap-3">
@@ -224,7 +224,10 @@ const AvatarInsightsView: React.FC = () => {
                         <p className="text-xs opacity-80 mb-6 leading-relaxed">
                             "Se detecta un patrón de consumo inusual en 'Signature Cocktails' entre 21:00-23:00. Sugiero aumentar stock de guarniciones cítricas."
                         </p>
-                        <button className="w-full py-3 bg-white text-indigo-600 font-bold rounded-lg text-xs hover:bg-indigo-50 transition-colors">
+                        <button
+                            onClick={() => console.log('[Avatar Insights] Ver análisis completo clicado')}
+                            className="w-full py-3 bg-white text-orange-600 font-bold rounded-lg text-xs hover:bg-orange-50 transition-colors shadow-sm"
+                        >
                             VER ANÁLISIS COMPLETO
                         </button>
                     </InsightCard>

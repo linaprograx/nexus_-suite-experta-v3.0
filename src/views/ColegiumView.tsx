@@ -288,6 +288,7 @@ const ColegiumView: React.FC<ColegiumViewProps> = ({ db, userId, allRecipes, all
     return (
         <PremiumLayout
             gradientTheme="colegium"
+            layoutMode="colegium"
             leftSidebar={
                 <ColegiumProfileSidebar
                     level="Mixólogo Senior"

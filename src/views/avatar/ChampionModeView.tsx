@@ -84,7 +84,10 @@ const ChampionModeView: React.FC = () => {
                     <p className="text-xs text-center text-slate-500 max-w-[200px]">
                         Inicia el asistente de creación molecular para generar tu propuesta basada en los requisitos.
                     </p>
-                    <button className="mt-6 px-6 py-2 bg-lime-500 hover:bg-lime-400 text-white font-bold rounded-lg shadow-lg shadow-lime-500/20 transition-all text-xs uppercase tracking-wider">
+                    <button
+                        onClick={() => console.log('[Champion Mode] Comenzar diseño clicado')}
+                        className="mt-6 px-6 py-2 bg-lime-500 hover:bg-lime-400 text-white font-bold rounded-lg shadow-lg shadow-lime-500/20 transition-all text-xs uppercase tracking-wider"
+                    >
                         Comenzar Diseño
                     </button>
                 </ChampionCard>

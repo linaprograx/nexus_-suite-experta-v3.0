@@ -4,11 +4,13 @@ import { Button } from '../ui/Button';
 import { Icon } from '../ui/Icon';
 import { ICONS } from '../ui/icons';
 import { UserProfile } from '../../../types';
+import { NexusMemberPassCard } from './NexusMemberPassCard';
 
 interface PersonalProfileSidebarProps {
     profile: Partial<UserProfile>;
     onEditProfile: () => void;
     onUploadAvatar: () => void;
+    onSaveProfile: () => void;
     newAvatarPreview: string | null;
 }
 
@@ -16,6 +18,7 @@ export const PersonalProfileSidebar: React.FC<PersonalProfileSidebarProps> = ({
     profile,
     onEditProfile,
     onUploadAvatar,
+    onSaveProfile,
     newAvatarPreview
 }) => {
     const [showLevelDetails, setShowLevelDetails] = React.useState(false);
@@ -58,45 +61,17 @@ export const PersonalProfileSidebar: React.FC<PersonalProfileSidebarProps> = ({
                     <Button variant="outline" className="w-full" onClick={onEditProfile}>
                         Editar Perfil
                     </Button>
+                    <Button variant="default" className="w-full mt-2" onClick={onSaveProfile}>
+                        Guardar Cambios
+                    </Button>
                 </div>
             </Card>
 
-            <Card
-                className={`group relative overflow-hidden p-6 bg-gradient-to-br from-indigo-500 to-purple-600 text-white border-none shadow-xl cursor-pointer transition-all duration-300 ${showLevelDetails ? 'row-span-2' : ''}`}
-                onClick={() => setShowLevelDetails(!showLevelDetails)}
-            >
-                <div className="flex items-center justify-between mb-4">
-                    <span className="font-bold uppercase tracking-wider text-xs opacity-70">Nivel Actual</span>
-                    <Icon svg={showLevelDetails ? ICONS.chevronUp : ICONS.star} className="w-5 h-5 text-yellow-300 transition-transform" />
-                </div>
-                <div className="text-4xl font-bold mb-2">12</div>
-                <div className="w-full bg-black/20 rounded-full h-2 mb-2">
-                    <div className="bg-white h-2 rounded-full w-[70%] shadow-[0_0_10px_rgba(255,255,255,0.5)]"></div>
-                </div>
-                <p className="text-xs opacity-80 text-right">3,450 / 5,000 XP</p>
-
-                {/* Collapsible Details */}
-                <div className={`grid transition-all duration-300 ease-in-out ${showLevelDetails ? 'grid-rows-[1fr] opacity-100 mt-6 pt-6 border-t border-white/20' : 'grid-rows-[0fr] opacity-0'}`}>
-                    <div className="overflow-hidden space-y-3">
-                        <div className="flex justify-between items-center text-sm">
-                            <span className="opacity-80">Dominio</span>
-                            <span className="font-bold">Coctelería Clásica</span>
-                        </div>
-                        <div className="flex justify-between items-center text-sm">
-                            <span className="opacity-80">Completado</span>
-                            <span className="font-bold">42 Módulos</span>
-                        </div>
-                        <div className="flex justify-between items-center text-sm">
-                            <span className="opacity-80">Racha</span>
-                            <span className="font-bold">5 Días 🔥</span>
-                        </div>
-                        <div className="mt-4 p-3 bg-white/10 rounded-xl text-xs text-center">
-                            Próxima Recompensa: <br />
-                            <strong className="text-yellow-300">Badge 'Mixólogo Master'</strong>
-                        </div>
-                    </div>
-                </div>
-            </Card>
+            <NexusMemberPassCard
+                level={12}
+                xpCurrent={3450}
+                xpMax={5000}
+            />
         </div>
     );
 };

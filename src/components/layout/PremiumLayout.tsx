@@ -10,7 +10,7 @@ interface PremiumLayoutProps {
     header?: React.ReactNode; // Content to render above the main grid (e.g. Navigation Pills)
     gradientTheme?: GradientTheme;
     className?: string;
-    layoutMode?: 'standard' | 'compact';
+    layoutMode?: 'standard' | 'compact' | 'colegium';
 }
 
 export const PremiumLayout: React.FC<PremiumLayoutProps> = ({
@@ -44,9 +44,12 @@ export const PremiumLayout: React.FC<PremiumLayoutProps> = ({
     const activeGradient = gradients[gradientTheme];
 
     // Grid Column Logic
-    const gridCols = layoutMode === 'compact'
-        ? 'grid-cols-1 lg:grid-cols-[100px,minmax(0,1fr),100px]'
-        : 'grid-cols-1 lg:grid-cols-[310px,minmax(0,1fr),320px]';
+    let gridCols = 'grid-cols-1 lg:grid-cols-[310px,minmax(0,1fr),320px]';
+    if (layoutMode === 'compact') {
+        gridCols = 'grid-cols-1 lg:grid-cols-[100px,minmax(0,1fr),100px]';
+    } else if (layoutMode === 'colegium') {
+        gridCols = 'grid-cols-1 lg:grid-cols-[150px,minmax(0,1fr),150px]';
+    }
 
     return (
         <div className={`h-[calc(100vh-80px)] w-full flex flex-col px-4 lg:px-8 py-6 ${className}`}>

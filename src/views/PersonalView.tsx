@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { doc, onSnapshot, setDoc, collection, query, orderBy, limit, Firestore } from 'firebase/firestore';
+import { doc, onSnapshot, setDoc, collection, query, orderBy, limit, Firestore, updateDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL, FirebaseStorage } from 'firebase/storage';
 import { Auth } from 'firebase/auth';
 import { UserProfile, ColegiumResult, Recipe, PizarronTask } from '../../types';
@@ -66,13 +66,26 @@ const PersonalView: React.FC<PersonalViewProps> = ({ db, userId, storage, auth, 
         };
     }, [userId, db, auth]);
 
-    const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files?.[0]) {
             const file = e.target.files[0];
-            setNewAvatar(file);
             setNewAvatarPreview(URL.createObjectURL(file));
-            // Auto-save or wait? User flow implies "Edit Profile" usually, but for avatar we can queue it.
-            // For now just preview.
+
+            try {
+                // Upload to Firebase Storage
+                const storageRef = ref(storage, `users/${userId}/profile/avatar_${Date.now()}`);
+                await uploadBytes(storageRef, file);
+                const downloadURL = await getDownloadURL(storageRef);
+
+                // Update Firestore
+                const profileRef = doc(db, `users/${userId}/profile`, 'main');
+                await setDoc(profileRef, { photoURL: downloadURL }, { merge: true });
+
+                alert('Foto de perfil actualizada correctamente.');
+            } catch (error) {
+                console.error("Error updating avatar:", error);
+                alert('Error al subir la imagen. Inténtalo de nuevo.');
+            }
         }
     };
 
@@ -88,6 +101,16 @@ const PersonalView: React.FC<PersonalViewProps> = ({ db, userId, storage, auth, 
     const recipesCount = allRecipes.length;
     const avgQuizScore = quizHistory.length > 0 ? (quizHistory.reduce((acc, curr) => acc + (curr.score / curr.total), 0) / quizHistory.length * 100) : 0;
     const ideasCount = allPizarronTasks.filter(task => task.assignees?.includes(userId)).length;
+
+    const handleSaveProfile = async () => {
+        try {
+            const profileRef = doc(db, `users/${userId}/profile`, 'main');
+            await setDoc(profileRef, profile, { merge: true });
+            alert('Perfil actualizado.');
+        } catch (e) {
+            console.error("Error saving profile:", e);
+        }
+    };
 
     return (
         <div className="h-full p-4 lg:p-8 overflow-hidden">
@@ -107,6 +130,7 @@ const PersonalView: React.FC<PersonalViewProps> = ({ db, userId, storage, auth, 
                         profile={profile}
                         onEditProfile={handleEditProfile}
                         onUploadAvatar={() => fileInputRef.current?.click()}
+                        onSaveProfile={handleSaveProfile}
                         newAvatarPreview={newAvatarPreview}
                     />
                 </div>
@@ -137,6 +161,8 @@ const PersonalView: React.FC<PersonalViewProps> = ({ db, userId, storage, auth, 
                         toggleSounds={() => setSounds(!sounds)}
                         compactMode={compactMode}
                         toggleCompactMode={toggleCompactMode}
+                        activeSessions={true}
+                        toggleActiveSessions={() => { }}
                     />
                 </div>
             </div>
