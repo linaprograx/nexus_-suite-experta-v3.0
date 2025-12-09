@@ -212,7 +212,7 @@ const CerebrityView: React.FC<CerebrityViewProps> = ({ db, userId, storage, appI
           results: data,
           createdAt: serverTimestamp()
         };
-        await addDoc(collection(db, `artifacts/${appId}/users/${userId}/trend-history`), trendDoc);
+        await addDoc(collection(db, `users/${userId}/trend-history`), trendDoc);
       } catch (e) { console.warn("Failed to save history", e) }
 
       setTrendResults(data);
@@ -565,7 +565,7 @@ const CerebrityView: React.FC<CerebrityViewProps> = ({ db, userId, storage, appI
     const combination = labInputs.map(i => i.nombre).join(', ');
     const taskContent = `[The Lab: ${combination}] ${title} - ${content}`.substring(0, 500);
     try {
-      await addDoc(collection(db, `artifacts/${appId}/public/data/pizarron-tasks`), {
+      await addDoc(collection(db, `users/${userId}/pizarron/tasks`), {
         content: taskContent, status: 'Ideas', category: 'Ideas', createdAt: serverTimestamp(), boardId: 'general'
       });
       alert("Idea guardada en el Pizarrón.");
@@ -639,7 +639,7 @@ const CerebrityView: React.FC<CerebrityViewProps> = ({ db, userId, storage, appI
           ) : activeTab === 'lab' ? (
             <TheLabHistorySidebar db={db} historyPath={`users/${userId}/the-lab-history`} onLoadHistory={(item) => setLabResult(item.result)} />
           ) : (
-            <TrendHistorySidebar db={db} trendHistoryPath={`artifacts/${appId}/users/${userId}/trend-history`} onLoadHistory={(item) => setTrendResults((item as any).results || [])} />
+            <TrendHistorySidebar db={db} trendHistoryPath={`users/${userId}/trend-history`} onLoadHistory={(item) => setTrendResults((item as any).results || [])} />
           )}
         </div>
         <div className="h-full min-h-0 overflow-y-auto">
@@ -648,7 +648,7 @@ const CerebrityView: React.FC<CerebrityViewProps> = ({ db, userId, storage, appI
           ) : activeTab === 'lab' ? (
             <LabView db={db} userId={userId} appId={appId} allIngredients={allIngredients} allRecipes={allRecipes} labResult={labResult} setLabResult={setLabResult} labInputs={labInputs} setLabInputs={setLabInputs} />
           ) : (
-            <TrendLocatorTab loading={trendLoading} error={trendError} trendResults={trendResults} trendSources={[]} db={db} userId={userId} appId={appId} trendHistoryPath={`artifacts/${appId}/users/${userId}/trend-history`} />
+            <TrendLocatorTab loading={trendLoading} error={trendError} trendResults={trendResults} trendSources={[]} db={db} userId={userId} appId={appId} trendHistoryPath={`users/${userId}/trend-history`} />
           )}
         </div>
         <div className="h-full min-h-0 overflow-hidden">

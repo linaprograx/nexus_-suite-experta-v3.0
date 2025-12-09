@@ -9,6 +9,8 @@ export type ViewName =
   'dashboard' |
   'grimorium' |
   'pizarron' |
+  'pizarron' |
+  'cerebrity' |
   'cerebrIty' |
   'escandallator' |
   'trendLocator' |
@@ -253,6 +255,7 @@ export interface AppContextType {
   userId: string | null;
   isAuthReady: boolean;
   appId: string;
+  userProfile?: Partial<UserProfile>;
   userProfile?: Partial<UserProfile>;
 }
 

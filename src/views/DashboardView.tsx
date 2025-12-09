@@ -4,68 +4,68 @@ import { Recipe, PizarronTask, Ingredient, ViewName } from '../../types';
 import { useApp } from '../context/AppContext';
 import { useUI } from '../context/UIContext';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '../components/ui/Card';
-import { 
-  FaBook, 
-  FaBolt, 
-  FaMagic, 
-  FaClock, 
-  FaChartLine,
-  FaLightbulb, 
-  FaFlask, 
-  FaExclamationCircle, 
-  FaCalendarAlt,
-  FaArrowRight
+import {
+    FaBook,
+    FaBolt,
+    FaMagic,
+    FaClock,
+    FaChartLine,
+    FaLightbulb,
+    FaFlask,
+    FaExclamationCircle,
+    FaCalendarAlt,
+    FaArrowRight
 } from 'react-icons/fa';
-import { 
-  ResponsiveContainer, 
-  AreaChart, 
-  CartesianGrid, 
-  XAxis, 
-  YAxis, 
-  Tooltip, 
-  Area, 
-  RadarChart, 
-  PolarGrid, 
-  PolarAngleAxis, 
-  PolarRadiusAxis, 
-  Radar 
+import {
+    ResponsiveContainer,
+    AreaChart,
+    CartesianGrid,
+    XAxis,
+    YAxis,
+    Tooltip,
+    Area,
+    RadarChart,
+    PolarGrid,
+    PolarAngleAxis,
+    PolarRadiusAxis,
+    Radar
 } from 'recharts';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import { useToday, TodayPanel } from '../features/today';
-import { 
-  useCreativeWeekPro, 
-  SummaryCards, 
-  WeekChart, 
-  WeeklySummary, 
-  KeyInsights,
+import {
+    useCreativeWeekPro,
+    SummaryCards,
+    WeekChart,
+    WeeklySummary,
+    KeyInsights,
 } from '../features/creative-week-pro';
 import { RecommendedAction } from '../features/creative-week-pro/ui/RecommendedAction';
 import { useNextBestAction, HybridNBACard } from '../features/next-best-action';
 
 // Helper components for the new layout
 const ProgressBar: React.FC<{ value: number; color?: string }> = ({ value, color = "bg-primary" }) => (
-  <div className="w-full bg-gray-200 rounded-full h-2 dark:bg-gray-700">
-    <div className={`${color} h-2 rounded-full transition-all duration-500`} style={{ width: `${Math.min(100, Math.max(0, value))}%` }}></div>
-  </div>
+    <div className="w-full bg-gray-200 rounded-full h-2 dark:bg-gray-700">
+        <div className={`${color} h-2 rounded-full transition-all duration-500`} style={{ width: `${Math.min(100, Math.max(0, value))}%` }}></div>
+    </div>
 );
 
 const AvatarPlaceholder: React.FC<{ name?: string; url?: string }> = ({ name, url }) => {
-  if (url) {
-    return <img src={url} alt="Avatar" className="w-10 h-10 rounded-full border-2 border-white shadow-sm object-cover" />;
-  }
-  return (
-    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold shadow-sm border-2 border-white">
-      {name ? name.charAt(0).toUpperCase() : 'U'}
-    </div>
-  );
+    if (url) {
+        return <img src={url} alt="Avatar" className="w-10 h-10 rounded-full border-2 border-white shadow-sm object-cover" />;
+    }
+    return (
+        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold shadow-sm border-2 border-white">
+            {name ? name.charAt(0).toUpperCase() : 'U'}
+        </div>
+    );
 };
 
 const DashboardView: React.FC<{
-  allRecipes: Recipe[];
-  allPizarronTasks: PizarronTask[];
-  allIngredients: Ingredient[];
-  auth: Auth;
-  setCurrentView: (view: ViewName) => void;
+    allRecipes: Recipe[];
+    allPizarronTasks: PizarronTask[];
+    allIngredients: Ingredient[];
+    auth: Auth;
+    setCurrentView: (view: ViewName) => void;
 }> = ({ allRecipes, allPizarronTasks, allIngredients, auth, setCurrentView }) => {
     const { userProfile } = useApp();
     const { compactMode } = useUI();
@@ -83,7 +83,7 @@ const DashboardView: React.FC<{
 
     const creativeTrendData = React.useMemo(() => {
         const activityByDate: { [key: string]: { recipes: number, tasks: number } } = {};
-        
+
         allPizarronTasks.forEach(item => {
             if (item.createdAt?.toDate) {
                 const date = item.createdAt.toDate().toISOString().split('T')[0];
@@ -99,7 +99,7 @@ const DashboardView: React.FC<{
 
         // Fill recent dates if empty to ensure chart looks okay
         const today = new Date();
-        for(let i=6; i>=0; i--) {
+        for (let i = 6; i >= 0; i--) {
             const d = new Date(today);
             d.setDate(d.getDate() - i);
             const dateStr = d.toISOString().split('T')[0];
@@ -125,8 +125,8 @@ const DashboardView: React.FC<{
 
     const { ideas, inProgress, urgent } = useToday(allPizarronTasks, userProfile);
     const { data: nbaData, isLoading: isNBALoading, refresh: refreshNBA } = useNextBestAction(
-        allRecipes, 
-        allPizarronTasks, 
+        allRecipes,
+        allPizarronTasks,
         userProfile?.displayName || 'Usuario'
     );
     const { summary, insights, recommendation, stats } = useCreativeWeekPro(allPizarronTasks, userProfile?.displayName || 'Usuario');
@@ -179,17 +179,17 @@ const DashboardView: React.FC<{
                 </span>
             </div>
             <div className="flex items-center justify-between mt-2">
-                 <ProgressBar value={Math.random() * 100} color={color.replace('text-', 'bg-')} />
-                 <div className="ml-3">
+                <ProgressBar value={Math.random() * 100} color={color.replace('text-', 'bg-')} />
+                <div className="ml-3">
                     <AvatarPlaceholder name={task.authorName} url={task.authorPhotoURL} />
-                 </div>
+                </div>
             </div>
         </div>
     );
 
     return (
         <div className={`h-full overflow-y-auto bg-gray-50 dark:bg-gray-900 pb-32 ${compactMode ? 'p-3 space-y-4' : 'p-6 lg:p-10 space-y-8'}`}>
-            
+
             {/* 1. Hero Section */}
             <section className={`flex flex-col md:flex-row items-start md:items-center justify-between bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 ${compactMode ? 'p-3' : 'p-6'}`}>
                 <div className={`flex items-center gap-4 mb-4 md:mb-0 ${compactMode ? 'gap-2' : 'gap-4'}`}>
@@ -223,33 +223,33 @@ const DashboardView: React.FC<{
             {/* 2. KPI Grid */}
             <section className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 ${compactMode ? 'gap-3' : 'gap-6'}`}>
                 <div onClick={() => setCurrentView('grimorium')} className="cursor-pointer">
-                    <KpiCard 
-                        title="Total Recetas" 
-                        value={kpis.totalRecipes} 
-                        icon={<FaBook size={20} />} 
+                    <KpiCard
+                        title="Total Recetas"
+                        value={kpis.totalRecipes}
+                        icon={<FaBook size={20} />}
                         colorClass="text-blue-600 bg-blue-600"
                         trend="+12% vs mes pasado"
                     />
                 </div>
                 <div onClick={() => setCurrentView('pizarron')} className="cursor-pointer">
-                    <KpiCard 
-                        title="Total Tareas" 
-                        value={kpis.totalTasks} 
-                        icon={<FaBolt size={20} />} 
+                    <KpiCard
+                        title="Total Tareas"
+                        value={kpis.totalTasks}
+                        icon={<FaBolt size={20} />}
                         colorClass="text-amber-500 bg-amber-500"
                     />
                 </div>
-                <KpiCard 
-                    title="Tasa Creativa" 
-                    value={`${kpis.creativeRate}%`} 
-                    icon={<FaMagic size={20} />} 
+                <KpiCard
+                    title="Tasa Creativa"
+                    value={`${kpis.creativeRate}%`}
+                    icon={<FaMagic size={20} />}
                     colorClass="text-purple-600 bg-purple-600"
                     trend="Constante"
                 />
-                <KpiCard 
-                    title="Tiempo Ahorrado" 
-                    value={`${kpis.tiempoAhorrado.toFixed(1)}h`} 
-                    icon={<FaClock size={20} />} 
+                <KpiCard
+                    title="Tiempo Ahorrado"
+                    value={`${kpis.tiempoAhorrado.toFixed(1)}h`}
+                    icon={<FaClock size={20} />}
                     colorClass="text-green-600 bg-green-600"
                     trend="Métrica de Impacto"
                 />
@@ -265,40 +265,46 @@ const DashboardView: React.FC<{
                         <CardDescription>Flujo de trabajo en los últimos 7 días</CardDescription>
                     </CardHeader>
                     <CardContent>
-                        <ResponsiveContainer width="100%" height={300}>
-                            <AreaChart data={creativeTrendData}>
-                                <defs>
-                                    <linearGradient id="colorTasks" x1="0" y1="0" x2="0" y2="1">
-                                        <stop offset="5%" stopColor="#6366f1" stopOpacity={0.3}/>
-                                        <stop offset="95%" stopColor="#6366f1" stopOpacity={0}/>
-                                    </linearGradient>
-                                </defs>
-                                <CartesianGrid strokeDasharray="3 3" stroke="rgba(156, 163, 175, 0.1)" vertical={false} />
-                                <XAxis 
-                                    dataKey="date" 
-                                    axisLine={false} 
-                                    tickLine={false} 
-                                    tick={{fill: '#9CA3AF', fontSize: 12}}
-                                    tickFormatter={(value) => new Date(value).getDate().toString()}
-                                />
-                                <YAxis 
-                                    axisLine={false} 
-                                    tickLine={false} 
-                                    tick={{fill: '#9CA3AF', fontSize: 12}} 
-                                />
-                                <Tooltip 
-                                    contentStyle={{ backgroundColor: '#1f2937', border: 'none', borderRadius: '8px', color: '#fff' }}
-                                />
-                                <Area 
-                                    type="monotone" 
-                                    dataKey="tasks" 
-                                    stroke="#6366f1" 
-                                    strokeWidth={2} 
-                                    fillOpacity={1} 
-                                    fill="url(#colorTasks)" 
-                                />
-                            </AreaChart>
-                        </ResponsiveContainer>
+                        {creativeTrendData.length > 0 ? (
+                            <ResponsiveContainer width="100%" height={300}>
+                                <AreaChart data={creativeTrendData}>
+                                    <defs>
+                                        <linearGradient id="colorTasks" x1="0" y1="0" x2="0" y2="1">
+                                            <stop offset="5%" stopColor="#6366f1" stopOpacity={0.3} />
+                                            <stop offset="95%" stopColor="#6366f1" stopOpacity={0} />
+                                        </linearGradient>
+                                    </defs>
+                                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(156, 163, 175, 0.1)" vertical={false} />
+                                    <XAxis
+                                        dataKey="date"
+                                        axisLine={false}
+                                        tickLine={false}
+                                        tick={{ fill: '#9CA3AF', fontSize: 12 }}
+                                        tickFormatter={(value) => new Date(value).getDate().toString()}
+                                    />
+                                    <YAxis
+                                        axisLine={false}
+                                        tickLine={false}
+                                        tick={{ fill: '#9CA3AF', fontSize: 12 }}
+                                    />
+                                    <Tooltip
+                                        contentStyle={{ backgroundColor: '#1f2937', border: 'none', borderRadius: '8px', color: '#fff' }}
+                                    />
+                                    <Area
+                                        type="monotone"
+                                        dataKey="tasks"
+                                        stroke="#6366f1"
+                                        strokeWidth={2}
+                                        fillOpacity={1}
+                                        fill="url(#colorTasks)"
+                                    />
+                                </AreaChart>
+                            </ResponsiveContainer>
+                        ) : (
+                            <div className="h-[300px] flex items-center justify-center text-gray-400 text-sm">
+                                No hay datos suficientes para mostrar la gráfica
+                            </div>
+                        )}
                     </CardContent>
                 </Card>
 
@@ -311,15 +317,19 @@ const DashboardView: React.FC<{
                     </CardHeader>
                     <CardContent>
                         <div className="h-[300px] w-full flex items-center justify-center">
-                            <ResponsiveContainer width="100%" height="100%">
-                                <RadarChart cx="50%" cy="50%" outerRadius="70%" data={balanceData}>
-                                    <PolarGrid stroke="rgba(156, 163, 175, 0.2)" />
-                                    <PolarAngleAxis dataKey="subject" tick={{ fill: '#9CA3AF', fontSize: 10 }} />
-                                    <PolarRadiusAxis angle={30} domain={[0, 10]} tick={false} axisLine={false} />
-                                    <Radar name="Sabor" dataKey="A" stroke="#ec4899" fill="#ec4899" fillOpacity={0.5} />
-                                    <Tooltip />
-                                </RadarChart>
-                            </ResponsiveContainer>
+                            {balanceData.length > 0 ? (
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <RadarChart cx="50%" cy="50%" outerRadius="70%" data={balanceData}>
+                                        <PolarGrid stroke="rgba(156, 163, 175, 0.2)" />
+                                        <PolarAngleAxis dataKey="subject" tick={{ fill: '#9CA3AF', fontSize: 10 }} />
+                                        <PolarRadiusAxis angle={30} domain={[0, 10]} tick={false} axisLine={false} />
+                                        <Radar name="Sabor" dataKey="A" stroke="#ec4899" fill="#ec4899" fillOpacity={0.5} />
+                                        <Tooltip />
+                                    </RadarChart>
+                                </ResponsiveContainer>
+                            ) : (
+                                <div className="text-gray-400 text-sm">Sin datos de equilibrio</div>
+                            )}
                         </div>
                     </CardContent>
                 </Card>
@@ -327,15 +337,15 @@ const DashboardView: React.FC<{
 
             {/* 4. "Lo que debes hacer hoy" */}
             <section className="mb-8">
-                 <TodayPanel ideas={ideas} inProgress={inProgress} urgent={urgent} />
+                <TodayPanel ideas={ideas} inProgress={inProgress} urgent={urgent} />
             </section>
 
             {/* 5. Reorderable Widgets */}
             <DragDropContext onDragEnd={onDragEnd}>
                 <Droppable droppableId="dashboard-widgets" direction="vertical">
                     {(provided) => (
-                        <div 
-                            ref={provided.innerRef} 
+                        <div
+                            ref={provided.innerRef}
                             {...provided.droppableProps}
                             className={`grid grid-cols-1 xl:grid-cols-4 ${compactMode ? 'gap-4' : 'gap-8'}`}
                         >
@@ -343,7 +353,7 @@ const DashboardView: React.FC<{
                                 let content = null;
                                 let colSpan = "xl:col-span-2";
 
-                                switch(widgetId) {
+                                switch (widgetId) {
                                     case 'weekly_creative':
                                         colSpan = "xl:col-span-4";
                                         content = (

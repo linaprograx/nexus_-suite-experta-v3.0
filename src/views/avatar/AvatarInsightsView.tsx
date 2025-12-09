@@ -124,13 +124,113 @@ const AvatarInsightsView: React.FC = () => {
                             <h4 className="text-xs font-bold text-rose-700 uppercase">Alertas Críticas</h4>
                         </div>
                         <ul className="space-y-2">
-                            <span className="text-[10px] text-amber-500 font-bold">HOY</span>
-                        </li>
-                    </ul>
+                            <li className="text-xs text-slate-600 flex justify-between items-center bg-white/50 p-2 rounded border border-orange-100">
+                                <span>Stock bajo: Tequila Blanco</span>
+                                <span className="text-[10px] text-rose-500 font-bold uppercase bg-rose-50 px-1.5 py-0.5 rounded border border-rose-100">Urgente</span>
+                            </li>
+                            <li className="text-xs text-slate-600 flex justify-between items-center bg-white/50 p-2 rounded border border-orange-100">
+                                <span>Mantenimiento: Ice Machine</span>
+                                <span className="text-[10px] text-amber-500 font-bold uppercase bg-amber-50 px-1.5 py-0.5 rounded border border-amber-100">Hoy</span>
+                            </li>
+                        </ul>
+                    </InsightCard>
                 </div>
+            </AvatarColumn>
+
+            {/* Column 2: Performance */}
+            <AvatarColumn title="Rendimiento Financiero" accentColor="bg-blue-500">
+                <div className="space-y-4">
+                    <InsightCard className="p-4 bg-white/50">
+                        <div className="h-[200px] w-full">
+                            {areaData && areaData.length > 0 ? (
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <AreaChart data={areaData}>
+                                        <defs>
+                                            <linearGradient id="colorUv" x1="0" y1="0" x2="0" y2="1">
+                                                <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3} />
+                                                <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
+                                            </linearGradient>
+                                        </defs>
+                                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(0,0,0,0.05)" />
+                                        <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10 }} />
+                                        <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10 }} />
+                                        <Tooltip
+                                            contentStyle={{ backgroundColor: '#fff', borderRadius: '8px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
+                                            itemStyle={{ fontSize: '12px', fontWeight: 'bold', color: '#1e293b' }}
+                                        />
+                                        <Area type="monotone" dataKey="uv" stroke="#3b82f6" strokeWidth={3} fillOpacity={1} fill="url(#colorUv)" />
+                                    </AreaChart>
+                                </ResponsiveContainer>
+                            ) : (
+                                <div className="flex h-full items-center justify-center text-xs text-slate-400">Cargando datos financieros...</div>
+                            )}
+                        </div>
+                        <div className="mt-4 grid grid-cols-2 gap-4">
+                            <div className="bg-slate-50 p-3 rounded-lg border border-slate-100">
+                                <span className="text-[10px] font-bold text-slate-400 uppercase">Margen Cocktail</span>
+                                <p className="text-xl font-black text-slate-700">82%</p>
+                            </div>
+                            <div className="bg-slate-50 p-3 rounded-lg border border-slate-100">
+                                <span className="text-[10px] font-bold text-slate-400 uppercase">Desperdicio</span>
+                                <p className="text-xl font-black text-emerald-600">1.2%</p>
+                            </div>
+                        </div>
+                    </InsightCard>
+
+                    <InsightCard className="aspect-square relative p-4 bg-white/50 flex flex-col items-center justify-center">
+                        <h4 className="absolute top-4 left-4 text-[10px] font-bold text-slate-400 uppercase">Salud Operativa (Radar)</h4>
+                        <div className="w-full h-full">
+                            {radarData && radarData.length > 0 ? (
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <RadarChart cx="50%" cy="50%" outerRadius="80%" data={radarData}>
+                                        <PolarGrid stroke="#e2e8f0" />
+                                        <PolarAngleAxis dataKey="subject" tick={{ fontSize: 10, fill: '#64748b' }} />
+                                        <PolarRadiusAxis angle={30} domain={[0, 150]} tick={false} axisLine={false} />
+                                        <Radar name="Actual" dataKey="A" stroke="#fb923c" strokeWidth={3} fill="#fb923c" fillOpacity={0.3} />
+                                    </RadarChart>
+                                </ResponsiveContainer>
+                            ) : (
+                                <div className="flex h-full items-center justify-center text-xs text-slate-400">Analizando...</div>
+                            )}
+                        </div>
+                    </InsightCard>
+                </div>
+            </AvatarColumn>
+
+            {/* Column 3: Command Center */}
+            <AvatarColumn title="Centro de Comando" accentColor="bg-slate-800">
+                <div className="space-y-3">
+                    {[
+                        { label: 'Exportar Reporte PDF', icon: ICONS.fileText || ICONS.book, color: 'bg-slate-800 text-white' },
+                        { label: 'Guardar Snapshot', icon: ICONS.camera, color: 'bg-slate-800 text-white' },
+                        { label: 'Configurar Alertas', icon: ICONS.bell || ICONS.alert, color: 'bg-slate-800 text-white' },
+                    ].map((btn, i) => (
+                        <button key={i} className={`w-full py-4 rounded-xl ${btn.color} shadow-lg shadow-slate-200 flex items-center justify-between px-6 transition-transform hover:scale-[1.02]`}>
+                            <div className="flex items-center gap-3">
+                                <div className="p-2 bg-white/10 rounded-lg">
+                                    <Icon svg={btn.icon} className="w-5 h-5" />
+                                </div>
+                                <span className="font-bold text-sm">{btn.label}</span>
+                            </div>
+                            <Icon svg={ICONS.arrowRight} className="w-4 h-4 opacity-50" />
+                        </button>
+                    ))}
+
+                    <InsightCard className="p-6 mt-6 bg-gradient-to-br from-indigo-500 to-purple-600 text-white border-none shadow-xl shadow-indigo-200">
+                        <div className="flex justify-between items-start mb-4">
+                            <h4 className="text-sm font-bold opacity-90">AI Insights Assistant</h4>
+                            <span className="px-2 py-0.5 bg-white/20 rounded text-[10px] font-bold">BETA</span>
+                        </div>
+                        <p className="text-xs opacity-80 mb-6 leading-relaxed">
+                            "Se detecta un patrón de consumo inusual en 'Signature Cocktails' entre 21:00-23:00. Sugiero aumentar stock de guarniciones cítricas."
+                        </p>
+                        <button className="w-full py-3 bg-white text-indigo-600 font-bold rounded-lg text-xs hover:bg-indigo-50 transition-colors">
+                            VER ANÁLISIS COMPLETO
+                        </button>
+                    </InsightCard>
+                </div>
+            </AvatarColumn>
         </div>
-            </AvatarColumn >
-        </div >
     );
 };
 

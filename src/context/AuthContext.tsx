@@ -1,27 +1,26 @@
 import React from 'react';
-import { AppContextType, UserProfile } from '../../types';
+import { AuthContextType } from '../../types';
 import { initializeApp, FirebaseApp } from 'firebase/app';
 import { getAuth, onAuthStateChanged, Auth, signInWithCustomToken, User } from 'firebase/auth';
-import { getFirestore, Firestore, doc, onSnapshot } from 'firebase/firestore';
+import { getFirestore, Firestore } from 'firebase/firestore';
 import { getStorage, FirebaseStorage } from 'firebase/storage';
 import { firebaseConfig } from '../config/firebaseConfig';
 
-const AppContext = React.createContext<AppContextType | undefined>(undefined);
+const AuthContext = React.createContext<AuthContextType | undefined>(undefined);
 
-export const useApp = (): AppContextType => {
-    const context = React.useContext(AppContext);
-    if (!context) throw new Error('useApp must be used within an AppProvider');
+export const useAuth = (): AuthContextType => {
+    const context = React.useContext(AuthContext);
+    if (!context) throw new Error('useAuth must be used within an AuthProvider');
     return context;
 };
 
-export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const [app, setApp] = React.useState<FirebaseApp | null>(null);
     const [db, setDb] = React.useState<Firestore | null>(null);
     const [auth, setAuth] = React.useState<Auth | null>(null);
     const [storage, setStorage] = React.useState<FirebaseStorage | null>(null);
     const [user, setUser] = React.useState<User | null>(null);
     const [isAuthReady, setIsAuthReady] = React.useState(false);
-    const [userProfile, setUserProfile] = React.useState<Partial<UserProfile>>({});
 
     React.useEffect(() => {
         const appInstance = initializeApp(firebaseConfig);
@@ -59,21 +58,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const userId = user ? user.uid : null;
     const appId = firebaseConfig.appId;
 
-    React.useEffect(() => {
-        if (db && userId) {
-            const profileDocRef = doc(db, `users/${userId}/profile`, 'main');
-            const unsubscribe = onSnapshot(profileDocRef, (doc) => {
-                if (doc.exists()) {
-                    setUserProfile(doc.data());
-                }
-            });
-            return () => unsubscribe();
-        }
-    }, [db, userId]);
-
     return (
-        <AppContext.Provider value={{ app, db, auth, storage, user, userId, isAuthReady, appId, userProfile }}>
+        <AuthContext.Provider value={{ app, db, auth, storage, user, userId, isAuthReady, appId }}>
             {children}
-        </AppContext.Provider>
+        </AuthContext.Provider>
     );
 };
