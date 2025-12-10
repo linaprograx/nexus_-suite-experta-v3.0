@@ -1,127 +1,82 @@
-import React from 'react';
-import { useDigitalBar } from '../../features/digital-bar/web/useDigitalBar';
-import { KpiCard } from '../../features/digital-bar/ui/KpiCard';
-import { ActivityChart } from '../../features/digital-bar/ui/ActivityChart';
+import React, { useState } from 'react';
+import { useDigitalBarScene } from '../../features/digital-bar/useDigitalBarScene';
+import { DigitalBarIsometricCanvas } from '../../features/digital-bar/scene/DigitalBarIsometricCanvas';
+import { DigitalBarContextPanel } from '../../features/digital-bar/components/DigitalBarContextPanel';
+import { DigitalBarAnalyticsPanel } from '../../features/digital-bar/components/DigitalBarAnalyticsPanel';
 import { Icon } from '../../components/ui/Icon';
 import { ICONS } from '../../components/ui/icons';
-import { Spinner } from '../../components/ui/Spinner';
-
-// --- Components ---
-
-const AvatarColumn = ({ title, children, accentColor = "bg-cyan-500" }: { title: string, children?: React.ReactNode, accentColor?: string }) => (
-    <div className="h-full min-h-0 flex flex-col overflow-hidden bg-white/40 dark:bg-slate-900/40 rounded-2xl border border-white/20 shadow-xl backdrop-blur-sm">
-        {/* Header */}
-        <div className="p-4 border-b border-white/10 flex justify-between items-center">
-            <h3 className="font-bold text-cyan-800 dark:text-cyan-200 tracking-wide text-xs uppercase flex items-center gap-2">
-                <span className={`w-2 h-2 rounded-full ${accentColor} shadow-[0_0_10px_rgba(34,211,238,0.5)]`}></span>
-                {title}
-            </h3>
-        </div>
-        <div className="flex-1 overflow-y-auto custom-scrollbar p-4 space-y-4">
-            {children}
-        </div>
-    </div>
-);
 
 const DigitalBarView: React.FC = () => {
-    const { metrics, insights, period, setPeriod, isLoading } = useDigitalBar();
-
-    if (isLoading) {
-        return <div className="h-full flex items-center justify-center"><Spinner /></div>;
-    }
-
-    const lastMetric = metrics[metrics.length - 1] || { tickets: 0, efficiency: 0, stress: 0 };
+    const [viewMode, setViewMode] = useState<'holographic' | 'analytics'>('holographic');
+    const { sceneState, actions, selectedArea } = useDigitalBarScene();
 
     return (
-        <div className="h-full grid grid-cols-1 lg:grid-cols-3 gap-6 text-slate-900 dark:text-slate-100 p-4">
-
-            {/* Column 1: Metricas en Tiempo Real */}
-            <AvatarColumn title="Métricas en Vivo">
-                <div className="grid grid-cols-1 gap-4">
-                    <KpiCard
-                        title="Eficiencia Actual"
-                        value={`${lastMetric.efficiency.toFixed(1)}%`}
-                        icon={<Icon svg={ICONS.activity} className="w-4 h-4" />}
-                        color="text-emerald-500"
-                    />
-                    <KpiCard
-                        title="Nivel de Estrés"
-                        value={`${lastMetric.stress.toFixed(0)}%`}
-                        icon={<Icon svg={ICONS.alertCircle} className="w-4 h-4" />}
-                        color="text-amber-500"
-                    />
-                    <KpiCard
-                        title="Tickets / Hora"
-                        value={lastMetric.tickets}
-                        icon={<Icon svg={ICONS.fileText} className="w-4 h-4" />}
-                        color="text-cyan-500"
-                    />
+        <div className="h-full flex flex-col gap-4 p-4 text-slate-900 dark:text-slate-100">
+            {/* Header / Tabs */}
+            <div className="flex justify-between items-center bg-white/40 dark:bg-slate-900/40 p-2 rounded-xl border border-white/20 backdrop-blur-sm shadow-sm shrink-0">
+                <div className="flex gap-2">
+                    <button
+                        onClick={() => setViewMode('holographic')}
+                        className={`
+                            px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wide flex items-center gap-2 transition-all
+                            ${viewMode === 'holographic'
+                                ? 'bg-slate-900 text-white shadow-lg shadow-slate-900/20'
+                                : 'text-slate-500 hover:bg-white/50 hover:text-slate-900'}
+                        `}
+                    >
+                        <Icon svg={ICONS.activity} className="w-4 h-4" />
+                        Vista Holográfica
+                    </button>
+                    <button
+                        onClick={() => setViewMode('analytics')}
+                        className={`
+                            px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wide flex items-center gap-2 transition-all
+                            ${viewMode === 'analytics'
+                                ? 'bg-slate-900 text-white shadow-lg shadow-slate-900/20'
+                                : 'text-slate-500 hover:bg-white/50 hover:text-slate-900'}
+                        `}
+                    >
+                        <Icon svg={ICONS.chart} className="w-4 h-4" />
+                        Métricas & Analytics
+                    </button>
                 </div>
 
-                <div className="mt-6">
-                    <h4 className="text-xs font-bold text-slate-500 uppercase mb-2">Actividad Reciente</h4>
-                    <ActivityChart data={metrics} dataKey="tickets" height={150} color="#06b6d4" />
+                <div className="px-4">
+                    <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest flex items-center gap-2 animate-pulse">
+                        <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+                        Sistema Operativo
+                    </span>
                 </div>
-            </AvatarColumn>
+            </div>
 
-            {/* Column 2: Insights & IA */}
-            <AvatarColumn title="IA Insights & Predicciones" accentColor="bg-fuchsia-500">
-                {insights && (
-                    <div className="space-y-4">
-                        <div className="bg-fuchsia-50 dark:bg-fuchsia-900/10 p-4 rounded-xl border border-fuchsia-100 dark:border-fuchsia-800">
-                            <div className="flex items-center gap-2 mb-2 text-fuchsia-600 font-bold text-xs uppercase">
-                                <Icon svg={ICONS.cpu} className="w-4 h-4" /> Análisis
-                            </div>
-                            <p className="text-sm font-medium">{insights.summary}</p>
+            {/* Content Area */}
+            <div className="flex-1 min-h-0 relative overflow-hidden rounded-2xl border border-white/20 shadow-xl bg-white/30 dark:bg-slate-900/30 backdrop-blur-md">
+                {viewMode === 'holographic' ? (
+                    <div className="h-full grid grid-cols-1 lg:grid-cols-3">
+                        {/* Scene Canvas (2/3 width) */}
+                        <div className="lg:col-span-2 h-full border-b lg:border-b-0 lg:border-r border-white/10 relative">
+                            <DigitalBarIsometricCanvas
+                                sceneState={sceneState}
+                                onSelectArea={actions.selectArea}
+                                onSetZoom={actions.setZoom}
+                                onSetPan={actions.setPan}
+                            />
                         </div>
-
-                        <div className="bg-indigo-50 dark:bg-indigo-900/10 p-4 rounded-xl border border-indigo-100 dark:border-indigo-800">
-                            <div className="flex items-center gap-2 mb-2 text-indigo-600 font-bold text-xs uppercase">
-                                <Icon svg={ICONS.zap} className="w-4 h-4" /> Recomendación
-                            </div>
-                            <p className="text-sm font-medium">{insights.recommendation}</p>
-                        </div>
-
-                        <div className="bg-amber-50 dark:bg-amber-900/10 p-4 rounded-xl border border-amber-100 dark:border-amber-800 flex justify-between items-center">
-                            <div>
-                                <div className="text-[10px] font-bold text-amber-600 uppercase">Hora Pico Estimada</div>
-                                <div className="text-xl font-black text-amber-800 dark:text-amber-200">{insights.peakHour}</div>
-                            </div>
-                            <Icon svg={ICONS.trendingUp} className="w-6 h-6 text-amber-500" />
+                        {/* Context Panel (1/3 width) */}
+                        <div className="h-full bg-white/40 dark:bg-slate-900/80 backdrop-blur-xl">
+                            <DigitalBarContextPanel
+                                selectedArea={selectedArea}
+                                workers={sceneState.workers}
+                            />
                         </div>
                     </div>
+                ) : (
+                    <DigitalBarAnalyticsPanel />
                 )}
-            </AvatarColumn>
-
-            {/* Column 3: Controles & Simulación */}
-            <AvatarColumn title="Controles Operativos" accentColor="bg-slate-500">
-                <div className="space-y-4">
-                    <div className="bg-white/50 p-4 rounded-xl border border-slate-200">
-                        <label className="text-[10px] font-bold text-slate-500 uppercase mb-2 block">Periodo de Análisis</label>
-                        <div className="flex bg-slate-100 rounded-lg p-1">
-                            {['day', 'week', 'month'].map((p) => (
-                                <button
-                                    key={p}
-                                    onClick={() => setPeriod(p as any)}
-                                    className={`flex-1 py-1.5 rounded-md text-xs font-bold capitalize transition-all ${period === p ? 'bg-white shadow text-slate-900' : 'text-slate-400 hover:text-slate-600'}`}
-                                >
-                                    {p === 'day' ? 'Día' : p === 'week' ? 'Semana' : 'Mes'}
-                                </button>
-                            ))}
-                        </div>
-                    </div>
-
-                    <div className="mt-8 pt-8 border-t border-slate-100">
-                        <button className="w-full py-3 bg-slate-900 text-white font-bold rounded-xl shadow hover:bg-slate-800 transition-colors flex items-center justify-center gap-2">
-                            <Icon svg={ICONS.settings} className="w-4 h-4" />
-                            Configuración Avanzada
-                        </button>
-                    </div>
-                </div>
-            </AvatarColumn>
-
+            </div>
         </div>
     );
 };
 
 export default DigitalBarView;
+

@@ -44,5 +44,16 @@ export const DigitalBarService = {
             recommendation: avgEff < 80 ? "Revisar dotación de personal en hora pico." : "Mantener ritmo actual.",
             peakHour: peakHour?.time || "--:--"
         };
+    },
+
+    getDigitalBarInsights: (sceneState: any) => {
+        // Logic to analyze scene state (mock)
+        const load = sceneState.areas.reduce((acc: any, area: any) => acc + area.stats.load, 0) / 4;
+        return [
+            `Carga global del bar al ${Math.round(load)}%.`,
+            load > 50 ? "Considera abrir una segunda estación de producción." : "Niveles de carga óptimos.",
+            "El estrés del equipo es bajo."
+        ];
     }
 };
+

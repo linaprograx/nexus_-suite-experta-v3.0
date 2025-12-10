@@ -1,8 +1,8 @@
 import * as React from 'react';
-import { ViewName, Recipe, Ingredient, PizarronTask, AppNotification } from './types';
+import { Recipe, Ingredient, PizarronTask, AppNotification } from './src/types';
 import { BrowserRouter, useNavigate, useLocation } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
+
 
 import { AppProvider, useApp } from './src/context/AppContext';
 import { UIProvider, useUI } from './src/context/UIContext';
@@ -189,7 +189,7 @@ const App: React.FC = () => {
             <UIProvider>
                 <QueryClientProvider client={queryClient}>
                     <AppContent />
-                    <ReactQueryDevtools initialIsOpen={false} />
+
                 </QueryClientProvider>
             </UIProvider>
         </AppProvider>
