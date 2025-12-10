@@ -1,26 +1,26 @@
 import * as React from 'react';
-import { ErrorBoundary } from './src/components/system/ErrorBoundary';
-import { Recipe, Ingredient, PizarronTask, AppNotification } from './src/types';
+import { ErrorBoundary } from './components/system/ErrorBoundary';
+import { Recipe, Ingredient, PizarronTask, AppNotification } from './types';
 import { BrowserRouter, useNavigate, useLocation } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 
-import { AppProvider, useApp } from './src/context/AppContext';
-import { UIProvider, useUI } from './src/context/UIContext';
+import { AppProvider, useApp } from './context/AppContext';
+import { UIProvider, useUI } from './context/UIContext';
 
-import { Spinner } from './src/components/ui/Spinner';
-import { Sidebar } from './src/components/layout/Sidebar';
-import { Topbar } from './src/components/layout/Topbar';
+import { Spinner } from './components/ui/Spinner';
+import { Sidebar } from './components/layout/Sidebar';
+import { Topbar } from './components/layout/Topbar';
 // import { ContentView } from './src/views/ContentView'; // DEPRECATED
-import { AppRouter } from './src/router/AppRouter';
-import { RecipeFormModal } from './src/components/grimorium/RecipeFormModal';
-import { NotificationsDrawer } from './src/components/dashboard/NotificationsDrawer';
-import { ChatbotWidget } from './src/components/ui/ChatbotWidget';
-import { AuthComponent } from './src/components/auth/AuthComponent';
-import { PrintStyles } from './src/components/ui/PrintStyles';
-import { AddTaskModal } from './src/components/pizarron/AddTaskModal';
-import { useFirebaseData } from './src/hooks/useFirebaseData';
-import { aiPrefetcher } from './src/features/prefetch/aiPrefetchEngine';
+import { AppRouter } from './router/AppRouter';
+import { RecipeFormModal } from './components/grimorium/RecipeFormModal';
+import { NotificationsDrawer } from './components/dashboard/NotificationsDrawer';
+import { ChatbotWidget } from './components/ui/ChatbotWidget';
+import { AuthComponent } from './components/auth/AuthComponent';
+import { PrintStyles } from './components/ui/PrintStyles';
+import { AddTaskModal } from './components/pizarron/AddTaskModal';
+import { useFirebaseData } from './hooks/useFirebaseData';
+import { aiPrefetcher } from './features/prefetch/aiPrefetchEngine';
 
 const queryClient = new QueryClient({
     defaultOptions: {
