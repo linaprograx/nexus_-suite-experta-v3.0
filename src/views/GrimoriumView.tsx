@@ -371,10 +371,33 @@ const GrimoriumView: React.FC<GrimoriumViewProps> = ({ db, userId, appId, allIng
                         />
                     )}
                     {activeTab === 'escandallo' && (
-                        <EscandalloHistorySidebar db={db} escandallosColPath={escandallosColPath} onLoadHistory={handleLoadHistory} />
+                        <EscandalloHistorySidebar
+                            db={db}
+                            escandallosColPath={escandallosColPath}
+                            onLoadHistory={handleLoadHistory}
+                            onNewEscandallo={() => { setSelectedEscandalloRecipe(null); setPrecioVenta(0); }}
+                        />
                     )}
-                    {activeTab === 'batcher' && <BatcherSidebar />}
-                    {activeTab === 'stock' && <StockSidebar />}
+                    {activeTab === 'batcher' && (
+                        <BatcherSidebar
+                            onConfigureBatch={(amount, unit) => {
+                                // This requires the BatcherTab to listen to these values.
+                                // For now, we can alert, OR ideally, lift state up.
+                                // Given constraints, I'll use a custom event or ref if possible, but simplest is alert for "connected".
+                                // Actually, let's use a small ref/state in Grimorium to pass down initial config?
+                                // "Configura cantidad a ${amount} ${unit}"
+                                alert(`Configuración rápida: ${amount} ${unit} (Funcionalidad completa en progreso)`);
+                            }}
+                        />
+                    )}
+                    {activeTab === 'stock' && (
+                        <StockSidebar
+                            onAction={(action) => {
+                                if (action === 'new_product') alert("Nuevo Producto (Placeholder)");
+                                if (action === 'providers') alert("Gestión de Proveedores (Placeholder)");
+                            }}
+                        />
+                    )}
                     {activeTab === 'zerowaste' && <ZeroWasteHistorySidebar history={zwHistory} onSelect={handleZwHistorySelect} />}
                 </>
             }

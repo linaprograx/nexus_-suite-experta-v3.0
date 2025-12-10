@@ -31,9 +31,10 @@ interface EscandalloHistorySidebarProps {
     db: Firestore;
     escandallosColPath: string;
     onLoadHistory: (item: Escandallo) => void;
+    onNewEscandallo: () => void;
 }
 
-const EscandalloHistorySidebar: React.FC<EscandalloHistorySidebarProps> = ({ db, escandallosColPath, onLoadHistory }) => {
+const EscandalloHistorySidebar: React.FC<EscandalloHistorySidebarProps> = ({ db, escandallosColPath, onLoadHistory, onNewEscandallo }) => {
     const [history, setHistory] = React.useState<Escandallo[]>([]);
     const [loading, setLoading] = React.useState(true);
 
@@ -57,6 +58,12 @@ const EscandalloHistorySidebar: React.FC<EscandalloHistorySidebarProps> = ({ db,
     return (
         <div className="h-full flex flex-col bg-white/50 dark:bg-slate-900/30 backdrop-blur-md rounded-2xl border border-white/20 dark:border-white/5 overflow-hidden">
             <div className="p-4 border-b border-white/10 dark:border-white/5 bg-white/40 dark:bg-slate-900/40">
+                <button
+                    onClick={onNewEscandallo}
+                    className="w-full mb-4 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-medium text-sm transition-colors flex items-center justify-center gap-2"
+                >
+                    <span>+</span> Nuevo Escandallo
+                </button>
                 <h3 className="font-semibold text-slate-800 dark:text-slate-200">Historial</h3>
             </div>
             <div className="flex-1 overflow-y-auto p-2 space-y-1 custom-scrollbar">

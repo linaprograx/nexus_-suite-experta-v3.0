@@ -3,10 +3,10 @@ import { ICONS } from '../ui/icons';
 import { Icon } from '../ui/Icon';
 
 interface StockSidebarProps {
-    // Add props if needed
+    onAction: (action: 'new_product' | 'providers' | 'movements') => void;
 }
 
-const StockSidebar: React.FC<StockSidebarProps> = () => {
+const StockSidebar: React.FC<StockSidebarProps> = ({ onAction }) => {
     return (
         <div className="bg-white/60 dark:bg-slate-900/30 backdrop-blur-md rounded-2xl border border-white/20 dark:border-white/5 h-full flex flex-col p-6 shadow-sm overflow-hidden">
             <div className="pb-6 border-b border-white/10 dark:border-white/5 flex items-center gap-3">
@@ -20,6 +20,20 @@ const StockSidebar: React.FC<StockSidebarProps> = () => {
             </div>
 
             <div className="mt-6 space-y-6 overflow-y-auto custom-scrollbar">
+                <div>
+                    <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">Acciones Rápidas</h4>
+                    <div className="space-y-2">
+                        <button onClick={() => onAction('new_product')} className="w-full text-left px-4 py-3 rounded-xl bg-white/40 dark:bg-slate-800/40 hover:bg-blue-50 dark:hover:bg-blue-900/20 border border-white/10 dark:border-white/5 transition-colors flex items-center gap-3 group">
+                            <Icon svg={ICONS.plus} className="w-4 h-4 text-slate-400 group-hover:text-blue-500" />
+                            <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Nuevo Producto</span>
+                        </button>
+                        <button onClick={() => onAction('providers')} className="w-full text-left px-4 py-3 rounded-xl bg-white/40 dark:bg-slate-800/40 hover:bg-blue-50 dark:hover:bg-blue-900/20 border border-white/10 dark:border-white/5 transition-colors flex items-center gap-3 group">
+                            <Icon svg={ICONS.users} className="w-4 h-4 text-slate-400 group-hover:text-blue-500" />
+                            <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Proveedores</span>
+                        </button>
+                    </div>
+                </div>
+
                 <div>
                     <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">Resumen de Alertas</h4>
                     <div className="flex items-center gap-3 p-3 rounded-xl bg-red-50 dark:bg-red-900/10 border border-red-100 dark:border-red-800/30">

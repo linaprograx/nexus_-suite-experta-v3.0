@@ -3,10 +3,10 @@ import { ICONS } from '../ui/icons';
 import { Icon } from '../ui/Icon';
 
 interface BatcherSidebarProps {
-    // Add props if needed, e.g. recent batches
+    onConfigureBatch: (amount: number, unit: 'Litros' | 'Botellas') => void;
 }
 
-const BatcherSidebar: React.FC<BatcherSidebarProps> = () => {
+const BatcherSidebar: React.FC<BatcherSidebarProps> = ({ onConfigureBatch }) => {
     return (
         <div className="bg-white/60 dark:bg-slate-900/30 backdrop-blur-md rounded-2xl border border-white/20 dark:border-white/5 h-full flex flex-col p-6 shadow-sm overflow-hidden">
             <div className="pb-6 border-b border-white/10 dark:border-white/5 flex items-center gap-3">
@@ -23,11 +23,17 @@ const BatcherSidebar: React.FC<BatcherSidebarProps> = () => {
                 <div>
                     <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">Accesos Rápidos</h4>
                     <div className="space-y-2">
-                        <button className="w-full text-left px-4 py-3 rounded-xl bg-white/40 dark:bg-slate-800/40 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 border border-white/10 dark:border-white/5 transition-colors flex items-center gap-3 group">
+                        <button
+                            onClick={() => onConfigureBatch(1, 'Litros')}
+                            className="w-full text-left px-4 py-3 rounded-xl bg-white/40 dark:bg-slate-800/40 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 border border-white/10 dark:border-white/5 transition-colors flex items-center gap-3 group"
+                        >
                             <Icon svg={ICONS.beaker} className="w-4 h-4 text-slate-400 group-hover:text-emerald-500" />
                             <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Nuevo Batch (1L)</span>
                         </button>
-                        <button className="w-full text-left px-4 py-3 rounded-xl bg-white/40 dark:bg-slate-800/40 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 border border-white/10 dark:border-white/5 transition-colors flex items-center gap-3 group">
+                        <button
+                            onClick={() => onConfigureBatch(1, 'Botellas')}
+                            className="w-full text-left px-4 py-3 rounded-xl bg-white/40 dark:bg-slate-800/40 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 border border-white/10 dark:border-white/5 transition-colors flex items-center gap-3 group"
+                        >
                             <Icon svg={ICONS.bottle} className="w-4 h-4 text-slate-400 group-hover:text-emerald-500" />
                             <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Nuevo Batch (700ml)</span>
                         </button>
