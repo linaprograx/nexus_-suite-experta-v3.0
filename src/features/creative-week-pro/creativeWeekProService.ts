@@ -1,40 +1,40 @@
 import { callGeminiApi } from '../../utils/gemini';
-import { PizarronTask } from '../../../types';
+import { PizarronTask } from '../../types';
 
 export interface CreativeWeekData {
-  summary: string;
-  insights: string[];
-  recommendation: {
-    title: string;
-    description: string;
-    impact: 'bajo' | 'medio' | 'alto';
-    difficulty: 'baja' | 'media' | 'alta';
-  };
-  stats?: {
-    totalTasks: number;
-    tasksByDay: Record<string, number>;
-    mostUsedCategory: string;
-    creationPeaks: string;
-    operationalRatio: string;
-  };
+    summary: string;
+    insights: string[];
+    recommendation: {
+        title: string;
+        description: string;
+        impact: 'bajo' | 'medio' | 'alto';
+        difficulty: 'baja' | 'media' | 'alta';
+    };
+    stats?: {
+        totalTasks: number;
+        tasksByDay: Record<string, number>;
+        mostUsedCategory: string;
+        creationPeaks: string;
+        operationalRatio: string;
+    };
 }
 
 const FALLBACK_DATA: CreativeWeekData = {
-  summary: "No hay suficiente actividad creativa registrada esta semana.",
-  insights: ["Completa tareas para generar insights útiles."],
-  recommendation: {
-    title: "Registrar actividad creativa",
-    description: "Añade o completa tareas en el pizarrón para activar el análisis semanal.",
-    impact: "bajo",
-    difficulty: "baja"
-  },
-  stats: {
-    totalTasks: 0,
-    tasksByDay: {},
-    mostUsedCategory: "N/A",
-    creationPeaks: "N/A",
-    operationalRatio: "0"
-  }
+    summary: "No hay suficiente actividad creativa registrada esta semana.",
+    insights: ["Completa tareas para generar insights útiles."],
+    recommendation: {
+        title: "Registrar actividad creativa",
+        description: "Añade o completa tareas en el pizarrón para activar el análisis semanal.",
+        impact: "bajo",
+        difficulty: "baja"
+    },
+    stats: {
+        totalTasks: 0,
+        tasksByDay: {},
+        mostUsedCategory: "N/A",
+        creationPeaks: "N/A",
+        operationalRatio: "0"
+    }
 };
 
 /**
@@ -43,34 +43,34 @@ const FALLBACK_DATA: CreativeWeekData = {
  */
 async function ensureSpanish(text: string): Promise<string> {
     if (!text) return "";
-    
+
     // Heurística simple: si contiene palabras comunes en inglés, traducimos.
     // O mejor, para ser robustos, hacemos una llamada rápida pidiendo traducción si es necesario.
     // Dado que el sistema pide explícitamente esta función y su uso:
-    
+
     try {
-       const prompt = `Translate the following text to Spanish. If it is already in Spanish, just return it exactly as is. Do not add any explanation or quotes. Text: "${text}"`;
-       const response = await callGeminiApi(
-          prompt,
-          "Eres un traductor experto. Solo devuelves el texto traducido al español."
-       );
-       // Safely extract text from response
-       const translated = response?.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
-       return translated || text;
+        const prompt = `Translate the following text to Spanish. If it is already in Spanish, just return it exactly as is. Do not add any explanation or quotes. Text: "${text}"`;
+        const response = await callGeminiApi(
+            prompt,
+            "Eres un traductor experto. Solo devuelves el texto traducido al español."
+        );
+        // Safely extract text from response
+        const translated = response.text?.trim();
+        return translated || text;
     } catch (e) {
         console.warn("Translation failed, using original text:", e);
-        return text; 
+        return text;
     }
 }
 
 // Helper for date comparison
 const isWithinLastDays = (dateStr: string, days: number) => {
-  if (!dateStr) return false;
-  const date = new Date(dateStr);
-  const now = new Date();
-  const diffTime = Math.abs(now.getTime() - date.getTime());
-  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-  return diffDays <= days;
+    if (!dateStr) return false;
+    const date = new Date(dateStr);
+    const now = new Date();
+    const diffTime = Math.abs(now.getTime() - date.getTime());
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays <= days;
 };
 
 export const getCreativeWeekInsights = async (tasks: PizarronTask[], userName: string): Promise<CreativeWeekData> => {
@@ -86,7 +86,7 @@ export const getCreativeWeekInsights = async (tasks: PizarronTask[], userName: s
         });
 
         if (recentTasks.length < 3) {
-             return FALLBACK_DATA;
+            return FALLBACK_DATA;
         }
 
         // Build Analysis Payload
@@ -100,12 +100,12 @@ export const getCreativeWeekInsights = async (tasks: PizarronTask[], userName: s
         }, {});
 
         const categories = recentTasks.map(t => t.category);
-        const mostUsedCategories = categories.sort((a,b) =>
-            categories.filter(v => v===a).length - categories.filter(v => v===b).length
+        const mostUsedCategories = categories.sort((a, b) =>
+            categories.filter(v => v === a).length - categories.filter(v => v === b).length
         ).pop();
 
         // Calculate creation peaks (simple logic: day with most tasks)
-        const sortedDays = Object.entries(tasksByDay).sort((a:any, b:any) => b[1] - a[1]);
+        const sortedDays = Object.entries(tasksByDay).sort((a: any, b: any) => b[1] - a[1]);
         const creationPeaks = sortedDays.length > 0 ? sortedDays[0][0] : "N/A";
 
         const operationalCount = recentTasks.filter(t => ['Admin', 'Urgente'].includes(t.category)).length;
@@ -148,14 +148,14 @@ export const getCreativeWeekInsights = async (tasks: PizarronTask[], userName: s
             { responseMimeType: "application/json" }
         );
 
-        const text = response?.candidates?.[0]?.content?.parts?.[0]?.text || "";
+        const text = response.text || "";
         let data: CreativeWeekData;
         try {
             // Clean potentially markdown wrapped response
             const cleanText = text.replace(/```json/g, '').replace(/```/g, '').trim();
             data = JSON.parse(cleanText);
         } catch (e) {
-            console.error("Failed to parse Gemini JSON:", text);
+            console.error("Gemini parse error", e, text);
             return FALLBACK_DATA;
         }
 
@@ -179,7 +179,7 @@ export const getCreativeWeekInsights = async (tasks: PizarronTask[], userName: s
         if (data.recommendation) {
             data.recommendation.title = await ensureSpanish(data.recommendation.title);
             data.recommendation.description = await ensureSpanish(data.recommendation.description);
-            
+
             // Normalize enums
             const mapImpact = (val: string) => {
                 const v = val?.toLowerCase() || '';
@@ -197,7 +197,7 @@ export const getCreativeWeekInsights = async (tasks: PizarronTask[], userName: s
             data.recommendation.impact = mapImpact(data.recommendation.impact as any) as any;
             data.recommendation.difficulty = mapDifficulty(data.recommendation.difficulty as any) as any;
         } else {
-             data.recommendation = FALLBACK_DATA.recommendation;
+            data.recommendation = FALLBACK_DATA.recommendation;
         }
 
         return data;

@@ -38,28 +38,32 @@ export const WeekChart: React.FC<WeekChartProps> = ({ tasksByDay }) => {
     <Card className="p-6 bg-white dark:bg-gray-800 shadow-sm h-[300px] transition-all duration-300 hover:shadow-xl hover:-translate-y-1 dark:shadow-slate-900/60">
       <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-6">Actividad Diaria</h3>
       <div className="h-[200px] w-full">
-        <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={data} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
-            <XAxis 
-              dataKey="date" 
-              axisLine={false}
-              tickLine={false}
-              tick={{ fill: '#6B7280', fontSize: 12 }}
-              dy={10}
-            />
-            <YAxis 
-              axisLine={false}
-              tickLine={false}
-              tick={{ fill: '#6B7280', fontSize: 12 }}
-            />
-            <Tooltip content={<CustomTooltip />} cursor={{ fill: 'transparent' }} />
-            <Bar dataKey="count" radius={[4, 4, 0, 0]}>
-              {data.map((entry, index) => (
-                <Cell key={`cell-${index}`} fill="#3B82F6" />
-              ))}
-            </Bar>
-          </BarChart>
-        </ResponsiveContainer>
+        {data.length > 0 ? (
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={data} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
+              <XAxis
+                dataKey="date"
+                axisLine={false}
+                tickLine={false}
+                tick={{ fill: '#6B7280', fontSize: 12 }}
+                dy={10}
+              />
+              <YAxis
+                axisLine={false}
+                tickLine={false}
+                tick={{ fill: '#6B7280', fontSize: 12 }}
+              />
+              <Tooltip content={<CustomTooltip />} cursor={{ fill: 'transparent' }} />
+              <Bar dataKey="count" radius={[4, 4, 0, 0]}>
+                {data.map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill="#3B82F6" />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        ) : (
+          <div className="h-full flex items-center justify-center text-gray-400 text-sm">Sin actividad reciente</div>
+        )}
       </div>
     </Card>
   );

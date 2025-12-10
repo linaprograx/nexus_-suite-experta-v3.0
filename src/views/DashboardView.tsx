@@ -1,7 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Auth } from 'firebase/auth';
-import { Recipe, PizarronTask, Ingredient, ViewName } from '../types';
+import { Recipe, PizarronTask, Ingredient } from '../types';
 import { useApp } from '../context/AppContext';
 import { useUI } from '../context/UIContext';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '../components/ui/Card';
@@ -32,7 +32,7 @@ import {
     Radar
 } from 'recharts';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
-import { useToday, TodayPanel } from '../features/today';
+import { TodayPanel } from '../features/today';
 import {
     useCreativeWeekPro,
     SummaryCards,
@@ -41,7 +41,8 @@ import {
     KeyInsights,
 } from '../features/creative-week-pro';
 import { RecommendedAction } from '../features/creative-week-pro/ui/RecommendedAction';
-import { useNextBestAction, HybridNBACard } from '../features/next-best-action';
+import { HybridNBACard } from '../features/next-best-action';
+import { useDashboardMetrics } from '../features/dashboard/useDashboardMetrics';
 
 // Helper components for the new layout
 const ProgressBar: React.FC<{ value: number; color?: string }> = ({ value, color = "bg-primary" }) => (
@@ -66,8 +67,7 @@ const DashboardView: React.FC<{
     allPizarronTasks: PizarronTask[];
     allIngredients: Ingredient[];
     auth: Auth | null; // Allow null auth
-    setCurrentView?: (view: ViewName) => void; // Optional/Deprecated
-}> = ({ allRecipes, allPizarronTasks, allIngredients, auth, setCurrentView }) => {
+}> = ({ allRecipes, allPizarronTasks, allIngredients, auth }) => {
     const { userProfile } = useApp();
     const { compactMode } = useUI();
     const navigate = useNavigate();
@@ -77,64 +77,20 @@ const DashboardView: React.FC<{
 
     // --- 1. Metrics & Data Processing ---
 
-    const kpis = React.useMemo(() => {
-        const totalRecipes = allRecipes.length;
-        const totalTasks = allPizarronTasks.length;
-        // Simple calculation for "Tiempo Ahorrado" based on logic from previous file
-        const tiempoAhorrado = (totalRecipes * 0.5) + (totalTasks * 0.25);
-        const creativeRate = 85; // Placeholder percentage
-        return { totalRecipes, totalTasks, tiempoAhorrado, creativeRate };
-    }, [allRecipes, allPizarronTasks]);
-
-    const creativeTrendData = React.useMemo(() => {
-        const activityByDate: { [key: string]: { recipes: number, tasks: number } } = {};
-
-        allPizarronTasks.forEach(item => {
-            if (item.createdAt?.toDate) {
-                const date = item.createdAt.toDate().toISOString().split('T')[0];
-                if (!activityByDate[date]) {
-                    activityByDate[date] = { recipes: 0, tasks: 0 };
-                }
-                activityByDate[date].tasks++;
-            }
-        });
-
-        // Also consider recipes if they had dates (assuming basic structure doesn't ensure it, but just in case)
-        // For now, using tasks as the main driver for the chart as per original code
-
-        // Fill recent dates if empty to ensure chart looks okay
-        const today = new Date();
-        for (let i = 6; i >= 0; i--) {
-            const d = new Date(today);
-            d.setDate(d.getDate() - i);
-            const dateStr = d.toISOString().split('T')[0];
-            if (!activityByDate[dateStr]) {
-                activityByDate[dateStr] = { recipes: 0, tasks: 0 };
-            }
-        }
-
-        return Object.entries(activityByDate)
-            .map(([date, counts]) => ({ date, ...counts }))
-            .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
-            .slice(-7); // Last 7 days
-    }, [allPizarronTasks]);
-
-    const balanceData = [
-        { subject: 'Dulce', A: 8, fullMark: 10 },
-        { subject: 'Cítrico', A: 9, fullMark: 10 },
-        { subject: 'Amargo', A: 6, fullMark: 10 },
-        { subject: 'Alcohol', A: 7, fullMark: 10 },
-        { subject: 'Herbal', A: 5, fullMark: 10 },
-        { subject: 'Especiado', A: 4, fullMark: 10 },
-    ];
-
-    const { ideas, inProgress, urgent } = useToday(allPizarronTasks, userProfile);
-    const { data: nbaData, isLoading: isNBALoading, refresh: refreshNBA } = useNextBestAction(
+    // --- Metrics Hook ---
+    const {
+        kpis,
+        creativeTrendData,
+        balanceData,
+        todayMetrics: { ideas, inProgress, urgent },
+        nba: { data: nbaData, isLoading: isNBALoading, refresh: refreshNBA },
+        creativeWeek: { summary, insights, recommendation, stats }
+    } = useDashboardMetrics({
         allRecipes,
         allPizarronTasks,
-        userProfile?.displayName || 'Usuario'
-    );
-    const { summary, insights, recommendation, stats } = useCreativeWeekPro(allPizarronTasks, userProfile?.displayName || 'Usuario');
+        allIngredients,
+        userProfile
+    });
 
     const [widgetOrder, setWidgetOrder] = React.useState<string[]>(() => {
         if (typeof window !== 'undefined') {
@@ -154,7 +110,7 @@ const DashboardView: React.FC<{
     };
 
     // DEBUG: NBA
-    console.log("NBA DEBUG:", nbaData);
+
 
     // --- Components ---
 

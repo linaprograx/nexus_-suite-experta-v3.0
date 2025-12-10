@@ -45,7 +45,6 @@ export const AppRouter = ({
                     allIngredients={allIngredients}
 
                     auth={auth}
-                    setCurrentView={() => { }}
                 />
             } />
             <Route path="/grimorium" element={

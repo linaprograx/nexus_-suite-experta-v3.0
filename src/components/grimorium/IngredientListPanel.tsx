@@ -1,5 +1,5 @@
 import React from 'react';
-import { Ingredient } from '../../../types';
+import { Ingredient } from '../../types';
 import { Card } from '../ui/Card';
 import { Icon } from '../ui/Icon';
 import { ICONS } from '../ui/icons';
@@ -122,7 +122,7 @@ export const IngredientListPanel: React.FC<IngredientListPanelProps> = ({
 
       {/* List Body */}
       <div className="flex-1 overflow-y-auto custom-scrollbar p-2 space-y-2">
-        {ingredients.map(ing => (
+        {ingredients.map((ing, index) => (
           <div
             key={ing.id}
             onClick={() => onEditIngredient(ing)}

@@ -167,7 +167,7 @@ const AvatarInsightsView: React.FC = () => {
                                     </AreaChart>
                                 </ResponsiveContainer>
                             ) : (
-                                <div className="flex h-full items-center justify-center text-xs text-slate-400">Cargando datos financieros...</div>
+                                <div className="flex h-full items-center justify-center text-xs text-slate-400">Sin datos financieros para mostrar</div>
                             )}
                         </div>
                         <div className="mt-4 grid grid-cols-2 gap-4">
@@ -195,7 +195,7 @@ const AvatarInsightsView: React.FC = () => {
                                     </RadarChart>
                                 </ResponsiveContainer>
                             ) : (
-                                <div className="flex h-full items-center justify-center text-xs text-slate-400">Analizando...</div>
+                                <div className="flex h-full items-center justify-center text-xs text-slate-400">Sin datos de radar</div>
                             )}
                         </div>
                     </InsightCard>

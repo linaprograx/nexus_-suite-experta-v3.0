@@ -1,5 +1,5 @@
 import React from 'react';
-import { Recipe } from '../../../types';
+import { Recipe } from '../../types';
 import { Card } from '../ui/Card';
 import { Button } from '../ui/Button';
 import { Icon } from '../ui/Icon';
@@ -123,7 +123,7 @@ export const RecipeList: React.FC<RecipeListProps> = ({
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            {recipes.map((recipe) => {
+            {recipes.map((recipe, index) => {
               const mainCategory = recipe.categorias?.[0] || 'General';
               const isDone = recipe.categorias?.includes('Carta') || recipe.categorias?.includes('Terminado');
 
@@ -186,7 +186,7 @@ export const RecipeList: React.FC<RecipeListProps> = ({
                     <div className="flex flex-col">
                       <span className={cn("text-[10px] uppercase tracking-wider", isSelected ? "text-indigo-200" : "text-slate-400")}>Costo</span>
                       <span className={cn("font-bold font-mono", isSelected ? "text-white" : "text-slate-700 dark:text-slate-300")}>
-                        €{(recipe.costoReceta || 0).toFixed(2)}
+                        €{(recipe.costoTotal || 0).toFixed(2)}
                       </span>
                     </div>
                     <div className="flex flex-col text-right">

@@ -19,6 +19,8 @@ import { GlobalSearchModal } from '../components/pizarron/GlobalSearchModal';
 import { TemplateSelectorModal } from '../components/pizarron/TemplateSelectorModal';
 import { createBoardFromTemplate } from '../features/pizarron-templates/createBoard';
 import { useUI } from '../context/UIContext';
+import { usePizarron } from '../features/pizarron/usePizarron';
+import { pizarronService } from '../features/pizarron/pizarronService';
 import { PizarronTask, Recipe, PizarronBoard, UserProfile, Tag } from '../types';
 import { BoardColumns } from '../features/pizarron/ui/BoardColumns';
 import { BoardTopbar } from '../features/pizarron/ui/BoardTopbar';
@@ -50,21 +52,20 @@ const PizarronView: React.FC<PizarronViewProps> = ({ db, userId, appId, auth, st
   const [showAddTaskModal, setShowAddTaskModal] = React.useState(false);
   const [initialStatusForModal, setInitialStatusForModal] = React.useState<string>('ideas');
   const [selectedTask, setSelectedTask] = React.useState<PizarronTask | null>(null);
-
-  const [boards, setBoards] = React.useState<PizarronBoard[]>([]);
-  const [activeBoardId, setActiveBoardId] = React.useState<string | null>(null);
   const [showAddBoard, setShowAddBoard] = React.useState(false);
   const [showTemplateSelector, setShowTemplateSelector] = React.useState(false);
   const [tags, setTags] = React.useState<Tag[]>([]);
 
-  const [isLeftPanelOpen, setIsLeftPanelOpen] = React.useState(true);
-  const [isCalendarOpen, setIsCalendarOpen] = React.useState(false);
-  const [showTopIdeasDrawer, setShowTopIdeasDrawer] = React.useState(false);
-  const [showStatsDrawer, setShowStatsDrawer] = React.useState(false);
-  const [showSmartView, setShowSmartView] = React.useState(false);
-  const [showGlobalSearch, setShowGlobalSearch] = React.useState(false);
-  const [filters, setFilters] = React.useState<any>({});
-  const [searchQuery, setSearchQuery] = React.useState("");
+  const [isLeftPanelOpen, setIsLeftPanelOpen] = React.useState(true); // Restored
+  const [isCalendarOpen, setIsCalendarOpen] = React.useState(false); // Restored
+  const [showTopIdeasDrawer, setShowTopIdeasDrawer] = React.useState(false); // Restored
+  const [showStatsDrawer, setShowStatsDrawer] = React.useState(false); // Restored
+  const [showSmartView, setShowSmartView] = React.useState(false); // Restored
+  const [showGlobalSearch, setShowGlobalSearch] = React.useState(false); // Restored
+  const [filters, setFilters] = React.useState<any>({}); // Restored
+  // const [searchQuery, setSearchQuery] = React.useState(""); // Managed by hook
+
+  const [boards, setBoards] = React.useState<PizarronBoard[]>([]);
 
   const [focusedColumn, setFocusedColumn] = React.useState<string | null>(null);
 
@@ -73,6 +74,23 @@ const PizarronView: React.FC<PizarronViewProps> = ({ db, userId, appId, auth, st
       return localStorage.getItem('nexus_pizarron_default_view') as any || 'kanban';
     }
     return 'kanban';
+  });
+
+  // --- Use Pizarron Hook (Moved Up) ---
+  const {
+    activeBoardId,
+    setActiveBoardId,
+    searchQuery,
+    setSearchQuery,
+    filteredTasks,
+    handleSaveTask: hookSaveTask,
+    handleDeleteTask: hookDeleteTask,
+  } = usePizarron({
+    db,
+    appId,
+    allTasks: allPizarronTasks,
+    allBoards: boards,
+    userProfile
   });
 
   const handleViewChange = (view: 'kanban' | 'list' | 'timeline' | 'document') => {
@@ -128,15 +146,10 @@ const PizarronView: React.FC<PizarronViewProps> = ({ db, userId, appId, auth, st
 
   const handleCreateBoard = async (boardData: Partial<PizarronBoard>) => {
     try {
-      const boardDataToSave = {
-        ...boardData,
-        enabledTools: boardData.enabledTools || []
-      };
-
       if (boardData.id) {
-        await updateDoc(doc(db, boardsColPath, boardData.id), boardDataToSave);
+        await pizarronService.updateBoard(db, appId, boardData.id, boardData);
       } else {
-        await addDoc(collection(db, boardsColPath), boardDataToSave);
+        await pizarronService.addBoard(db, appId, boardData);
       }
       setShowAddBoard(false);
       setEditingBoard(null);
@@ -147,12 +160,8 @@ const PizarronView: React.FC<PizarronViewProps> = ({ db, userId, appId, auth, st
 
   const handleDeleteBoard = async (boardId: string) => {
     if (confirm("¿Estás seguro de eliminar este tablero?")) {
-      try {
-        await deleteDoc(doc(db, boardsColPath, boardId));
-        if (activeBoardId === boardId) setActiveBoardId(null);
-      } catch (e) {
-        console.error("Error deleting board", e);
-      }
+      await pizarronService.deleteBoard(db, appId, boardId);
+      if (activeBoardId === boardId) setActiveBoardId('general'); // Hook uses 'general' as default, or we can set null
     }
   };
 
@@ -225,26 +234,27 @@ const PizarronView: React.FC<PizarronViewProps> = ({ db, userId, appId, auth, st
     // Here we would call the Gemini API to analyze task distribution and suggest dates
   };
 
-  const filteredTasks = React.useMemo(() => {
-    if (!activeBoardId) return [];
 
-    let tasks = allPizarronTasks.filter(task => task.boardId === activeBoardId);
+
+  // Sync activeBoardId from Boards loading if not set
+  React.useEffect(() => {
+    if (!activeBoardId && boards.length > 0) {
+      setActiveBoardId(boards[0].id);
+    }
+  }, [boards, activeBoardId, setActiveBoardId]);
+
+  // Combined Filters Logic (Hook + View)
+  // We use the hook's `filteredTasks` as base (which handles Board, Search, Category)
+  // And apply extra View filters (Tags, Priority) here.
+  const finalFilteredTasks = React.useMemo(() => {
+    let tasks = filteredTasks;
 
     // Focus Mode
     if (focusMode) {
       tasks = tasks.filter(t => t.assignees?.includes(userId));
     }
 
-    // Search
-    if (searchQuery) {
-      const query = searchQuery.toLowerCase();
-      tasks = tasks.filter(t => t.texto.toLowerCase().includes(query) || t.category.toLowerCase().includes(query));
-    }
-
-    // Filters
-    if (filters.categories && filters.categories.length > 0) {
-      tasks = tasks.filter(t => filters.categories.includes(t.category));
-    }
+    // Extra View Filters
     if (filters.priorities && filters.priorities.length > 0) {
       tasks = tasks.filter(t => filters.priorities.includes(t.priority || 'media'));
     }
@@ -253,7 +263,8 @@ const PizarronView: React.FC<PizarronViewProps> = ({ db, userId, appId, auth, st
     }
 
     return tasks;
-  }, [allPizarronTasks, activeBoardId, searchQuery, filters]);
+  }, [filteredTasks, filters, focusMode, userId]);
+
 
   const handleColumnHeaderClick = (status: string) => {
     if (focusMode) {
@@ -304,7 +315,7 @@ const PizarronView: React.FC<PizarronViewProps> = ({ db, userId, appId, auth, st
             tags={tags}
             compactMode={compactMode}
             onToggleCompactMode={toggleCompactMode}
-            onShowStats={() => setShowStatsDrawer(true)}
+
             onShowTopIdeas={() => setShowTopIdeasDrawer(true)}
             onShowSmartView={() => setShowSmartView(true)}
             currentView={currentView}
@@ -319,7 +330,7 @@ const PizarronView: React.FC<PizarronViewProps> = ({ db, userId, appId, auth, st
             {currentView === 'kanban' && (
               <BoardColumns
                 activeBoard={activeBoard}
-                filteredTasks={filteredTasks}
+                filteredTasks={finalFilteredTasks}
                 focusedColumn={focusedColumn}
                 focusMode={focusMode}
                 tags={tags}
@@ -333,19 +344,19 @@ const PizarronView: React.FC<PizarronViewProps> = ({ db, userId, appId, auth, st
             )}
             {currentView === 'list' && (
               <ListView
-                tasks={filteredTasks}
+                tasks={finalFilteredTasks}
                 onTaskClick={setSelectedTask}
               />
             )}
             {currentView === 'timeline' && (
               <TimelineView
-                tasks={filteredTasks}
+                tasks={finalFilteredTasks}
                 onTaskClick={setSelectedTask}
               />
             )}
             {currentView === 'document' && (
               <DocumentView
-                tasks={filteredTasks}
+                tasks={finalFilteredTasks}
                 columns={columns}
                 onTaskClick={setSelectedTask}
               />
@@ -356,7 +367,7 @@ const PizarronView: React.FC<PizarronViewProps> = ({ db, userId, appId, auth, st
               </button>
               {isCalendarOpen && (
                 <div className="h-[500px] overflow-y-auto custom-scrollbar">
-                  <PizarronCalendarView tasks={filteredTasks} onDropTask={handleDropOnCalendar} onTaskClick={setSelectedTask} onSuggestSlots={handleSuggestSlots} />
+                  <PizarronCalendarView tasks={finalFilteredTasks} onDropTask={handleDropOnCalendar} onTaskClick={setSelectedTask} onSuggestSlots={handleSuggestSlots} />
                 </div>
               )}
             </div>
@@ -382,11 +393,11 @@ const PizarronView: React.FC<PizarronViewProps> = ({ db, userId, appId, auth, st
       {showGlobalSearch && <GlobalSearchModal isOpen={showGlobalSearch} onClose={() => setShowGlobalSearch(false)} db={db} appId={appId} onOpenTask={(t) => setSelectedTask(t)} />}
       {showAddTaskModal && activeBoardId && <AddTaskModal isOpen={showAddTaskModal} onClose={() => setShowAddTaskModal(false)} db={db} appId={appId} userId={userId} auth={auth} initialStatus={initialStatusForModal} activeBoardId={activeBoardId} userProfile={userProfile} enabledTools={activeBoard?.enabledTools} />}
       {selectedTask && <TaskDetailModal task={selectedTask} onClose={() => setSelectedTask(null)} db={db} userId={userId} appId={appId} auth={auth} storage={storage} onAnalyze={onAnalyze} enabledTools={activeBoard?.enabledTools} />}
-      {showTopIdeasDrawer && <TopIdeasDrawer isOpen={showTopIdeasDrawer} onClose={() => setShowTopIdeasDrawer(false)} tasks={filteredTasks} onTaskClick={setSelectedTask} />}
-      <StatsDrawer isOpen={showStatsDrawer} onClose={() => setShowStatsDrawer(false)} tasks={filteredTasks} />
+      {showTopIdeasDrawer && <TopIdeasDrawer isOpen={showTopIdeasDrawer} onClose={() => setShowTopIdeasDrawer(false)} tasks={finalFilteredTasks} onTaskClick={setSelectedTask} />}
+      <StatsDrawer isOpen={showStatsDrawer} onClose={() => setShowStatsDrawer(false)} tasks={finalFilteredTasks} />
       {showAddBoard && <CreateBoardModal isOpen={showAddBoard} onClose={() => { setShowAddBoard(false); setEditingBoard(null); }} onCreate={handleCreateBoard} boardToEdit={editingBoard} />}
       {showTemplateSelector && <TemplateSelectorModal isOpen={showTemplateSelector} onClose={() => setShowTemplateSelector(false)} onSelectTemplate={handleCreateFromTemplate} />}
-      <SmartViewPanel isOpen={showSmartView} onClose={() => setShowSmartView(false)} tasks={filteredTasks} columns={columns} />
+      <SmartViewPanel isOpen={showSmartView} onClose={() => setShowSmartView(false)} tasks={finalFilteredTasks} columns={columns} />
     </PremiumLayout>
   );
 };

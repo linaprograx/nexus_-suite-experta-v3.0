@@ -1,10 +1,11 @@
 import * as React from 'react';
 import { collection, doc, addDoc, deleteDoc, writeBatch, Firestore, serverTimestamp } from 'firebase/firestore';
-import { Ingredient, Recipe, ViewName, ZeroWasteResult } from '../../types';
+import { Ingredient, Recipe, ViewName, ZeroWasteResult } from '../types';
 import { parseMultipleRecipes } from '../utils/recipeImporter';
 import { importPdfRecipes } from '../modules/pdf/importPdfRecipes';
 import { useApp } from '../context/AppContext';
 import { parseEuroNumber } from "../utils/parseEuroNumber";
+import { useGrimorium } from '../features/grimorium/useGrimorium';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Label } from '../components/ui/Label';
@@ -60,11 +61,21 @@ const GrimoriumView: React.FC<GrimoriumViewProps> = ({ db, userId, appId, allIng
     // --- State ---
     const [activeTab, setActiveTab] = React.useState<'recipes' | 'ingredients' | 'escandallo' | 'batcher' | 'stock' | 'zerowaste'>('recipes');
 
+    const {
+        searchQuery, setSearchQuery,
+        selectedCategory, setSelectedCategory,
+        selectedStatus, setSelectedStatus,
+        filteredRecipes: hookFilteredRecipes,
+        stats,
+        handleDeleteRecipe: hookDeleteRecipe,
+        handleDuplicateRecipe: hookDuplicateRecipe
+    } = useGrimorium({ db, userId, allRecipes, allIngredients });
+
     // Grimorium State
-    const [recipeSearch, setRecipeSearch] = React.useState("");
+    // const [recipeSearch, setRecipeSearch] = React.useState(""); // Replaced by hook
     const [ingredientSearch, setIngredientSearch] = React.useState("");
     const [selectedRecipeId, setSelectedRecipeId] = React.useState<string | null>(null);
-    const [filters, setFilters] = React.useState({ category: 'all', status: 'all' });
+    // const [filters, setFilters] = React.useState({ category: 'all', status: 'all' }); // Replaced by hook
     const [ingredientFilters, setIngredientFilters] = React.useState({ category: 'all', status: 'all' });
     const [selectedIngredients, setSelectedIngredients] = React.useState<string[]>([]);
     const [selectedIngredientId, setSelectedIngredientId] = React.useState<string | null>(null);
@@ -87,17 +98,16 @@ const GrimoriumView: React.FC<GrimoriumViewProps> = ({ db, userId, appId, allIng
     const [shoppingList, setShoppingList] = React.useState<any[] | null>(null);
 
     // --- Debounce ---
-    const debouncedRecipeSearch = useDebounce(recipeSearch, 300);
+    const debouncedRecipeSearch = useDebounce(searchQuery, 300);
     const debouncedIngredientSearch = useDebounce(ingredientSearch, 300);
 
     const ingredientsColPath = `artifacts/${appId}/users/${userId}/grimorio-ingredients`;
 
     // --- Grimorium Helpers ---
+    // --- Grimorium Helpers ---
     const handleDeleteRecipe = async (recipeId: string) => {
-        if (window.confirm("¿Seguro que quieres eliminar esta receta?")) {
-            await deleteDoc(doc(db, `users/${userId}/grimorio`, recipeId));
-            setSelectedRecipeId(null);
-        }
+        await hookDeleteRecipe(recipeId);
+        setSelectedRecipeId(null);
     };
 
     const handleDeleteIngredient = async (ing: Ingredient) => {
@@ -202,28 +212,14 @@ const GrimoriumView: React.FC<GrimoriumViewProps> = ({ db, userId, appId, allIng
         });
     }, [allIngredients, debouncedIngredientSearch, ingredientFilters]);
 
-    const filteredRecipes = React.useMemo(() => {
-        return allRecipes.filter(rec => {
-            const matchesSearch = rec.nombre.toLowerCase().includes(debouncedRecipeSearch.toLowerCase());
-            const matchesCategory = filters.category === 'all' || rec.categorias?.includes(filters.category);
-            const matchesStatus = filters.status === 'all' || rec.categorias?.includes(filters.status);
-            return matchesSearch && matchesCategory && matchesStatus;
-        });
-    }, [allRecipes, debouncedRecipeSearch, filters]);
+    // const filteredRecipes = React.useMemo(...); // Replaced by hook
+    const filteredRecipes = hookFilteredRecipes;
 
     const selectedRecipe = React.useMemo(() => allRecipes.find(r => r.id === selectedRecipeId) || null, [allRecipes, selectedRecipeId]);
     const selectedIngredient = React.useMemo(() => allIngredients.find(i => i.id === selectedIngredientId) || null, [allIngredients, selectedIngredientId]);
-    const stats = React.useMemo(() => ({
-        total: allRecipes.length,
-        ideas: allRecipes.filter(r => r.categorias?.includes('Idea')).length,
-        inProgress: allRecipes.filter(r => r.categorias?.includes('Pruebas')).length,
-        done: allRecipes.filter(r => r.categorias?.includes('Carta')).length
-    }), [allRecipes]);
+    // const stats = ... // Replaced by hook
 
-    const handleDuplicateRecipe = async (recipe: Recipe) => {
-        const { id, ...rest } = recipe;
-        await addDoc(collection(db, `users/${userId}/grimorio`), { ...rest, nombre: `${recipe.nombre} (Copia)` });
-    };
+    const handleDuplicateRecipe = hookDuplicateRecipe;
 
     // --- Escandallator Logic ---
     const escandalloData = React.useMemo(() => {
@@ -392,13 +388,13 @@ const GrimoriumView: React.FC<GrimoriumViewProps> = ({ db, userId, appId, allIng
                                 onSelectRecipe={(r) => setSelectedRecipeId(r.id)}
                                 onAddRecipe={() => onOpenRecipeModal(null)}
                                 onDragStart={onDragRecipeStart ? (e, r) => onDragRecipeStart(r) : undefined}
-                                searchTerm={recipeSearch}
-                                onSearchChange={setRecipeSearch}
-                                selectedCategory={filters.category}
-                                onCategoryChange={(cat) => setFilters(prev => ({ ...prev, category: cat }))}
+                                searchTerm={searchQuery}
+                                onSearchChange={setSearchQuery}
+                                selectedCategory={selectedCategory}
+                                onCategoryChange={(cat) => setSelectedCategory(cat)}
                                 availableCategories={['Coctel', 'Mocktail', 'Preparacion', 'Otro', ...new Set(allRecipes.flatMap(r => r.categorias || []))]}
-                                selectedStatus={filters.status}
-                                onStatusChange={(stat) => setFilters(prev => ({ ...prev, status: stat }))}
+                                selectedStatus={selectedStatus}
+                                onStatusChange={(stat) => setSelectedStatus(stat)}
                                 onDelete={() => selectedRecipeId && handleDeleteRecipe(selectedRecipeId)}
                             />
                         )}
