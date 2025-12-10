@@ -47,6 +47,17 @@ export const RecipeList: React.FC<RecipeListProps> = ({
 }) => {
   const { compactMode } = useUI();
 
+  // Deduplicate recipes to prevent key warnings
+  const uniqueRecipes = React.useMemo(() => {
+    if (!recipes) return [];
+    const seen = new Set();
+    return recipes.filter(r => {
+      const duplicate = seen.has(r.id);
+      seen.add(r.id);
+      return !duplicate;
+    });
+  }, [recipes]);
+
   // If no recipes AND no search/filters active, show empty state? 
   // Actually, we want to show the toolbar even if empty, so user can clear filters or search.
   // We'll move the empty check inside the content area.
@@ -113,7 +124,7 @@ export const RecipeList: React.FC<RecipeListProps> = ({
       </div>
 
       <div className="flex-1 overflow-y-auto custom-scrollbar p-2">
-        {recipes.length === 0 ? (
+        {uniqueRecipes.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-center p-8 opacity-60">
             <div className="p-4 rounded-full bg-slate-100 dark:bg-slate-800 mb-4">
               <Icon svg={ICONS.book} className="w-8 h-8 text-slate-400" />
@@ -123,7 +134,7 @@ export const RecipeList: React.FC<RecipeListProps> = ({
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            {recipes.map((recipe, index) => {
+            {uniqueRecipes.map((recipe, index) => {
               const mainCategory = recipe.categorias?.[0] || 'General';
               const isDone = recipe.categorias?.includes('Carta') || recipe.categorias?.includes('Terminado');
 

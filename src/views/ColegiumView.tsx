@@ -15,7 +15,8 @@ import ColegiumContextSidebar from '../components/colegium/ColegiumContextSideba
 import { GameCard } from '../components/colegium/GameCard';
 import { ICONS } from '../components/ui/icons';
 import { Icon } from '../components/ui/Icon';
-import { AreaChart, Area, ResponsiveContainer, XAxis, Tooltip } from 'recharts'; // For Stats Card
+import { AreaChart, Area, XAxis, Tooltip } from 'recharts'; // For Stats Card
+import { ChartContainer } from '../components/ui/ChartContainer';
 import { useApp } from '../context/AppContext';
 import { useRecipes } from '../hooks/useRecipes';
 import { usePizarronData } from '../hooks/usePizarronData';
@@ -208,7 +209,7 @@ const ColegiumView: React.FC<ColegiumViewProps> = () => {
                         </div>
 
                         <div className="relative z-10 w-full h-32 mt-6">
-                            <ResponsiveContainer width="100%" height="100%">
+                            <ChartContainer>
                                 <AreaChart data={[{ v: 30 }, { v: 45 }, { v: 35 }, { v: 60 }, { v: 55 }, { v: 80 }, { v: 75 }]}>
                                     <defs>
                                         <linearGradient id="chartG" x1="0" y1="0" x2="0" y2="1">
@@ -218,7 +219,7 @@ const ColegiumView: React.FC<ColegiumViewProps> = () => {
                                     </defs>
                                     <Area type="monotone" dataKey="v" stroke="#fff" strokeWidth={3} fill="url(#chartG)" />
                                 </AreaChart>
-                            </ResponsiveContainer>
+                            </ChartContainer>
                             <p className="text-center text-xs opacity-60 mt-2">Actividad últimos 7 días</p>
                         </div>
                     </div>

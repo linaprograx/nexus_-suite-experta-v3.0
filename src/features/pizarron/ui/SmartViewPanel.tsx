@@ -2,7 +2,8 @@ import React, { useMemo } from 'react';
 import { Drawer } from '../../../components/ui/Drawer';
 import { PizarronTask } from '../../../../types';
 import { getBoardAnalytics } from '../data/analytics';
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, PieChart, Pie } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, Cell, PieChart, Pie } from 'recharts';
+import { ChartContainer } from '../../../components/ui/ChartContainer';
 import { Icon } from '../../../components/ui/Icon';
 import { ICONS } from '../../../components/ui/icons';
 
@@ -41,7 +42,7 @@ export const SmartViewPanel: React.FC<SmartViewPanelProps> = ({ isOpen, onClose,
                     </h3>
                     <div className="h-48 w-full">
                         {analytics.tasksByStatus.length > 0 ? (
-                            <ResponsiveContainer width="100%" height="100%">
+                            <ChartContainer>
                                 <BarChart data={analytics.tasksByStatus}>
                                     <XAxis dataKey="name" stroke="#94a3b8" fontSize={10} tickLine={false} axisLine={false} />
                                     <YAxis stroke="#94a3b8" fontSize={10} tickLine={false} axisLine={false} />
@@ -55,7 +56,7 @@ export const SmartViewPanel: React.FC<SmartViewPanelProps> = ({ isOpen, onClose,
                                         ))}
                                     </Bar>
                                 </BarChart>
-                            </ResponsiveContainer>
+                            </ChartContainer>
                         ) : (
                             <div className="h-full flex items-center justify-center text-slate-400 text-xs">Sin datos</div>
                         )}
@@ -89,7 +90,7 @@ export const SmartViewPanel: React.FC<SmartViewPanelProps> = ({ isOpen, onClose,
                             <Icon svg={ICONS.calendar} className="w-4 h-4 text-slate-500" /> Actividad Reciente
                         </h3>
                         <div className="h-40 w-full">
-                            <ResponsiveContainer width="100%" height="100%">
+                            <ChartContainer>
                                 <BarChart data={analytics.tasksPerDay.slice(-7)}>
                                     <XAxis dataKey="date" stroke="#94a3b8" fontSize={10} tickLine={false} axisLine={false} tickFormatter={(val) => val.slice(5)} />
                                     <Tooltip
@@ -97,7 +98,7 @@ export const SmartViewPanel: React.FC<SmartViewPanelProps> = ({ isOpen, onClose,
                                     />
                                     <Bar dataKey="count" fill="#6366f1" radius={[4, 4, 0, 0]} />
                                 </BarChart>
-                            </ResponsiveContainer>
+                            </ChartContainer>
                         </div>
                     </div>
                 )}

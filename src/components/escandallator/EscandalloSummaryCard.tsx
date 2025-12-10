@@ -1,6 +1,7 @@
 import React from 'react';
 import { Button } from '../ui/Button';
-import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { PieChart, Pie, Cell, Tooltip, Legend } from 'recharts';
+import { ChartContainer } from '../ui/ChartContainer';
 
 interface ReportData {
     costo: number;
@@ -60,7 +61,7 @@ const EscandalloSummaryCard: React.FC<EscandalloSummaryCardProps> = ({
                 <div className="bg-white/40 dark:bg-slate-800/20 rounded-lg p-3 border border-white/20">
                     <p className="text-xs font-semibold text-slate-700 dark:text-slate-300 mb-2">Distribución del PVP</p>
                     <div className="w-full" style={{ height: '200px' }}>
-                        <ResponsiveContainer width="100%" height="100%">
+                        <ChartContainer>
                             <PieChart>
                                 <Pie
                                     data={pieData}
@@ -77,7 +78,7 @@ const EscandalloSummaryCard: React.FC<EscandalloSummaryCardProps> = ({
                                 <Tooltip formatter={(value: number) => `€${value.toFixed(2)}`} />
                                 <Legend wrapperStyle={{ fontSize: '11px' }} />
                             </PieChart>
-                        </ResponsiveContainer>
+                        </ChartContainer>
                     </div>
                 </div>
 

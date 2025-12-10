@@ -1,6 +1,7 @@
 import React from 'react';
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, Cell } from 'recharts';
 import { Card } from '../../../components/ui/Card';
+import { ChartContainer } from '../../../components/ui/ChartContainer';
 
 interface WeekChartProps {
   tasksByDay?: Record<string, number>;
@@ -39,7 +40,7 @@ export const WeekChart: React.FC<WeekChartProps> = ({ tasksByDay }) => {
       <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-6">Actividad Diaria</h3>
       <div className="h-[200px] w-full">
         {data.length > 0 ? (
-          <ResponsiveContainer width="100%" height="100%">
+          <ChartContainer>
             <BarChart data={data} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
               <XAxis
                 dataKey="date"
@@ -60,7 +61,7 @@ export const WeekChart: React.FC<WeekChartProps> = ({ tasksByDay }) => {
                 ))}
               </Bar>
             </BarChart>
-          </ResponsiveContainer>
+          </ChartContainer>
         ) : (
           <div className="h-full flex items-center justify-center text-gray-400 text-sm">Sin actividad reciente</div>
         )}

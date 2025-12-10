@@ -1,5 +1,6 @@
 import React from 'react';
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts';
+import { ChartContainer } from '../../../components/ui/ChartContainer';
 
 interface ActivityChartProps {
     data: any[];
@@ -14,31 +15,29 @@ export const ActivityChart: React.FC<ActivityChartProps> = ({ data, dataKey, col
     }
 
     return (
-        <div style={{ width: '100%', minWidth: '100%', height, minHeight: height || 260 }}>
-            <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={data}>
-                    <defs>
-                        <linearGradient id={`gradient-${dataKey}`} x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="5%" stopColor={color} stopOpacity={0.3} />
-                            <stop offset="95%" stopColor={color} stopOpacity={0} />
-                        </linearGradient>
-                    </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(200,200,200,0.2)" vertical={false} />
-                    <XAxis dataKey="time" hide />
-                    <YAxis hide domain={[0, 'auto']} />
-                    <Tooltip
-                        contentStyle={{ backgroundColor: 'white', borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)' }}
-                        itemStyle={{ color: color, fontSize: '12px', fontWeight: 'bold' }}
-                    />
-                    <Area
-                        type="monotone"
-                        dataKey={dataKey}
-                        stroke={color}
-                        strokeWidth={2}
-                        fill={`url(#gradient-${dataKey})`}
-                    />
-                </AreaChart>
-            </ResponsiveContainer>
-        </div>
+        <ChartContainer height={height}>
+            <AreaChart data={data}>
+                <defs>
+                    <linearGradient id={`gradient-${dataKey}`} x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor={color} stopOpacity={0.3} />
+                        <stop offset="95%" stopColor={color} stopOpacity={0} />
+                    </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(200,200,200,0.2)" vertical={false} />
+                <XAxis dataKey="time" hide />
+                <YAxis hide domain={[0, 'auto']} />
+                <Tooltip
+                    contentStyle={{ backgroundColor: 'white', borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)' }}
+                    itemStyle={{ color: color, fontSize: '12px', fontWeight: 'bold' }}
+                />
+                <Area
+                    type="monotone"
+                    dataKey={dataKey}
+                    stroke={color}
+                    strokeWidth={2}
+                    fill={`url(#gradient-${dataKey})`}
+                />
+            </AreaChart>
+        </ChartContainer>
     );
 };

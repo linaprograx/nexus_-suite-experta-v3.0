@@ -8,7 +8,8 @@ import { Alert } from '../components/ui/Alert';
 import { Icon } from '../components/ui/Icon';
 import { ICONS } from '../components/ui/icons';
 import { Combobox } from '../components/ui/Combobox';
-import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
+import { PieChart, Pie, Cell, Tooltip } from 'recharts';
+import { ChartContainer } from '../components/ui/ChartContainer';
 import { callGeminiApi } from '../utils/gemini';
 import { Type } from "@google/genai";
 
@@ -46,13 +47,13 @@ const LabView: React.FC<LabViewProps> = ({ db, userId, appId, allIngredients, al
         const promptData = labInputs.map(item => item.nombre).join(', ');
         const systemPrompt = "Eres un científico de alimentos experto en Flavor Pairing...";
         const userQuery = `Analiza la combinación: ${promptData}. Devuelve un JSON con: 'perfil', 'clasicos' (array), 'moleculares' (array), 'tecnica' (string), y 'perfilSabor' (objeto).`;
-        
+
         try {
             const response = await callGeminiApi(userQuery, systemPrompt, {
                 responseMimeType: "application/json",
                 responseSchema: { type: Type.OBJECT, properties: { perfil: { type: Type.STRING }, clasicos: { type: Type.ARRAY, items: { type: Type.STRING } }, moleculares: { type: Type.ARRAY, items: { type: Type.STRING } }, tecnica: { type: Type.STRING }, perfilSabor: { type: Type.OBJECT, properties: { dulce: { type: Type.NUMBER }, acido: { type: Type.NUMBER }, amargo: { type: Type.NUMBER }, salado: { type: Type.NUMBER }, umami: { type: Type.NUMBER }, herbal: { type: Type.NUMBER }, especiado: { type: Type.NUMBER } } } } }
             });
-            
+
             let parsedResult;
             try {
                 parsedResult = JSON.parse(response.text);
@@ -69,7 +70,7 @@ const LabView: React.FC<LabViewProps> = ({ db, userId, appId, allIngredients, al
             setLabLoading(false);
         }
     };
-    
+
     const handleSaveLabResultToPizarron = async (title: string, content: string) => {
         if (!labResult) return;
         const combination = labInputs.map(i => i.nombre).join(', ');
@@ -117,8 +118,8 @@ const LabView: React.FC<LabViewProps> = ({ db, userId, appId, allIngredients, al
                 {labError && <div className="px-6 pb-6"><Alert variant="destructive" title="Error de Análisis" description={labError} /></div>}
             </Card>
 
-            {labLoading && <div className="flex justify-center items-center h-64"><Spinner className="w-12 h-12 text-cyan-500"/></div>}
-            
+            {labLoading && <div className="flex justify-center items-center h-64"><Spinner className="w-12 h-12 text-cyan-500" /></div>}
+
             {!labLoading && !labResult && (
                 <div className="text-center p-10">
                     <p className="text-slate-500">Analiza una combinación para ver los resultados del laboratorio.</p>
@@ -129,32 +130,62 @@ const LabView: React.FC<LabViewProps> = ({ db, userId, appId, allIngredients, al
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <Card className="md:col-span-2 backdrop-blur-xl bg-white/40 dark:bg-slate-900/40 border border-white/20 shadow-lg rounded-xl">
                         <CardHeader><CardTitle>Perfil de Sabor Molecular</CardTitle></CardHeader>
-                        <CardContent>
-                            <ResponsiveContainer width="100%" height={250}>
+                        <div className="h-[250px]">
+                            <ChartContainer height={250}>
                                 <PieChart>
                                     <Pie data={flavorProfileData} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={60} outerRadius={80} fill="#8884d8" paddingAngle={5} label={p => `${p.name} (${p.value})`}>
                                         {flavorProfileData.map((entry, index) => <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />)}
                                     </Pie>
                                     <Tooltip />
                                 </PieChart>
-                            </ResponsiveContainer>
+                            </ChartContainer>
+                        </div>
+                    </Card>
+
+                    <Card className="md:col-span-2 backdrop-blur-xl bg-white/40 dark:bg-slate-900/40 border border-white/20 shadow-lg rounded-xl">
+                        <CardHeader>
+                            <CardTitle>Perfil Aromático</CardTitle>
+                        </CardHeader>
+                        <CardContent className="px-7 pb-7">
+                            <p className="text-slate-600 leading-relaxed dark:text-slate-300">
+                                {labResult?.perfil}
+                            </p>
                         </CardContent>
                     </Card>
-                    <Card className="md:col-span-2 backdrop-blur-xl bg-white/40 dark:bg-slate-900/40 border border-white/20 shadow-lg rounded-xl">
-                        <CardHeader><CardTitle>Perfil Aromático</CardTitle></CardHeader>
-                        <CardContent className="px-7 pb-7"><p className="leading-relaxed">{labResult.perfil || 'N/A'}</p></CardContent>
-                    </Card>
+
                     <Card className="backdrop-blur-xl bg-white/40 dark:bg-slate-900/40 border border-white/20 shadow-lg rounded-xl">
-                        <CardHeader><CardTitle>Clásicos</CardTitle></CardHeader>
-                        <CardContent><ul className="list-disc list-inside space-y-1">{Array.isArray(labResult.clasicos) ? labResult.clasicos.map((item, index) => <li key={index}>{item}</li>) : <li>N/A</li>}</ul></CardContent>
+                        <CardHeader>
+                            <CardTitle>Clásicos</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <ul className="list-disc list-inside space-y-1 text-slate-600 dark:text-slate-300">
+                                {Array.isArray(labResult?.clasicos) &&
+                                    labResult.clasicos.map((c: string, i: number) => <li key={i}>{c}</li>)}
+                            </ul>
+                        </CardContent>
                     </Card>
+
                     <Card className="backdrop-blur-xl bg-white/40 dark:bg-slate-900/40 border border-white/20 shadow-lg rounded-xl">
-                        <CardHeader><CardTitle>Moleculares</CardTitle></CardHeader>
-                        <CardContent><ul className="list-disc list-inside space-y-1">{Array.isArray(labResult.moleculares) ? labResult.moleculares.map((item, index) => <li key={index}>{item}</li>) : <li>N/A</li>}</ul></CardContent>
+                        <CardHeader>
+                            <CardTitle>Moleculares</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <ul className="list-disc list-inside space-y-1 text-slate-600 dark:text-slate-300">
+                                {Array.isArray(labResult?.moleculares) &&
+                                    labResult.moleculares.map((c: string, i: number) => <li key={i}>{c}</li>)}
+                            </ul>
+                        </CardContent>
                     </Card>
+
                     <Card className="md:col-span-2 backdrop-blur-xl bg-white/40 dark:bg-slate-900/40 border border-white/20 shadow-lg rounded-xl">
-                        <CardHeader><CardTitle>Técnica Sugerida</CardTitle></CardHeader>
-                        <CardContent className="px-7 pb-7"><p className="leading-relaxed">{labResult.tecnica || 'N/A'}</p></CardContent>
+                        <CardHeader>
+                            <CardTitle>Técnica Sugerida</CardTitle>
+                        </CardHeader>
+                        <CardContent className="px-7 pb-7">
+                            <p className="text-slate-600 leading-relaxed dark:text-slate-300">
+                                {labResult?.tecnica}
+                            </p>
+                        </CardContent>
                     </Card>
                 </div>
             )}

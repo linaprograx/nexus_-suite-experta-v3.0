@@ -5,6 +5,7 @@ import { Recipe, PizarronTask, Ingredient } from '../types';
 import { useApp } from '../context/AppContext';
 import { useUI } from '../context/UIContext';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '../components/ui/Card';
+import { ChartContainer } from '../components/ui/ChartContainer';
 import {
     FaBook,
     FaBolt,
@@ -18,7 +19,6 @@ import {
     FaArrowRight
 } from 'react-icons/fa';
 import {
-    ResponsiveContainer,
     AreaChart,
     CartesianGrid,
     XAxis,
@@ -237,7 +237,7 @@ const DashboardView: React.FC = () => {
                     </CardHeader>
                     <CardContent>
                         {creativeTrendData.length > 0 ? (
-                            <ResponsiveContainer width="100%" height={300}>
+                            <ChartContainer height={300}>
                                 <AreaChart data={creativeTrendData}>
                                     <defs>
                                         <linearGradient id="colorTasks" x1="0" y1="0" x2="0" y2="1">
@@ -270,12 +270,13 @@ const DashboardView: React.FC = () => {
                                         fill="url(#colorTasks)"
                                     />
                                 </AreaChart>
-                            </ResponsiveContainer>
+                            </ChartContainer>
                         ) : (
                             <div className="h-[300px] flex items-center justify-center text-gray-400 text-sm">
                                 No hay datos suficientes para mostrar la gráfica
                             </div>
-                        )}
+                        )
+                        }
                     </CardContent>
                 </Card>
 
@@ -289,7 +290,7 @@ const DashboardView: React.FC = () => {
                     <CardContent>
                         <div className="h-[300px] w-full flex items-center justify-center">
                             {balanceData.length > 0 ? (
-                                <ResponsiveContainer width="100%" height="100%">
+                                <ChartContainer>
                                     <RadarChart cx="50%" cy="50%" outerRadius="70%" data={balanceData}>
                                         <PolarGrid stroke="rgba(156, 163, 175, 0.2)" />
                                         <PolarAngleAxis dataKey="subject" tick={{ fill: '#9CA3AF', fontSize: 10 }} />
@@ -297,7 +298,7 @@ const DashboardView: React.FC = () => {
                                         <Radar name="Sabor" dataKey="A" stroke="#ec4899" fill="#ec4899" fillOpacity={0.5} />
                                         <Tooltip />
                                     </RadarChart>
-                                </ResponsiveContainer>
+                                </ChartContainer>
                             ) : (
                                 <div className="text-gray-400 text-sm">Sin datos de equilibrio</div>
                             )}
@@ -361,7 +362,7 @@ const DashboardView: React.FC = () => {
                                                             { text: "Menú de temporada aprobado", time: "Ayer", icon: <FaCalendarAlt size={12} />, color: "bg-purple-500" },
                                                             { text: "Inventario revisado", time: "Ayer", icon: <FaBolt size={12} />, color: "bg-amber-500" }
                                                         ].map((item, idx) => (
-                                                            <div key={idx} className="relative">
+                                                            <div key={`${item.text}-${idx}`} className="relative">
                                                                 <div className={`absolute -left-[21px] top-0 w-8 h-8 rounded-full border-4 border-white dark:border-gray-900 ${item.color} flex items-center justify-center text-white`}>
                                                                     {item.icon}
                                                                 </div>

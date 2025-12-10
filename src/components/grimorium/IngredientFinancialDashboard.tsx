@@ -3,7 +3,8 @@ import { Ingredient } from '../../../types';
 import { Card } from '../ui/Card';
 import { Icon } from '../ui/Icon';
 import { ICONS } from '../ui/icons';
-import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, BarChart, Bar, Cell } from 'recharts';
+import { AreaChart, Area, XAxis, YAxis, Tooltip, BarChart, Bar, Cell } from 'recharts';
+import { ChartContainer } from '../ui/ChartContainer';
 
 interface IngredientFinancialDashboardProps {
     selectedIngredient: Ingredient | null;
@@ -63,7 +64,7 @@ export const IngredientFinancialDashboard: React.FC<IngredientFinancialDashboard
                         <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Evolución Precio</span>
                     </div>
                     <div className="flex-1 w-full min-h-0">
-                        <ResponsiveContainer width="100%" height="100%">
+                        <ChartContainer>
                             <AreaChart data={priceHistory}>
                                 <defs>
                                     <linearGradient id="colorPrice" x1="0" y1="0" x2="0" y2="1">
@@ -80,10 +81,10 @@ export const IngredientFinancialDashboard: React.FC<IngredientFinancialDashboard
                                 />
                                 <Area type="monotone" dataKey="value" stroke="#10b981" strokeWidth={3} fillOpacity={1} fill="url(#colorPrice)" />
                             </AreaChart>
-                        </ResponsiveContainer>
+                        </ChartContainer>
                     </div>
-                </Card>
-            </div>
+                </Card >
+            </div >
         );
     }
 
@@ -132,7 +133,7 @@ export const IngredientFinancialDashboard: React.FC<IngredientFinancialDashboard
             <Card className="p-4 bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm border-slate-100 dark:border-slate-800 shadow-sm min-h-[140px]">
                 <div className="text-[10px] text-emerald-600 uppercase font-bold mb-2">Valor Histórico Inventario</div>
                 <div className="h-[100px] w-full">
-                    <ResponsiveContainer width="100%" height="100%">
+                    <ChartContainer height="100%">
                         <AreaChart data={inventoryHistory}>
                             <defs>
                                 <linearGradient id="colorInv" x1="0" y1="0" x2="0" y2="1">
@@ -146,12 +147,12 @@ export const IngredientFinancialDashboard: React.FC<IngredientFinancialDashboard
                             />
                             <Area type="monotone" dataKey="value" stroke="#059669" strokeWidth={2} fill="url(#colorInv)" />
                         </AreaChart>
-                    </ResponsiveContainer>
+                    </ChartContainer>
                 </div>
-            </Card>
+            </Card >
 
             {/* Top Cost Products */}
-            <Card className="p-4 bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm border-slate-100 dark:border-slate-800 shadow-sm">
+            < Card className="p-4 bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm border-slate-100 dark:border-slate-800 shadow-sm" >
                 <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-4">Top Costo Unitario</h4>
                 <div className="space-y-3">
                     {topCostItems.map((item, idx) => (
@@ -164,10 +165,10 @@ export const IngredientFinancialDashboard: React.FC<IngredientFinancialDashboard
                         </div>
                     ))}
                 </div>
-            </Card>
+            </Card >
 
             {/* Stock Status Logic */}
-            <Card className="p-4 bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm border-slate-100 dark:border-slate-800 shadow-sm flex-1">
+            < Card className="p-4 bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm border-slate-100 dark:border-slate-800 shadow-sm flex-1" >
                 <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-4">Estado del Stock</h4>
                 <div className="space-y-4">
                     <div>
@@ -189,7 +190,7 @@ export const IngredientFinancialDashboard: React.FC<IngredientFinancialDashboard
                         </div>
                     </div>
                 </div>
-            </Card>
-        </div>
+            </Card >
+        </div >
     );
 };

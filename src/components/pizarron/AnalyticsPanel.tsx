@@ -1,5 +1,6 @@
 import React from 'react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, PieChart, Pie, Cell, LineChart, Line } from 'recharts';
+import { ChartContainer } from '../ui/ChartContainer';
 import { PizarronTask } from '../../types';
 
 // Since I don't know if date-fns is installed (package.json didn't show it, but it's common), I'll use native JS Date
@@ -79,7 +80,7 @@ export const AnalyticsPanel: React.FC<AnalyticsPanelProps> = ({ tasks }) => {
             <div className="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
                 <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-4">Estado de Tareas</h3>
                 <div className="h-64">
-                    <ResponsiveContainer width="100%" height="100%">
+                    <ChartContainer>
                         <BarChart data={tasksByColumn}>
                             <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
                             <XAxis dataKey="name" stroke="#94a3b8" fontSize={12} />
@@ -90,14 +91,14 @@ export const AnalyticsPanel: React.FC<AnalyticsPanelProps> = ({ tasks }) => {
                             />
                             <Bar dataKey="value" fill="#6366F1" radius={[4, 4, 0, 0]} />
                         </BarChart>
-                    </ResponsiveContainer>
+                    </ChartContainer>
                 </div>
             </div>
 
             <div className="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
                 <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-4">Actividad Diaria (Últimos 7 días)</h3>
                 <div className="h-64">
-                    <ResponsiveContainer width="100%" height="100%">
+                    <ChartContainer>
                         <LineChart data={dailyActivity}>
                             <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
                             <XAxis dataKey="date" stroke="#94a3b8" fontSize={12} />
@@ -107,14 +108,14 @@ export const AnalyticsPanel: React.FC<AnalyticsPanelProps> = ({ tasks }) => {
                             />
                             <Line type="monotone" dataKey="tasks" stroke="#10B981" strokeWidth={3} dot={{ r: 4, fill: '#10B981' }} activeDot={{ r: 6 }} />
                         </LineChart>
-                    </ResponsiveContainer>
+                    </ChartContainer>
                 </div>
             </div>
 
             <div className="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
                 <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-4">Distribución por Categoría</h3>
                 <div className="h-64">
-                    <ResponsiveContainer width="100%" height="100%">
+                    <ChartContainer>
                         <PieChart>
                             <Pie
                                 data={tasksByCategory}
@@ -132,7 +133,7 @@ export const AnalyticsPanel: React.FC<AnalyticsPanelProps> = ({ tasks }) => {
                             <Tooltip contentStyle={{ backgroundColor: '#1e293b', border: 'none', borderRadius: '8px', color: '#fff' }} />
                             <Legend />
                         </PieChart>
-                    </ResponsiveContainer>
+                    </ChartContainer>
                 </div>
             </div>
         </div>

@@ -1,5 +1,6 @@
 import React from 'react';
-import { BarChart, Bar, AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
+import { BarChart, Bar, AreaChart, Area, XAxis, YAxis, Tooltip, Cell } from 'recharts';
+import { ChartContainer } from '../ui/ChartContainer';
 import { Recipe } from '../../../types';
 import { Card } from '../ui/Card';
 import { Icon } from '../ui/Icon';
@@ -91,8 +92,8 @@ export const RecipeFinancialDashboard: React.FC<RecipeFinancialDashboardProps> =
                         <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Ventas (7 días)</span>
                         <span className="font-bold text-indigo-600 dark:text-indigo-400 text-lg">€{revenue.toFixed(0)}</span>
                     </div>
-                    <div className="h-40 w-full">
-                        <ResponsiveContainer width="100%" height="100%">
+                    <div className="flex-1 w-full min-h-0">
+                        <ChartContainer>
                             <BarChart data={salesData}>
                                 <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} />
                                 <Tooltip
@@ -106,7 +107,7 @@ export const RecipeFinancialDashboard: React.FC<RecipeFinancialDashboardProps> =
                                     ))}
                                 </Bar>
                             </BarChart>
-                        </ResponsiveContainer>
+                        </ChartContainer>
                     </div>
                     <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-700 flex justify-between text-sm">
                         <span className="text-slate-500">Beneficio Neto Est.</span>
@@ -155,7 +156,7 @@ export const RecipeFinancialDashboard: React.FC<RecipeFinancialDashboardProps> =
                     <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Consumo Mensual</span>
                 </div>
                 <div className="h-48 w-full">
-                    <ResponsiveContainer width="100%" height="100%">
+                    <ChartContainer>
                         <AreaChart data={generateTrendData(100, 30)}>
                             <defs>
                                 <linearGradient id="colorGlobal" x1="0" y1="0" x2="0" y2="1">
@@ -166,7 +167,7 @@ export const RecipeFinancialDashboard: React.FC<RecipeFinancialDashboardProps> =
                             <Tooltip />
                             <Area type="monotone" dataKey="value" stroke="#8b5cf6" strokeWidth={2} fill="url(#colorGlobal)" />
                         </AreaChart>
-                    </ResponsiveContainer>
+                    </ChartContainer>
                 </div>
                 <p className="text-xs text-center text-slate-400 mt-2">Tendencia de creación y ventas de recetas.</p>
             </Card>
