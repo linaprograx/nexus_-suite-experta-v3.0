@@ -75,7 +75,7 @@ export class AIPrefetchEngine {
         const normalizedView = view.startsWith('/') ? view.slice(1) : view;
         const viewKey = normalizedView || 'dashboard';
 
-        console.log(`[AI Prefetch] Prefetching data for predicted view: ${viewKey}`);
+        // console.log(`[AI Prefetch] Prefetching data for predicted view: ${viewKey}`);
 
         const promises: Promise<void>[] = [];
 

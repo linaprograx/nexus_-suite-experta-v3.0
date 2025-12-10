@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useDigitalBarScene } from '../../features/digital-bar/useDigitalBarScene';
-import { DigitalBarIsometricCanvas } from '../../features/digital-bar/scene/DigitalBarIsometricCanvas';
-import { DigitalBarContextPanel } from '../../features/digital-bar/components/DigitalBarContextPanel';
+import { DigitalBarScene } from '../../features/digital-bar/scene/DigitalBarScene';
+import { OpsPanel } from '../../features/digital-bar/components/OpsPanel';
 import { DigitalBarAnalyticsPanel } from '../../features/digital-bar/components/DigitalBarAnalyticsPanel';
 import { Icon } from '../../components/ui/Icon';
 import { ICONS } from '../../components/ui/icons';
@@ -55,16 +55,16 @@ const DigitalBarView: React.FC = () => {
                     <div className="h-full grid grid-cols-1 lg:grid-cols-3">
                         {/* Scene Canvas (2/3 width) */}
                         <div className="lg:col-span-2 h-full border-b lg:border-b-0 lg:border-r border-white/10 relative">
-                            <DigitalBarIsometricCanvas
+                            <DigitalBarScene
                                 sceneState={sceneState}
                                 onSelectArea={actions.selectArea}
                                 onSetZoom={actions.setZoom}
                                 onSetPan={actions.setPan}
                             />
                         </div>
-                        {/* Context Panel (1/3 width) */}
+                        {/* Ops Panel (1/3 width) */}
                         <div className="h-full bg-white/40 dark:bg-slate-900/80 backdrop-blur-xl">
-                            <DigitalBarContextPanel
+                            <OpsPanel
                                 selectedArea={selectedArea}
                                 workers={sceneState.workers}
                             />

@@ -1,7 +1,10 @@
 import { useState, useCallback } from 'react';
 import { useApp } from '../../../context/AppContext';
+import { evaluateProposal, AiEvaluationResult } from '../logic/championAiEvaluator';
+import { exportProposalToPdf } from '../logic/championPdfExporter';
 
 export interface ChampionCreativeState {
+    viewMode: 'DESIGN' | 'PRESENTATION';
     concept: string;
     tags: string[];
     isGenerating: boolean;
@@ -11,6 +14,7 @@ export interface ChampionCreativeState {
         recipe: { ingredient: string; amount: string }[];
         score: number;
     } | null;
+    aiEvaluation: AiEvaluationResult | null;
 }
 
 const MOCK_PROPOSALS = {
@@ -51,20 +55,46 @@ const MOCK_PROPOSALS = {
             { ingredient: 'Espuma de Jengibre', amount: 'Top' }
         ],
         score: 90
+    },
+    'Cítrico': {
+        title: 'Luminous drops',
+        description: 'Frescura eléctrica con notas de yuzu y bergamota.',
+        recipe: [
+            { ingredient: 'Vodka Cítrico', amount: '50ml' },
+            { ingredient: 'Jugo de Yuzu', amount: '20ml' },
+            { ingredient: 'Jarabe de Lemongrass', amount: '15ml' }
+        ],
+        score: 91
+    },
+    'Especiado': {
+        title: 'Silk Road',
+        description: 'Un viaje sensorial por la ruta de la seda.',
+        recipe: [
+            { ingredient: 'Rum Añejo', amount: '60ml' },
+            { ingredient: 'Chai Tea Cordial', amount: '30ml' },
+            { ingredient: 'Cardamom Bitters', amount: '2 dashes' }
+        ],
+        score: 89
     }
 };
 
 export const useChampionCreativeEngine = () => {
+    const { db, userId, appId, user } = useApp();
+    const [statusMessage, setStatusMessage] = useState<string | null>(null);
+
     const [state, setState] = useState<ChampionCreativeState>({
+        viewMode: 'DESIGN',
         concept: '',
         tags: [],
         isGenerating: false,
-        proposal: null
+        proposal: null,
+        aiEvaluation: null
     });
 
-    const setConcept = (concept: string) => {
-        setState(prev => ({ ...prev, concept }));
-    };
+    // Actions
+    const setConcept = (concept: string) => setState(prev => ({ ...prev, concept }));
+
+    const setViewMode = (mode: 'DESIGN' | 'PRESENTATION') => setState(prev => ({ ...prev, viewMode: mode }));
 
     const toggleTag = (tag: string) => {
         setState(prev => {
@@ -73,14 +103,6 @@ export const useChampionCreativeEngine = () => {
                 : [...prev.tags, tag];
             return { ...prev, tags: newTags };
         });
-
-        // Auto-trigger generation for demo purposes if not generating
-        if (!state.isGenerating) {
-            // simulateGeneration(tag); 
-            // Better to let user click "Generate" or have an effect? 
-            // Requirements say "Filters must notify hook".
-            // Let's just update state here.
-        }
     };
 
     const generateProposal = useCallback(() => {
@@ -95,13 +117,37 @@ export const useChampionCreativeEngine = () => {
             setState(prev => ({
                 ...prev,
                 isGenerating: false,
-                proposal: mock
+                proposal: mock,
+                aiEvaluation: null // Reset evaluation on new generation
             }));
         }, 1500);
     }, [state.tags]);
 
-    const { db, userId, appId, user } = useApp();
-    const [statusMessage, setStatusMessage] = useState<string | null>(null);
+    const runAiEvaluation = useCallback(() => {
+        if (!state.proposal) return;
+
+        setStatusMessage('Juez IA analizando...');
+        setTimeout(() => {
+            const result = evaluateProposal(state.proposal as any); // Type cast for simpler mock compatibility
+            setState(prev => ({ ...prev, aiEvaluation: result }));
+            setStatusMessage('Evaluación completada');
+            setTimeout(() => setStatusMessage(null), 2000);
+        }, 1200);
+    }, [state.proposal]);
+
+    const triggerPdfExport = useCallback(async () => {
+        if (!state.proposal) return;
+
+        setStatusMessage('Generando PDF Premium...');
+        const success = await exportProposalToPdf(state.proposal as any);
+
+        if (success) {
+            setStatusMessage('PDF descargado correctamente');
+        } else {
+            setStatusMessage('Error al generar PDF');
+        }
+        setTimeout(() => setStatusMessage(null), 3000);
+    }, [state.proposal]);
 
     const saveToGrimorium = async () => {
         if (!state.proposal || !db || !userId) return;
@@ -150,9 +196,12 @@ export const useChampionCreativeEngine = () => {
     return {
         state: { ...state, statusMessage },
         actions: {
+            setViewMode,
             setConcept,
             toggleTag,
             generateProposal,
+            runAiEvaluation,
+            triggerPdfExport,
             saveToGrimorium,
             createTrainingPlan
         }

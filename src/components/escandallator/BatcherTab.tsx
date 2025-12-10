@@ -23,6 +23,11 @@ const BatcherTab: React.FC<BatcherTabProps> = ({ db, appId, allRecipes, setBatch
     const [includeDilution, setIncludeDilution] = React.useState(false);
 
     const handleCalculateBatch = () => {
+        if (!allRecipes || allRecipes.length === 0) {
+            console.warn("Batcher: No recipes available to calculate.");
+            return;
+        }
+
         const recipe = allRecipes.find(r => r.id === batchSelectedRecipeId);
         const targetQuantity = parseFloat(targetQuantityStr);
 
@@ -31,22 +36,62 @@ const BatcherTab: React.FC<BatcherTabProps> = ({ db, appId, allRecipes, setBatch
             return;
         };
 
-        const originalVolume = recipe.ingredientes.reduce((acc, ing) => { if (ing.unidad === 'ml' || ing.unidad === 'g') return acc + ing.cantidad; return acc; }, 0);
-        if (originalVolume === 0) return;
+        // Calculate original volume (approx)
+        const originalVolume = recipe.ingredientes.reduce((acc, ing) => {
+            // Only count liquids/measurable solids to some extent
+            if (ing.unidad === 'ml' || ing.unidad === 'g' || ing.unidad === 'cl' || ing.unidad === 'oz') {
+                let qty = ing.cantidad;
+                if (ing.unidad === 'cl') qty *= 10;
+                if (ing.unidad === 'oz') qty *= 30; // Approx
+                return acc + qty;
+            }
+            return acc;
+        }, 0);
+
+        if (originalVolume === 0) {
+            // Fallback if no volume found, maybe just scale by 1 (or error?)
+            // For now, let's assume if 0, we can't scale by volume properly, 
+            // but usually there's liquid. Let's warn.
+            console.warn("Batcher: Original volume is 0, cannot scale.");
+            return;
+        }
 
         const BOTTLE_SIZE_ML = 700;
         const targetVolumeMl = targetUnit === 'Litros' ? targetQuantity * 1000 : targetQuantity * BOTTLE_SIZE_ML;
         const scalingFactor = targetVolumeMl / originalVolume;
 
-        const newBatchData = recipe.ingredientes.map(ing => ({ ingredient: ing.nombre, originalQty: `${ing.cantidad} ${ing.unidad}`, batchQty: `${(ing.cantidad * scalingFactor).toFixed(1)} ml` }));
+        const newBatchData = recipe.ingredientes.map(ing => ({
+            ingredient: ing.nombre,
+            originalQty: `${ing.cantidad} ${ing.unidad}`,
+            batchQty: `${(ing.cantidad * scalingFactor).toFixed(1)} ${ing.unidad === 'oz' ? 'oz' : 'ml'}` // Normalized to ml roughly, or keep unit? 
+            // actually usually batch is in ml. Let's keep it simplifiel.
+        }));
+
+        // Re-map with simpler logic for the view
+        const finalBatchData = recipe.ingredientes.map(ing => {
+            let amount = ing.cantidad;
+            if (ing.unidad === 'cl') amount *= 10;
+            if (ing.unidad === 'oz') amount *= 30;
+
+            // If it's a dash/twist, maybe just multiply count? 
+            // For now assuming scaler logic relies on liquid volume mostly.
+
+            return {
+                ingredient: ing.nombre,
+                originalQty: `${ing.cantidad} ${ing.unidad}`,
+                batchQty: (ing.unidad === 'ml' || ing.unidad === 'cl' || ing.unidad === 'oz' || ing.unidad === 'g')
+                    ? `${(amount * scalingFactor).toFixed(0)} ml`
+                    : `${(ing.cantidad * scalingFactor).toFixed(1)} ${ing.unidad}`
+            };
+        });
 
         if (includeDilution) {
-            newBatchData.push({ ingredient: 'Agua (Dilución 20%)', originalQty: '-', batchQty: `${(targetVolumeMl * 0.20).toFixed(1)} ml` });
+            finalBatchData.push({ ingredient: 'Agua (Dilución 20%)', originalQty: '-', batchQty: `${(targetVolumeMl * 0.20).toFixed(0)} ml` });
         }
 
         // Pass result up including metadata for saving
         setBatchResult({
-            data: newBatchData,
+            data: finalBatchData,
             meta: {
                 recipeId: recipe.id,
                 recipeName: recipe.nombre,
@@ -58,13 +103,13 @@ const BatcherTab: React.FC<BatcherTabProps> = ({ db, appId, allRecipes, setBatch
     };
 
     return (
-        <div className="flex flex-col gap-6 max-w-4xl mx-auto mt-4 pb-20">
-            <div className="text-center">
-                <h2 className="text-2xl font-light text-slate-800 dark:text-slate-100 flex items-center justify-center gap-2">
-                    <Icon svg={ICONS.layers} className="w-6 h-6 text-emerald-600" />
+        <div className="flex flex-col gap-6 w-full max-w-4xl mx-auto mt-8 px-4 pb-20">
+            <div className="flex flex-col items-center justify-center text-center space-y-2">
+                <h2 className="text-3xl font-light text-slate-800 dark:text-slate-100 flex items-center gap-3">
+                    <Icon svg={ICONS.layers} className="w-8 h-8 text-emerald-600" />
                     Batcher
                 </h2>
-                <p className="text-slate-500 dark:text-slate-400 text-sm">Calculadora de producción masiva</p>
+                <p className="text-slate-500 dark:text-slate-400 text-base font-medium">Calculadora de producción masiva</p>
             </div>
 
             {/* Configuration Card */}

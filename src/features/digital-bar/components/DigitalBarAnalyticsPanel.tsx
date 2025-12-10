@@ -25,7 +25,13 @@ export const DigitalBarAnalyticsPanel: React.FC = () => {
     const { metrics, insights, period, setPeriod, isLoading } = useDigitalBar();
 
     if (isLoading) {
-        return <div className="h-full flex items-center justify-center"><Spinner /></div>;
+        return (
+            <div className="h-full grid grid-cols-1 lg:grid-cols-3 gap-6 p-4 animate-pulse">
+                {[1, 2, 3].map(i => (
+                    <div key={i} className="h-full bg-white/20 dark:bg-slate-900/20 rounded-2xl border border-white/10" />
+                ))}
+            </div>
+        );
     }
 
     const lastMetric = metrics[metrics.length - 1] || { tickets: 0, efficiency: 0, stress: 0 };
@@ -56,9 +62,11 @@ export const DigitalBarAnalyticsPanel: React.FC = () => {
                     />
                 </div>
 
-                <div className="mt-6">
+                <div className="mt-6 flex flex-col h-[200px] w-full min-h-[200px] relative">
                     <h4 className="text-xs font-bold text-slate-500 uppercase mb-2">Actividad Reciente</h4>
-                    <ActivityChart data={metrics} dataKey="tickets" height={150} color="#06b6d4" />
+                    <div className="flex-1 w-full min-h-0 bg-white/5 dark:bg-slate-800/20 rounded-xl overflow-hidden">
+                        <ActivityChart data={metrics} dataKey="tickets" height={180} color="#06b6d4" />
+                    </div>
                 </div>
             </AvatarColumn>
 
