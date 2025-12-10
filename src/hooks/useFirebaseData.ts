@@ -1,107 +1,117 @@
-import { useState, useEffect } from 'react';
-import { Firestore, collection, onSnapshot, query, orderBy, limit, doc } from 'firebase/firestore';
-import { Recipe, Ingredient, PizarronTask, AppNotification, UserProfile } from '../../types';
+import { useMemo } from 'react';
+import { Firestore, collection, query, orderBy, limit, doc, getDocs, getDoc } from 'firebase/firestore';
+import { useQuery } from '@tanstack/react-query';
+import { Recipe, Ingredient, PizarronTask, AppNotification, UserProfile } from '../types';
 import { safeNormalizeTask } from '../utils/taskHelpers';
+
+// --- Query Keys & Fetchers ---
+
+export const QUERY_KEYS = {
+    recipes: (userId: string) => ['recipes', userId],
+    ingredients: (appId: string, userId: string) => ['ingredients', appId, userId],
+    tasks: (appId: string) => ['tasks', appId],
+    notifications: (appId: string, userId: string) => ['notifications', appId, userId],
+    profile: (userId: string) => ['profile', userId],
+    boards: (appId: string) => ['boards', appId],
+};
+
+export const fetchRecipes = async (db: Firestore, userId: string) => {
+    const q = query(collection(db, `users/${userId}/grimorio`), orderBy('nombre'));
+    const snap = await getDocs(q);
+    return snap.docs.map(d => ({ ...d.data(), id: d.id } as Recipe));
+};
+
+export const fetchIngredients = async (db: Firestore, appId: string, userId: string) => {
+    const q = query(collection(db, `artifacts/${appId}/users/${userId}/grimorio-ingredients`), orderBy('nombre'));
+    const snap = await getDocs(q);
+    return snap.docs.map(d => ({ ...d.data(), id: d.id } as Ingredient));
+};
+
+export const fetchTasks = async (db: Firestore, appId: string) => {
+    const q = query(collection(db, `artifacts/${appId}/public/data/pizarron-tasks`), orderBy('createdAt', 'desc'));
+    const snap = await getDocs(q);
+    return snap.docs.map(d => safeNormalizeTask({ ...d.data(), id: d.id }));
+};
+
+const fetchNotifications = async (db: Firestore, appId: string, userId: string) => {
+    const q = query(collection(db, `artifacts/${appId}/users/${userId}/notifications`), orderBy('createdAt', 'desc'), limit(20));
+    const snap = await getDocs(q);
+    return snap.docs.map(d => ({ ...d.data(), id: d.id } as AppNotification));
+};
+
+const fetchProfile = async (db: Firestore, userId: string) => {
+    const ref = doc(db, `users/${userId}/profile`, 'main');
+    const snap = await getDoc(ref);
+    return snap.exists() ? snap.data() as Partial<UserProfile> : {};
+};
+
+const fetchBoards = async (db: Firestore, appId: string) => {
+    const q = collection(db, `artifacts/${appId}/public/data/pizarron-boards`);
+    const snap = await getDocs(q);
+    return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+};
+
+// --- Hook ---
 
 export const useFirebaseData = (
     db: Firestore | null,
     userId: string | null,
     appId: string
 ) => {
-    const [allRecipes, setAllRecipes] = useState<Recipe[]>([]);
-    const [allIngredients, setAllIngredients] = useState<Ingredient[]>([]);
-    const [allPizarronTasks, setAllPizarronTasks] = useState<PizarronTask[]>([]);
-    const [notifications, setNotifications] = useState<AppNotification[]>([]);
-    const [userProfile, setUserProfile] = useState<Partial<UserProfile>>({});
-    const [activeBoardId, setActiveBoardId] = useState<string | null>(null);
-    const [loading, setLoading] = useState(true);
+    const enabled = !!db && !!userId && !!appId;
 
-    useEffect(() => {
-        // Triple Guard: Do not attempt to listen if any requirement is missing
-        if (!db || !userId || !appId) {
-            setLoading(false);
-            return;
-        }
+    const recipesQuery = useQuery({
+        queryKey: QUERY_KEYS.recipes(userId || ''),
+        queryFn: () => fetchRecipes(db!, userId!),
+        enabled,
+    });
 
-        setLoading(true);
+    const ingredientsQuery = useQuery({
+        queryKey: QUERY_KEYS.ingredients(appId, userId || ''),
+        queryFn: () => fetchIngredients(db!, appId, userId!),
+        enabled,
+    });
 
-        // 1. Recipes Listener
-        const recipeDef = query(collection(db, `users/${userId}/grimorio`), orderBy('nombre'));
-        const recipeUnsub = onSnapshot(recipeDef,
-            (snap) => {
-                setAllRecipes(snap.docs.map(d => ({ ...d.data(), id: d.id } as Recipe)));
-            },
-            (error) => console.log("Recipes listener info:", error.message)
-        );
+    const tasksQuery = useQuery({
+        queryKey: QUERY_KEYS.tasks(appId),
+        queryFn: () => fetchTasks(db!, appId),
+        enabled,
+        refetchInterval: 1000 * 30, // Polling every 30s for tasks
+    });
 
-        // 2. Ingredients Listener
-        const ingredientRef = query(collection(db, `artifacts/${appId}/users/${userId}/grimorio-ingredients`), orderBy('nombre'));
-        const ingredientUnsub = onSnapshot(ingredientRef,
-            (snap) => {
-                setAllIngredients(snap.docs.map(d => ({ ...d.data(), id: d.id } as Ingredient)));
-            },
-            (error) => console.log("Ingredients listener info:", error.message)
-        );
+    const notificationsQuery = useQuery({
+        queryKey: QUERY_KEYS.notifications(appId, userId || ''),
+        queryFn: () => fetchNotifications(db!, appId, userId!),
+        enabled,
+        refetchInterval: 1000 * 60, // Polling every 60s
+    });
 
-        // 3. Tasks Listener
-        const tasksRef = query(collection(db, `artifacts/${appId}/public/data/pizarron-tasks`), orderBy('createdAt', 'desc'));
-        const taskUnsub = onSnapshot(tasksRef,
-            (snap) => {
-                setAllPizarronTasks(snap.docs.map(d => safeNormalizeTask({ ...d.data(), id: d.id })));
-            },
-            (error) => console.log("Tasks listener info:", error.message)
-        );
+    const profileQuery = useQuery({
+        queryKey: QUERY_KEYS.profile(userId || ''),
+        queryFn: () => fetchProfile(db!, userId!),
+        enabled,
+    });
 
-        // 4. Notifications Listener
-        const notifRef = query(collection(db, `artifacts/${appId}/users/${userId}/notifications`), orderBy('createdAt', 'desc'), limit(20));
-        const notifUnsub = onSnapshot(notifRef,
-            (snap) => {
-                setNotifications(snap.docs.map(doc => ({ ...doc.data(), id: doc.id } as AppNotification)));
-            },
-            (error) => console.log("Notifications listener info:", error.message)
-        );
+    const boardsQuery = useQuery({
+        queryKey: QUERY_KEYS.boards(appId),
+        queryFn: () => fetchBoards(db!, appId),
+        enabled,
+    });
 
-        // 5. User Profile Listener
-        const profileRef = doc(db, `users/${userId}/profile`, 'main');
-        const profileUnsub = onSnapshot(profileRef,
-            (doc) => {
-                if (doc.exists()) {
-                    setUserProfile(doc.data());
-                }
-            },
-            (error) => console.log("Profile listener info:", error.message)
-        );
+    // Derived State
+    const activeBoardId = useMemo(() => {
+        if (!boardsQuery.data || boardsQuery.data.length === 0) return 'general';
+        return boardsQuery.data[0].id; // Logic from previous hook
+    }, [boardsQuery.data]);
 
-        // 6. Boards Listener for FAB
-        const boardsColPath = `artifacts/${appId}/public/data/pizarron-boards`;
-        const boardsUnsub = onSnapshot(collection(db, boardsColPath), (snap) => {
-            if (!snap.empty) {
-                setActiveBoardId(snap.docs[0].id);
-            } else {
-                setActiveBoardId('general');
-            }
-        });
-
-        setLoading(false);
-
-        // Cleanup function to unsubscribe from all listeners
-        return () => {
-            recipeUnsub();
-            ingredientUnsub();
-            taskUnsub();
-            notifUnsub();
-            profileUnsub();
-            boardsUnsub();
-        };
-
-    }, [db, userId, appId]);
+    const loading = recipesQuery.isLoading || ingredientsQuery.isLoading || tasksQuery.isLoading || profileQuery.isLoading;
 
     return {
-        allRecipes,
-        allIngredients,
-        allPizarronTasks,
-        notifications,
-        userProfile,
+        allRecipes: recipesQuery.data || [],
+        allIngredients: ingredientsQuery.data || [],
+        allPizarronTasks: tasksQuery.data || [],
+        notifications: notificationsQuery.data || [],
+        userProfile: profileQuery.data || {},
         activeBoardId,
         loading
     };

@@ -4,7 +4,8 @@ import {
     updateDoc,
     deleteDoc,
     doc,
-    serverTimestamp
+    serverTimestamp,
+    writeBatch
 } from 'firebase/firestore';
 import { Recipe, Ingredient } from '../../types';
 import { Firestore } from 'firebase/firestore';
@@ -52,5 +53,32 @@ export const grimoriumService = {
     deleteIngredient: async (db: Firestore, userId: string, ingredientId: string) => {
         const docRef = doc(db, `users/${userId}/ingredients`, ingredientId);
         await deleteDoc(docRef);
+    },
+
+    // --- BATCH OPERATIONS ---
+    batchAddIngredients: async (db: Firestore, userId: string, ingredients: Partial<Ingredient>[]) => {
+        const batch = writeBatch(db);
+        const collectionRef = collection(db, `users/${userId}/ingredients`);
+
+        ingredients.forEach(ing => {
+            const docRef = doc(collectionRef); // Generate new ID
+            batch.set(docRef, {
+                ...ing,
+                createdAt: serverTimestamp()
+            });
+        });
+
+        await batch.commit();
+    },
+
+    batchUpdateIngredients: async (db: Firestore, userId: string, updates: { id: string, data: Partial<Ingredient> }[]) => {
+        const batch = writeBatch(db);
+
+        updates.forEach(({ id, data }) => {
+            const docRef = doc(db, `users/${userId}/ingredients`, id);
+            batch.update(docRef, data);
+        });
+
+        await batch.commit();
     }
 };

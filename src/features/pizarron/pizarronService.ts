@@ -5,7 +5,8 @@ import {
     deleteDoc,
     doc,
     serverTimestamp,
-    Firestore
+    Firestore,
+    writeBatch
 } from 'firebase/firestore';
 import { PizarronTask, PizarronBoard } from '../../types';
 
@@ -52,5 +53,20 @@ export const pizarronService = {
     deleteBoard: async (db: Firestore, appId: string, boardId: string) => {
         const docRef = doc(db, `artifacts/${appId}/public/data/pizarron-boards`, boardId);
         await deleteDoc(docRef);
+    },
+
+    // --- BATCH OPERATIONS ---
+    batchUpdateTasks: async (db: Firestore, appId: string, updates: { id: string, data: Partial<PizarronTask> }[]) => {
+        const batch = writeBatch(db);
+
+        updates.forEach(({ id, data }) => {
+            const docRef = doc(db, `artifacts/${appId}/public/data/pizarron-tasks`, id);
+            batch.update(docRef, {
+                ...data,
+                updatedAt: serverTimestamp()
+            });
+        });
+
+        await batch.commit();
     }
 };

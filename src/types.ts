@@ -1,4 +1,7 @@
-import { Timestamp } from 'firebase/firestore';
+import { Timestamp, Firestore } from 'firebase/firestore';
+import { Auth, User } from 'firebase/auth';
+import { FirebaseStorage } from 'firebase/storage';
+import { FirebaseApp } from 'firebase/app';
 
 export interface Ingredient {
     id: string;
@@ -190,5 +193,15 @@ export interface AppContextType {
     isAuthReady: boolean;
     appId: string;
     userProfile?: Partial<UserProfile>;
+}
+
+export interface AppNotification {
+    id: string;
+    title: string;
+    message: string;
+    read: boolean;
+    type?: 'info' | 'success' | 'warning' | 'error';
+    link?: string;
+    createdAt?: any;
 }
 

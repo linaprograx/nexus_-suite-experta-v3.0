@@ -1,6 +1,8 @@
 import * as React from 'react';
 import { ViewName, Recipe, Ingredient, PizarronTask, AppNotification } from './types';
 import { BrowserRouter, useNavigate, useLocation } from 'react-router-dom';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 
 import { AppProvider, useApp } from './src/context/AppContext';
 import { UIProvider, useUI } from './src/context/UIContext';
@@ -17,6 +19,18 @@ import { AuthComponent } from './src/components/auth/AuthComponent';
 import { PrintStyles } from './src/components/ui/PrintStyles';
 import { AddTaskModal } from './src/components/pizarron/AddTaskModal';
 import { useFirebaseData } from './src/hooks/useFirebaseData';
+import { aiPrefetcher } from './src/features/prefetch/aiPrefetchEngine';
+
+const queryClient = new QueryClient({
+    defaultOptions: {
+        queries: {
+            staleTime: 1000 * 60 * 5, // 5 minutes
+            gcTime: 1000 * 60 * 30, // 30 minutes (formerly cacheTime)
+            refetchOnWindowFocus: false,
+            retry: 1,
+        },
+    },
+});
 
 const MainAppContent: React.FC = () => {
     const { db, userId, auth, storage, appId, userProfile } = useApp();
@@ -92,6 +106,25 @@ const AppLayout: React.FC<any> = ({
     // For now, let's just render the router.
 
     const navigate = useNavigate();
+    const location = useLocation();
+
+    // AI Prefetch Integration
+    React.useEffect(() => {
+        if (!userId || !appId) return;
+
+        const currentPath = location.pathname;
+        const viewName = currentPath === '/' ? 'dashboard' : currentPath.substring(1).split('/')[0];
+
+        // Track
+        aiPrefetcher.trackView(viewName);
+
+        // Predict & Prefetch
+        const nextViews = aiPrefetcher.getPredictedNextViews(viewName);
+        nextViews.forEach(v => {
+            aiPrefetcher.prefetchForView(v, queryClient, db, userId, appId);
+        });
+
+    }, [location.pathname, userId, appId, db]);
 
     return (
         <div className='min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-50 font-sans antialiased'>
@@ -154,7 +187,10 @@ const App: React.FC = () => {
     return (
         <AppProvider>
             <UIProvider>
-                <AppContent />
+                <QueryClientProvider client={queryClient}>
+                    <AppContent />
+                    <ReactQueryDevtools initialIsOpen={false} />
+                </QueryClientProvider>
             </UIProvider>
         </AppProvider>
     );

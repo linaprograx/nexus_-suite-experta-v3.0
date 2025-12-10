@@ -62,6 +62,44 @@ const AvatarPlaceholder: React.FC<{ name?: string; url?: string }> = ({ name, ur
     );
 };
 
+
+const KpiCard = ({ title, value, icon, trend, colorClass }: any) => {
+    const { compactMode } = useUI();
+    return (
+        <div className={`bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-shadow duration-200 ${compactMode ? 'p-3' : 'p-6'}`}>
+            <div className={`flex items-center justify-between ${compactMode ? 'mb-2' : 'mb-4'}`}>
+                <div className={`rounded-lg ${colorClass} bg-opacity-10 text-current ${compactMode ? 'p-2' : 'p-3'}`}>
+                    {icon}
+                </div>
+                {trend && (
+                    <span className="text-xs font-medium text-green-500 bg-green-50 dark:bg-green-900/20 px-2 py-1 rounded-full">
+                        {trend}
+                    </span>
+                )}
+            </div>
+            <h3 className={`font-medium text-gray-500 dark:text-gray-400 ${compactMode ? 'text-xs' : 'text-sm'}`}>{title}</h3>
+            <p className={`font-bold text-gray-900 dark:text-white mt-1 ${compactMode ? 'text-xl' : 'text-3xl'}`}>{value}</p>
+        </div>
+    );
+};
+
+const TaskListItem = ({ task, color }: { task: PizarronTask, color: string }) => (
+    <div className="mb-3 p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-100 dark:border-gray-700 hover:bg-white dark:hover:bg-gray-800 transition-colors group">
+        <div className="flex justify-between items-start mb-2">
+            <h4 className="text-sm font-semibold text-gray-800 dark:text-gray-200 line-clamp-2">{task.texto}</h4>
+            <span className={`text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded ${color} bg-opacity-10 text-current`}>
+                {task.category}
+            </span>
+        </div>
+        <div className="flex items-center justify-between mt-2">
+            <ProgressBar value={Math.random() * 100} color={color.replace('text-', 'bg-')} />
+            <div className="ml-3">
+                <AvatarPlaceholder name={task.authorName} url={task.authorPhotoURL} />
+            </div>
+        </div>
+    </div>
+);
+
 const DashboardView: React.FC<{
     allRecipes: Recipe[];
     allPizarronTasks: PizarronTask[];
@@ -114,39 +152,7 @@ const DashboardView: React.FC<{
 
     // --- Components ---
 
-    const KpiCard = ({ title, value, icon, trend, colorClass }: any) => (
-        <div className={`bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-shadow duration-200 ${compactMode ? 'p-3' : 'p-6'}`}>
-            <div className={`flex items-center justify-between ${compactMode ? 'mb-2' : 'mb-4'}`}>
-                <div className={`rounded-lg ${colorClass} bg-opacity-10 text-current ${compactMode ? 'p-2' : 'p-3'}`}>
-                    {icon}
-                </div>
-                {trend && (
-                    <span className="text-xs font-medium text-green-500 bg-green-50 dark:bg-green-900/20 px-2 py-1 rounded-full">
-                        {trend}
-                    </span>
-                )}
-            </div>
-            <h3 className={`font-medium text-gray-500 dark:text-gray-400 ${compactMode ? 'text-xs' : 'text-sm'}`}>{title}</h3>
-            <p className={`font-bold text-gray-900 dark:text-white mt-1 ${compactMode ? 'text-xl' : 'text-3xl'}`}>{value}</p>
-        </div>
-    );
 
-    const TaskListItem = ({ task, color }: { task: PizarronTask, color: string }) => (
-        <div className="mb-3 p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-100 dark:border-gray-700 hover:bg-white dark:hover:bg-gray-800 transition-colors group">
-            <div className="flex justify-between items-start mb-2">
-                <h4 className="text-sm font-semibold text-gray-800 dark:text-gray-200 line-clamp-2">{task.texto}</h4>
-                <span className={`text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded ${color} bg-opacity-10 text-current`}>
-                    {task.category}
-                </span>
-            </div>
-            <div className="flex items-center justify-between mt-2">
-                <ProgressBar value={Math.random() * 100} color={color.replace('text-', 'bg-')} />
-                <div className="ml-3">
-                    <AvatarPlaceholder name={task.authorName} url={task.authorPhotoURL} />
-                </div>
-            </div>
-        </div>
-    );
 
     return (
         <div className={`h-full overflow-y-auto bg-gray-50 dark:bg-gray-900 pb-32 ${compactMode ? 'p-3 space-y-4' : 'p-6 lg:p-10 space-y-8'}`}>
