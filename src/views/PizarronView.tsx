@@ -305,8 +305,7 @@ const PizarronView: React.FC<PizarronViewProps> = ({ db, userId, appId, auth, st
       }
       mainContent={
         <div
-          className="flex flex-col h-full rounded-tl-3xl transition-colors duration-500"
-          style={{ background: `linear-gradient(to bottom, ${boardThemeColor}15, ${boardThemeColor}05, transparent)` }}
+          className="flex flex-col h-full rounded-tl-3xl transition-colors duration-500 bg-transparent"
         >
           <BoardTopbar
             isLeftPanelOpen={isLeftPanelOpen}

@@ -66,20 +66,20 @@ export const PizarronCard: React.FC<PizarronCardProps> = ({ task, onDragStart, o
         relative group cursor-pointer
         bg-white/60 dark:bg-slate-800/60 backdrop-blur-md
         border border-white/20 dark:border-slate-700/30
-        rounded-xl shadow-lg hover:shadow-2xl transition-shadow duration-200
-        ${isUrgent ? 'ring-2 ring-red-500/50 dark:ring-red-500/30 shadow-[0_0_15px_rgba(239,68,68,0.2)]' : ''}
+        rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-1
+        ${isUrgent ? 'ring-2 ring-red-500/50 dark:ring-red-500/30' : ''}
         ${compactMode ? 'p-2' : 'p-4'}
+        border-b-[3px] border-b-transparent
       `}
       draggable="true"
       onDragStart={onDragStart as any}
       onClick={onOpenDetail}
-      style={{ borderColor: borderColor ? `${borderColor}40` : undefined }}
+      style={{ borderBottomColor: borderColor || '#60A5FA' }}
     >
       <div className={`absolute inset-0 bg-gradient-to-br ${getCategoryColor(task.category)} opacity-5 rounded-xl pointer-events-none`} />
 
       <button
-        onClick={handleDelete}
-        className="absolute top-2 right-2 z-20 p-1.5 rounded-md bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-100 dark:hover:bg-red-500/20"
+        className="absolute top-2 right-2 z-20 p-1.5 rounded-md bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 opacity-0 group-hover:opacity-100 transition-all hover:bg-red-100 dark:hover:bg-red-500/20 hover:scale-110"
         title="Eliminar"
       >
         <Icon svg={ICONS.trash} className="w-[14px] h-[14px]" />

@@ -624,10 +624,10 @@ const CerebrityView: React.FC<CerebrityViewProps> = ({ db, userId, storage, appI
   };
 
   const backgroundClass = activeTab === 'creativity'
-    ? "from-[#EDE9FE] to-white dark:from-[#1E1B2A] dark:to-slate-950"
+    ? "from-violet-500/90 via-violet-500/40 to-white/10 dark:from-violet-500/40 dark:via-violet-500/20 dark:to-slate-950/20"
     : (activeTab === 'lab'
-      ? "from-[#CCFBF1] to-white dark:from-[#1A2A29] dark:to-slate-950"
-      : "from-fuchsia-100 to-white dark:from-[#4a1232] dark:to-slate-950" // Trend Locator Gradient
+      ? "from-cyan-500/90 via-cyan-500/40 to-white/10 dark:from-cyan-500/40 dark:via-cyan-500/20 dark:to-slate-950/20"
+      : "from-fuchsia-500/90 via-fuchsia-500/40 to-white/10 dark:from-fuchsia-500/40 dark:via-fuchsia-500/20 dark:to-slate-950/20" // Trend Locator Gradient
     );
 
   return (
@@ -640,7 +640,7 @@ const CerebrityView: React.FC<CerebrityViewProps> = ({ db, userId, storage, appI
         </div>
       </div>
       <div className={`flex-1 grid grid-cols-1 lg:grid-cols-[310px,minmax(0,1fr),320px] gap-6 overflow-hidden rounded-3xl bg-gradient-to-b ${backgroundClass} p-6`}>
-        <div className="h-full min-h-0 overflow-y-auto">
+        <div className="nexus-col-premium">
           {activeTab === 'creativity' ? (
             <CerebrityHistorySidebar db={db} userId={userId} onLoadHistory={(item) => setResult(item)} />
           ) : activeTab === 'lab' ? (
@@ -649,7 +649,7 @@ const CerebrityView: React.FC<CerebrityViewProps> = ({ db, userId, storage, appI
             <TrendHistorySidebar db={db} trendHistoryPath={`users/${userId}/trend-history`} onLoadHistory={(item) => setTrendResults((item as any).results || [])} />
           )}
         </div>
-        <div className="h-full min-h-0 overflow-y-auto">
+        <div className="nexus-col-premium">
           {activeTab === 'creativity' ? (
             <CreativityTab db={db} userId={userId} appId={appId} allRecipes={allRecipes} selectedRecipe={selectedRecipe} setSelectedRecipe={setSelectedRecipe} rawInput={rawInput} setRawInput={setRawInput} handleGenerate={handleGenerate} loading={loading} imageLoading={imageLoading} error={error} result={result} setResult={setResult} onOpenRecipeModal={onOpenRecipeModal} />
           ) : activeTab === 'lab' ? (
@@ -658,7 +658,7 @@ const CerebrityView: React.FC<CerebrityViewProps> = ({ db, userId, storage, appI
             <TrendLocatorTab loading={trendLoading} error={trendError} trendResults={trendResults} trendSources={[]} db={db} userId={userId} appId={appId} trendHistoryPath={`users/${userId}/trend-history`} />
           )}
         </div>
-        <div className="h-full min-h-0 overflow-hidden">
+        <div className="nexus-col-premium">
           {activeTab === 'trendLocator' ? (
             <TrendLocatorControls sourceFilter={sourceFilter} setSourceFilter={setSourceFilter} topicFilter={topicFilter} setTopicFilter={setTopicFilter} keyword={keyword} setKeyword={setKeyword} loading={trendLoading} onSearch={handleTrendSearch} />
           ) : (

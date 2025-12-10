@@ -27,7 +27,7 @@
     --radius-base: 14px;
     --transition-fast: 180ms;
   }
- 
+
   .dark {
     --background: 224 71% 4%;
     --foreground: 213 31% 91%;
@@ -55,7 +55,14 @@
   * {
     @apply border-border;
   }
+
   body {
     @apply bg-background text-foreground antialiased;
+  }
+}
+
+@layer components {
+  .shadow-premium {
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
   }
 }

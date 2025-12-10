@@ -28,7 +28,7 @@ const UnleashView: React.FC<UnleashViewProps> = () => {
   // Dynamic Gradients per section (Soft, Vertical, Top-to-Bottom)
   const getGradientStyle = () => {
     switch (activeTab) {
-      case 'synthesis': return { background: 'linear-gradient(180deg, #7C3AED 0%, rgba(124, 58, 237, 0.35) 45%, rgba(0,0,0,0) 100%)' };
+      case 'synthesis': return { background: 'linear-gradient(180deg, #6366F1 0%, rgba(99, 102, 241, 0.35) 45%, rgba(0,0,0,0) 100%)' };
       case 'atelier': return { background: 'linear-gradient(180deg, #06B6D4 0%, rgba(6, 182, 212, 0.35) 45%, rgba(0,0,0,0) 100%)' };
       case 'econos': return { background: 'linear-gradient(180deg, #10B981 0%, rgba(16, 185, 129, 0.35) 45%, rgba(0,0,0,0) 100%)' };
       case 'makemenu': return { background: 'linear-gradient(180deg, #EF4444 0%, rgba(239, 68, 68, 0.35) 45%, rgba(0,0,0,0) 100%)' };

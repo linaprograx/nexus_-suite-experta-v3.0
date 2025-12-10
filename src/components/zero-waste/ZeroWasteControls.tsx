@@ -77,7 +77,7 @@ const ZeroWasteControls: React.FC<ZeroWasteControlsProps> = ({
                 <Button
                     onClick={onGenerate}
                     disabled={loading}
-                    className="w-full bg-cyan-600 hover:bg-cyan-700 text-white shadow-lg shadow-cyan-500/20"
+                    className="w-full bg-green-600 hover:bg-green-700 text-white shadow-premium rounded-xl"
                 >
                     {loading ? <Spinner className="w-4 h-4 mr-2" /> : <Icon svg={ICONS.recycle} className="w-4 h-4 mr-2" />}
                     Generar

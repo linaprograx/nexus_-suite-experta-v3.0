@@ -182,9 +182,9 @@ export const IngredientListPanel: React.FC<IngredientListPanelProps> = ({
 
       {/* Floating Action Button for New Ingredient */}
       <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20">
-        <Button onClick={onNewIngredient} className="rounded-full shadow-lg bg-emerald-600 hover:bg-emerald-700 text-white px-6">
-          <Icon svg={ICONS.plus} className="w-4 h-4 mr-2" />
-          Nuevo ingrediente
+        <Button onClick={onNewIngredient} className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-md shadow-emerald-900/20">
+          <Icon svg={ICONS.plus} className="mr-2 h-4 w-4" />
+          Nuevo Ingrediente
         </Button>
       </div>
     </Card>

@@ -110,7 +110,7 @@ const LabView: React.FC<LabViewProps> = ({ db, userId, appId, allIngredients, al
                             ))
                         }
                     </div>
-                    <Button onClick={handleAnalyzeLab} disabled={labLoading} className="w-full rounded-xl bg-cyan-500 hover:bg-cyan-600 text-white font-semibold py-2.5 shadow-md transition-all">
+                    <Button onClick={handleAnalyzeLab} disabled={labLoading} className="w-full rounded-xl bg-teal-500 hover:bg-teal-600 text-white font-semibold py-2.5 shadow-premium transition-all hover:scale-[1.02]">
                         {labLoading ? <Spinner className="mr-2" /> : <Icon svg={ICONS.flask} className="mr-2 h-5 w-5" />}
                         Analizar Combinación
                     </Button>

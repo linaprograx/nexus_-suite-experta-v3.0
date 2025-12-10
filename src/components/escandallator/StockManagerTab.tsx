@@ -64,13 +64,13 @@ const StockManagerTab: React.FC<StockManagerTabProps> = ({ allRecipes, allIngred
             </div>
 
             {/* Step 1: Projection Inputs */}
-            <div className="bg-white/60 dark:bg-slate-900/40 backdrop-blur-md rounded-2xl border border-white/20 dark:border-white/5 overflow-hidden shadow-sm">
+            <div className="bg-white/60 dark:bg-slate-900/40 backdrop-blur-xl rounded-2xl border-0 shadow-premium overflow-hidden">
                 <div className="p-4 border-b border-white/10 dark:border-white/5 bg-white/40 dark:bg-slate-900/40 flex justify-between items-center">
                     <div>
                         <h3 className="font-semibold text-slate-800 dark:text-slate-200">1. Proyección de Ventas</h3>
                         <p className="text-xs text-slate-500 dark:text-slate-400">Estima cantidades por cóctel</p>
                     </div>
-                    <Button onClick={handleGenerate} className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-600/20">
+                    <Button onClick={handleGenerate} className="bg-lime-600 hover:bg-lime-700 text-white shadow-premium rounded-xl">
                         <Icon svg={ICONS.calculator} className="mr-2 h-4 w-4" />Generar Pedido
                     </Button>
                 </div>

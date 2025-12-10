@@ -113,7 +113,7 @@ const BatcherTab: React.FC<BatcherTabProps> = ({ db, appId, allRecipes, setBatch
             </div>
 
             {/* Configuration Card */}
-            <div className="bg-white/60 dark:bg-slate-900/40 backdrop-blur-md rounded-2xl border border-white/20 dark:border-white/5 p-6 shadow-sm">
+            <div className="bg-white/60 dark:bg-slate-900/40 backdrop-blur-xl rounded-2xl border-0 shadow-premium p-8">
                 <div className="space-y-6">
                     <div className="space-y-2">
                         <Label htmlFor="batch-recipe" className="text-base font-medium text-slate-700 dark:text-slate-300">Seleccionar Receta</Label>
@@ -142,7 +142,7 @@ const BatcherTab: React.FC<BatcherTabProps> = ({ db, appId, allRecipes, setBatch
                         <Label htmlFor="dilution" className="text-sm cursor-pointer select-none text-slate-700 dark:text-slate-300">Incluir Dilución (20% Agua)</Label>
                     </div>
 
-                    <Button onClick={handleCalculateBatch} disabled={!batchSelectedRecipeId} className="w-full h-12 text-base bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-600/20 transition-all hover:scale-[1.01]">
+                    <Button onClick={handleCalculateBatch} disabled={!batchSelectedRecipeId} className="w-full h-12 text-base bg-cyan-600 hover:bg-cyan-700 text-white shadow-premium rounded-xl transition-all hover:scale-[1.01]">
                         <Icon svg={ICONS.calculator} className="mr-2 h-5 w-5" />Calcular Producción
                     </Button>
                 </div>

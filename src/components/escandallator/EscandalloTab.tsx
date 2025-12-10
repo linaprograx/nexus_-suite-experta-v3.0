@@ -24,8 +24,8 @@ const EscandalloTab: React.FC<EscandalloTabProps> = ({
 
     return (
         <div className="space-y-6 max-w-2xl mx-auto mt-8">
-            <Card className="bg-white/60 dark:bg-slate-900/30 backdrop-blur-sm border-white/20 dark:border-white/5 shadow-sm">
-                <CardContent className="p-6 space-y-6">
+            <Card className="bg-white/60 dark:bg-slate-900/40 backdrop-blur-xl border-0 shadow-premium rounded-2xl">
+                <CardContent className="p-8 space-y-8">
                     <div className="text-center mb-6">
                         <h2 className="text-2xl font-light text-slate-800 dark:text-slate-100">Calculadora de Rentabilidad</h2>
                         <p className="text-slate-500 dark:text-slate-400 text-sm">Selecciona una receta y define su precio de venta</p>
