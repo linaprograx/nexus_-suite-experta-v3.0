@@ -19,7 +19,6 @@ import { ChatbotWidget } from './components/ui/ChatbotWidget';
 import { AuthComponent } from './components/auth/AuthComponent';
 import { PrintStyles } from './components/ui/PrintStyles';
 import { AddTaskModal } from './components/pizarron/AddTaskModal';
-import { useFirebaseData } from './hooks/useFirebaseData';
 import { aiPrefetcher } from './features/prefetch/aiPrefetchEngine';
 
 const queryClient = new QueryClient({
@@ -33,38 +32,30 @@ const queryClient = new QueryClient({
     },
 });
 
+import { useNexusProfile } from './hooks/useNexusProfile';
+import { useIngredients } from './hooks/useIngredients';
+
+// ... (other imports remain, but useFirebaseData is gone)
+
 const MainAppContent: React.FC = () => {
-    const { db, userId, auth, storage, appId, userProfile } = useApp();
+    const { db, userId, auth, storage, appId } = useApp();
     const { isSidebarCollapsed } = useUI();
 
-    const {
-        allRecipes,
-        allIngredients,
-        allPizarronTasks,
-        notifications,
-        userProfile: firebaseUserProfile,
-        activeBoardId,
-        loading: firebaseLoading,
-    } = useFirebaseData(db, userId, appId || 'default-app-id');
+    // Modular Hooks
+    const { notifications } = useNexusProfile();
+    const { ingredients: allIngredients } = useIngredients();
 
-    // Prefer profile from hook, fallback to context
-    const effectiveUserProfile = firebaseUserProfile && Object.keys(firebaseUserProfile).length > 0
-        ? firebaseUserProfile
-        : userProfile;
     const [showNotificationsDrawer, setShowNotificationsDrawer] = React.useState(false);
     const [isMobileSidebarOpen, setIsMobileSidebarOpen] = React.useState(false);
 
     const [showRecipeModal, setShowRecipeModal] = React.useState(false);
     const [recipeToEdit, setRecipeToEdit] = React.useState<Partial<Recipe> | null>(null);
     const [showAddTaskModal, setShowAddTaskModal] = React.useState(false);
-    // const [activeBoardId, setActiveBoardId] = React.useState<string | null>(null); // REPLACED BY HOOK
 
     const [taskToOpen, setTaskToOpen] = React.useState<string | null>(null);
     const [draggingRecipe, setDraggingRecipe] = React.useState<Recipe | null>(null);
     const [draggingTask, setDraggingTask] = React.useState<string | null>(null);
     const [textToAnalyze, setTextToAnalyze] = React.useState<string | null>('');
-
-
 
     if (!db || !userId || !auth || !storage || !appId) {
         return <div className='flex h-screen items-center justify-center'><Spinner className='w-12 h-12' /></div>;
@@ -74,8 +65,7 @@ const MainAppContent: React.FC = () => {
         <BrowserRouter>
             <AppLayout
                 db={db} userId={userId} auth={auth} storage={storage} appId={appId}
-                allRecipes={allRecipes} allIngredients={allIngredients} allPizarronTasks={allPizarronTasks} notifications={notifications}
-                effectiveUserProfile={effectiveUserProfile}
+                allIngredients={allIngredients} notifications={notifications}
                 isSidebarCollapsed={isSidebarCollapsed}
                 showNotificationsDrawer={showNotificationsDrawer} setShowNotificationsDrawer={setShowNotificationsDrawer}
                 isMobileSidebarOpen={isMobileSidebarOpen} setIsMobileSidebarOpen={setIsMobileSidebarOpen}
@@ -92,8 +82,8 @@ const MainAppContent: React.FC = () => {
 // Internal component to use router hooks
 const AppLayout: React.FC<any> = ({
     db, userId, auth, storage, appId,
-    allRecipes, allIngredients, allPizarronTasks, notifications,
-    effectiveUserProfile, isSidebarCollapsed,
+    allIngredients, notifications,
+    isSidebarCollapsed,
     showNotificationsDrawer, setShowNotificationsDrawer,
     isMobileSidebarOpen, setIsMobileSidebarOpen,
     recipeToEdit, setRecipeToEdit, setShowRecipeModal, showRecipeModal,
@@ -149,8 +139,7 @@ const AppLayout: React.FC<any> = ({
                 <main className='flex-1 overflow-y-auto p-4'>
                     <AppRouter
                         db={db} userId={userId} appId={appId} auth={auth} storage={storage}
-                        allRecipes={allRecipes} allIngredients={allIngredients} allPizarronTasks={allPizarronTasks}
-                        notifications={notifications} userProfile={effectiveUserProfile}
+                        // allRecipes, allPizarronTasks, userProfile removed as they are fetched internally by views
                         onOpenRecipeModal={(r: any) => { setRecipeToEdit(r); setShowRecipeModal(true); }}
                         taskToOpen={taskToOpen} onTaskOpened={() => setTaskToOpen(null)}
                         draggingRecipe={draggingRecipe} onDragRecipeStart={setDraggingRecipe}
@@ -169,6 +158,8 @@ const AppLayout: React.FC<any> = ({
         </div>
     );
 };
+
+
 
 const AppContent: React.FC = () => {
     const { isAuthReady, user } = useApp();

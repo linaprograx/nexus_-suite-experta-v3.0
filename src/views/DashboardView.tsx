@@ -100,15 +100,19 @@ const TaskListItem = ({ task, color }: { task: PizarronTask, color: string }) =>
     </div>
 );
 
-const DashboardView: React.FC<{
-    allRecipes: Recipe[];
-    allPizarronTasks: PizarronTask[];
-    allIngredients: Ingredient[];
-    auth: Auth | null; // Allow null auth
-}> = ({ allRecipes, allPizarronTasks, allIngredients, auth }) => {
-    const { userProfile } = useApp();
+import { useRecipes } from '../hooks/useRecipes';
+import { useIngredients } from '../hooks/useIngredients';
+import { usePizarronData } from '../hooks/usePizarronData';
+
+const DashboardView: React.FC = () => {
+    const { userProfile, auth } = useApp();
     const { compactMode } = useUI();
     const navigate = useNavigate();
+
+    // Data Hooks
+    const { recipes: allRecipes } = useRecipes();
+    const { ingredients: allIngredients } = useIngredients();
+    const { tasks: allPizarronTasks } = usePizarronData();
 
     // Safe user access
     const safeUser = auth?.currentUser;

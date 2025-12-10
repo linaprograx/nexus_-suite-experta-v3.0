@@ -16,15 +16,19 @@ import { GameCard } from '../components/colegium/GameCard';
 import { ICONS } from '../components/ui/icons';
 import { Icon } from '../components/ui/Icon';
 import { AreaChart, Area, ResponsiveContainer, XAxis, Tooltip } from 'recharts'; // For Stats Card
+import { useApp } from '../context/AppContext';
+import { useRecipes } from '../hooks/useRecipes';
+import { usePizarronData } from '../hooks/usePizarronData';
 
 interface ColegiumViewProps {
-    db: Firestore;
-    userId: string;
-    allRecipes: Recipe[];
-    allPizarronTasks: PizarronTask[];
+    // Props removed
 }
 
-const ColegiumView: React.FC<ColegiumViewProps> = ({ db, userId, allRecipes, allPizarronTasks }) => {
+const ColegiumView: React.FC<ColegiumViewProps> = () => {
+    const { db, userId } = useApp();
+    const { recipes: allRecipes } = useRecipes();
+    const { tasks: allPizarronTasks } = usePizarronData();
+
     // Phases: 'menu' (Bento Grid) -> 'selection' (Old selector, maybe skip?) -> 'setup' -> 'quiz' -> 'result'
     // Let's map Bento Cards directly to 'setup' or 'quiz' depending on game.
     const [quizPhase, setQuizPhase] = React.useState<'menu' | 'selection' | 'setup' | 'quiz' | 'result'>('menu');

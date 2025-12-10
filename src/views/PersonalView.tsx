@@ -9,16 +9,21 @@ import { PersonalSettingsPanel } from '../components/personal/PersonalSettingsPa
 import { useUI } from '../context/UIContext';
 import { Input } from '../components/ui/Input'; // Used for hidden file inputs, kept for logic
 
+import { useRecipes } from '../hooks/useRecipes';
+import { usePizarronData } from '../hooks/usePizarronData';
+
 interface PersonalViewProps {
     db: Firestore;
     userId: string;
     storage: FirebaseStorage | null;
     auth: Auth | null;
-    allRecipes: Recipe[];
-    allPizarronTasks: PizarronTask[];
+    // allRecipes, allPizarronTasks REMOVED
 }
 
-const PersonalView: React.FC<PersonalViewProps> = ({ db, userId, storage, auth, allRecipes, allPizarronTasks }) => {
+const PersonalView: React.FC<PersonalViewProps> = ({ db, userId, storage, auth }) => {
+    const { recipes: allRecipes } = useRecipes();
+    const { tasks: allPizarronTasks } = usePizarronData();
+
     const { theme, setTheme, compactMode, toggleCompactMode } = useUI();
     const [profile, setProfile] = useState<Partial<UserProfile>>({});
     const [newAvatar, setNewAvatar] = useState<File | null>(null);

@@ -42,6 +42,7 @@ export interface Recipe {
     storytelling?: string;
     imageUrl?: string | null;
     costoTotal?: number;
+    costoReceta?: number; // Alias for legacy code
     precioVenta?: number;
     margen?: number;
     createdAt?: any;
@@ -140,12 +141,16 @@ export interface Tag {
     color: string;
 }
 
+export type ViewName = 'dashboard' | 'grimorium' | 'pizarron' | 'cerebrity' | 'unleash' | 'colegium' | 'settings' | 'menu' | string;
+
 export interface UserProfile {
     uid: string;
     displayName: string | null;
     email: string | null;
     photoURL: string | null;
     role?: string;
+    jobTitle?: string;
+    bio?: string;
 }
 
 export interface ZeroWasteResult {

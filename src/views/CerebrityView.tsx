@@ -75,19 +75,25 @@ const SaveModal = ({ isOpen, onClose, options, powerName, onConfirm }: { isOpen:
   )
 }
 
+import { useRecipes } from '../hooks/useRecipes';
+import { useIngredients } from '../hooks/useIngredients';
+
 interface CerebrityViewProps {
   db: Firestore;
   userId: string;
   storage: FirebaseStorage | null;
   appId: string;
-  allRecipes: Recipe[];
-  allIngredients: Ingredient[];
+  // allRecipes: Recipe[]; // Removed
+  // allIngredients: Ingredient[]; // Removed
   onOpenRecipeModal: (recipe: Partial<Recipe> | null) => void;
   initialText: string | null;
   onAnalysisDone: () => void;
 }
 
-const CerebrityView: React.FC<CerebrityViewProps> = ({ db, userId, storage, appId, allRecipes, allIngredients, onOpenRecipeModal, initialText, onAnalysisDone }) => {
+const CerebrityView: React.FC<CerebrityViewProps> = ({ db, userId, storage, appId, onOpenRecipeModal, initialText, onAnalysisDone }) => {
+  const { recipes: allRecipes } = useRecipes();
+  const { ingredients: allIngredients } = useIngredients();
+
   const [activeTab, setActiveTab] = React.useState<'creativity' | 'lab' | 'trendLocator'>('creativity'); // Added trendLocator
   const [selectedRecipe, setSelectedRecipe] = React.useState<Recipe | null>(null);
   const [rawInput, setRawInput] = React.useState("");

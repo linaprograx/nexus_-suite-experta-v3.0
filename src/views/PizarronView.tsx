@@ -31,13 +31,15 @@ import { DocumentView } from '../features/pizarron/views/DocumentView';
 import { createDraftRecipeFromTask, runAutomations } from '../features/automations/pizarronAutomations';
 import { usePizarraStore } from '../store/pizarraStore';
 
+import { usePizarronData } from '../hooks/usePizarronData';
+
 interface PizarronViewProps {
   db: Firestore;
   userId: string;
   appId: string;
   auth: Auth | null;
   storage: FirebaseStorage | null;
-  allPizarronTasks: PizarronTask[];
+  // allPizarronTasks: PizarronTask[]; // Removed
   taskToOpen: string | null;
   onTaskOpened: () => void;
   draggingRecipe: Recipe | null;
@@ -48,7 +50,10 @@ interface PizarronViewProps {
   userProfile: Partial<UserProfile>;
 }
 
-const PizarronView: React.FC<PizarronViewProps> = ({ db, userId, appId, auth, storage, allPizarronTasks, taskToOpen, onTaskOpened, draggingRecipe, draggingTask, onDropEnd, onDragTaskStart, onAnalyze, userProfile }) => {
+const PizarronView: React.FC<PizarronViewProps> = ({ db, userId, appId, auth, storage, taskToOpen, onTaskOpened, draggingRecipe, draggingTask, onDropEnd, onDragTaskStart, onAnalyze, userProfile }) => {
+  // Fetch Data directly
+  const { tasks: allPizarronTasks } = usePizarronData();
+
   const [showAddTaskModal, setShowAddTaskModal] = React.useState(false);
   const [initialStatusForModal, setInitialStatusForModal] = React.useState<string>('ideas');
   const [selectedTask, setSelectedTask] = React.useState<PizarronTask | null>(null);
@@ -316,12 +321,8 @@ const PizarronView: React.FC<PizarronViewProps> = ({ db, userId, appId, auth, st
             compactMode={compactMode}
             onToggleCompactMode={toggleCompactMode}
 
-            onShowTopIdeas={() => setShowTopIdeasDrawer(true)}
-            onShowSmartView={() => setShowSmartView(true)}
             currentView={currentView}
             onViewChange={handleViewChange}
-            boardName={activeBoard?.name || 'Pizarrón'}
-            boardDescription={activeBoard?.description}
             board={activeBoard}
             users={[]}
           />

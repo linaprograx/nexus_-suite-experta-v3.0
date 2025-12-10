@@ -43,18 +43,23 @@ import ZeroWasteResultCard from '../components/zero-waste/ZeroWasteResultCard';
 import ZeroWasteControls from '../components/zero-waste/ZeroWasteControls';
 import ZeroWasteHistorySidebar from '../components/zero-waste/ZeroWasteHistorySidebar';
 
+import { useRecipes } from '../hooks/useRecipes';
+import { useIngredients } from '../hooks/useIngredients';
+
 interface GrimoriumViewProps {
-    db: Firestore;
-    userId: string;
-    appId: string;
-    allIngredients: Ingredient[];
-    allRecipes: Recipe[];
     onOpenRecipeModal: (recipe: Partial<Recipe> | null) => void;
     onDragRecipeStart: (recipe: Recipe) => void;
     setCurrentView: (view: ViewName) => void;
 }
 
-const GrimoriumView: React.FC<GrimoriumViewProps> = ({ db, userId, appId, allIngredients, allRecipes, onOpenRecipeModal, onDragRecipeStart, setCurrentView }) => {
+const GrimoriumView: React.FC<GrimoriumViewProps> = ({ onOpenRecipeModal, onDragRecipeStart, setCurrentView }) => {
+    const { db, userId, appId } = useApp();
+    const { recipes: allRecipes } = useRecipes();
+    const { ingredients: allIngredients } = useIngredients();
+
+    // Legacy prop support for sub-components (cleaned up locally)
+    // ...
+
     const { storage } = useApp();
     const [loading, setLoading] = React.useState(false);
 

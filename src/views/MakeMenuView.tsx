@@ -10,15 +10,20 @@ import MakeMenuSidebar from '../components/make-menu/MakeMenuSidebar';
 import DesignerControls from '../components/make-menu/DesignerControls';
 import DesignerResults from '../components/make-menu/DesignerResults';
 
+import { useRecipes } from '../hooks/useRecipes';
+import { usePizarronData } from '../hooks/usePizarronData';
+
 interface MakeMenuViewProps {
     db: Firestore;
     userId: string;
     appId: string;
-    allRecipes: Recipe[];
-    allPizarronTasks: PizarronTask[];
+    // allRecipes, allPizarronTasks REMOVED
 }
 
-const MakeMenuView: React.FC<MakeMenuViewProps> = ({ db, userId, appId, allRecipes, allPizarronTasks }) => {
+const MakeMenuView: React.FC<MakeMenuViewProps> = ({ db, userId, appId }) => {
+    const { recipes: allRecipes } = useRecipes();
+    const { tasks: allPizarronTasks } = usePizarronData();
+
     // --- Designer State ---
     const [selectedRecipeIds, setSelectedRecipeIds] = useState<string[]>([]);
     const [selectedTaskIds, setSelectedTaskIds] = useState<string[]>([]);
