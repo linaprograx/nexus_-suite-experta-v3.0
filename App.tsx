@@ -1,4 +1,5 @@
 import * as React from 'react';
+import { ErrorBoundary } from './src/components/system/ErrorBoundary';
 import { Recipe, Ingredient, PizarronTask, AppNotification } from './src/types';
 import { BrowserRouter, useNavigate, useLocation } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -187,10 +188,11 @@ const App: React.FC = () => {
     return (
         <AppProvider>
             <UIProvider>
-                <QueryClientProvider client={queryClient}>
-                    <AppContent />
-
-                </QueryClientProvider>
+                <ErrorBoundary>
+                    <QueryClientProvider client={queryClient}>
+                        <AppContent />
+                    </QueryClientProvider>
+                </ErrorBoundary>
             </UIProvider>
         </AppProvider>
     );
