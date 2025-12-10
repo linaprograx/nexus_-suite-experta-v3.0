@@ -75,9 +75,11 @@ export const ContentView: React.FC<ContentViewProps> = (props) => {
         return <ColegiumView db={rest.db} userId={rest.userId} allRecipes={rest.allRecipes} allPizarronTasks={rest.allPizarronTasks} />;
       case 'personal':
         return <PersonalView db={rest.db} userId={rest.userId} storage={rest.storage} auth={rest.auth} allRecipes={rest.allRecipes} allPizarronTasks={rest.allPizarronTasks} />;
+
+      case 'trendLocator':
+        return <TrendLocatorView db={rest.db} userId={rest.userId} appId={rest.appId} />;
       default:
         // Handle sub-views or legacy cases safely
-        if (currentView === 'trendLocator') return <CerebrityView {...rest} initialText={rest.initialText} onAnalysisDone={rest.onAnalysisDone} />;
         return <PlaceholderView title={currentView} />;
     }
   };

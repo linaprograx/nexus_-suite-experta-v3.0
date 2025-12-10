@@ -1,5 +1,4 @@
 import * as React from 'react';
-import { collection, onSnapshot, query, orderBy, limit } from 'firebase/firestore';
 import { ViewName, Recipe, Ingredient, PizarronTask, AppNotification } from './types';
 
 import { AppProvider, useApp } from './src/context/AppContext';
@@ -15,17 +14,32 @@ import { ChatbotWidget } from './src/components/ui/ChatbotWidget';
 import { AuthComponent } from './src/components/auth/AuthComponent';
 import { PrintStyles } from './src/components/ui/PrintStyles';
 import { AddTaskModal } from './src/components/pizarron/AddTaskModal';
-import { safeNormalizeTask } from './src/utils/taskHelpers';
+import { useFirebaseData } from './src/hooks/useFirebaseData';
 
 const MainAppContent: React.FC = () => {
     const { db, userId, auth, storage, appId, userProfile } = useApp();
     const { isSidebarCollapsed } = useUI();
 
+    const {
+        allRecipes,
+        allIngredients,
+        allPizarronTasks,
+        notifications,
+        userProfile: firebaseUserProfile,
+        activeBoardId,
+        loading: firebaseLoading,
+    } = useFirebaseData(db, userId, appId || 'default-app-id');
+
+    // Prefer profile from hook, fallback to context
+    const effectiveUserProfile = firebaseUserProfile && Object.keys(firebaseUserProfile).length > 0
+        ? firebaseUserProfile
+        : userProfile;
+
     const [currentView, setCurrentView] = React.useState<ViewName>('dashboard');
-    const [allRecipes, setAllRecipes] = React.useState<Recipe[]>([]);
-    const [allIngredients, setAllIngredients] = React.useState<Ingredient[]>([]);
-    const [allPizarronTasks, setAllPizarronTasks] = React.useState<PizarronTask[]>([]);
-    const [notifications, setNotifications] = React.useState<AppNotification[]>([]);
+    // const [allRecipes, setAllRecipes] = React.useState<Recipe[]>([]); // REPLACED BY HOOK
+    // const [allIngredients, setAllIngredients] = React.useState<Ingredient[]>([]); // REPLACED BY HOOK
+    // const [allPizarronTasks, setAllPizarronTasks] = React.useState<PizarronTask[]>([]); // REPLACED BY HOOK
+    // const [notifications, setNotifications] = React.useState<AppNotification[]>([]); // REPLACED BY HOOK
 
     const [showNotificationsDrawer, setShowNotificationsDrawer] = React.useState(false);
     const [isMobileSidebarOpen, setIsMobileSidebarOpen] = React.useState(false);
@@ -33,47 +47,14 @@ const MainAppContent: React.FC = () => {
     const [showRecipeModal, setShowRecipeModal] = React.useState(false);
     const [recipeToEdit, setRecipeToEdit] = React.useState<Partial<Recipe> | null>(null);
     const [showAddTaskModal, setShowAddTaskModal] = React.useState(false);
-    const [activeBoardId, setActiveBoardId] = React.useState<string | null>(null);
+    // const [activeBoardId, setActiveBoardId] = React.useState<string | null>(null); // REPLACED BY HOOK
 
     const [taskToOpen, setTaskToOpen] = React.useState<string | null>(null);
     const [draggingRecipe, setDraggingRecipe] = React.useState<Recipe | null>(null);
     const [draggingTask, setDraggingTask] = React.useState<string | null>(null);
     const [textToAnalyze, setTextToAnalyze] = React.useState<string | null>('');
 
-    React.useEffect(() => {
-        if (!db || !userId || !appId) return;
 
-        const recipeUnsub = onSnapshot(query(collection(db, `users/${userId}/grimorio`), orderBy('nombre')), snap => {
-            setAllRecipes(snap.docs.map(d => ({ ...d.data(), id: d.id } as Recipe)));
-        });
-
-        const ingredientUnsub = onSnapshot(query(collection(db, `users/${userId}/grimorio-ingredients`), orderBy('nombre')), snap => {
-            setAllIngredients(snap.docs.map(d => ({ ...d.data(), id: d.id } as Ingredient)));
-        });
-
-        const taskUnsub = onSnapshot(query(collection(db, `artifacts/${appId}/public/data/pizarron-tasks`), orderBy('createdAt', 'desc')), snap => {
-            setAllPizarronTasks(snap.docs.map(d => safeNormalizeTask({ ...d.data(), id: d.id })));
-        });
-
-        const notifPath = `users/${userId}/notifications`;
-        const notifUnsub = onSnapshot(query(collection(db, notifPath), orderBy('createdAt', 'desc'), limit(20)), snapshot => {
-            setNotifications(snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as AppNotification)));
-        });
-
-        const boardsColPath = `artifacts/${appId}/public/data/pizarron-boards`;
-        const boardsUnsub = onSnapshot(collection(db, boardsColPath), snap => {
-            if (!snap.empty) setActiveBoardId(snap.docs[0].id);
-            else setActiveBoardId('general');
-        });
-
-        return () => {
-            recipeUnsub();
-            ingredientUnsub();
-            taskUnsub();
-            notifUnsub();
-            boardsUnsub();
-        };
-    }, [db, userId, appId]);
 
     if (!db || !userId || !auth || !storage || !appId) {
         return <div className='flex h-screen items-center justify-center'><Spinner className='w-12 h-12' /></div>;
@@ -87,7 +68,7 @@ const MainAppContent: React.FC = () => {
                 <Topbar onToggleMobileSidebar={() => setIsMobileSidebarOpen(true)} onShowNotifications={() => setShowNotificationsDrawer(true)} unreadNotifications={notifications.some(n => !n.read)} title='Nexus Suite' />
 
                 <main className='flex-1 overflow-y-auto p-4'>
-                    <ContentView currentView={currentView} setCurrentView={setCurrentView} db={db} auth={auth} storage={storage} userId={userId} appId={appId} allRecipes={allRecipes} allIngredients={allIngredients} allPizarronTasks={allPizarronTasks} onOpenRecipeModal={(r) => { setRecipeToEdit(r); setShowRecipeModal(true); }} taskToOpen={taskToOpen} onTaskOpened={() => setTaskToOpen(null)} draggingRecipe={draggingRecipe} onDragRecipeStart={setDraggingRecipe} draggingTask={draggingTask} onDragTaskStart={setDraggingTask} onDropEnd={() => { setDraggingRecipe(null); setDraggingTask(null); }} onAnalyze={(t) => { setTextToAnalyze(t); setCurrentView('cerebrity'); }} initialText={textToAnalyze} onAnalysisDone={() => setTextToAnalyze('')} userProfile={userProfile} />
+                    <ContentView currentView={currentView} setCurrentView={setCurrentView} db={db} auth={auth} storage={storage} userId={userId} appId={appId} allRecipes={allRecipes} allIngredients={allIngredients} allPizarronTasks={allPizarronTasks} onOpenRecipeModal={(r) => { setRecipeToEdit(r); setShowRecipeModal(true); }} taskToOpen={taskToOpen} onTaskOpened={() => setTaskToOpen(null)} draggingRecipe={draggingRecipe} onDragRecipeStart={setDraggingRecipe} draggingTask={draggingTask} onDragTaskStart={setDraggingTask} onDropEnd={() => { setDraggingRecipe(null); setDraggingTask(null); }} onAnalyze={(t) => { setTextToAnalyze(t); setCurrentView('cerebrity'); }} initialText={textToAnalyze} onAnalysisDone={() => setTextToAnalyze('')} userProfile={effectiveUserProfile} />
                 </main>
             </div>
 

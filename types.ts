@@ -19,7 +19,8 @@ export type ViewName =
   'colegium' |
   'personal' |
   'unleash' |
-  'lab';
+  'lab' |
+  'avatar';
 
 
 export interface Ingredient {
@@ -256,7 +257,7 @@ export interface AppContextType {
   isAuthReady: boolean;
   appId: string;
   userProfile?: Partial<UserProfile>;
-  userProfile?: Partial<UserProfile>;
+
 }
 
 export interface CerebrityResult {
