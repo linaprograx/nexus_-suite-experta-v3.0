@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { doc, onSnapshot, setDoc, collection, query, orderBy, limit, Firestore, updateDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL, FirebaseStorage } from 'firebase/storage';
 import { Auth } from 'firebase/auth';
-import { UserProfile, ColegiumResult, Recipe, PizarronTask } from '../../types';
+import { UserProfile, ColegiumResult, Recipe, PizarronTask } from '../types';
 import { PersonalProfileSidebar } from '../components/personal/PersonalProfileSidebar';
 import { PersonalHub } from '../components/personal/PersonalHub';
 import { PersonalSettingsPanel } from '../components/personal/PersonalSettingsPanel';
@@ -12,14 +12,14 @@ import { Input } from '../components/ui/Input'; // Used for hidden file inputs, 
 interface PersonalViewProps {
     db: Firestore;
     userId: string;
-    storage: FirebaseStorage;
-    auth: Auth;
+    storage: FirebaseStorage | null;
+    auth: Auth | null;
     allRecipes: Recipe[];
     allPizarronTasks: PizarronTask[];
 }
 
 const PersonalView: React.FC<PersonalViewProps> = ({ db, userId, storage, auth, allRecipes, allPizarronTasks }) => {
-    const { darkMode, toggleDarkMode, compactMode, toggleCompactMode } = useUI();
+    const { theme, setTheme, compactMode, toggleCompactMode } = useUI();
     const [profile, setProfile] = useState<Partial<UserProfile>>({});
     const [newAvatar, setNewAvatar] = useState<File | null>(null);
     const [newAvatarPreview, setNewAvatarPreview] = useState<string | null>(null);
@@ -46,8 +46,8 @@ const PersonalView: React.FC<PersonalViewProps> = ({ db, userId, storage, auth, 
                 setProfile(doc.data());
             } else {
                 setProfile({
-                    displayName: auth.currentUser?.displayName || '',
-                    photoURL: auth.currentUser?.photoURL || '',
+                    displayName: auth?.currentUser?.displayName || '',
+                    photoURL: auth?.currentUser?.photoURL || '',
                     jobTitle: '',
                     bio: '',
                 });
@@ -68,6 +68,10 @@ const PersonalView: React.FC<PersonalViewProps> = ({ db, userId, storage, auth, 
 
     const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files?.[0]) {
+            if (!storage) {
+                alert("Storage no disponible");
+                return;
+            }
             const file = e.target.files[0];
             setNewAvatarPreview(URL.createObjectURL(file));
 
@@ -149,8 +153,8 @@ const PersonalView: React.FC<PersonalViewProps> = ({ db, userId, storage, auth, 
                 {/* Right Column: Settings (3 cols) */}
                 <div className="lg:col-span-3 h-full overflow-y-auto custom-scrollbar">
                     <PersonalSettingsPanel
-                        darkMode={darkMode}
-                        toggleDarkMode={toggleDarkMode}
+                        darkMode={theme === 'dark'}
+                        toggleDarkMode={() => setTheme(prev => prev === 'dark' ? 'light' : 'dark')}
                         reducedMotion={reducedMotion}
                         toggleReducedMotion={() => setReducedMotion(!reducedMotion)}
                         twoFactor={twoFactor}

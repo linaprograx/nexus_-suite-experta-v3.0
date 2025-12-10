@@ -1,7 +1,7 @@
 import React from 'react';
 import { Firestore, collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { FirebaseStorage, ref, uploadString, getDownloadURL } from 'firebase/storage';
-import { Recipe, Ingredient, CerebrityResult } from '../../types';
+import { Recipe, Ingredient, CerebrityResult } from '../types';
 import { CreativityTab } from '../components/cerebrity/CreativityTab';
 import { CerebrityHistorySidebar } from '../components/cerebrity/CerebrityHistorySidebar';
 import { TheLabHistorySidebar } from '../components/cerebrity/TheLabHistorySidebar';
@@ -78,7 +78,7 @@ const SaveModal = ({ isOpen, onClose, options, powerName, onConfirm }: { isOpen:
 interface CerebrityViewProps {
   db: Firestore;
   userId: string;
-  storage: FirebaseStorage;
+  storage: FirebaseStorage | null;
   appId: string;
   allRecipes: Recipe[];
   allIngredients: Ingredient[];
@@ -547,6 +547,7 @@ const CerebrityView: React.FC<CerebrityViewProps> = ({ db, userId, storage, appI
       setImageLoading(true);
       const imageResponse = await generateImage(textResult.promptImagen);
       const base64Data = imageResponse.predictions[0].bytesBase64Encoded;
+      if (!storage) throw new Error("Storage no disponible");
       const storageRef = ref(storage, `users/${userId}/recipe-images/${Date.now()}.jpg`);
       await uploadString(storageRef, base64Data, 'base64', { contentType: 'image/jpeg' });
       const downloadURL = await getDownloadURL(storageRef);

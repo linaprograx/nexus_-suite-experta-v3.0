@@ -19,7 +19,7 @@ import { GlobalSearchModal } from '../components/pizarron/GlobalSearchModal';
 import { TemplateSelectorModal } from '../components/pizarron/TemplateSelectorModal';
 import { createBoardFromTemplate } from '../features/pizarron-templates/createBoard';
 import { useUI } from '../context/UIContext';
-import { PizarronTask, Recipe, PizarronBoard, UserProfile, Tag } from '../../types';
+import { PizarronTask, Recipe, PizarronBoard, UserProfile, Tag } from '../types';
 import { BoardColumns } from '../features/pizarron/ui/BoardColumns';
 import { BoardTopbar } from '../features/pizarron/ui/BoardTopbar';
 import { SmartViewPanel } from '../features/pizarron/ui/SmartViewPanel';
@@ -33,8 +33,8 @@ interface PizarronViewProps {
   db: Firestore;
   userId: string;
   appId: string;
-  auth: Auth;
-  storage: FirebaseStorage;
+  auth: Auth | null;
+  storage: FirebaseStorage | null;
   allPizarronTasks: PizarronTask[];
   taskToOpen: string | null;
   onTaskOpened: () => void;
@@ -265,7 +265,7 @@ const PizarronView: React.FC<PizarronViewProps> = ({ db, userId, appId, auth, st
   const columns = activeBoard?.columns || ['Ideas', 'Pruebas', 'Aprobado'];
   const boardThemeColor = activeBoard?.themeColor || '#60A5FA';
 
-  if (!db || !userId || !auth || !storage) return <Spinner />;
+  if (!db || !userId) return <Spinner />;
 
   return (
     <PremiumLayout

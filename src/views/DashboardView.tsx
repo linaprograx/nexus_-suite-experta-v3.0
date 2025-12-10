@@ -1,6 +1,7 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Auth } from 'firebase/auth';
-import { Recipe, PizarronTask, Ingredient, ViewName } from '../../types';
+import { Recipe, PizarronTask, Ingredient, ViewName } from '../types';
 import { useApp } from '../context/AppContext';
 import { useUI } from '../context/UIContext';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '../components/ui/Card';
@@ -64,11 +65,15 @@ const DashboardView: React.FC<{
     allRecipes: Recipe[];
     allPizarronTasks: PizarronTask[];
     allIngredients: Ingredient[];
-    auth: Auth;
-    setCurrentView: (view: ViewName) => void;
+    auth: Auth | null; // Allow null auth
+    setCurrentView?: (view: ViewName) => void; // Optional/Deprecated
 }> = ({ allRecipes, allPizarronTasks, allIngredients, auth, setCurrentView }) => {
     const { userProfile } = useApp();
     const { compactMode } = useUI();
+    const navigate = useNavigate();
+
+    // Safe user access
+    const safeUser = auth?.currentUser;
 
     // --- 1. Metrics & Data Processing ---
 
@@ -198,14 +203,14 @@ const DashboardView: React.FC<{
                             <img src={userProfile.photoURL} alt="Profile" className={`${compactMode ? 'w-10 h-10' : 'w-16 h-16'} rounded-full object-cover border-4 border-indigo-50 dark:border-indigo-900`} />
                         ) : (
                             <div className={`${compactMode ? 'w-10 h-10 text-lg' : 'w-16 h-16 text-2xl'} rounded-full bg-gradient-to-r from-indigo-500 to-purple-500 flex items-center justify-center text-white font-bold border-4 border-indigo-50 dark:border-indigo-900`}>
-                                {userProfile?.displayName?.[0] || auth.currentUser?.email?.[0] || 'U'}
+                                {userProfile?.displayName?.[0] || safeUser?.email?.[0]?.toUpperCase() || 'U'}
                             </div>
                         )}
                         <div className="absolute bottom-0 right-0 w-4 h-4 bg-green-500 border-2 border-white dark:border-gray-800 rounded-full"></div>
                     </div>
                     <div>
                         <h1 className={`font-bold text-gray-900 dark:text-white ${compactMode ? 'text-lg' : 'text-2xl'}`}>
-                            Bienvenido, {userProfile?.displayName || auth.currentUser?.email?.split('@')[0]}
+                            Bienvenido, {userProfile?.displayName || safeUser?.email?.split('@')[0] || 'Chef'}
                         </h1>
                         <p className="text-gray-500 dark:text-gray-400 text-sm">Tu centro de control diario</p>
                     </div>
@@ -222,7 +227,7 @@ const DashboardView: React.FC<{
 
             {/* 2. KPI Grid */}
             <section className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 ${compactMode ? 'gap-3' : 'gap-6'}`}>
-                <div onClick={() => setCurrentView('grimorium')} className="cursor-pointer">
+                <div onClick={() => navigate('/grimorium')} className="cursor-pointer">
                     <KpiCard
                         title="Total Recetas"
                         value={kpis.totalRecipes}
@@ -231,7 +236,7 @@ const DashboardView: React.FC<{
                         trend="+12% vs mes pasado"
                     />
                 </div>
-                <div onClick={() => setCurrentView('pizarron')} className="cursor-pointer">
+                <div onClick={() => navigate('/pizarron')} className="cursor-pointer">
                     <KpiCard
                         title="Total Tareas"
                         value={kpis.totalTasks}

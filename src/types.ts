@@ -98,11 +98,11 @@ export interface PizarronTask {
     id: string;
     content?: string; // Legacy
     texto?: string; // Legacy Title
-    title: string;
+    title?: string;
     description?: string;
     status: string;
     boardId: string;
-    category?: string;
+    category: string; // Made generic to avoid conflict, or use union if strict
     priority?: 'low' | 'medium' | 'high' | 'urgent' | 'baja' | 'media' | 'alta';
     tags?: string[];
     labels?: string[];
@@ -153,4 +153,42 @@ export interface ZeroWasteResult {
     difficulty: 'Fácil' | 'Media' | 'Avanzada';
 }
 
-export type ViewName = 'dashboard' | 'grimorium' | 'cerebrIty' | 'unleash' | 'pizarron' | 'colegium' | 'personal' | 'makeMenu' | 'avatar' | 'trendLocator';
+export interface QuizQuestion {
+    question: string;
+    options: string[];
+    correctAnswerIndex: number;
+    type: 'multiple-choice' | 'true-false';
+}
+
+export interface ColegiumResult {
+    id?: string;
+    score: number;
+    total: number;
+    topic: string;
+    difficulty: string;
+    createdAt: any;
+}
+
+export interface UIContextType {
+    theme: string;
+    setTheme: React.Dispatch<React.SetStateAction<string>>;
+    isSidebarCollapsed: boolean;
+    toggleSidebar: () => void;
+    compactMode: boolean;
+    toggleCompactMode: () => void;
+    focusMode: boolean;
+    toggleFocusMode: () => void;
+}
+
+export interface AppContextType {
+    app: FirebaseApp | null;
+    db: Firestore | null;
+    auth: Auth | null;
+    storage: FirebaseStorage | null;
+    user: User | null;
+    userId: string | null;
+    isAuthReady: boolean;
+    appId: string;
+    userProfile?: Partial<UserProfile>;
+}
+

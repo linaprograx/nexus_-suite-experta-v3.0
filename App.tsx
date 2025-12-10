@@ -1,5 +1,6 @@
 import * as React from 'react';
 import { ViewName, Recipe, Ingredient, PizarronTask, AppNotification } from './types';
+import { BrowserRouter, useNavigate, useLocation } from 'react-router-dom';
 
 import { AppProvider, useApp } from './src/context/AppContext';
 import { UIProvider, useUI } from './src/context/UIContext';
@@ -7,7 +8,8 @@ import { UIProvider, useUI } from './src/context/UIContext';
 import { Spinner } from './src/components/ui/Spinner';
 import { Sidebar } from './src/components/layout/Sidebar';
 import { Topbar } from './src/components/layout/Topbar';
-import { ContentView } from './src/views/ContentView';
+// import { ContentView } from './src/views/ContentView'; // DEPRECATED
+import { AppRouter } from './src/router/AppRouter';
 import { RecipeFormModal } from './src/components/grimorium/RecipeFormModal';
 import { NotificationsDrawer } from './src/components/dashboard/NotificationsDrawer';
 import { ChatbotWidget } from './src/components/ui/ChatbotWidget';
@@ -34,13 +36,6 @@ const MainAppContent: React.FC = () => {
     const effectiveUserProfile = firebaseUserProfile && Object.keys(firebaseUserProfile).length > 0
         ? firebaseUserProfile
         : userProfile;
-
-    const [currentView, setCurrentView] = React.useState<ViewName>('dashboard');
-    // const [allRecipes, setAllRecipes] = React.useState<Recipe[]>([]); // REPLACED BY HOOK
-    // const [allIngredients, setAllIngredients] = React.useState<Ingredient[]>([]); // REPLACED BY HOOK
-    // const [allPizarronTasks, setAllPizarronTasks] = React.useState<PizarronTask[]>([]); // REPLACED BY HOOK
-    // const [notifications, setNotifications] = React.useState<AppNotification[]>([]); // REPLACED BY HOOK
-
     const [showNotificationsDrawer, setShowNotificationsDrawer] = React.useState(false);
     const [isMobileSidebarOpen, setIsMobileSidebarOpen] = React.useState(false);
 
@@ -61,19 +56,81 @@ const MainAppContent: React.FC = () => {
     }
 
     return (
+        <BrowserRouter>
+            <AppLayout
+                db={db} userId={userId} auth={auth} storage={storage} appId={appId}
+                allRecipes={allRecipes} allIngredients={allIngredients} allPizarronTasks={allPizarronTasks} notifications={notifications}
+                effectiveUserProfile={effectiveUserProfile}
+                isSidebarCollapsed={isSidebarCollapsed}
+                showNotificationsDrawer={showNotificationsDrawer} setShowNotificationsDrawer={setShowNotificationsDrawer}
+                isMobileSidebarOpen={isMobileSidebarOpen} setIsMobileSidebarOpen={setIsMobileSidebarOpen}
+                recipeToEdit={recipeToEdit} setRecipeToEdit={setRecipeToEdit} setShowRecipeModal={setShowRecipeModal} showRecipeModal={showRecipeModal}
+                taskToOpen={taskToOpen} setTaskToOpen={setTaskToOpen}
+                draggingRecipe={draggingRecipe} setDraggingRecipe={setDraggingRecipe}
+                draggingTask={draggingTask} setDraggingTask={setDraggingTask}
+                textToAnalyze={textToAnalyze} setTextToAnalyze={setTextToAnalyze}
+            />
+        </BrowserRouter>
+    );
+};
+
+// Internal component to use router hooks
+const AppLayout: React.FC<any> = ({
+    db, userId, auth, storage, appId,
+    allRecipes, allIngredients, allPizarronTasks, notifications,
+    effectiveUserProfile, isSidebarCollapsed,
+    showNotificationsDrawer, setShowNotificationsDrawer,
+    isMobileSidebarOpen, setIsMobileSidebarOpen,
+    recipeToEdit, setRecipeToEdit, setShowRecipeModal, showRecipeModal,
+    taskToOpen, setTaskToOpen,
+    draggingRecipe, setDraggingRecipe,
+    draggingTask, setDraggingTask,
+    textToAnalyze, setTextToAnalyze
+}) => {
+
+    // We can't use currentView state anymore, passing navigate logic down to sidebar requires changes in Sidebar
+    // For now, let's just render the router.
+
+    const navigate = useNavigate();
+
+    return (
         <div className='min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-50 font-sans antialiased'>
-            <Sidebar currentView={currentView} setCurrentView={setCurrentView} onShowNotifications={() => setShowNotificationsDrawer(true)} unreadNotifications={notifications.some(n => !n.read)} isMobileOpen={isMobileSidebarOpen} onCloseMobile={() => setIsMobileSidebarOpen(false)} />
+            <Sidebar
+                // Passing a fake setCurrentView that uses navigate
+                currentView={"" as any} // Requires Sidebar update to read from URL
+                setCurrentView={(view) => {
+                    // Simple mapping for now, ideally Sidebar links should be <Link>
+                    if (view === 'dashboard') navigate('/');
+                    else navigate('/' + view);
+                }}
+                onShowNotifications={() => setShowNotificationsDrawer(true)}
+                unreadNotifications={notifications.some((n: any) => !n.read)}
+                isMobileOpen={isMobileSidebarOpen}
+                onCloseMobile={() => setIsMobileSidebarOpen(false)}
+            />
 
             <div className={`flex-1 flex flex-col transition-all duration-300 h-screen ${isSidebarCollapsed ? 'md:ml-20' : 'md:ml-64'}`}>
-                <Topbar onToggleMobileSidebar={() => setIsMobileSidebarOpen(true)} onShowNotifications={() => setShowNotificationsDrawer(true)} unreadNotifications={notifications.some(n => !n.read)} title='Nexus Suite' />
+                <Topbar onToggleMobileSidebar={() => setIsMobileSidebarOpen(true)} onShowNotifications={() => setShowNotificationsDrawer(true)} unreadNotifications={notifications.some((n: any) => !n.read)} title='Nexus Suite' />
 
                 <main className='flex-1 overflow-y-auto p-4'>
-                    <ContentView currentView={currentView} setCurrentView={setCurrentView} db={db} auth={auth} storage={storage} userId={userId} appId={appId} allRecipes={allRecipes} allIngredients={allIngredients} allPizarronTasks={allPizarronTasks} onOpenRecipeModal={(r) => { setRecipeToEdit(r); setShowRecipeModal(true); }} taskToOpen={taskToOpen} onTaskOpened={() => setTaskToOpen(null)} draggingRecipe={draggingRecipe} onDragRecipeStart={setDraggingRecipe} draggingTask={draggingTask} onDragTaskStart={setDraggingTask} onDropEnd={() => { setDraggingRecipe(null); setDraggingTask(null); }} onAnalyze={(t) => { setTextToAnalyze(t); setCurrentView('cerebrity'); }} initialText={textToAnalyze} onAnalysisDone={() => setTextToAnalyze('')} userProfile={effectiveUserProfile} />
+                    <AppRouter
+                        db={db} userId={userId} appId={appId} auth={auth} storage={storage}
+                        allRecipes={allRecipes} allIngredients={allIngredients} allPizarronTasks={allPizarronTasks}
+                        notifications={notifications} userProfile={effectiveUserProfile}
+                        onOpenRecipeModal={(r: any) => { setRecipeToEdit(r); setShowRecipeModal(true); }}
+                        taskToOpen={taskToOpen} onTaskOpened={() => setTaskToOpen(null)}
+                        draggingRecipe={draggingRecipe} onDragRecipeStart={setDraggingRecipe}
+                        draggingTask={draggingTask} onDragTaskStart={setDraggingTask}
+                        onDropEnd={() => { setDraggingRecipe(null); setDraggingTask(null); }}
+                        onAnalyze={(t: any) => { setTextToAnalyze(t); navigate('/cerebrity'); }}
+                        initialText={textToAnalyze} onAnalysisDone={() => setTextToAnalyze('')}
+
+                    />
                 </main>
             </div>
 
             {showRecipeModal && <RecipeFormModal isOpen={showRecipeModal} onClose={() => setShowRecipeModal(false)} db={db} userId={userId} initialData={recipeToEdit} allIngredients={allIngredients} />}
-            {showNotificationsDrawer && <NotificationsDrawer isOpen={showNotificationsDrawer} onClose={() => setShowNotificationsDrawer(false)} notifications={notifications} db={db} userId={userId} appId={appId} onTaskClick={(id) => { setCurrentView('pizarron'); setTaskToOpen(id); }} />}
+            {showNotificationsDrawer && <NotificationsDrawer isOpen={showNotificationsDrawer} onClose={() => setShowNotificationsDrawer(false)} notifications={notifications} db={db} userId={userId} appId={appId} onTaskClick={(id) => { navigate('/pizarron'); setTaskToOpen(id); }} />}
             <ChatbotWidget />
         </div>
     );
