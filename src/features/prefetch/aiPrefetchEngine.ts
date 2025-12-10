@@ -1,6 +1,7 @@
 import { Firestore } from 'firebase/firestore';
 import { QueryClient } from '@tanstack/react-query';
 import { QUERY_KEYS, fetchRecipes, fetchTasks, fetchIngredients } from '../../hooks/useFirebaseData';
+import { DigitalBarService } from '../digital-bar/web/DigitalBarService';
 
 const STORAGE_KEY = 'nexus_ai_prefetch_interactions';
 
@@ -95,6 +96,12 @@ export class AIPrefetchEngine {
                 queryKey: QUERY_KEYS.tasks(appId),
                 queryFn: () => fetchTasks(db, appId),
                 staleTime: 1000 * 30
+            }));
+        } else if (viewKey === 'avatar' || viewKey === 'avatar/digital-bar') {
+            promises.push(queryClient.prefetchQuery({
+                queryKey: ['digital-bar-metrics', userId, 'day'],
+                queryFn: () => DigitalBarService.fetchDailyMetrics(db, userId),
+                staleTime: 1000 * 60 * 5
             }));
         }
         // Add other views as needed
