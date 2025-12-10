@@ -1,27 +1,48 @@
-export type BarAreaType = 'main-bar' | 'production' | 'dispatch' | 'backbar';
+export type BarAreaType = 'main-bar' | 'prep-room' | 'dispatch-zone' | 'backbar';
+export type BarAreaShape = 'L' | 'rect' | 'U' | 'square';
+
+export interface AreaOperationalSnapshot {
+    areaId: string;
+    activeTasks: number;
+    ticketsPerHour: number;
+    avgTaskAgeMinutes: number;
+    linkedRecipes: number;
+    stockPressure: number; // 0-100
+    teamStress: number;    // 0-100
+    efficiency: number;    // 0-100
+}
 
 export type BarArea = {
     id: string;
     type: BarAreaType;
+    shape: BarAreaShape;
     name: string;
-    position: { x: number; y: number }; // Isometric grid coordinates (not pixels)
-    icon: string; // SVG path or icon name
+    position: { x: number; y: number }; // Isometric grid coordinates
+    size: { width: number; height: number }; // Dimensions in grid units
+    rotation: number; // 0, 90, 180, 270
+    icon: string;
+    isActive: boolean;
     stats: {
-        load: number; // 0-100
-        efficiency: number; // 0-100
+        load: number;
+        efficiency: number;
         activeTickets: number;
+        // Extended metrics
+        ticketsPerHour?: number;
+        stockPressure?: number;
+        teamStress?: number;
+        snapshot?: AreaOperationalSnapshot;
     };
 };
 
-export type BarWorkerRole = 'bartender' | 'barback' | 'runner' | 'chef';
+export type BarWorkerRole = 'bartender' | 'barback' | 'prep-chef' | 'runner' | 'stock-manager';
 
 export type BarWorker = {
     id: string;
     name: string;
     role: BarWorkerRole;
     areaId: string;
-    stressLevel: number; // 0-100
-    activity: 'idle' | 'mixing' | 'prepping' | 'serving' | 'cleaning';
+    stressLevel: number;
+    activity: 'idle' | 'mixing' | 'prepping' | 'serving' | 'cleaning' | 'resting' | 'overloaded';
     avatarUrl?: string;
 };
 

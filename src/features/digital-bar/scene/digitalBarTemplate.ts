@@ -5,33 +5,49 @@ export const INITIAL_SCENE_STATE: BarSceneState = {
         {
             id: 'main-bar',
             type: 'main-bar',
+            shape: 'L',
             name: 'Barra Principal',
             position: { x: 0, y: 0 },
+            size: { width: 2, height: 2 },
+            rotation: 0,
             icon: 'cocktail',
+            isActive: true,
             stats: { load: 45, efficiency: 92, activeTickets: 3 }
         },
         {
-            id: 'production',
-            type: 'production',
-            name: 'Estación Producción',
-            position: { x: 1, y: 0 }, // Adjacent to main bar
+            id: 'prep-room',
+            type: 'prep-room',
+            shape: 'rect',
+            name: 'Estación de Producción',
+            position: { x: 4, y: 0 },
+            size: { width: 1, height: 2 },
+            rotation: 0,
             icon: 'flask',
+            isActive: true,
             stats: { load: 20, efficiency: 98, activeTickets: 1 }
         },
         {
-            id: 'dispatch',
-            type: 'dispatch',
+            id: 'dispatch-zone',
+            type: 'dispatch-zone',
+            shape: 'rect',
             name: 'Zona Despacho',
-            position: { x: 0, y: 1 }, // "Behind" main bar in iso view
+            position: { x: 0, y: 4 },
+            size: { width: 2, height: 1 },
+            rotation: 0,
             icon: 'check-circle',
+            isActive: true,
             stats: { load: 10, efficiency: 100, activeTickets: 0 }
         },
         {
             id: 'backbar',
             type: 'backbar',
+            shape: 'square',
             name: 'Backbar / Stock',
-            position: { x: 1, y: 1 },
+            position: { x: 4, y: 4 },
+            size: { width: 1, height: 1 },
+            rotation: 0,
             icon: 'box',
+            isActive: true,
             stats: { load: 5, efficiency: 100, activeTickets: 0 }
         }
     ],
@@ -48,7 +64,7 @@ export const INITIAL_SCENE_STATE: BarSceneState = {
             id: 'w2',
             name: 'Sam',
             role: 'barback',
-            areaId: 'production',
+            areaId: 'prep-room',
             stressLevel: 15,
             activity: 'prepping'
         }

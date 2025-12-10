@@ -19,88 +19,136 @@ const projectIso = (x: number, y: number) => {
     };
 };
 
+// Helper to get relative coordinates for different shapes
+const getShapeTiles = (shape: string, size: { width: number; height: number }) => {
+    const tiles: { x: number; y: number }[] = [];
+
+    // Default fallback
+    const w = Math.max(1, size?.width || 1);
+    const h = Math.max(1, size?.height || 1);
+
+    if (shape === 'L') {
+        // Vertical leg
+        for (let y = 0; y < h; y++) tiles.push({ x: 0, y });
+        // Horizontal leg (bottom)
+        for (let x = 1; x < w; x++) tiles.push({ x, y: h - 1 });
+    } else if (shape === 'U') {
+        // Left leg
+        for (let y = 0; y < h; y++) tiles.push({ x: 0, y });
+        // Bottom
+        for (let x = 1; x < w - 1; x++) tiles.push({ x, y: h - 1 });
+        // Right leg
+        for (let y = 0; y < h; y++) tiles.push({ x: w - 1, y });
+    } else {
+        // Rect / Square (Fill all)
+        for (let x = 0; x < w; x++) {
+            for (let y = 0; y < h; y++) {
+                tiles.push({ x, y });
+            }
+        }
+    }
+    return tiles;
+};
+
 const AreaBlock = React.memo(({ area, isSelected, onClick, workers }: { area: BarArea, isSelected: boolean, onClick: () => void, workers: BarWorker[] }) => {
-    const { left, top } = projectIso(area.position.x, area.position.y);
+    const tiles = useMemo(() => getShapeTiles(area.shape, area.size), [area.shape, area.size]);
     const gradient = SCENE_STYLES.gradients[area.type as keyof typeof SCENE_STYLES.gradients] || SCENE_STYLES.gradients['main-bar'];
+
+    // Calculate center of mass for workers/label
+    const centerTile = tiles[Math.floor(tiles.length / 2)] || { x: 0, y: 0 };
+    const { left: centerLeft, top: centerTop } = projectIso(area.position.x + centerTile.x, area.position.y + centerTile.y);
 
     // Smooth lift calculation
     const lift = isSelected ? -20 : 0;
 
     return (
         <div
-            className="absolute transition-all duration-500 ease-out z-10"
-            style={{
-                left,
-                top,
-                width: ISO_CONSTANTS.TILE_WIDTH,
-                height: ISO_CONSTANTS.TILE_HEIGHT * ISO_CONSTANTS.DEPTH_SCALE,
-                zIndex: isSelected ? 50 : 10 + Math.floor(top) // Z-index based on depth (y position)
-            }}
-            onClick={(e) => { e.stopPropagation(); onClick(); }}
+            className="absolute z-10 pointer-events-none" // Container is pointer-events-none to let children handle clicks or bubble up
+            style={{ width: 0, height: 0 }} // Virtual container
         >
-            {/* Shadow */}
-            <div
-                className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[80%] h-[20%] bg-black/40 blur-xl rounded-full transition-all duration-500"
-                style={{
-                    opacity: isSelected ? 0.6 : 0.3,
-                    transform: `translate(-50%, ${isSelected ? '20px' : '0px'}) scale(${isSelected ? 1.2 : 1})`
-                }}
-            />
+            {/* Render Voxel Blocks */}
+            {tiles.map((tile, i) => {
+                const { left, top } = projectIso(area.position.x + tile.x, area.position.y + tile.y);
+                // Depth sorting hack: z-index based on grid sum
+                const zIndex = 10 + Math.floor(area.position.x + tile.x + area.position.y + tile.y);
 
-            {/* Block Container with Lift */}
-            <div
-                className="relative w-full h-full transition-transform duration-500 will-change-transform group cursor-pointer"
-                style={{ transform: `translateY(${lift}px)` }}
-            >
-                {/* Top Face (The Platform) */}
-                <div
-                    className="absolute top-0 left-0 w-full h-[65%] rounded-2xl overflow-hidden backdrop-blur-md border-[0.5px] border-white/20 transition-all duration-300"
-                    style={{
-                        background: gradient,
-                        boxShadow: isSelected ? SCENE_STYLES.shadows.selected : SCENE_STYLES.shadows.block,
-                        clipPath: 'polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)' // Diamond shape clip for cleaner iso edges if needed, or rounded rect
-                    }}
-                >
-                    {/* Glass Shine */}
-                    <div className="absolute inset-0 bg-gradient-to-tr from-white/10 to-transparent opacity-50 pointer-events-none" />
+                return (
+                    <div
+                        key={`${i}`}
+                        className="absolute transition-all duration-500 ease-out will-change-transform group cursor-pointer pointer-events-auto"
+                        style={{
+                            left,
+                            top,
+                            width: ISO_CONSTANTS.TILE_WIDTH,
+                            height: ISO_CONSTANTS.TILE_HEIGHT * ISO_CONSTANTS.DEPTH_SCALE,
+                            zIndex: isSelected ? 50 + zIndex : zIndex,
+                            transform: `translateY(${lift}px)`
+                        }}
+                        onClick={(e) => { e.stopPropagation(); onClick(); }}
+                    >
+                        {/* Shadow (Only for bottom-most tiles? Simplification: all have shadow for "floating" effect) */}
+                        <div
+                            className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[80%] h-[20%] bg-black/40 blur-xl rounded-full transition-all duration-500"
+                            style={{
+                                opacity: isSelected ? 0.6 : 0.3,
+                                transform: `translate(-50%, ${isSelected ? '20px' : '0px'}) scale(${isSelected ? 1.2 : 1})`
+                            }}
+                        />
 
-                    {/* Grid Pattern on Top */}
-                    <div className="absolute inset-0 opacity-20 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] mix-blend-overlay"></div>
-
-                    {/* Content Centered on Top Face */}
-                    <div className="absolute inset-0 flex flex-col items-center justify-center transform -rotate-0 pb-4 scale-y-75 origin-center">
-                        {/* Scale Y to counter foreshortening if strict iso, but here we keep it simple 2.5D */}
-                        <div className={`
-                            p-3 rounded-full mb-1 transition-all duration-500
-                            ${isSelected ? 'bg-white text-cyan-600 scale-110 shadow-lg' : 'bg-white/10 text-white hover:bg-white/20'}
-                        `}>
-                            <Icon svg={ICONS[area.icon as keyof typeof ICONS] || ICONS.activity} className="w-8 h-8" />
+                        {/* Top Face */}
+                        <div
+                            className="absolute top-0 left-0 w-full h-[65%] rounded-2xl overflow-hidden backdrop-blur-md border-[0.5px] border-white/20 transition-all duration-300"
+                            style={{
+                                background: gradient,
+                                boxShadow: isSelected ? SCENE_STYLES.shadows.selected : SCENE_STYLES.shadows.block,
+                                clipPath: 'polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)'
+                            }}
+                        >
+                            <div className="absolute inset-0 bg-gradient-to-tr from-white/10 to-transparent opacity-50 pointer-events-none" />
+                            {/* Grid overlay only on top faces */}
+                            <div className="absolute inset-0 opacity-20 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] mix-blend-overlay"></div>
                         </div>
-                        <span className="text-[10px] font-black text-white uppercase tracking-widest drop-shadow-md bg-black/20 px-2 py-0.5 rounded-full backdrop-blur-sm">
-                            {area.name}
-                        </span>
+
+                        {/* Sides for pseudo 3D */}
+                        <div className="absolute top-[32%] left-[2px] w-[50%] h-[40%] bg-black/20 transform skew-y-12 origin-top-right rounded-bl-xl pointer-events-none blur-[1px]" />
+                        <div className="absolute top-[32%] right-[2px] w-[50%] h-[40%] bg-black/40 transform -skew-y-12 origin-top-left rounded-br-xl pointer-events-none blur-[1px]" />
                     </div>
+                );
+            })}
+
+            {/* Label & Workers Overlay (Centered on the "Center of Mass") */}
+            <div
+                className="absolute pointer-events-none z-[100] transition-transform duration-500"
+                style={{
+                    left: centerLeft,
+                    top: centerTop,
+                    transform: `translateY(${lift - 40}px)` // Floating above
+                }}
+            >
+                {/* Floating Label */}
+                <div className="absolute -translate-x-1/2 -translate-y-1/2 flex flex-col items-center justify-center pb-4">
+                    <div className={`
+                        p-3 rounded-full mb-1 transition-all duration-500
+                        ${isSelected ? 'bg-white text-cyan-600 scale-110 shadow-lg' : 'bg-white/10 text-white'}
+                    `}>
+                        <Icon svg={ICONS[area.icon as keyof typeof ICONS] || ICONS.activity} className="w-6 h-6" />
+                    </div>
+                    <span className="text-[10px] font-black text-white uppercase tracking-widest drop-shadow-md bg-black/40 px-2 py-0.5 rounded-full backdrop-blur-md border border-white/10">
+                        {area.name}
+                    </span>
 
                     {/* Status Pip */}
                     {area.stats.activeTickets > 0 && (
-                        <div className="absolute top-[20%] right-[20%]">
-                            <span className="flex items-center justify-center w-6 h-6 bg-rose-500 rounded-full text-[10px] font-bold text-white shadow-lg border-2 border-white/20 animate-bounce">
+                        <div className="absolute -top-1 -right-1">
+                            <span className="flex items-center justify-center w-5 h-5 bg-rose-500 rounded-full text-[9px] font-bold text-white shadow-lg border border-white animate-bounce">
                                 {area.stats.activeTickets}
                             </span>
                         </div>
                     )}
                 </div>
 
-                {/* Left/Right Side Faces for Pseudo 3D Depth (Optional visual trickery, simplified here with CSS layers) */}
-                <div
-                    className="absolute top-[32%] left-[2px] w-[50%] h-[40%] bg-black/20 transform skew-y-12 origin-top-right rounded-bl-xl pointer-events-none blur-[1px]"
-                />
-                <div
-                    className="absolute top-[32%] right-[2px] w-[50%] h-[40%] bg-black/40 transform -skew-y-12 origin-top-left rounded-br-xl pointer-events-none blur-[1px]"
-                />
-
-                {/* Workers Layer */}
-                <div className="absolute inset-0 pointer-events-none">
+                {/* Workers Layer (Relative to Center) */}
+                <div className="absolute inset-0">
                     {workers.map((worker, idx) => (
                         <WorkerAvatar key={worker.id} worker={worker} index={idx} total={workers.length} />
                     ))}
@@ -169,6 +217,8 @@ export const DigitalBarIsometricCanvas: React.FC<DigitalBarIsometricCanvasProps>
     const containerRef = useRef<HTMLDivElement>(null);
     const [isDragging, setIsDragging] = useState(false);
     const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+    const [isExpanded, setIsExpanded] = useState(false);
+    const [viewMode, setViewMode] = useState<'holographic' | 'operational'>('holographic');
 
     const handleMouseDown = (e: React.MouseEvent) => {
         setIsDragging(true);
@@ -185,6 +235,18 @@ export const DigitalBarIsometricCanvas: React.FC<DigitalBarIsometricCanvasProps>
 
     const handleMouseUp = () => { setIsDragging(false); };
 
+    // Toggle Expanded Mode
+    const toggleExpanded = () => {
+        setIsExpanded(!isExpanded);
+        // Reset pan/zoom on toggle for safety
+        onSetPan(0, 0);
+        onSetZoom(isExpanded ? 1 : 1.5);
+    };
+
+    const toggleViewMode = () => {
+        setViewMode(prev => prev === 'holographic' ? 'operational' : 'holographic');
+    };
+
     // Particles System (Simple CSS bubbles)
     const particles = useMemo(() => Array.from({ length: 15 }).map((_, i) => ({
         id: i,
@@ -194,16 +256,22 @@ export const DigitalBarIsometricCanvas: React.FC<DigitalBarIsometricCanvasProps>
         duration: 3 + Math.random() * 5 + 's'
     })), []);
 
-    return (
+    const canvasContent = (
         <div
-            className="w-full h-full overflow-hidden bg-slate-950 relative rounded-2xl border border-slate-800 shadow-2xl group cursor-move select-none"
+            className={`
+                w-full h-full overflow-hidden bg-slate-950 relative rounded-2xl border border-slate-800 shadow-2xl group cursor-move select-none
+                ${isExpanded ? 'fixed inset-4 z-[200] rounded-[32px] border-slate-700 ring-4 ring-cyan-500/20 shadow-[0_0_100px_rgba(34,211,238,0.2)]' : ''}
+            `}
             onMouseDown={handleMouseDown}
             onMouseMove={handleMouseMove}
             onMouseUp={handleMouseUp}
             onMouseLeave={handleMouseUp}
             ref={containerRef}
             style={{
-                background: 'radial-gradient(circle at 50% 50%, #1e293b 0%, #020617 100%)'
+                background: 'radial-gradient(circle at 50% 50%, #1e293b 0%, #020617 100%)',
+                // Size override for expanded
+                width: isExpanded ? 'calc(100vw - 2rem)' : '100%',
+                height: isExpanded ? 'calc(100vh - 2rem)' : '100%'
             }}
         >
             {/* Ambient Background Particles */}
@@ -240,31 +308,119 @@ export const DigitalBarIsometricCanvas: React.FC<DigitalBarIsometricCanvasProps>
                         <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
                         <span className="relative inline-flex rounded-full h-3 w-3 bg-cyan-500"></span>
                     </span>
-                    Nexus Operations View
+                    Nexus Operations View {isExpanded && '(EXPANDED)'}
                 </h2>
             </div>
 
-            {/* Scene Container */}
-            <div
-                className="absolute w-full h-full transition-transform duration-75 ease-out origin-center preserve-3d"
-                style={{
-                    transform: `translate(${sceneState.panOffset.x}px, ${sceneState.panOffset.y}px) scale(${sceneState.zoomLevel})`
-                }}
-            >
-                {/* Render Areas sorted by Y position (simple depth sorting) */}
-                {[...sceneState.areas]
-                    .sort((a, b) => (a.position.x + a.position.y) - (b.position.x + b.position.y))
-                    .map(area => (
-                        <AreaBlock
-                            key={area.id}
-                            area={area}
-                            isSelected={sceneState.selectedAreaId === area.id}
-                            onClick={() => onSelectArea(area.id)}
-                            workers={sceneState.workers.filter(w => w.areaId === area.id)}
-                        />
-                    ))
-                }
+            {/* Top Controls */}
+            <div className="absolute top-6 right-6 pointer-events-auto z-50 flex gap-2">
+                <button
+                    onClick={toggleViewMode}
+                    className={`p-3 backdrop-blur-md rounded-full text-white transition-all hover:scale-110 active:scale-95 border shadow-lg ${viewMode === 'operational' ? 'bg-cyan-500 border-cyan-400' : 'bg-white/10 border-white/10 hover:bg-white/20'}`}
+                    title={viewMode === 'holographic' ? "Ver Métricas Operativas" : "Ver Escena Holográfica"}
+                >
+                    <Icon svg={viewMode === 'holographic' ? ICONS.grid : ICONS.box} className="w-5 h-5" />
+                </button>
+                <button
+                    onClick={toggleExpanded}
+                    className="p-3 bg-white/10 hover:bg-white/20 backdrop-blur-md rounded-full text-white transition-all hover:scale-110 active:scale-95 border border-white/10 shadow-lg"
+                    title={isExpanded ? "Contraer Vista" : "Expandir Vista"}
+                >
+                    <Icon svg={isExpanded ? ICONS.minimize : ICONS.maximize} className="w-5 h-5" />
+                </button>
             </div>
+
+            {/* CONTENT SWITCHER */}
+            {viewMode === 'operational' ? (
+                <div className="absolute inset-0 z-40 overflow-y-auto p-20 pt-24 custom-scrollbar">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-7xl mx-auto">
+                        {sceneState.areas.map(area => {
+                            const snapshot = area.stats.snapshot;
+                            const efficiencyColor = (snapshot?.efficiency || 100) > 80 ? 'bg-emerald-500' : (snapshot?.efficiency || 100) > 50 ? 'bg-amber-500' : 'bg-rose-500';
+
+                            return (
+                                <div key={area.id} className="bg-slate-900/80 backdrop-blur-xl border border-slate-700/50 rounded-[28px] p-6 flex flex-col gap-4 hover:border-cyan-500/30 transition-colors shadow-2xl relative overflow-hidden group">
+                                    <div className={`absolute top-0 left-0 w-full h-1 ${efficiencyColor} opacity-80`} />
+
+                                    <div className="flex justify-between items-start">
+                                        <div>
+                                            <h3 className="text-lg font-black text-white uppercase tracking-wider">{area.name}</h3>
+                                            <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">{area.type.replace('-', ' ')}</span>
+                                        </div>
+                                        <div className="w-10 h-10 rounded-2xl bg-white/5 flex items-center justify-center">
+                                            <Icon svg={ICONS[area.icon as keyof typeof ICONS] || ICONS.activity} className="w-5 h-5 text-slate-300" />
+                                        </div>
+                                    </div>
+
+                                    {/* KPI Grid */}
+                                    {snapshot ? (
+                                        <div className="grid grid-cols-2 gap-3 mt-2">
+                                            <div className="bg-black/20 p-3 rounded-xl border border-white/5">
+                                                <span className="text-[9px] text-slate-400 block mb-1">TICKETS/H</span>
+                                                <span className="text-xl font-mono text-cyan-400">{Math.round(snapshot.ticketsPerHour)}</span>
+                                            </div>
+                                            <div className="bg-black/20 p-3 rounded-xl border border-white/5">
+                                                <span className="text-[9px] text-slate-400 block mb-1">STRESS EQ.</span>
+                                                <span className={`text-xl font-mono ${snapshot.teamStress > 70 ? 'text-rose-400' : 'text-emerald-400'}`}>{Math.round(snapshot.teamStress)}%</span>
+                                            </div>
+                                            <div className="bg-black/20 p-3 rounded-xl border border-white/5 col-span-2 flex justify-between items-center">
+                                                <span className="text-[9px] text-slate-400">EFICIENCIA GLOBAL</span>
+                                                <span className={`text-xl font-mono ${efficiencyColor.replace('bg-', 'text-')}`}>{Math.round(snapshot.efficiency)}%</span>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <div className="text-center py-8 text-slate-500 text-xs">Sin datos operativos</div>
+                                    )}
+
+                                    <div className="mt-auto pt-4 border-t border-white/5 flex gap-2">
+                                        {/* Workers Avatars Mock */}
+                                        <div className="flex -space-x-3">
+                                            {sceneState.workers.filter(w => w.areaId === area.id).map(w => (
+                                                <div key={w.id} className="w-8 h-8 rounded-full border-2 border-slate-800 bg-slate-700 flex items-center justify-center text-[9px] text-white font-bold" title={`${w.name}: ${w.activity}`}>
+                                                    {w.name.substring(0, 2)}
+                                                </div>
+                                            ))}
+                                        </div>
+                                        <div className="ml-auto flex items-center text-xs font-bold text-slate-500">
+                                            {sceneState.workers.filter(w => w.areaId === area.id).length} Átomos
+                                        </div>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+            ) : (
+                /* Scene Container */
+                <div
+                    className="absolute w-full h-full transition-transform duration-75 ease-out origin-center preserve-3d"
+                    style={{
+                        transform: `translate(${sceneState.panOffset.x}px, ${sceneState.panOffset.y}px) scale(${sceneState.zoomLevel})`
+                    }}
+                >
+                    {/* Render Areas sorted by Y position (simple depth sorting) */}
+                    {[...sceneState.areas]
+                        .sort((a, b) => (a.position.x + a.position.y) - (b.position.x + b.position.y))
+                        .map(area => {
+                            // Load Glow Calculation
+                            const loadGlow = area.stats.load > 70
+                                ? `0 0 ${area.stats.load * 0.5}px rgba(244, 63, 94, ${area.stats.load / 200})` // Rose glow
+                                : 'none';
+
+                            return (
+                                <div key={area.id} style={{ filter: `drop-shadow(${loadGlow})` }} className="transition-all duration-1000">
+                                    <AreaBlock
+                                        area={area}
+                                        isSelected={sceneState.selectedAreaId === area.id}
+                                        onClick={() => onSelectArea(area.id)}
+                                        workers={sceneState.workers.filter(w => w.areaId === area.id)}
+                                    />
+                                </div>
+                            );
+                        })
+                    }
+                </div>
+            )}
 
             {/* Controls */}
             <div className="absolute bottom-6 right-6 flex flex-col gap-3 z-50 pointer-events-auto">
@@ -289,5 +445,16 @@ export const DigitalBarIsometricCanvas: React.FC<DigitalBarIsometricCanvasProps>
             </div>
         </div>
     );
-};
 
+    // Backdrop for expanded view
+    if (isExpanded) {
+        return (
+            <>
+                <div className="fixed inset-0 z-[190] bg-black/60 backdrop-blur-xl animate-in fade-in duration-300" onClick={toggleExpanded} />
+                {canvasContent}
+            </>
+        );
+    }
+
+    return canvasContent;
+};

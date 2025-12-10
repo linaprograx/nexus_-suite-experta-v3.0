@@ -96,4 +96,35 @@ export class OperationalEngine {
             tickets: [...state.tickets, ticket]
         };
     }
+
+    // Dynamic Area Management
+    static addArea(state: OperationalState, areaId: string): OperationalState {
+        return {
+            ...state,
+            areas: {
+                ...state.areas,
+                [areaId]: {
+                    load: 0,
+                    energy: 100,
+                    stress: 0,
+                    efficiency: 100,
+                    activeTickets: 0,
+                    completedTickets: 0
+                }
+            }
+        };
+    }
+
+    static removeArea(state: OperationalState, areaId: string): OperationalState {
+        const { [areaId]: removed, ...remainingAreas } = state.areas;
+
+        // Optional: Remove or Reassign workers? 
+        // For v1, we'll leave workers but they won't contribute to the deleted area.
+        // Ideally we should filter them out in a real app.
+
+        return {
+            ...state,
+            areas: remainingAreas
+        };
+    }
 }

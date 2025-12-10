@@ -3,12 +3,14 @@ import { BarSceneState, BarArea, BarWorker } from './scene/digitalBarTypes';
 import { INITIAL_SCENE_STATE } from './scene/digitalBarTemplate';
 import { OperationalEngine } from './engine/OperationalEngine';
 import { OperationalState, EngineWorker } from './engine/types';
+import { useDigitalBarMetrics } from './hooks/useDigitalBarMetrics';
 
 export const useDigitalBarScene = () => {
     // We maintain a "View State" (BarSceneState) for the UI components
     // and an "Engine State" (OperationalState) for the logic.
     const [viewState, setViewState] = useState<BarSceneState>(INITIAL_SCENE_STATE);
     const engineStateRef = useRef<OperationalState | null>(null);
+    const { metrics } = useDigitalBarMetrics(); // Real data integration
 
     // Initialize Engine on first mount
     useEffect(() => {
@@ -48,6 +50,32 @@ export const useDigitalBarScene = () => {
         setViewState(prev => ({ ...prev, zoomLevel: 1, panOffset: { x: 0, y: 0 } }));
     }, []);
 
+    // -- Dynamic Area Actions --
+    const addArea = useCallback((area: BarArea) => {
+        setViewState(prev => ({ ...prev, areas: [...prev.areas, area] }));
+        if (engineStateRef.current) {
+            engineStateRef.current = OperationalEngine.addArea(engineStateRef.current, area.id);
+        }
+    }, []);
+
+    const deleteArea = useCallback((areaId: string) => {
+        setViewState(prev => ({
+            ...prev,
+            areas: prev.areas.filter(a => a.id !== areaId),
+            selectedAreaId: prev.selectedAreaId === areaId ? null : prev.selectedAreaId
+        }));
+        if (engineStateRef.current) {
+            engineStateRef.current = OperationalEngine.removeArea(engineStateRef.current, areaId);
+        }
+    }, []);
+
+    const updateArea = useCallback((areaId: string, updates: Partial<BarArea>) => {
+        setViewState(prev => ({
+            ...prev,
+            areas: prev.areas.map(a => a.id === areaId ? { ...a, ...updates } : a)
+        }));
+    }, []);
+
     // -- Engine Loop --
     useEffect(() => {
         const intervalId = setInterval(() => {
@@ -60,13 +88,23 @@ export const useDigitalBarScene = () => {
                 setViewState(prev => {
                     const nextAreas = prev.areas.map(area => {
                         const engineStats = nextEngineState.areas[area.id];
+                        const realMetrics = metrics[area.id]; // Get real metrics for this area
+
                         if (!engineStats) return area;
+
                         return {
                             ...area,
                             stats: {
-                                load: engineStats.load,
-                                efficiency: engineStats.efficiency,
-                                activeTickets: engineStats.activeTickets
+                                // Prefer real metrics if available, fallback to engine
+                                load: realMetrics ? realMetrics.activeTasks * 10 : engineStats.load, // Scale for demo
+                                efficiency: realMetrics ? realMetrics.efficiency : engineStats.efficiency,
+                                activeTickets: realMetrics ? realMetrics.activeTasks : engineStats.activeTickets,
+
+                                // Attach full snapshot
+                                snapshot: realMetrics,
+                                ticketsPerHour: realMetrics?.ticketsPerHour,
+                                stockPressure: realMetrics?.stockPressure,
+                                teamStress: realMetrics?.teamStress
                             }
                         };
                     });
@@ -91,7 +129,7 @@ export const useDigitalBarScene = () => {
         }, 2000); // 2-second heartbeat
 
         return () => clearInterval(intervalId);
-    }, []);
+    }, [metrics]); // Added metrics logic dependency
 
     // -- Computed --
     const selectedArea = viewState.areas.find(a => a.id === viewState.selectedAreaId);
@@ -102,7 +140,10 @@ export const useDigitalBarScene = () => {
             selectArea,
             setZoom,
             setPan,
-            centerView
+            centerView,
+            addArea,
+            deleteArea,
+            updateArea
         },
         selectedArea
     };
