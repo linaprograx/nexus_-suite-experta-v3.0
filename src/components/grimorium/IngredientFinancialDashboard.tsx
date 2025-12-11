@@ -8,10 +8,12 @@ import { ChartContainer } from '../ui/ChartContainer';
 
 interface IngredientFinancialDashboardProps {
     selectedIngredient: Ingredient | null;
+    selectedIngredient: Ingredient | null;
     allIngredients: Ingredient[];
+    onFilterByStatus?: (status: string) => void;
 }
 
-export const IngredientFinancialDashboard: React.FC<IngredientFinancialDashboardProps> = ({ selectedIngredient, allIngredients }) => {
+export const IngredientFinancialDashboard: React.FC<IngredientFinancialDashboardProps> = ({ selectedIngredient, allIngredients, onFilterByStatus }) => {
 
     // --- Mock Data Generators ---
     const generateTrendData = (baseValue: number, volatility: number) => {
@@ -174,18 +176,18 @@ export const IngredientFinancialDashboard: React.FC<IngredientFinancialDashboard
             < Card className="p-4 bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm border-slate-100 dark:border-slate-800 shadow-sm flex-1" >
                 <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-4">Estado del Stock</h4>
                 <div className="space-y-4">
-                    <div>
+                    <div className="cursor-pointer group hover:bg-emerald-50 dark:hover:bg-emerald-900/10 p-1 rounded-lg transition-colors" onClick={() => onFilterByStatus && onFilterByStatus('healthy')}>
                         <div className="flex justify-between text-xs mb-1">
-                            <span className="text-slate-600 dark:text-slate-400">Stock Saludable</span>
+                            <span className="text-slate-600 dark:text-slate-400 group-hover:text-slate-900 dark:group-hover:text-slate-200 transition-colors">Stock Saludable</span>
                             <span className="font-bold text-emerald-600">{allIngredients.length - lowStockCount}</span>
                         </div>
                         <div className="h-2 w-full bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
                             <div className="h-full bg-emerald-500" style={{ width: `${((allIngredients.length - lowStockCount) / allIngredients.length) * 100}%` }} />
                         </div>
                     </div>
-                    <div>
+                    <div className="cursor-pointer group hover:bg-amber-50 dark:hover:bg-amber-900/10 p-1 rounded-lg transition-colors" onClick={() => onFilterByStatus && onFilterByStatus('low')}>
                         <div className="flex justify-between text-xs mb-1">
-                            <span className="text-slate-600 dark:text-slate-400">Stock Bajo / Crítico</span>
+                            <span className="text-slate-600 dark:text-slate-400 group-hover:text-slate-900 dark:group-hover:text-slate-200 transition-colors">Stock Bajo / Crítico</span>
                             <span className="font-bold text-amber-500">{lowStockCount}</span>
                         </div>
                         <div className="h-2 w-full bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">

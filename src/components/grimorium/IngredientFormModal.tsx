@@ -9,8 +9,13 @@ import { Label } from '../ui/Label';
 import { calculateIngredientPrice } from '../../utils/costCalculator';
 import { classifyIngredient } from '../../modules/ingredients/families';
 
+import { useProveedores } from '../../hooks/useProveedores'; // Added import
+
 export const IngredientFormModal: React.FC<{ isOpen: boolean, onClose: () => void, db: Firestore, userId: string, appId: string, editingIngredient: Ingredient | null }> =
   ({ isOpen, onClose, db, userId, appId, editingIngredient }) => {
+
+    // Providers Hook
+    const { proveedores } = useProveedores({ db, userId });
 
     const predefinedCategories = ['General', 'Citrus', 'Fruits', 'Herbs', 'Spices', 'Floral', 'Vegetal', 'Toasted', 'Umami', 'Sweeteners', 'Fermented', 'Alcohol Base', 'Bitters', 'Syrups', 'Cordials', 'Infusions', 'Unknown'];
 
@@ -22,6 +27,9 @@ export const IngredientFormModal: React.FC<{ isOpen: boolean, onClose: () => voi
       standardUnit: 'ml',
       standardQuantity: 700,
       wastePercentage: 0,
+      proveedores: [] as string[],
+      stockActual: 0,
+      cantidadComprada: 0
     });
 
     React.useEffect(() => {
@@ -36,6 +44,9 @@ export const IngredientFormModal: React.FC<{ isOpen: boolean, onClose: () => voi
             standardUnit: editingIngredient.standardUnit || 'ml',
             standardQuantity: editingIngredient.standardQuantity || 700,
             wastePercentage: editingIngredient.wastePercentage || 0,
+            proveedores: editingIngredient.proveedores || [],
+            stockActual: (editingIngredient as any).stockActual || 0,
+            cantidadComprada: (editingIngredient as any).cantidadComprada || 0
           });
         } else {
           // Reset for new ingredient
@@ -46,7 +57,10 @@ export const IngredientFormModal: React.FC<{ isOpen: boolean, onClose: () => voi
             unidadCompra: 'Botella (700ml)',
             standardUnit: 'ml',
             standardQuantity: 700,
-            wastePercentage: 0
+            wastePercentage: 0,
+            proveedores: [],
+            stockActual: 0,
+            cantidadComprada: 0
           });
         }
       }
@@ -164,6 +178,31 @@ export const IngredientFormModal: React.FC<{ isOpen: boolean, onClose: () => voi
                 <div className="space-y-1">
                   <Label className="text-xs uppercase tracking-wider text-slate-500">Cant. Últ. Compra</Label>
                   <Input name="cantidadComprada" type="number" value={formData.cantidadComprada} onChange={handleChange} placeholder="0" className="bg-white/50 dark:bg-slate-800/50" />
+                </div>
+              </div>
+
+              {/* Provider Selector */}
+              <div className="space-y-1">
+                <Label className="text-xs uppercase tracking-wider text-slate-500">Proveedor Principal</Label>
+                <div className="relative">
+                  <select
+                    name="proveedor"
+                    className="w-full h-10 pl-3 pr-8 bg-white/50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:ring-emerald-500/50 appearance-none"
+                    value={formData.proveedores?.[0] || ''}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setFormData(prev => ({ ...prev, proveedores: val ? [val] : [] }));
+                    }}
+                  >
+                    <option value="">-- Sin asignar --</option>
+                    {proveedores.map(p => (
+                      <option key={p.id} value={p.id}>{p.nombre}</option>
+                    ))}
+                  </select>
+                  {/* Custom Arrow */}
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6" /></svg>
+                  </div>
                 </div>
               </div>
 

@@ -5,6 +5,9 @@ import { Icon } from '../ui/Icon';
 import { ICONS } from '../ui/icons';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
+import { useProveedores } from '../../hooks/useProveedores';
+import { useApp } from '../../context/AppContext';
+import { CatalogoItem } from '../../types';
 
 interface IngredientListPanelProps {
   ingredients: Ingredient[];
@@ -46,8 +49,45 @@ export const IngredientListPanel: React.FC<IngredientListPanelProps> = ({
   // Extract unique categories for the filter dropdown
   const uniqueCategories = Array.from(new Set(ingredients.map(ing => ing.categoria)));
 
+  // Providers Hook
+  const { db, userId } = useApp();
+  const { proveedores, getCatalogoForProveedor } = useProveedores({ db, userId });
+
+  // Providers State
+  const [selectedProveedorId, setSelectedProveedorId] = React.useState<string>('all');
+  const [currentCatalogo, setCurrentCatalogo] = React.useState<CatalogoItem[]>([]);
+
+  // Effect to load catalog when provider changes
+  React.useEffect(() => {
+    if (selectedProveedorId === 'all') {
+      setCurrentCatalogo([]);
+      return;
+    }
+    const loadCatalog = async () => {
+      const data = await getCatalogoForProveedor(selectedProveedorId);
+      setCurrentCatalogo(data);
+    };
+    loadCatalog();
+  }, [selectedProveedorId, getCatalogoForProveedor]);
+
+  // Combined Filter Logic
+  const filteredIngredients = React.useMemo(() => {
+    let result = ingredients;
+
+    // A. Provider Filter (Double Validation)
+    if (selectedProveedorId !== 'all') {
+      result = result.filter(ing => {
+        const isLinked = ing.proveedores?.includes(selectedProveedorId);
+        const isInCatalog = currentCatalogo.some(item => item.ingredienteId === ing.id);
+        return isLinked && isInCatalog;
+      });
+    }
+
+    return result;
+  }, [ingredients, selectedProveedorId, currentCatalogo]);
+
   return (
-    <div className="h-full flex flex-col bg-transparent border-0 shadow-none w-full max-w-full">
+    <div className="h-full flex flex-col bg-transparent border-0 shadow-none w-full max-w-[97%] px-8">
       {/* Unique Integrated Header */}
       <div className="py-4 flex flex-col gap-4 w-full justify-start">
         {/* 1. Search Bar - Expands */}
@@ -79,9 +119,6 @@ export const IngredientListPanel: React.FC<IngredientListPanelProps> = ({
           <div className="h-6 w-px bg-slate-300 dark:bg-slate-700 mx-1" />
 
           <div className="flex gap-1">
-            <Button variant="outline" size="icon" onClick={() => onIngredientFilterChange('status', 'low')} title="Stock Bajo" className={ingredientFilters.status === 'low' ? 'bg-red-100 text-red-600 border-red-200' : ''}>
-              <Icon svg={ICONS.alertCircle} className="w-4 h-4" />
-            </Button>
             <Button variant="outline" size="icon" onClick={onImportCSV} title="Importar CSV">
               <Icon svg={ICONS.upload} className="w-4 h-4" />
             </Button>
@@ -90,7 +127,26 @@ export const IngredientListPanel: React.FC<IngredientListPanelProps> = ({
                 <Icon svg={ICONS.trash} className="w-4 h-4" />
               </Button>
             )}
-            <Button onClick={onNewIngredient} className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-900/20 h-10 w-10 p-0 rounded-xl">
+
+            {/* Provider Selector - Custom Premium Style */}
+            <div className="relative group/prov">
+              <select
+                className="h-10 pl-3 pr-8 bg-white/20 hover:bg-white/30 backdrop-blur-xl rounded-xl text-slate-800 dark:text-slate-100 border-none focus:ring-2 focus:ring-emerald-500/50 transition-all cursor-pointer text-sm font-medium appearance-none min-w-[140px]"
+                value={selectedProveedorId}
+                onChange={(e) => setSelectedProveedorId(e.target.value)}
+              >
+                <option value="all" className="text-slate-800">Todos los productos</option>
+                {proveedores.map(prov => (
+                  <option key={prov.id} value={prov.id} className="text-slate-800">{prov.nombre}</option>
+                ))}
+              </select>
+              {/* Custom Arrow because appearance-none removes default */}
+              <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-500 group-hover/prov:text-slate-800 dark:group-hover/prov:text-slate-200 transition-colors">
+                <Icon svg={ICONS.chevronDown} className="w-3 h-3" />
+              </div>
+            </div>
+
+            <Button onClick={onNewIngredient} className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-900/20 h-10 w-10 p-0 rounded-xl transition-all hover:scale-105 active:scale-95">
               <Icon svg={ICONS.plus} className="w-5 h-5" />
             </Button>
           </div>
@@ -103,7 +159,7 @@ export const IngredientListPanel: React.FC<IngredientListPanelProps> = ({
           <div className="w-8 shrink-0 flex justify-center">
             <input
               type="checkbox"
-              checked={selectedIngredientIds.length === ingredients.length && ingredients.length > 0}
+              checked={selectedIngredientIds.length === filteredIngredients.length && filteredIngredients.length > 0}
               onChange={(e) => onSelectAll(e.target.checked)}
               className="rounded border-white/30 bg-white/20 text-emerald-500 focus:ring-emerald-500/50"
             />
@@ -116,14 +172,14 @@ export const IngredientListPanel: React.FC<IngredientListPanelProps> = ({
 
       {/* List Body */}
       <div className="flex-1 overflow-y-auto custom-scrollbar p-0 w-full">
-        {ingredients.length === 0 ? (
+        {filteredIngredients.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-40 text-center opacity-60">
             <Icon svg={ICONS.flask} className="w-8 h-8 text-slate-400 mb-2" />
             <p className="text-sm text-slate-500">No hay ingredientes</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-2 2xl:grid-cols-3 gap-6 pb-20">
-            {ingredients.map((ing) => {
+            {filteredIngredients.map((ing) => {
               const isSelected = selectedIngredientIds.includes(ing.id);
               const isViewing = viewingIngredientId === ing.id;
 

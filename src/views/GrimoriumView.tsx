@@ -13,6 +13,7 @@ import { Icon } from '../components/ui/Icon';
 import { Modal } from '../components/ui/Modal';
 import { ICONS } from '../components/ui/icons';
 import { IngredientFormModal } from '../components/grimorium/IngredientFormModal';
+import { SuppliersManagerModal } from '../components/grimorium/SuppliersManagerModal'; // Added import
 import { FiltersSidebar } from '../components/grimorium/FiltersSidebar';
 import { RecipeList } from '../components/grimorium/RecipeList';
 import { RecipeDetailPanel } from '../components/grimorium/RecipeDetailPanel';
@@ -93,6 +94,7 @@ const GrimoriumView: React.FC<GrimoriumViewProps> = ({ onOpenRecipeModal, onDrag
     const [showPdfImportModal, setShowPdfImportModal] = React.useState(false);
     const [useOcr, setUseOcr] = React.useState(false);
     const [showIngredientsManager, setShowIngredientsManager] = React.useState(false);
+    const [showSuppliersModal, setShowSuppliersModal] = React.useState(false); // New state
     const [isToolOpen, setIsToolOpen] = React.useState(false);
 
     // --- Escandallator & Batcher State ---
@@ -362,7 +364,7 @@ const GrimoriumView: React.FC<GrimoriumViewProps> = ({ onOpenRecipeModal, onDrag
             setEditingIngredient(null);
             setShowIngredientModal(true);
         } else if (action === 'providers') {
-            alert("Gestión de Proveedores (Próximamente)");
+            setShowSuppliersModal(true); // Open modal
         }
     };
 
@@ -687,6 +689,7 @@ const GrimoriumView: React.FC<GrimoriumViewProps> = ({ onOpenRecipeModal, onDrag
             )}
 
             {/* Modals */}
+            {showSuppliersModal && <SuppliersManagerModal isOpen={showSuppliersModal} onClose={() => setShowSuppliersModal(false)} />}
             {showIngredientModal && <IngredientFormModal isOpen={showIngredientModal} onClose={() => setShowIngredientModal(false)} db={db} userId={userId} appId={appId} editingIngredient={editingIngredient} />}
             <Modal isOpen={showCsvImportModal} onClose={() => setShowCsvImportModal(false)} title="Importar Ingredientes CSV"><div className="space-y-4 p-4"><p className="text-sm text-slate-500">Formato: Nombre;Categoria;Precio;Unidad.</p><Input type="file" accept=".csv" onChange={handleCsvImport} /></div></Modal>
             <Modal isOpen={showTxtImportModal} onClose={() => setShowTxtImportModal(false)} title="Importar Recetas TXT"><div className="space-y-4 p-4"><p className="text-sm text-slate-500">Formato Nexus TXT.</p><Input type="file" accept=".txt" onChange={handleTxtImport} /></div></Modal>

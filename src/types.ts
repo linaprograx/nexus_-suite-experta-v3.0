@@ -36,6 +36,77 @@ export interface Ingredient {
     marca?: string;
     merma?: number;
     wastePercentage?: number;
+    proveedores?: string[]; // Added: List of Provider IDs
+}
+
+export interface Proveedor {
+    id: string;
+    nombre: string;
+    contacto: string;
+    email: string;
+    telefono: string;
+    tiempoEntrega: number; // días
+    costoEnvio: number;
+    pedidoMinimo: number;
+    descuentosDisponibles: string[];
+    activo: boolean;
+}
+
+// --- SUPPLIERS MODULE TYPES ---
+
+export interface SupplierProduct {
+    productId: string; // Internal or External ID
+    productName: string;
+    price: number;
+    unit: string;
+    updatedAt: any; // Timestamp
+}
+
+export interface Supplier {
+    id: string;
+    name: string;
+    contactName: string;
+    phone: string;
+    email: string;
+    address: string;
+    taxId: string;
+    category: "Bebidas" | "Frutas" | "Lácteos" | "Secos" | "Otros";
+    deliveryDays: string[];
+    leadTimeDays: number;
+    paymentTerms: string;
+    productList: SupplierProduct[]; // Summary of products for quick access
+    createdAt: any;
+    updatedAt: any;
+}
+
+export interface SupplierOrder {
+    id: string;
+    supplierId: string;
+    supplierName: string;
+    status: 'draft' | 'pending' | 'received' | 'cancelled';
+    items: {
+        productId: string;
+        productName: string;
+        quantity: number;
+        price: number;
+        unit: string;
+        total: number;
+    }[];
+    totalAmount: number;
+    createdAt: any;
+    deliveryDate?: any;
+    receivedAt?: any;
+}
+
+// ---------------------------
+
+export interface CatalogoItem {
+    ingredienteId: string;
+    precioUnidad: number;
+    unidadCompra: string;
+    formato: string;
+    contenidoPorUnidad: number;
+    ultimaActualizacionPrecio: any; // Timestamp
 }
 
 export interface Recipe {
