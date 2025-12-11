@@ -95,9 +95,16 @@ const GrimoriumView: React.FC<GrimoriumViewProps> = ({ onOpenRecipeModal, onDrag
     const [showIngredientsManager, setShowIngredientsManager] = React.useState(false);
     const [isToolOpen, setIsToolOpen] = React.useState(false);
 
-    // --- Escandallator State ---
+    // --- Escandallator & Batcher State ---
     const [selectedEscandalloRecipe, setSelectedEscandalloRecipe] = React.useState<Recipe | null>(null);
     const [precioVenta, setPrecioVenta] = React.useState<number>(0);
+
+    // Batcher Lifted State
+    const [batchSelectedRecipeId, setBatchSelectedRecipeId] = React.useState('');
+    const [batchTargetQty, setBatchTargetQty] = React.useState('1');
+    const [batchTargetUnit, setBatchTargetUnit] = React.useState<'Litros' | 'Botellas'>('Litros');
+    const [batchIncludeDilution, setBatchIncludeDilution] = React.useState(false);
+
     const escandallosColPath = `users/${userId}/escandallo-history`;
     const [batchResult, setBatchResult] = React.useState<any>(null);
     const [shoppingList, setShoppingList] = React.useState<any[] | null>(null);
@@ -341,8 +348,27 @@ const GrimoriumView: React.FC<GrimoriumViewProps> = ({ onOpenRecipeModal, onDrag
                     activeTab === 'stock' ? 'ice' :
                         activeTab === 'zerowaste' ? 'lime' : 'slate';
 
+    const handleConfigureBatch = (amount: number, unit: 'Litros' | 'Botellas') => {
+        setBatchTargetQty(amount.toString());
+        setBatchTargetUnit(unit);
+        // If we want to auto-select a recipe, we can't unless we know which one, 
+        // but this is mostly for "New Batch" setup of quantity.
+        // If a recipe was already selected, it stays. 
+        // If not, user picks it.
+    };
+
+    const handleStockAction = (action: string) => {
+        if (action === 'new_product') {
+            setEditingIngredient(null);
+            setShowIngredientModal(true);
+        } else if (action === 'providers') {
+            alert("Gestión de Proveedores (Próximamente)");
+        }
+    };
+
     return (
         <PremiumLayout
+            id="grimorium-section"
             gradientTheme={currentGradient}
             transparentColumns={true}
             className="lg:!grid-cols-[minmax(150px,300px),minmax(600px,1fr),400px] gap-px" // 3-Column Layout: Exact Resizing (Left Shrinks to 150px, Center Min 600, Right Fixed)
@@ -386,22 +412,12 @@ const GrimoriumView: React.FC<GrimoriumViewProps> = ({ onOpenRecipeModal, onDrag
                     )}
                     {activeTab === 'batcher' && (
                         <BatcherSidebar
-                            onConfigureBatch={(amount, unit) => {
-                                // This requires the BatcherTab to listen to these values.
-                                // For now, we can alert, OR ideally, lift state up.
-                                // Given constraints, I'll use a custom event or ref if possible, but simplest is alert for "connected".
-                                // Actually, let's use a small ref/state in Grimorium to pass down initial config?
-                                // "Configura cantidad a ${amount} ${unit}"
-                                alert(`Configuración rápida: ${amount} ${unit} (Funcionalidad completa en progreso)`);
-                            }}
+                            onConfigureBatch={handleConfigureBatch}
                         />
                     )}
                     {activeTab === 'stock' && (
                         <StockSidebar
-                            onAction={(action) => {
-                                if (action === 'new_product') alert("Nuevo Producto (Placeholder)");
-                                if (action === 'providers') alert("Gestión de Proveedores (Placeholder)");
-                            }}
+                            onAction={handleStockAction}
                         />
                     )}
                     {activeTab === 'zerowaste' && <ZeroWasteHistorySidebar history={zwHistory} onSelect={handleZwHistorySelect} />}
@@ -454,7 +470,20 @@ const GrimoriumView: React.FC<GrimoriumViewProps> = ({ onOpenRecipeModal, onDrag
                             />
                         )}
                         {activeTab === 'batcher' && (
-                            <BatcherTab db={db} appId={appId} allRecipes={allRecipes} setBatchResult={setBatchResult} />
+                            <BatcherTab
+                                db={db}
+                                appId={appId}
+                                allRecipes={allRecipes}
+                                setBatchResult={setBatchResult}
+                                selectedRecipeId={batchSelectedRecipeId}
+                                targetQuantity={batchTargetQty}
+                                targetUnit={batchTargetUnit}
+                                includeDilution={batchIncludeDilution}
+                                onRecipeChange={setBatchSelectedRecipeId}
+                                onQuantityChange={setBatchTargetQty}
+                                onUnitChange={setBatchTargetUnit}
+                                onDilutionChange={setBatchIncludeDilution}
+                            />
                         )}
                         {activeTab === 'stock' && (
                             <StockManagerTab allRecipes={allRecipes} allIngredients={allIngredients} setShoppingList={setShoppingList} />
@@ -510,7 +539,10 @@ const GrimoriumView: React.FC<GrimoriumViewProps> = ({ onOpenRecipeModal, onDrag
                             onNavigate={(view, data) => setCurrentView(view)}
                             onClose={() => setSelectedRecipeId(null)}
                             onEscandallo={() => { setSelectedEscandalloRecipe(selectedRecipe); setActiveTab('escandallo'); }}
-                            onBatcher={() => {  /* Ideally switch to batcher and select recipe, but BatcherTab needs logic for that */ setActiveTab('batcher'); }}
+                            onBatcher={() => {
+                                setBatchSelectedRecipeId(selectedRecipe.id);
+                                setActiveTab('batcher');
+                            }}
                         />
                     )}
 

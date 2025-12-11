@@ -3,7 +3,7 @@
    ================================ */
 
 /* Shell general (estructura idéntica a Cerebrity) */
-.grimorium-shell {
+#grimorium-section .grimorium-shell {
   border-radius: 22px;
   padding: 24px;
   background-size: cover;
@@ -12,35 +12,31 @@
 }
 
 /* --- GRADIENTE PARA RECETAS --- */
-.grimorium-recipes-shell {
-  background: linear-gradient(
-    135deg,
-    #FFA75E 0%,
-    #FF5E62 100%
-  );
+#grimorium-section .grimorium-recipes-shell {
+  background: linear-gradient(135deg,
+      #FFA75E 0%,
+      #FF5E62 100%);
 }
 
 /* --- GRADIENTE PARA INGREDIENTES --- */
-.grimorium-ingredients-shell {
-  background: linear-gradient(
-    135deg,
-    #A0F2B8 0%,
-    #34D399 100%
-  );
+#grimorium-section .grimorium-ingredients-shell {
+  background: linear-gradient(135deg,
+      #A0F2B8 0%,
+      #34D399 100%);
 }
 
 /* Tabs activas */
-.grimorium-tab-recipes-active {
+#grimorium-section .grimorium-tab-recipes-active {
   background: linear-gradient(135deg, #FFA75E 0%, #FF5E62 100%);
   color: white !important;
 }
 
-.grimorium-tab-ingredients-active {
+#grimorium-section .grimorium-tab-ingredients-active {
   background: linear-gradient(135deg, #A0F2B8 0%, #34D399 100%);
   color: white !important;
 }
 
 /* Tab inactiva */
-.grimorium-tab-inactive {
+#grimorium-section .grimorium-tab-inactive {
   color: #6b7280;
 }

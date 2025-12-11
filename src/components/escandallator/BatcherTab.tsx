@@ -14,13 +14,24 @@ interface BatcherTabProps {
     appId: string;
     allRecipes: Recipe[];
     setBatchResult: (result: any) => void;
+    // Lifted State Props
+    selectedRecipeId: string;
+    targetQuantity: string;
+    targetUnit: 'Litros' | 'Botellas';
+    includeDilution: boolean;
+    onRecipeChange: (id: string) => void;
+    onQuantityChange: (qty: string) => void;
+    onUnitChange: (unit: 'Litros' | 'Botellas') => void;
+    onDilutionChange: (checked: boolean) => void;
 }
 
-const BatcherTab: React.FC<BatcherTabProps> = ({ db, appId, allRecipes, setBatchResult }) => {
-    const [batchSelectedRecipeId, setBatchSelectedRecipeId] = React.useState('');
-    const [targetQuantityStr, setTargetQuantityStr] = React.useState('1');
-    const [targetUnit, setTargetUnit] = React.useState<'Litros' | 'Botellas'>('Litros');
-    const [includeDilution, setIncludeDilution] = React.useState(false);
+const BatcherTab: React.FC<BatcherTabProps> = ({
+    db, appId, allRecipes, setBatchResult,
+    selectedRecipeId, targetQuantity, targetUnit, includeDilution,
+    onRecipeChange, onQuantityChange, onUnitChange, onDilutionChange
+}) => {
+    // Removed local state
+
 
     const handleCalculateBatch = () => {
         if (!allRecipes || allRecipes.length === 0) {
@@ -28,8 +39,8 @@ const BatcherTab: React.FC<BatcherTabProps> = ({ db, appId, allRecipes, setBatch
             return;
         }
 
-        const recipe = allRecipes.find(r => r.id === batchSelectedRecipeId);
-        const targetQuantity = parseFloat(targetQuantityStr);
+        const recipe = allRecipes.find(r => r.id === selectedRecipeId);
+        const quantity = parseFloat(targetQuantity);
 
         if (!recipe || !recipe.ingredientes || !targetQuantity || targetQuantity <= 0) {
             setBatchResult(null);
@@ -40,7 +51,7 @@ const BatcherTab: React.FC<BatcherTabProps> = ({ db, appId, allRecipes, setBatch
         const originalVolume = recipe.ingredientes.reduce((acc, ing) => {
             // Only count liquids/measurable solids to some extent
             if (ing.unidad === 'ml' || ing.unidad === 'g' || ing.unidad === 'cl' || ing.unidad === 'oz') {
-                let qty = ing.cantidad;
+                let qty = typeof ing.cantidad === 'string' ? parseFloat(ing.cantidad) : ing.cantidad;
                 if (ing.unidad === 'cl') qty *= 10;
                 if (ing.unidad === 'oz') qty *= 30; // Approx
                 return acc + qty;
@@ -69,7 +80,7 @@ const BatcherTab: React.FC<BatcherTabProps> = ({ db, appId, allRecipes, setBatch
 
         // Re-map with simpler logic for the view
         const finalBatchData = recipe.ingredientes.map(ing => {
-            let amount = ing.cantidad;
+            let amount = typeof ing.cantidad === 'string' ? parseFloat(ing.cantidad) : ing.cantidad;
             if (ing.unidad === 'cl') amount *= 10;
             if (ing.unidad === 'oz') amount *= 30;
 
@@ -95,7 +106,7 @@ const BatcherTab: React.FC<BatcherTabProps> = ({ db, appId, allRecipes, setBatch
             meta: {
                 recipeId: recipe.id,
                 recipeName: recipe.nombre,
-                targetQuantity: targetQuantityStr,
+                targetQuantity: targetQuantity,
                 targetUnit,
                 includeDilution
             }
@@ -117,7 +128,7 @@ const BatcherTab: React.FC<BatcherTabProps> = ({ db, appId, allRecipes, setBatch
                 <div className="space-y-6">
                     <div className="space-y-2">
                         <Label htmlFor="batch-recipe" className="text-base font-medium text-slate-700 dark:text-slate-300">Seleccionar Receta</Label>
-                        <Select id="batch-recipe" value={batchSelectedRecipeId} onChange={e => setBatchSelectedRecipeId(e.target.value)} className="h-12 text-lg bg-white/50 dark:bg-slate-800/50 rounded-xl border-white/20 w-full">
+                        <Select id="batch-recipe" value={selectedRecipeId} onChange={e => onRecipeChange(e.target.value)} className="h-12 text-lg bg-white/50 dark:bg-slate-800/50 rounded-xl border-white/20 w-full">
                             <option value="">-- Elige un cóctel --</option>
                             {allRecipes.map(r => <option key={r.id} value={r.id}>{r.nombre}</option>)}
                         </Select>
@@ -126,11 +137,11 @@ const BatcherTab: React.FC<BatcherTabProps> = ({ db, appId, allRecipes, setBatch
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 w-full">
                         <div className="space-y-2 w-full">
                             <Label htmlFor="batch-qty" className="text-sm font-medium text-slate-700 dark:text-slate-300">Cantidad Objetivo</Label>
-                            <Input id="batch-qty" type="number" value={targetQuantityStr} onChange={e => setTargetQuantityStr(e.target.value)} min="0.1" step="0.1" className="h-12 text-lg bg-white/50 dark:bg-slate-800/50 rounded-xl border-white/20 w-full" />
+                            <Input id="batch-qty" type="number" value={targetQuantity} onChange={e => onQuantityChange(e.target.value)} min="0.1" step="0.1" className="h-12 text-lg bg-white/50 dark:bg-slate-800/50 rounded-xl border-white/20 w-full" />
                         </div>
                         <div className="space-y-2 w-full">
                             <Label htmlFor="batch-unit" className="text-sm font-medium text-slate-700 dark:text-slate-300">Unidad</Label>
-                            <Select id="batch-unit" value={targetUnit} onChange={e => setTargetUnit(e.target.value as any)} className="h-12 text-lg bg-white/50 dark:bg-slate-800/50 rounded-xl border-white/20 w-full">
+                            <Select id="batch-unit" value={targetUnit} onChange={e => onUnitChange(e.target.value as any)} className="h-12 text-lg bg-white/50 dark:bg-slate-800/50 rounded-xl border-white/20 w-full">
                                 <option value="Litros">Litros (L)</option>
                                 <option value="Botellas">Botellas (700ml)</option>
                             </Select>
@@ -138,11 +149,11 @@ const BatcherTab: React.FC<BatcherTabProps> = ({ db, appId, allRecipes, setBatch
                     </div>
 
                     <div className="flex items-center space-x-3 p-3 bg-amber-50/50 dark:bg-amber-900/10 rounded-xl border border-amber-100 dark:border-amber-800/20 w-full">
-                        <Checkbox id="dilution" checked={includeDilution} onChange={e => setIncludeDilution(e.target.checked)} className="border-amber-500 text-amber-600 focus:ring-amber-500" />
+                        <Checkbox id="dilution" checked={includeDilution} onChange={e => onDilutionChange(e.target.checked)} className="border-amber-500 text-amber-600 focus:ring-amber-500" />
                         <Label htmlFor="dilution" className="text-sm cursor-pointer select-none text-slate-700 dark:text-slate-300">Incluir Dilución (20% Agua)</Label>
                     </div>
 
-                    <Button onClick={handleCalculateBatch} disabled={!batchSelectedRecipeId} className="w-full h-12 text-base bg-amber-500 hover:bg-amber-600 text-white font-semibold rounded-xl px-6 py-3 shadow-md transition hover:shadow-lg">
+                    <Button onClick={handleCalculateBatch} disabled={!selectedRecipeId} className="w-full h-12 text-base bg-amber-500 hover:bg-amber-600 text-white font-semibold rounded-xl px-6 py-3 shadow-md transition hover:shadow-lg">
                         <Icon svg={ICONS.calculator} className="mr-2 h-5 w-5" />Calcular Producción
                     </Button>
                 </div>

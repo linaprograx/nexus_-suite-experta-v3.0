@@ -12,6 +12,7 @@ interface PremiumLayoutProps {
     className?: string;
     layoutMode?: 'standard' | 'compact' | 'colegium';
     transparentColumns?: boolean;
+    id?: string;
 }
 
 export const PremiumLayout: React.FC<PremiumLayoutProps> = ({
@@ -23,7 +24,8 @@ export const PremiumLayout: React.FC<PremiumLayoutProps> = ({
     gradientTheme = 'indigo',
     className = '',
     layoutMode = 'standard',
-    transparentColumns = false
+    transparentColumns = false,
+    id
 }) => {
 
     // Gradient definitions mapping (Avatar Standard: 4-Stop Opacity)
@@ -62,7 +64,7 @@ export const PremiumLayout: React.FC<PremiumLayoutProps> = ({
     const columnClass = `h-full min-h-0 flex flex-col relative z-20 ${transparentColumns ? 'bg-transparent shadow-none border-0' : 'bg-transparent shadow-premium'} rounded-2xl overflow-y-auto p-6 scrollbar-hide`;
 
     return (
-        <div className={`h-[calc(100vh-80px)] w-full flex flex-col px-4 lg:px-8 py-6 ${className}`}>
+        <div id={id} className={`h-[calc(100vh-80px)] w-full flex flex-col px-4 lg:px-8 py-6 ${className}`}>
             {/* Header / Navbar Area */}
             {header && (
                 <div className="flex-shrink-0 mb-4 z-30 relative">
