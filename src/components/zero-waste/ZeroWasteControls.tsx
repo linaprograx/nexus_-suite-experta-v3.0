@@ -1,5 +1,5 @@
 import React from 'react';
-import { Ingredient } from '../../../types';
+import { Ingredient } from '../../types';
 import { Label } from '../ui/Label';
 import { Checkbox } from '../ui/Checkbox';
 import { Textarea } from '../ui/Textarea';
@@ -28,7 +28,7 @@ const ZeroWasteControls: React.FC<ZeroWasteControlsProps> = ({
     onGenerate
 }) => {
     return (
-        <div className="bg-white/60 dark:bg-slate-900/30 backdrop-blur-md rounded-2xl border border-white/20 dark:border-white/5 h-full flex flex-col overflow-hidden">
+        <div className="bg-white/30 dark:bg-slate-900/30 backdrop-blur-xl rounded-2xl border border-white/20 dark:border-white/5 shadow-premium h-full flex flex-col overflow-hidden">
             <div className="p-4 border-b border-white/10 dark:border-white/5 bg-white/40 dark:bg-slate-900/40">
                 <h3 className="font-semibold text-slate-800 dark:text-slate-200">The Lab Input</h3>
                 <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Define tus descartes</p>
@@ -49,9 +49,9 @@ const ZeroWasteControls: React.FC<ZeroWasteControlsProps> = ({
                                             id={`zw-${ing.id}`}
                                             checked={selectedIngredients.includes(ing.nombre)}
                                             onChange={() => onToggleIngredient(ing.nombre)}
-                                            className="data-[state=checked]:bg-cyan-500 border-slate-300 dark:border-slate-600"
+                                            className="data-[state=checked]:bg-lime-500 border-slate-300 dark:border-slate-600"
                                         />
-                                        <span className="text-sm text-slate-700 dark:text-slate-300 group-hover:text-cyan-600 dark:group-hover:text-cyan-400 transition-colors">
+                                        <span className="text-sm text-slate-700 dark:text-slate-300 group-hover:text-lime-600 dark:group-hover:text-lime-400 transition-colors">
                                             {ing.nombre}
                                         </span>
                                     </label>
@@ -68,7 +68,7 @@ const ZeroWasteControls: React.FC<ZeroWasteControlsProps> = ({
                         value={rawIngredients}
                         onChange={e => onRawIngredientsChange(e.target.value)}
                         placeholder="Ej: Pieles de cítricos, restos de sirope, pulpa de fruta..."
-                        className="bg-white/40 dark:bg-slate-800/40 border-white/10 focus:border-cyan-500 min-h-[100px] text-sm resize-none"
+                        className="bg-white/40 dark:bg-slate-800/40 border-white/10 focus:border-lime-500 min-h-[100px] text-sm resize-none"
                     />
                 </div>
             </div>
@@ -77,10 +77,10 @@ const ZeroWasteControls: React.FC<ZeroWasteControlsProps> = ({
                 <Button
                     onClick={onGenerate}
                     disabled={loading}
-                    className="w-full bg-green-600 hover:bg-green-700 text-white shadow-premium rounded-xl"
+                    className="w-full bg-lime-500 hover:bg-lime-600 text-white font-semibold rounded-xl px-6 py-3 shadow-md transition hover:shadow-lg"
                 >
                     {loading ? <Spinner className="w-4 h-4 mr-2" /> : <Icon svg={ICONS.recycle} className="w-4 h-4 mr-2" />}
-                    Generar
+                    Generar Elaboraciones
                 </Button>
             </div>
         </div>

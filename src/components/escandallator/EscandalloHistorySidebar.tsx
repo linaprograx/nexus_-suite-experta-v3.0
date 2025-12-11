@@ -1,6 +1,8 @@
 import React from 'react';
 import { Firestore, collection, query, orderBy, limit, onSnapshot } from 'firebase/firestore';
-import { Escandallo } from '../../../types';
+import { Icon } from '../ui/Icon';
+import { ICONS } from '../ui/icons';
+import { Escandallo } from '../../types';
 import { Card } from '../ui/Card';
 
 const EscandalloHistoryCard: React.FC<{
@@ -56,21 +58,37 @@ const EscandalloHistorySidebar: React.FC<EscandalloHistorySidebarProps> = ({ db,
     }, [db, escandallosColPath]);
 
     return (
-        <div className="h-full flex flex-col bg-white/50 dark:bg-slate-900/30 backdrop-blur-md rounded-2xl border border-white/20 dark:border-white/5 overflow-hidden">
-            <div className="p-4 border-b border-white/10 dark:border-white/5 bg-white/40 dark:bg-slate-900/40">
+        <div className="h-full flex flex-col bg-transparent border-0 shadow-none">
+            <div className="p-4 bg-transparent mb-2 w-full mx-auto">
+                <div className="px-4 py-2 bg-transparent text-[10px] font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider mb-2 w-[96%] mx-auto">Historial</div>
                 <button
                     onClick={onNewEscandallo}
-                    className="w-full mb-4 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-medium text-sm transition-colors flex items-center justify-center gap-2"
+                    className="w-full px-4 py-3 bg-rose-500 hover:bg-rose-600 text-white rounded-xl font-bold shadow-premium transition-all duration-300 transform hover:-translate-y-0.5 flex items-center justify-center gap-2"
                 >
-                    <span>+</span> Nuevo Escandallo
+                    <Icon svg={ICONS.plus} className="w-5 h-5" /> Nuevo Escandallo
                 </button>
-                <h3 className="font-semibold text-slate-800 dark:text-slate-200">Historial</h3>
             </div>
-            <div className="flex-1 overflow-y-auto p-2 space-y-1 custom-scrollbar">
+            <div className="flex-1 overflow-y-auto custom-scrollbar p-4 space-y-4 w-[96%] mx-auto">
                 {loading && <p className="p-4 text-center text-sm text-slate-500">Cargando...</p>}
                 {!loading && history.length === 0 && <p className="p-4 text-center text-sm text-slate-500">No hay historial.</p>}
                 {history.map(item => (
-                    <EscandalloHistoryCard key={item.id} item={item} onLoadHistory={onLoadHistory} />
+                    <div
+                        key={item.id}
+                        onClick={() => onLoadHistory(item)}
+                        className="cursor-pointer bg-white/30 dark:bg-slate-900/30 backdrop-blur-xl p-4 rounded-2xl border border-white/10 dark:border-white/5 shadow-sm hover:bg-rose-50/50 dark:hover:bg-rose-900/20 hover:border-rose-200 dark:hover:border-rose-800 transition-all duration-300 group relative overflow-hidden"
+                    >
+                        <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
+                        <div className="relative z-10">
+                            <p className="font-bold text-slate-900 dark:text-slate-100 mb-1">{item.recipeName}</p>
+                            <div className="flex justify-between items-end">
+                                <span className="text-xs text-slate-500 dark:text-slate-400">{item.createdAt?.seconds ? new Date(item.createdAt.seconds * 1000).toLocaleDateString() : 'Reciente'}</span>
+                                <div className="text-right">
+                                    <span className="block text-xs text-rose-500/80 font-semibold uppercase tracking-wider">Rentabilidad</span>
+                                    <span className="text-lg font-black text-rose-600 dark:text-rose-400 leading-none">{item.rentabilidad.toFixed(0)}%</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 ))}
             </div>
         </div>

@@ -50,17 +50,17 @@ export const RecipeFinancialDashboard: React.FC<RecipeFinancialDashboardProps> =
                     <div className="p-2 rounded-xl bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400">
                         <Icon svg={ICONS.trendingUp} className="w-5 h-5" />
                     </div>
-                    <div className="min-w-0">
-                        <h3 className="font-bold text-slate-800 dark:text-slate-100 text-sm truncate">{selectedRecipe.nombre}</h3>
-                        <p className="text-xs text-slate-500">Rendimiento Financiero</p>
+                    <div className="min-w-0 flex-1">
+                        <h3 className="font-bold text-slate-800 dark:text-slate-100 text-xs truncate" title={selectedRecipe.nombre}>{selectedRecipe.nombre}</h3>
+                        <p className="text-[10px] text-slate-500 truncate">Rendimiento Financiero</p>
                     </div>
                 </div>
 
                 {/* Margin KPI */}
-                <Card className={`p-4 border ${margen < 25 ? 'bg-red-50 border-red-100' : 'bg-indigo-50/50 border-indigo-100'} dark:bg-slate-800/50 dark:border-slate-700`}>
-                    <div className="flex justify-between items-center mb-2">
-                        <span className="text-xs font-semibold uppercase tracking-wider opacity-70">Margen Bruto</span>
-                        <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${margen < 25 ? 'bg-red-200 text-red-800' : 'bg-emerald-100 text-emerald-700'}`}>
+                <Card className={`p-3 border ${margen < 25 ? 'bg-red-50 border-red-100' : 'bg-indigo-50/50 border-indigo-100'} dark:bg-slate-800/50 dark:border-slate-700`}>
+                    <div className="flex justify-between items-center mb-1 flex-wrap gap-1">
+                        <span className="text-[10px] font-semibold uppercase tracking-wider opacity-70">Margen Bruto</span>
+                        <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${margen < 25 ? 'bg-red-200 text-red-800' : 'bg-emerald-100 text-emerald-700'}`}>
                             {margen > 70 ? 'EXCELENTE' : margen < 25 ? 'CRÍTICO' : 'BUENO'}
                         </span>
                     </div>

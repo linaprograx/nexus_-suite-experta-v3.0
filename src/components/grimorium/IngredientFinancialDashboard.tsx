@@ -34,16 +34,19 @@ export const IngredientFinancialDashboard: React.FC<IngredientFinancialDashboard
                     <div className="p-2 rounded-xl bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400">
                         <Icon svg={ICONS.trendingUp} className="w-5 h-5" />
                     </div>
-                    <div className="min-w-0">
-                        <h3 className="font-bold text-slate-800 dark:text-slate-100 text-sm truncate">{selectedIngredient.nombre}</h3>
-                        <p className="text-xs text-slate-500">Análisis de Costos</p>
+                    <div className="min-w-0 flex-1">
+                        <h3 className="font-bold text-slate-800 dark:text-slate-100 text-xs truncate" title={selectedIngredient.nombre}>{selectedIngredient.nombre}</h3>
+                        <p className="text-[10px] text-slate-500 truncate">Análisis de Costos</p>
                     </div>
                 </div>
 
                 {/* KPI Grid */}
                 <div className="grid grid-cols-2 gap-2">
-                    <Card className="p-3 border bg-white/50 dark:bg-slate-800/50 border-slate-100 dark:border-slate-800">
-                        <div className="text-[10px] text-slate-500 uppercase font-bold mb-1">Precio Actual</div>
+                    {/* Price KPI */}
+                    <Card className="p-3 border bg-emerald-50/50 border-emerald-100 dark:bg-slate-800/50 dark:border-slate-700">
+                        <div className="flex justify-between items-center mb-1 flex-wrap gap-1">
+                            <span className="text-[10px] font-semibold uppercase tracking-wider opacity-70">Precio Actual</span>
+                        </div>
                         <div className="text-lg font-bold text-slate-800 dark:text-slate-100">€{selectedIngredient.precioCompra.toFixed(2)}</div>
                         <div className={`text-[10px] font-bold ${trend >= 0 ? 'text-red-500' : 'text-emerald-500'}`}>
                             {trend >= 0 ? '+' : ''}{trend.toFixed(1)}% vs 6m

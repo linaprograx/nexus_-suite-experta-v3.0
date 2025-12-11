@@ -344,7 +344,8 @@ const GrimoriumView: React.FC<GrimoriumViewProps> = ({ onOpenRecipeModal, onDrag
     return (
         <PremiumLayout
             gradientTheme={currentGradient}
-            className="lg:!grid-cols-[200px,minmax(0,1fr),320px]"
+            transparentColumns={true}
+            className="lg:!grid-cols-[minmax(150px,300px),minmax(600px,1fr),400px] gap-px" // 3-Column Layout: Exact Resizing (Left Shrinks to 150px, Center Min 600, Right Fixed)
             header={
                 <div className="flex items-center gap-2 w-fit max-w-full overflow-x-auto no-scrollbar">
                     <button onClick={() => setActiveTab('recipes')} className={`flex-shrink-0 py-2 px-5 text-sm font-semibold rounded-full transition-all duration-300 ${activeTab === 'recipes' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-800'}`}>Recetas</button>
@@ -459,33 +460,34 @@ const GrimoriumView: React.FC<GrimoriumViewProps> = ({ onOpenRecipeModal, onDrag
                             <StockManagerTab allRecipes={allRecipes} allIngredients={allIngredients} setShoppingList={setShoppingList} />
                         )}
                         {activeTab === 'zerowaste' && (
-                            <div className="h-full overflow-y-auto custom-scrollbar p-1">
+                            <div className="h-full overflow-y-auto custom-scrollbar p-0 w-full max-w-full">
                                 {zwLoading && (
                                     <div className="flex flex-col items-center justify-center h-64 animate-pulse">
                                         <Spinner className="w-12 h-12 text-lime-500 mb-4" />
-                                        <p className="text-slate-500 font-medium">Diseñando elaboraciones...</p>
+                                        <p className="text-lime-700 font-medium">Analizando desperdicios...</p>
                                     </div>
                                 )}
 
                                 {zwError && <Alert variant="destructive" title="Error de Generación" description={zwError} className="mb-4" />}
 
                                 {!zwLoading && zwRecipeResults.length === 0 && (
-                                    <div className="flex flex-col items-center justify-center h-64 text-slate-400 border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-2xl bg-white/20 dark:bg-slate-900/10">
+                                    <div className="flex flex-col items-center justify-center h-64 text-slate-400 border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-2xl bg-white/20 dark:bg-slate-900/10 w-full">
                                         <Icon svg={ICONS.flask} className="w-12 h-12 mb-3 opacity-40" />
                                         <p className="text-lg font-light">Selecciona ingredientes y genera ideas Zero Waste</p>
                                     </div>
                                 )}
 
                                 {zwRecipeResults.length > 0 && (
-                                    <div className="grid grid-cols-1 gap-6 pb-6">
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-2 2xl:grid-cols-3 gap-6 pb-20">
                                         {zwRecipeResults.map((recipe, index) => (
-                                            <ZeroWasteResultCard
-                                                key={index}
-                                                recipe={recipe}
-                                                db={db}
-                                                userId={userId}
-                                                appId={appId}
-                                            />
+                                            <div key={index} className="w-full">
+                                                <ZeroWasteResultCard
+                                                    recipe={recipe}
+                                                    db={db}
+                                                    userId={userId}
+                                                    appId={appId}
+                                                />
+                                            </div>
                                         ))}
                                     </div>
                                 )}
@@ -506,6 +508,7 @@ const GrimoriumView: React.FC<GrimoriumViewProps> = ({ onOpenRecipeModal, onDrag
                             onDuplicate={handleDuplicateRecipe}
                             onToolToggle={setIsToolOpen}
                             onNavigate={(view, data) => setCurrentView(view)}
+                            onClose={() => setSelectedRecipeId(null)}
                             onEscandallo={() => { setSelectedEscandalloRecipe(selectedRecipe); setActiveTab('escandallo'); }}
                             onBatcher={() => {  /* Ideally switch to batcher and select recipe, but BatcherTab needs logic for that */ setActiveTab('batcher'); }}
                         />
@@ -524,14 +527,16 @@ const GrimoriumView: React.FC<GrimoriumViewProps> = ({ onOpenRecipeModal, onDrag
 
                     {/* ESCANDALLO RESULTS */}
                     {activeTab === 'escandallo' && (
-                        <div className="h-full overflow-y-auto custom-scrollbar">
+                        <div className="h-full overflow-y-auto custom-scrollbar p-4 w-[98%] mx-auto">
                             {escandalloData ? (
                                 <EscandalloSummaryCard
+
                                     recipeName={selectedEscandalloRecipe?.nombre || 'Receta'}
                                     reportData={escandalloData.report}
                                     pieData={escandalloData.pie}
                                     onSaveHistory={handleSaveToHistory}
                                     onExport={() => window.print()}
+                                    recipe={selectedEscandalloRecipe}
                                 />
                             ) : (
                                 <EmptyState icon={ICONS.chart} text="Resultados" subtext="Selecciona una receta para ver el análisis." />
@@ -541,7 +546,7 @@ const GrimoriumView: React.FC<GrimoriumViewProps> = ({ onOpenRecipeModal, onDrag
 
                     {/* BATCHER RESULTS */}
                     {activeTab === 'batcher' && (
-                        <div className="h-full overflow-y-auto custom-scrollbar">
+                        <div className="h-full overflow-y-auto custom-scrollbar p-4 w-[98%] mx-auto">
                             {batchResult ? (
                                 <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
                                     <div className="bg-white/60 dark:bg-slate-900/40 backdrop-blur-md rounded-2xl border border-white/20 dark:border-white/5 p-4 flex justify-between items-center shadow-sm">
@@ -573,7 +578,7 @@ const GrimoriumView: React.FC<GrimoriumViewProps> = ({ onOpenRecipeModal, onDrag
 
                     {/* STOCK RESULTS */}
                     {activeTab === 'stock' && (
-                        <div className="h-full overflow-y-auto custom-scrollbar">
+                        <div className="h-full overflow-y-auto custom-scrollbar p-4 w-[98%] mx-auto">
                             {shoppingList ? (
                                 <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
                                     <div className="flex justify-between items-center px-2">
@@ -617,19 +622,18 @@ const GrimoriumView: React.FC<GrimoriumViewProps> = ({ onOpenRecipeModal, onDrag
                     )}
 
                     {/* Empty State Fallback for Recipes/Ingredients when nothing selected */}
+                    {/* Empty State Fallback for Recipes/Ingredients when nothing selected */}
                     {(!selectedRecipe && activeTab === 'recipes') && (
-                        <div className="h-full flex items-center justify-center text-slate-400 text-center p-8">
-                            <div>
-                                <Icon svg={ICONS.book} className="w-12 h-12 mx-auto mb-2 opacity-50" />
-                                <p>Selecciona una receta.</p>
+                        <div className="h-full flex items-center justify-center text-white/40 text-center p-8">
+                            <div className="animate-pulse">
+                                <p className="font-medium text-lg tracking-wide">Selecciona una receta</p>
                             </div>
                         </div>
                     )}
                     {(!selectedIngredient && activeTab === 'ingredients') && (
-                        <div className="h-full flex items-center justify-center text-slate-400 text-center p-8">
-                            <div>
-                                <Icon svg={ICONS.beaker} className="w-12 h-12 mx-auto mb-2 opacity-50" />
-                                <p>Selecciona un ingrediente.</p>
+                        <div className="h-full flex items-center justify-center text-white/40 text-center p-8">
+                            <div className="animate-pulse">
+                                <p className="font-medium text-lg tracking-wide">Selecciona un ingrediente</p>
                             </div>
                         </div>
                     )}
@@ -640,7 +644,7 @@ const GrimoriumView: React.FC<GrimoriumViewProps> = ({ onOpenRecipeModal, onDrag
             {selectedRecipe && activeTab === 'recipes' && (
                 <div className="lg:hidden fixed inset-0 z-50 bg-white dark:bg-slate-950 p-4 overflow-y-auto">
                     <Button size="icon" variant="ghost" onClick={() => setSelectedRecipeId(null)} className="absolute top-4 right-4"><Icon svg={ICONS.x} /></Button>
-                    <RecipeDetailPanel recipe={selectedRecipe} allIngredients={allIngredients} onEdit={(r) => onOpenRecipeModal(r)} onDelete={(r) => handleDeleteRecipe(r.id)} onDuplicate={handleDuplicateRecipe} onToolToggle={setIsToolOpen} onNavigate={(view, data) => setCurrentView(view)} />
+                    <RecipeDetailPanel recipe={selectedRecipe} allIngredients={allIngredients} onEdit={(r) => onOpenRecipeModal(r)} onDelete={(r) => handleDeleteRecipe(r.id)} onDuplicate={handleDuplicateRecipe} onToolToggle={setIsToolOpen} onNavigate={(view, data) => setCurrentView(view)} onClose={() => setSelectedRecipeId(null)} />
                 </div>
             )}
             {selectedIngredient && activeTab === 'ingredients' && (

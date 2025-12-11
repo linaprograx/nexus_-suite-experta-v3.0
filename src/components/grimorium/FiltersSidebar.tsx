@@ -4,7 +4,7 @@ import { Icon } from '../ui/Icon';
 import { ICONS } from '../ui/icons';
 import { RecipeFinancialDashboard } from './RecipeFinancialDashboard';
 import { IngredientFinancialDashboard } from './IngredientFinancialDashboard';
-import { Recipe, Ingredient } from '../../../types';
+import { Recipe, Ingredient } from '../../types';
 
 interface FiltersSidebarProps {
   activeTab: 'recipes' | 'ingredients';
@@ -42,7 +42,7 @@ export const FiltersSidebar: React.FC<FiltersSidebarProps> = ({
 
   return (
     <div className="h-full flex flex-col gap-4">
-      <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar">
+      <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar p-2 w-full max-w-full mx-auto">
         {activeTab === 'recipes' ? (
           <RecipeFinancialDashboard selectedRecipe={selectedRecipe} allRecipes={allRecipes} />
         ) : (

@@ -1,6 +1,6 @@
 import React from 'react';
 import { Firestore, addDoc, collection, serverTimestamp } from 'firebase/firestore';
-import { Recipe } from '../../../types';
+import { Recipe } from '../../types';
 import { Label } from '../ui/Label';
 import { Select } from '../ui/Select';
 import { Input } from '../ui/Input';
@@ -103,7 +103,7 @@ const BatcherTab: React.FC<BatcherTabProps> = ({ db, appId, allRecipes, setBatch
     };
 
     return (
-        <div className="flex flex-col gap-6 w-full max-w-4xl mx-auto mt-8 px-4 pb-20">
+        <div className="h-full flex flex-col w-full max-w-full p-4 overflow-y-auto custom-scrollbar space-y-6">
             <div className="flex flex-col items-center justify-center text-center space-y-2">
                 <h2 className="text-3xl font-light text-slate-800 dark:text-slate-100 flex items-center gap-3">
                     <Icon svg={ICONS.layers} className="w-8 h-8 text-emerald-600" />
@@ -113,36 +113,36 @@ const BatcherTab: React.FC<BatcherTabProps> = ({ db, appId, allRecipes, setBatch
             </div>
 
             {/* Configuration Card */}
-            <div className="bg-white/60 dark:bg-slate-900/40 backdrop-blur-xl rounded-2xl border-0 shadow-premium p-8">
+            <div className="bg-white/60 dark:bg-slate-900/40 backdrop-blur-xl rounded-2xl border-0 shadow-premium p-8 w-full">
                 <div className="space-y-6">
                     <div className="space-y-2">
                         <Label htmlFor="batch-recipe" className="text-base font-medium text-slate-700 dark:text-slate-300">Seleccionar Receta</Label>
-                        <Select id="batch-recipe" value={batchSelectedRecipeId} onChange={e => setBatchSelectedRecipeId(e.target.value)} className="h-12 text-lg bg-white/50 dark:bg-slate-800/50 rounded-xl border-white/20">
+                        <Select id="batch-recipe" value={batchSelectedRecipeId} onChange={e => setBatchSelectedRecipeId(e.target.value)} className="h-12 text-lg bg-white/50 dark:bg-slate-800/50 rounded-xl border-white/20 w-full">
                             <option value="">-- Elige un cóctel --</option>
                             {allRecipes.map(r => <option key={r.id} value={r.id}>{r.nombre}</option>)}
                         </Select>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 w-full">
+                        <div className="space-y-2 w-full">
                             <Label htmlFor="batch-qty" className="text-sm font-medium text-slate-700 dark:text-slate-300">Cantidad Objetivo</Label>
-                            <Input id="batch-qty" type="number" value={targetQuantityStr} onChange={e => setTargetQuantityStr(e.target.value)} min="0.1" step="0.1" className="h-12 text-lg bg-white/50 dark:bg-slate-800/50 rounded-xl border-white/20" />
+                            <Input id="batch-qty" type="number" value={targetQuantityStr} onChange={e => setTargetQuantityStr(e.target.value)} min="0.1" step="0.1" className="h-12 text-lg bg-white/50 dark:bg-slate-800/50 rounded-xl border-white/20 w-full" />
                         </div>
-                        <div className="space-y-2">
+                        <div className="space-y-2 w-full">
                             <Label htmlFor="batch-unit" className="text-sm font-medium text-slate-700 dark:text-slate-300">Unidad</Label>
-                            <Select id="batch-unit" value={targetUnit} onChange={e => setTargetUnit(e.target.value as any)} className="h-12 text-lg bg-white/50 dark:bg-slate-800/50 rounded-xl border-white/20">
+                            <Select id="batch-unit" value={targetUnit} onChange={e => setTargetUnit(e.target.value as any)} className="h-12 text-lg bg-white/50 dark:bg-slate-800/50 rounded-xl border-white/20 w-full">
                                 <option value="Litros">Litros (L)</option>
                                 <option value="Botellas">Botellas (700ml)</option>
                             </Select>
                         </div>
                     </div>
 
-                    <div className="flex items-center space-x-3 p-3 bg-emerald-50/50 dark:bg-emerald-900/10 rounded-xl border border-emerald-100 dark:border-emerald-800/20">
-                        <Checkbox id="dilution" checked={includeDilution} onChange={e => setIncludeDilution(e.target.checked)} className="border-emerald-500 text-emerald-600 focus:ring-emerald-500" />
+                    <div className="flex items-center space-x-3 p-3 bg-amber-50/50 dark:bg-amber-900/10 rounded-xl border border-amber-100 dark:border-amber-800/20 w-full">
+                        <Checkbox id="dilution" checked={includeDilution} onChange={e => setIncludeDilution(e.target.checked)} className="border-amber-500 text-amber-600 focus:ring-amber-500" />
                         <Label htmlFor="dilution" className="text-sm cursor-pointer select-none text-slate-700 dark:text-slate-300">Incluir Dilución (20% Agua)</Label>
                     </div>
 
-                    <Button onClick={handleCalculateBatch} disabled={!batchSelectedRecipeId} className="w-full h-12 text-base bg-cyan-600 hover:bg-cyan-700 text-white shadow-premium rounded-xl transition-all hover:scale-[1.01]">
+                    <Button onClick={handleCalculateBatch} disabled={!batchSelectedRecipeId} className="w-full h-12 text-base bg-amber-500 hover:bg-amber-600 text-white font-semibold rounded-xl px-6 py-3 shadow-md transition hover:shadow-lg">
                         <Icon svg={ICONS.calculator} className="mr-2 h-5 w-5" />Calcular Producción
                     </Button>
                 </div>

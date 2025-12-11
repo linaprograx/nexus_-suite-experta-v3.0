@@ -1,9 +1,10 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import { Ingredient } from '../../types';
 import { Card } from '../ui/Card';
 import { Icon } from '../ui/Icon';
 import { ICONS } from '../ui/icons';
 import { Button } from '../ui/Button';
+import { Input } from '../ui/Input';
 
 interface IngredientListPanelProps {
   ingredients: Ingredient[];
@@ -40,153 +41,160 @@ export const IngredientListPanel: React.FC<IngredientListPanelProps> = ({
   ingredientFilters,
   onIngredientFilterChange
 }) => {
+  const searchInputRef = useRef<HTMLInputElement>(null); // Added useRef
+
+  // Extract unique categories for the filter dropdown
+  const uniqueCategories = Array.from(new Set(ingredients.map(ing => ing.categoria)));
 
   return (
-    <Card className="h-full flex flex-col bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm border-slate-100 dark:border-slate-800 shadow-sm overflow-hidden">
+    <div className="h-full flex flex-col bg-transparent border-0 shadow-none w-full max-w-full">
       {/* Unique Integrated Header */}
-      <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex flex-nowrap items-center gap-3">
+      <div className="py-4 flex flex-col gap-4 w-full justify-start">
         {/* 1. Search Bar - Expands */}
-        <div className="relative flex-1 group min-w-[120px]">
-          <Icon svg={ICONS.search} className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-emerald-400 group-focus-within:text-emerald-500 transition-colors" />
-          <input
+        <div className="relative w-full group">
+          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <Icon svg={ICONS.search} className="h-4 w-4 text-emerald-500/50 group-focus-within:text-emerald-600 transition-colors" />
+          </div>
+          <Input
+            ref={searchInputRef}
             type="text"
+            placeholder="Buscar ingrediente..."
+            className="pl-10 h-10 bg-white/50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 focus:ring-emerald-500/50 focus:border-emerald-500 rounded-xl w-full transition-all"
             value={ingredientSearchTerm}
             onChange={(e) => onIngredientSearchChange(e.target.value)}
-            placeholder="Buscar..."
-            className="w-full pl-9 pr-4 py-2 rounded-xl bg-emerald-50/50 dark:bg-emerald-900/10 border border-emerald-100 dark:border-emerald-800/50 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 hover:bg-emerald-50/80 dark:hover:bg-emerald-900/20 transition-all text-sm font-bold text-emerald-900 dark:text-emerald-100 placeholder:text-emerald-400/70"
           />
         </div>
 
-        {/* 2. Family Filter */}
-        <div className="relative shrink-0">
+        {/* Filters & Actions */}
+        <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1 w-full text-xs">
           <select
-            value={ingredientFilters.category}
+            className="h-10 pl-3 pr-8 bg-white/50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:ring-emerald-500/50 min-w-[120px]"
+            value={ingredientFilters.category || 'all'}
             onChange={(e) => onIngredientFilterChange('category', e.target.value)}
-            className="appearance-none w-32 pl-3 pr-8 py-2 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-800/50 text-emerald-700 dark:text-emerald-300 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-emerald-500/50 cursor-pointer hover:bg-emerald-100 dark:hover:bg-emerald-900/30 transition-colors"
           >
-            <option value="all">Familia</option>
-            <option value="Alcohol Base">Bases</option>
-            <option value="Citrus">Cítricos</option>
-            <option value="Fruits">Frutas</option>
-            <option value="Herbs">Hierbas</option>
-            <option value="Sweeteners">Dulces</option>
-            <option value="Spices">Especias</option>
-            <option value="General">Otros</option>
+            <option value="all">Categoría</option>
+            {uniqueCategories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
           </select>
-          <Icon svg={ICONS.chevronDown} className="absolute right-3 top-1/2 -translate-y-1/2 w-3 h-3 text-emerald-500 pointer-events-none" />
-        </div>
 
-        {/* 3. Stock Filter */}
-        <div className="relative shrink-0 hidden sm:block">
-          <select
-            value={ingredientFilters.status}
-            onChange={(e) => onIngredientFilterChange('status', e.target.value)}
-            className="appearance-none w-28 pl-3 pr-8 py-2 rounded-xl bg-teal-50 dark:bg-teal-900/20 border border-teal-100 dark:border-teal-800/50 text-teal-700 dark:text-teal-300 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-teal-500/50 cursor-pointer hover:bg-teal-100 dark:hover:bg-teal-900/30 transition-colors"
-          >
-            <option value="all">Stock</option>
-            <option value="ok">Alto</option>
-            <option value="low">Bajo</option>
-            <option value="out">Agotado</option>
-          </select>
-          <Icon svg={ICONS.chevronDown} className="absolute right-3 top-1/2 -translate-y-1/2 w-3 h-3 text-teal-500 pointer-events-none" />
-        </div>
+          <div className="h-6 w-px bg-slate-300 dark:bg-slate-700 mx-1" />
 
-        {/* 4. Delete Action */}
-        {selectedIngredientIds.length > 0 && (
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={onDeleteSelected}
-            className="bg-red-50 text-red-600 hover:bg-red-100 border border-red-100 shrink-0 w-9 h-9 rounded-lg"
-            title="Eliminar seleccionados"
-          >
-            <Icon svg={ICONS.trash} className="w-4 h-4" />
-          </Button>
-        )}
+          <div className="flex gap-1">
+            <Button variant="outline" size="icon" onClick={() => onIngredientFilterChange('status', 'low')} title="Stock Bajo" className={ingredientFilters.status === 'low' ? 'bg-red-100 text-red-600 border-red-200' : ''}>
+              <Icon svg={ICONS.alertCircle} className="w-4 h-4" />
+            </Button>
+            <Button variant="outline" size="icon" onClick={onImportCSV} title="Importar CSV">
+              <Icon svg={ICONS.upload} className="w-4 h-4" />
+            </Button>
+            {selectedIngredientIds.length > 0 && (
+              <Button variant="destructive" size="icon" onClick={onDeleteSelected} title="Eliminar Seleccionados">
+                <Icon svg={ICONS.trash} className="w-4 h-4" />
+              </Button>
+            )}
+            <Button onClick={onNewIngredient} className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-900/20 h-10 w-10 p-0 rounded-xl">
+              <Icon svg={ICONS.plus} className="w-5 h-5" />
+            </Button>
+          </div>
+        </div>
       </div>
 
       {/* List Header (Column Names) */}
-      <div className="px-4 py-2 bg-slate-50/50 dark:bg-slate-800/50 border-b border-slate-100 dark:border-slate-800 flex items-center text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-        <div className="w-8 shrink-0 flex justify-center">
-          <input
-            type="checkbox"
-            checked={selectedIngredientIds.length === ingredients.length && ingredients.length > 0}
-            onChange={(e) => onSelectAll(e.target.checked)}
-            className="rounded border-slate-300 text-emerald-500 focus:ring-emerald-500/50"
-          />
+      <div className="px-4 py-2 bg-transparent text-[10px] font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider mb-2 w-full">
+        <div className="flex items-center">
+          <div className="w-8 shrink-0 flex justify-center">
+            <input
+              type="checkbox"
+              checked={selectedIngredientIds.length === ingredients.length && ingredients.length > 0}
+              onChange={(e) => onSelectAll(e.target.checked)}
+              className="rounded border-white/30 bg-white/20 text-emerald-500 focus:ring-emerald-500/50"
+            />
+          </div>
+          <div className="flex-1 px-4">Detalles</div>
+          <div className="w-32 hidden sm:block">Familia</div>
+          <div className="w-24 text-right">Precio / Unidad</div>
         </div>
-        <div className="flex-1 px-4">Detalles</div>
-        <div className="w-32 hidden sm:block">Familia</div>
-        <div className="w-24 text-right">Precio / Unidad</div>
       </div>
 
       {/* List Body */}
-      <div className="flex-1 overflow-y-auto custom-scrollbar p-2 space-y-2">
-        {ingredients.map((ing, index) => (
-          <div
-            key={ing.id}
-            onClick={() => onEditIngredient(ing)}
-            className={`group relative flex items-center p-3 rounded-xl border transition-all duration-200 cursor-pointer hover:shadow-md
-                            ${viewingIngredientId === ing.id
-                ? 'bg-emerald-50/50 border-emerald-200 dark:bg-emerald-900/20 dark:border-emerald-800'
-                : 'bg-white border-transparent hover:border-emerald-100 dark:bg-slate-800 dark:hover:border-emerald-900'
-              }
-                        `}
-          >
-            {/* Selection Checkbox (Stop propagation to prevent opening details when selecting) */}
-            <div className="w-8 shrink-0 flex justify-center z-10" onClick={(e) => e.stopPropagation()}>
-              <input
-                type="checkbox"
-                checked={selectedIngredientIds.includes(ing.id)}
-                onChange={() => onToggleSelection(ing.id)}
-                className="rounded border-slate-200 dark:border-slate-700 text-emerald-500 focus:ring-emerald-500/50 cursor-pointer"
-              />
-            </div>
-
-            {/* Content */}
-            <div className="flex-1 px-4 min-w-0">
-              <div className="font-bold text-slate-800 dark:text-slate-200 truncate">{ing.nombre}</div>
-              <div className="text-xs text-slate-400 truncate">{ing.categoria}</div>
-            </div>
-
-            {/* Family Badge */}
-            <div className="w-32 hidden sm:block">
-              <span className="px-2 py-1 rounded-md bg-slate-100 dark:bg-slate-800 text-[10px] font-bold text-slate-500 uppercase">
-                {ing.categoria.slice(0, 10)}
-              </span>
-            </div>
-
-            {/* Price */}
-            <div className="w-24 text-right">
-              <div className="font-bold text-slate-700 dark:text-slate-300">€{ing.precioCompra.toFixed(2)}</div>
-              <div className="text-[10px] text-slate-400 uppercase">{ing.unidadCompra || 'Und'}</div>
-            </div>
-
-            {/* Viewing Indicator Bar */}
-            {viewingIngredientId === ing.id && (
-              <div className="absolute left-0 top-2 bottom-2 w-1 bg-emerald-500 rounded-r-full" />
-            )}
+      <div className="flex-1 overflow-y-auto custom-scrollbar p-0 w-full">
+        {ingredients.length === 0 ? (
+          <div className="flex flex-col items-center justify-center h-40 text-center opacity-60">
+            <Icon svg={ICONS.flask} className="w-8 h-8 text-slate-400 mb-2" />
+            <p className="text-sm text-slate-500">No hay ingredientes</p>
           </div>
-        ))}
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-2 2xl:grid-cols-3 gap-6 pb-20">
+            {ingredients.map((ing) => {
+              const isSelected = selectedIngredientIds.includes(ing.id);
+              const isViewing = viewingIngredientId === ing.id;
 
-        {/* Empty State */}
-        {ingredients.length === 0 && (
-          <div className="h-full flex flex-col items-center justify-center text-slate-400 p-8 text-center opacity-60">
-            <Icon svg={ICONS.search} className="w-12 h-12 mb-2" />
-            <p>No se encontraron ingredientes</p>
+              return (
+                <div
+                  key={ing.id}
+                  onClick={() => onEditIngredient(ing)}
+                  className={`group relative flex items-center p-3 rounded-2xl border transition-all duration-200 cursor-pointer w-full
+                            ${isViewing
+                      ? 'bg-emerald-600 shadow-lg shadow-emerald-900/20 scale-[1.02] border-emerald-500 z-10'
+                      : 'bg-white/30 dark:bg-slate-900/30 backdrop-blur-md border-white/10 dark:border-white/5 hover:bg-white/50 hover:shadow-md hover:-translate-y-0.5'
+                    }
+                        `}
+                >
+                  {/* Selection Checkbox */}
+                  <div className="w-8 shrink-0 flex justify-center z-10" onClick={(e) => e.stopPropagation()}>
+                    <input
+                      type="checkbox"
+                      checked={isSelected}
+                      onChange={() => onToggleSelection(ing.id)}
+                      className={`rounded border-slate-300 dark:border-slate-600 text-emerald-600 focus:ring-emerald-500 transition-colors cursor-pointer ${isSelected ? 'bg-emerald-500 border-emerald-500' : 'bg-white/50'}`}
+                    />
+                  </div>
+
+                  {/* Content */}
+                  <div className="flex-1 px-4 min-w-0">
+                    <div className={`font-bold truncate ${isViewing ? 'text-white' : 'text-slate-800 dark:text-slate-200'}`}>{ing.nombre}</div>
+                    <div className="flex items-center gap-2 text-xs mt-1">
+                      <span className={`px-2 py-0.5 rounded-full font-medium ${isViewing ? 'bg-white/20 text-emerald-100' : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400'}`}>
+                        {ing.categoria}
+                      </span>
+                      {/* Stock Status Badge */}
+                      {((ing as any).stockActual !== undefined && (ing as any).stockActual <= 0) && (
+                        <span className="px-1.5 py-0.5 rounded-md bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 font-bold tracking-tight flex items-center gap-1">
+                          <Icon svg={ICONS.alertCircle} className="w-3 h-3" /> AGOTADOS
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Price Column */}
+                  <div className="w-24 text-right shrink-0 flex flex-col justify-center">
+                    <div className={`font-bold font-mono text-sm ${isViewing ? 'text-white' : 'text-slate-700 dark:text-slate-300'}`}>
+                      €{ing.precioCompra?.toFixed(2)}{ing.unidadCompra === 'kg' || ing.unidadCompra === 'Lt' ? `/${ing.unidadCompra}` : ''}
+                    </div>
+                    <div className={`text-[10px] uppercase tracking-wider ${isViewing ? 'text-emerald-200' : 'text-slate-400'}`}>
+                      {ing.unidadCompra || 'Und'}
+                    </div>
+                  </div>
+
+                  {/* Viewing Indicator Bar */}
+                  {isViewing && (
+                    <div className="absolute right-2 top-1/2 -translate-y-1/2 text-white/20">
+                      <Icon svg={ICONS.check} className="w-8 h-8 -rotate-12" />
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
         )}
-
         <div className="h-12" /> {/* Bottom spacer for FAB */}
       </div>
 
       {/* Floating Action Button for New Ingredient */}
       <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20">
-        <Button onClick={onNewIngredient} className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-md shadow-emerald-900/20">
-          <Icon svg={ICONS.plus} className="mr-2 h-4 w-4" />
+        <Button onClick={onNewIngredient} className="bg-emerald-500 hover:bg-emerald-600 text-white shadow-xl shadow-emerald-900/30 rounded-2xl px-6 py-3 h-auto text-base">
+          <Icon svg={ICONS.plus} className="mr-2 h-5 w-5" />
           Nuevo Ingrediente
         </Button>
       </div>
-    </Card>
+    </div >
   );
 };

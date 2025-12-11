@@ -31,6 +31,11 @@ export interface Ingredient {
     minStock?: number;
     proveedor?: string;
     createdAt?: any;
+    ingredientId?: string; // For compatibility
+    cantidad?: number; // For compatibility
+    marca?: string;
+    merma?: number;
+    wastePercentage?: number;
 }
 
 export interface Recipe {
@@ -154,11 +159,22 @@ export interface UserProfile {
 }
 
 export interface ZeroWasteResult {
+    nombre: string;
+    ingredientes: string;
+    preparacion: string;
+}
+
+export interface Escandallo {
+    id: string;
+    recipeId: string;
     recipeName: string;
-    description: string;
-    ingredientsUsed: string[];
-    savings: string;
-    difficulty: 'Fácil' | 'Media' | 'Avanzada';
+    costo: number;
+    baseImponible: number;
+    ivaSoportado: number;
+    margenBruto: number;
+    rentabilidad: number;
+    precioVenta: number;
+    createdAt?: any;
 }
 
 export interface QuizQuestion {

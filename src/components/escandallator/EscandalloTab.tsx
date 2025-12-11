@@ -1,5 +1,5 @@
 import React from 'react';
-import { Recipe, Ingredient } from '../../../types';
+import { Recipe, Ingredient } from '../../types';
 import { Card, CardContent } from '../ui/Card';
 import { Label } from '../ui/Label';
 import { Select } from '../ui/Select';
@@ -23,8 +23,8 @@ const EscandalloTab: React.FC<EscandalloTabProps> = ({
 }) => {
 
     return (
-        <div className="space-y-6 max-w-2xl mx-auto mt-8">
-            <Card className="bg-white/60 dark:bg-slate-900/40 backdrop-blur-xl border-0 shadow-premium rounded-2xl">
+        <div className="h-full flex flex-col p-4 space-y-4 md:space-y-6 w-full max-w-full">
+            <Card className="bg-white/40 dark:bg-slate-900/40 border-slate-200 dark:border-slate-800 p-4 w-full">
                 <CardContent className="p-8 space-y-8">
                     <div className="text-center mb-6">
                         <h2 className="text-2xl font-light text-slate-800 dark:text-slate-100">Calculadora de Rentabilidad</h2>
@@ -41,7 +41,7 @@ const EscandalloTab: React.FC<EscandalloTabProps> = ({
                                     const recipe = allRecipes.find(r => r.id === e.target.value) || null;
                                     onSelectRecipe(recipe);
                                 }}
-                                className="h-12 text-lg bg-white/50 dark:bg-slate-800/50"
+                                className="h-12 text-lg bg-white/50 dark:bg-slate-800/50 w-full"
                             >
                                 <option value="">-- Seleccionar --</option>
                                 {allRecipes.map(r => <option key={r.id} value={r.id}>{r.nombre}</option>)}
@@ -50,7 +50,7 @@ const EscandalloTab: React.FC<EscandalloTabProps> = ({
 
                         <div className="space-y-2">
                             <Label htmlFor="pvp-input" className="text-base">Precio de Venta (PVP)</Label>
-                            <div className="relative">
+                            <div className="relative w-full">
                                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">€</span>
                                 <Input
                                     id="pvp-input"
@@ -58,7 +58,7 @@ const EscandalloTab: React.FC<EscandalloTabProps> = ({
                                     placeholder="0.00"
                                     value={precioVenta || ''}
                                     onChange={e => onPriceChange(parseFloat(e.target.value) || 0)}
-                                    className="pl-8 h-12 text-lg font-medium bg-white/50 dark:bg-slate-800/50"
+                                    className="pl-8 h-12 text-lg font-medium bg-white/50 dark:bg-slate-800/50 w-full"
                                 />
                             </div>
                         </div>
@@ -67,12 +67,12 @@ const EscandalloTab: React.FC<EscandalloTabProps> = ({
             </Card>
 
             {selectedRecipe && (
-                <div className="grid grid-cols-2 gap-4">
-                    <Card className="bg-emerald-50/50 dark:bg-emerald-900/10 border-emerald-100 dark:border-emerald-800/30 p-4 text-center">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-2 2xl:grid-cols-3 gap-6 w-full">
+                    <Card className="bg-emerald-50/50 dark:bg-emerald-900/10 border-emerald-100 dark:border-emerald-800/30 p-6 text-center w-full">
                         <p className="text-sm text-slate-500 mb-1">Costo Receta</p>
                         <p className="text-xl font-semibold text-slate-700 dark:text-slate-300">€{selectedRecipe.costoReceta?.toFixed(2) || '0.00'}</p>
                     </Card>
-                    <Card className="bg-slate-50/50 dark:bg-slate-800/30 border-slate-100 dark:border-slate-700/30 p-4 text-center">
+                    <Card className="bg-slate-50/50 dark:bg-slate-800/30 border-slate-100 dark:border-slate-700/30 p-6 text-center w-full">
                         <p className="text-sm text-slate-500 mb-1">Ingredientes</p>
                         <p className="text-xl font-semibold text-slate-700 dark:text-slate-300">{selectedRecipe.ingredientes?.length || 0}</p>
                     </Card>

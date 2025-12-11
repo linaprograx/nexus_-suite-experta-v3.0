@@ -1,5 +1,5 @@
 import React from 'react';
-import { Recipe, Ingredient } from '../../../types';
+import { Recipe, Ingredient } from '../../types';
 import { Label } from '../ui/Label';
 import { Input } from '../ui/Input';
 import { Button } from '../ui/Button';
@@ -53,7 +53,7 @@ const StockManagerTab: React.FC<StockManagerTabProps> = ({ allRecipes, allIngred
     };
 
     return (
-        <div className="flex flex-col gap-6 max-w-4xl mx-auto mt-4 pb-20">
+        <div className="h-full flex flex-col w-full max-w-full p-4 overflow-hidden">
             {/* Header */}
             <div className="text-center">
                 <h2 className="text-2xl font-light text-slate-800 dark:text-slate-100 flex items-center justify-center gap-2">
@@ -64,26 +64,26 @@ const StockManagerTab: React.FC<StockManagerTabProps> = ({ allRecipes, allIngred
             </div>
 
             {/* Step 1: Projection Inputs */}
-            <div className="bg-white/60 dark:bg-slate-900/40 backdrop-blur-xl rounded-2xl border-0 shadow-premium overflow-hidden">
-                <div className="p-4 border-b border-white/10 dark:border-white/5 bg-white/40 dark:bg-slate-900/40 flex justify-between items-center">
+            <div className="bg-white/30 dark:bg-slate-900/30 backdrop-blur-xl rounded-2xl border-0 shadow-premium overflow-hidden w-full">
+                <div className="p-4 border-b border-white/10 dark:border-white/5 bg-white/40 dark:bg-slate-900/40 flex justify-between items-center w-full">
                     <div>
                         <h3 className="font-semibold text-slate-800 dark:text-slate-200">1. Proyección de Ventas</h3>
                         <p className="text-xs text-slate-500 dark:text-slate-400">Estima cantidades por cóctel</p>
                     </div>
-                    <Button onClick={handleGenerate} className="bg-lime-600 hover:bg-lime-700 text-white shadow-premium rounded-xl">
+                    <Button onClick={handleGenerate} className="bg-sky-500 hover:bg-sky-600 text-white shadow-premium rounded-xl transition-all hover:scale-[1.02]">
                         <Icon svg={ICONS.calculator} className="mr-2 h-4 w-4" />Generar Pedido
                     </Button>
                 </div>
 
-                <div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-3 max-h-[300px] overflow-y-auto custom-scrollbar">
+                <div className="p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-2 2xl:grid-cols-3 gap-6 max-h-[300px] overflow-y-auto custom-scrollbar w-full">
                     {allRecipes.map(recipe => (
-                        <div key={recipe.id} className="flex items-center justify-between gap-3 p-3 rounded-xl bg-white/40 dark:bg-slate-800/40 border border-white/10 dark:border-white/5 hover:border-emerald-500/50 transition-all">
+                        <div key={recipe.id} className="flex items-center justify-between gap-3 p-3 rounded-xl bg-white/40 dark:bg-slate-800/40 border border-white/10 dark:border-white/5 hover:border-emerald-500/50 transition-all w-full">
                             <Label htmlFor={`recipe-${recipe.id}`} className="text-sm font-medium text-slate-700 dark:text-slate-300 truncate flex-1">{recipe.nombre}</Label>
-                            <div className="relative w-24">
+                            <div className="relative w-24 shrink-0">
                                 <Input
                                     id={`recipe-${recipe.id}`}
                                     type="number"
-                                    className="h-9 pr-8 text-right bg-white dark:bg-slate-900 border-white/20"
+                                    className="h-9 pr-8 text-right bg-white dark:bg-slate-900 border-white/20 w-full"
                                     placeholder="0"
                                     value={ventaQuantities[recipe.id] || ''}
                                     onChange={e => setVentaQuantities(prev => ({ ...prev, [recipe.id]: e.target.value }))}

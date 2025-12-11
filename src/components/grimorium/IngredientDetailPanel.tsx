@@ -1,5 +1,5 @@
 import React from 'react';
-import { Ingredient } from '../../../types';
+import { Ingredient } from '../../types';
 import { Card } from '../ui/Card';
 import { Button } from '../ui/Button';
 import { Icon } from '../ui/Icon';
@@ -46,12 +46,12 @@ export const IngredientDetailPanel: React.FC<IngredientDetailPanelProps> = ({ in
     const familyInfo = FAMILY_BG_COLORS[ingredient.categoria as AromaticFamily] || FAMILY_BG_COLORS.Unknown;
 
     return (
-        <Card className="h-full min-h-0 flex flex-col bg-white/60 dark:bg-slate-900/30 backdrop-blur-md border border-slate-200/70 dark:border-slate-800/70 overflow-hidden relative">
+        <Card className="h-full min-h-0 flex flex-col bg-transparent backdrop-blur-xl border-0 shadow-none rounded-2xl overflow-hidden relative">
             <Button size="icon" variant="ghost" onClick={onClose} className="absolute top-2 right-2 z-10 lg:hidden">
                 <Icon svg={ICONS.x} />
             </Button>
 
-            <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar p-6">
+            <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar p-8 w-full max-w-[95%] mx-auto">
                 <div className="flex flex-col items-center text-center mb-8">
                     <div className={`w-24 h-24 rounded-full flex items-center justify-center mb-4 shadow-inner ${familyInfo}`}>
                         <Icon svg={ICONS.beaker} className="w-10 h-10 opacity-80" />

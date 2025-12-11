@@ -11,6 +11,7 @@ interface PremiumLayoutProps {
     gradientTheme?: GradientTheme;
     className?: string;
     layoutMode?: 'standard' | 'compact' | 'colegium';
+    transparentColumns?: boolean;
 }
 
 export const PremiumLayout: React.FC<PremiumLayoutProps> = ({
@@ -21,7 +22,8 @@ export const PremiumLayout: React.FC<PremiumLayoutProps> = ({
     header,
     gradientTheme = 'indigo',
     className = '',
-    layoutMode = 'standard'
+    layoutMode = 'standard',
+    transparentColumns = false
 }) => {
 
     // Gradient definitions mapping (Avatar Standard: 4-Stop Opacity)
@@ -55,8 +57,9 @@ export const PremiumLayout: React.FC<PremiumLayoutProps> = ({
         gridCols = 'grid-cols-1 lg:grid-cols-[150px,minmax(0,1fr),150px]';
     }
 
-    // Avatar Standard Column Class (Transparent with Soft Shadow)
-    const columnClass = "h-full min-h-0 flex flex-col relative z-20 bg-transparent shadow-premium rounded-2xl overflow-y-auto p-6 scrollbar-hide";
+    // Avatar Standard Column Class
+    // User Update: Optional transparent columns (no shadow, no bg)
+    const columnClass = `h-full min-h-0 flex flex-col relative z-20 ${transparentColumns ? 'bg-transparent shadow-none border-0' : 'bg-transparent shadow-premium'} rounded-2xl overflow-y-auto p-6 scrollbar-hide`;
 
     return (
         <div className={`h-[calc(100vh-80px)] w-full flex flex-col px-4 lg:px-8 py-6 ${className}`}>
