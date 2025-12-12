@@ -9,13 +9,13 @@ import { Label } from '../ui/Label';
 import { calculateIngredientPrice } from '../../utils/costCalculator';
 import { classifyIngredient } from '../../modules/ingredients/families';
 
-import { useProveedores } from '../../hooks/useProveedores'; // Added import
+import { useSuppliers } from '../../features/suppliers/hooks/useSuppliers'; // Updated import
 
 export const IngredientFormModal: React.FC<{ isOpen: boolean, onClose: () => void, db: Firestore, userId: string, appId: string, editingIngredient: Ingredient | null }> =
   ({ isOpen, onClose, db, userId, appId, editingIngredient }) => {
 
     // Providers Hook
-    const { proveedores } = useProveedores({ db, userId });
+    const { suppliers: proveedores } = useSuppliers({ db, userId }); // Mapped to match existing variable name 'proveedores'
 
     const predefinedCategories = ['General', 'Citrus', 'Fruits', 'Herbs', 'Spices', 'Floral', 'Vegetal', 'Toasted', 'Umami', 'Sweeteners', 'Fermented', 'Alcohol Base', 'Bitters', 'Syrups', 'Cordials', 'Infusions', 'Unknown'];
 
@@ -196,7 +196,7 @@ export const IngredientFormModal: React.FC<{ isOpen: boolean, onClose: () => voi
                   >
                     <option value="">-- Sin asignar --</option>
                     {proveedores.map(p => (
-                      <option key={p.id} value={p.id}>{p.nombre}</option>
+                      <option key={p.id} value={p.id}>{p.name}</option>
                     ))}
                   </select>
                   {/* Custom Arrow */}

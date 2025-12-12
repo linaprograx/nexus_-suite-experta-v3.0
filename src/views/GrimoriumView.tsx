@@ -1,6 +1,7 @@
 import * as React from 'react';
 import { collection, doc, addDoc, deleteDoc, writeBatch, Firestore, serverTimestamp } from 'firebase/firestore';
 import { useQueryClient } from '@tanstack/react-query';
+import { useSuppliers } from '../features/suppliers/hooks/useSuppliers'; // Added import
 import { Ingredient, Recipe, ViewName, ZeroWasteResult } from '../types';
 import { parseMultipleRecipes } from '../utils/recipeImporter';
 import { importPdfRecipes } from '../modules/pdf/importPdfRecipes';
@@ -135,8 +136,9 @@ const GrimoriumView: React.FC<GrimoriumViewProps> = ({ onOpenRecipeModal, onDrag
         if (window.confirm(`¿Seguro que quieres eliminar ${ing.nombre}?`)) {
             try {
                 await deleteDoc(doc(db, ingredientsColPath, ing.id));
-                // Invalidate cache to update UI immediately
-                await queryClient.invalidateQueries({ queryKey: ['ingredients'] });
+                // Invalidate cache with exact matching keys to force UI update
+                await queryClient.invalidateQueries({ queryKey: ['ingredients'] }); // Keep fuzzy for broader safety
+                await queryClient.invalidateQueries({ queryKey: ['ingredients', appId, userId] }); // Exact match
 
                 if (selectedIngredients.includes(ing.id)) handleSelectIngredient(ing.id);
                 if (selectedIngredientId === ing.id) setSelectedIngredientId(null);
@@ -156,6 +158,7 @@ const GrimoriumView: React.FC<GrimoriumViewProps> = ({ onOpenRecipeModal, onDrag
 
                 // Invalidate cache
                 await queryClient.invalidateQueries({ queryKey: ['ingredients'] });
+                await queryClient.invalidateQueries({ queryKey: ['ingredients', appId, userId] });
 
                 setSelectedIngredients([]);
                 setSelectedIngredientId(null);
@@ -198,6 +201,9 @@ const GrimoriumView: React.FC<GrimoriumViewProps> = ({ onOpenRecipeModal, onDrag
         } catch (error) { console.error(error); alert("Error importando PDF."); } finally { setLoading(false); setShowPdfImportModal(false); }
     };
 
+    const [csvSupplierId, setCsvSupplierId] = React.useState<string>("");
+    const { suppliers } = useSuppliers({ db, userId }); // Added hook for CSV import
+
     const handleCsvImport = (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
         if (!file || !db || !userId) return;
@@ -213,16 +219,27 @@ const GrimoriumView: React.FC<GrimoriumViewProps> = ({ onOpenRecipeModal, onDrag
                 if (!row.trim()) continue;
                 const cols = row.split(text.includes(';') ? ';' : ',');
                 if (!cols[0]) continue;
-                batch.set(doc(collection(db, ingredientsColPath)), {
-                    nombre: cols[0].trim(), categoria: cols[1]?.trim() || 'General',
-                    precioCompra: parseEuroNumber(cols[2]), unidadCompra: cols[3]?.trim() || 'und'
-                });
+
+                const dataToSave: any = {
+                    nombre: cols[0].trim(),
+                    categoria: cols[1]?.trim() || 'General',
+                    precioCompra: parseEuroNumber(cols[2]),
+                    unidadCompra: cols[3]?.trim() || 'und',
+                    proveedores: csvSupplierId ? [csvSupplierId] : [] // Tag with selected supplier
+                };
+
+                batch.set(doc(collection(db, ingredientsColPath)), dataToSave);
                 count++;
             }
             await batch.commit();
+            // Invalidate cache to update UI immediately
+            await queryClient.invalidateQueries({ queryKey: ['ingredients'] });
+            await queryClient.invalidateQueries({ queryKey: ['ingredients', appId, userId] });
+
             alert(`${count} ingredientes importados.`);
             setLoading(false);
             setShowCsvImportModal(false);
+            setCsvSupplierId(""); // Reset
         };
         reader.readAsText(file);
     };
@@ -705,7 +722,26 @@ const GrimoriumView: React.FC<GrimoriumViewProps> = ({ onOpenRecipeModal, onDrag
             {/* Modals */}
             {showSuppliersModal && <SuppliersManagerModal isOpen={showSuppliersModal} onClose={() => setShowSuppliersModal(false)} />}
             {showIngredientModal && <IngredientFormModal isOpen={showIngredientModal} onClose={() => setShowIngredientModal(false)} db={db} userId={userId} appId={appId} editingIngredient={editingIngredient} />}
-            <Modal isOpen={showCsvImportModal} onClose={() => setShowCsvImportModal(false)} title="Importar Ingredientes CSV"><div className="space-y-4 p-4"><p className="text-sm text-slate-500">Formato: Nombre;Categoria;Precio;Unidad.</p><Input type="file" accept=".csv" onChange={handleCsvImport} /></div></Modal>
+            <Modal isOpen={showCsvImportModal} onClose={() => setShowCsvImportModal(false)} title="Importar Ingredientes CSV">
+                <div className="space-y-4 p-4">
+                    <p className="text-sm text-slate-500">Formato: Nombre;Categoria;Precio;Unidad.</p>
+                    <div className="space-y-2">
+                        <Label>Proveedor (Opcional)</Label>
+                        <select
+                            className="w-full h-10 pl-3 pr-8 bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-xl text-sm"
+                            value={csvSupplierId}
+                            onChange={(e) => setCsvSupplierId(e.target.value)}
+                        >
+                            <option value="">-- Sin asignar --</option>
+                            {suppliers.map(s => (
+                                <option key={s.id} value={s.id}>{s.name}</option>
+                            ))}
+                        </select>
+                        <p className="text-[10px] text-slate-400">Todos los ingredientes importados se vincularán a este proveedor.</p>
+                    </div>
+                    <Input type="file" accept=".csv" onChange={handleCsvImport} />
+                </div>
+            </Modal>
             <Modal isOpen={showTxtImportModal} onClose={() => setShowTxtImportModal(false)} title="Importar Recetas TXT"><div className="space-y-4 p-4"><p className="text-sm text-slate-500">Formato Nexus TXT.</p><Input type="file" accept=".txt" onChange={handleTxtImport} /></div></Modal>
             <Modal isOpen={showPdfImportModal} onClose={() => setShowPdfImportModal(false)} title="Importar Recetas PDF PRO"><div className="space-y-4 p-4"><div className="flex items-center gap-2 mb-2"><input type="checkbox" checked={useOcr} onChange={() => setUseOcr(!useOcr)} id="ocr" /><label htmlFor="ocr">Usar OCR</label></div><Input type="file" accept=".pdf" onChange={handlePdfImport} /></div></Modal>
         </PremiumLayout>

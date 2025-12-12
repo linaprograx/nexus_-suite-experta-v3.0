@@ -5,9 +5,11 @@ import { Icon } from '../ui/Icon';
 import { ICONS } from '../ui/icons';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
-import { useProveedores } from '../../hooks/useProveedores';
+import { useSuppliers } from '../../features/suppliers/hooks/useSuppliers';
+import { useSupplierProducts } from '../../features/suppliers/hooks/useSupplierProducts';
 import { useApp } from '../../context/AppContext';
 import { CatalogoItem } from '../../types';
+import { getCategoryColor } from '../../utils/categoryColors';
 
 interface IngredientListPanelProps {
   ingredients: Ingredient[];
@@ -34,7 +36,6 @@ export const IngredientListPanel: React.FC<IngredientListPanelProps> = ({
   onToggleSelection,
   onSelectAll,
   onDeleteSelected,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   onImportCSV,
   onEditIngredient,
   onNewIngredient,
@@ -44,47 +45,60 @@ export const IngredientListPanel: React.FC<IngredientListPanelProps> = ({
   ingredientFilters,
   onIngredientFilterChange
 }) => {
-  const searchInputRef = useRef<HTMLInputElement>(null); // Added useRef
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  const [showCategoryDropdown, setShowCategoryDropdown] = React.useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdown when clicking outside
+  React.useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setShowCategoryDropdown(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
 
   // Extract unique categories for the filter dropdown
-  const uniqueCategories = Array.from(new Set(ingredients.map(ing => ing.categoria)));
+  const uniqueCategories = Array.from(new Set(ingredients.map(ing => ing.categoria))).sort();
 
   // Providers Hook
   const { db, userId } = useApp();
-  const { proveedores, getCatalogoForProveedor } = useProveedores({ db, userId });
+  const { suppliers: proveedores } = useSuppliers({ db, userId });
 
   // Providers State
   const [selectedProveedorId, setSelectedProveedorId] = React.useState<string>('all');
-  const [currentCatalogo, setCurrentCatalogo] = React.useState<CatalogoItem[]>([]);
-
-  // Effect to load catalog when provider changes
-  React.useEffect(() => {
-    if (selectedProveedorId === 'all') {
-      setCurrentCatalogo([]);
-      return;
-    }
-    const loadCatalog = async () => {
-      const data = await getCatalogoForProveedor(selectedProveedorId);
-      setCurrentCatalogo(data);
-    };
-    loadCatalog();
-  }, [selectedProveedorId, getCatalogoForProveedor]);
 
   // Combined Filter Logic
   const filteredIngredients = React.useMemo(() => {
     let result = ingredients;
 
-    // A. Provider Filter (Double Validation)
+    // A. Provider Filter (Simple Link Check)
     if (selectedProveedorId !== 'all') {
       result = result.filter(ing => {
-        const isLinked = ing.proveedores?.includes(selectedProveedorId);
-        const isInCatalog = currentCatalogo.some(item => item.ingredienteId === ing.id);
-        return isLinked && isInCatalog;
+        return ing.proveedores?.includes(selectedProveedorId);
       });
     }
 
+    // B. Category Filter
+    if (ingredientFilters.category && ingredientFilters.category !== 'all') {
+      result = result.filter(ing => ing.categoria === ingredientFilters.category);
+    }
+
+    // C. Search Term Filter
+    if (ingredientSearchTerm) {
+      const lowerCaseSearchTerm = ingredientSearchTerm.toLowerCase();
+      result = result.filter(ing =>
+        ing.nombre.toLowerCase().includes(lowerCaseSearchTerm) ||
+        ing.categoria.toLowerCase().includes(lowerCaseSearchTerm)
+      );
+    }
+
     return result;
-  }, [ingredients, selectedProveedorId, currentCatalogo]);
+  }, [ingredients, selectedProveedorId, ingredientFilters.category, ingredientSearchTerm]);
+
 
   return (
     <div className="h-full flex flex-col bg-transparent border-0 shadow-none w-full max-w-[97%] px-8">
@@ -106,19 +120,50 @@ export const IngredientListPanel: React.FC<IngredientListPanelProps> = ({
         </div>
 
         {/* Filters & Actions */}
-        <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1 w-full text-xs">
-          <select
-            className="h-10 pl-3 pr-8 bg-white/50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:ring-emerald-500/50 min-w-[120px]"
-            value={ingredientFilters.category || 'all'}
-            onChange={(e) => onIngredientFilterChange('category', e.target.value)}
-          >
-            <option value="all">Categoría</option>
-            {uniqueCategories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
-          </select>
+        <div className="flex items-center gap-2 overflow-x-visible pb-1 w-full text-xs relative z-50">
+
+          {/* Custom Category Dropdown with Color Dots */}
+          <div className="relative" ref={dropdownRef}>
+            <button
+              onClick={() => setShowCategoryDropdown(!showCategoryDropdown)}
+              className="h-10 pl-3 pr-8 bg-white/50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl text-sm flex items-center gap-2 min-w-[140px] text-left relative hover:bg-white/80 transition-colors"
+            >
+              {ingredientFilters.category && ingredientFilters.category !== 'all' ? (
+                <>
+                  <div className={`w-2.5 h-2.5 rounded-full ${getCategoryColor(ingredientFilters.category)}`} />
+                  <span className="truncate max-w-[100px]">{ingredientFilters.category}</span>
+                </>
+              ) : (
+                <span className="text-slate-500">Categoría</span>
+              )}
+              <Icon svg={ICONS.chevronDown} className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+            </button>
+
+            {showCategoryDropdown && (
+              <div className="absolute top-full left-0 mt-2 w-56 max-h-60 overflow-y-auto custom-scrollbar bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl z-[100] p-1">
+                <button
+                  onClick={() => { onIngredientFilterChange('category', 'all'); setShowCategoryDropdown(false); }}
+                  className="w-full text-left px-3 py-2 text-sm rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors flex items-center gap-2"
+                >
+                  <span className="text-slate-500">Todas</span>
+                </button>
+                {uniqueCategories.map(cat => (
+                  <button
+                    key={cat}
+                    onClick={() => { onIngredientFilterChange('category', cat); setShowCategoryDropdown(false); }}
+                    className="w-full text-left px-3 py-2 text-sm rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors flex items-center gap-2"
+                  >
+                    <div className={`w-2.5 h-2.5 rounded-full ${getCategoryColor(cat)}`} />
+                    <span className="truncate">{cat}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
 
           <div className="h-6 w-px bg-slate-300 dark:bg-slate-700 mx-1" />
 
-          <div className="flex gap-1">
+          <div className="flex gap-1 items-center">
             <Button variant="outline" size="icon" onClick={onImportCSV} title="Importar CSV">
               <Icon svg={ICONS.upload} className="w-4 h-4" />
             </Button>
@@ -128,7 +173,7 @@ export const IngredientListPanel: React.FC<IngredientListPanelProps> = ({
               </Button>
             )}
 
-            {/* Provider Selector - Custom Premium Style */}
+            {/* Provider Selector */}
             <div className="relative group/prov">
               <select
                 className="h-10 pl-3 pr-8 bg-white/20 hover:bg-white/30 backdrop-blur-xl rounded-xl text-slate-800 dark:text-slate-100 border-none focus:ring-2 focus:ring-emerald-500/50 transition-all cursor-pointer text-sm font-medium appearance-none min-w-[140px]"
@@ -137,7 +182,7 @@ export const IngredientListPanel: React.FC<IngredientListPanelProps> = ({
               >
                 <option value="all" className="text-slate-800">Todos los productos</option>
                 {proveedores.map(prov => (
-                  <option key={prov.id} value={prov.id} className="text-slate-800">{prov.nombre}</option>
+                  <option key={prov.id} value={prov.id} className="text-slate-800">{prov.name}</option>
                 ))}
               </select>
               {/* Custom Arrow because appearance-none removes default */}
@@ -165,13 +210,12 @@ export const IngredientListPanel: React.FC<IngredientListPanelProps> = ({
             />
           </div>
           <div className="flex-1 px-4">Detalles</div>
-          <div className="w-32 hidden sm:block">Familia</div>
           <div className="w-24 text-right">Precio / Unidad</div>
         </div>
       </div>
 
       {/* List Body */}
-      <div className="flex-1 overflow-y-auto custom-scrollbar p-0 w-full">
+      <div className="flex-1 overflow-y-auto custom-scrollbar p-0 w-full z-0">
         {filteredIngredients.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-40 text-center opacity-60">
             <Icon svg={ICONS.flask} className="w-8 h-8 text-slate-400 mb-2" />
@@ -182,57 +226,64 @@ export const IngredientListPanel: React.FC<IngredientListPanelProps> = ({
             {filteredIngredients.map((ing) => {
               const isSelected = selectedIngredientIds.includes(ing.id);
               const isViewing = viewingIngredientId === ing.id;
+              const categoryColor = getCategoryColor(ing.categoria);
 
               return (
                 <div
                   key={ing.id}
                   onClick={() => onEditIngredient(ing)}
-                  className={`group relative flex items-center p-3 rounded-2xl border transition-all duration-200 cursor-pointer w-full
+                  className={`group relative flex flex-col p-0 rounded-2xl border transition-all duration-200 cursor-pointer w-full overflow-hidden
                             ${isViewing
                       ? 'bg-emerald-600 shadow-lg shadow-emerald-900/20 scale-[1.02] border-emerald-500 z-10'
                       : 'bg-white/30 dark:bg-slate-900/30 backdrop-blur-md border-white/10 dark:border-white/5 hover:bg-white/50 hover:shadow-md hover:-translate-y-0.5'
                     }
-                        `}
+                  `}
                 >
-                  {/* Selection Checkbox */}
-                  <div className="w-8 shrink-0 flex justify-center z-10" onClick={(e) => e.stopPropagation()}>
-                    <input
-                      type="checkbox"
-                      checked={isSelected}
-                      onChange={() => onToggleSelection(ing.id)}
-                      className={`rounded border-slate-300 dark:border-slate-600 text-emerald-600 focus:ring-emerald-500 transition-colors cursor-pointer ${isSelected ? 'bg-emerald-500 border-emerald-500' : 'bg-white/50'}`}
-                    />
-                  </div>
+                  <div className="flex items-center p-3 relative z-10">
+                    {/* Selection Checkbox */}
+                    <div className="w-8 shrink-0 flex justify-center z-10" onClick={(e) => e.stopPropagation()}>
+                      <input
+                        type="checkbox"
+                        checked={isSelected}
+                        onChange={() => onToggleSelection(ing.id)}
+                        className={`rounded border-slate-300 dark:border-slate-600 text-emerald-600 focus:ring-emerald-500 transition-colors cursor-pointer ${isSelected ? 'bg-emerald-500 border-emerald-500' : 'bg-white/50'}`}
+                      />
+                    </div>
 
-                  {/* Content */}
-                  <div className="flex-1 px-4 min-w-0">
-                    <div className={`font-bold truncate ${isViewing ? 'text-white' : 'text-slate-800 dark:text-slate-200'}`}>{ing.nombre}</div>
-                    <div className="flex items-center gap-2 text-xs mt-1">
-                      <span className={`px-2 py-0.5 rounded-full font-medium ${isViewing ? 'bg-white/20 text-emerald-100' : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400'}`}>
-                        {ing.categoria}
-                      </span>
-                      {/* Stock Status Badge */}
+                    {/* Content */}
+                    <div className="flex-1 px-4 min-w-0">
+                      {/* Title - Optimized for space */}
+                      <div className={`font-bold text-sm tracking-tight leading-snug line-clamp-2 ${isViewing ? 'text-white' : 'text-slate-800 dark:text-slate-200'}`}>
+                        {ing.nombre}
+                      </div>
+
+                      {/* Stock Status Badge (Optional, kept small) */}
                       {((ing as any).stockActual !== undefined && (ing as any).stockActual <= 0) && (
-                        <span className="px-1.5 py-0.5 rounded-md bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 font-bold tracking-tight flex items-center gap-1">
-                          <Icon svg={ICONS.alertCircle} className="w-3 h-3" /> AGOTADOS
-                        </span>
+                        <div className="flex mt-1">
+                          <span className="px-1.5 py-0.5 rounded-[4px] bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 text-[10px] font-bold tracking-tight flex items-center gap-1 uppercase">
+                            <Icon svg={ICONS.alertCircle} className="w-3 h-3" /> Agotados
+                          </span>
+                        </div>
                       )}
                     </div>
+
+                    {/* Price Column */}
+                    <div className="w-24 text-right shrink-0 flex flex-col justify-center">
+                      <div className={`font-bold font-mono text-sm ${isViewing ? 'text-white' : 'text-slate-700 dark:text-slate-300'}`}>
+                        €{ing.precioCompra?.toFixed(2)}{ing.unidadCompra === 'kg' || ing.unidadCompra === 'Lt' ? `/${ing.unidadCompra}` : ''}
+                      </div>
+                      <div className={`text-[10px] uppercase tracking-wider ${isViewing ? 'text-emerald-200' : 'text-slate-400'}`}>
+                        {ing.unidadCompra || 'Und'}
+                      </div>
+                    </div>
                   </div>
 
-                  {/* Price Column */}
-                  <div className="w-24 text-right shrink-0 flex flex-col justify-center">
-                    <div className={`font-bold font-mono text-sm ${isViewing ? 'text-white' : 'text-slate-700 dark:text-slate-300'}`}>
-                      €{ing.precioCompra?.toFixed(2)}{ing.unidadCompra === 'kg' || ing.unidadCompra === 'Lt' ? `/${ing.unidadCompra}` : ''}
-                    </div>
-                    <div className={`text-[10px] uppercase tracking-wider ${isViewing ? 'text-emerald-200' : 'text-slate-400'}`}>
-                      {ing.unidadCompra || 'Und'}
-                    </div>
-                  </div>
+                  {/* Category Color Bar at Bottom */}
+                  <div className={`h-1.5 w-full ${categoryColor} opacity-80`} title={ing.categoria} />
 
                   {/* Viewing Indicator Bar */}
                   {isViewing && (
-                    <div className="absolute right-2 top-1/2 -translate-y-1/2 text-white/20">
+                    <div className="absolute right-2 top-1/2 -translate-y-1/2 text-white/20 pointer-events-none">
                       <Icon svg={ICONS.check} className="w-8 h-8 -rotate-12" />
                     </div>
                   )}
