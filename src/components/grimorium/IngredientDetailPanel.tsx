@@ -30,14 +30,14 @@ interface IngredientDetailPanelProps {
     onEdit: (ingredient: Ingredient) => void;
     onDelete: (ingredient: Ingredient) => void;
     onClose: () => void;
-    onSendToZeroWaste?: (ingredient: Ingredient) => void;
+    onBuy?: (ingredient: Ingredient) => void;
 }
 
 
 import { useSuppliers } from '../../features/suppliers/hooks/useSuppliers';
 import { useApp } from '../../context/AppContext';
 
-export const IngredientDetailPanel: React.FC<IngredientDetailPanelProps> = ({ ingredient, onEdit, onDelete, onClose, onSendToZeroWaste }) => {
+export const IngredientDetailPanel: React.FC<IngredientDetailPanelProps> = ({ ingredient, onEdit, onDelete, onClose, onBuy }) => {
     const { db, userId } = useApp();
     const { suppliers } = useSuppliers({ db, userId });
 
@@ -143,9 +143,14 @@ export const IngredientDetailPanel: React.FC<IngredientDetailPanelProps> = ({ in
             </div>
 
             <div className="p-4 border-t border-slate-200 dark:border-slate-800 bg-white/40 dark:bg-slate-900/40 backdrop-blur-sm flex gap-3">
-                {onSendToZeroWaste && (
-                    <Button variant="secondary" className="flex-1" onClick={() => onSendToZeroWaste(ingredient)} title="Crear receta Zero Waste">
-                        <Icon svg={ICONS.recycle} className="w-4 h-4 mr-2" /> <span className="hidden sm:inline">Zero Waste</span>
+                {onBuy && (
+                    <Button
+                        variant="ghost"
+                        className="flex-1 !bg-emerald-50 !text-emerald-700 border border-emerald-200 hover:!bg-emerald-600 hover:!text-white hover:border-emerald-600 hover:shadow-md hover:shadow-emerald-500/20 transition-all duration-300 font-bold"
+                        onClick={() => onBuy(ingredient)}
+                        title="Comprar Ingrediente"
+                    >
+                        <span className="hidden sm:inline">Comprar</span>
                     </Button>
                 )}
                 <Button variant="outline" className="flex-1" onClick={() => onEdit(ingredient)}>

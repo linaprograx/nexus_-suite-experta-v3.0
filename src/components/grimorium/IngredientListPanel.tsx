@@ -11,6 +11,7 @@ import { useApp } from '../../context/AppContext';
 import { CatalogoItem } from '../../types';
 import { getCategoryColor } from '../../utils/categoryColors';
 
+
 interface IngredientListPanelProps {
   ingredients: Ingredient[];
   selectedIngredientIds: string[];
@@ -28,6 +29,8 @@ interface IngredientListPanelProps {
   ingredientFilters: { category: string; status: string };
   onIngredientFilterChange: (key: string, value: string) => void;
   availableCategories: string[]; // Added
+  onBuy?: (ingredient: Ingredient) => void;
+  onBulkBuy?: () => void; // Added onBulkBuy
 }
 
 export const IngredientListPanel: React.FC<IngredientListPanelProps> = ({
@@ -45,7 +48,9 @@ export const IngredientListPanel: React.FC<IngredientListPanelProps> = ({
   onIngredientSearchChange,
   ingredientFilters,
   onIngredientFilterChange,
-  availableCategories // Added
+  availableCategories, // Added
+  onBuy,
+  onBulkBuy // Destructured
 }) => {
   const searchInputRef = useRef<HTMLInputElement>(null);
   const [showCategoryDropdown, setShowCategoryDropdown] = React.useState(false);
@@ -190,9 +195,23 @@ export const IngredientListPanel: React.FC<IngredientListPanelProps> = ({
               <Icon svg={ICONS.upload} className="w-4 h-4" />
             </Button>
             {selectedIngredientIds.length > 0 && (
-              <Button variant="destructive" size="icon" onClick={onDeleteSelected} title="Eliminar Seleccionados" className="h-10 w-10">
-                <Icon svg={ICONS.trash} className="w-4 h-4" />
-              </Button>
+              <>
+                {/* BULK BUY BUTTON */}
+                {onBulkBuy && (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={onBulkBuy}
+                    className="h-10 !bg-emerald-50 !text-emerald-700 border border-emerald-200 hover:!bg-emerald-600 hover:!text-white hover:border-emerald-600 transition-colors font-bold mr-1"
+                  >
+                    Comprar ({selectedIngredientIds.length})
+                  </Button>
+                )}
+
+                <Button variant="destructive" size="icon" onClick={onDeleteSelected} title="Eliminar Seleccionados" className="h-10 w-10">
+                  <Icon svg={ICONS.trash} className="w-4 h-4" />
+                </Button>
+              </>
             )}
 
             <Button onClick={onNewIngredient} className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-900/20 h-10 w-10 p-0 rounded-xl transition-all hover:scale-105 active:scale-95">
@@ -271,14 +290,29 @@ export const IngredientListPanel: React.FC<IngredientListPanelProps> = ({
                       )}
                     </div>
 
-                    {/* Price Column */}
-                    <div className="w-24 text-right shrink-0 flex flex-col justify-center">
-                      <div className={`font-bold font-mono text-sm ${isViewing ? 'text-white' : 'text-slate-700 dark:text-slate-300'}`}>
-                        €{ing.precioCompra?.toFixed(2)}{ing.unidadCompra === 'kg' || ing.unidadCompra === 'Lt' ? `/${ing.unidadCompra}` : ''}
+                    {/* Price Column + Buy Action */}
+                    <div className="w-auto flex flex-col items-end gap-2 shrink-0">
+                      <div className="text-right">
+                        <div className={`font-bold font-mono text-sm ${isViewing ? 'text-white' : 'text-slate-700 dark:text-slate-300'}`}>
+                          €{ing.precioCompra?.toFixed(2)}{ing.unidadCompra === 'kg' || ing.unidadCompra === 'Lt' ? `/${ing.unidadCompra}` : ''}
+                        </div>
+                        <div className={`text-[10px] uppercase tracking-wider ${isViewing ? 'text-emerald-200' : 'text-slate-400'}`}>
+                          {ing.unidadCompra || 'Und'}
+                        </div>
                       </div>
-                      <div className={`text-[10px] uppercase tracking-wider ${isViewing ? 'text-emerald-200' : 'text-slate-400'}`}>
-                        {ing.unidadCompra || 'Und'}
-                      </div>
+
+                      {/* BUY BUTTON */}
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className={`h-7 px-3 text-[10px] font-bold uppercase tracking-wide !bg-emerald-50 !text-emerald-700 border border-emerald-200 hover:!bg-emerald-600 hover:!text-white hover:border-emerald-600 hover:shadow-md hover:shadow-emerald-500/20 rounded-lg transition-all duration-300 ${isViewing ? 'hidden' : ''}`}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onBuy?.(ing);
+                        }}
+                      >
+                        Comprar
+                      </Button>
                     </div>
                   </div>
 

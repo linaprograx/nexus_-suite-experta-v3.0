@@ -15,7 +15,9 @@ import { Icon } from '../components/ui/Icon';
 import { Modal } from '../components/ui/Modal';
 import { ICONS } from '../components/ui/icons';
 import { IngredientFormModal } from '../components/grimorium/IngredientFormModal';
-import { SuppliersManagerModal } from '../components/grimorium/SuppliersManagerModal'; // Added import
+import { PurchaseModal } from '../components/grimorium/PurchaseModal';
+import { BulkPurchaseModal } from '../components/grimorium/BulkPurchaseModal'; // Added import
+import { SuppliersManagerModal } from '../components/grimorium/SuppliersManagerModal'; // Corrected import path
 import { FiltersSidebar } from '../components/grimorium/FiltersSidebar';
 import { RecipeList } from '../components/grimorium/RecipeList';
 import { RecipeDetailPanel } from '../components/grimorium/RecipeDetailPanel';
@@ -31,6 +33,8 @@ import { callGeminiApi } from '../utils/gemini';
 import { Type } from "@google/genai";
 import { Alert } from '../components/ui/Alert';
 import { Spinner } from '../components/ui/Spinner';
+import { usePurchaseIngredient } from '../hooks/usePurchaseIngredient';
+
 
 // Escandallator Imports
 import EscandalloTab from '../components/escandallator/EscandalloTab';
@@ -118,6 +122,35 @@ const GrimoriumView: React.FC<GrimoriumViewProps> = ({ onOpenRecipeModal, onDrag
     const debouncedIngredientSearch = useDebounce(ingredientSearch, 300);
 
     const ingredientsColPath = `artifacts/${appId}/users/${userId}/grimorio-ingredients`;
+
+    // Purchase Logic
+    const {
+        startPurchase,
+        isPurchaseModalOpen,
+        closePurchaseModal,
+        confirmPurchase,
+        purchaseTarget
+    } = usePurchaseIngredient();
+
+    // --- Bulk Purchase Logic ---
+    const [isBulkPurchaseModalOpen, setIsBulkPurchaseModalOpen] = React.useState(false);
+    const [bulkPurchaseTargets, setBulkPurchaseTargets] = React.useState<Ingredient[]>([]);
+
+    const startBulkPurchase = () => {
+        const targets = allIngredients.filter(i => selectedIngredients.includes(i.id));
+        if (targets.length === 0) return;
+        setBulkPurchaseTargets(targets);
+        setIsBulkPurchaseModalOpen(true);
+    };
+
+    const confirmBulkPurchase = (orders: { ingredientId: string; quantity: number; totalCost: number; unit: string }[]) => {
+        console.log('Bulk Purchase Orders:', orders);
+        // Here you would integrate with the actual backend service
+        // For now, just log and close
+        setIsBulkPurchaseModalOpen(false);
+        setBulkPurchaseTargets([]);
+        setSelectedIngredients([]); // Clear selection
+    };
 
     // --- Grimorium Helpers ---
     // --- Grimorium Helpers ---
@@ -591,6 +624,8 @@ const GrimoriumView: React.FC<GrimoriumViewProps> = ({ onOpenRecipeModal, onDrag
                                 ingredientFilters={ingredientFilters}
                                 onIngredientFilterChange={(k, v) => setIngredientFilters(prev => ({ ...prev, [k]: v }))}
                                 availableCategories={['General', ...new Set(allIngredients.map(i => i.categoria))]}
+                                onBuy={startPurchase}
+                                onBulkBuy={startBulkPurchase}
                             />
                         )}
                         {activeTab === 'escandallo' && (
@@ -687,6 +722,7 @@ const GrimoriumView: React.FC<GrimoriumViewProps> = ({ onOpenRecipeModal, onDrag
                             onDelete={(ing) => handleDeleteIngredient(ing)}
                             onClose={() => setSelectedIngredientId(null)}
                             onSendToZeroWaste={handleSendToZeroWaste}
+                            onBuy={() => startPurchase(selectedIngredient)}
                         />
                     )}
 
@@ -815,11 +851,19 @@ const GrimoriumView: React.FC<GrimoriumViewProps> = ({ onOpenRecipeModal, onDrag
             {selectedIngredient && activeTab === 'ingredients' && (
                 <div className="lg:hidden fixed inset-0 z-50 bg-white dark:bg-slate-950 p-4 overflow-y-auto">
                     <Button size="icon" variant="ghost" onClick={() => setSelectedIngredientId(null)} className="absolute top-4 right-4"><Icon svg={ICONS.x} /></Button>
-                    <IngredientDetailPanel ingredient={selectedIngredient} onEdit={(ing) => { setEditingIngredient(ing); setShowIngredientModal(true); }} onDelete={(ing) => handleDeleteIngredient(ing)} onClose={() => setSelectedIngredientId(null)} onSendToZeroWaste={handleSendToZeroWaste} />
+                    <IngredientDetailPanel ingredient={selectedIngredient} onEdit={(ing) => { setEditingIngredient(ing); setShowIngredientModal(true); }} onDelete={(ing) => handleDeleteIngredient(ing)} onClose={() => setSelectedIngredientId(null)} onBuy={startPurchase} />
                 </div>
             )}
 
             {/* Modals */}
+            <PurchaseModal isOpen={isPurchaseModalOpen} onClose={closePurchaseModal} ingredient={purchaseTarget} onConfirm={confirmPurchase} suppliers={suppliers} />
+            <BulkPurchaseModal
+                isOpen={isBulkPurchaseModalOpen}
+                onClose={() => setIsBulkPurchaseModalOpen(false)}
+                ingredients={bulkPurchaseTargets}
+                onConfirm={confirmBulkPurchase}
+                suppliers={suppliers}
+            />
             {showSuppliersModal && <SuppliersManagerModal isOpen={showSuppliersModal} onClose={() => setShowSuppliersModal(false)} />}
             {showIngredientModal && <IngredientFormModal isOpen={showIngredientModal} onClose={() => setShowIngredientModal(false)} db={db} userId={userId} appId={appId} editingIngredient={editingIngredient} />}
             <Modal isOpen={showCsvImportModal} onClose={() => setShowCsvImportModal(false)} title="Importar Ingredientes CSV">

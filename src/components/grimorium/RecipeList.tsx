@@ -124,15 +124,24 @@ export const RecipeList: React.FC<RecipeListProps> = ({
             </Button>
           )}
 
-          {/* Import Button (Replaces Filters) */}
+          {/* Import Button */}
           <Button
             variant="ghost"
             size="icon"
             onClick={onImport}
-            className="h-10 w-10 text-slate-400 hover:text-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 ml-auto"
+            className="h-10 w-10 text-slate-400 hover:text-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-900/20"
             title="Importar Receta"
           >
             <Icon svg={ICONS.upload} className="w-4 h-4" />
+          </Button>
+
+          {/* NEW RECIPE BUTTON */}
+          <Button
+            onClick={onAddRecipe}
+            className="bg-slate-900 hover:bg-slate-800 text-white shadow-lg shadow-slate-900/20 h-10 w-10 p-0 rounded-xl transition-all hover:scale-105 active:scale-95 ml-1"
+            title="Nueva Receta"
+          >
+            <Icon svg={ICONS.plus} className="w-5 h-5" />
           </Button>
         </div>
       </div>
