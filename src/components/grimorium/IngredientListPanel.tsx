@@ -27,6 +27,7 @@ interface IngredientListPanelProps {
   onIngredientSearchChange: (val: string) => void;
   ingredientFilters: { category: string; status: string };
   onIngredientFilterChange: (key: string, value: string) => void;
+  availableCategories: string[]; // Added
 }
 
 export const IngredientListPanel: React.FC<IngredientListPanelProps> = ({
@@ -43,7 +44,8 @@ export const IngredientListPanel: React.FC<IngredientListPanelProps> = ({
   ingredientSearchTerm,
   onIngredientSearchChange,
   ingredientFilters,
-  onIngredientFilterChange
+  onIngredientFilterChange,
+  availableCategories // Added
 }) => {
   const searchInputRef = useRef<HTMLInputElement>(null);
   const [showCategoryDropdown, setShowCategoryDropdown] = React.useState(false);
@@ -61,8 +63,8 @@ export const IngredientListPanel: React.FC<IngredientListPanelProps> = ({
   }, []);
 
 
-  // Extract unique categories for the filter dropdown
-  const uniqueCategories = Array.from(new Set(ingredients.map(ing => ing.categoria))).sort();
+  // Use passed availableCategories
+  const uniqueCategories = availableCategories.sort();
 
   // Providers Hook
   const { db, userId } = useApp();

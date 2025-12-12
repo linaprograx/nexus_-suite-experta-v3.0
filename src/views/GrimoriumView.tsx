@@ -215,28 +215,88 @@ const GrimoriumView: React.FC<GrimoriumViewProps> = ({ onOpenRecipeModal, onDrag
             const rows = text.split('\n').slice(1);
             const batch = writeBatch(db);
             let count = 0;
+            let updatedCount = 0;
+
+            // Map existing ingredients for fast lookup
+            const existingMap = new Map(allIngredients.map(i => [i.nombre.toLowerCase().trim(), i]));
+
             for (const row of rows) {
                 if (!row.trim()) continue;
                 const cols = row.split(text.includes(';') ? ';' : ',');
                 if (!cols[0]) continue;
 
-                const dataToSave: any = {
-                    nombre: cols[0].trim(),
-                    categoria: cols[1]?.trim() || 'General',
-                    precioCompra: parseEuroNumber(cols[2]),
-                    unidadCompra: cols[3]?.trim() || 'und',
-                    proveedores: csvSupplierId ? [csvSupplierId] : [] // Tag with selected supplier
-                };
+                const name = cols[0].trim();
+                const normalizedName = name.toLowerCase();
+                const price = parseEuroNumber(cols[2]);
+                const unit = cols[3]?.trim() || 'und';
+                const category = cols[1]?.trim() || 'General';
 
-                batch.set(doc(collection(db, ingredientsColPath)), dataToSave);
-                count++;
+                const existingIngredient = existingMap.get(normalizedName);
+
+                if (existingIngredient) {
+                    // Update existing
+                    const ingredientRef = doc(db, ingredientsColPath, existingIngredient.id);
+                    const updates: any = {};
+                    let needsUpdate = false;
+
+                    // 1. Link New Supplier if provided
+                    if (csvSupplierId && !existingIngredient.proveedores?.includes(csvSupplierId)) {
+                        const currentSuppliers = existingIngredient.proveedores || [];
+                        updates.proveedores = [...currentSuppliers, csvSupplierId];
+                        needsUpdate = true;
+                    }
+
+                    // 2. Update Supplier Data (Price Limit)
+                    if (csvSupplierId) {
+                        const currentSupplierData = existingIngredient.supplierData || {};
+                        updates.supplierData = {
+                            ...currentSupplierData,
+                            [csvSupplierId]: {
+                                price: price,
+                                unit: unit,
+                                lastUpdated: serverTimestamp()
+                            }
+                        };
+                        // Also update main price if it's 0 or we want to overwrite (keeping it simple: update if new supplier is primary context)
+                        // For now, let's only update standard price if it was 0
+                        if (!existingIngredient.precioCompra || existingIngredient.precioCompra === 0) {
+                            updates.precioCompra = price;
+                        }
+                        needsUpdate = true;
+                    }
+
+                    if (needsUpdate) {
+                        batch.update(ingredientRef, updates);
+                        updatedCount++;
+                    }
+
+                } else {
+                    // Create New
+                    const newDocRef = doc(collection(db, ingredientsColPath));
+                    const dataToSave: any = {
+                        nombre: name,
+                        categoria: category,
+                        precioCompra: price,
+                        unidadCompra: unit,
+                        proveedores: csvSupplierId ? [csvSupplierId] : [],
+                        supplierData: csvSupplierId ? {
+                            [csvSupplierId]: {
+                                price: price,
+                                unit: unit,
+                                lastUpdated: serverTimestamp()
+                            }
+                        } : {}
+                    };
+                    batch.set(newDocRef, dataToSave);
+                    count++;
+                }
             }
             await batch.commit();
             // Invalidate cache to update UI immediately
             await queryClient.invalidateQueries({ queryKey: ['ingredients'] });
             await queryClient.invalidateQueries({ queryKey: ['ingredients', appId, userId] });
 
-            alert(`${count} ingredientes importados.`);
+            alert(`Importación completada: ${count} nuevos, ${updatedCount} actualizados.`);
             setLoading(false);
             setShowCsvImportModal(false);
             setCsvSupplierId(""); // Reset
@@ -491,6 +551,7 @@ const GrimoriumView: React.FC<GrimoriumViewProps> = ({ onOpenRecipeModal, onDrag
                                 onIngredientSearchChange={setIngredientSearch}
                                 ingredientFilters={ingredientFilters}
                                 onIngredientFilterChange={(k, v) => setIngredientFilters(prev => ({ ...prev, [k]: v }))}
+                                availableCategories={['General', ...new Set(allIngredients.map(i => i.categoria))]}
                             />
                         )}
                         {activeTab === 'escandallo' && (

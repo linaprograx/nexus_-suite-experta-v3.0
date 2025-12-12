@@ -37,6 +37,11 @@ export interface Ingredient {
     merma?: number;
     wastePercentage?: number;
     proveedores?: string[]; // Added: List of Provider IDs
+    supplierData?: Record<string, {
+        price: number;
+        unit: string;
+        lastUpdated?: any;
+    }>;
 }
 
 export interface Proveedor {

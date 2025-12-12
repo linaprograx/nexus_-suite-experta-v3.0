@@ -33,7 +33,14 @@ interface IngredientDetailPanelProps {
     onSendToZeroWaste?: (ingredient: Ingredient) => void;
 }
 
+
+import { useSuppliers } from '../../features/suppliers/hooks/useSuppliers';
+import { useApp } from '../../context/AppContext';
+
 export const IngredientDetailPanel: React.FC<IngredientDetailPanelProps> = ({ ingredient, onEdit, onDelete, onClose, onSendToZeroWaste }) => {
+    const { db, userId } = useApp();
+    const { suppliers } = useSuppliers({ db, userId });
+
     if (!ingredient) {
         return (
             <Card className="h-full flex flex-col items-center justify-center bg-white/60 dark:bg-slate-900/30 backdrop-blur-md border border-slate-200/70 dark:border-slate-800/70 p-8 text-center">
@@ -42,6 +49,20 @@ export const IngredientDetailPanel: React.FC<IngredientDetailPanelProps> = ({ in
             </Card>
         );
     }
+
+    // Resolve Provider Names
+    const providerNames = React.useMemo(() => {
+        if (!ingredient.proveedores || ingredient.proveedores.length === 0) return 'No especificado';
+
+        // Handle legacy single supplier case if array is empty but legacy field exists
+        if (ingredient.proveedores.length === 0 && ingredient.proveedor) return ingredient.proveedor;
+
+        return ingredient.proveedores.map(id => {
+            const s = suppliers.find(sup => sup.id === id);
+            return s ? s.name : null;
+        }).filter(Boolean).join(', ') || 'No especificado';
+    }, [ingredient.proveedores, ingredient.proveedor, suppliers]);
+
 
     const familyInfo = FAMILY_BG_COLORS[ingredient.categoria as AromaticFamily] || FAMILY_BG_COLORS.Unknown;
 
@@ -69,7 +90,7 @@ export const IngredientDetailPanel: React.FC<IngredientDetailPanelProps> = ({ in
                             <div>
                                 <p className="text-xs text-slate-400 mb-1">Precio de Compra</p>
                                 <p className="text-xl font-bold text-slate-800 dark:text-slate-200">
-                                    {ingredient.precioCompra > 0 ? `€${ingredient.precioCompra.toFixed(2)}` : '€0.00'}
+                                    {ingredient.precioCompra && ingredient.precioCompra > 0 ? `€${ingredient.precioCompra.toFixed(2)}` : '€0.00'}
                                 </p>
                             </div>
                             <div>
@@ -86,7 +107,9 @@ export const IngredientDetailPanel: React.FC<IngredientDetailPanelProps> = ({ in
                         <div className="space-y-3">
                             <div className="flex justify-between py-2 border-b border-slate-100 dark:border-slate-700 last:border-0">
                                 <span className="text-slate-600 dark:text-slate-400 text-sm">Proveedor</span>
-                                <span className="font-medium text-slate-800 dark:text-slate-200 text-sm">{ingredient.proveedor || 'No especificado'}</span>
+                                <span className="font-medium text-slate-800 dark:text-slate-200 text-sm text-right max-w-[60%] truncate" title={providerNames}>
+                                    {providerNames}
+                                </span>
                             </div>
                             <div className="flex justify-between py-2 border-b border-slate-100 dark:border-slate-700 last:border-0">
                                 <span className="text-slate-600 dark:text-slate-400 text-sm">Marca</span>
@@ -98,6 +121,24 @@ export const IngredientDetailPanel: React.FC<IngredientDetailPanelProps> = ({ in
                             </div>
                         </div>
                     </div>
+
+                    {/* Supplier Pricing Table if multiple */}
+                    {ingredient.supplierData && Object.keys(ingredient.supplierData).length > 0 && (
+                        <div className="bg-white/40 dark:bg-slate-800/40 rounded-xl p-4 border border-slate-100 dark:border-slate-800">
+                            <h3 className="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-4">Precios por Proveedor</h3>
+                            <div className="space-y-2">
+                                {Object.entries(ingredient.supplierData).map(([supId, data]) => {
+                                    const supName = suppliers.find(s => s.id === supId)?.name || 'Desconocido';
+                                    return (
+                                        <div key={supId} className="flex justify-between py-1 text-sm">
+                                            <span className="text-slate-600 dark:text-slate-400">{supName}</span>
+                                            <span className="font-medium">€{data.price.toFixed(2)} / {data.unit}</span>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    )}
                 </div>
             </div>
 
