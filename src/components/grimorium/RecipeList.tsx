@@ -27,12 +27,19 @@ interface RecipeListProps {
   selectedStatus: string;
   onStatusChange: (status: string) => void;
   onDelete: () => void;
+
+  // Bulk Selection Props
+  selectedRecipeIds: string[];
+  onToggleSelection: (id: string, multi?: boolean) => void;
+  onSelectAll: (select: boolean) => void;
+  onDeleteSelected: () => void;
+  onImport: () => void;
 }
 
 export const RecipeList: React.FC<RecipeListProps> = ({
   recipes,
-  selectedRecipeId,
-  onSelectRecipe,
+  selectedRecipeId, // Viewing
+  onSelectRecipe, // Viewing
   onAddRecipe,
   onDragStart,
 
@@ -43,11 +50,16 @@ export const RecipeList: React.FC<RecipeListProps> = ({
   availableCategories,
   selectedStatus,
   onStatusChange,
-  onDelete
+
+  selectedRecipeIds = [],
+  onToggleSelection,
+  onSelectAll,
+  onDeleteSelected,
+  onImport
 }) => {
   const { compactMode } = useUI();
 
-  // Deduplicate recipes to prevent key warnings
+  // Deduplicate recipes
   const uniqueRecipes = React.useMemo(() => {
     if (!recipes) return [];
     const seen = new Set();
@@ -58,9 +70,7 @@ export const RecipeList: React.FC<RecipeListProps> = ({
     });
   }, [recipes]);
 
-  // If no recipes AND no search/filters active, show empty state? 
-  // Actually, we want to show the toolbar even if empty, so user can clear filters or search.
-  // We'll move the empty check inside the content area.
+  // Handle multi-select with shift key could be cool, but simple toggle for now.
 
   return (
     <div className="h-full flex flex-col w-full max-w-full">
@@ -78,42 +88,67 @@ export const RecipeList: React.FC<RecipeListProps> = ({
           />
         </div>
 
-        {/* Filters Row */}
+        {/* Filters Row - FULL WIDTH FLEX */}
         <div className="flex flex-wrap items-center gap-2 w-full">
           <select
-            className="h-10 pl-3 pr-8 bg-white/50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:ring-emerald-500/50"
+            className="h-10 pl-3 pr-8 bg-white/50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:ring-emerald-500/50 flex-1 min-w-[120px]"
             value={selectedCategory}
             onChange={(e) => onCategoryChange(e.target.value)}
           >
-            <option value="all">Categoría</option>
+            <option value="all">Todas las Categorías</option>
             {availableCategories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
           </select>
 
           <select
-            className="h-10 pl-3 pr-8 bg-white/50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:ring-emerald-500/50"
+            className="h-10 pl-3 pr-8 bg-white/50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:ring-emerald-500/50 flex-1 min-w-[120px]"
             value={selectedStatus}
             onChange={(e) => onStatusChange(e.target.value)}
           >
-            <option value="all">Estado</option>
+            <option value="all">Todos los Estados</option>
             <option value="Idea">Idea</option>
             <option value="Pruebas">Pruebas</option>
             <option value="Terminado">Carta</option>
             <option value="Archivada">Archivada</option>
           </select>
 
-          {/* Clean Filters Button */}
-          {(selectedCategory !== 'all' || selectedStatus !== 'all' || searchTerm) && (
+          {/* Delete Selected Button */}
+          {selectedRecipeIds.length > 0 && (
             <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => { onCategoryChange('all'); onStatusChange('all'); onSearchChange(''); }}
-              className="h-10 w-10 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 ml-auto"
-              title="Limpiar filtros"
+              variant="destructive"
+              className="h-10 px-4 ml-auto whitespace-nowrap"
+              onClick={onDeleteSelected}
+              title="Eliminar seleccionadas"
             >
-              <Icon svg={ICONS.trash} className="w-4 h-4" />
+              <Icon svg={ICONS.trash} className="w-4 h-4 mr-2" />
+              <span className="hidden sm:inline">({selectedRecipeIds.length})</span>
             </Button>
           )}
+
+          {/* Import Button (Replaces Filters) */}
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={onImport}
+            className="h-10 w-10 text-slate-400 hover:text-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 ml-auto"
+            title="Importar Receta"
+          >
+            <Icon svg={ICONS.upload} className="w-4 h-4" />
+          </Button>
         </div>
+      </div>
+
+      {/* List Header (Actions) */}
+      <div className="px-1 py-2 flex items-center justify-between text-xs text-slate-500 mb-2">
+        <div className="flex items-center gap-2">
+          <input
+            type="checkbox"
+            checked={uniqueRecipes.length > 0 && selectedRecipeIds.length === uniqueRecipes.length}
+            onChange={(e) => onSelectAll(e.target.checked)}
+            className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+          />
+          <span>Seleccionar todo</span>
+        </div>
+        <span className="italic">{uniqueRecipes.length} recetas</span>
       </div>
 
       <div className="flex-1 overflow-y-auto custom-scrollbar p-0 w-full">
@@ -130,22 +165,39 @@ export const RecipeList: React.FC<RecipeListProps> = ({
             {uniqueRecipes.map((recipe) => {
               const mainCategory = recipe.categorias?.[0] || 'General';
               const isDone = recipe.categorias?.includes('Carta') || recipe.categorias?.includes('Terminado');
-
-              const isSelected = selectedRecipeId === recipe.id;
+              const isViewing = selectedRecipeId === recipe.id;
+              const isSelected = selectedRecipeIds.includes(recipe.id);
 
               return (
-                <div key={recipe.id} className="w-full">
+                <div key={recipe.id} className="w-full relative group">
                   <div
-                    onClick={() => onSelectRecipe(recipe)}
+                    onClick={() => onSelectRecipe(recipe)} // View on click
                     draggable={!!onDragStart}
                     onDragStart={(e) => onDragStart && onDragStart(e, recipe)}
                     className={cn(
-                      "relative flex flex-col gap-3 rounded-2xl p-4 cursor-pointer transition-all duration-300 group overflow-hidden h-full",
-                      isSelected
+                      "relative flex flex-col gap-3 rounded-2xl p-4 cursor-pointer transition-all duration-300 overflow-hidden h-full",
+                      isViewing
                         ? "bg-indigo-600 shadow-xl shadow-indigo-900/20 scale-[1.02] ring-0 z-10"
                         : "bg-white/30 dark:bg-slate-900/30 border border-white/10 hover:bg-white/50 dark:hover:bg-slate-800/50 hover:shadow-lg hover:-translate-y-1 backdrop-blur-md"
                     )}
                   >
+                    {/* Checkbox Overlay */}
+                    <div
+                      className="absolute top-3 right-3 z-20"
+                      onClick={(e) => { e.stopPropagation(); onToggleSelection(recipe.id); }}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={isSelected}
+                        readOnly
+                        className={cn(
+                          "w-5 h-5 rounded border-2 transition-all cursor-pointer",
+                          isViewing ? "border-white/50 text-indigo-600" : "border-slate-300 text-indigo-600",
+                          isSelected ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+                        )}
+                      />
+                    </div>
+
                     {/* Header: Thumb + Title */}
                     <div className="flex items-start gap-3">
                       <div className="relative shrink-0">
@@ -162,21 +214,21 @@ export const RecipeList: React.FC<RecipeListProps> = ({
                         )}
                       </div>
 
-                      <div className="min-w-0 flex-1">
+                      <div className="min-w-0 flex-1 pr-6"> {/* pr-6 for checkbox space */}
                         <p className={cn("font-bold text-lg truncate leading-tight mb-1",
-                          isSelected ? "text-white" : "text-slate-900 dark:text-white"
+                          isViewing ? "text-white" : "text-slate-900 dark:text-white"
                         )}>
                           {recipe.nombre}
                         </p>
                         <div className="flex flex-wrap gap-1">
                           <span className={cn("text-[10px] px-2 py-0.5 rounded-full uppercase font-bold tracking-wide",
-                            isSelected ? "bg-white/20 text-indigo-100" : "bg-slate-100 dark:bg-slate-800 text-slate-500"
+                            isViewing ? "bg-white/20 text-indigo-100" : "bg-slate-100 dark:bg-slate-800 text-slate-500"
                           )}>
                             {mainCategory}
                           </span>
                           {isDone && (
                             <span className={cn("text-[10px] px-2 py-0.5 rounded-full uppercase font-bold tracking-wide",
-                              isSelected ? "bg-emerald-500/30 text-emerald-100" : "bg-emerald-100 text-emerald-700"
+                              isViewing ? "bg-emerald-500/30 text-emerald-100" : "bg-emerald-100 text-emerald-700"
                             )}>Carta</span>
                           )}
                         </div>
@@ -185,28 +237,21 @@ export const RecipeList: React.FC<RecipeListProps> = ({
 
                     {/* Footer: Financials (Compact) */}
                     <div className={cn("flex items-center justify-between pt-3 border-t mt-1",
-                      isSelected ? "border-white/20" : "border-slate-100 dark:border-slate-800"
+                      isViewing ? "border-white/20" : "border-slate-100 dark:border-slate-800"
                     )}>
                       <div className="flex flex-col">
-                        <span className={cn("text-[10px] uppercase tracking-wider", isSelected ? "text-indigo-200" : "text-slate-400")}>Costo</span>
-                        <span className={cn("font-bold font-mono", isSelected ? "text-white" : "text-slate-700 dark:text-slate-300")}>
+                        <span className={cn("text-[10px] uppercase tracking-wider", isViewing ? "text-indigo-200" : "text-slate-400")}>Costo</span>
+                        <span className={cn("font-bold font-mono", isViewing ? "text-white" : "text-slate-700 dark:text-slate-300")}>
                           €{(recipe.costoTotal || 0).toFixed(2)}
                         </span>
                       </div>
                       <div className="flex flex-col text-right">
-                        <span className={cn("text-[10px] uppercase tracking-wider", isSelected ? "text-indigo-200" : "text-slate-400")}>Venta</span>
-                        <span className={cn("font-bold font-mono", isSelected ? "text-white" : "text-slate-900 dark:text-white")}>
+                        <span className={cn("text-[10px] uppercase tracking-wider", isViewing ? "text-indigo-200" : "text-slate-400")}>Venta</span>
+                        <span className={cn("font-bold font-mono", isViewing ? "text-white" : "text-slate-900 dark:text-white")}>
                           {recipe.precioVenta ? `€${recipe.precioVenta.toFixed(2)}` : '-'}
                         </span>
                       </div>
                     </div>
-
-                    {/* Selection Indicator Icon */}
-                    {isSelected && (
-                      <div className="absolute top-2 right-2 text-white/20">
-                        <Icon svg={ICONS.check} className="w-12 h-12 -rotate-12" />
-                      </div>
-                    )}
                   </div>
                 </div>
               );

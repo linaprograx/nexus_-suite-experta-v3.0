@@ -63,18 +63,20 @@ export const SuppliersManagerModal: React.FC<SuppliersManagerModalProps> = ({ is
             const text = event.target?.result as string;
             if (!text) return;
 
-            const lines = text.split('\n').splice(1); // Skip header
+            const lines = text.split('\n').slice(1); // Skip header
             const batch = writeBatch(db);
             const supplierProductsRef = collection(db, `users/${userId}/suppliers/${supplier.id}/supplierProducts`);
             const globalIngredientsRef = collection(db, `artifacts/${appId}/users/${userId}/grimorio-ingredients`);
 
             let addedCount = 0;
             let globalCreatedCount = 0;
+            let globalUpdatedCount = 0;
+
+            // Map existing global ingredients for fast lookup
+            const existingMap = new Map(globalIngredients.map(gi => [gi.nombre.toLowerCase().trim(), gi]));
 
             for (const line of lines) {
                 if (!line.trim()) continue;
-                // Expected CSV: Name, Price, Unit (Simple)
-                // Adjust based on your CSV structure or make it flexible
                 const cols = line.split(line.includes(';') ? ';' : ',');
                 const rawName = cols[0]?.trim();
                 const rawPrice = parseEuroNumber(cols[1]);
@@ -82,7 +84,7 @@ export const SuppliersManagerModal: React.FC<SuppliersManagerModalProps> = ({ is
 
                 if (!rawName) continue;
 
-                // 1. Add to Supplier Products
+                // 1. Add to Supplier Products (Always separate)
                 const productDoc = doc(supplierProductsRef);
                 batch.set(productDoc, {
                     productId: productDoc.id,
@@ -94,9 +96,46 @@ export const SuppliersManagerModal: React.FC<SuppliersManagerModalProps> = ({ is
                 });
                 addedCount++;
 
-                // 2. Check & Add to Global Ingredients
-                const exists = globalIngredients.some(gi => gi.nombre.toLowerCase() === rawName.toLowerCase());
-                if (!exists) {
+                // 2. Check & Sync with Global Ingredients
+                const normalizedRawName = rawName.toLowerCase();
+                const existingIng = existingMap.get(normalizedRawName);
+
+                if (existingIng) {
+                    // Ingredient exists: Update Link & SupplierData
+                    const ingRef = doc(db, `artifacts/${appId}/users/${userId}/grimorio-ingredients`, existingIng.id);
+                    const updates: any = {};
+                    let needsUpdate = false;
+
+                    // Link Supplier ID if missing
+                    if (!existingIng.proveedores?.includes(supplier.id)) {
+                        updates.proveedores = [...(existingIng.proveedores || []), supplier.id];
+                        needsUpdate = true;
+                    }
+
+                    // Update SupplierData (Price)
+                    const currentSupplierData = existingIng.supplierData || {};
+                    const newSupplierDataEntry = {
+                        price: rawPrice,
+                        unit: rawUnit,
+                        lastUpdated: new Date() // Firestore will convert or we use serverTimestamp() if imported
+                    };
+
+                    // Only update if price changed or entry missing
+                    if (JSON.stringify(currentSupplierData[supplier.id]) !== JSON.stringify(newSupplierDataEntry)) {
+                        updates.supplierData = {
+                            ...currentSupplierData,
+                            [supplier.id]: newSupplierDataEntry
+                        };
+                        needsUpdate = true;
+                    }
+
+                    if (needsUpdate) {
+                        batch.update(ingRef, updates);
+                        globalUpdatedCount++;
+                    }
+
+                } else {
+                    // Create New Global Ingredient
                     const ingDoc = doc(globalIngredientsRef);
                     batch.set(ingDoc, {
                         nombre: rawName,
@@ -106,27 +145,22 @@ export const SuppliersManagerModal: React.FC<SuppliersManagerModalProps> = ({ is
                         wastePercentage: 0,
                         proveedores: [supplier.id],
                         standardUnit: 'und',
-                        standardQuantity: 1
+                        standardQuantity: 1,
+                        supplierData: {
+                            [supplier.id]: {
+                                price: rawPrice,
+                                unit: rawUnit,
+                                lastUpdated: new Date()
+                            }
+                        }
                     });
                     globalCreatedCount++;
-                } else {
-                    // Start linking? 
-                    // Ideally we update the existing ingredient to include this provider ID
-                    // But that requires finding the ID, which is expensive in a loop without a map.
-                    // For now, let's just create missing ones.
-                    const existingIng = globalIngredients.find(gi => gi.nombre.toLowerCase() === rawName.toLowerCase());
-                    if (existingIng && !existingIng.proveedores?.includes(supplier.id)) {
-                        const ingRef = doc(db, `artifacts/${appId}/users/${userId}/grimorio-ingredients`, existingIng.id);
-                        batch.update(ingRef, {
-                            proveedores: [...(existingIng.proveedores || []), supplier.id]
-                        });
-                    }
                 }
             }
 
             try {
                 await batch.commit();
-                alert(`Catálogo importado: ${addedCount} productos añadidos. ${globalCreatedCount} ingredientes nuevos creados.`);
+                alert(`Catálogo importado:\n- ${addedCount} productos al catálogo de ${supplier.name}\n- ${globalCreatedCount} nuevos ingredientes creados\n- ${globalUpdatedCount} ingredientes existentes vinculados`);
             } catch (err) {
                 console.error(err);
                 alert("Error subiendo catálogo.");

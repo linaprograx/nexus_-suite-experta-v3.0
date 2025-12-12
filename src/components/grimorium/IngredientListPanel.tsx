@@ -122,13 +122,13 @@ export const IngredientListPanel: React.FC<IngredientListPanelProps> = ({
         </div>
 
         {/* Filters & Actions */}
-        <div className="flex items-center gap-2 overflow-x-visible pb-1 w-full text-xs relative z-50">
+        <div className="flex flex-wrap items-center gap-2 w-full text-xs relative z-50">
 
-          {/* Custom Category Dropdown with Color Dots */}
-          <div className="relative" ref={dropdownRef}>
+          {/* Custom Category Dropdown with Color Dots - FLEX 1 */}
+          <div className="relative flex-1 min-w-[120px]" ref={dropdownRef}>
             <button
               onClick={() => setShowCategoryDropdown(!showCategoryDropdown)}
-              className="h-10 pl-3 pr-8 bg-white/50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl text-sm flex items-center gap-2 min-w-[140px] text-left relative hover:bg-white/80 transition-colors"
+              className="h-10 pl-3 pr-8 bg-white/50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl text-sm flex items-center gap-2 w-full text-left relative hover:bg-white/80 transition-colors"
             >
               {ingredientFilters.category && ingredientFilters.category !== 'all' ? (
                 <>
@@ -142,7 +142,7 @@ export const IngredientListPanel: React.FC<IngredientListPanelProps> = ({
             </button>
 
             {showCategoryDropdown && (
-              <div className="absolute top-full left-0 mt-2 w-56 max-h-60 overflow-y-auto custom-scrollbar bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl z-[100] p-1">
+              <div className="absolute top-full left-0 mt-2 w-full max-h-60 overflow-y-auto custom-scrollbar bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl z-[100] p-1">
                 <button
                   onClick={() => { onIngredientFilterChange('category', 'all'); setShowCategoryDropdown(false); }}
                   className="w-full text-left px-3 py-2 text-sm rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors flex items-center gap-2"
@@ -163,35 +163,37 @@ export const IngredientListPanel: React.FC<IngredientListPanelProps> = ({
             )}
           </div>
 
-          <div className="h-6 w-px bg-slate-300 dark:bg-slate-700 mx-1" />
+          <div className="h-6 w-px bg-slate-300 dark:bg-slate-700 mx-1 hidden sm:block" />
 
-          <div className="flex gap-1 items-center">
-            <Button variant="outline" size="icon" onClick={onImportCSV} title="Importar CSV">
+          {/* Provider Selector - FLEX 1 */}
+          <div className="relative group/prov flex-1 min-w-[120px]">
+            <select
+              className="h-10 pl-3 pr-8 w-full bg-white/20 hover:bg-white/30 backdrop-blur-xl rounded-xl text-slate-800 dark:text-slate-100 border-none focus:ring-2 focus:ring-emerald-500/50 transition-all cursor-pointer text-sm font-medium appearance-none"
+              value={selectedProveedorId}
+              onChange={(e) => setSelectedProveedorId(e.target.value)}
+            >
+              <option value="all" className="text-slate-800">Todos los productos</option>
+              {proveedores.map(prov => (
+                <option key={prov.id} value={prov.id} className="text-slate-800">{prov.name}</option>
+              ))}
+            </select>
+            {/* Custom Arrow because appearance-none removes default */}
+            <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-500 group-hover/prov:text-slate-800 dark:group-hover/prov:text-slate-200 transition-colors">
+              <Icon svg={ICONS.chevronDown} className="w-3 h-3" />
+            </div>
+          </div>
+
+
+          {/* Small Actions */}
+          <div className="flex gap-1 items-center ml-1">
+            <Button variant="outline" size="icon" onClick={onImportCSV} title="Importar CSV" className="border-slate-200 dark:border-slate-700 h-10 w-10">
               <Icon svg={ICONS.upload} className="w-4 h-4" />
             </Button>
             {selectedIngredientIds.length > 0 && (
-              <Button variant="destructive" size="icon" onClick={onDeleteSelected} title="Eliminar Seleccionados">
+              <Button variant="destructive" size="icon" onClick={onDeleteSelected} title="Eliminar Seleccionados" className="h-10 w-10">
                 <Icon svg={ICONS.trash} className="w-4 h-4" />
               </Button>
             )}
-
-            {/* Provider Selector */}
-            <div className="relative group/prov">
-              <select
-                className="h-10 pl-3 pr-8 bg-white/20 hover:bg-white/30 backdrop-blur-xl rounded-xl text-slate-800 dark:text-slate-100 border-none focus:ring-2 focus:ring-emerald-500/50 transition-all cursor-pointer text-sm font-medium appearance-none min-w-[140px]"
-                value={selectedProveedorId}
-                onChange={(e) => setSelectedProveedorId(e.target.value)}
-              >
-                <option value="all" className="text-slate-800">Todos los productos</option>
-                {proveedores.map(prov => (
-                  <option key={prov.id} value={prov.id} className="text-slate-800">{prov.name}</option>
-                ))}
-              </select>
-              {/* Custom Arrow because appearance-none removes default */}
-              <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-500 group-hover/prov:text-slate-800 dark:group-hover/prov:text-slate-200 transition-colors">
-                <Icon svg={ICONS.chevronDown} className="w-3 h-3" />
-              </div>
-            </div>
 
             <Button onClick={onNewIngredient} className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-900/20 h-10 w-10 p-0 rounded-xl transition-all hover:scale-105 active:scale-95">
               <Icon svg={ICONS.plus} className="w-5 h-5" />

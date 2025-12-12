@@ -169,6 +169,29 @@ const GrimoriumView: React.FC<GrimoriumViewProps> = ({ onOpenRecipeModal, onDrag
         }
     };
 
+    // --- Recipe Bulk Delete ---
+    const [selectedRecipes, setSelectedRecipes] = React.useState<string[]>([]);
+
+    const handleDeleteSelectedRecipes = async () => {
+        if (window.confirm(`¿Seguro que quieres eliminar ${selectedRecipes.length} recetas?`)) {
+            try {
+                const batch = writeBatch(db);
+                selectedRecipes.forEach(id => batch.delete(doc(db, `users/${userId}/grimorio`, id)));
+                await batch.commit();
+
+                // Force cache invalidation to update UI immediately
+                await queryClient.invalidateQueries({ queryKey: ['recipes'] });
+                await queryClient.invalidateQueries({ queryKey: ['recipes', appId, userId] });
+
+                setSelectedRecipes([]);
+                setSelectedRecipeId(null);
+            } catch (error) {
+                console.error("Error deleting recipes:", error);
+                alert("Error al eliminar las recetas seleccionadas.");
+            }
+        }
+    };
+
     // --- Imports ---
     const handleTxtImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
@@ -182,6 +205,10 @@ const GrimoriumView: React.FC<GrimoriumViewProps> = ({ onOpenRecipeModal, onDrag
             const recipesCollection = collection(db, `users/${userId}/grimorio`);
             newRecipes.forEach(recipe => batch.set(doc(recipesCollection), recipe));
             await batch.commit();
+
+            await queryClient.invalidateQueries({ queryKey: ['recipes'] });
+            await queryClient.invalidateQueries({ queryKey: ['recipes', appId, userId] });
+
             alert(`${newRecipes.length} recetas importadas.`);
         } catch (error) { console.error(error); alert("Error importando TXT."); } finally { setLoading(false); setShowTxtImportModal(false); }
     };
@@ -197,6 +224,10 @@ const GrimoriumView: React.FC<GrimoriumViewProps> = ({ onOpenRecipeModal, onDrag
             const recipesCollection = collection(db, `users/${userId}/grimorio`);
             newRecipes.forEach(recipe => batch.set(doc(recipesCollection), recipe));
             await batch.commit();
+
+            await queryClient.invalidateQueries({ queryKey: ['recipes'] });
+            await queryClient.invalidateQueries({ queryKey: ['recipes', appId, userId] });
+
             alert(`${newRecipes.length} recetas importadas.`);
         } catch (error) { console.error(error); alert("Error importando PDF."); } finally { setLoading(false); setShowPdfImportModal(false); }
     };
@@ -534,6 +565,14 @@ const GrimoriumView: React.FC<GrimoriumViewProps> = ({ onOpenRecipeModal, onDrag
                                 selectedStatus={selectedStatus}
                                 onStatusChange={(stat) => setSelectedStatus(stat)}
                                 onDelete={() => selectedRecipeId && handleDeleteRecipe(selectedRecipeId)}
+
+                                // Bulk Actions props
+                                selectedRecipeIds={selectedRecipes}
+                                onToggleSelection={(id) => setSelectedRecipes(prev => prev.includes(id) ? prev.filter(r => r !== id) : [...prev, id])}
+                                onSelectAll={(select) => setSelectedRecipes(select ? filteredRecipes.map(r => r.id) : [])}
+                                onSelectAll={(select) => setSelectedRecipes(select ? filteredRecipes.map(r => r.id) : [])}
+                                onDeleteSelected={handleDeleteSelectedRecipes}
+                                onImport={() => setShowPdfImportModal(true)}
                             />
                         )}
                         {activeTab === 'ingredients' && (
