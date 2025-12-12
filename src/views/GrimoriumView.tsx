@@ -1,5 +1,6 @@
 import * as React from 'react';
 import { collection, doc, addDoc, deleteDoc, writeBatch, Firestore, serverTimestamp } from 'firebase/firestore';
+import { useQueryClient } from '@tanstack/react-query';
 import { Ingredient, Recipe, ViewName, ZeroWasteResult } from '../types';
 import { parseMultipleRecipes } from '../utils/recipeImporter';
 import { importPdfRecipes } from '../modules/pdf/importPdfRecipes';
@@ -124,31 +125,44 @@ const GrimoriumView: React.FC<GrimoriumViewProps> = ({ onOpenRecipeModal, onDrag
         setSelectedRecipeId(null);
     };
 
-    const handleDeleteIngredient = async (ing: Ingredient) => {
-        if (window.confirm(`¿Seguro que quieres eliminar ${ing.nombre}?`)) {
-            await deleteDoc(doc(db, ingredientsColPath, ing.id));
-            if (selectedIngredients.includes(ing.id)) handleSelectIngredient(ing.id);
-            if (selectedIngredientId === ing.id) setSelectedIngredientId(null);
-        }
-    };
-
-    React.useEffect(() => {
-        // Reset selections when switching tabs? Maybe only for Grimorium tabs.
-        if (activeTab === 'recipes') setSelectedIngredientId(null);
-        if (activeTab === 'ingredients') setSelectedRecipeId(null);
-    }, [activeTab]);
+    const queryClient = useQueryClient();
 
     const handleSelectIngredient = (id: string) => {
         setSelectedIngredients(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
     };
 
+    const handleDeleteIngredient = async (ing: Ingredient) => {
+        if (window.confirm(`¿Seguro que quieres eliminar ${ing.nombre}?`)) {
+            try {
+                await deleteDoc(doc(db, ingredientsColPath, ing.id));
+                // Invalidate cache to update UI immediately
+                await queryClient.invalidateQueries({ queryKey: ['ingredients'] });
+
+                if (selectedIngredients.includes(ing.id)) handleSelectIngredient(ing.id);
+                if (selectedIngredientId === ing.id) setSelectedIngredientId(null);
+            } catch (error) {
+                console.error("Error eliminando ingrediente:", error);
+                alert("Error al eliminar el ingrediente.");
+            }
+        }
+    };
+
     const handleDeleteSelectedIngredients = async () => {
         if (window.confirm(`¿Seguro que quieres eliminar ${selectedIngredients.length} ingredientes?`)) {
-            const batch = writeBatch(db);
-            selectedIngredients.forEach(id => batch.delete(doc(db, ingredientsColPath, id)));
-            await batch.commit();
-            setSelectedIngredients([]);
-            setSelectedIngredientId(null);
+            try {
+                const batch = writeBatch(db);
+                selectedIngredients.forEach(id => batch.delete(doc(db, ingredientsColPath, id)));
+                await batch.commit();
+
+                // Invalidate cache
+                await queryClient.invalidateQueries({ queryKey: ['ingredients'] });
+
+                setSelectedIngredients([]);
+                setSelectedIngredientId(null);
+            } catch (error) {
+                console.error("Error eliminando ingredientes:", error);
+                alert("Error al eliminar los ingredientes seleccionados.");
+            }
         }
     };
 

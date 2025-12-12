@@ -42,7 +42,7 @@ export const FiltersSidebar: React.FC<FiltersSidebarProps> = ({
   const { db, userId } = useApp();
 
   return (
-    <div className="h-full flex flex-col gap-0 border-r border-slate-200 dark:border-slate-800 bg-white/30 dark:bg-slate-900/30 backdrop-blur-sm">
+    <div className="h-full flex flex-col gap-0 border-r-0 border-transparent bg-transparent">
 
       {/* SECTION 1: TOP (Providers / Active Filters) - Only for Ingredients Tab */}
       {activeTab === 'ingredients' && (
@@ -78,20 +78,17 @@ export const FiltersSidebar: React.FC<FiltersSidebarProps> = ({
         {/* Legacy Actions */}
         <div className="p-4 border-t border-white/10 space-y-2 bg-white/5">
           {activeTab === 'recipes' && (
-            <Button variant="outline" className="w-full justify-start text-xs h-9" onClick={onImportPdf}>
-              <Icon svg={ICONS.fileText} className="mr-2 h-3 w-3" />
-              Importar PDF PRO
-            </Button>
+            <>
+              <Button variant="outline" className="w-full justify-start text-xs h-9" onClick={onImportPdf}>
+                <Icon svg={ICONS.fileText} className="mr-2 h-3 w-3" />
+                Importar PDF PRO
+              </Button>
+              <Button variant="ghost" size="sm" className="w-full justify-start text-xs h-8 bg-white/40 dark:bg-slate-800/40" onClick={onImportRecipes}>
+                <Icon svg={ICONS.upload} className="mr-2 h-3 w-3" /> Imp. TXT
+              </Button>
+            </>
           )}
-
-          <div className="grid grid-cols-2 gap-2">
-            <Button variant="ghost" size="sm" className="justify-start text-xs h-8 bg-white/40 dark:bg-slate-800/40" onClick={onImportRecipes}>
-              <Icon svg={ICONS.upload} className="mr-2 h-3 w-3" /> Imp. TXT
-            </Button>
-            <Button variant="ghost" size="sm" className="justify-start text-xs h-8 bg-white/40 dark:bg-slate-800/40" onClick={onImportIngredients}>
-              <Icon svg={ICONS.upload} className="mr-2 h-3 w-3" /> Imp. CSV
-            </Button>
-          </div>
+          {/* Floating Action Button removed as per request */}
         </div>
       </div>
     </div>
@@ -117,7 +114,7 @@ const SuppliersList = ({ db, userId }: { db: any, userId: string }) => {
     <div className="space-y-2">
       {suppliers.map(s => (
         <div key={s.id} className="flex items-center justify-between p-2 rounded-lg bg-white/40 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700 hover:border-emerald-500/50 transition-colors cursor-pointer group">
-          <div className="flex flex-col">
+          <div className="flex flex-wrap items-center gap-2 w-full">
             <span className="text-sm font-semibold text-slate-700 dark:text-slate-200">{s.name}</span>
             <span className="text-[10px] text-slate-500">{s.category} • {s.contactName?.split(' ')[0]}</span>
           </div>

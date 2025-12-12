@@ -245,12 +245,7 @@ export const IngredientListPanel: React.FC<IngredientListPanelProps> = ({
       </div>
 
       {/* Floating Action Button for New Ingredient */}
-      <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20">
-        <Button onClick={onNewIngredient} className="bg-emerald-500 hover:bg-emerald-600 text-white shadow-xl shadow-emerald-900/30 rounded-2xl px-6 py-3 h-auto text-base">
-          <Icon svg={ICONS.plus} className="mr-2 h-5 w-5" />
-          Nuevo Ingrediente
-        </Button>
-      </div>
+      {/* Floating Action Button removed as per request */}
     </div >
   );
 };

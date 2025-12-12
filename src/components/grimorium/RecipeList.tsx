@@ -107,7 +107,7 @@ export const RecipeList: React.FC<RecipeListProps> = ({
               variant="ghost"
               size="icon"
               onClick={() => { onCategoryChange('all'); onStatusChange('all'); onSearchChange(''); }}
-              className="h-10 w-10 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20"
+              className="h-10 w-10 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 ml-auto"
               title="Limpiar filtros"
             >
               <Icon svg={ICONS.trash} className="w-4 h-4" />

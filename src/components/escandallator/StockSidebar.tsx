@@ -14,14 +14,22 @@ const StockSidebar: React.FC<StockSidebarProps> = ({ onAction }) => {
             <div className="p-6 space-y-8 overflow-y-auto custom-scrollbar w-full max-w-[95%] mx-auto">
                 <div>
                     <h4 className="text-xs font-bold text-slate-500/80 uppercase tracking-wider mb-3 drop-shadow-sm">Acciones Rápidas</h4>
-                    <div className="space-y-2">
-                        <button onClick={() => onAction('new_product')} className="w-full text-left px-4 py-3 rounded-xl bg-white/20 hover:bg-white/30 border border-white/10 transition-colors flex items-center gap-3 group backdrop-blur-sm">
-                            <Icon svg={ICONS.plus} className="w-4 h-4 text-slate-500 group-hover:text-sky-500" />
-                            <span className="text-sm font-medium text-slate-700 dark:text-slate-200">Nuevo Producto</span>
-                        </button>
-                        <button onClick={() => onAction('providers')} className="w-full text-left px-4 py-3 rounded-xl bg-white/20 hover:bg-white/30 border border-white/10 transition-colors flex items-center gap-3 group backdrop-blur-sm">
-                            <Icon svg={ICONS.user} className="w-4 h-4 text-slate-500 group-hover:text-sky-500" />
-                            <span className="text-sm font-medium text-slate-700 dark:text-slate-200">Proveedores</span>
+                    <div className="space-y-4">
+                        {/* Modified: merged button for Providers, larger and highlighted */}
+                        <button onClick={() => onAction('providers')} className="w-full text-left px-6 py-8 rounded-2xl bg-gradient-to-br from-sky-500 to-blue-600 hover:from-sky-400 hover:to-blue-500 shadow-lg shadow-sky-500/20 border border-white/10 transition-all group flex flex-col justify-between h-32 relative overflow-hidden">
+                            <div className="relative z-10 flex justify-between items-start">
+                                <span className="p-3 bg-white/20 rounded-xl backdrop-blur-md">
+                                    <Icon svg={ICONS.user} className="w-8 h-8 text-white" />
+                                </span>
+                                <Icon svg={ICONS.chevronRight} className="w-5 h-5 text-white/50 group-hover:translate-x-1 transition-transform" />
+                            </div>
+                            <div className="relative z-10">
+                                <h3 className="text-xl font-bold text-white mb-1">Proveedores</h3>
+                                <p className="text-sky-100/80 text-sm">Gestionar catálogo y pedidos</p>
+                            </div>
+
+                            {/* Decorative background icons */}
+                            <Icon svg={ICONS.grid} className="absolute -bottom-4 -right-4 w-32 h-32 text-white/5 -rotate-12" />
                         </button>
                     </div>
                 </div>
