@@ -3,7 +3,7 @@ import { collection, doc, addDoc, deleteDoc, writeBatch, Firestore, serverTimest
 import { useQueryClient } from '@tanstack/react-query';
 import { useSuppliers } from '../features/suppliers/hooks/useSuppliers';
 import { useOrders, Order } from '../hooks/useOrders'; // Added useOrders
-import { Ingredient, Recipe, ViewName, ZeroWasteResult } from '../types';
+import { Ingredient, Recipe, ViewName, ZeroWasteResult, StockRule } from '../types';
 import { parseMultipleRecipes } from '../utils/recipeImporter';
 import { importPdfRecipes } from '../modules/pdf/importPdfRecipes';
 import { useApp } from '../context/AppContext';
@@ -160,6 +160,7 @@ const GrimoriumView: React.FC<GrimoriumViewProps> = ({ onOpenRecipeModal, onDrag
     const [isReplenishModalOpen, setIsReplenishModalOpen] = React.useState(false);
     // Stock V2 State
     const [stockSelectedIngredient, setStockSelectedIngredient] = React.useState<Ingredient | null>(null);
+    const [editingOrder, setEditingOrder] = React.useState<Order | null>(null); // New state for editing orders
     const [toast, setToast] = React.useState({ message: '', type: 'success' as 'success' | 'error' | 'info', isVisible: false });
 
     const showToast = (message: string, type: 'success' | 'error' | 'info' = 'success') => {
@@ -173,11 +174,37 @@ const GrimoriumView: React.FC<GrimoriumViewProps> = ({ onOpenRecipeModal, onDrag
         setIsBulkPurchaseModalOpen(true);
     };
 
+    // --- Stock Rules State ---
+    const [stockRules, setStockRules] = React.useState<any[]>([]); // Using 'any' for now to avoid import cycle if types not ready, but better import StockRule
+
+    // Helper to check and create rule
+    const checkAndCreateRule = (ingredientId: string, ingredientName: string) => {
+        setStockRules(prev => {
+            if (!prev.find(r => r.ingredientId === ingredientId)) {
+                // Auto-create rule
+                const newRule = {
+                    id: Math.random().toString(36).substr(2, 9),
+                    ingredientId,
+                    ingredientName,
+                    minStock: 1,
+                    reorderQuantity: 1,
+                    active: true
+                };
+                showToast(`Regla de stock creada para ${ingredientName}`, 'info');
+                return [...prev, newRule];
+            }
+            return prev;
+        });
+    };
+
     const confirmBulkPurchase = async (orders: { ingredientId: string; quantity: number; totalCost: number; unit: string }[]) => {
         try {
             const promises = orders.map(async (order) => {
                 const ingredient = allIngredients.find(i => i.id === order.ingredientId);
                 if (!ingredient) throw new Error(`Ingrediente ${order.ingredientId} no encontrado`);
+
+                // Auto-Rule Check
+                checkAndCreateRule(ingredient.id, ingredient.nombre);
 
                 const providerId = ingredient.proveedor || (ingredient.proveedores && ingredient.proveedores[0]) || 'generic_provider';
                 // Try to find supplier name, fallback to ID or default
@@ -240,6 +267,10 @@ const GrimoriumView: React.FC<GrimoriumViewProps> = ({ onOpenRecipeModal, onDrag
         try {
             const promises = order.items.map(async (item) => {
                 const ingredient = allIngredients.find(i => i.id === item.ingredientId);
+
+                // Auto-Rule Check
+                if (ingredient) checkAndCreateRule(ingredient.id, ingredient.nombre);
+
                 const providerId = ingredient?.proveedor || 'generic_provider';
                 const providerName = suppliers.find(s => s.id === providerId)?.name || 'Proveedor Desconocido';
 
@@ -721,6 +752,10 @@ const GrimoriumView: React.FC<GrimoriumViewProps> = ({ onOpenRecipeModal, onDrag
                         <StockRulesPanel
                             allIngredients={allIngredients}
                             stockItems={calculatedStockItems}
+                            rules={stockRules}
+                            onSaveRule={(rule) => setStockRules(prev => [...prev, rule])}
+                            onDeleteRule={(id) => setStockRules(prev => prev.filter(r => r.id !== id))}
+                            onUpdateRules={setStockRules}
                             onQuickBuy={startPurchase}
                             onBulkOrder={(ingredients) => {
                                 setBulkPurchaseTargets(ingredients);
@@ -950,10 +985,17 @@ const GrimoriumView: React.FC<GrimoriumViewProps> = ({ onOpenRecipeModal, onDrag
                         <StockOrdersPanel
                             purchases={purchaseHistory}
                             orders={orders}
-                            onCreateOrder={() => setIsReplenishModalOpen(true)}
+                            onCreateOrder={() => {
+                                setEditingOrder(null); // Clear editing state 
+                                setIsReplenishModalOpen(true);
+                            }}
                             onLaunchOrder={handleLaunchOrder}
                             onDeleteOrder={deleteOrder}
                             onDeleteHistoryItem={handleDeletePurchase}
+                            onEditOrder={(order) => {
+                                setEditingOrder(order); // Set order to edit
+                                setIsReplenishModalOpen(true);
+                            }}
                         />
                     )}
 
@@ -1011,13 +1053,17 @@ const GrimoriumView: React.FC<GrimoriumViewProps> = ({ onOpenRecipeModal, onDrag
                 ingredients={allIngredients}
                 onConfirm={handleConfirmReplenish}
                 suppliers={suppliers}
+                initialOrder={editingOrder}
             />
 
             <PurchaseModal
                 isOpen={isPurchaseModalOpen}
                 onClose={() => setIsPurchaseModalOpen(false)}
                 ingredient={purchaseTarget}
-                onConfirm={confirmPurchase}
+                onConfirm={(data) => {
+                    if (purchaseTarget) checkAndCreateRule(purchaseTarget.id, purchaseTarget.nombre);
+                    confirmPurchase(data);
+                }}
                 suppliers={suppliers}
             />
 

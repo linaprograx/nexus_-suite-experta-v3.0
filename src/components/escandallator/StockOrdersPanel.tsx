@@ -13,6 +13,7 @@ interface StockOrdersPanelProps {
     onDeleteOrder: (orderId: string) => void;
     onDeleteHistoryGroup?: (providerName: string) => void;
     onDeleteHistoryItem?: (id: string) => void;
+    onEditOrder?: (order: Order) => void; // New
 }
 
 interface OrderGroup {
@@ -29,7 +30,8 @@ export const StockOrdersPanel: React.FC<StockOrdersPanelProps> = ({
     onLaunchOrder,
     onDeleteOrder,
     onDeleteHistoryGroup,
-    onDeleteHistoryItem
+    onDeleteHistoryItem,
+    onEditOrder
 }) => {
 
     const [activeTab, setActiveTab] = useState<'drafts' | 'history'>('drafts');
@@ -76,36 +78,7 @@ export const StockOrdersPanel: React.FC<StockOrdersPanelProps> = ({
     return (
         <div className="h-full flex flex-col bg-white/30 dark:bg-slate-900/40 backdrop-blur-xl border-l border-white/20 dark:border-white/5">
             {/* Toolbar Header */}
-            <div className="p-4 border-b border-white/20 dark:border-white/5 flex flex-col gap-4">
-                <div className="flex items-center justify-between">
-                    <h3 className="text-sm font-bold text-slate-800 dark:text-slate-100 uppercase tracking-wider flex items-center gap-2">
-                        <Icon svg={ICONS.fileText} className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                        Gestión de Pedidos
-                    </h3>
-                </div>
-
-                <div className="flex bg-slate-100/50 dark:bg-slate-800/50 p-1 rounded-lg">
-                    <button
-                        onClick={() => setActiveTab('drafts')}
-                        className={`flex-1 text-xs py-1.5 rounded-md font-medium transition-all ${activeTab === 'drafts' ? 'bg-white dark:bg-slate-700 shadow text-indigo-600' : 'text-slate-500 hover:text-slate-700'}`}
-                    >
-                        Borradores ({orders.filter(o => o.status === 'draft').length})
-                    </button>
-                    <button
-                        onClick={() => setActiveTab('history')}
-                        className={`flex-1 text-xs py-1.5 rounded-md font-medium transition-all ${activeTab === 'history' ? 'bg-white dark:bg-slate-700 shadow text-emerald-600' : 'text-slate-500 hover:text-slate-700'}`}
-                    >
-                        Historial
-                    </button>
-                </div>
-
-                {activeTab === 'drafts' && (
-                    <Button variant="outline" onClick={onCreateOrder} className="w-full bg-indigo-50 border-indigo-200 text-indigo-700 hover:bg-indigo-100 dark:bg-indigo-900/20 dark:border-indigo-800 dark:text-indigo-300">
-                        <Icon svg={ICONS.plus} className="w-4 h-4 mr-2" />
-                        Crear Hoja de Pedido
-                    </Button>
-                )}
-            </div>
+            {/* ... */}
 
             {/* Content List */}
             <div className="flex-1 overflow-y-auto custom-scrollbar p-4 space-y-4">
@@ -119,7 +92,11 @@ export const StockOrdersPanel: React.FC<StockOrdersPanelProps> = ({
                             </div>
                         ) : (
                             orders.filter(o => o.status === 'draft').map(order => (
-                                <div key={order.id} className="bg-white/60 dark:bg-slate-800/60 backdrop-blur-md rounded-xl border border-indigo-100 dark:border-indigo-900/30 p-3 shadow-sm relative group">
+                                <div
+                                    key={order.id}
+                                    className="bg-white/60 dark:bg-slate-800/60 backdrop-blur-md rounded-xl border border-indigo-100 dark:border-indigo-900/30 p-3 shadow-sm relative group cursor-pointer hover:border-indigo-300 transition-all"
+                                    onClick={() => onEditOrder && onEditOrder(order)}
+                                >
                                     <div className="flex justify-between items-start mb-2">
                                         <div>
                                             <span className="font-bold text-slate-800 dark:text-slate-200 text-sm block">{order.name}</span>
@@ -142,14 +119,21 @@ export const StockOrdersPanel: React.FC<StockOrdersPanelProps> = ({
                                     <div className="flex gap-2 mt-2">
                                         <Button
                                             size="sm"
-                                            onClick={() => onLaunchOrder(order)}
+                                            onClick={(e) => { e.stopPropagation(); onLaunchOrder(order); }}
                                             className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] h-7"
                                         >
                                             <Icon svg={ICONS.check} className="w-3 h-3 mr-1" />
                                             Lanzar Pedido
                                         </Button>
                                         <button
-                                            onClick={() => onDeleteOrder(order.id)}
+                                            onClick={(e) => { e.stopPropagation(); handleDownloadCSV(ordersByProvider.find(g => g.providerName === order.providerName) as any || { providerName: 'Unknown', items: order.items, totalValue: 0, lastDate: new Date() }); }}
+                                            className="p-1.5 text-slate-400 hover:text-indigo-600 transition-colors"
+                                            title="Descargar CSV"
+                                        >
+                                            <Icon svg={ICONS.fileText} className="w-4 h-4" />
+                                        </button>
+                                        <button
+                                            onClick={(e) => { e.stopPropagation(); onDeleteOrder(order.id); }}
                                             className="p-1.5 text-slate-400 hover:text-red-500 transition-colors"
                                             title="Eliminar Borrador"
                                         >

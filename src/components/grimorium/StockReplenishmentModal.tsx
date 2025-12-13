@@ -1,8 +1,9 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { Ingredient } from '../../types';
+import { Order } from '../../hooks/useOrders'; // Import Order type
 
 interface OrderItem {
     ingredientId: string;
@@ -19,6 +20,7 @@ interface StockReplenishmentModalProps {
     ingredients: Ingredient[];
     onConfirm: (orders: { providerId: string; providerName: string; items: OrderItem[] }[]) => void;
     suppliers: any[];
+    initialOrder?: Order | null; // Support editing
 }
 
 export const StockReplenishmentModal: React.FC<StockReplenishmentModalProps> = ({
@@ -26,12 +28,33 @@ export const StockReplenishmentModal: React.FC<StockReplenishmentModalProps> = (
     onClose,
     ingredients = [],
     onConfirm,
-    suppliers = []
+    suppliers = [],
+    initialOrder
 }) => {
     // Selection & Quantities
     const [selectedIds, setSelectedIds] = useState<string[]>([]);
     const [quantities, setQuantities] = useState<Record<string, number>>({});
     const [searchQuery, setSearchQuery] = useState('');
+
+    // Pre-fill Logic
+    useEffect(() => {
+        if (isOpen && initialOrder) {
+            const ids: string[] = [];
+            const qtys: Record<string, number> = {};
+
+            initialOrder.items.forEach(item => {
+                ids.push(item.ingredientId);
+                qtys[item.ingredientId] = item.quantity;
+            });
+
+            setSelectedIds(ids);
+            setQuantities(qtys);
+        } else if (isOpen && !initialOrder) {
+            // Reset if opening new
+            setSelectedIds([]);
+            setQuantities({});
+        }
+    }, [isOpen, initialOrder]);
 
     // Derived Logic
     const toggleSelection = (id: string) => {

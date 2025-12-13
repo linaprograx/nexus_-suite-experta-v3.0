@@ -3,45 +3,69 @@ import { ICONS } from '../ui/icons';
 import { Icon } from '../ui/Icon';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
-import { Ingredient } from '../../types';
+import { Ingredient, StockRule } from '../../types';
 import { Modal } from '../ui/Modal';
 import { StockItem } from '../../utils/stockUtils';
-
-export interface StockRule {
-    id: string;
-    ingredientId: string;
-    ingredientName: string;
-    minStock: number;
-    reorderQuantity: number;
-    active: boolean;
-}
 
 interface StockRulesPanelProps {
     allIngredients: Ingredient[];
     stockItems: StockItem[];
+    // Lifted State Props
+    rules: StockRule[];
     onQuickBuy: (ingredient: Ingredient) => void;
-    // In a real app, these would be async actions
-    onSaveRule?: (rule: StockRule) => void;
-    onDeleteRule?: (ruleId: string) => void;
+    onSaveRule: (rule: StockRule) => void;
+    onDeleteRule: (ruleId: string) => void;
     onBulkOrder?: (ingredients: Ingredient[]) => void;
+    onUpdateRules?: (rules: StockRule[]) => void;
+    onEditRule?: (rule: StockRule) => void; // New
+    onCheckAlert?: (ingredient: Ingredient) => void; // New
 }
 
 export const StockRulesPanel: React.FC<StockRulesPanelProps> = ({
     allIngredients = [],
     stockItems = [],
+    rules = [],
     onQuickBuy,
     onSaveRule,
     onDeleteRule,
-    onBulkOrder
+    onBulkOrder,
+    onUpdateRules,
+    onEditRule,
+    onCheckAlert
 }) => {
-    // Local State for Rules (Simulation)
-    const [rules, setRules] = useState<StockRule[]>([]);
+    // Removed local rules state
 
     const [isRuleModalOpen, setIsRuleModalOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
     const [quickSearchQuery, setQuickSearchQuery] = useState('');
     const [selectedIngredients, setSelectedIngredients] = useState<Ingredient[]>([]);
     const [newRule, setNewRule] = useState<{ minStock: number; reorderQuantity: number }>({ minStock: 0, reorderQuantity: 0 });
+    const [editingRuleId, setEditingRuleId] = useState<string | null>(null); // New local state for internal edit if no prop provided
+
+    // ... (rest of filtering logic)
+
+    const handleEditRuleClick = (rule: StockRule) => {
+        if (onEditRule) {
+            onEditRule(rule);
+        } else {
+            // Local fallback (simplified)
+            setNewRule({ minStock: rule.minStock, reorderQuantity: rule.reorderQuantity });
+            setEditingRuleId(rule.id);
+            // Pre-select ingredient
+            const ing = allIngredients.find(i => i.id === rule.ingredientId);
+            if (ing) setSelectedIngredients([ing]);
+            setIsRuleModalOpen(true);
+        }
+    };
+
+    const handleAlertClick = (ingredientId: string) => {
+        const ingredient = allIngredients.find(i => i.id === ingredientId);
+        if (ingredient && onCheckAlert) {
+            onCheckAlert(ingredient);
+        } else if (ingredient) {
+            onQuickBuy(ingredient);
+        }
+    };
 
     const filteredIngredients = useMemo(() => {
         if (!searchQuery) return [];
@@ -80,28 +104,41 @@ export const StockRulesPanel: React.FC<StockRulesPanelProps> = ({
 
     const handleSaveRule = () => {
         const newRulesList = [...rules];
+
+        // Remove existing if editing
+        let rulesToSave = editingRuleId ? newRulesList.filter(r => r.id !== editingRuleId) : newRulesList;
+
         selectedIngredients.forEach(ing => {
-            // Avoid duplicates
-            if (!rules.find(r => r.ingredientId === ing.id)) {
-                newRulesList.push({
-                    id: Math.random().toString(36).substr(2, 9),
+            // Avoid duplicates (unless editing same rule, but we filtered it out)
+            if (!rulesToSave.find(r => r.ingredientId === ing.id)) {
+                const newRuleObj: StockRule = {
+                    id: editingRuleId || Math.random().toString(36).substr(2, 9),
                     ingredientId: ing.id,
                     ingredientName: ing.nombre,
                     minStock: newRule.minStock || 1,
                     reorderQuantity: newRule.reorderQuantity || 1,
                     active: true
-                });
+                };
+                rulesToSave.push(newRuleObj);
+                // Call props
+                if (onSaveRule) onSaveRule(newRuleObj);
             }
         });
-        setRules(newRulesList);
+
+        if (onUpdateRules) onUpdateRules(rulesToSave);
+
         setIsRuleModalOpen(false);
         setSelectedIngredients([]);
         setNewRule({ minStock: 0, reorderQuantity: 0 });
+        setEditingRuleId(null);
         setSearchQuery('');
     };
 
     const handleDelete = (id: string) => {
-        setRules(prev => prev.filter(r => r.id !== id));
+        if (onDeleteRule) onDeleteRule(id);
+        if (onUpdateRules) {
+            onUpdateRules(rules.filter(r => r.id !== id));
+        }
     };
 
     return (
@@ -185,7 +222,11 @@ export const StockRulesPanel: React.FC<StockRulesPanelProps> = ({
 
                         <div className="divide-y divide-red-100 dark:divide-red-800/30">
                             {lowStockAlerts.map(alert => (
-                                <div key={alert.item.ingredientId} className="p-2 hover:bg-red-100/30 transition-colors flex justify-between items-center group">
+                                <div
+                                    key={alert.item.ingredientId}
+                                    className="p-2 hover:bg-red-100/30 transition-colors flex justify-between items-center group cursor-pointer"
+                                    onClick={() => handleAlertClick(alert.item.ingredientId)}
+                                >
                                     <div className="min-w-0 flex-1 pr-2">
                                         <div className="flex items-baseline justify-between mb-0.5">
                                             <span className="text-xs font-bold text-red-700 dark:text-red-300 truncate" title={alert.item.ingredientName}>
@@ -203,7 +244,10 @@ export const StockRulesPanel: React.FC<StockRulesPanelProps> = ({
                                     {/* Small individual buy action just in case */}
                                     <button
                                         className="opacity-0 group-hover:opacity-100 p-1 text-red-400 hover:text-red-600 hover:bg-red-100 rounded"
-                                        onClick={() => onQuickBuy(allIngredients.find(i => i.id === alert.item.ingredientId) as Ingredient)}
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            onQuickBuy(allIngredients.find(i => i.id === alert.item.ingredientId) as Ingredient);
+                                        }}
                                         title="Pedir solo este"
                                     >
                                         <Icon svg={ICONS.shoppingCart} className="w-3 h-3" />
@@ -235,7 +279,8 @@ export const StockRulesPanel: React.FC<StockRulesPanelProps> = ({
                         {rules.map((rule, idx) => (
                             <div
                                 key={rule.id}
-                                className={`flex items-center justify-between p-2 px-3 hover:bg-indigo-50/50 dark:hover:bg-indigo-900/10 group transition-colors ${idx !== rules.length - 1 ? 'border-b border-slate-100 dark:border-slate-700/50' : ''}`}
+                                className={`flex items-center justify-between p-2 px-3 hover:bg-indigo-50/50 dark:hover:bg-indigo-900/10 group transition-colors cursor-pointer ${idx !== rules.length - 1 ? 'border-b border-slate-100 dark:border-slate-700/50' : ''}`}
+                                onClick={() => handleEditRuleClick(rule)}
                             >
                                 <div className="flex-1 min-w-0 pr-3 flex items-center gap-2">
                                     <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${rule.active ? 'bg-emerald-400' : 'bg-slate-300'}`}></div>
@@ -253,7 +298,7 @@ export const StockRulesPanel: React.FC<StockRulesPanelProps> = ({
 
                                     {/* Delete Action */}
                                     <button
-                                        onClick={() => handleDelete(rule.id)}
+                                        onClick={(e) => { e.stopPropagation(); handleDelete(rule.id); }}
                                         className="ml-1 text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all"
                                     >
                                         <Icon svg={ICONS.trash} className="w-3 h-3" />
