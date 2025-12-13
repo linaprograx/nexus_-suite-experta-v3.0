@@ -26,6 +26,7 @@ interface FiltersSidebarProps {
   ingredientFilters?: any;
   onIngredientFilterChange?: (k: string, v: any) => void;
   stats?: any;
+  onOpenSuppliers?: () => void;
 }
 
 export const FiltersSidebar: React.FC<FiltersSidebarProps> = ({
@@ -38,6 +39,7 @@ export const FiltersSidebar: React.FC<FiltersSidebarProps> = ({
   onImportPdf,
   onImportIngredients,
   onIngredientFilterChange,
+  onOpenSuppliers,
 }) => {
   const { db, userId } = useApp();
 
@@ -46,17 +48,29 @@ export const FiltersSidebar: React.FC<FiltersSidebarProps> = ({
 
       {/* SECTION 1: TOP (Providers / Active Filters) - Only for Ingredients Tab */}
       {activeTab === 'ingredients' && (
-        <div className="h-1/2 flex flex-col min-h-0 border-b border-slate-200 dark:border-slate-800">
-          <div className="p-4 pb-2">
-            <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">Mis Proveedores</h3>
-            <div className="space-y-2 overflow-y-auto custom-scrollbar max-h-[calc(100%-2rem)]">
-              {/* We'll iterate the suppliers here. Logic to fetch them would be needed. 
-                          For now, let's pretend strictly UI structure or use the hook if accessible. 
-                          If I can't easily import the hook here without causing issues (e.g. if I need to update imports), 
-                          I will write the hook usage. 
-                      */}
-              <SuppliersList db={db} userId={userId} />
-            </div>
+        <div className="h-auto flex flex-col min-h-0 border-b border-slate-200 dark:border-slate-800">
+          <div className="p-4">
+            <button
+              onClick={onOpenSuppliers}
+              className="w-full text-left px-5 py-6 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 shadow-lg shadow-emerald-500/20 border border-white/10 transition-all group flex items-center justify-between relative overflow-hidden"
+            >
+              <div className="relative z-10 flex items-center gap-4">
+                <span className="p-3 bg-white/20 rounded-xl backdrop-blur-md text-white">
+                  <Icon svg={ICONS.user} className="w-6 h-6" />
+                </span>
+                <div>
+                  <h3 className="text-lg font-bold text-white mb-0.5">Proveedores</h3>
+                  <p className="text-emerald-100/90 text-xs text-medium">Gestionar mercado</p>
+                </div>
+              </div>
+
+              <div className="relative z-10 p-2 bg-white/10 rounded-full group-hover:bg-white/20 transition-colors">
+                <Icon svg={ICONS.chevronRight} className="w-4 h-4 text-white" />
+              </div>
+
+              {/* Decorative */}
+              <Icon svg={ICONS.grid} className="absolute -bottom-2 -right-2 w-24 h-24 text-white/10 -rotate-12 pointer-events-none" />
+            </button>
           </div>
         </div>
       )}

@@ -2,13 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
-import { Label } from '../ui/Label';
 import { Ingredient } from '../../types';
 
 interface BulkPurchaseModalProps {
     isOpen: boolean;
     onClose: () => void;
-    ingredients: Ingredient[];
+    selectedIngredients: Ingredient[];
     onConfirm: (orders: { ingredientId: string; quantity: number; totalCost: number; unit: string }[]) => void;
     suppliers: any[];
 }
@@ -16,7 +15,7 @@ interface BulkPurchaseModalProps {
 export const BulkPurchaseModal: React.FC<BulkPurchaseModalProps> = ({
     isOpen,
     onClose,
-    ingredients,
+    selectedIngredients = [],
     onConfirm,
     suppliers = []
 }) => {
@@ -24,21 +23,21 @@ export const BulkPurchaseModal: React.FC<BulkPurchaseModalProps> = ({
 
     // Initialize quantities when ingredients change or modal opens
     useEffect(() => {
-        if (isOpen && ingredients.length > 0) {
+        if (isOpen && selectedIngredients.length > 0) {
             const initial: Record<string, number> = {};
-            ingredients.forEach(ing => {
+            selectedIngredients.forEach(ing => {
                 initial[ing.id] = 1;
             });
             setQuantities(initial);
         }
-    }, [isOpen, ingredients]);
+    }, [isOpen, selectedIngredients]);
 
     const handleQuantityChange = (id: string, val: number) => {
         setQuantities(prev => ({ ...prev, [id]: val }));
     };
 
     const calculateTotal = () => {
-        return ingredients.reduce((sum, ing) => {
+        return selectedIngredients.reduce((sum, ing) => {
             const qty = quantities[ing.id] || 0;
             const price = ing.precioCompra || 0;
             return sum + (qty * price);
@@ -46,7 +45,7 @@ export const BulkPurchaseModal: React.FC<BulkPurchaseModalProps> = ({
     };
 
     const handleConfirm = () => {
-        const orders = ingredients.map(ing => ({
+        const orders = selectedIngredients.map(ing => ({
             ingredientId: ing.id,
             quantity: quantities[ing.id] || 0,
             totalCost: (quantities[ing.id] || 0) * (ing.precioCompra || 0),
@@ -73,7 +72,7 @@ export const BulkPurchaseModal: React.FC<BulkPurchaseModalProps> = ({
                     <div className="p-2 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-5 h-5"><path d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" strokeLinecap="round" strokeLinejoin="round" /></svg>
                     </div>
-                    <span>Lista de Compra ({ingredients.length})</span>
+                    <span>Lista de Compra ({selectedIngredients.length})</span>
                 </div>
             }
             className="!max-w-3xl"
@@ -86,7 +85,7 @@ export const BulkPurchaseModal: React.FC<BulkPurchaseModalProps> = ({
                     <div className="col-span-3 text-right">Coste Est.</div>
                 </div>
 
-                {ingredients.map(ing => (
+                {selectedIngredients.map(ing => (
                     <div key={ing.id} className="grid grid-cols-12 gap-4 items-center bg-slate-50 dark:bg-slate-800/50 p-2 rounded-xl border border-slate-100 dark:border-slate-800/50">
                         {/* Name & Supplier */}
                         <div className="col-span-4">

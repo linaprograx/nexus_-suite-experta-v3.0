@@ -16,21 +16,9 @@ const StockSidebar: React.FC<StockSidebarProps> = ({ onAction }) => {
                     <h4 className="text-xs font-bold text-slate-500/80 uppercase tracking-wider mb-3 drop-shadow-sm">Acciones Rápidas</h4>
                     <div className="space-y-4">
                         {/* Modified: merged button for Providers, larger and highlighted */}
-                        <button onClick={() => onAction('providers')} className="w-full text-left px-6 py-8 rounded-2xl bg-gradient-to-br from-sky-500 to-blue-600 hover:from-sky-400 hover:to-blue-500 shadow-lg shadow-sky-500/20 border border-white/10 transition-all group flex flex-col justify-between h-32 relative overflow-hidden">
-                            <div className="relative z-10 flex justify-between items-start">
-                                <span className="p-3 bg-white/20 rounded-xl backdrop-blur-md">
-                                    <Icon svg={ICONS.user} className="w-8 h-8 text-white" />
-                                </span>
-                                <Icon svg={ICONS.chevronRight} className="w-5 h-5 text-white/50 group-hover:translate-x-1 transition-transform" />
-                            </div>
-                            <div className="relative z-10">
-                                <h3 className="text-xl font-bold text-white mb-1">Proveedores</h3>
-                                <p className="text-sky-100/80 text-sm">Gestionar catálogo y pedidos</p>
-                            </div>
-
-                            {/* Decorative background icons */}
-                            <Icon svg={ICONS.grid} className="absolute -bottom-4 -right-4 w-32 h-32 text-white/5 -rotate-12" />
-                        </button>
+                        <div className="p-4 bg-slate-100 dark:bg-slate-800/50 rounded-xl text-center border-2 border-dashed border-slate-200 dark:border-slate-700">
+                            <p className="text-sm text-slate-400">Stock activo</p>
+                        </div>
                     </div>
                 </div>
 
