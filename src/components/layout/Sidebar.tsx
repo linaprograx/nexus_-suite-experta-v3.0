@@ -89,7 +89,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       <div className={`h-20 flex items-center px-4 ${isSidebarCollapsed ? 'justify-center' : 'justify-between'}`}>
         <div className={`flex items-center gap-3 ${isSidebarCollapsed ? 'justify-center w-full' : ''}`}>
           {/* Logo Circular */}
-          <div className="w-9 h-9 rounded-2xl bg-gradient-to-br from-indigo-500 via-fuchsia-500 to-emerald-400 shadow-lg flex-shrink-0 animate-pulse" />
+          <div className="w-9 h-9 rounded-2xl bg-[linear-gradient(135deg,#ef4444,#f97316,#eab308,#22c55e,#06b6d4,#3b82f6,#8b5cf6,#ec4899)] shadow-lg flex-shrink-0 animate-pulse" />
 
           {!isSidebarCollapsed && (
             <div className="flex flex-col overflow-hidden">
