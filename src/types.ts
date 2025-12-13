@@ -214,6 +214,7 @@ export interface PizarronTask {
         }[];
         steps?: string[];
     };
+    position?: { x: number, y: number };
 }
 
 export interface Tag {

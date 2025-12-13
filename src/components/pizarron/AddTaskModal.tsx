@@ -207,7 +207,9 @@ export const AddTaskModal: React.FC<AddTaskModalProps> = ({ isOpen, onClose, db,
 
           {/* HEADER */}
           <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-white dark:bg-slate-900 z-10">
-            <span className="font-bold text-lg text-slate-800 dark:text-slate-200">Nueva Tarea</span>
+            <span className="font-bold text-lg text-slate-800 dark:text-slate-200">
+              {initialStatus === 'ideas' ? 'Nueva Idea' : 'Nueva Tarea'}
+            </span>
             <button onClick={onClose} className="text-slate-400 hover:text-slate-600"><Icon svg={ICONS.x} className="w-5 h-5" /></button>
           </div>
 
@@ -377,7 +379,7 @@ export const AddTaskModal: React.FC<AddTaskModalProps> = ({ isOpen, onClose, db,
                   value={texto}
                   onChange={(e) => setTexto(e.target.value)}
                   className="text-2xl font-bold border-none px-0 py-2 h-auto focus:ring-0 bg-transparent placeholder:text-gray-300 w-full text-slate-800 dark:text-slate-100"
-                  placeholder="Título de la tarea"
+                  placeholder={initialStatus === 'ideas' ? "Título de la idea" : "Título de la tarea"}
                   autoFocus
                 />
 
@@ -490,7 +492,7 @@ export const AddTaskModal: React.FC<AddTaskModalProps> = ({ isOpen, onClose, db,
           <div className="p-4 border-t border-slate-100 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm flex justify-end items-center z-10">
             <Button onClick={onClose} variant="ghost" className="mr-2">Cancelar</Button>
             <Button onClick={handleAddTask} disabled={isSaving} className="bg-slate-900 text-white hover:bg-slate-800 px-8 flex items-center gap-2">
-              {isSaving && <Spinner className="w-4 h-4" />} Crear Tarea
+              {isSaving && <Spinner className="w-4 h-4" />} {initialStatus === 'ideas' ? 'Crear Idea' : 'Crear Tarea'}
             </Button>
           </div>
 

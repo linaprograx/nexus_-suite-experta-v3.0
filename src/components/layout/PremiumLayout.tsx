@@ -10,7 +10,7 @@ interface PremiumLayoutProps {
     header?: React.ReactNode; // Content to render above the main grid (e.g. Navigation Pills)
     gradientTheme?: GradientTheme;
     className?: string;
-    layoutMode?: 'standard' | 'compact' | 'colegium';
+    layoutMode?: 'standard' | 'compact' | 'colegium' | 'zen';
     transparentColumns?: boolean;
     id?: string;
 }
@@ -57,23 +57,27 @@ export const PremiumLayout: React.FC<PremiumLayoutProps> = ({
         gridCols = 'grid-cols-1 lg:grid-cols-[100px,minmax(0,1fr),100px]';
     } else if (layoutMode === 'colegium') {
         gridCols = 'grid-cols-1 lg:grid-cols-[150px,minmax(0,1fr),150px]';
+    } else if (layoutMode === 'zen') {
+        gridCols = 'grid-cols-1';
     }
 
     // Avatar Standard Column Class
     // User Update: Optional transparent columns (no shadow, no bg)
-    const columnClass = `h-full min-h-0 flex flex-col relative z-20 ${transparentColumns ? 'bg-transparent shadow-none border-0' : 'bg-transparent shadow-premium'} rounded-2xl overflow-y-auto p-6 scrollbar-hide`;
+    const columnClass = `h-full min-h-0 flex flex-col relative z-20 ${transparentColumns || layoutMode === 'zen' ? 'bg-transparent shadow-none border-0' : 'bg-transparent shadow-premium'} rounded-2xl overflow-y-auto ${layoutMode === 'zen' ? 'p-0' : 'p-6'} scrollbar-hide`;
+
+    const isZen = layoutMode === 'zen';
 
     return (
-        <div id={id} className={`h-[calc(100vh-80px)] w-full flex flex-col px-4 lg:px-8 py-6 ${className}`}>
+        <div id={id} className={`w-full flex flex-col ${isZen ? 'h-screen p-0' : 'h-[calc(100vh-80px)] px-4 lg:px-8 py-6'} ${className}`}>
             {/* Header / Navbar Area */}
-            {header && (
+            {header && !isZen && (
                 <div className="flex-shrink-0 mb-4 z-30 relative">
                     {header}
                 </div>
             )}
 
             {/* Main Container with Rounded Corners and Gradient */}
-            <div className={`flex-1 grid ${gridCols} gap-4 overflow-hidden rounded-3xl ${activeGradient} p-4 shadow-sm ring-1 ring-black/5 dark:ring-white/5 ${className}`}>
+            <div className={`flex-1 grid ${gridCols} gap-4 overflow-hidden ${isZen ? 'rounded-none border-0 bg-slate-50 dark:bg-slate-900' : `rounded-3xl p-4 shadow-sm ring-1 ring-black/5 dark:ring-white/5 ${activeGradient}`} ${className}`}>
 
                 {/* Left Sidebar Column */}
                 <div className={columnClass}>
