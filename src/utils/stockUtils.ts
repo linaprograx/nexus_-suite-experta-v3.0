@@ -9,6 +9,7 @@ export interface StockItem {
     averageUnitCost: number;
     lastPurchaseDate: Date;
     providerName: string; // Most recent provider
+    lastPurchaseQuantity: number;
 }
 
 export const buildStockFromPurchases = (purchases: PurchaseEvent[]): StockItem[] => {
@@ -43,7 +44,8 @@ export const buildStockFromPurchases = (purchases: PurchaseEvent[]): StockItem[]
                 totalValue: newTotalValue,
                 averageUnitCost: newAverageCost,
                 lastPurchaseDate: isLatest ? purchaseDate : existing.lastPurchaseDate,
-                providerName: isLatest ? (purchase.providerName || existing.providerName) : existing.providerName
+                providerName: isLatest ? (purchase.providerName || existing.providerName) : existing.providerName,
+                lastPurchaseQuantity: isLatest ? purchase.quantity : existing.lastPurchaseQuantity
             };
 
         } else {
@@ -56,7 +58,8 @@ export const buildStockFromPurchases = (purchases: PurchaseEvent[]): StockItem[]
                 totalValue: purchase.totalCost || 0,
                 averageUnitCost: (purchase.totalCost || 0) / purchase.quantity,
                 lastPurchaseDate: new Date(purchase.createdAt),
-                providerName: purchase.providerName || 'Sin Proveedor'
+                providerName: purchase.providerName || 'Sin Proveedor',
+                lastPurchaseQuantity: purchase.quantity
             };
         }
     });

@@ -722,6 +722,10 @@ const GrimoriumView: React.FC<GrimoriumViewProps> = ({ onOpenRecipeModal, onDrag
                             allIngredients={allIngredients}
                             stockItems={calculatedStockItems}
                             onQuickBuy={startPurchase}
+                            onBulkOrder={(ingredients) => {
+                                setBulkPurchaseTargets(ingredients);
+                                setIsBulkPurchaseModalOpen(true);
+                            }}
                         />
                     )}
                     {activeTab === 'zerowaste' && <ZeroWasteHistorySidebar history={zwHistory} onSelect={handleZwHistorySelect} />}
@@ -801,11 +805,21 @@ const GrimoriumView: React.FC<GrimoriumViewProps> = ({ onOpenRecipeModal, onDrag
                         )}
                         {activeTab === 'stock' && (
                             <StockInventoryPanel
+                                stockItems={calculatedStockItems}
                                 purchases={purchaseHistory}
-                                onSelectIngredient={(item) => {
-                                    // Open Local Modal instead of Navigating
-                                    const ing = allIngredients.find(i => i.id === item.ingredientId);
-                                    if (ing) setStockSelectedIngredient(ing);
+                                onSelectIngredient={(ingredientId) => {
+                                    const stockItem = calculatedStockItems.find(i => i.ingredientId === ingredientId);
+                                    const ingredient = allIngredients.find(i => i.id === ingredientId);
+                                    if (ingredient) {
+                                        // Merge stock data into ingredient for the modal
+                                        const enrichedIngredient = {
+                                            ...ingredient,
+                                            stockActual: stockItem ? stockItem.quantityAvailable : 0,
+                                            cantidadComprada: stockItem ? stockItem.lastPurchaseQuantity || 0 : 0
+                                        };
+                                        setEditingIngredient(enrichedIngredient);
+                                        setShowIngredientModal(true);
+                                    }
                                 }}
                             />
                         )}
@@ -989,48 +1003,12 @@ const GrimoriumView: React.FC<GrimoriumViewProps> = ({ onOpenRecipeModal, onDrag
                 </div>
             )}
 
-            {/* Modals */}
-            {/* --- Modals --- */}
-
-            {/* Stock Detail Modal */}
-            <Modal
-                isOpen={!!stockSelectedIngredient}
-                onClose={() => setStockSelectedIngredient(null)}
-                title={null}
-                className="!max-w-4xl !p-0 bg-transparent shadow-none"
-            >
-                <div className="bg-white dark:bg-slate-900 rounded-2xl overflow-hidden h-[80vh] flex flex-col">
-                    <div className="flex justify-end p-2 bg-slate-50 dark:bg-slate-800">
-                        <button onClick={() => setStockSelectedIngredient(null)} className="p-2 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-full">
-                            <Icon svg={ICONS.x} className="w-5 h-5 text-slate-500" />
-                        </button>
-                    </div>
-                    <div className="flex-1 overflow-hidden">
-                        {stockSelectedIngredient && (
-                            <div className="h-full overflow-y-auto">
-                                <IngredientDetailPanel
-                                    ingredient={stockSelectedIngredient}
-                                    onEdit={(ing) => {
-                                        setEditingIngredient(ing);
-                                        setShowIngredientModal(true);
-                                    }}
-                                    onDelete={handleDeleteIngredient}
-                                    onClose={() => setStockSelectedIngredient(null)}
-                                    onBuy={() => {
-                                        setStockSelectedIngredient(null);
-                                        startPurchase(stockSelectedIngredient);
-                                    }}
-                                />
-                            </div>
-                        )}
-                    </div>
-                </div>
-            </Modal>
+            {/* --- MODALS --- */}
 
             <StockReplenishmentModal
                 isOpen={isReplenishModalOpen}
                 onClose={() => setIsReplenishModalOpen(false)}
-                ingredients={allIngredients} // Can filter by stockItems if desired
+                ingredients={allIngredients}
                 onConfirm={handleConfirmReplenish}
                 suppliers={suppliers}
             />
@@ -1043,15 +1021,40 @@ const GrimoriumView: React.FC<GrimoriumViewProps> = ({ onOpenRecipeModal, onDrag
                 suppliers={suppliers}
             />
 
+            {/* Existing Bulk Modal for Main Ingredients Tab (Green) */}
             <BulkPurchaseModal
-                isOpen={isBulkPurchaseModalOpen}
+                isOpen={isBulkPurchaseModalOpen && activeTab !== 'stock'}
                 onClose={() => setIsBulkPurchaseModalOpen(false)}
-                ingredients={bulkPurchaseTargets}
+                selectedIngredients={bulkPurchaseTargets}
                 onConfirm={confirmBulkPurchase}
                 suppliers={suppliers}
+                theme="emerald"
             />
+
+            {/* New Bulk Modal for Stock Tab (Blue) */}
+            <BulkPurchaseModal
+                isOpen={isBulkPurchaseModalOpen && activeTab === 'stock'}
+                onClose={() => setIsBulkPurchaseModalOpen(false)}
+                selectedIngredients={bulkPurchaseTargets}
+                onConfirm={confirmBulkPurchase}
+                suppliers={suppliers}
+                theme="blue"
+            />
+
             {showSuppliersModal && <SuppliersManagerModal isOpen={showSuppliersModal} onClose={() => setShowSuppliersModal(false)} />}
-            {showIngredientModal && <IngredientFormModal isOpen={showIngredientModal} onClose={() => setShowIngredientModal(false)} db={db} userId={userId} appId={appId} editingIngredient={editingIngredient} />}
+
+            {showIngredientModal && (
+                <IngredientFormModal
+                    isOpen={showIngredientModal}
+                    onClose={() => setShowIngredientModal(false)}
+                    db={db}
+                    userId={userId}
+                    appId={appId}
+                    editingIngredient={editingIngredient}
+                    theme={activeTab === 'stock' ? 'blue' : 'emerald'}
+                />
+            )}
+
             <Modal isOpen={showCsvImportModal} onClose={() => setShowCsvImportModal(false)} title="Importar Ingredientes CSV">
                 <div className="space-y-4 p-4">
                     <p className="text-sm text-slate-500">Formato: Nombre;Categoria;Precio;Unidad.</p>
@@ -1086,17 +1089,10 @@ const GrimoriumView: React.FC<GrimoriumViewProps> = ({ onOpenRecipeModal, onDrag
             <Modal isOpen={showTxtImportModal} onClose={() => setShowTxtImportModal(false)} title="Importar Recetas TXT"><div className="space-y-4 p-4"><p className="text-sm text-slate-500">Formato Nexus TXT.</p><Input type="file" accept=".txt" onChange={handleTxtImport} /></div></Modal>
             <Modal isOpen={showPdfImportModal} onClose={() => setShowPdfImportModal(false)} title="Importar Recetas PDF PRO"><div className="space-y-4 p-4"><div className="flex items-center gap-2 mb-2"><input type="checkbox" checked={useOcr} onChange={() => setUseOcr(!useOcr)} id="ocr" /><label htmlFor="ocr">Usar OCR</label></div><Input type="file" accept=".pdf" onChange={handlePdfImport} /></div></Modal>
 
-            {/* Bulk Purchase Modal */}
-            <BulkPurchaseModal
-                isOpen={isBulkPurchaseModalOpen}
-                onClose={() => setIsBulkPurchaseModalOpen(false)}
-                selectedIngredients={bulkPurchaseTargets}
-                onConfirm={confirmBulkPurchase}
-                suppliers={suppliers}
-            />
         </PremiumLayout>
     );
 };
+
 
 const EmptyState = ({ icon, text, subtext }: { icon: string, text: string, subtext: string }) => (
     <div className="h-full flex flex-col items-center justify-center text-slate-400 p-8 text-center border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-3xl">

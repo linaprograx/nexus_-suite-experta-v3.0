@@ -9,7 +9,8 @@ interface BulkPurchaseModalProps {
     onClose: () => void;
     selectedIngredients: Ingredient[];
     onConfirm: (orders: { ingredientId: string; quantity: number; totalCost: number; unit: string }[]) => void;
-    suppliers: any[];
+    theme?: 'emerald' | 'blue';
+    suppliers?: any[];
 }
 
 export const BulkPurchaseModal: React.FC<BulkPurchaseModalProps> = ({
@@ -17,7 +18,8 @@ export const BulkPurchaseModal: React.FC<BulkPurchaseModalProps> = ({
     onClose,
     selectedIngredients = [],
     onConfirm,
-    suppliers = []
+    suppliers = [],
+    theme = 'emerald'
 }) => {
     const [quantities, setQuantities] = useState<Record<string, number>>({});
 
@@ -63,13 +65,22 @@ export const BulkPurchaseModal: React.FC<BulkPurchaseModalProps> = ({
         return s ? s.name : ing.proveedor;
     };
 
+    // Theme Config
+    const isEmerald = theme === 'emerald';
+    const accentBg = isEmerald ? 'bg-emerald-100' : 'bg-indigo-100';
+    const accentText = isEmerald ? 'text-emerald-600' : 'text-indigo-600';
+    const accentBorder = isEmerald ? 'border-emerald-200' : 'border-indigo-200';
+    const ringColor = isEmerald ? 'focus:ring-emerald-500/10' : 'focus:ring-indigo-500/10';
+    const focusBorder = isEmerald ? 'focus:border-emerald-500' : 'focus:border-indigo-500';
+    const softBg = isEmerald ? 'bg-emerald-50/50' : 'bg-indigo-50/50';
+
     return (
         <Modal
             isOpen={isOpen}
             onClose={onClose}
             title={
                 <div className="flex items-center gap-2">
-                    <div className="p-2 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600">
+                    <div className={`p-2 rounded-full ${isEmerald ? 'bg-emerald-100 dark:bg-emerald-900/30' : 'bg-indigo-100 dark:bg-indigo-900/30'} ${accentText}`}>
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-5 h-5"><path d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" strokeLinecap="round" strokeLinejoin="round" /></svg>
                     </div>
                     <span>Lista de Compra ({selectedIngredients.length})</span>
@@ -101,7 +112,7 @@ export const BulkPurchaseModal: React.FC<BulkPurchaseModalProps> = ({
                                 step="any"
                                 value={quantities[ing.id] || ''}
                                 onChange={(e) => handleQuantityChange(ing.id, parseFloat(e.target.value))}
-                                className="h-9 text-center font-bold text-emerald-600 border-slate-200 focus:border-emerald-500 focus:ring-emerald-500/10"
+                                className={`h-9 text-center font-bold ${accentText} border-slate-200 ${focusBorder} ${ringColor}`}
                             />
                         </div>
 
@@ -122,9 +133,9 @@ export const BulkPurchaseModal: React.FC<BulkPurchaseModalProps> = ({
 
             {/* Footer Total */}
             <div className="pt-4 border-t border-slate-100 dark:border-slate-800 mt-4">
-                <div className="flex justify-between items-center bg-emerald-50/50 dark:bg-emerald-900/10 p-4 rounded-xl border border-emerald-100 dark:border-emerald-900/30">
-                    <span className="text-sm font-bold text-emerald-700 uppercase tracking-wider">Total Estimado</span>
-                    <span className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">€{calculateTotal().toFixed(2)}</span>
+                <div className={`flex justify-between items-center ${softBg} dark:bg-opacity-10 p-4 rounded-xl border ${isEmerald ? 'border-emerald-100' : 'border-indigo-100'} dark:border-opacity-30`}>
+                    <span className={`text-sm font-bold ${isEmerald ? 'text-emerald-700' : 'text-indigo-700'} uppercase tracking-wider`}>Total Estimado</span>
+                    <span className={`text-2xl font-bold ${accentText} dark:text-opacity-80`}>€{calculateTotal().toFixed(2)}</span>
                 </div>
 
                 <div className="grid grid-cols-2 gap-3 mt-4">
@@ -138,7 +149,10 @@ export const BulkPurchaseModal: React.FC<BulkPurchaseModalProps> = ({
                     <Button
                         variant="ghost"
                         onClick={handleConfirm}
-                        className="h-12 !bg-emerald-50 !text-emerald-700 border border-emerald-200 hover:!bg-emerald-600 hover:!text-white shadow-lg shadow-emerald-500/10 font-bold text-lg transition-all duration-300"
+                        className={`h-12 !bg-opacity-20 !text-opacity-100 border ${accentBorder} hover:!bg-opacity-100 hover:!text-white shadow-lg font-bold text-lg transition-all duration-300
+                            ${isEmerald
+                                ? '!bg-emerald-50 !text-emerald-700 hover:!bg-emerald-600 shadow-emerald-500/10'
+                                : '!bg-indigo-50 !text-indigo-700 hover:!bg-indigo-600 shadow-indigo-500/10'}`}
                     >
                         Confirmar Pedido ({Object.values(quantities).filter(q => q > 0).length})
                     </Button>
