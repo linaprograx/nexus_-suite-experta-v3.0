@@ -57,28 +57,58 @@ export const StockOrdersPanel: React.FC<StockOrdersPanelProps> = ({
         return Object.values(groups).sort((a, b) => b.lastDate.getTime() - a.lastDate.getTime());
     }, [purchases]);
 
-    const handleDownloadCSV = (order: OrderGroup) => {
-        const headers = ['Ingrediente', 'Cantidad', 'Unidad', 'Costo Total', 'Fecha'];
-        const rows = order.items.map(item => [
+    const handleDownloadCSV = (data: { providerName: string; items: any[], totalValue?: number, lastDate?: Date }) => {
+        const headers = ['Ingrediente', 'Cantidad', 'Unidad', 'Costo', 'Fecha'];
+        const rows = data.items.map(item => [
             item.ingredientName,
             item.quantity,
             item.unit,
-            item.totalCost.toFixed(2),
-            item.createdAt.toLocaleDateString()
+            (item.totalCost || item.estimatedCost || 0).toFixed(2),
+            (item.createdAt instanceof Date ? item.createdAt : new Date()).toLocaleDateString()
         ]);
+
         const csvContent = "data:text/csv;charset=utf-8," + headers.join(",") + "\n" + rows.map(e => e.join(",")).join("\n");
         const encodedUri = encodeURI(csvContent);
         const link = document.createElement("a");
         link.setAttribute("href", encodedUri);
-        link.setAttribute("download", `pedido_${order.providerName}_${new Date().toISOString()}.csv`);
+        link.setAttribute("download", `pedido_${data.providerName.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.csv`);
         document.body.appendChild(link);
         link.click();
+        document.body.removeChild(link);
     };
 
     return (
         <div className="h-full flex flex-col bg-white/30 dark:bg-slate-900/40 backdrop-blur-xl border-l border-white/20 dark:border-white/5">
             {/* Toolbar Header */}
-            {/* ... */}
+            <div className="p-4 border-b border-white/10 shrink-0">
+                <div className="flex items-center justify-between mb-4">
+                    <h3 className="font-bold text-slate-700 dark:text-slate-200 text-sm uppercase tracking-wider flex items-center gap-2">
+                        <Icon svg={ICONS.list} className="w-4 h-4" />
+                        Gestión Pedidos
+                    </h3>
+                    {onCreateOrder && (
+                        <Button size="sm" onClick={onCreateOrder} className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs h-8 px-3 rounded-lg shadow-sm">
+                            <Icon svg={ICONS.plus} className="w-3 h-3 mr-1.5" />
+                            Nuevo
+                        </Button>
+                    )}
+                </div>
+
+                <div className="flex p-1 bg-slate-100 dark:bg-slate-800/50 rounded-lg">
+                    <button
+                        onClick={() => setActiveTab('drafts')}
+                        className={`flex-1 py-1.5 text-xs font-semibold rounded-md transition-all ${activeTab === 'drafts' ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
+                    >
+                        Borradores ({orders.filter(o => o.status === 'draft').length})
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('history')}
+                        className={`flex-1 py-1.5 text-xs font-semibold rounded-md transition-all ${activeTab === 'history' ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
+                    >
+                        Historial
+                    </button>
+                </div>
+            </div>
 
             {/* Content List */}
             <div className="flex-1 overflow-y-auto custom-scrollbar p-4 space-y-4">
@@ -99,8 +129,8 @@ export const StockOrdersPanel: React.FC<StockOrdersPanelProps> = ({
                                 >
                                     <div className="flex justify-between items-start mb-2">
                                         <div>
-                                            <span className="font-bold text-slate-800 dark:text-slate-200 text-sm block">{order.name}</span>
-                                            <span className="text-[10px] text-slate-500">{order.createdAt.toLocaleDateString()}</span>
+                                            <span className="font-bold text-slate-800 dark:text-slate-200 text-sm block">{order.name || 'Pedido'}</span>
+                                            <span className="text-[10px] text-slate-500">{order.createdAt instanceof Date ? order.createdAt.toLocaleDateString() : 'Fecha desc.'}</span>
                                         </div>
                                         <span className="text-xs font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/20 px-2 py-0.5 rounded-full border border-indigo-100">
                                             €{order.totalEstimatedCost.toFixed(2)}
@@ -126,7 +156,14 @@ export const StockOrdersPanel: React.FC<StockOrdersPanelProps> = ({
                                             Lanzar Pedido
                                         </Button>
                                         <button
-                                            onClick={(e) => { e.stopPropagation(); handleDownloadCSV(ordersByProvider.find(g => g.providerName === order.providerName) as any || { providerName: 'Unknown', items: order.items, totalValue: 0, lastDate: new Date() }); }}
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleDownloadCSV({
+                                                    providerName: order.name || 'Borrador',
+                                                    items: order.items,
+                                                    totalValue: order.totalEstimatedCost
+                                                });
+                                            }}
                                             className="p-1.5 text-slate-400 hover:text-indigo-600 transition-colors"
                                             title="Descargar CSV"
                                         >
@@ -162,15 +199,13 @@ export const StockOrdersPanel: React.FC<StockOrdersPanelProps> = ({
                                             <span className="text-[10px] text-slate-500">{order.lastDate.toLocaleDateString()}</span>
                                         </div>
                                         <div className="flex gap-2">
-                                            <button onClick={() => handleDownloadCSV(order)} className="text-slate-400 hover:text-emerald-500"><Icon svg={ICONS.download} className="w-4 h-4" /></button>
+                                            <button onClick={() => handleDownloadCSV(order)} className="text-slate-400 hover:text-emerald-500"><Icon svg={ICONS.fileText} className="w-4 h-4" /></button>
                                             {onDeleteHistoryGroup && (
                                                 <button onClick={() => onDeleteHistoryGroup(order.providerName)} className="text-slate-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"><Icon svg={ICONS.trash} className="w-4 h-4" /></button>
                                             )}
                                         </div>
                                     </div>
                                     <div className="p-2 space-y-2">
-                                        {/* Summarized View or Detailed? The user requested 'Edit/Delete' on 'Historical Order Cards'. */}
-                                        {/* Since we group by Provider, let's list items and allow deleting them individually. */}
                                         <div className="max-h-32 overflow-y-auto custom-scrollbar">
                                             {order.items.map(item => (
                                                 <div key={item.id} className="flex justify-between items-center text-[10px] text-slate-600 dark:text-slate-400 border-b border-slate-100 dark:border-slate-800 last:border-0 py-1 group/item">
