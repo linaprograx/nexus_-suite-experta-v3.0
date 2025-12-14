@@ -1,5 +1,5 @@
 import { collection, onSnapshot, doc, setDoc, deleteDoc, writeBatch } from 'firebase/firestore';
-import { db } from '../../../config/firebase';
+import { db } from '../../../config/firebaseApp';
 import { pizarronStore } from '../state/store';
 import { BoardNode } from '../engine/types';
 
@@ -113,17 +113,18 @@ class FirestoreAdapter {
         this.pendingWrites.forEach((node) => {
             const docRef = doc(colRef, node.id);
             // Map BoardNode -> Firestore Data
-            const data = {
+            // We use JSON parse/stringify to strip undefined values automatically
+            const rawData = {
                 type: node.type,
                 position: { x: node.x, y: node.y },
-                x: node.x, y: node.y, // Redundant for safety
+                x: node.x, y: node.y,
                 width: node.w,
                 height: node.h,
                 zIndex: node.zIndex,
                 // Content
-                title: node.content.title,
-                texto: node.content.title, // legacy compat
-                body: node.content.body,
+                title: node.content.title || '',
+                texto: node.content.title || '',
+                body: node.content.body || '',
                 style: { backgroundColor: node.content.color },
                 shapeType: node.content.shapeType,
                 // Meta
@@ -131,7 +132,9 @@ class FirestoreAdapter {
                 updatedAt: node.updatedAt
             };
 
-            batch.set(docRef, data, { merge: true });
+            const cleanData = JSON.parse(JSON.stringify(rawData)); // Removes undefined
+
+            batch.set(docRef, cleanData, { merge: true });
         });
 
         const count = this.pendingWrites.size;
@@ -142,7 +145,6 @@ class FirestoreAdapter {
             console.log(`[Sync] Flushed ${count} nodes to Firestore`);
         } catch (err) {
             console.error("[Sync] Write Failed", err);
-            // Ideally re-queue
         }
     }
 }

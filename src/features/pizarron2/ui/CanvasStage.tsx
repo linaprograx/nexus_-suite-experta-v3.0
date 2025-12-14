@@ -17,6 +17,9 @@ export const CanvasStage: React.FC = () => {
         // 1. Attach Renderer
         renderer.attach(canvas);
 
+        // 1b. Attach Logic to Canvas (Fix for coordinates)
+        interactionManager.setCanvas(canvas);
+
         // 2. Handle Resize
         const resizeObserver = new ResizeObserver((entries) => {
             const { width, height } = entries[0].contentRect;
@@ -66,36 +69,34 @@ export const CanvasStage: React.FC = () => {
 
     // Wheel is handled locally or via manager? 
     // Let's keep locally for now as manager didn't implement wheel yet, 
-    // OR we should ideally move it. Use logic from previous step for now.
-    const handleWheel = (e: React.WheelEvent) => {
-        e.preventDefault();
-        if (e.ctrlKey || e.metaKey) {
-            const { viewport } = pizarronStore.getState();
-            const delta = e.deltaY * -0.001;
-            const newZoom = Math.min(Math.max(viewport.zoom + delta, 0.1), 5);
-            pizarronStore.updateViewport({ zoom: newZoom });
-        } else {
-            const { viewport } = pizarronStore.getState();
-            pizarronStore.updateViewport({
-                x: viewport.x - e.deltaX,
-                y: viewport.y - e.deltaY
-            });
-        }
-    };
+    // 3. Wheel Event (Non-passive for Zoom blocking)
+    useEffect(() => {
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+
+        const onWheel = (e: WheelEvent) => {
+            e.preventDefault(); // Stop Browser Zoom/Scroll
+            // Delegate to InteractionManager? 
+            interactionManager.onWheel(e);
+        };
+
+        canvas.addEventListener('wheel', onWheel, { passive: false });
+        return () => canvas.removeEventListener('wheel', onWheel);
+    }, []);
 
     return (
-        <div
-            ref={containerRef}
-            className="w-full h-full relative overflow-hidden bg-slate-50 select-none touch-none"
-        >
+        <div ref={containerRef} className="w-full h-full bg-slate-50 relative overflow-hidden touch-none">
             <canvas
                 ref={canvasRef}
-                className="block w-full h-full outline-none"
-                onPointerDown={handlePointerDown}
-                onPointerMove={handlePointerMove}
-                onPointerUp={handlePointerUp}
-                onWheel={handleWheel}
-                tabIndex={1} // For keyboard events
+                className="block absolute top-0 left-0 outline-none"
+                // Events delegated manually or via React?
+                // React events are fine for Pointer, but Wheel needs non-passive.
+                // Pointer inputs:
+                onPointerDown={(e) => interactionManager.onPointerDown(e)}
+                onPointerMove={(e) => interactionManager.onPointerMove(e)}
+                onPointerUp={(e) => interactionManager.onPointerUp(e)}
+                onPointerLeave={(e) => interactionManager.onPointerUp(e)}
+            // onWheel removed from JSX to avoid collision
             />
         </div>
     );

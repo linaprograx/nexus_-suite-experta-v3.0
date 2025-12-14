@@ -47,5 +47,12 @@ export interface BoardState {
     interactionState: {
         marquee?: { x: number; y: number; w: number; h: number };
         isDragging?: boolean;
+        creationDraft?: Partial<BoardNode>; // Shadow/Ghost node being created
+        editingNodeId?: string; // ID of node being inline edited
+    };
+    presentationState: {
+        isActive: boolean;
+        route: 'order' | 'selection';
+        currentIndex: number;
     };
 }

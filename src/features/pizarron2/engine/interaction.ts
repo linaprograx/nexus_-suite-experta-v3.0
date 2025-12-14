@@ -9,17 +9,68 @@ interface Point {
 export class InteractionManager {
     private isDragging: boolean = false;
     private isPanning: boolean = false;
-    private dragStart: Point = { x: 0, y: 0 };
+    private dragStart: Point = { x: 0, y: 0 }; // World Coords (for Items/Creation)
+    private panStartScreen: Point = { x: 0, y: 0 }; // Screen Coords (for Pan)
     private initialNodePositions: Record<string, Point> = {};
     private startViewport: Viewport = { x: 0, y: 0, zoom: 1 };
+    private canvas: HTMLCanvasElement | null = null;
+
+    // Double Click Helpers
+    private lastClickTime: number = 0;
+    private lastClickId: string | null = null;
 
     // Configurable keys
     private panKey = 'Space';
 
+    onWheel(e: WheelEvent) {
+        if (!this.canvas) return;
+        const state = pizarronStore.getState();
+        const { viewport } = state;
+
+        if (e.ctrlKey || e.metaKey) {
+            // ZOOM
+            // Calculate zoom center (mouse position relative to viewport)
+            const rect = this.canvas.getBoundingClientRect();
+            const mouseX = e.clientX - rect.left;
+            const mouseY = e.clientY - rect.top;
+
+            // World point before zoom
+            const wx = (mouseX - viewport.x) / viewport.zoom;
+            const wy = (mouseY - viewport.y) / viewport.zoom;
+
+            // Zoom Factor
+            const factor = e.deltaY > 0 ? 0.9 : 1.1;
+            const newZoom = Math.min(Math.max(viewport.zoom * factor, 0.1), 5);
+
+            // Compensate Pan to keep mouse point stable
+            // mouseX = newX * newZoom + newPanX
+            // newPanX = mouseX - wx * newZoom
+
+            pizarronStore.updateViewport({
+                zoom: newZoom,
+                x: mouseX - wx * newZoom,
+                y: mouseY - wy * newZoom
+            });
+
+        } else {
+            // PAN
+            pizarronStore.updateViewport({
+                x: viewport.x - e.deltaX,
+                y: viewport.y - e.deltaY
+            });
+        }
+    }
+
     constructor() { }
+
+    setCanvas(canvas: HTMLCanvasElement) {
+        this.canvas = canvas;
+    }
 
     // Main Entry Points from React
     onPointerDown(e: React.PointerEvent<HTMLCanvasElement>) {
+        if (!this.canvas) return; // Guard
+
         const state = pizarronStore.getState();
         const { viewport, order, nodes } = state;
         const screenPoint = { x: e.clientX, y: e.clientY };
@@ -36,6 +87,19 @@ export class InteractionManager {
             }
         }
 
+        // DOUBLE CLICK (Text Edit)
+        const now = Date.now();
+        if (hitId && hitId === this.lastClickId && (now - this.lastClickTime) < 300) {
+            const node = nodes[hitId];
+            if (node.type === 'text') {
+                pizarronStore.updateInteractionState({ editingNodeId: hitId });
+                this.lastClickId = null;
+                return;
+            }
+        }
+        this.lastClickTime = now;
+        this.lastClickId = hitId;
+
         // 2. Logic: Pan vs Select/Drag vs Marquee
         const isMiddleClick = e.button === 1;
         const currentTool = state.uiFlags.activeTool;
@@ -44,7 +108,7 @@ export class InteractionManager {
         // PAN CONDITION
         if (isMiddleClick || isHandTool) {
             this.isPanning = true;
-            this.dragStart = screenPoint;
+            this.panStartScreen = screenPoint; // Use Screen Coords
             this.startViewport = { ...viewport };
             (e.target as HTMLElement).setPointerCapture(e.pointerId);
             (e.target as HTMLElement).style.cursor = 'grabbing';
@@ -86,11 +150,7 @@ export class InteractionManager {
                 (e.target as HTMLElement).setPointerCapture(e.pointerId);
             } else {
                 // Mode: MARQUEE (Background Click)
-                this.dragStart = worldPoint; // Start in World Coords gives us stable anchor? 
-                // Careful: Marquee usually drawn in SCREEN or WORLD?
-                // Visuals usually World-relative if we want them to zoom with canvas, 
-                // or Screen-relative if we want them static.
-                // Standard is World-relative logic for intersection.
+                this.dragStart = worldPoint; // Start in World Coords allows consistent resize calculations
 
                 pizarronStore.updateInteractionState({
                     marquee: { x: worldPoint.x, y: worldPoint.y, w: 0, h: 0 }
@@ -100,14 +160,41 @@ export class InteractionManager {
                 (e.target as HTMLElement).setPointerCapture(e.pointerId);
             }
         }
+        // RECTANGLE TOOL
+        else if (currentTool === 'rectangle') {
+            // Start Creation Draft
+            this.dragStart = worldPoint;
+            pizarronStore.updateInteractionState({
+                creationDraft: {
+                    type: 'shape',
+                    x: worldPoint.x,
+                    y: worldPoint.y,
+                    w: 0,
+                    h: 0,
+                    content: { shapeType: 'rectangle', color: '#ffffff' }
+                }
+            });
+            (e.target as HTMLElement).setPointerCapture(e.pointerId);
+        }
+
+        // TEXT TOOL
+        else if (currentTool === 'text') {
+            // We just track start pos to detect drag vs click
+            this.dragStart = worldPoint;
+        }
     }
 
     onPointerMove(e: React.PointerEvent<HTMLCanvasElement>) {
+        if (!this.canvas) return;
+
         const state = pizarronStore.getState();
 
+        // Optimize: Only calc world point if needed (not for Pan)
+
         if (this.isPanning) {
-            const dx = e.clientX - this.dragStart.x;
-            const dy = e.clientY - this.dragStart.y;
+            // Use Screen Delta
+            const dx = e.clientX - this.panStartScreen.x;
+            const dy = e.clientY - this.panStartScreen.y;
             pizarronStore.updateViewport({
                 x: this.startViewport.x + dx,
                 y: this.startViewport.y + dy
@@ -115,11 +202,13 @@ export class InteractionManager {
             return;
         }
 
+        const worldPoint = this.screenToWorld({ x: e.clientX, y: e.clientY }, state.viewport);
+
         if (this.isDragging) {
-            const worldPoint = this.screenToWorld({ x: e.clientX, y: e.clientY }, state.viewport);
             const dx = worldPoint.x - this.dragStart.x;
             const dy = worldPoint.y - this.dragStart.y;
 
+            // Update all selected nodes
             state.selection.forEach(id => {
                 const initial = this.initialNodePositions[id];
                 if (initial) {
@@ -134,11 +223,6 @@ export class InteractionManager {
 
         // Marquee Update
         if (state.interactionState.marquee) {
-            const worldPoint = this.screenToWorld({ x: e.clientX, y: e.clientY }, state.viewport);
-            // Logic to allow negative width/height normalization?
-            // Or keep w/h signed and renderer handles it? 
-            // Renderer `rect` supports signed usually.
-
             pizarronStore.updateInteractionState({
                 marquee: {
                     x: state.interactionState.marquee.x,
@@ -147,12 +231,18 @@ export class InteractionManager {
                     h: worldPoint.y - state.interactionState.marquee.y
                 }
             });
-
-            // Update selection continuously during drag? (Heavy but cool)
-            // Let's do it on Up for speed, or throttle. 
-            // "Acceptance: Selection box fluid". Continuously is better UX.
-            // We can do simple bounding box check.
             this.updateMarqueeSelection(state.interactionState.marquee, state.nodes, state.order);
+        }
+
+        // Creation Update
+        if (state.interactionState.creationDraft) {
+            pizarronStore.updateInteractionState({
+                creationDraft: {
+                    ...state.interactionState.creationDraft,
+                    w: worldPoint.x - this.dragStart.x,
+                    h: worldPoint.y - this.dragStart.y
+                }
+            });
         }
 
         // Hover effects? (Debounce/Throttle if expensive)
@@ -182,6 +272,62 @@ export class InteractionManager {
 
     onPointerUp(e: React.PointerEvent<HTMLCanvasElement>) {
         const state = pizarronStore.getState();
+        const worldPoint = this.screenToWorld({ x: e.clientX, y: e.clientY }, state.viewport);
+
+        // Commit Creation
+        if (state.interactionState.creationDraft) {
+            const draft = state.interactionState.creationDraft;
+            // Normalize Geometry (handle negative w/h)
+            const finalX = draft.w! < 0 ? (draft.x || 0) + draft.w! : (draft.x || 0);
+            const finalY = draft.h! < 0 ? (draft.y || 0) + draft.h! : (draft.y || 0);
+            const finalW = Math.abs(draft.w || 0);
+            const finalH = Math.abs(draft.h || 0);
+
+            if (finalW > 5 && finalH > 5) {
+                const newNode: BoardNode = {
+                    id: crypto.randomUUID(),
+                    type: draft.type as any,
+                    x: finalX,
+                    y: finalY,
+                    w: finalW,
+                    h: finalH,
+                    zIndex: state.order.length + 1,
+                    content: draft.content || {},
+                    createdAt: Date.now(),
+                    updatedAt: Date.now()
+                };
+
+                pizarronStore.addNode(newNode);
+                pizarronStore.setSelection([newNode.id]);
+                pizarronStore.setActiveTool('pointer'); // Reset tool
+            }
+
+            pizarronStore.updateInteractionState({ creationDraft: undefined });
+        }
+
+        // Create Text on Click
+        if (state.uiFlags.activeTool === 'text' && !this.isPanning && !this.isDragging) {
+            // Check distance for clean click
+            const dist = Math.hypot(worldPoint.x - this.dragStart.x, worldPoint.y - this.dragStart.y);
+            if (dist < 5) {
+                const newNode: BoardNode = {
+                    id: crypto.randomUUID(),
+                    type: 'text',
+                    x: worldPoint.x,
+                    y: worldPoint.y,
+                    w: 200,
+                    h: 50,
+                    zIndex: state.order.length + 1,
+                    content: { title: 'New Text', color: '#1e293b' }, // Default text
+                    createdAt: Date.now(),
+                    updatedAt: Date.now()
+                };
+
+                pizarronStore.addNode(newNode);
+                pizarronStore.setSelection([newNode.id]);
+                pizarronStore.setActiveTool('pointer');
+            }
+        }
 
         if (state.interactionState.marquee) {
             // Clear Marquee

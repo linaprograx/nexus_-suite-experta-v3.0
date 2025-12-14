@@ -56,12 +56,24 @@ export class PizarronRenderer {
             const { x, y, w, h } = interactionState.marquee;
             ctx.fillStyle = 'rgba(249, 115, 22, 0.1)'; // Orange-500 @ 10%
             ctx.strokeStyle = '#f97316'; // Orange-500
-            ctx.lineWidth = 1 / viewport.zoom; // Constant hairline
+            ctx.lineWidth = 1 / viewport.zoom;
 
             ctx.beginPath();
             ctx.rect(x, y, w, h);
             ctx.fill();
             ctx.stroke();
+        }
+
+        // 5b. Draw Creation Ghost
+        if (interactionState.creationDraft) {
+            const draft = interactionState.creationDraft;
+            if (draft.x !== undefined && draft.y !== undefined && draft.w !== undefined) {
+                ctx.save();
+                ctx.globalAlpha = 0.6;
+                // Mock node for drawing
+                this.drawNode(ctx, draft as BoardNode, true);
+                ctx.restore();
+            }
         }
 
         // 6. Debug Overlay

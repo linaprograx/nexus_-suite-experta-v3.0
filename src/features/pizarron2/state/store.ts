@@ -13,7 +13,12 @@ const INITIAL_STATE: BoardState = {
         debug: false,
         activeTool: 'pointer'
     },
-    interactionState: {}
+    interactionState: {},
+    presentationState: {
+        isActive: false,
+        route: 'order',
+        currentIndex: 0
+    }
 };
 
 type Listener = () => void;
@@ -101,6 +106,19 @@ class PizarronStore {
         this.setState(state => {
             Object.assign(state.interactionState, patch);
         });
+    }
+
+    // --- Presentation ---
+    setPresentationMode(active: boolean) {
+        this.setState(s => { s.presentationState.isActive = active; });
+    }
+
+    setPresentationIndex(idx: number) {
+        this.setState(s => { s.presentationState.currentIndex = idx; });
+    }
+
+    setPresentationRoute(route: 'order' | 'selection') {
+        this.setState(s => { s.presentationState.route = route; });
     }
 
     // --- Selectors ---
