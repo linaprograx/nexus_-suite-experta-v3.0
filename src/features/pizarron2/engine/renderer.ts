@@ -51,7 +51,7 @@ export class PizarronRenderer {
         for (const node of sortedNodes) {
             // Simple Culling Check (Optional)
             // if (!intersects(node, visibleRect)) continue;
-            this.drawNode(ctx, node, selection.has(node.id), viewport.zoom);
+            this.drawNode(ctx, node, selection.has(node.id), viewport.zoom, nodes);
         }
 
         // 5. Draw Marquee
@@ -135,15 +135,42 @@ export class PizarronRenderer {
 
     private imageCache = new Map<string, HTMLImageElement>();
 
-    private drawNode(ctx: CanvasRenderingContext2D, node: BoardNode, isSelected: boolean, zoom: number) {
+    private drawNode(ctx: CanvasRenderingContext2D, node: BoardNode, isSelected: boolean, zoom: number, nodes?: Record<string, BoardNode>) {
         ctx.save();
+        ctx.translate(node.x, node.y);
+        ctx.rotate(node.rotation || 0);
 
-        // Rotation Support: Rotate around center
-        const cx = node.x + node.w / 2;
-        const cy = node.y + node.h / 2;
-        ctx.translate(cx, cy);
-        if (node.rotation) ctx.rotate(node.rotation);
-        ctx.translate(-node.w / 2, -node.h / 2);
+        if (node.type === 'group' && node.childrenIds && nodes) {
+            // Draw Group debug border if needed, or rely on Selection Overlay
+
+            // Draw Children (Absolute Coords -> Reset Transform)
+            ctx.save();
+            ctx.rotate(-(node.rotation || 0));
+            ctx.translate(-node.x, -node.y);
+
+            node.childrenIds.forEach(childId => {
+                const child = nodes[childId];
+                if (child) {
+                    this.drawNode(ctx, child, false, zoom, nodes);
+                }
+            });
+            ctx.restore();
+
+            ctx.restore();
+            return;
+        }
+
+        // For non-group nodes, apply rotation around center
+        // The initial translate(node.x, node.y) and rotate(node.rotation || 0)
+        // effectively moved the origin to the node's top-left and rotated it.
+        // Now, to rotate around the center of the node, we need to adjust.
+        // We want to draw the node as if its top-left is (0,0) in the current transformed space.
+        // So, we translate to the center relative to (0,0), rotate, then translate back.
+        const cx = node.w / 2;
+        const cy = node.h / 2;
+        ctx.translate(cx, cy); // Translate to center of node (relative to current origin)
+        // Rotation was already applied at the start, so we don't apply it again here.
+        ctx.translate(-node.w / 2, -node.h / 2); // Translate back to top-left for drawing
 
         // Apply Global Filters (Blur / Shadow)
         if (node.content.filters) {
@@ -648,6 +675,26 @@ export class PizarronRenderer {
         ctx.lineTo(-size, -size / 2);
         ctx.closePath();
         ctx.fill();
+        ctx.restore();
+    }
+
+    private drawSnapLines(ctx: CanvasRenderingContext2D, lines: Array<{ type: 'horizontal' | 'vertical', x?: number, y?: number, start: number, end: number }>, zoom: number) {
+        ctx.save();
+        ctx.strokeStyle = '#f43f5e';
+        ctx.lineWidth = 1 / zoom;
+        ctx.beginPath();
+
+        lines.forEach(line => {
+            if (line.type === 'vertical' && line.x !== undefined) {
+                ctx.moveTo(line.x, line.start);
+                ctx.lineTo(line.x, line.end);
+            } else if (line.type === 'horizontal' && line.y !== undefined) {
+                ctx.moveTo(line.start, line.y);
+                ctx.lineTo(line.end, line.y);
+            }
+        });
+
+        ctx.stroke();
         ctx.restore();
     }
 }

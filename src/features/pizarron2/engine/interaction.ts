@@ -20,6 +20,7 @@ export class InteractionManager {
     private initialResizeState: { x: number, y: number, w: number, h: number, rotation?: number, fontSize?: number } | null = null;
     private initialNodesState: Record<string, { x: number, y: number, w: number, h: number, fontSize?: number }> | null = null;
     private canvas: HTMLCanvasElement | null = null;
+    private interactionTargetId: string | null = null;
 
     // Helper: Rotate point around center
     private rotatePoint(point: Point, center: Point, angle: number): Point {
@@ -95,11 +96,34 @@ export class InteractionManager {
 
     // Helper to check if a point is inside a node
     private isPointInNode(point: Point, node: BoardNode): boolean {
-        // Basic AABB check for now
         return point.x >= node.x &&
             point.x <= node.x + node.w &&
             point.y >= node.y &&
             point.y <= node.y + node.h;
+    }
+
+    // Helper: Calculate connection point on node
+    private calculateConnection(point: Point, node: BoardNode): { x: number, y: number, side: 'left' | 'right' | 'top' | 'bottom' } {
+        const centers: Record<string, { x: number, y: number }> = {
+            top: { x: node.x + node.w / 2, y: node.y },
+            bottom: { x: node.x + node.w / 2, y: node.y + node.h },
+            left: { x: node.x, y: node.y + node.h / 2 },
+            right: { x: node.x + node.w, y: node.y + node.h / 2 }
+        };
+
+        let minDist = Infinity;
+        let bestSide: 'left' | 'right' | 'top' | 'bottom' = 'top';
+
+        (Object.keys(centers) as Array<'left' | 'right' | 'top' | 'bottom'>).forEach(side => {
+            const c = centers[side];
+            const dist = Math.hypot(c.x - point.x, c.y - point.y);
+            if (dist < minDist) {
+                minDist = dist;
+                bestSide = side;
+            }
+        });
+
+        return { ...centers[bestSide], side: bestSide };
     }
 
     // Main Entry Points from React
@@ -308,58 +332,96 @@ export class InteractionManager {
         // POINTER TOOL
         if (currentTool === 'pointer') {
             if (hitId) {
-                // Mode: SELECT / DRAG
-                const n = nodes[hitId]; // Get the node that was hit
+                // --- MODE: HIT NODE (Select/Drag) ---
 
-                // Handle Selection (Always allow selection, even if locked)
+                // 1. Handle Selection
                 const isMultiSelect = e.ctrlKey || e.metaKey || e.shiftKey;
-                let newSelection = new Set(state.selection);
+
+                // Group Hierarchy Logic
+                let targetId = hitId;
+                const node = state.nodes[hitId];
+                if (node?.parentId) {
+                    if (state.interactionState.editingGroupId !== node.parentId) {
+                        targetId = node.parentId;
+                    }
+                }
+                this.interactionTargetId = targetId;
 
                 if (isMultiSelect) {
-                    if (newSelection.has(hitId)) {
-                        newSelection.delete(hitId);
-                    } else {
-                        newSelection.add(hitId);
-                    }
+                    pizarronStore.toggleSelection(targetId);
                 } else {
-                    if (!newSelection.has(hitId)) {
-                        newSelection = new Set([hitId]);
+                    if (!state.selection.has(targetId)) {
+                        pizarronStore.setSelection([targetId]);
                     }
+                    // If already selected, keep it selected (drag prep)
                 }
 
-                pizarronStore.setSelection(Array.from(newSelection));
-
-                // Check Lock
-                if (n.locked || n.isFixed) {
-                    // Allow selection but NO drag
-                    (e.target as HTMLElement).setPointerCapture(e.pointerId); // Still capture to prevent bg panning
-                    return;
-                }
-
+                // 2. Prepare Drag (Always runs on hit)
                 this.isDragging = true;
                 this.dragStart = worldPoint;
 
-                // Prepare initial positions
+                const selectedNodes = pizarronStore.getSelectedNodes();
                 this.initialNodePositions = {};
-                newSelection.forEach(id => {
-                    const n = nodes[id];
-                    if (n) this.initialNodePositions[id] = { x: n.x, y: n.y };
+                selectedNodes.forEach(n => {
+                    this.initialNodePositions[n.id] = { ...n };
+                    if (n.type === 'group' && n.childrenIds) {
+                        n.childrenIds.forEach(cid => {
+                            const child = state.nodes[cid];
+                            if (child) {
+                                this.initialNodePositions[cid] = { ...child };
+                            }
+                        });
+                    }
                 });
 
                 (e.target as HTMLElement).setPointerCapture(e.pointerId);
+
             } else {
-                // Mode: MARQUEE (Background Click)
-                this.dragStart = worldPoint; // Start in World Coords allows consistent resize calculations
+                // --- MODE: BACKGROUND (Marquee) ---
+                this.dragStart = worldPoint;
 
                 pizarronStore.updateInteractionState({
                     marquee: { x: worldPoint.x, y: worldPoint.y, w: 0, h: 0 }
                 });
 
-                if (!state.uiFlags.toolbarPinned) {
-                    pizarronStore.setSelection([]); // Clear selection on bg click
+                if (!state.uiFlags.toolbarPinned && !e.shiftKey) {
+                    pizarronStore.setSelection([]);
                 }
                 (e.target as HTMLElement).setPointerCapture(e.pointerId);
             }
+        }
+        // LINE TOOL
+        else if (currentTool === 'line') {
+            let startX = worldPoint.x;
+            let startY = worldPoint.y;
+            let startBinding: any = undefined;
+
+            if (hitId) {
+                const target = nodes[hitId];
+                const snap = this.calculateConnection(worldPoint, target);
+                startX = snap.x;
+                startY = snap.y;
+                startBinding = { nodeId: hitId, side: snap.side };
+            }
+
+            this.dragStart = { x: startX, y: startY };
+
+            pizarronStore.updateInteractionState({
+                creationDraft: {
+                    type: 'line',
+                    x: startX,
+                    y: startY,
+                    w: 0,
+                    h: 0,
+                    content: {
+                        lineType: 'straight',
+                        strokeWidth: 2,
+                        endArrow: true,
+                        startBinding
+                    }
+                }
+            });
+            (e.target as HTMLElement).setPointerCapture(e.pointerId);
         }
         // RECTANGLE TOOL
         else if (currentTool === 'rectangle') {
@@ -552,8 +614,43 @@ export class InteractionManager {
         // ALREADY CALCULATED AT TOP
 
         if (this.isDragging) {
-            const dx = worldPoint.x - this.dragStart.x;
-            const dy = worldPoint.y - this.dragStart.y;
+            let dx = worldPoint.x - this.dragStart.x;
+            let dy = worldPoint.y - this.dragStart.y;
+
+            // --- SNAP ENGINE ---
+            let snapLines: any[] = [];
+
+            if (!e.altKey && state.selection.size > 0) {
+                // Calculate Future Bounds
+                let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+
+                state.selection.forEach(id => {
+                    const init = this.initialNodePositions[id];
+                    const n = state.nodes[id];
+                    if (init && n) {
+                        minX = Math.min(minX, init.x);
+                        minY = Math.min(minY, init.y);
+                        maxX = Math.max(maxX, init.x + n.w);
+                        maxY = Math.max(maxY, init.y + n.h);
+                    }
+                });
+
+                if (minX !== Infinity) {
+                    const w = maxX - minX;
+                    const h = maxY - minY;
+                    const futureBox = { x: minX + dx, y: minY + dy, w, h };
+
+                    // 8px Threshold (adjusted for zoom)
+                    const threshold = 8 / state.viewport.zoom;
+                    const snap = this.calculateSnap(futureBox, state.nodes, state.selection, threshold);
+
+                    dx += snap.dx;
+                    dy += snap.dy;
+                    snapLines = snap.lines;
+                }
+            }
+
+            pizarronStore.updateInteractionState({ snapLines: snapLines.length > 0 ? snapLines : undefined });
 
             // Update all selected nodes
             state.selection.forEach(id => {
@@ -563,6 +660,25 @@ export class InteractionManager {
                         x: initial.x + dx,
                         y: initial.y + dy
                     });
+
+                    // Update Connected Lines
+                    if (state.nodes[id]) {
+                        pizarronStore.updateAttachedLines(id, { x: initial.x + dx, y: initial.y + dy, w: state.nodes[id].w, h: state.nodes[id].h });
+                    }
+
+                    // Propagate to Group Children
+                    const node = state.nodes[id];
+                    if (node?.type === 'group' && node.childrenIds) {
+                        node.childrenIds.forEach(cid => {
+                            const childInitial = this.initialNodePositions[cid];
+                            if (childInitial) {
+                                pizarronStore.updateNode(cid, {
+                                    x: childInitial.x + dx,
+                                    y: childInitial.y + dy
+                                });
+                            }
+                        });
+                    }
                 }
             });
             return;
@@ -583,13 +699,51 @@ export class InteractionManager {
 
         // Creation Update
         if (state.interactionState.creationDraft) {
-            pizarronStore.updateInteractionState({
-                creationDraft: {
-                    ...state.interactionState.creationDraft,
-                    w: worldPoint.x - this.dragStart.x,
-                    h: worldPoint.y - this.dragStart.y
+            const draft = state.interactionState.creationDraft;
+
+            if (draft.type === 'line') {
+                let endX = worldPoint.x;
+                let endY = worldPoint.y;
+                let endBinding = undefined;
+
+                let hitId: string | null = null;
+                for (let i = state.order.length - 1; i >= 0; i--) {
+                    const id = state.order[i];
+                    const n = state.nodes[id];
+                    if (n && this.isPointInNode(worldPoint, n)) {
+                        hitId = id;
+                        break;
+                    }
                 }
-            });
+
+                if (hitId && hitId !== draft.content?.startBinding?.nodeId) {
+                    const target = state.nodes[hitId];
+                    const snap = this.calculateConnection(worldPoint, target);
+                    endX = snap.x;
+                    endY = snap.y;
+                    endBinding = { nodeId: hitId, side: snap.side };
+                }
+
+                pizarronStore.updateInteractionState({
+                    creationDraft: {
+                        ...draft,
+                        w: endX - this.dragStart.x,
+                        h: endY - this.dragStart.y,
+                        content: {
+                            ...draft.content,
+                            endBinding
+                        }
+                    }
+                });
+            } else {
+                pizarronStore.updateInteractionState({
+                    creationDraft: {
+                        ...draft,
+                        w: worldPoint.x - this.dragStart.x,
+                        h: worldPoint.y - this.dragStart.y
+                    }
+                });
+            }
         }
 
         // Hover effects? (Debounce/Throttle if expensive)
@@ -624,6 +778,91 @@ export class InteractionManager {
         }
     }
 
+    private calculateSnap(
+        movingBox: { x: number, y: number, w: number, h: number },
+        otherNodes: Record<string, BoardNode>,
+        excludeIds: Set<string>,
+        threshold: number = 6
+    ): { dx: number, dy: number, lines: NonNullable<import('./types').BoardState['interactionState']['snapLines']> } {
+
+        let dx = 0;
+        let dy = 0;
+        const lines: NonNullable<import('./types').BoardState['interactionState']['snapLines']> = [];
+
+        const candidates = Object.values(otherNodes).filter(n => !excludeIds.has(n.id));
+
+        const moving = {
+            l: movingBox.x,
+            c: movingBox.x + movingBox.w / 2,
+            r: movingBox.x + movingBox.w,
+            t: movingBox.y,
+            m: movingBox.y + movingBox.h / 2,
+            b: movingBox.y + movingBox.h
+        };
+
+        let minDx = Infinity;
+        let snapXLine: any = null;
+
+        let minDy = Infinity;
+        let snapYLine: any = null;
+
+        candidates.forEach(cand => {
+            const target = {
+                l: cand.x,
+                c: cand.x + cand.w / 2,
+                r: cand.x + cand.w,
+                t: cand.y,
+                m: cand.y + cand.h / 2,
+                b: cand.y + cand.h
+            };
+
+            // Horizontal Snaps
+            const xPairs = [
+                { m: moving.l, t: target.l }, { m: moving.l, t: target.c }, { m: moving.l, t: target.r },
+                { m: moving.c, t: target.l }, { m: moving.c, t: target.c }, { m: moving.c, t: target.r },
+                { m: moving.r, t: target.l }, { m: moving.r, t: target.c }, { m: moving.r, t: target.r }
+            ];
+
+            xPairs.forEach(pair => {
+                const diff = pair.t - pair.m;
+                if (Math.abs(diff) < threshold && Math.abs(diff) < Math.abs(minDx)) {
+                    minDx = diff;
+                    const startY = Math.min(movingBox.y, cand.y);
+                    const endY = Math.max(movingBox.y + movingBox.h, cand.y + cand.h);
+                    snapXLine = { type: 'vertical', x: pair.t, start: startY - 20, end: endY + 20 };
+                }
+            });
+
+            // Vertical Snaps
+            const yPairs = [
+                { m: moving.t, t: target.t }, { m: moving.t, t: target.m }, { m: moving.t, t: target.b },
+                { m: moving.m, t: target.t }, { m: moving.m, t: target.m }, { m: moving.m, t: target.b },
+                { m: moving.b, t: target.t }, { m: moving.b, t: target.m }, { m: moving.b, t: target.b }
+            ];
+
+            yPairs.forEach(pair => {
+                const diff = pair.t - pair.m;
+                if (Math.abs(diff) < threshold && Math.abs(diff) < Math.abs(minDy)) {
+                    minDy = diff;
+                    const startX = Math.min(movingBox.x, cand.x);
+                    const endX = Math.max(movingBox.x + movingBox.w, cand.x + cand.w);
+                    snapYLine = { type: 'horizontal', y: pair.t, start: startX - 20, end: endX + 20 };
+                }
+            });
+        });
+
+        if (minDx !== Infinity) {
+            dx = minDx;
+            if (snapXLine) lines.push(snapXLine);
+        }
+        if (minDy !== Infinity) {
+            dy = minDy;
+            if (snapYLine) lines.push(snapYLine);
+        }
+
+        return { dx, dy, lines };
+    }
+
     onPointerUp(e: React.PointerEvent<HTMLCanvasElement>) {
         (e.target as HTMLElement).releasePointerCapture(e.pointerId);
         (e.target as HTMLElement).style.cursor = 'default';
@@ -643,7 +882,21 @@ export class InteractionManager {
         this.isDragging = false;
 
         const state = pizarronStore.getState();
+
+        if (state.interactionState.snapLines) {
+            pizarronStore.updateInteractionState({ snapLines: undefined });
+        }
+
         const worldPoint = this.screenToWorld({ x: e.clientX, y: e.clientY }, state.viewport);
+
+        // Click Selection Refinement
+        if (this.interactionTargetId && !state.interactionState.marquee && !state.interactionState.creationDraft) {
+            const dist = Math.hypot(worldPoint.x - this.dragStart.x, worldPoint.y - this.dragStart.y);
+            if (dist < 5 && !e.shiftKey) {
+                pizarronStore.setSelection([this.interactionTargetId]);
+            }
+        }
+        this.interactionTargetId = null;
 
         // MARQUEE SELECTION
         if (state.interactionState.marquee) {

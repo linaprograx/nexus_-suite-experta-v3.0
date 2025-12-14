@@ -121,6 +121,30 @@ class PizarronStore {
         });
     }
 
+    selectNode(id: string) {
+        this.setState(state => {
+            state.selection.add(id);
+        });
+    }
+
+    toggleSelection(id: string) {
+        this.setState(state => {
+            if (state.selection.has(id)) {
+                state.selection.delete(id);
+            } else {
+                state.selection.add(id);
+            }
+        });
+    }
+
+    clearSelection() {
+        this.setSelection([]);
+    }
+
+    getSelectedNodes(): BoardNode[] {
+        return Array.from(this.state.selection).map(id => this.state.nodes[id]).filter(Boolean);
+    }
+
     setActiveTool(tool: BoardState['uiFlags']['activeTool']) {
         this.setState(state => {
             state.uiFlags.activeTool = tool;
@@ -346,6 +370,98 @@ class PizarronStore {
         });
     }
 
+    groupSelection() {
+        this.setState(state => {
+            const selectedIds = Array.from(state.selection);
+            if (selectedIds.length < 2) return;
+
+            // 1. Calculate Bounds
+            let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+            const children: string[] = [];
+
+            selectedIds.forEach(id => {
+                const node = state.nodes[id];
+                if (node && !node.parentId) {
+                    minX = Math.min(minX, node.x);
+                    minY = Math.min(minY, node.y);
+                    maxX = Math.max(maxX, node.x + node.w);
+                    maxY = Math.max(maxY, node.y + node.h);
+                    children.push(id);
+                }
+            });
+
+            if (children.length === 0) return;
+
+            const groupId = crypto.randomUUID();
+            const groupNode: BoardNode = {
+                id: groupId,
+                type: 'group',
+                x: minX,
+                y: minY,
+                w: maxX - minX,
+                h: maxY - minY,
+                zIndex: Math.max(...children.map(cid => state.nodes[cid].zIndex || 1)) + 1,
+                content: {},
+                childrenIds: children,
+                createdAt: Date.now(),
+                updatedAt: Date.now()
+            };
+
+            // 2. Update Children Parent
+            children.forEach(cid => {
+                const child = state.nodes[cid];
+                if (child) {
+                    child.parentId = groupId;
+                    child.updatedAt = Date.now();
+                }
+            });
+
+            // 3. Update Order: Remove children, Add Group
+            state.order = state.order.filter(id => !state.selection.has(id));
+
+            state.nodes[groupId] = groupNode;
+            state.order.push(groupId);
+
+            // 4. Select Group
+            state.selection.clear();
+            state.selection.add(groupId);
+        });
+    }
+
+    ungroupSelection() {
+        this.setState(state => {
+            const selectedIds = Array.from(state.selection);
+
+            const groupsToUngroup = selectedIds.filter(id => state.nodes[id]?.type === 'group');
+            if (groupsToUngroup.length === 0) return;
+
+            const newSelection: string[] = [];
+
+            groupsToUngroup.forEach(groupId => {
+                const group = state.nodes[groupId];
+                if (!group || !group.childrenIds) return;
+
+                group.childrenIds.forEach(cid => {
+                    const child = state.nodes[cid];
+                    if (child) {
+                        child.parentId = undefined;
+                        child.updatedAt = Date.now();
+                        newSelection.push(cid);
+                    }
+                });
+
+                delete state.nodes[groupId];
+            });
+
+            // Rebuild Order: Remove dead groups, append children
+            state.order = state.order.filter(id => state.nodes[id]);
+            state.order.push(...newSelection);
+
+            state.selection.clear();
+            newSelection.forEach(id => state.selection.add(id));
+        });
+    }
+
     stackSelected(direction: 'vertical' | 'horizontal', gap: number = 20) {
         this.setState(state => {
             const selected = Array.from(state.selection).map(id => state.nodes[id]).filter(Boolean);
@@ -373,6 +489,48 @@ class PizarronStore {
                     currentX += node.w + gap;
                 });
             }
+        });
+    }
+
+    updateAttachedLines(nodeId: string, nodeFrame: { x: number, y: number, w: number, h: number }) {
+        this.setState(state => {
+            Object.values(state.nodes).forEach(node => {
+                if (node.type !== 'line') return;
+
+                const startB = node.content.startBinding;
+                const endB = node.content.endBinding;
+
+                // Calculate connection points on the moved node
+                const getPoint = (side: 'left' | 'right' | 'top' | 'bottom') => {
+                    switch (side) {
+                        case 'left': return { x: nodeFrame.x, y: nodeFrame.y + nodeFrame.h / 2 };
+                        case 'right': return { x: nodeFrame.x + nodeFrame.w, y: nodeFrame.y + nodeFrame.h / 2 };
+                        case 'top': return { x: nodeFrame.x + nodeFrame.w / 2, y: nodeFrame.y };
+                        case 'bottom': return { x: nodeFrame.x + nodeFrame.w / 2, y: nodeFrame.y + nodeFrame.h };
+                    }
+                };
+
+                let start = { x: node.x, y: node.y };
+                let end = { x: node.x + node.w, y: node.y + node.h };
+                let changed = false;
+
+                if (startB && startB.nodeId === nodeId) {
+                    start = getPoint(startB.side);
+                    changed = true;
+                }
+                if (endB && endB.nodeId === nodeId) {
+                    end = getPoint(endB.side);
+                    changed = true;
+                }
+
+                if (changed) {
+                    node.x = start.x;
+                    node.y = start.y;
+                    node.w = end.x - start.x;
+                    node.h = end.y - start.y;
+                    node.updatedAt = Date.now();
+                }
+            });
         });
     }
 

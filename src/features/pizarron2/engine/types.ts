@@ -1,4 +1,10 @@
 export type NodeType = 'card' | 'group' | 'image' | 'text' | 'shape' | 'line' | 'board';
+
+export interface LineBinding {
+    nodeId: string;
+    side: 'left' | 'right' | 'top' | 'bottom';
+}
+
 export interface BoardNode {
     id: string;
     type: NodeType;
@@ -8,6 +14,10 @@ export interface BoardNode {
     h: number;
     rotation?: number; // radians
     zIndex: number;
+
+    // Group Props
+    parentId?: string;
+    childrenIds?: string[];
 
     // Content Data
     // Content Data
@@ -69,6 +79,8 @@ export interface BoardNode {
         strokeWidth?: number;
         startArrow?: boolean;
         endArrow?: boolean;
+        startBinding?: LineBinding;
+        endBinding?: LineBinding;
 
         // Card props (Task/Idea)
         status?: 'todo' | 'in-progress' | 'done';
@@ -104,11 +116,18 @@ export interface BoardState {
         toolbarPinned?: boolean;
     };
     interactionState: {
+        selectionBounds?: { x: number; y: number; w: number; h: number };
         marquee?: { x: number; y: number; w: number; h: number };
-        isDragging?: boolean;
-        creationDraft?: Partial<BoardNode>; // Shadow/Ghost node being created
-        editingNodeId?: string; // ID of node being inline edited (Text)
-        editingImageId?: string; // ID of node being edited (Image Modal)
+        creationDraft?: any; // BoardNode partial
+        editingImageId?: string;
+        editingGroupId?: string;
+        snapLines?: Array<{
+            type: 'horizontal' | 'vertical';
+            x?: number;
+            y?: number;
+            start: number;
+            end: number;
+        }>;
     };
     presentationState: {
         isActive: boolean;
