@@ -13,7 +13,8 @@ export const ConfigModalRouter: React.FC = () => {
                 const id = Array.from(state.selection)[0];
                 const node = state.nodes[id];
                 if (node) {
-                    setSelectedNode(node);
+                    // Force new reference to trigger React re-render
+                    setSelectedNode({ ...node });
                     return;
                 }
             }
@@ -24,23 +25,21 @@ export const ConfigModalRouter: React.FC = () => {
 
     if (!selectedNode) return null;
 
-    // Fixed position Config Panel (Top Right below toolbar)
+    const closeModal = () => {
+        pizarronStore.setSelection([]);
+    };
 
-    switch (selectedNode.type) {
-        case 'text':
-            return <TextConfigModal node={selectedNode} />;
-        case 'shape':
-            return <ShapeConfigModal node={selectedNode} />;
-        case 'line':
-            return <LineConfigModal node={selectedNode} />;
-        case 'board':
-            return <BoardConfigModal node={selectedNode} />;
-        case 'card':
-        case 'group':
-            return <CardConfigModal node={selectedNode} />;
-        case 'image':
-            return <ImageConfigModal node={selectedNode} />;
-        default:
-            return null;
-    }
+    return (
+        <>
+            {/* Modal */}
+            {selectedNode && (
+                selectedNode.type === 'shape' ? <ShapeConfigModal node={selectedNode} /> :
+                    selectedNode.type === 'line' ? <LineConfigModal node={selectedNode} /> :
+                        selectedNode.type === 'text' ? <TextConfigModal node={selectedNode} /> :
+                            selectedNode.type === 'board' ? <BoardConfigModal node={selectedNode} /> :
+                                selectedNode.type === 'image' ? <ImageConfigModal node={selectedNode} /> :
+                                    <CardConfigModal node={selectedNode} />
+            )}
+        </>
+    );
 };

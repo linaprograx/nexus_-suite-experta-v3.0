@@ -128,31 +128,35 @@ export class PizarronRenderer {
 
     private drawNode(ctx: CanvasRenderingContext2D, node: BoardNode, isSelected: boolean, zoom: number) {
         ctx.save();
-
-        // Base Transform
         ctx.translate(node.x, node.y);
 
-        // Shadow (applied to all types that have a distinct shape)
+        // Shadow
         ctx.shadowColor = 'rgba(0,0,0,0.1)';
         ctx.shadowBlur = isSelected ? 15 : 4;
         ctx.shadowOffsetY = isSelected ? 4 : 2;
 
-        // Draw Content based on Type
         if (node.type === 'shape') {
             const shape = node.content.shapeType || 'rectangle';
+            const borderWidth = node.content.borderWidth || 0;
+            const borderColor = node.content.borderColor || '#334155';
+            const radius = node.content.borderRadius || 0;
+
             ctx.fillStyle = node.content.color || '#cbd5e1';
+            ctx.strokeStyle = borderColor;
+            ctx.lineWidth = borderWidth;
 
             ctx.beginPath();
             if (shape === 'circle') {
                 ctx.ellipse(node.w / 2, node.h / 2, node.w / 2, node.h / 2, 0, 0, Math.PI * 2);
             } else if (shape === 'triangle') {
-                ctx.moveTo(node.w / 2, 0);
-                ctx.lineTo(node.w, node.h);
-                ctx.lineTo(0, node.h);
+                const pad = borderWidth / 2;
+                ctx.moveTo(node.w / 2, pad);
+                ctx.lineTo(node.w - pad, node.h - pad);
+                ctx.lineTo(pad, node.h - pad);
                 ctx.closePath();
             } else if (shape === 'star') {
-                // Simple Diamond/Star approximation
                 ctx.moveTo(node.w / 2, 0);
+                // ... (simplified star)
                 ctx.lineTo(node.w * 0.8, node.h / 2);
                 ctx.lineTo(node.w, node.h);
                 ctx.lineTo(node.w / 2, node.h * 0.8);
@@ -160,128 +164,206 @@ export class PizarronRenderer {
                 ctx.lineTo(node.w * 0.2, node.h / 2);
                 ctx.closePath();
             } else {
-                // Rectangle
-                ctx.rect(0, 0, node.w, node.h);
+                if (ctx.roundRect) ctx.roundRect(0, 0, node.w, node.h, radius);
+                else ctx.rect(0, 0, node.w, node.h);
             }
+
             ctx.fill();
+            if (borderWidth > 0) ctx.stroke();
         }
         else if (node.type === 'line') {
             ctx.strokeStyle = node.content.color || '#334155';
             ctx.lineWidth = node.content.strokeWidth || 4;
             ctx.lineCap = 'round';
-            ctx.beginPath();
-            ctx.moveTo(0, 0);
-            ctx.lineTo(node.w, node.h);
-            ctx.stroke();
+
+            // Arrows Logic
+            const hasStart = node.content.startArrow;
+            const hasEnd = node.content.endArrow;
+            const arrowSize = (node.content.strokeWidth || 4) * 3;
+
+            // Simple line path
+            let sx = 0, sy = 0, ex = node.w, ey = node.h;
+
+            if (node.content.lineType === 'curved') {
+                // Curve
+                ctx.beginPath();
+                ctx.moveTo(sx, sy);
+                ctx.bezierCurveTo(node.w / 2, 0, node.w / 2, node.h, ex, ey);
+                ctx.stroke();
+
+                // Arrows for curve (simplified: approximate angle at ends)
+                // TODO: complex calc for robust curve arrows, skip for now or use simple tangent
+            } else {
+                // Straight
+                // Back off for arrows
+                const angle = Math.atan2(ey - sy, ex - sx);
+                const backOff = arrowSize / 1.5;
+
+                if (hasStart) {
+                    sx += Math.cos(angle) * backOff;
+                    sy += Math.sin(angle) * backOff;
+                }
+                if (hasEnd) {
+                    ex -= Math.cos(angle) * backOff;
+                    ey -= Math.sin(angle) * backOff;
+                }
+
+                ctx.beginPath();
+                ctx.moveTo(sx, sy);
+                ctx.lineTo(ex, ey);
+                ctx.stroke();
+
+                // Draw Arrows
+                if (hasStart) {
+                    this.drawArrowHead(ctx, 0, 0, angle + Math.PI, arrowSize, node.content.color || '#334155');
+                }
+                if (hasEnd) {
+                    this.drawArrowHead(ctx, node.w, node.h, angle, arrowSize, node.content.color || '#334155');
+                }
+            }
         }
         else if (node.type === 'image') {
             const src = node.content.src;
+            const opacity = node.content.opacity ?? 1;
+            const radius = node.content.borderRadius || 0;
             if (src) {
                 let img = this.imageCache.get(src);
                 if (!img) {
                     img = new Image();
                     img.src = src;
-                    img.onload = () => { /* trigger redraw? */ };
                     this.imageCache.set(src, img);
                 }
-
                 if (img.complete) {
-                    ctx.globalAlpha = node.content.opacity ?? 1;
+                    ctx.save();
+                    if (radius > 0) {
+                        ctx.beginPath();
+                        if (ctx.roundRect) ctx.roundRect(0, 0, node.w, node.h, radius);
+                        else ctx.rect(0, 0, node.w, node.h);
+                        ctx.clip();
+                    }
+                    ctx.globalAlpha = opacity;
                     ctx.drawImage(img, 0, 0, node.w, node.h);
+                    ctx.restore();
                 } else {
-                    // Loading placeholder
-                    ctx.fillStyle = '#f1f5f9';
-                    ctx.fillRect(0, 0, node.w, node.h);
-                    ctx.fillStyle = '#94a3b8';
-                    ctx.fillText("Loading...", 10, 20);
+                    ctx.fillStyle = '#eff6ff'; ctx.fillRect(0, 0, node.w, node.h);
                 }
             } else {
-                // Placeholder
-                ctx.fillStyle = '#f8fafc';
-                ctx.fillRect(0, 0, node.w, node.h);
-                ctx.strokeStyle = '#cbd5e1';
-                ctx.setLineDash([5, 5]);
-                ctx.strokeRect(0, 0, node.w, node.h);
-                ctx.setLineDash([]);
-                ctx.fillStyle = '#64748b';
-                ctx.font = '20px sans-serif';
-                ctx.fillText("Image", node.w / 2 - 20, node.h / 2);
+                ctx.fillStyle = '#cbd5e1'; ctx.fillRect(0, 0, node.w, node.h);
+                ctx.fillStyle = '#64748b'; ctx.fillText("IMG", node.w / 2 - 10, node.h / 2);
             }
         }
         else if (node.type === 'text') {
-            // Text logic
-            ctx.font = '16px Inter, sans-serif';
+            const fontSize = node.content.fontSize || 16;
+            const fontWeight = node.content.fontWeight || 'normal';
+            // ... (keep text logic)
+            // Re-implementing briefly to keep context valid
+            const fontStyle = node.content.fontStyle || 'normal';
+            const align = node.content.textAlign || 'left';
+            const decoration = node.content.textDecoration || 'none';
+            ctx.font = `${fontStyle} ${fontWeight} ${fontSize}px Inter, sans-serif`;
             ctx.fillStyle = node.content.color || '#1e293b';
             ctx.textBaseline = 'top';
+            let xAnchor = 5;
+            if (align === 'center') xAnchor = node.w / 2;
+            if (align === 'right') xAnchor = node.w - 5;
+            ctx.textAlign = align;
             const lines = (node.content.title || '').split('\n');
             lines.forEach((line, i) => {
-                ctx.fillText(line, 5, 5 + (i * 20));
+                const y = 5 + (i * (fontSize * 1.2));
+                ctx.fillText(line, xAnchor, y);
+                if (decoration === 'underline') {
+                    const width = ctx.measureText(line).width;
+                    let ux = xAnchor;
+                    if (align === 'center') ux -= width / 2;
+                    if (align === 'right') ux -= width;
+                    ctx.fillRect(ux, y + fontSize, width, 1);
+                }
             });
+            ctx.textAlign = 'left';
         }
         else if (node.type === 'board') {
-            // Board Container
+            // ... Board logic with Border
             ctx.fillStyle = node.content.color || '#f8fafc';
+            const borderWidth = node.content.borderWidth || 2;
+            const borderColor = node.content.borderColor || '#e2e8f0';
+
             ctx.beginPath();
             if (ctx.roundRect) ctx.roundRect(0, 0, node.w, node.h, 16);
-            else ctx.rect(0, 0, node.w, node.h); // Fallback
+            else ctx.rect(0, 0, node.w, node.h);
             ctx.fill();
 
-            ctx.lineWidth = 2;
-            ctx.strokeStyle = '#e2e8f0'; // Slate-200
-            ctx.stroke();
+            ctx.lineWidth = borderWidth;
+            ctx.strokeStyle = borderColor;
+            if (borderWidth > 0) ctx.stroke();
 
-            // Label
-            ctx.fillStyle = '#94a3b8'; // Slate-400
+            ctx.fillStyle = '#94a3b8';
             ctx.font = 'bold 12px sans-serif';
             ctx.fillText((node.content.title || 'BOARD').toUpperCase(), 20, 30);
         }
         else {
-            // Fallback Card
+            // Card / Generic
             ctx.fillStyle = node.content.color || '#ffffff';
             ctx.fillRect(0, 0, node.w, node.h);
-            // Border
             ctx.strokeStyle = '#e2e8f0';
-            ctx.lineWidth = 1;
             ctx.strokeRect(0, 0, node.w, node.h);
-
-            // Content
-            ctx.fillStyle = '#000';
+            ctx.fillStyle = '#0f172a';
             ctx.font = '14px sans-serif';
-            ctx.fillText(node.content.title || '', 10, 20);
+            ctx.textBaseline = 'top';
+            ctx.fillText(node.content.title || '', 10, 10);
+
+            // Status Pill
+            if (node.content.status) {
+                const s = node.content.status;
+                const statusColor = s === 'done' ? '#22c55e' : s === 'in-progress' ? '#3b82f6' : '#94a3b8';
+                const statusBg = s === 'done' ? '#dcfce7' : s === 'in-progress' ? '#dbeafe' : '#f1f5f9';
+
+                // Draw pill at bottom right
+                const pillW = 60, pillH = 20;
+                const px = node.w - pillW - 10;
+                const py = node.h - pillH - 10;
+
+                ctx.fillStyle = statusBg;
+                ctx.beginPath();
+                if (ctx.roundRect) ctx.roundRect(px, py, pillW, pillH, 10);
+                else ctx.rect(px, py, pillW, pillH);
+                ctx.fill();
+
+                ctx.fillStyle = statusColor;
+                ctx.font = 'bold 10px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText(s.toUpperCase(), px + pillW / 2, py + 5);
+                ctx.textAlign = 'left';
+            }
         }
 
-        // Selection Ring
+        // Selection Ring (Keep existing)
         if (isSelected) {
-            ctx.strokeStyle = '#f97316'; // Orange
-            const lineWidth = 2 / zoom;
-            ctx.lineWidth = lineWidth;
+            ctx.strokeStyle = '#f97316';
+            ctx.lineWidth = 2 / zoom;
             ctx.strokeRect(0, 0, node.w, node.h);
-
-            // Draw Resize Handles (Scale Invariant: 8px visual)
+            // Handles...
             const handleVisualSize = 8;
             const handleSize = handleVisualSize / zoom;
             const half = handleSize / 2;
-
-            ctx.fillStyle = '#ffffff';
-            ctx.strokeStyle = '#f97316';
-            ctx.lineWidth = 1.5 / zoom;
-
-            // Corners: NW, NE, SE, SW
-            const coords = [
-                { x: -half, y: -half, cursor: 'nwse-resize' },
-                { x: node.w - half, y: -half, cursor: 'nesw-resize' },
-                { x: node.w - half, y: node.h - half, cursor: 'nwse-resize' },
-                { x: -half, y: node.h - half, cursor: 'nesw-resize' }
-            ];
-
-            coords.forEach(h => {
-                ctx.beginPath();
-                ctx.rect(h.x, h.y, handleSize, handleSize);
-                ctx.fill();
-                ctx.stroke();
-            });
+            ctx.fillStyle = '#ffffff'; ctx.strokeStyle = '#f97316'; ctx.lineWidth = 1.5 / zoom;
+            const coords = [{ x: -half, y: -half }, { x: node.w - half, y: -half }, { x: node.w - half, y: node.h - half }, { x: -half, y: node.h - half }];
+            coords.forEach(h => { ctx.beginPath(); ctx.rect(h.x, h.y, handleSize, handleSize); ctx.fill(); ctx.stroke(); });
         }
 
+        ctx.restore();
+    }
+
+    private drawArrowHead(ctx: CanvasRenderingContext2D, x: number, y: number, angle: number, size: number, color: string) {
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.rotate(angle);
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.lineTo(-size, size / 2);
+        ctx.lineTo(-size, -size / 2);
+        ctx.closePath();
+        ctx.fill();
         ctx.restore();
     }
 }

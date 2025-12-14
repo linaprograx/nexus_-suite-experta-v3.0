@@ -55,9 +55,9 @@ export const PizarronRoot: React.FC<PizarronRootProps> = ({ appId, boardId, user
                         <Inspector />
                         <TextEditor />
                         <ConfigModalRouter />
-                        {editingImageId && <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+                        {editingImageId && <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm pointer-events-auto">
                             <ImageModal
-                                active={true}
+                                nodeId={editingImageId}
                                 onClose={() => pizarronStore.updateInteractionState({ editingImageId: undefined })}
                             />
                         </div>}

@@ -10,25 +10,40 @@ export interface BoardNode {
     zIndex: number;
 
     // Content Data
+    // Content Data
     content: {
         title?: string;
         body?: string;
         color?: string; // hex or theme var
 
-        // Shape props
+        // Typography (TextNode)
+        fontSize?: number;
+        textAlign?: 'left' | 'center' | 'right';
+        fontWeight?: 'normal' | 'bold';
+        fontStyle?: 'normal' | 'italic';
+        textDecoration?: 'none' | 'underline';
+
+        // Shape/Board props
         shapeType?: 'rectangle' | 'circle' | 'triangle' | 'star' | 'freeform';
+        borderColor?: string;
+        borderWidth?: number;
+        borderStyle?: 'solid' | 'dashed' | 'dotted';
+        borderRadius?: number;
 
         // Image props
-        src?: string; // for images
+        src?: string;
         caption?: string;
         opacity?: number; // 0-1
-        borderRadius?: number;
 
         // Line props
         lineType?: 'straight' | 'curved';
         strokeWidth?: number;
         startArrow?: boolean;
         endArrow?: boolean;
+
+        // Card props (Task/Idea)
+        status?: 'todo' | 'in-progress' | 'done';
+        tags?: string[];
     };
 
     // Meta

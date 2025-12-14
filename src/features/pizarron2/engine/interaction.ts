@@ -292,6 +292,44 @@ export class InteractionManager {
         if (!this.canvas) return;
 
         const state = pizarronStore.getState();
+        const { viewport } = state;
+
+        const rect = this.canvas.getBoundingClientRect();
+        const screenPoint = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+        const worldPoint = this.screenToWorld(screenPoint, viewport);
+
+        // RESIZING
+        if (this.isResizing && this.initialResizeState && this.resizeHandle) {
+            const { x, y, w, h } = this.initialResizeState;
+            const dx = worldPoint.x - this.dragStart.x;
+            const dy = worldPoint.y - this.dragStart.y;
+
+            let nx = x, ny = y, nw = w, nh = h;
+
+            if (this.resizeHandle.includes('e')) nw = w + dx;
+            if (this.resizeHandle.includes('s')) nh = h + dy;
+            if (this.resizeHandle.includes('w')) { nx = x + dx; nw = w - dx; }
+            if (this.resizeHandle.includes('n')) { ny = y + dy; nh = h - dy; }
+
+            // Min Size
+            if (nw < 10) {
+                if (this.resizeHandle.includes('w')) nx = x + (w - 10);
+                nw = 10;
+            }
+            if (nh < 10) {
+                if (this.resizeHandle.includes('n')) ny = y + (h - 10);
+                nh = 10;
+            }
+
+            const id = Array.from(state.selection)[0];
+            if (id) {
+                const node = state.nodes[id];
+                if (node) {
+                    pizarronStore.updateNode(id, { x: nx, y: ny, w: nw, h: nh });
+                }
+            }
+            return;
+        }
 
         // Optimize: Only calc world point if needed (not for Pan)
 
@@ -306,7 +344,8 @@ export class InteractionManager {
             return;
         }
 
-        const worldPoint = this.screenToWorld({ x: e.clientX, y: e.clientY }, state.viewport);
+        // const worldPoint = this.screenToWorld({ x: e.clientX, y: e.clientY }, state.viewport); 
+        // ALREADY CALCULATED AT TOP
 
         if (this.isDragging) {
             const dx = worldPoint.x - this.dragStart.x;

@@ -132,6 +132,68 @@ class PizarronStore {
         });
     }
 
+    // --- Layer Management ---
+
+    bringToFront() {
+        this.setState(state => {
+            const selected = Array.from(state.selection);
+            if (selected.length === 0) return;
+
+            const remaining = state.order.filter(id => !state.selection.has(id));
+            state.order = [...remaining, ...selected];
+            this.reindex(state);
+        });
+    }
+
+    sendToBack() {
+        this.setState(state => {
+            const selected = Array.from(state.selection);
+            if (selected.length === 0) return;
+
+            const remaining = state.order.filter(id => !state.selection.has(id));
+            state.order = [...selected, ...remaining];
+            this.reindex(state);
+        });
+    }
+
+    bringForward() {
+        this.setState(state => {
+            const selected = Array.from(state.selection);
+            if (selected.length !== 1) return;
+
+            const id = selected[0];
+            const idx = state.order.indexOf(id);
+            if (idx < state.order.length - 1) {
+                // Swap
+                [state.order[idx], state.order[idx + 1]] = [state.order[idx + 1], state.order[idx]];
+                this.reindex(state);
+            }
+        });
+    }
+
+    sendBackward() {
+        this.setState(state => {
+            const selected = Array.from(state.selection);
+            if (selected.length !== 1) return;
+
+            const id = selected[0];
+            const idx = state.order.indexOf(id);
+            if (idx > 0) {
+                // Swap
+                [state.order[idx], state.order[idx - 1]] = [state.order[idx - 1], state.order[idx]];
+                this.reindex(state);
+            }
+        });
+    }
+
+    private reindex(state: BoardState) {
+        state.order.forEach((id, index) => {
+            if (state.nodes[id]) {
+                state.nodes[id].zIndex = index;
+            }
+        });
+    }
+
     updateInteractionState(patch: Partial<BoardState['interactionState']>) {
         this.setState(state => {
             Object.assign(state.interactionState, patch);
