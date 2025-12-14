@@ -17,7 +17,8 @@ export class InteractionManager {
     private isRotating = false;
     private initialRotation = 0;
     private resizeHandle: string | null = null;
-    private initialResizeState: { x: number, y: number, w: number, h: number, rotation?: number } | null = null;
+    private initialResizeState: { x: number, y: number, w: number, h: number, rotation?: number, fontSize?: number } | null = null;
+    private initialNodesState: Record<string, { x: number, y: number, w: number, h: number, fontSize?: number }> | null = null;
     private canvas: HTMLCanvasElement | null = null;
 
     // Helper: Rotate point around center
@@ -118,61 +119,102 @@ export class InteractionManager {
 
         // 0. RESIZE HANDLES
         // 1. Check Resize Handles (only if 1 node selected and NOT LOCKED)
-        if (state.selection.size === 1 && state.uiFlags.activeTool === 'pointer') {
-            const id = Array.from(state.selection)[0];
-            const node = nodes[id];
+        // 0. RESIZE HANDLES
+        const selectedIds = Array.from(state.selection);
+        if (selectedIds.length > 0 && state.uiFlags.activeTool === 'pointer') {
+            // Determine Bounds
+            let bounds: { x: number, y: number, w: number, h: number, rotation?: number } | null = null;
 
-            if (node && !node.locked && !node.isFixed) {
-                const handleSize = 10 / viewport.zoom;
-                const half = handleSize / 2;
-                const margin = handleSize;
-
-                // Prepare Rotation Math
-                const cx = node.x + node.w / 2;
-                const cy = node.y + node.h / 2;
-                const rot = node.rotation || 0;
-
-                // Map Mouse to Local Axis-Aligned Space
-                const localMouse = this.rotatePoint(worldPoint, { x: cx, y: cy }, -rot);
-
-                // 1. ROTATION HANDLE
-                const rotHandleY = node.y - (25 / viewport.zoom);
-                const rotHandleX = node.x + node.w / 2;
-
-                if (Math.abs(localMouse.x - rotHandleX) < margin &&
-                    Math.abs(localMouse.y - rotHandleY) < margin) {
-
-                    this.isRotating = true;
-                    this.initialResizeState = { ...node }; // snapshot
-                    // Calculate start angle relative to center in WORLD space
-                    this.initialRotation = Math.atan2(worldPoint.y - cy, worldPoint.x - cx);
-                    (e.target as HTMLElement).setPointerCapture(e.pointerId);
-                    return;
+            if (selectedIds.length === 1) {
+                const node = nodes[selectedIds[0]];
+                if (node && !node.locked && !node.isFixed) {
+                    bounds = { x: node.x, y: node.y, w: node.w, h: node.h, rotation: node.rotation };
                 }
+            } else {
+                // Group Bounds
+                let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+                let anyLocked = false;
+                selectedIds.forEach(id => {
+                    const n = nodes[id];
+                    if (n) {
+                        minX = Math.min(minX, n.x);
+                        minY = Math.min(minY, n.y);
+                        maxX = Math.max(maxX, n.x + n.w);
+                        maxY = Math.max(maxY, n.y + n.h);
+                        if (n.locked || n.isFixed) anyLocked = true;
+                    }
+                });
+                if (!anyLocked && minX !== Infinity) {
+                    bounds = { x: minX, y: minY, w: maxX - minX, h: maxY - minY, rotation: 0 };
+                }
+            }
 
-                // 2. RESIZE HANDLES (Using localMouse works perfectly for rotated nodes!)
-                const handles: Record<string, { x: number, y: number }> = {
-                    nw: { x: node.x - half, y: node.y - half },
-                    ne: { x: node.x + node.w - half, y: node.y - half },
-                    se: { x: node.x + node.w - half, y: node.y + node.h - half },
-                    sw: { x: node.x - half, y: node.y + node.h - half },
-                    n: { x: node.x + node.w / 2 - half, y: node.y - half },
-                    s: { x: node.x + node.w / 2 - half, y: node.y + node.h - half },
-                    e: { x: node.x + node.w - half, y: node.y + node.h / 2 - half },
-                    w: { x: node.x - half, y: node.y + node.h / 2 - half }
-                };
+            if (bounds) {
+                const handleSize = 10 / viewport.zoom;
+                const margin = handleSize; // Hit area
+                const half = handleSize / 2;
 
-                for (const [key, pos] of Object.entries(handles)) {
-                    if (Math.abs(localMouse.x - (pos.x + half)) < margin &&
-                        Math.abs(localMouse.y - (pos.y + half)) < margin) {
+                let localMouse = { ...worldPoint };
 
-                        this.isResizing = true;
-                        this.resizeHandle = key as any;
-                        this.initialResizeState = { ...node };
-                        this.dragStart = worldPoint;
+                // Rotation Check (Only Single)
+                if (selectedIds.length === 1 && bounds.rotation) {
+                    const cx = bounds.x + bounds.w / 2;
+                    const cy = bounds.y + bounds.h / 2;
+                    localMouse = this.rotatePoint(worldPoint, { x: cx, y: cy }, -bounds.rotation);
+
+                    // Rotation Handle Check (Only Single)
+                    const rotHandleY = bounds.y - (25 / viewport.zoom);
+                    const rotHandleX = bounds.x + bounds.w / 2;
+                    if (Math.abs(localMouse.x - rotHandleX) < margin && Math.abs(localMouse.y - rotHandleY) < margin) {
+                        this.isRotating = true;
+                        this.initialResizeState = { ...bounds };
+                        this.initialRotation = Math.atan2(worldPoint.y - cy, worldPoint.x - cx);
                         (e.target as HTMLElement).setPointerCapture(e.pointerId);
                         return;
                     }
+                }
+
+                // Resize Handles Check
+                const startX = bounds.x;
+                const startY = bounds.y;
+                const w = bounds.w;
+                const h = bounds.h;
+
+                const handles: Record<string, { x: number, y: number }> = {
+                    nw: { x: startX - half, y: startY - half },
+                    ne: { x: startX + w - half, y: startY - half },
+                    se: { x: startX + w - half, y: startY + h - half },
+                    sw: { x: startX - half, y: startY + h - half },
+                    n: { x: startX + w / 2 - half, y: startY - half },
+                    s: { x: startX + w / 2 - half, y: startY + h - half },
+                    e: { x: startX + w - half, y: startY + h / 2 - half },
+                    w: { x: startX - half, y: startY + h / 2 - half }
+                };
+
+                let hitHandle: string | null = null;
+                for (const [key, pos] of Object.entries(handles)) {
+                    if (Math.abs(localMouse.x - (pos.x + half)) < margin &&
+                        Math.abs(localMouse.y - (pos.y + half)) < margin) {
+                        hitHandle = key;
+                        break;
+                    }
+                }
+
+                if (hitHandle) {
+                    this.isResizing = true;
+                    this.resizeHandle = hitHandle;
+                    this.initialResizeState = { ...bounds };
+
+                    // Capture Initial State of ALL Selected Nodes
+                    this.initialNodesState = {};
+                    selectedIds.forEach(id => {
+                        const n = nodes[id];
+                        if (n) this.initialNodesState![id] = { x: n.x, y: n.y, w: n.w, h: n.h, fontSize: n.content.fontSize };
+                    });
+
+                    this.dragStart = worldPoint;
+                    (e.target as HTMLElement).setPointerCapture(e.pointerId);
+                    return;
                 }
             }
         }
@@ -295,6 +337,7 @@ export class InteractionManager {
                 }
 
                 this.isDragging = true;
+                this.dragStart = worldPoint;
 
                 // Prepare initial positions
                 this.initialNodePositions = {};
@@ -312,7 +355,9 @@ export class InteractionManager {
                     marquee: { x: worldPoint.x, y: worldPoint.y, w: 0, h: 0 }
                 });
 
-                pizarronStore.setSelection([]); // Clear selection on bg click
+                if (!state.uiFlags.toolbarPinned) {
+                    pizarronStore.setSelection([]); // Clear selection on bg click
+                }
                 (e.target as HTMLElement).setPointerCapture(e.pointerId);
             }
         }
@@ -384,10 +429,11 @@ export class InteractionManager {
             const dx = worldPoint.x - this.dragStart.x;
             const dy = worldPoint.y - this.dragStart.y;
             const aspect = w / h;
+            const isProportional = !e.altKey && ['se', 'sw', 'ne', 'nw'].includes(this.resizeHandle);
 
             let nx = x, ny = y, nw = w, nh = h;
 
-            // --- Side Handles (Unidim) ---
+            // --- Side Handles (Always Unidim) ---
             if (this.resizeHandle === 'e') {
                 nw = w + dx;
             } else if (this.resizeHandle === 'w') {
@@ -399,34 +445,91 @@ export class InteractionManager {
                 ny = y + dy;
                 nh = h - dy;
             }
-            // --- Corner Handles (Proportional) ---
+            // --- Corner Handles ---
             else if (this.resizeHandle === 'se') {
                 nw = w + dx;
-                nh = nw / aspect;
+                nh = isProportional ? nw / aspect : h + dy;
             } else if (this.resizeHandle === 'sw') {
                 nx = x + dx;
                 nw = w - dx;
-                nh = nw / aspect;
+                nh = isProportional ? nw / aspect : h + dy;
             } else if (this.resizeHandle === 'ne') {
                 nw = w + dx;
-                nh = nw / aspect;
-                ny = y + (h - nh);
+                if (isProportional) {
+                    nh = nw / aspect;
+                    ny = y + (h - nh);
+                } else {
+                    ny = y + dy;
+                    nh = h - dy;
+                }
             } else if (this.resizeHandle === 'nw') {
                 nx = x + dx;
                 nw = w - dx;
-                nh = nw / aspect;
-                ny = y + (h - nh);
+                if (isProportional) {
+                    nh = nw / aspect;
+                    ny = y + (h - nh);
+                } else {
+                    ny = y + dy;
+                    nh = h - dy;
+                }
             }
 
             // Min Size Constraint
             if (nw < 20) nw = 20;
             if (nh < 20) nh = 20;
 
-            const id = Array.from(state.selection)[0];
-            if (id) {
-                const node = state.nodes[id];
-                if (node) {
-                    pizarronStore.updateNode(id, { x: nx, y: ny, w: nw, h: nh });
+            // --- Group vs Single Update ---
+            if (this.initialNodesState) {
+                // MULTI-SELECTION RESIZE
+                const initBox = this.initialResizeState!;
+                const scaleX = nw / initBox.w;
+                const scaleY = nh / initBox.h;
+
+                Object.entries(this.initialNodesState).forEach(([id, initNode]) => {
+                    // Calculate relative position to the Group Box
+                    const relX = initNode.x - initBox.x;
+                    const relY = initNode.y - initBox.y;
+
+                    // Apply Scale
+                    const newX = nx + (relX * scaleX);
+                    const newY = ny + (relY * scaleY);
+                    const newW = initNode.w * scaleX;
+                    const newH = initNode.h * scaleY;
+
+                    const updates: any = { x: newX, y: newY, w: newW, h: newH };
+
+                    // Text Scaling (if present)
+                    // Use MAX scale factor to ensure text scales even if dragging only one axis
+                    if (initNode.fontSize) {
+                        const maxScale = Math.max(scaleX, scaleY);
+                        const newSize = Math.max(8, Math.round(initNode.fontSize * maxScale));
+                        const currentNode = state.nodes[id];
+                        updates.content = { ...currentNode.content, fontSize: newSize };
+                    }
+
+                    pizarronStore.updateNode(id, updates);
+                });
+
+            } else {
+                // SINGLE SELECTION RESIZE (Legacy Logic)
+                const id = Array.from(state.selection)[0];
+                if (id) {
+                    const node = state.nodes[id];
+                    if (node) {
+                        const updates: any = { x: nx, y: ny, w: nw, h: nh };
+
+                        // Text Scaling (Proportional)
+                        if (node.type === 'text' && this.initialResizeState?.fontSize) {
+                            const initialH = this.initialResizeState.h;
+                            if (initialH > 0) {
+                                const ratio = nh / initialH;
+                                const newSize = Math.max(8, Math.round(this.initialResizeState.fontSize * ratio));
+                                updates.content = { ...node.content, fontSize: newSize };
+                            }
+                        }
+
+                        pizarronStore.updateNode(id, updates);
+                    }
                 }
             }
             return;
@@ -547,7 +650,7 @@ export class InteractionManager {
             const { x, y, w, h } = state.interactionState.marquee;
             // Normalize
             const rx = w < 0 ? x + w : x;
-            const ry = h < 0 ? y + h : h;
+            const ry = h < 0 ? y + h : y;
             const rw = Math.abs(w);
             const rh = Math.abs(h);
 
@@ -599,15 +702,16 @@ export class InteractionManager {
             // Let's keep top-left as click point for simplicity
 
             const newNode: BoardNode = {
-                ...draft,
+                id: crypto.randomUUID(), // New ID or keep draft ID? Draft has ID.
+                type: draft.type || 'shape', // Ensure type is set
                 x: finalX,
                 y: finalY,
                 w: finalW,
                 h: finalH,
-                id: crypto.randomUUID(), // New ID or keep draft ID? Draft has ID.
                 zIndex: state.order.length + 1,
                 updatedAt: Date.now(),
-                createdAt: Date.now()
+                createdAt: Date.now(),
+                content: draft.content || {}
             };
 
             pizarronStore.addNode(newNode);

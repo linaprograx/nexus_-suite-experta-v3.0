@@ -89,6 +89,15 @@ export class PizarronRenderer {
 
         ctx.restore(); // Back to Screen Space
 
+        // 5. Selection Overlay (World Space, but on top)
+        if (state.selection.size > 0) {
+            ctx.save();
+            ctx.scale(viewport.zoom, viewport.zoom);
+            ctx.translate(viewport.x / viewport.zoom, viewport.y / viewport.zoom);
+            this.drawSelectionOverlay(ctx, state, viewport.zoom);
+            ctx.restore();
+        }
+
         // HUD Layer (Static atop world)
         if (uiFlags.debug) {
             ctx.fillStyle = 'rgba(0,0,0,0.5)';
@@ -136,15 +145,29 @@ export class PizarronRenderer {
         if (node.rotation) ctx.rotate(node.rotation);
         ctx.translate(-node.w / 2, -node.h / 2);
 
+        // Apply Global Filters (Blur / Shadow)
+        if (node.content.filters) {
+            const { blur, shadow } = node.content.filters;
+            if (blur) {
+                ctx.filter = `blur(${blur}px)`;
+            }
+            if (shadow) {
+                ctx.shadowColor = shadow.color;
+                ctx.shadowBlur = shadow.blur;
+                ctx.shadowOffsetX = shadow.offsetX;
+                ctx.shadowOffsetY = shadow.offsetY;
+            }
+        } else {
+            // Default shadow if no custom filters are defined
+            ctx.shadowColor = 'rgba(0,0,0,0.1)';
+            ctx.shadowBlur = isSelected ? 15 : 4;
+            ctx.shadowOffsetY = isSelected ? 4 : 2;
+        }
+
         // Universal Opacity
         if (node.content.opacity !== undefined) {
             ctx.globalAlpha = node.content.opacity;
         }
-
-        // Shadow
-        ctx.shadowColor = 'rgba(0,0,0,0.1)';
-        ctx.shadowBlur = isSelected ? 15 : 4;
-        ctx.shadowOffsetY = isSelected ? 4 : 2;
 
         if (node.type === 'shape') {
             const shape = node.content.shapeType || 'rectangle';
@@ -152,9 +175,26 @@ export class PizarronRenderer {
             const borderColor = node.content.borderColor || '#334155';
             const radius = node.content.borderRadius || 0;
 
+            // Enhanced Gradient Logic
             if (node.content.gradient) {
                 const g = node.content.gradient;
-                const grd = ctx.createLinearGradient(0, 0, 0, node.h);
+                let grd: CanvasGradient;
+
+                if (g.type === 'radial') {
+                    const cx = node.w / 2;
+                    const cy = node.h / 2;
+                    const r = Math.max(node.w, node.h) / 2;
+                    grd = ctx.createRadialGradient(cx, cy, 0, cx, cy, r);
+                } else {
+                    // Linear
+                    // Simple Angle support: 0 (Vertical), 90 (Horizontal), 45 (Diagonal)
+                    let x0 = 0, y0 = 0, x1 = 0, y1 = node.h; // Default Vertical
+                    if (g.angle === 90) { x1 = node.w; y1 = 0; }
+                    else if (g.angle === 45) { x1 = node.w; y1 = node.h; } // Approx diagonal
+
+                    grd = ctx.createLinearGradient(x0, y0, x1, y1);
+                }
+
                 grd.addColorStop(0, g.start);
                 grd.addColorStop(1, g.end);
                 ctx.fillStyle = grd;
@@ -321,6 +361,38 @@ export class PizarronRenderer {
             else ctx.rect(0, 0, node.w, node.h);
             ctx.fill();
 
+            // Internal Grid
+            if (node.content.grid) {
+                const { columns, rows, gap } = node.content.grid;
+                if (columns > 1 || rows > 1) {
+                    ctx.save();
+                    ctx.beginPath();
+                    ctx.strokeStyle = borderColor + '60'; // Semi-transparent
+                    ctx.lineWidth = 1;
+
+                    // Columns
+                    if (columns > 1) {
+                        const colW = (node.w - (gap * 2)) / columns; // Simplified gap logic
+                        for (let i = 1; i < columns; i++) {
+                            const x = i * colW + gap; // Approx
+                            ctx.moveTo(x, 0);
+                            ctx.lineTo(x, node.h);
+                        }
+                    }
+                    // Rows
+                    if (rows > 1) {
+                        const rowH = (node.h - (gap * 2)) / rows;
+                        for (let i = 1; i < rows; i++) {
+                            const y = i * rowH + gap;
+                            ctx.moveTo(0, y);
+                            ctx.lineTo(node.w, y);
+                        }
+                    }
+                    ctx.stroke();
+                    ctx.restore();
+                }
+            }
+
             ctx.lineWidth = borderWidth;
             ctx.strokeStyle = borderColor;
             if (borderWidth > 0) ctx.stroke();
@@ -414,63 +486,155 @@ export class PizarronRenderer {
             }
         }
 
-        // Selection Ring & Handles
-        if (isSelected) {
+        // Reset Filters for Selection Ring
+        ctx.filter = 'none';
+        ctx.shadowColor = 'transparent';
+        ctx.shadowBlur = 0;
+        ctx.shadowOffsetX = 0;
+        ctx.restore();
+    }
+
+    private drawSelectionOverlay(ctx: CanvasRenderingContext2D, state: BoardState, zoom: number) {
+        const selectedIds = Array.from(state.selection);
+        if (selectedIds.length === 0) return;
+
+        // Is Locked? (If mixed, we treat as normal unless ALL are locked)
+        // Actually, simplify: Just check if single is locked. Multi resize is special.
+
+        if (selectedIds.length === 1) {
+            // Single Selection
+            const id = selectedIds[0];
+            const node = state.nodes[id];
+            if (!node) return;
+
             const isLocked = node.locked || node.isFixed;
-            ctx.strokeStyle = isLocked ? '#ef4444' : '#f97316';
-            ctx.lineWidth = 2 / zoom;
+            const color = isLocked ? '#ef4444' : '#3b82f6'; // Blue
+
+            ctx.save();
+            const cx = node.x + node.w / 2;
+            const cy = node.y + node.h / 2;
+            ctx.translate(cx, cy);
+            if (node.rotation) ctx.rotate(node.rotation);
+            ctx.translate(-node.w / 2, -node.h / 2);
+
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 1.5;
             ctx.strokeRect(0, 0, node.w, node.h);
+            ctx.restore();
 
             if (!isLocked) {
-                const handleVisualSize = 8;
-                const handleSize = handleVisualSize / zoom;
-                const half = handleSize / 2;
+                ctx.save();
+                const cx = node.x + node.w / 2;
+                const cy = node.y + node.h / 2;
+                ctx.translate(cx, cy);
+                if (node.rotation) ctx.rotate(node.rotation);
+                ctx.translate(-node.w / 2, -node.h / 2);
+                this.drawControls(ctx, node, zoom);
+                ctx.restore();
+            }
+        } else {
+            // Multi Selection - Master Bounding Box
+            let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+            let anyLocked = false;
 
-                // 8 Visual Handles
-                const handles = [
-                    // Corners
-                    { x: -half, y: -half },
-                    { x: node.w - half, y: -half },
-                    { x: node.w - half, y: node.h - half },
-                    { x: -half, y: node.h - half },
-                    // Sides
-                    { x: node.w / 2 - half, y: -half }, // N
-                    { x: node.w / 2 - half, y: node.h - half }, // S
-                    { x: -half, y: node.h / 2 - half }, // W
-                    { x: node.w - half, y: node.h / 2 - half }  // E
-                ];
+            selectedIds.forEach(id => {
+                const node = state.nodes[id];
+                if (node) {
+                    // Logic for rotated bounding box is complex.
+                    // For now, we calculate AABB of the rotated nodes?
+                    // Or simplified: Just AABB of raw coordinates (UX standard for quick multi-select).
+                    // Actually, Figma/Miro calculate the AABB of the rotated shapes.
+                    // Doing simple min/max on x/y/w/h works well enough for now unless extreme rotation.
+                    minX = Math.min(minX, node.x);
+                    minY = Math.min(minY, node.y);
+                    maxX = Math.max(maxX, node.x + node.w);
+                    maxY = Math.max(maxY, node.y + node.h);
+                    if (node.locked) anyLocked = true;
+                }
+            });
 
-                ctx.fillStyle = '#ffffff';
-                ctx.strokeStyle = '#f97316';
-                ctx.lineWidth = 1.5 / zoom;
+            const w = maxX - minX;
+            const h = maxY - minY;
 
-                handles.forEach(h => {
-                    ctx.beginPath();
-                    ctx.rect(h.x, h.y, handleSize, handleSize);
-                    ctx.fill();
-                    ctx.stroke();
-                });
+            ctx.save();
+            ctx.strokeStyle = anyLocked ? '#ef4444' : '#3b82f6';
+            ctx.lineWidth = 1;
+            ctx.setLineDash([4, 4]);
+            ctx.strokeRect(minX, minY, w, h);
+            ctx.setLineDash([]);
+            ctx.restore();
 
-                // Rotation Handle
-                const rotDist = 25 / zoom;
-                const rotSize = 10 / zoom;
-                const rotX = node.w / 2;
-                const rotY = -rotDist;
+            if (!anyLocked) {
+                // Mock Group Node for Handles
+                const groupNode = {
+                    id: 'selection-group',
+                    type: 'group' as any,
+                    x: minX,
+                    y: minY,
+                    w,
+                    h,
+                    rotation: 0
+                };
 
-                ctx.beginPath();
-                ctx.moveTo(node.w / 2, 0);
-                ctx.lineTo(rotX, rotY);
-                ctx.strokeStyle = '#f97316';
-                ctx.stroke();
-
-                ctx.beginPath();
-                ctx.arc(rotX, rotY, rotSize / 2, 0, Math.PI * 2);
-                ctx.fillStyle = '#ffffff';
-                ctx.fill();
-                ctx.stroke();
+                ctx.save();
+                ctx.translate(minX, minY);
+                this.drawControls(ctx, groupNode, zoom);
+                ctx.restore();
             }
         }
-        ctx.restore();
+    }
+
+    private drawControls(ctx: CanvasRenderingContext2D, node: { x: number, y: number, w: number, h: number }, zoom: number) {
+        // Handles are always drawn relative to current context origin
+        // Single: Origin is Top-Left of Node (Rotated)
+        // Multi: Origin is Top-Left of Bonding Box (Unrotated)
+
+        const handleVisualSize = 8;
+        const handleSize = handleVisualSize / zoom;
+        const half = handleSize / 2;
+
+        // 8 Visual Handles
+        const handles = [
+            // Corners
+            { x: -half, y: -half },
+            { x: node.w - half, y: -half },
+            { x: node.w - half, y: node.h - half },
+            { x: -half, y: node.h - half },
+            // Sides
+            { x: node.w / 2 - half, y: -half }, // N
+            { x: node.w / 2 - half, y: node.h - half }, // S
+            { x: -half, y: node.h / 2 - half }, // W
+            { x: node.w - half, y: node.h / 2 - half }  // E
+        ];
+
+        ctx.fillStyle = '#ffffff';
+        ctx.strokeStyle = '#3b82f6'; // Blue
+        ctx.lineWidth = 1.5 / zoom;
+
+        handles.forEach(h => {
+            ctx.beginPath();
+            ctx.rect(h.x, h.y, handleSize, handleSize);
+            ctx.fill();
+            ctx.stroke();
+        });
+
+        // Rotation Handle
+        const rotDist = 25 / zoom;
+        const rotSize = 10 / zoom;
+        const rotX = node.w / 2;
+        const rotY = -rotDist;
+
+        ctx.beginPath();
+        ctx.moveTo(node.w / 2, 0);
+        ctx.lineTo(rotX, rotY);
+        ctx.strokeStyle = '#3b82f6';
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.arc(rotX, rotY, rotSize / 2, 0, Math.PI * 2);
+        ctx.fillStyle = '#ffffff';
+        ctx.fill();
+        ctx.stroke();
     }
 
     private drawArrowHead(ctx: CanvasRenderingContext2D, x: number, y: number, angle: number, size: number, color: string) {

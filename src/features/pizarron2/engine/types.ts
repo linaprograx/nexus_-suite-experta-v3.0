@@ -11,6 +11,7 @@ export interface BoardNode {
 
     // Content Data
     // Content Data
+    // Content Data
     content: {
         title?: string;
         body?: string;
@@ -23,12 +24,25 @@ export interface BoardNode {
             angle?: number; // deg
         };
 
+        // Advanced Filters
+        filters?: {
+            blur?: number; // px
+            shadow?: {
+                color: string;
+                blur: number; // px
+                offsetX: number;
+                offsetY: number;
+                opacity?: number;
+            };
+        };
+
         // Typography (TextNode)
         fontSize?: number;
         textAlign?: 'left' | 'center' | 'right';
         fontWeight?: 'normal' | 'bold';
         fontStyle?: 'normal' | 'italic';
         textDecoration?: 'none' | 'underline';
+        textSizing?: 'auto' | 'fixed'; // New
 
         // Shape/Board props
         shapeType?: 'rectangle' | 'circle' | 'triangle' | 'star' | 'freeform';
@@ -36,6 +50,14 @@ export interface BoardNode {
         borderWidth?: number;
         borderStyle?: 'solid' | 'dashed' | 'dotted';
         borderRadius?: number;
+
+        // Board Specific
+        grid?: {
+            columns: number;
+            rows: number;
+            gap: number;
+            showLines?: boolean;
+        };
 
         // Image props
         src?: string;
@@ -58,7 +80,7 @@ export interface BoardNode {
     updatedAt: number;
     locked?: boolean;
     isFixed?: boolean; // Background mode
-    parentId?: string; // for groups
+    parentId?: string; // For grouping (future)
 }
 
 export interface Viewport {
@@ -79,6 +101,7 @@ export interface BoardState {
         debug: boolean;
         activeTool: 'pointer' | 'hand' | 'rectangle' | 'text' | 'shape' | 'line' | 'image';
         activeShapeType?: 'rectangle' | 'circle' | 'triangle' | 'star' | 'freeform';
+        toolbarPinned?: boolean;
     };
     interactionState: {
         marquee?: { x: number; y: number; w: number; h: number };

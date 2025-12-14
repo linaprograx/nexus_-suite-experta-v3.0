@@ -70,6 +70,18 @@ export const PizarronRoot: React.FC<PizarronRootProps> = ({ appId, boardId, user
                 pizarronStore.paste();
             }
 
+            // Layer Shortcuts
+            if (isCmd && e.key === 'ArrowUp') {
+                e.preventDefault();
+                if (e.shiftKey) pizarronStore.bringToFront();
+                else pizarronStore.bringForward();
+            }
+            if (isCmd && e.key === 'ArrowDown') {
+                e.preventDefault();
+                if (e.shiftKey) pizarronStore.sendToBack();
+                else pizarronStore.sendBackward();
+            }
+
             // Undo/Redo Could go here too
         };
 

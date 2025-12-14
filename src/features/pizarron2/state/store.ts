@@ -12,7 +12,8 @@ const INITIAL_STATE: BoardState = {
         qualityTier: 'high',
         debug: false,
         activeTool: 'pointer',
-        activeShapeType: 'rectangle' as 'rectangle' | 'circle' | 'triangle' | 'star'
+        activeShapeType: 'rectangle' as 'rectangle' | 'circle' | 'triangle' | 'star',
+        toolbarPinned: false
     },
     interactionState: {},
     presentationState: {
@@ -158,31 +159,43 @@ class PizarronStore {
 
     bringForward() {
         this.setState(state => {
-            const selected = Array.from(state.selection);
-            if (selected.length !== 1) return;
+            const selected = state.selection;
+            if (selected.size === 0) return;
 
-            const id = selected[0];
-            const idx = state.order.indexOf(id);
-            if (idx < state.order.length - 1) {
-                // Swap
-                [state.order[idx], state.order[idx + 1]] = [state.order[idx + 1], state.order[idx]];
-                this.reindex(state);
+            // Bubble up: Iterate from top-1 down to 0
+            for (let i = state.order.length - 2; i >= 0; i--) {
+                const id = state.order[i];
+                if (selected.has(id)) {
+                    const nextId = state.order[i + 1];
+                    if (!selected.has(nextId)) {
+                        // Swap with unselected neighbor above
+                        state.order[i] = nextId;
+                        state.order[i + 1] = id;
+                    }
+                }
             }
+            this.reindex(state);
         });
     }
 
     sendBackward() {
         this.setState(state => {
-            const selected = Array.from(state.selection);
-            if (selected.length !== 1) return;
+            const selected = state.selection;
+            if (selected.size === 0) return;
 
-            const id = selected[0];
-            const idx = state.order.indexOf(id);
-            if (idx > 0) {
-                // Swap
-                [state.order[idx], state.order[idx - 1]] = [state.order[idx - 1], state.order[idx]];
-                this.reindex(state);
+            // Bubble down: Iterate from 1 up to length-1
+            for (let i = 1; i < state.order.length; i++) {
+                const id = state.order[i];
+                if (selected.has(id)) {
+                    const prevId = state.order[i - 1];
+                    if (!selected.has(prevId)) {
+                        // Swap with unselected neighbor below
+                        state.order[i] = prevId;
+                        state.order[i - 1] = id;
+                    }
+                }
             }
+            this.reindex(state);
         });
     }
 
@@ -330,6 +343,64 @@ class PizarronStore {
                     node.y = center - node.h / 2;
                 });
             }
+        });
+    }
+
+    stackSelected(direction: 'vertical' | 'horizontal', gap: number = 20) {
+        this.setState(state => {
+            const selected = Array.from(state.selection).map(id => state.nodes[id]).filter(Boolean);
+            if (selected.length < 2) return;
+
+            if (direction === 'vertical') {
+                selected.sort((a, b) => a.y - b.y);
+                // Start from the first item's top position
+                let currentY = selected[0].y;
+                const alignX = selected[0].x;
+
+                selected.forEach((node) => {
+                    node.x = alignX; // Align to first item
+                    node.y = currentY;
+                    currentY += node.h + gap;
+                });
+            } else {
+                selected.sort((a, b) => a.x - b.x);
+                let currentX = selected[0].x;
+                const alignY = selected[0].y;
+
+                selected.forEach(node => {
+                    node.y = alignY; // Align to first item
+                    node.x = currentX;
+                    currentX += node.w + gap;
+                });
+            }
+        });
+    }
+
+    distributeCorners() {
+        this.setState(state => {
+            const selected = Array.from(state.selection).map(id => state.nodes[id]).filter(Boolean);
+            if (selected.length < 2) return;
+
+            let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+            selected.forEach(n => {
+                minX = Math.min(minX, n.x);
+                minY = Math.min(minY, n.y);
+                maxX = Math.max(maxX, n.x + n.w);
+                maxY = Math.max(maxY, n.y + n.h);
+            });
+
+            // Top-Left, Top-Right, Bottom-Left, Bottom-Right
+            // We apply to first 4 items
+            const assign = [
+                (n: any) => { n.x = minX; n.y = minY; },
+                (n: any) => { n.x = maxX - n.w; n.y = minY; },
+                (n: any) => { n.x = minX; n.y = maxY - n.h; },
+                (n: any) => { n.x = maxX - n.w; n.y = maxY - n.h; }
+            ];
+
+            selected.forEach((node, i) => {
+                if (assign[i]) assign[i](node);
+            });
         });
     }
 }

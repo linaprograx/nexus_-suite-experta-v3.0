@@ -33,11 +33,46 @@ export const TopBar: React.FC = () => {
             {hasSelection && (
                 <>
                     <div className="w-px h-4 bg-slate-300 mx-2"></div>
-                    <div className="flex items-center gap-1">
-                        <button onClick={() => pizarronStore.bringToFront()} title="Bring to Front" className="w-8 h-8 hover:bg-slate-100 rounded text-[10px] font-bold text-slate-600 flex items-center justify-center">TOP</button>
-                        <button onClick={() => pizarronStore.bringForward()} title="Bring Forward" className="w-8 h-8 hover:bg-slate-100 rounded text-[10px] font-bold text-slate-600 flex items-center justify-center">UP</button>
-                        <button onClick={() => pizarronStore.sendBackward()} title="Send Backward" className="w-8 h-8 hover:bg-slate-100 rounded text-[10px] font-bold text-slate-600 flex items-center justify-center">DWN</button>
-                        <button onClick={() => pizarronStore.sendToBack()} title="Send to Back" className="w-8 h-8 hover:bg-slate-100 rounded text-[10px] font-bold text-slate-600 flex items-center justify-center">BOT</button>
+
+                    {/* Position Dropdown */}
+                    <div className="relative group">
+                        <button className="flex items-center gap-1 hover:bg-slate-100 px-3 py-1.5 rounded-full text-xs font-medium text-slate-700 transition-colors">
+                            Posición
+                            <svg className="w-3 h-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+                        </button>
+
+                        <div className="absolute top-full left-0 mt-2 hidden group-hover:block bg-white border border-slate-200 shadow-xl rounded-lg p-1 min-w-[160px] z-50 animate-in fade-in zoom-in-95 duration-100">
+                            <div className="absolute -top-3 left-0 w-full h-3 bg-transparent"></div>
+
+                            <button onClick={() => pizarronStore.bringToFront()} className="w-full text-left px-3 py-2 text-xs text-slate-600 hover:bg-slate-50 rounded flex items-center justify-between group/item">
+                                <span>Traer al frente</span>
+                                <div className="flex flex-col gap-0.5 items-end">
+                                    <div className="w-3 h-0.5 bg-slate-400"></div>
+                                    <div className="w-3 h-0.5 bg-slate-200"></div>
+                                </div>
+                            </button>
+                            <button onClick={() => pizarronStore.bringForward()} className="w-full text-left px-3 py-2 text-xs text-slate-600 hover:bg-slate-50 rounded flex items-center justify-between group/item">
+                                <span>Adelantar</span>
+                                <div className="flex flex-col gap-0.5 items-end">
+                                    <div className="w-3 h-0.5 bg-slate-400"></div>
+                                    <div className="w-3 h-0.5 bg-indigo-400"></div>
+                                </div>
+                            </button>
+                            <button onClick={() => pizarronStore.sendBackward()} className="w-full text-left px-3 py-2 text-xs text-slate-600 hover:bg-slate-50 rounded flex items-center justify-between group/item">
+                                <span>Enviar atrás</span>
+                                <div className="flex flex-col gap-0.5 items-end">
+                                    <div className="w-3 h-0.5 bg-indigo-400"></div>
+                                    <div className="w-3 h-0.5 bg-slate-400"></div>
+                                </div>
+                            </button>
+                            <button onClick={() => pizarronStore.sendToBack()} className="w-full text-left px-3 py-2 text-xs text-slate-600 hover:bg-slate-50 rounded flex items-center justify-between group/item">
+                                <span>Enviar al fondo</span>
+                                <div className="flex flex-col gap-0.5 items-end">
+                                    <div className="w-3 h-0.5 bg-slate-200"></div>
+                                    <div className="w-3 h-0.5 bg-slate-400"></div>
+                                </div>
+                            </button>
+                        </div>
                     </div>
                 </>
             )}

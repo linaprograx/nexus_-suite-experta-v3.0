@@ -7,6 +7,8 @@ export const MiniToolbar: React.FC = () => {
     const [nodes, setNodes] = useState<Record<string, BoardNode>>({});
     const [zoom, setZoom] = useState(1);
     const [pan, setPan] = useState({ x: 0, y: 0 });
+    const [toolbarPinned, setToolbarPinned] = useState(false);
+    const [activeMenu, setActiveMenu] = useState<'none' | 'align' | 'distribute'>('none');
 
     useEffect(() => {
         return pizarronStore.subscribe(() => {
@@ -15,6 +17,7 @@ export const MiniToolbar: React.FC = () => {
             setNodes(state.nodes);
             setZoom(state.viewport.zoom);
             setPan({ x: state.viewport.x, y: state.viewport.y });
+            setToolbarPinned(state.uiFlags.toolbarPinned || false);
         });
     }, []);
 
@@ -78,34 +81,75 @@ export const MiniToolbar: React.FC = () => {
                 <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24"><path d="M8 6h8M8 12h8M8 18h8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" /></svg>
             </div>
 
+            {/* PIN TOGGLE */}
+            <button
+                onClick={() => pizarronStore.setState(s => { s.uiFlags.toolbarPinned = !s.uiFlags.toolbarPinned; })}
+                className={`p-1.5 rounded transition-colors ${toolbarPinned ? 'text-blue-600 bg-blue-50' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-50'}`}
+                title={toolbarPinned ? "Unpin Toolbar" : "Pin Toolbar"}
+            >
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2v16z" /></svg>
+            </button>
+            <div className="w-px h-4 bg-slate-200 mx-1"></div>
+
             {/* --- Multi Selection Tools --- */}
             {isMulti && (
                 <>
                     {/* Align Dropdown */}
-                    <div className="relative group">
-                        <button className="p-1.5 hover:bg-slate-100 rounded text-slate-600" title="Align">
+                    {/* Align Dropdown */}
+                    <div className="relative">
+                        <button
+                            onClick={() => setActiveMenu(activeMenu === 'align' ? 'none' : 'align')}
+                            className={`p-1.5 rounded ${activeMenu === 'align' ? 'bg-indigo-50 text-indigo-600 ring-2 ring-indigo-200' : 'hover:bg-slate-100 text-slate-600'}`}
+                            title="Align"
+                        >
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" /></svg>
                         </button>
-                        <div className="absolute top-full left-0 mt-1 hidden group-hover:flex bg-white border border-slate-200 shadow-xl rounded-lg p-1 gap-1 min-w-max z-50">
-                            <button onClick={() => pizarronStore.alignSelected('left')} className="p-1 hover:bg-slate-100 rounded" title="Left">⇤</button>
-                            <button onClick={() => pizarronStore.alignSelected('center')} className="p-1 hover:bg-slate-100 rounded" title="Center">⇹</button>
-                            <button onClick={() => pizarronStore.alignSelected('right')} className="p-1 hover:bg-slate-100 rounded" title="Right">⇥</button>
-                            <div className="w-px h-4 bg-slate-200"></div>
-                            <button onClick={() => pizarronStore.alignSelected('top')} className="p-1 hover:bg-slate-100 rounded" title="Top">⤒</button>
-                            <button onClick={() => pizarronStore.alignSelected('middle')} className="p-1 hover:bg-slate-100 rounded" title="Middle">⇕</button>
-                            <button onClick={() => pizarronStore.alignSelected('bottom')} className="p-1 hover:bg-slate-100 rounded" title="Bottom">⤓</button>
-                        </div>
+                        {activeMenu === 'align' && (
+                            <div className="absolute top-full left-0 mt-1 flex flex-col bg-white border border-slate-200 shadow-xl rounded-lg p-1 gap-1 min-w-[140px] z-50">
+                                <div className="text-[10px] text-slate-400 font-bold px-1 uppercase tracking-wider">Align</div>
+                                <div className="flex gap-1">
+                                    <button onClick={() => pizarronStore.alignSelected('left')} className="p-1 hover:bg-slate-100 rounded flex-1" title="Left">⇤</button>
+                                    <button onClick={() => pizarronStore.alignSelected('center')} className="p-1 hover:bg-slate-100 rounded flex-1" title="Center">⇹</button>
+                                    <button onClick={() => pizarronStore.alignSelected('right')} className="p-1 hover:bg-slate-100 rounded flex-1" title="Right">⇥</button>
+                                </div>
+                                <div className="flex gap-1">
+                                    <button onClick={() => pizarronStore.alignSelected('top')} className="p-1 hover:bg-slate-100 rounded flex-1" title="Top">⤒</button>
+                                    <button onClick={() => pizarronStore.alignSelected('middle')} className="p-1 hover:bg-slate-100 rounded flex-1" title="Middle">⇕</button>
+                                    <button onClick={() => pizarronStore.alignSelected('bottom')} className="p-1 hover:bg-slate-100 rounded flex-1" title="Bottom">⤓</button>
+                                </div>
+                                <div className="h-px bg-slate-100 my-0.5"></div>
+                                <div className="text-[10px] text-slate-400 font-bold px-1 uppercase tracking-wider">Stack</div>
+                                <div className="flex gap-1">
+                                    <button onClick={() => pizarronStore.stackSelected('vertical')} className="p-1 hover:bg-slate-100 rounded flex-1" title="Stack Vertical">
+                                        <svg className="w-4 h-4 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" /></svg>
+                                    </button>
+                                    <button onClick={() => pizarronStore.stackSelected('horizontal')} className="p-1 hover:bg-slate-100 rounded flex-1" title="Stack Horizontal">
+                                        <svg className="w-4 h-4 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 4v16M12 4v16M18 4v16" /></svg>
+                                    </button>
+                                    <button onClick={() => pizarronStore.distributeCorners()} className="p-1 hover:bg-slate-100 rounded flex-1" title="Corners">
+                                        <svg className="w-4 h-4 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4h4v4H4zM16 4h4v4h-4zM4 16h4v4H4zM16 16h4v4h-4z" /></svg>
+                                    </button>
+                                </div>
+                            </div>
+                        )}
                     </div>
 
                     {/* Distribute */}
-                    <div className="relative group">
-                        <button className="p-1.5 hover:bg-slate-100 rounded text-slate-600" title="Distribute">
+                    {/* Distribute */}
+                    <div className="relative">
+                        <button
+                            onClick={() => setActiveMenu(activeMenu === 'distribute' ? 'none' : 'distribute')}
+                            className={`p-1.5 rounded ${activeMenu === 'distribute' ? 'bg-indigo-50 text-indigo-600 ring-2 ring-indigo-200' : 'hover:bg-slate-100 text-slate-600'}`}
+                            title="Distribute"
+                        >
                             <span className="font-mono text-[10px] font-bold tracking-tight">|||</span>
                         </button>
-                        <div className="absolute top-full left-0 mt-1 hidden group-hover:flex bg-white border border-slate-200 shadow-xl rounded-lg p-1 gap-1 min-w-max z-50">
-                            <button onClick={() => pizarronStore.distributeSelected('horizontal')} className="p-1 hover:bg-slate-100 rounded text-xs" title="Horizontal">↔</button>
-                            <button onClick={() => pizarronStore.distributeSelected('vertical')} className="p-1 hover:bg-slate-100 rounded text-xs" title="Vertical">↕</button>
-                        </div>
+                        {activeMenu === 'distribute' && (
+                            <div className="absolute top-full left-0 mt-1 flex bg-white border border-slate-200 shadow-xl rounded-lg p-1 gap-1 min-w-max z-50">
+                                <button onClick={() => pizarronStore.distributeSelected('horizontal')} className="p-1 hover:bg-slate-100 rounded text-xs" title="Horizontal">↔</button>
+                                <button onClick={() => pizarronStore.distributeSelected('vertical')} className="p-1 hover:bg-slate-100 rounded text-xs" title="Vertical">↕</button>
+                            </div>
+                        )}
                     </div>
 
                     <div className="w-px h-4 bg-slate-200 mx-0.5"></div>
@@ -196,6 +240,67 @@ export const MiniToolbar: React.FC = () => {
                     >
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" /></svg>
                     </button>
+
+                    {/* Effects Menu */}
+                    <div className="relative group">
+                        <button className="p-1.5 hover:bg-slate-100 rounded text-slate-600" title="Effects">
+                            <span className="text-xs font-bold">✨</span>
+                        </button>
+                        <div className="absolute top-full left-0 mt-1 hidden group-hover:flex flex-col bg-white border border-slate-200 shadow-xl rounded-lg p-2 gap-2 min-w-[200px] z-50">
+                            {/* Hover Bridge */}
+                            <div className="absolute -top-3 left-0 w-full h-3 bg-transparent"></div>
+
+                            {/* Shadow Toggle */}
+                            <div className="flex items-center justify-between text-xs text-slate-600">
+                                <span>Shadow (Sombra)</span>
+                                <button
+                                    onClick={() => {
+                                        const current = firstNode.content.filters?.shadow;
+                                        pizarronStore.updateNode(firstNode.id, {
+                                            content: {
+                                                ...firstNode.content,
+                                                filters: {
+                                                    ...firstNode.content.filters,
+                                                    shadow: current ? undefined : { color: 'rgba(0,0,0,0.3)', blur: 20, offsetX: 10, offsetY: 10 }
+                                                }
+                                            }
+                                        });
+                                    }}
+                                    className={`w-8 h-4 rounded-full flex items-center transition-colors px-1 ${firstNode.content.filters?.shadow ? 'bg-indigo-500 justify-end' : 'bg-slate-200 justify-start'}`}
+                                >
+                                    <div className="w-2.5 h-2.5 bg-white rounded-full"></div>
+                                </button>
+                            </div>
+
+                            {/* Blur Slider */}
+                            <div className="flex flex-col gap-1 text-xs text-slate-600">
+                                <div className="flex justify-between">
+                                    <span>Blur (Desenfoque)</span>
+                                    <span>{(firstNode.content.filters?.blur || 0)}px</span>
+                                </div>
+                                <input
+                                    type="range"
+                                    min="0"
+                                    max="20"
+                                    step="1"
+                                    value={firstNode.content.filters?.blur || 0}
+                                    onInput={(e) => {
+                                        const val = parseInt((e.target as HTMLInputElement).value);
+                                        pizarronStore.updateNode(firstNode.id, {
+                                            content: {
+                                                ...firstNode.content,
+                                                filters: {
+                                                    ...firstNode.content.filters,
+                                                    blur: val > 0 ? val : undefined
+                                                }
+                                            }
+                                        });
+                                    }}
+                                    className="w-full h-1 bg-slate-200 rounded-lg appearance-none cursor-pointer"
+                                />
+                            </div>
+                        </div>
+                    </div>
                 </>
             )}
 
