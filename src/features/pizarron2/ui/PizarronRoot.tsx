@@ -10,6 +10,7 @@ import { TextEditor } from './overlays/TextEditor';
 import { PresentationMode } from './presentation/PresentationMode';
 import { ImageModal } from './overlays/ImageModal';
 import { ConfigModalRouter } from './overlays/ConfigModalRouter';
+import { MiniToolbar } from './overlays/MiniToolbar';
 import { Firestore } from 'firebase/firestore'; // Assuming Firestore type is available or needs to be imported
 
 interface PizarronRootProps {
@@ -43,6 +44,39 @@ export const PizarronRoot: React.FC<PizarronRootProps> = ({ appId, boardId, user
         });
     }, []);
 
+    // Global Keybinds
+    React.useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            // Ignore if input is focused
+            if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement || (e.target as HTMLElement).isContentEditable) return;
+
+            const isCmd = e.metaKey || e.ctrlKey;
+
+            if (isCmd && e.key === 'c') {
+                e.preventDefault();
+                pizarronStore.copySelection();
+            }
+            if (isCmd && e.key === 'v') {
+                e.preventDefault();
+                pizarronStore.paste();
+            }
+            if (e.key === 'Delete' || e.key === 'Backspace') {
+                const sel = pizarronStore.getState().selection;
+                if (sel.size > 0) pizarronStore.deleteNodes(Array.from(sel));
+            }
+            if (isCmd && e.key === 'd') {
+                e.preventDefault();
+                pizarronStore.copySelection();
+                pizarronStore.paste();
+            }
+
+            // Undo/Redo Could go here too
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, []);
+
     return (
         <div className="w-full h-full relative flex flex-col bg-slate-50 overflow-hidden">
             {/* Standard Overlays (Hidden during Presentation) */}
@@ -55,6 +89,7 @@ export const PizarronRoot: React.FC<PizarronRootProps> = ({ appId, boardId, user
                         <Inspector />
                         <TextEditor />
                         <ConfigModalRouter />
+                        <MiniToolbar />
                         {editingImageId && <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm pointer-events-auto">
                             <ImageModal
                                 nodeId={editingImageId}

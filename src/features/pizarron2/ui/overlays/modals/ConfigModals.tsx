@@ -80,9 +80,23 @@ export const ShapeConfigModal: React.FC<{ node: BoardNode }> = ({ node }) => {
                     />
                 </div>
 
+                {/* Opacity */}
+                <div>
+                    <label className="text-xs font-medium text-slate-600 flex justify-between">
+                        <span>Opacity</span>
+                        <span>{Math.round((node.content.opacity ?? 1) * 100)}%</span>
+                    </label>
+                    <input
+                        type="range" min="0" max="1" step="0.1"
+                        value={node.content.opacity ?? 1}
+                        onChange={(e) => update({ opacity: Number(e.target.value) })}
+                        className="w-full mt-1 accent-indigo-500"
+                    />
+                </div>
+
                 <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-100">
-                    <button onClick={() => pizarronStore.duplicateSelectedNodes()} className="px-3 py-1 text-xs bg-slate-50 hover:bg-slate-100 border rounded text-slate-600">Duplicate</button>
-                    <button onClick={() => pizarronStore.deleteSelectedNodes()} className="px-3 py-1 text-xs bg-red-50 hover:bg-red-100 border border-red-200 rounded text-red-600">Delete</button>
+                    <button onClick={() => { pizarronStore.copySelection(); pizarronStore.paste(); }} className="px-3 py-1 text-xs bg-slate-50 hover:bg-slate-100 border rounded text-slate-600">Duplicate</button>
+                    <button onClick={() => { const sel = pizarronStore.getState().selection; pizarronStore.deleteNodes(Array.from(sel)); }} className="px-3 py-1 text-xs bg-red-50 hover:bg-red-100 border border-red-200 rounded text-red-600">Delete</button>
                 </div>
             </div>
         </div>
@@ -255,7 +269,7 @@ export const TextConfigModal: React.FC<{ node: BoardNode }> = ({ node }) => {
                 </div>
 
                 <div className="pt-2 border-t border-slate-100">
-                    <button onClick={() => pizarronStore.deleteSelectedNodes()} className="w-full px-3 py-1 text-xs bg-red-50 hover:bg-red-100 border border-red-200 rounded text-red-600">Delete Text</button>
+                    <button onClick={() => { const sel = pizarronStore.getState().selection; pizarronStore.deleteNodes(Array.from(sel)); }} className="w-full px-3 py-1 text-xs bg-red-50 hover:bg-red-100 border border-red-200 rounded text-red-600">Delete Text</button>
                 </div>
             </div>
         </div>
@@ -320,6 +334,32 @@ export const BoardConfigModal: React.FC<{ node: BoardNode }> = ({ node }) => {
                             />
                         ))}
                     </div>
+                </div>
+
+                {/* Opacity */}
+                <div>
+                    <label className="text-xs font-medium text-slate-600 flex justify-between">
+                        <span>Opacity</span>
+                        <span>{Math.round((node.content.opacity ?? 1) * 100)}%</span>
+                    </label>
+                    <input
+                        type="range" min="0" max="1" step="0.1"
+                        value={node.content.opacity ?? 1}
+                        onChange={(e) => update({ opacity: Number(e.target.value) })}
+                        className="w-full mt-1"
+                    />
+                </div>
+
+                {/* Content Body */}
+                <div>
+                    <label className="text-xs font-medium text-slate-600">Content</label>
+                    <textarea
+                        className="w-full mt-1 p-2 border rounded text-xs font-mono min-h-[100px]"
+                        value={node.content.body || ''}
+                        onChange={(e) => update({ body: e.target.value })}
+                        placeholder="- Item 1&#10;1. Ordered&#10;--- (Separator)"
+                    />
+                    <p className="text-[9px] text-slate-400 mt-1">Use "- " for bullets, "1. " for numbers, "---" for separator.</p>
                 </div>
 
                 <button

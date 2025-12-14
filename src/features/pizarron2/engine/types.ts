@@ -14,7 +14,14 @@ export interface BoardNode {
     content: {
         title?: string;
         body?: string;
+        // Fill props
         color?: string; // hex or theme var
+        gradient?: {
+            type: 'linear' | 'radial';
+            start: string; // color
+            end: string;   // color
+            angle?: number; // deg
+        };
 
         // Typography (TextNode)
         fontSize?: number;
@@ -50,6 +57,7 @@ export interface BoardNode {
     createdAt: number;
     updatedAt: number;
     locked?: boolean;
+    isFixed?: boolean; // Background mode
     parentId?: string; // for groups
 }
 

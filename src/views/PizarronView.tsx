@@ -1,10 +1,10 @@
-import React from 'react';
-import { Firestore, collection, onSnapshot, setDoc, doc } from 'firebase/firestore';
-import { Auth } from 'firebase/auth'; // Keep signature
-import { FirebaseStorage } from 'firebase/storage'; // Keep signature
-import { PremiumLayout } from '../components/layout/PremiumLayout';
+import React, { useEffect, useState, useRef } from 'react';
+import { Firestore } from 'firebase/firestore';
+import { Auth } from 'firebase/auth';
+import { FirebaseStorage } from 'firebase/storage';
 import { PizarronRoot } from '../features/pizarron2/ui/PizarronRoot';
-import { PizarronBoard, UserProfile } from '../types';
+import { UserProfile } from '../types';
+import { useUI } from '../context/UIContext';
 
 interface PizarronViewProps {
   db: Firestore;
@@ -24,49 +24,45 @@ interface PizarronViewProps {
 
 export default function PizarronView(props: PizarronViewProps) {
   const { db, userId, appId } = props;
-  const [activeBoardId, setActiveBoardId] = React.useState<string | null>(null);
 
-  // Minimal Board Loading to bootstrap the Engine
-  React.useEffect(() => {
-    const boardsColPath = `artifacts/${appId}/public/data/pizarron-boards`;
-    const unsub = onSnapshot(collection(db, boardsColPath), async (snap) => {
-      const data = snap.docs.map(d => ({ id: d.id, ...d.data() } as PizarronBoard));
-      if (data.length === 0) {
-        // Create default if none
-        const defaultId = 'general';
-        await setDoc(doc(db, boardsColPath, defaultId), {
-          name: 'General',
-          columns: ['Ideas', 'Pruebas', 'Aprobado'],
-          createdAt: Date.now()
-        });
-        setActiveBoardId(defaultId);
-        return;
-      }
-      // logic to keep current or default to first
-      if (!activeBoardId) {
-        setActiveBoardId(data[0].id);
-      }
-    });
-    return () => unsub();
-  }, [db, appId, activeBoardId]);
+  // UX Pro: Instant Load. 
+  // We skip the legacy board lookup and default to "general".
+  // The internal PizarronRoot sync adapter handles the real data connection.
+  const [activeBoardId] = useState<string>('general');
 
-  // Force full screen layout without PremiumLayout constraints for now
-  // to solve the "split screen" issue.
+  const { toggleSidebar, isSidebarCollapsed } = useUI();
+  const didCollapseRef = useRef(false);
+
+  // Layout: Force Sidebar Collapse on Entry
+  useEffect(() => {
+    // Only collapse if it's currently open
+    if (!isSidebarCollapsed) {
+      toggleSidebar();
+      didCollapseRef.current = true;
+    }
+
+    return () => {
+      // Restore: If WE collapsed it, we should expand it back (toggle again).
+      // Note: If user manually interacted in between, this might act weird, 
+      // but without specific 'setSidebar(bool)', this is the standard pattern.
+      if (didCollapseRef.current) {
+        toggleSidebar();
+      }
+    };
+  }, []); // Run once on mount
+
   return (
-    <div className="fixed inset-0 w-full h-full overflow-hidden bg-slate-50 z-[100]">
-      {/* PizarronRoot takes over */}
-      {activeBoardId ? (
-        <PizarronRoot
-          appId={appId}
-          boardId={activeBoardId}
-          userId={userId}
-          db={db}
-        />
-      ) : (
-        <div className="flex items-center justify-center h-full text-slate-400">
-          Loading Pizarrón Engine...
-        </div>
-      )}
+    // Layout Strategy "UX Pro":
+    // 1. Sidebar (z-40) is fixed at left-0. When collapsed it is w-20.
+    // 2. We position Pizarron fixed at left-0 (mobile) or left-20 (desktop).
+    // 3. We use z-30 to ensure we are above page backgrounds but BELOW the Sidebar (so it remains visible).
+    <div className="fixed inset-0 md:left-20 z-30 bg-slate-50 overflow-hidden">
+      <PizarronRoot
+        appId={appId}
+        boardId={activeBoardId}
+        userId={userId}
+        db={db}
+      />
     </div>
   );
 }

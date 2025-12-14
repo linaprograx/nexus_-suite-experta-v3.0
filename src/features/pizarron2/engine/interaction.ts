@@ -14,9 +14,23 @@ export class InteractionManager {
     private initialNodePositions: Record<string, Point> = {};
     private startViewport: Viewport = { x: 0, y: 0, zoom: 1 };
     private isResizing = false;
-    private resizeHandle: 'nw' | 'ne' | 'se' | 'sw' | null = null;
-    private initialResizeState: { x: number, y: number, w: number, h: number } | null = null;
+    private isRotating = false;
+    private initialRotation = 0;
+    private resizeHandle: string | null = null;
+    private initialResizeState: { x: number, y: number, w: number, h: number, rotation?: number } | null = null;
     private canvas: HTMLCanvasElement | null = null;
+
+    // Helper: Rotate point around center
+    private rotatePoint(point: Point, center: Point, angle: number): Point {
+        const cos = Math.cos(angle);
+        const sin = Math.sin(angle);
+        const dx = point.x - center.x;
+        const dy = point.y - center.y;
+        return {
+            x: center.x + (dx * cos - dy * sin),
+            y: center.y + (dx * sin + dy * cos)
+        };
+    }
 
     // Double Click Helpers
     private lastClickTime: number = 0;
@@ -70,11 +84,11 @@ export class InteractionManager {
         this.canvas = canvas;
     }
 
-    // Helper to convert screen coordinates to world coordinates
-    private screenToWorld(screenPoint: Point, viewport: Viewport): Point {
+    // Helper to convert screen coordinates to    // Coordinate Systems
+    private screenToWorld(point: { x: number, y: number }, viewport: Viewport): Point {
         return {
-            x: (screenPoint.x - viewport.x) / viewport.zoom,
-            y: (screenPoint.y - viewport.y) / viewport.zoom
+            x: (point.x - viewport.x) / viewport.zoom,
+            y: (point.y - viewport.y) / viewport.zoom
         };
     }
 
@@ -103,24 +117,54 @@ export class InteractionManager {
         const worldPoint = this.screenToWorld(screenPoint, viewport);
 
         // 0. RESIZE HANDLES
+        // 1. Check Resize Handles (only if 1 node selected and NOT LOCKED)
         if (state.selection.size === 1 && state.uiFlags.activeTool === 'pointer') {
             const id = Array.from(state.selection)[0];
             const node = nodes[id];
-            if (node) {
+
+            if (node && !node.locked && !node.isFixed) {
                 const handleSize = 10 / viewport.zoom;
                 const half = handleSize / 2;
                 const margin = handleSize;
 
-                const handles = {
+                // Prepare Rotation Math
+                const cx = node.x + node.w / 2;
+                const cy = node.y + node.h / 2;
+                const rot = node.rotation || 0;
+
+                // Map Mouse to Local Axis-Aligned Space
+                const localMouse = this.rotatePoint(worldPoint, { x: cx, y: cy }, -rot);
+
+                // 1. ROTATION HANDLE
+                const rotHandleY = node.y - (25 / viewport.zoom);
+                const rotHandleX = node.x + node.w / 2;
+
+                if (Math.abs(localMouse.x - rotHandleX) < margin &&
+                    Math.abs(localMouse.y - rotHandleY) < margin) {
+
+                    this.isRotating = true;
+                    this.initialResizeState = { ...node }; // snapshot
+                    // Calculate start angle relative to center in WORLD space
+                    this.initialRotation = Math.atan2(worldPoint.y - cy, worldPoint.x - cx);
+                    (e.target as HTMLElement).setPointerCapture(e.pointerId);
+                    return;
+                }
+
+                // 2. RESIZE HANDLES (Using localMouse works perfectly for rotated nodes!)
+                const handles: Record<string, { x: number, y: number }> = {
                     nw: { x: node.x - half, y: node.y - half },
                     ne: { x: node.x + node.w - half, y: node.y - half },
                     se: { x: node.x + node.w - half, y: node.y + node.h - half },
-                    sw: { x: node.x - half, y: node.y + node.h - half }
+                    sw: { x: node.x - half, y: node.y + node.h - half },
+                    n: { x: node.x + node.w / 2 - half, y: node.y - half },
+                    s: { x: node.x + node.w / 2 - half, y: node.y + node.h - half },
+                    e: { x: node.x + node.w - half, y: node.y + node.h / 2 - half },
+                    w: { x: node.x - half, y: node.y + node.h / 2 - half }
                 };
 
                 for (const [key, pos] of Object.entries(handles)) {
-                    if (Math.abs(worldPoint.x - (pos.x + half)) < margin &&
-                        Math.abs(worldPoint.y - (pos.y + half)) < margin) {
+                    if (Math.abs(localMouse.x - (pos.x + half)) < margin &&
+                        Math.abs(localMouse.y - (pos.y + half)) < margin) {
 
                         this.isResizing = true;
                         this.resizeHandle = key as any;
@@ -223,10 +267,9 @@ export class InteractionManager {
         if (currentTool === 'pointer') {
             if (hitId) {
                 // Mode: SELECT / DRAG
-                this.isDragging = true;
-                this.dragStart = worldPoint;
+                const n = nodes[hitId]; // Get the node that was hit
 
-                // Handle Selection
+                // Handle Selection (Always allow selection, even if locked)
                 const isMultiSelect = e.ctrlKey || e.metaKey || e.shiftKey;
                 let newSelection = new Set(state.selection);
 
@@ -243,6 +286,15 @@ export class InteractionManager {
                 }
 
                 pizarronStore.setSelection(Array.from(newSelection));
+
+                // Check Lock
+                if (n.locked || n.isFixed) {
+                    // Allow selection but NO drag
+                    (e.target as HTMLElement).setPointerCapture(e.pointerId); // Still capture to prevent bg panning
+                    return;
+                }
+
+                this.isDragging = true;
 
                 // Prepare initial positions
                 this.initialNodePositions = {};
@@ -298,28 +350,77 @@ export class InteractionManager {
         const screenPoint = { x: e.clientX - rect.left, y: e.clientY - rect.top };
         const worldPoint = this.screenToWorld(screenPoint, viewport);
 
+        // ROTATION
+        if (this.isRotating && this.initialResizeState) {
+            const { x, y, w, h, rotation } = this.initialResizeState;
+            const cx = x + w / 2;
+            const cy = y + h / 2;
+
+            // Current angle from center
+            const currentAngle = Math.atan2(worldPoint.y - cy, worldPoint.x - cx);
+
+            // Diff from drag start
+            let deltaAngle = currentAngle - this.initialRotation;
+
+            // New Rotation (Start Rotation + Delta)
+            let newRotation = (rotation || 0) + deltaAngle;
+
+            // Snap (Shift) - 45 deg
+            if (e.shiftKey) {
+                const step = Math.PI / 4; // 45 deg
+                newRotation = Math.round(newRotation / step) * step;
+            }
+
+            const id = Array.from(state.selection)[0];
+            if (id) {
+                pizarronStore.updateNode(id, { rotation: newRotation });
+            }
+            return;
+        }
+
         // RESIZING
         if (this.isResizing && this.initialResizeState && this.resizeHandle) {
             const { x, y, w, h } = this.initialResizeState;
             const dx = worldPoint.x - this.dragStart.x;
             const dy = worldPoint.y - this.dragStart.y;
+            const aspect = w / h;
 
             let nx = x, ny = y, nw = w, nh = h;
 
-            if (this.resizeHandle.includes('e')) nw = w + dx;
-            if (this.resizeHandle.includes('s')) nh = h + dy;
-            if (this.resizeHandle.includes('w')) { nx = x + dx; nw = w - dx; }
-            if (this.resizeHandle.includes('n')) { ny = y + dy; nh = h - dy; }
+            // --- Side Handles (Unidim) ---
+            if (this.resizeHandle === 'e') {
+                nw = w + dx;
+            } else if (this.resizeHandle === 'w') {
+                nx = x + dx;
+                nw = w - dx;
+            } else if (this.resizeHandle === 's') {
+                nh = h + dy;
+            } else if (this.resizeHandle === 'n') {
+                ny = y + dy;
+                nh = h - dy;
+            }
+            // --- Corner Handles (Proportional) ---
+            else if (this.resizeHandle === 'se') {
+                nw = w + dx;
+                nh = nw / aspect;
+            } else if (this.resizeHandle === 'sw') {
+                nx = x + dx;
+                nw = w - dx;
+                nh = nw / aspect;
+            } else if (this.resizeHandle === 'ne') {
+                nw = w + dx;
+                nh = nw / aspect;
+                ny = y + (h - nh);
+            } else if (this.resizeHandle === 'nw') {
+                nx = x + dx;
+                nw = w - dx;
+                nh = nw / aspect;
+                ny = y + (h - nh);
+            }
 
-            // Min Size
-            if (nw < 10) {
-                if (this.resizeHandle.includes('w')) nx = x + (w - 10);
-                nw = 10;
-            }
-            if (nh < 10) {
-                if (this.resizeHandle.includes('n')) ny = y + (h - 10);
-                nh = 10;
-            }
+            // Min Size Constraint
+            if (nw < 20) nw = 20;
+            if (nh < 20) nh = 20;
 
             const id = Array.from(state.selection)[0];
             if (id) {
@@ -410,7 +511,14 @@ export class InteractionManager {
             }
         }
 
-        pizarronStore.setSelection(selected);
+        // OPTIMIZATION: Diff check to avoid spamming Store updates
+        const currentSel = pizarronStore.getState().selection;
+        const isSame = selected.length === currentSel.size &&
+            selected.every(id => currentSel.has(id));
+
+        if (!isSame) {
+            pizarronStore.setSelection(selected);
+        }
     }
 
     onPointerUp(e: React.PointerEvent<HTMLCanvasElement>) {
@@ -420,6 +528,11 @@ export class InteractionManager {
         if (this.isResizing) {
             this.isResizing = false;
             this.resizeHandle = null;
+            return;
+        }
+
+        if (this.isRotating) {
+            this.isRotating = false;
             return;
         }
 

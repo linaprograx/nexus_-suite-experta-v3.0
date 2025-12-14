@@ -11,9 +11,13 @@ class FirestoreAdapter {
     private pendingDeletes: Set<string> = new Set();
     private writeTimeout: NodeJS.Timeout | null = null;
     private isApplyingRemote = false;
+    private currentAppId: string | null = null;
+    private currentBoardId: string | null = null;
 
     init(appId: string, boardId: string = 'general') {
         this.stop(); // Cleanup previous if any
+        this.currentAppId = appId;
+        this.currentBoardId = boardId;
 
         const colRef = collection(db, `artifacts/${appId}/public/data/pizarron-tasks`);
 
@@ -99,9 +103,19 @@ class FirestoreAdapter {
     }
 
     stop() {
+        if (this.writeTimeout) {
+            clearTimeout(this.writeTimeout);
+            this.writeTimeout = null;
+            // Force flush if we have context
+            if (this.currentAppId && this.currentBoardId) {
+                this.flush(this.currentAppId, this.currentBoardId);
+            }
+        }
         if (this.unsubscribeSnapshot) this.unsubscribeSnapshot();
         if (this.unsubscribeStore) this.unsubscribeStore();
-        if (this.writeTimeout) clearTimeout(this.writeTimeout);
+
+        this.currentAppId = null;
+        this.currentBoardId = null;
     }
 
     private scheduleFlush(appId: string, boardId: string) {

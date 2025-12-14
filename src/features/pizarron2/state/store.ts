@@ -106,7 +106,7 @@ class PizarronStore {
         newNode.id = crypto.randomUUID();
         newNode.x += 20;
         newNode.y += 20;
-        newNode.zIndex = state.order.length + 1; // Ensure on top
+        newNode.zIndex = this.state.order.length + 1;
         newNode.updatedAt = Date.now();
         newNode.createdAt = Date.now();
 
@@ -217,6 +217,121 @@ class PizarronStore {
 
     // Helper to cache metric
     private itemCount = 0;
+
+    // Ephemeral Clipboard (run-time only)
+    private clipboard: BoardNode[] = [];
+
+    copySelection() {
+        const selectedIds = Array.from(this.state.selection);
+        this.clipboard = selectedIds
+            .map(id => this.state.nodes[id])
+            .filter(n => !!n)
+            .map(n => JSON.parse(JSON.stringify(n))); // Deep copy
+    }
+
+    paste() {
+        if (this.clipboard.length === 0) return;
+
+        this.setState(state => {
+            const newIds: string[] = [];
+            this.clipboard.forEach(nodeData => {
+                const newNode = { ...nodeData };
+                newNode.id = crypto.randomUUID();
+                newNode.x += 20; // Offset
+                newNode.y += 20;
+                newNode.zIndex = state.order.length + newIds.length;
+                newNode.createdAt = Date.now();
+                newNode.updatedAt = Date.now();
+
+                state.nodes[newNode.id] = newNode;
+                state.order.push(newNode.id);
+                newIds.push(newNode.id);
+            });
+            state.selection = new Set(newIds);
+        });
+
+        // Cascade for subsequent pastes
+        this.clipboard.forEach(n => { n.x += 20; n.y += 20; });
+    }
+
+    // --- Transformations & Alignment ---
+
+    rotateSelected(angleDeg: number) {
+        const rad = (angleDeg * Math.PI) / 180;
+        this.setState(state => {
+            state.selection.forEach(id => {
+                const node = state.nodes[id];
+                if (node) {
+                    node.rotation = (node.rotation || 0) + rad;
+                }
+            });
+        });
+    }
+
+    alignSelected(type: 'left' | 'center' | 'right' | 'top' | 'middle' | 'bottom') {
+        this.setState(state => {
+            const selected = Array.from(state.selection).map(id => state.nodes[id]).filter(Boolean);
+            if (selected.length < 2) return;
+
+            // Calculate bounds of selection group
+            let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+            selected.forEach(n => {
+                minX = Math.min(minX, n.x);
+                maxX = Math.max(maxX, n.x + n.w);
+                minY = Math.min(minY, n.y);
+                maxY = Math.max(maxY, n.y + n.h);
+            });
+
+            const midX = minX + (maxX - minX) / 2;
+            const midY = minY + (maxY - minY) / 2;
+
+            selected.forEach(node => {
+                switch (type) {
+                    case 'left': node.x = minX; break;
+                    case 'center': node.x = midX - node.w / 2; break;
+                    case 'right': node.x = maxX - node.w; break;
+                    case 'top': node.y = minY; break;
+                    case 'middle': node.y = midY - node.h / 2; break;
+                    case 'bottom': node.y = maxY - node.h; break;
+                }
+            });
+        });
+    }
+
+    distributeSelected(axis: 'horizontal' | 'vertical') {
+        this.setState(state => {
+            const selected = Array.from(state.selection)
+                .map(id => state.nodes[id])
+                .filter(Boolean);
+
+            if (selected.length < 3) return;
+
+            if (axis === 'horizontal') {
+                selected.sort((a, b) => a.x - b.x);
+
+                const firstCenter = selected[0].x + selected[0].w / 2;
+                const lastCenter = selected[selected.length - 1].x + selected[selected.length - 1].w / 2;
+                const step = (lastCenter - firstCenter) / (selected.length - 1);
+
+                selected.forEach((node, i) => {
+                    if (i === 0 || i === selected.length - 1) return;
+                    const center = firstCenter + step * i;
+                    node.x = center - node.w / 2;
+                });
+            } else {
+                selected.sort((a, b) => a.y - b.y);
+                const firstCenter = selected[0].y + selected[0].h / 2;
+                const lastCenter = selected[selected.length - 1].y + selected[selected.length - 1].h / 2;
+                const step = (lastCenter - firstCenter) / (selected.length - 1);
+
+                selected.forEach((node, i) => {
+                    if (i === 0 || i === selected.length - 1) return;
+                    const center = firstCenter + step * i;
+                    node.y = center - node.h / 2;
+                });
+            }
+        });
+    }
 }
 
 export const pizarronStore = new PizarronStore();

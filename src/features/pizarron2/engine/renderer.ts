@@ -128,7 +128,18 @@ export class PizarronRenderer {
 
     private drawNode(ctx: CanvasRenderingContext2D, node: BoardNode, isSelected: boolean, zoom: number) {
         ctx.save();
-        ctx.translate(node.x, node.y);
+
+        // Rotation Support: Rotate around center
+        const cx = node.x + node.w / 2;
+        const cy = node.y + node.h / 2;
+        ctx.translate(cx, cy);
+        if (node.rotation) ctx.rotate(node.rotation);
+        ctx.translate(-node.w / 2, -node.h / 2);
+
+        // Universal Opacity
+        if (node.content.opacity !== undefined) {
+            ctx.globalAlpha = node.content.opacity;
+        }
 
         // Shadow
         ctx.shadowColor = 'rgba(0,0,0,0.1)';
@@ -141,7 +152,15 @@ export class PizarronRenderer {
             const borderColor = node.content.borderColor || '#334155';
             const radius = node.content.borderRadius || 0;
 
-            ctx.fillStyle = node.content.color || '#cbd5e1';
+            if (node.content.gradient) {
+                const g = node.content.gradient;
+                const grd = ctx.createLinearGradient(0, 0, 0, node.h);
+                grd.addColorStop(0, g.start);
+                grd.addColorStop(1, g.end);
+                ctx.fillStyle = grd;
+            } else {
+                ctx.fillStyle = node.content.color || '#cbd5e1';
+            }
             ctx.strokeStyle = borderColor;
             ctx.lineWidth = borderWidth;
 
@@ -224,7 +243,10 @@ export class PizarronRenderer {
         }
         else if (node.type === 'image') {
             const src = node.content.src;
-            const opacity = node.content.opacity ?? 1;
+            // Opacity handled globally now, but keep explicit checks if implementation relies on it inside drawImage
+            // Actually ctx.globalAlpha multiplies. 
+            // node.content.opacity logic in image block was manual. Global is better.
+
             const radius = node.content.borderRadius || 0;
             if (src) {
                 let img = this.imageCache.get(src);
@@ -241,7 +263,7 @@ export class PizarronRenderer {
                         else ctx.rect(0, 0, node.w, node.h);
                         ctx.clip();
                     }
-                    ctx.globalAlpha = opacity;
+                    // ctx.globalAlpha already set
                     ctx.drawImage(img, 0, 0, node.w, node.h);
                     ctx.restore();
                 } else {
@@ -282,8 +304,15 @@ export class PizarronRenderer {
             ctx.textAlign = 'left';
         }
         else if (node.type === 'board') {
-            // ... Board logic with Border
-            ctx.fillStyle = node.content.color || '#f8fafc';
+            if (node.content.gradient) {
+                const g = node.content.gradient;
+                const grd = ctx.createLinearGradient(0, 0, 0, node.h);
+                grd.addColorStop(0, g.start);
+                grd.addColorStop(1, g.end);
+                ctx.fillStyle = grd;
+            } else {
+                ctx.fillStyle = node.content.color || '#f8fafc';
+            }
             const borderWidth = node.content.borderWidth || 2;
             const borderColor = node.content.borderColor || '#e2e8f0';
 
@@ -296,9 +325,58 @@ export class PizarronRenderer {
             ctx.strokeStyle = borderColor;
             if (borderWidth > 0) ctx.stroke();
 
+            // Title
             ctx.fillStyle = '#94a3b8';
             ctx.font = 'bold 12px sans-serif';
-            ctx.fillText((node.content.title || 'BOARD').toUpperCase(), 20, 30);
+            ctx.textBaseline = 'top';
+            ctx.fillText((node.content.title || 'BOARD').toUpperCase(), 20, 20);
+
+            // Body (Lists)
+            if (node.content.body) {
+                const startY = 50;
+                let cursorY = startY;
+                ctx.fillStyle = '#334155';
+                ctx.font = '14px Inter, sans-serif';
+                const lineHeight = 20;
+
+                const lines = node.content.body.split('\n');
+                lines.forEach(line => {
+                    if (cursorY > node.h - 20) return; // Clip
+
+                    if (line.trim() === '---') {
+                        ctx.beginPath();
+                        ctx.moveTo(20, cursorY + 10);
+                        ctx.lineTo(node.w - 20, cursorY + 10);
+                        ctx.strokeStyle = '#cbd5e1';
+                        ctx.lineWidth = 1;
+                        ctx.stroke();
+                        cursorY += 20;
+                        return;
+                    }
+
+                    let text = line;
+                    let offsetX = 20;
+
+                    if (line.trim().startsWith('- ')) {
+                        // Bullet
+                        ctx.beginPath();
+                        ctx.arc(28, cursorY + 8, 3, 0, Math.PI * 2);
+                        ctx.fill();
+                        text = line.replace('- ', '');
+                        offsetX = 38;
+                    } else if (/^\d+\.\s/.test(line.trim())) {
+                        // Number
+                        const match = line.trim().match(/^(\d+\.)\s/);
+                        const prefix = match ? match[1] : '';
+                        ctx.fillText(prefix, 20, cursorY);
+                        text = line.replace(/^\d+\.\s/, '');
+                        offsetX = 38;
+                    }
+
+                    ctx.fillText(text, offsetX, cursorY);
+                    cursorY += lineHeight;
+                });
+            }
         }
         else {
             // Card / Generic
@@ -336,20 +414,62 @@ export class PizarronRenderer {
             }
         }
 
-        // Selection Ring (Keep existing)
+        // Selection Ring & Handles
         if (isSelected) {
-            ctx.strokeStyle = '#f97316';
+            const isLocked = node.locked || node.isFixed;
+            ctx.strokeStyle = isLocked ? '#ef4444' : '#f97316';
             ctx.lineWidth = 2 / zoom;
             ctx.strokeRect(0, 0, node.w, node.h);
-            // Handles...
-            const handleVisualSize = 8;
-            const handleSize = handleVisualSize / zoom;
-            const half = handleSize / 2;
-            ctx.fillStyle = '#ffffff'; ctx.strokeStyle = '#f97316'; ctx.lineWidth = 1.5 / zoom;
-            const coords = [{ x: -half, y: -half }, { x: node.w - half, y: -half }, { x: node.w - half, y: node.h - half }, { x: -half, y: node.h - half }];
-            coords.forEach(h => { ctx.beginPath(); ctx.rect(h.x, h.y, handleSize, handleSize); ctx.fill(); ctx.stroke(); });
-        }
 
+            if (!isLocked) {
+                const handleVisualSize = 8;
+                const handleSize = handleVisualSize / zoom;
+                const half = handleSize / 2;
+
+                // 8 Visual Handles
+                const handles = [
+                    // Corners
+                    { x: -half, y: -half },
+                    { x: node.w - half, y: -half },
+                    { x: node.w - half, y: node.h - half },
+                    { x: -half, y: node.h - half },
+                    // Sides
+                    { x: node.w / 2 - half, y: -half }, // N
+                    { x: node.w / 2 - half, y: node.h - half }, // S
+                    { x: -half, y: node.h / 2 - half }, // W
+                    { x: node.w - half, y: node.h / 2 - half }  // E
+                ];
+
+                ctx.fillStyle = '#ffffff';
+                ctx.strokeStyle = '#f97316';
+                ctx.lineWidth = 1.5 / zoom;
+
+                handles.forEach(h => {
+                    ctx.beginPath();
+                    ctx.rect(h.x, h.y, handleSize, handleSize);
+                    ctx.fill();
+                    ctx.stroke();
+                });
+
+                // Rotation Handle
+                const rotDist = 25 / zoom;
+                const rotSize = 10 / zoom;
+                const rotX = node.w / 2;
+                const rotY = -rotDist;
+
+                ctx.beginPath();
+                ctx.moveTo(node.w / 2, 0);
+                ctx.lineTo(rotX, rotY);
+                ctx.strokeStyle = '#f97316';
+                ctx.stroke();
+
+                ctx.beginPath();
+                ctx.arc(rotX, rotY, rotSize / 2, 0, Math.PI * 2);
+                ctx.fillStyle = '#ffffff';
+                ctx.fill();
+                ctx.stroke();
+            }
+        }
         ctx.restore();
     }
 
