@@ -4,7 +4,7 @@ import { CanvasBoard } from './CanvasBoard';
 import { BoardTopbar } from './BoardTopbar'; // We'll update this import location or ensure it matches
 import { PizarronTask, Tag, UserProfile, PizarronBoard } from '../../../types';
 import { PizarronControls } from '../../../components/pizarron/PizarronControls'; // If we need parts of it, or we implement directly
-import { Firestore } from 'firebase/firestore';
+import { Firestore, addDoc, collection, doc, deleteDoc } from 'firebase/firestore';
 
 interface PizarronWorkspaceProps {
     tasks: PizarronTask[];
@@ -56,64 +56,92 @@ export const PizarronWorkspace: React.FC<PizarronWorkspaceProps> = ({
         setPan({ x: 0, y: 0 });
     }, []);
 
+    const handleAddCanvasItem = useCallback(async (itemAttrs: Partial<PizarronTask>) => {
+        try {
+            const collectionRef = collection(db, `artifacts/${appId}/public/data/pizarron-tasks`);
+            await addDoc(collectionRef, {
+                ...itemAttrs,
+                boardId: activeBoard?.id || 'general', // Default to current board
+                createdAt: new Date(),
+                status: 'ideas', // Default status for visibility
+                position: itemAttrs.position || { x: pan.x * -1 + 100 + Math.random() * 50, y: pan.y * -1 + 100 + Math.random() * 50 }, // Center in view if not provided
+                // Default styles if not provided
+                style: itemAttrs.style || {},
+                zIndex: itemAttrs.type === 'frame' ? 0 : 10,
+                authorName: userProfile.displayName || 'User',
+                authorPhotoURL: userProfile.photoURL || '',
+            });
+        } catch (error) {
+            console.error("Error creating canvas item:", error);
+        }
+    }, [db, appId, activeBoard, pan, userProfile]);
+
     const handleCreateIdea = useCallback(() => {
-        onAddTask('ideas', 'Brainstorming'); // Example defaults
-    }, [onAddTask]);
+        handleAddCanvasItem({ type: 'task', category: 'Idea', status: 'ideas', texto: 'Nueva Idea' });
+    }, [handleAddCanvasItem]);
 
     const handleCreateTask = useCallback(() => {
-        onAddTask('ideas', 'General');
-    }, [onAddTask]);
+        handleAddCanvasItem({ type: 'task', category: 'General', status: 'ideas', texto: 'Nueva Tarea' });
+    }, [handleAddCanvasItem]);
+
+    const handleDeleteCanvasItem = useCallback(async (id: string) => {
+        try {
+            const docRef = doc(db, `artifacts/${appId}/public/data/pizarron-tasks`, id);
+            await deleteDoc(docRef);
+        } catch (error) {
+            console.error("Error deleting canvas item:", error);
+        }
+    }, [db, appId]);
 
     return (
-        <div className="relative w-full h-full flex flex-col overflow-hidden bg-slate-50 dark:bg-slate-900 rounded-tl-3xl">
+        <div className="relative w-full h-full flex flex-col bg-slate-50 dark:bg-slate-900">
 
-            {/* Topbar Absolute Overlay */}
-            <div className="absolute top-0 left-0 right-0 z-20 pointer-events-none">
-                {/* Topbar needs pointer-events-auto on its interactive children */}
-                <BoardTopbar
-                    // Core Props
-                    board={activeBoard}
-                    currentView="kanban" // Forced to kanban/canvas for now
-                    onViewChange={() => { }} // Maybe allow switching view types later
+            {/* Topbar: Fixed, High Z-Index, Always Interactive */}
+            <BoardTopbar
+                // Core Props
+                board={activeBoard}
+                currentView="kanban"
+                onViewChange={() => { }}
 
-                    // Tools
-                    activeTool={activeTool}
-                    setActiveTool={setActiveTool}
-                    zoom={zoom}
-                    setZoom={setZoom}
-                    onResetView={handleResetView}
+                // Tools
+                activeTool={activeTool}
+                setActiveTool={setActiveTool}
+                zoom={zoom}
+                setZoom={setZoom}
+                onResetView={handleResetView}
 
-                    // Data
-                    tasks={tasks}
-                    tags={tags}
-                    filters={filters}
-                    setFilters={setFilters}
-                    searchQuery={searchQuery}
-                    onSearchChange={onSearchChange}
-                    db={db}
-                    userId={userId}
-                    appId={appId}
+                // Data
+                tasks={tasks}
+                tags={tags}
+                filters={filters}
+                setFilters={setFilters}
+                searchQuery={searchQuery}
+                onSearchChange={onSearchChange}
+                db={db}
+                userId={userId}
+                appId={appId}
 
-                    // Creation Handlers
-                    onAddTask={handleCreateTask}
-                    onCreateIdea={handleCreateIdea} // We need to add this prop to BoardTopbar
+                // Creation Handlers
+                onAddTask={handleCreateTask}
+                onCreateIdea={handleCreateIdea}
+                onAddCanvasItem={handleAddCanvasItem}
 
-                    // Board Management (If we integrate board switcher in topbar)
-                    boards={boards}
-                    setActiveBoardId={setActiveBoardId}
-                    onAddBoard={onAddBoard}
-                    userProfile={userProfile}
-                />
-            </div>
+                // Board Management
+                boards={boards}
+                setActiveBoardId={setActiveBoardId}
+                onAddBoard={onAddBoard}
+                userProfile={userProfile}
+            />
 
-            {/* Canvas Layer */}
-            <div className="flex-1 w-full h-full">
+            {/* Canvas Layer - Clipped and Rounded */}
+            <div className="flex-1 w-full h-full relative overflow-hidden rounded-tl-3xl">
                 <PanZoomCanvas
                     zoom={zoom}
                     setZoom={setZoom}
                     pan={pan}
                     setPan={setPan}
                     className="w-full h-full"
+                    activeTool={activeTool}
                 >
                     <CanvasBoard
                         filteredTasks={tasks}
@@ -121,6 +149,8 @@ export const PizarronWorkspace: React.FC<PizarronWorkspaceProps> = ({
                         activeTool={activeTool}
                         onOpenTaskDetail={onOpenTaskDetail}
                         onUpdateTaskPosition={onUpdateTaskPosition}
+                        onAddCanvasItem={handleAddCanvasItem}
+                        onDeleteCanvasItem={handleDeleteCanvasItem}
                     />
                 </PanZoomCanvas>
             </div>

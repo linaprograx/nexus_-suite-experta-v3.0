@@ -215,6 +215,27 @@ export interface PizarronTask {
         steps?: string[];
     };
     position?: { x: number, y: number };
+    // Canvas Props
+    type?: 'task' | 'text' | 'shape' | 'line' | 'frame' | 'image' | 'sticker';
+    style?: Record<string, any>;
+    frameId?: string; // ID of the parent Visual Board (Frame)
+    zIndex?: number;
+    width?: number;
+    height?: number;
+    rotation?: number;
+    // Specifics for non-tasks
+    // content is already defined in PizarronTask legacy fields, reusing it for Text elements
+    shapeType?: 'rectangle' | 'circle' | 'triangle'; // For shapes
+    lineStart?: { x: number, y: number }; // For lines
+    lineEnd?: { x: number, y: number }; // For lines
+    path?: string; // For free drawing (SVG path data)
+    strokeColor?: string;
+    strokeWidth?: number;
+}
+
+export interface CanvasItem extends PizarronTask {
+    // Union type alias for clearer code, even if PizarronTask has optional fields
+    // This allows us to treat everything as an item with a position.
 }
 
 export interface Tag {

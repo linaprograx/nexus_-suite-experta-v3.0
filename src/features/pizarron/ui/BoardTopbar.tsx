@@ -46,11 +46,13 @@ interface BoardTopbarProps {
     setActiveTool?: (tool: string) => void;
 
     // Right Sidebar Tools Handlers
-    onShowStats?: () => void;
     onShowTopIdeas?: () => void;
     onShowSmartView?: () => void;
     onGlobalSearch?: () => void;
+    onAddCanvasItem?: (item: Partial<PizarronTask>) => void; // New Prop
 }
+
+import { createPortal } from 'react-dom';
 
 export const BoardTopbar: React.FC<BoardTopbarProps> = ({
     searchQuery,
@@ -67,6 +69,7 @@ export const BoardTopbar: React.FC<BoardTopbarProps> = ({
     board,
     onAddTask,
     onCreateIdea,
+    onAddCanvasItem, // Destructure
     zoom,
     setZoom,
     onResetView,
@@ -76,11 +79,15 @@ export const BoardTopbar: React.FC<BoardTopbarProps> = ({
     userProfile,
     activeTool = 'pointer',
     setActiveTool,
-    onShowStats,
     onShowTopIdeas,
     onShowSmartView,
     onGlobalSearch
 }) => {
+    const [mounted, setMounted] = React.useState(false);
+
+    React.useEffect(() => {
+        setMounted(true);
+    }, []);
 
     const handleCreateTask = () => onAddTask();
     const handleCreateIdea = () => onCreateIdea && onCreateIdea();
@@ -88,30 +95,55 @@ export const BoardTopbar: React.FC<BoardTopbarProps> = ({
     // Board Switcher Logic
     const [showBoardMenu, setShowBoardMenu] = React.useState(false);
 
-    return (
-        <div className="absolute top-0 left-0 w-full h-20 flex items-center justify-between px-6 z-50 pointer-events-auto bg-orange-500/10 backdrop-blur-md border-b border-orange-500/20 shadow-sm transition-all duration-300 hover:bg-orange-500/20 hover:shadow-md">
+    if (!mounted) return null;
 
-            {/* LEFT: Board Switcher */}
-            <div className="flex items-center gap-4">
+    // Helper handlers for new buttons
+    const handleCreateImage = () => {
+        if (onAddCanvasItem) {
+            onAddCanvasItem({
+                type: 'image',
+                title: 'Imagen Referencia',
+                // Placeholder visuals
+                style: { backgroundColor: '#e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center' },
+                width: 300,
+                height: 200,
+                path: 'placeholder-image' // Signal to render a placeholder
+            });
+        }
+    };
+
+    const handleCreateSticker = () => {
+        if (onAddCanvasItem) {
+            onAddCanvasItem({
+                type: 'sticker',
+                title: 'Sticker',
+                // Emoji as content for now
+                texto: '✨',
+                style: { fontSize: '4rem', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'transparent' },
+                width: 100,
+                height: 100
+            });
+        }
+    };
+
+    const handleAIAction = () => {
+        // Mock AI action
+        alert("Nexus AI: Optimizando distribución del tablero...");
+    };
+
+    return createPortal(
+        <div className="fixed top-0 right-0 left-[70px] h-16 flex items-center justify-between px-4 z-[99999] pointer-events-auto bg-orange-500/10 dark:bg-orange-900/20 hover:bg-orange-500/20 dark:hover:bg-orange-900/30 backdrop-blur-xl border-b border-orange-500/10 shadow-sm transition-all duration-300 font-sans">
+            {/* 1. CONTEXT (Left) */}
+            <div className="flex items-center gap-4 min-w-[200px]">
                 <button
                     onClick={() => setShowBoardMenu(!showBoardMenu)}
-                    className="flex items-center gap-3 px-3 py-2 bg-white/30 dark:bg-slate-900/30 backdrop-blur-md rounded-xl border border-white/40 shadow-sm hover:bg-orange-500 hover:text-white hover:border-orange-400 transition-all duration-300 group/btn"
+                    className="flex items-center gap-2 px-3 py-1.5 bg-white/40 dark:bg-black/20 backdrop-blur-md rounded-lg border border-orange-500/20 shadow-sm transition-all duration-200 group hover:bg-orange-500 hover:text-white hover:border-orange-500 hover:shadow-md"
                 >
-                    <div className="w-10 h-10 rounded-lg bg-white/50 flex items-center justify-center shadow-inner group-hover/btn:bg-white/20 text-orange-600 group-hover/btn:text-white transition-colors">
-                        <Icon svg={ICONS.layout} className="w-6 h-6" />
-                    </div>
-                    <div className="text-left">
-                        <h1 className="text-sm font-bold text-slate-800 dark:text-slate-100 leading-tight group-hover/btn:text-white">
-                            {board?.name || 'Tablero General'}
-                        </h1>
-                        <p className="text-[10px] font-medium text-slate-500 dark:text-slate-400 group-hover/btn:text-orange-100">
-                            {boards?.length || 0} Tableros
-                        </p>
-                    </div>
-                    <Icon svg={ICONS.chevronDown} className="w-4 h-4 text-slate-400 group-hover/btn:text-white/70" />
+                    <Icon svg={ICONS.layout} className="w-4 h-4 text-orange-700 dark:text-orange-200 group-hover:text-white" />
+                    <span className="text-sm font-bold truncate max-w-[120px] text-orange-900 dark:text-orange-100 group-hover:text-white">{board?.name || 'Tablero General'}</span>
+                    <Icon svg={ICONS.chevronDown} className="w-3 h-3 opacity-50 group-hover:text-white" />
                 </button>
-
-                {/* Dropdown Menu (Keep existing style or update?) Keep simple for now */}
+                {/* Board Menu Dropdown (Simplified for brevity, similar logic as before) */}
                 {showBoardMenu && (
                     <div className="absolute top-full left-6 mt-2 w-64 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl overflow-hidden py-2 animate-in fade-in slide-in-from-top-2">
                         {/* ... existing dropdown content ... */}
@@ -143,124 +175,139 @@ export const BoardTopbar: React.FC<BoardTopbarProps> = ({
                 )}
             </div>
 
-            {/* CENTER: Creation Tools (Floating Glass Squares) */}
-            <div className="flex items-center gap-3">
-                <button
-                    onClick={handleCreateIdea}
-                    className="group relative w-12 h-12 flex items-center justify-center bg-white/40 dark:bg-slate-900/40 backdrop-blur-md rounded-xl border border-white/30 shadow-sm hover:bg-orange-500 hover:border-orange-400 hover:shadow-orange-500/30 transition-all duration-300 hover:-translate-y-1"
-                    title="Nueva Idea"
-                >
-                    <Icon svg={ICONS.book} className="w-6 h-6 text-slate-700 dark:text-slate-200 group-hover:text-white transition-colors" />
-                </button>
-
-                <button
-                    onClick={handleCreateTask}
-                    className="group relative w-12 h-12 flex items-center justify-center bg-white/40 dark:bg-slate-900/40 backdrop-blur-md rounded-xl border border-white/30 shadow-sm hover:bg-orange-500 hover:border-orange-400 hover:shadow-orange-500/30 transition-all duration-300 hover:-translate-y-1"
-                    title="Nueva Tarea"
-                >
-                    <Icon svg={ICONS.fileText} className="w-6 h-6 text-slate-700 dark:text-slate-200 group-hover:text-white transition-colors" />
-                </button>
-
-                <div className="w-px h-8 bg-black/10 dark:bg-white/10 mx-2" />
-
-                {/* Tools: Selector, Shapes, Text, Lines, Eraser */}
-                <button
-                    onClick={() => setActiveTool && setActiveTool('pointer')}
-                    className={`group relative w-10 h-10 flex items-center justify-center backdrop-blur-md rounded-lg border shadow-sm transition-all duration-200 ${activeTool === 'pointer' ? 'bg-orange-500 border-orange-400 text-white' : 'bg-white/30 dark:bg-slate-900/30 border-white/20 text-slate-700 dark:text-slate-200 hover:bg-orange-500 hover:border-orange-400 hover:text-white'}`}
-                    title="Seleccionar"
-                >
-                    <Icon svg={ICONS.mousePointer || ICONS.maximize} className="w-4 h-4" />
-                </button>
-
-                <button
-                    onClick={() => setActiveTool && setActiveTool('shape')}
-                    className={`group relative w-10 h-10 flex items-center justify-center backdrop-blur-md rounded-lg border shadow-sm transition-all duration-200 ${activeTool === 'shape' ? 'bg-orange-500 border-orange-400 text-white' : 'bg-white/30 dark:bg-slate-900/30 border-white/20 text-slate-700 dark:text-slate-200 hover:bg-orange-500 hover:border-orange-400 hover:text-white'}`}
-                    title="Formas"
-                >
-                    <div className={`w-4 h-4 border-2 rounded-sm transition-colors ${activeTool === 'shape' ? 'border-white' : 'border-slate-700 dark:border-slate-200 group-hover:border-white'}`} />
-                </button>
-
-                <button
-                    onClick={() => setActiveTool && setActiveTool('text')}
-                    className={`group relative w-10 h-10 flex items-center justify-center backdrop-blur-md rounded-lg border shadow-sm transition-all duration-200 ${activeTool === 'text' ? 'bg-orange-500 border-orange-400 text-white' : 'bg-white/30 dark:bg-slate-900/30 border-white/20 text-slate-700 dark:text-slate-200 hover:bg-orange-500 hover:border-orange-400 hover:text-white'}`}
-                    title="Texto"
-                >
-                    <span className="font-serif font-bold text-lg leading-none transition-colors">T</span>
-                </button>
-
-                <button
-                    onClick={() => setActiveTool && setActiveTool('line')}
-                    className={`group relative w-10 h-10 flex items-center justify-center backdrop-blur-md rounded-lg border shadow-sm transition-all duration-200 ${activeTool === 'line' ? 'bg-orange-500 border-orange-400 text-white' : 'bg-white/30 dark:bg-slate-900/30 border-white/20 text-slate-700 dark:text-slate-200 hover:bg-orange-500 hover:border-orange-400 hover:text-white'}`}
-                    title="Líneas"
-                >
-                    <Icon svg={ICONS.activity} className="w-5 h-5 transition-colors" />
-                </button>
-
-                <button
-                    onClick={() => setActiveTool && setActiveTool('eraser')}
-                    className={`group relative w-10 h-10 flex items-center justify-center backdrop-blur-md rounded-lg border shadow-sm transition-all duration-200 ${activeTool === 'eraser' ? 'bg-red-500 border-red-400 text-white' : 'bg-white/30 dark:bg-slate-900/30 border-white/20 text-slate-700 dark:text-slate-200 hover:bg-red-500 hover:border-red-400 hover:text-white'}`}
-                    title="Borrador"
-                >
-                    <Icon svg={ICONS.trash} className="w-5 h-5 transition-colors" />
-                </button>
-            </div>
-
-            {/* RIGHT: Tools & Actions (Automations, Search, etc.) */}
-            <div className="flex items-center gap-3">
-
-                {/* Search */}
-                <div className={`flex items-center bg-white/40 dark:bg-slate-900/40 backdrop-blur-md rounded-xl border border-white/30 transition-all duration-300 ${searchQuery ? 'w-64 px-3' : 'w-10 h-10 justify-center hover:w-64 hover:px-3'} h-10 overflow-hidden`}>
-                    <button onClick={onGlobalSearch}>
-                        <Icon svg={ICONS.search} className="w-4 h-4 text-slate-600 dark:text-slate-300 shrink-0" />
+            {/* CENTER TOOLS GROUP */}
+            <div className="absolute left-1/2 transform -translate-x-1/2 flex items-center gap-2 h-10 px-2 bg-white/40 dark:bg-black/20 backdrop-blur-xl rounded-xl border border-orange-500/20 shadow-md transition-all duration-300 hover:bg-white/60 dark:hover:bg-black/40">
+                {/* 2. CREATION (Dropdown/Quick Actions) */}
+                <div className="flex items-center gap-1 pr-2 border-r border-orange-500/10 relative">
+                    <button
+                        onClick={() => {
+                            if (onAddCanvasItem) {
+                                onAddCanvasItem({
+                                    type: 'frame',
+                                    title: 'Nuevo Tablero',
+                                    width: 800,
+                                    height: 600,
+                                    style: { backgroundColor: 'transparent' }
+                                });
+                            }
+                        }}
+                        className="w-8 h-8 flex items-center justify-center rounded-lg transition-all duration-200 text-orange-700 dark:text-orange-200 hover:bg-orange-500 hover:text-white hover:shadow-md hover:scale-110"
+                        title="Añadir Tablero (Marco)"
+                    >
+                        <Icon svg={ICONS.layout} className="w-5 h-5" />
                     </button>
-                    <input
-                        type="text"
-                        value={searchQuery}
-                        onChange={(e) => onSearchChange(e.target.value)}
-                        placeholder="Buscar..."
-                        className={`bg-transparent border-none outline-none text-sm font-medium text-slate-800 dark:text-white ml-2 w-full ${searchQuery ? 'block' : 'hidden md:block'}`}
-                    />
-                    {searchQuery && (
-                        <button onClick={() => onSearchChange('')}>
-                            <Icon svg={ICONS.x} className="w-3 h-3 text-slate-500 hover:text-red-500" />
-                        </button>
-                    )}
-                </div>
-
-                {/* Right Sidebar Tools RESTORED */}
-                <button className="w-10 h-10 flex items-center justify-center bg-white/30 dark:bg-slate-900/30 backdrop-blur-md rounded-xl border border-white/30 shadow-sm hover:bg-orange-500 hover:text-white transition-all" title="Plantillas">
-                    <Icon svg={ICONS.layout || ICONS.grid} className="w-5 h-5" />
-                </button>
-
-                <button className="w-10 h-10 flex items-center justify-center bg-white/30 dark:bg-slate-900/30 backdrop-blur-md rounded-xl border border-white/30 shadow-sm hover:bg-orange-500 hover:text-white transition-all" title="Historial">
-                    <Icon svg={ICONS.clock || ICONS.refresh} className="w-5 h-5" />
-                </button>
-
-                <button className="w-10 h-10 flex items-center justify-center bg-white/30 dark:bg-slate-900/30 backdrop-blur-md rounded-xl border border-white/30 shadow-sm hover:bg-orange-500 hover:text-white transition-all" title="Automatizaciones">
-                    <Icon svg={ICONS.zap} className="w-5 h-5" />
-                </button>
-
-                <button className="w-10 h-10 flex items-center justify-center bg-white/40 dark:bg-slate-900/40 backdrop-blur-md rounded-xl border border-white/30 shadow-sm hover:bg-orange-500 hover:text-white transition-all" title="Compartir">
-                    <Icon svg={ICONS.share} className="w-5 h-5" />
-                </button>
-
-                <div className="w-px h-8 bg-black/10 dark:bg-white/10 mx-1" />
-
-                {/* Zoom */}
-                <div className="flex items-center gap-1 bg-white/40 dark:bg-slate-900/40 backdrop-blur-md rounded-xl border border-white/30 p-1">
-                    <button onClick={() => setZoom && setZoom(Math.max((zoom || 1) - 0.1, 0.5))} className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-white/50 dark:hover:bg-slate-800/50 hover:text-orange-600 transition-colors">
-                        <Icon svg={ICONS.minus} className="w-4 h-4" />
+                    {/* Shortcuts for common items */}
+                    <button
+                        onClick={handleCreateTask}
+                        className="w-8 h-8 flex items-center justify-center rounded-lg transition-all duration-200 text-orange-700 dark:text-orange-200 hover:bg-orange-500 hover:text-white hover:shadow-md hover:scale-110"
+                        title="Tarea Rápida"
+                    >
+                        <Icon svg={ICONS.fileText} className="w-4 h-4" />
                     </button>
-                    <span className="text-xs font-mono font-bold w-12 text-center text-slate-700 dark:text-slate-200">{Math.round((zoom || 1) * 100)}%</span>
-                    <button onClick={() => setZoom && setZoom(Math.min((zoom || 1) + 0.1, 2))} className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-white/50 dark:hover:bg-slate-800/50 hover:text-orange-600 transition-colors">
-                        <Icon svg={ICONS.plus} className="w-4 h-4" />
+                    <button
+                        onClick={handleCreateIdea}
+                        className="w-8 h-8 flex items-center justify-center rounded-lg transition-all duration-200 text-orange-700 dark:text-orange-200 hover:bg-orange-500 hover:text-white hover:shadow-md hover:scale-110"
+                        title="Idea Rápida"
+                    >
+                        <Icon svg={ICONS.book} className="w-4 h-4" />
                     </button>
                 </div>
 
-                <button onClick={onResetView} className="w-10 h-10 flex items-center justify-center bg-white/40 dark:bg-slate-900/40 backdrop-blur-md rounded-xl border border-white/30 shadow-sm hover:bg-orange-500 hover:text-white transition-all" title="Centrar">
-                    <Icon svg={ICONS.maximize} className="w-5 h-5" />
+                {/* 3. DRAWING & TOOLS */}
+                <div className="flex items-center gap-1 pr-2 border-r border-orange-500/10">
+                    <button
+                        onClick={() => setActiveTool && setActiveTool('pointer')}
+                        className={`w-8 h-8 flex items-center justify-center rounded-lg transition-all duration-200 ${activeTool === 'pointer' ? 'bg-orange-500 text-white shadow-md scale-110' : 'text-orange-800 dark:text-orange-100 hover:bg-orange-500 hover:text-white hover:shadow-md hover:scale-110'}`}
+                        title="Seleccionar (V)"
+                    >
+                        <Icon svg={ICONS.mousePointer || ICONS.maximize} className="w-4 h-4" />
+                    </button>
+                    <button
+                        onClick={() => setActiveTool && setActiveTool('hand')}
+                        className={`w-8 h-8 flex items-center justify-center rounded-lg transition-all duration-200 ${activeTool === 'hand' ? 'bg-orange-500 text-white shadow-md scale-110' : 'text-orange-800 dark:text-orange-100 hover:bg-orange-500 hover:text-white hover:shadow-md hover:scale-110'}`}
+                        title="Mover (H)"
+                    >
+                        <Icon svg={ICONS.hand} className="w-4 h-4" />
+                    </button>
+                    <button
+                        onClick={() => setActiveTool && setActiveTool('shape')}
+                        className={`w-8 h-8 flex items-center justify-center rounded-lg transition-all duration-200 ${activeTool === 'shape' ? 'bg-orange-500 text-white shadow-md scale-110' : 'text-orange-800 dark:text-orange-100 hover:bg-orange-500 hover:text-white hover:shadow-md hover:scale-110'}`}
+                        title="Formas (R)"
+                    >
+                        <div className={`w-3 h-3 border-2 rounded-sm ${activeTool === 'shape' ? 'border-white' : 'border-current'}`} />
+                    </button>
+                    <button
+                        onClick={() => setActiveTool && setActiveTool('text')}
+                        className={`w-8 h-8 flex items-center justify-center rounded-lg transition-all duration-200 ${activeTool === 'text' ? 'bg-orange-500 text-white shadow-md scale-110' : 'text-orange-800 dark:text-orange-100 hover:bg-orange-500 hover:text-white hover:shadow-md hover:scale-110'}`}
+                        title="Texto (T)"
+                    >
+                        <span className="font-serif font-bold text-sm">T</span>
+                    </button>
+                    <button
+                        onClick={() => setActiveTool && setActiveTool('line')}
+                        className={`w-8 h-8 flex items-center justify-center rounded-lg transition-all duration-200 ${activeTool === 'line' ? 'bg-orange-500 text-white shadow-md scale-110' : 'text-orange-800 dark:text-orange-100 hover:bg-orange-500 hover:text-white hover:shadow-md hover:scale-110'}`}
+                        title="Conectores (L)"
+                    >
+                        <Icon svg={ICONS.activity} className="w-4 h-4" />
+                    </button>
+                    <button
+                        onClick={() => setActiveTool && setActiveTool('eraser')}
+                        className={`w-8 h-8 flex items-center justify-center rounded-lg transition-all duration-200 ${activeTool === 'eraser' ? 'bg-red-500 text-white shadow-md scale-110' : 'text-orange-800 dark:text-orange-100 hover:bg-red-500 hover:text-white hover:shadow-md hover:scale-110'}`}
+                        title="Borrador (E)"
+                    >
+                        <Icon svg={ICONS.trash} className="w-4 h-4" />
+                    </button>
+                </div>
+
+                {/* 4. RESOURCES (Simplified) */}
+                <div className="flex items-center gap-1">
+                    <button
+                        onClick={handleCreateImage}
+                        className="w-8 h-8 flex items-center justify-center rounded-lg transition-all duration-200 text-orange-700 dark:text-orange-200 hover:bg-orange-500 hover:text-white hover:shadow-md hover:scale-110"
+                        title="Imagen"
+                    >
+                        <Icon svg={ICONS.image || ICONS.layout} className="w-4 h-4" />
+                    </button>
+                    <button
+                        onClick={handleCreateSticker}
+                        className="w-8 h-8 flex items-center justify-center rounded-lg transition-all duration-200 text-orange-700 dark:text-orange-200 hover:bg-orange-500 hover:text-white hover:shadow-md hover:scale-110"
+                        title="Stickers"
+                    >
+                        <Icon svg={ICONS.star || ICONS.zap} className="w-4 h-4" />
+                    </button>
+                </div>
+            </div>
+
+            {/* 5, 6, 7. RIGHT ACTIONS */}
+            <div className="flex items-center gap-3">
+                {/* 5. INTELLIGENCE */}
+                <div className="hidden md:flex items-center gap-1 bg-white/40 dark:bg-black/20 backdrop-blur-md rounded-lg p-0.5 border border-orange-500/20">
+                    <button
+                        onClick={handleAIAction}
+                        className="w-8 h-8 flex items-center justify-center rounded-lg transition-all duration-200 text-orange-700 dark:text-orange-200 hover:bg-orange-500 hover:text-white hover:shadow-md hover:scale-110 group"
+                        title="Nexus AI"
+                    >
+                        <Icon svg={ICONS.zap} className="w-4 h-4 group-hover:text-white" />
+                    </button>
+                </div>
+
+                {/* 6. CANVAS CONTROLS */}
+                <div className="flex items-center gap-1 bg-white/40 dark:bg-black/20 backdrop-blur-md rounded-lg px-2 py-1 border border-orange-500/20">
+                    <button onClick={() => setZoom && setZoom(Math.max((zoom || 1) - 0.1, 0.5))} className="hover:text-orange-600 transition-colors text-orange-800 dark:text-orange-100 hover:scale-110">
+                        <Icon svg={ICONS.minus} className="w-3 h-3" />
+                    </button>
+                    <span className="text-xs font-mono font-bold w-8 text-center text-orange-900 dark:text-orange-100">{Math.round((zoom || 1) * 100)}%</span>
+                    <button onClick={() => setZoom && setZoom(Math.min((zoom || 1) + 0.1, 2))} className="hover:text-orange-600 transition-colors text-orange-800 dark:text-orange-100 hover:scale-110">
+                        <Icon svg={ICONS.plus} className="w-3 h-3" />
+                    </button>
+                </div>
+
+                {/* 7. MENU */}
+                <button className="w-9 h-9 flex items-center justify-center bg-white/40 dark:bg-black/20 backdrop-blur-md rounded-lg border border-orange-500/20 shadow-sm transition-all duration-200 text-orange-700 dark:text-orange-200 hover:bg-orange-500 hover:text-white hover:shadow-md hover:scale-110">
+                    <Icon svg={ICONS.menu} className="w-5 h-5" />
                 </button>
             </div>
-        </div>
+        </div>,
+        document.body
     );
 };

@@ -10,6 +10,7 @@ interface PanZoomCanvasProps {
     pan: { x: number; y: number };
     setPan: (pan: { x: number; y: number }) => void;
     className?: string;
+    activeTool?: string; // Add activeTool
 }
 
 export const PanZoomCanvas: React.FC<PanZoomCanvasProps> = ({
@@ -18,13 +19,14 @@ export const PanZoomCanvas: React.FC<PanZoomCanvasProps> = ({
     setZoom,
     pan,
     setPan,
-    className = ''
+    className = '',
+    activeTool = 'pointer'
 }) => {
     const containerRef = useRef<HTMLDivElement>(null);
     const [isDragging, setIsDragging] = useState(false);
     const [lastMousePos, setLastMousePos] = useState({ x: 0, y: 0 });
 
-    // Handle Wheel Zoom
+    // Handle Wheel Zoom (keep existing)
     const handleWheel = (e: React.WheelEvent) => {
         if (e.ctrlKey || e.metaKey) {
             e.preventDefault();
@@ -32,12 +34,6 @@ export const PanZoomCanvas: React.FC<PanZoomCanvasProps> = ({
             const newZoom = Math.min(Math.max(zoom + delta, 0.5), 2);
             setZoom(newZoom);
         } else {
-            // Optional: Pan with wheel if not zooming? 
-            // Standard behavior for infinite canvas often allows wheel to pan Y or Shift+Wheel to pan X
-            // But let's stick to trackpad/mouse conventions if possible.
-            // For now, let native scroll happen if we aren't preventing it, 
-            // BUT we are using transform, so native scroll might not work well on the container if we want "infinite" feeling.
-            // Let's implement wheel pan for non-zoom events.
             const newPan = {
                 x: pan.x - e.deltaX,
                 y: pan.y - e.deltaY
@@ -47,17 +43,29 @@ export const PanZoomCanvas: React.FC<PanZoomCanvasProps> = ({
     };
 
     const handleMouseDown = (e: React.MouseEvent) => {
-        // Only start drag if clicking on the background (container)
-        // We can check if e.target is the container or explicitly checking class/id
-        if ((e.target as HTMLElement) === containerRef.current) {
+        const target = e.target as HTMLElement;
+        // Panning condition:
+        // 1. Tool is 'hand'
+        // 2. Clicked on the container itself
+        // 3. Clicked on the canvas background element
+        const isBackground = target === containerRef.current || target.getAttribute('data-id') === 'canvas-background';
+        const shouldPan = activeTool === 'hand' || isBackground;
+
+        if (shouldPan) {
             setIsDragging(true);
             setLastMousePos({ x: e.clientX, y: e.clientY });
-            containerRef.current.style.cursor = 'grabbing';
+            if (activeTool === 'hand') {
+                containerRef.current!.style.cursor = 'grabbing';
+            }
         }
     };
 
     const handleMouseMove = (e: React.MouseEvent) => {
         if (!isDragging) return;
+
+        // Prevent default text selection while dragging
+        e.preventDefault();
+
         const dx = e.clientX - lastMousePos.x;
         const dy = e.clientY - lastMousePos.y;
 
