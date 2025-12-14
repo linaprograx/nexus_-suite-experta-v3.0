@@ -42,13 +42,16 @@ export class PizarronRenderer {
         // Optimization: Get visible bounds in World Coords
         // const visibleRect = this.getVisibleRect(viewport);
 
-        for (const id of order) {
-            const node = nodes[id];
-            if (!node) continue;
-            // Simple Culling Check
-            // if (!intersects(node, visibleRect)) continue;
+        // 4. Draw Nodes (Sorted by Z-Index)
+        const sortedNodes = order
+            .map(id => nodes[id])
+            .filter(n => !!n)
+            .sort((a, b) => (a.zIndex || 0) - (b.zIndex || 0));
 
-            this.drawNode(ctx, node, selection.has(id));
+        for (const node of sortedNodes) {
+            // Simple Culling Check (Optional)
+            // if (!intersects(node, visibleRect)) continue;
+            this.drawNode(ctx, node, selection.has(node.id), viewport.zoom);
         }
 
         // 5. Draw Marquee
@@ -71,7 +74,7 @@ export class PizarronRenderer {
                 ctx.save();
                 ctx.globalAlpha = 0.6;
                 // Mock node for drawing
-                this.drawNode(ctx, draft as BoardNode, true);
+                this.drawNode(ctx, draft as BoardNode, true, viewport.zoom);
                 ctx.restore();
             }
         }
@@ -121,38 +124,165 @@ export class PizarronRenderer {
         }
     }
 
-    private drawNode(ctx: CanvasRenderingContext2D, node: BoardNode, isSelected: boolean) {
-        const { x, y, w, h } = node;
+    private imageCache = new Map<string, HTMLImageElement>();
 
-        // Shadow
+    private drawNode(ctx: CanvasRenderingContext2D, node: BoardNode, isSelected: boolean, zoom: number) {
+        ctx.save();
+
+        // Base Transform
+        ctx.translate(node.x, node.y);
+
+        // Shadow (applied to all types that have a distinct shape)
         ctx.shadowColor = 'rgba(0,0,0,0.1)';
         ctx.shadowBlur = isSelected ? 15 : 4;
         ctx.shadowOffsetY = isSelected ? 4 : 2;
 
-        // Base Shape
-        ctx.fillStyle = node.content.color || '#ffffff';
-        ctx.beginPath();
-        ctx.roundRect(x, y, w, h, 8);
-        ctx.fill();
+        // Draw Content based on Type
+        if (node.type === 'shape') {
+            const shape = node.content.shapeType || 'rectangle';
+            ctx.fillStyle = node.content.color || '#cbd5e1';
 
-        // Border
-        ctx.shadowColor = 'transparent'; // clear shadow for stroke
-        ctx.lineWidth = isSelected ? 2 : 1;
-        ctx.strokeStyle = isSelected ? '#f97316' : '#e2e8f0'; // Orange-500 : Slate-200
-        ctx.stroke();
-
-        // Content
-        if (node.content.title) {
-            ctx.fillStyle = '#1e293b'; // Slate-800
-            ctx.font = 'bold 16px sans-serif'; // Can use custom font if loaded
-            ctx.fillText(node.content.title, x + 16, y + 24, w - 32);
+            ctx.beginPath();
+            if (shape === 'circle') {
+                ctx.ellipse(node.w / 2, node.h / 2, node.w / 2, node.h / 2, 0, 0, Math.PI * 2);
+            } else if (shape === 'triangle') {
+                ctx.moveTo(node.w / 2, 0);
+                ctx.lineTo(node.w, node.h);
+                ctx.lineTo(0, node.h);
+                ctx.closePath();
+            } else if (shape === 'star') {
+                // Simple Diamond/Star approximation
+                ctx.moveTo(node.w / 2, 0);
+                ctx.lineTo(node.w * 0.8, node.h / 2);
+                ctx.lineTo(node.w, node.h);
+                ctx.lineTo(node.w / 2, node.h * 0.8);
+                ctx.lineTo(0, node.h);
+                ctx.lineTo(node.w * 0.2, node.h / 2);
+                ctx.closePath();
+            } else {
+                // Rectangle
+                ctx.rect(0, 0, node.w, node.h);
+            }
+            ctx.fill();
         }
+        else if (node.type === 'line') {
+            ctx.strokeStyle = node.content.color || '#334155';
+            ctx.lineWidth = node.content.strokeWidth || 4;
+            ctx.lineCap = 'round';
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.lineTo(node.w, node.h);
+            ctx.stroke();
+        }
+        else if (node.type === 'image') {
+            const src = node.content.src;
+            if (src) {
+                let img = this.imageCache.get(src);
+                if (!img) {
+                    img = new Image();
+                    img.src = src;
+                    img.onload = () => { /* trigger redraw? */ };
+                    this.imageCache.set(src, img);
+                }
 
-        if (node.content.body) {
-            ctx.fillStyle = '#64748b'; // Slate-500
+                if (img.complete) {
+                    ctx.globalAlpha = node.content.opacity ?? 1;
+                    ctx.drawImage(img, 0, 0, node.w, node.h);
+                } else {
+                    // Loading placeholder
+                    ctx.fillStyle = '#f1f5f9';
+                    ctx.fillRect(0, 0, node.w, node.h);
+                    ctx.fillStyle = '#94a3b8';
+                    ctx.fillText("Loading...", 10, 20);
+                }
+            } else {
+                // Placeholder
+                ctx.fillStyle = '#f8fafc';
+                ctx.fillRect(0, 0, node.w, node.h);
+                ctx.strokeStyle = '#cbd5e1';
+                ctx.setLineDash([5, 5]);
+                ctx.strokeRect(0, 0, node.w, node.h);
+                ctx.setLineDash([]);
+                ctx.fillStyle = '#64748b';
+                ctx.font = '20px sans-serif';
+                ctx.fillText("Image", node.w / 2 - 20, node.h / 2);
+            }
+        }
+        else if (node.type === 'text') {
+            // Text logic
+            ctx.font = '16px Inter, sans-serif';
+            ctx.fillStyle = node.content.color || '#1e293b';
+            ctx.textBaseline = 'top';
+            const lines = (node.content.title || '').split('\n');
+            lines.forEach((line, i) => {
+                ctx.fillText(line, 5, 5 + (i * 20));
+            });
+        }
+        else if (node.type === 'board') {
+            // Board Container
+            ctx.fillStyle = node.content.color || '#f8fafc';
+            ctx.beginPath();
+            if (ctx.roundRect) ctx.roundRect(0, 0, node.w, node.h, 16);
+            else ctx.rect(0, 0, node.w, node.h); // Fallback
+            ctx.fill();
+
+            ctx.lineWidth = 2;
+            ctx.strokeStyle = '#e2e8f0'; // Slate-200
+            ctx.stroke();
+
+            // Label
+            ctx.fillStyle = '#94a3b8'; // Slate-400
+            ctx.font = 'bold 12px sans-serif';
+            ctx.fillText((node.content.title || 'BOARD').toUpperCase(), 20, 30);
+        }
+        else {
+            // Fallback Card
+            ctx.fillStyle = node.content.color || '#ffffff';
+            ctx.fillRect(0, 0, node.w, node.h);
+            // Border
+            ctx.strokeStyle = '#e2e8f0';
+            ctx.lineWidth = 1;
+            ctx.strokeRect(0, 0, node.w, node.h);
+
+            // Content
+            ctx.fillStyle = '#000';
             ctx.font = '14px sans-serif';
-            ctx.fillText(node.content.body, x + 16, y + 48, w - 32);
+            ctx.fillText(node.content.title || '', 10, 20);
         }
+
+        // Selection Ring
+        if (isSelected) {
+            ctx.strokeStyle = '#f97316'; // Orange
+            const lineWidth = 2 / zoom;
+            ctx.lineWidth = lineWidth;
+            ctx.strokeRect(0, 0, node.w, node.h);
+
+            // Draw Resize Handles (Scale Invariant: 8px visual)
+            const handleVisualSize = 8;
+            const handleSize = handleVisualSize / zoom;
+            const half = handleSize / 2;
+
+            ctx.fillStyle = '#ffffff';
+            ctx.strokeStyle = '#f97316';
+            ctx.lineWidth = 1.5 / zoom;
+
+            // Corners: NW, NE, SE, SW
+            const coords = [
+                { x: -half, y: -half, cursor: 'nwse-resize' },
+                { x: node.w - half, y: -half, cursor: 'nesw-resize' },
+                { x: node.w - half, y: node.h - half, cursor: 'nwse-resize' },
+                { x: -half, y: node.h - half, cursor: 'nesw-resize' }
+            ];
+
+            coords.forEach(h => {
+                ctx.beginPath();
+                ctx.rect(h.x, h.y, handleSize, handleSize);
+                ctx.fill();
+                ctx.stroke();
+            });
+        }
+
+        ctx.restore();
     }
 }
 

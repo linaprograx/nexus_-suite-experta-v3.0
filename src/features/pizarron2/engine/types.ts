@@ -1,5 +1,4 @@
-export type NodeType = 'card' | 'group' | 'image' | 'text' | 'shape';
-
+export type NodeType = 'card' | 'group' | 'image' | 'text' | 'shape' | 'line' | 'board';
 export interface BoardNode {
     id: string;
     type: NodeType;
@@ -15,8 +14,21 @@ export interface BoardNode {
         title?: string;
         body?: string;
         color?: string; // hex or theme var
+
+        // Shape props
+        shapeType?: 'rectangle' | 'circle' | 'triangle' | 'star' | 'freeform';
+
+        // Image props
         src?: string; // for images
-        shapeType?: 'rectangle' | 'circle' | 'triangle' | 'arrow';
+        caption?: string;
+        opacity?: number; // 0-1
+        borderRadius?: number;
+
+        // Line props
+        lineType?: 'straight' | 'curved';
+        strokeWidth?: number;
+        startArrow?: boolean;
+        endArrow?: boolean;
     };
 
     // Meta
@@ -42,13 +54,15 @@ export interface BoardState {
         presentationMode: boolean;
         qualityTier: 'high' | 'medium' | 'low';
         debug: boolean;
-        activeTool: 'pointer' | 'hand' | 'rectangle' | 'text' | 'image';
+        activeTool: 'pointer' | 'hand' | 'rectangle' | 'text' | 'shape' | 'line' | 'image';
+        activeShapeType?: 'rectangle' | 'circle' | 'triangle' | 'star' | 'freeform';
     };
     interactionState: {
         marquee?: { x: number; y: number; w: number; h: number };
         isDragging?: boolean;
         creationDraft?: Partial<BoardNode>; // Shadow/Ghost node being created
-        editingNodeId?: string; // ID of node being inline edited
+        editingNodeId?: string; // ID of node being inline edited (Text)
+        editingImageId?: string; // ID of node being edited (Image Modal)
     };
     presentationState: {
         isActive: boolean;

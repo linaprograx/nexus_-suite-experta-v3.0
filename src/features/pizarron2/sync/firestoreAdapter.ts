@@ -8,6 +8,7 @@ class FirestoreAdapter {
     private unsubscribeStore: (() => void) | null = null;
     private lastKnownState: Record<string, number> = {}; // id -> updatedAt
     private pendingWrites: Map<string, BoardNode> = new Map();
+    private pendingDeletes: Set<string> = new Set();
     private writeTimeout: NodeJS.Timeout | null = null;
     private isApplyingRemote = false;
 
@@ -85,6 +86,14 @@ class FirestoreAdapter {
                 }
             });
 
+            // Detect Deletions
+            Object.keys(this.lastKnownState).forEach(id => {
+                if (!nodes[id]) {
+                    this.pendingDeletes.add(id);
+                    delete this.lastKnownState[id];
+                }
+            });
+
             this.scheduleFlush(appId, boardId);
         });
     }
@@ -105,10 +114,16 @@ class FirestoreAdapter {
     }
 
     private async flush(appId: string, boardId: string) {
-        if (this.pendingWrites.size === 0) return;
+        if (this.pendingWrites.size === 0 && this.pendingDeletes.size === 0) return;
 
         const batch = writeBatch(db);
         const colRef = collection(db, `artifacts/${appId}/public/data/pizarron-tasks`);
+
+        // Deletions
+        this.pendingDeletes.forEach(id => {
+            batch.delete(doc(colRef, id));
+        });
+        this.pendingDeletes.clear();
 
         this.pendingWrites.forEach((node) => {
             const docRef = doc(colRef, node.id);
@@ -142,7 +157,7 @@ class FirestoreAdapter {
 
         try {
             await batch.commit();
-            console.log(`[Sync] Flushed ${count} nodes to Firestore`);
+            console.log(`[Sync] Flushed batch to Firestore`);
         } catch (err) {
             console.error("[Sync] Write Failed", err);
         }

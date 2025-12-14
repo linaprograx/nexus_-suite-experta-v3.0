@@ -11,7 +11,8 @@ const INITIAL_STATE: BoardState = {
         presentationMode: false,
         qualityTier: 'high',
         debug: false,
-        activeTool: 'pointer'
+        activeTool: 'pointer',
+        activeShapeType: 'rectangle' as 'rectangle' | 'circle' | 'triangle' | 'star'
     },
     interactionState: {},
     presentationState: {
@@ -83,11 +84,34 @@ class PizarronStore {
     }
 
     deleteNode(id: string) {
+        this.deleteNodes([id]);
+    }
+
+    deleteNodes(ids: string[]) {
         this.setState(state => {
-            delete state.nodes[id];
-            state.order = state.order.filter(oid => oid !== id);
-            state.selection.delete(id);
+            const set = new Set(ids);
+            state.order = state.order.filter(oid => !set.has(oid));
+            ids.forEach(id => {
+                delete state.nodes[id];
+                state.selection.delete(id);
+            });
         });
+    }
+
+    duplicateNode(id: string) {
+        const node = this.state.nodes[id];
+        if (!node) return;
+
+        const newNode: BoardNode = JSON.parse(JSON.stringify(node));
+        newNode.id = crypto.randomUUID();
+        newNode.x += 20;
+        newNode.y += 20;
+        newNode.zIndex = state.order.length + 1; // Ensure on top
+        newNode.updatedAt = Date.now();
+        newNode.createdAt = Date.now();
+
+        this.addNode(newNode);
+        this.setSelection([newNode.id]);
     }
 
     setSelection(ids: string[]) {
@@ -99,6 +123,12 @@ class PizarronStore {
     setActiveTool(tool: BoardState['uiFlags']['activeTool']) {
         this.setState(state => {
             state.uiFlags.activeTool = tool;
+        });
+    }
+
+    setActiveShapeType(type: any) {
+        this.setState(state => {
+            state.uiFlags.activeShapeType = type;
         });
     }
 

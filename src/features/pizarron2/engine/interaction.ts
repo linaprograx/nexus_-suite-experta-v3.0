@@ -13,6 +13,9 @@ export class InteractionManager {
     private panStartScreen: Point = { x: 0, y: 0 }; // Screen Coords (for Pan)
     private initialNodePositions: Record<string, Point> = {};
     private startViewport: Viewport = { x: 0, y: 0, zoom: 1 };
+    private isResizing = false;
+    private resizeHandle: 'nw' | 'ne' | 'se' | 'sw' | null = null;
+    private initialResizeState: { x: number, y: number, w: number, h: number } | null = null;
     private canvas: HTMLCanvasElement | null = null;
 
     // Double Click Helpers
@@ -67,14 +70,68 @@ export class InteractionManager {
         this.canvas = canvas;
     }
 
+    // Helper to convert screen coordinates to world coordinates
+    private screenToWorld(screenPoint: Point, viewport: Viewport): Point {
+        return {
+            x: (screenPoint.x - viewport.x) / viewport.zoom,
+            y: (screenPoint.y - viewport.y) / viewport.zoom
+        };
+    }
+
+    // Helper to check if a point is inside a node
+    private isPointInNode(point: Point, node: BoardNode): boolean {
+        // Basic AABB check for now
+        return point.x >= node.x &&
+            point.x <= node.x + node.w &&
+            point.y >= node.y &&
+            point.y <= node.y + node.h;
+    }
+
     // Main Entry Points from React
     onPointerDown(e: React.PointerEvent<HTMLCanvasElement>) {
         if (!this.canvas) return; // Guard
 
         const state = pizarronStore.getState();
         const { viewport, order, nodes } = state;
-        const screenPoint = { x: e.clientX, y: e.clientY };
+
+        // Correctly calculate screen point relative to canvas
+        const rect = this.canvas.getBoundingClientRect();
+        const screenPoint = {
+            x: e.clientX - rect.left,
+            y: e.clientY - rect.top
+        };
         const worldPoint = this.screenToWorld(screenPoint, viewport);
+
+        // 0. RESIZE HANDLES
+        if (state.selection.size === 1 && state.uiFlags.activeTool === 'pointer') {
+            const id = Array.from(state.selection)[0];
+            const node = nodes[id];
+            if (node) {
+                const handleSize = 10 / viewport.zoom;
+                const half = handleSize / 2;
+                const margin = handleSize;
+
+                const handles = {
+                    nw: { x: node.x - half, y: node.y - half },
+                    ne: { x: node.x + node.w - half, y: node.y - half },
+                    se: { x: node.x + node.w - half, y: node.y + node.h - half },
+                    sw: { x: node.x - half, y: node.y + node.h - half }
+                };
+
+                for (const [key, pos] of Object.entries(handles)) {
+                    if (Math.abs(worldPoint.x - (pos.x + half)) < margin &&
+                        Math.abs(worldPoint.y - (pos.y + half)) < margin) {
+
+                        this.isResizing = true;
+                        this.resizeHandle = key as any;
+                        this.initialResizeState = { ...node };
+                        this.dragStart = worldPoint;
+                        (e.target as HTMLElement).setPointerCapture(e.pointerId);
+                        return;
+                    }
+                }
+            }
+        }
 
         // 1. Check for Node Hits (Reverse order for z-index)
         let hitId: string | null = null;
@@ -104,6 +161,7 @@ export class InteractionManager {
         const isMiddleClick = e.button === 1;
         const currentTool = state.uiFlags.activeTool;
         const isHandTool = currentTool === 'hand';
+        const isCreatingTool = ['rectangle', 'shape', 'text', 'line'].includes(currentTool);
 
         // PAN CONDITION
         if (isMiddleClick || isHandTool) {
@@ -112,6 +170,52 @@ export class InteractionManager {
             this.startViewport = { ...viewport };
             (e.target as HTMLElement).setPointerCapture(e.pointerId);
             (e.target as HTMLElement).style.cursor = 'grabbing';
+            return;
+        }
+
+        // CREATE CONDITION
+        if (isCreatingTool) {
+            this.isDragging = true;
+            this.dragStart = worldPoint;
+
+            // Fetch latest state for activeShapeType
+            // const state = pizarronStore.getState(); // Already fetched
+
+            // Determine Type & Content
+            let nodeType: BoardNode['type'] = 'shape'; // default
+            let content: any = { color: '#94a3b8' };
+            let w = 0, h = 0;
+
+            if (currentTool === 'text') {
+                nodeType = 'text';
+                content = { title: 'New Text', color: '#1e293b' };
+                // Default size if click, but allow drag
+            } else if (currentTool === 'line') {
+                nodeType = 'line';
+                content = { lineType: 'straight', strokeWidth: 4, color: '#334155' };
+            } else if (currentTool === 'shape' || currentTool === 'rectangle') {
+                nodeType = 'shape';
+                content = {
+                    shapeType: state.uiFlags.activeShapeType || 'rectangle',
+                    color: '#cbd5e1'
+                };
+            }
+
+            pizarronStore.updateInteractionState({
+                creationDraft: {
+                    id: crypto.randomUUID(),
+                    type: nodeType,
+                    x: worldPoint.x,
+                    y: worldPoint.y,
+                    w: w,
+                    h: h,
+                    content,
+                    zIndex: state.order.length + 1,
+                    createdAt: Date.now(),
+                    updatedAt: Date.now()
+                }
+            });
+            (e.target as HTMLElement).setPointerCapture(e.pointerId);
             return;
         }
 
@@ -271,103 +375,120 @@ export class InteractionManager {
     }
 
     onPointerUp(e: React.PointerEvent<HTMLCanvasElement>) {
+        (e.target as HTMLElement).releasePointerCapture(e.pointerId);
+        (e.target as HTMLElement).style.cursor = 'default';
+
+        if (this.isResizing) {
+            this.isResizing = false;
+            this.resizeHandle = null;
+            return;
+        }
+
+        this.isPanning = false;
+        this.isDragging = false;
+
         const state = pizarronStore.getState();
         const worldPoint = this.screenToWorld({ x: e.clientX, y: e.clientY }, state.viewport);
+
+        // MARQUEE SELECTION
+        if (state.interactionState.marquee) {
+            const { x, y, w, h } = state.interactionState.marquee;
+            // Normalize
+            const rx = w < 0 ? x + w : x;
+            const ry = h < 0 ? y + h : h;
+            const rw = Math.abs(w);
+            const rh = Math.abs(h);
+
+            const selectedIds: string[] = [];
+            state.order.forEach(id => {
+                const node = state.nodes[id];
+                // Intersect
+                if (
+                    node.x < rx + rw &&
+                    node.x + node.w > rx &&
+                    node.y < ry + rh &&
+                    node.y + node.h > ry
+                ) {
+                    selectedIds.push(id);
+                }
+            });
+
+            pizarronStore.setSelection(selectedIds);
+            pizarronStore.updateInteractionState({ marquee: undefined });
+        }
 
         // Commit Creation
         if (state.interactionState.creationDraft) {
             const draft = state.interactionState.creationDraft;
-            // Normalize Geometry (handle negative w/h)
-            const finalX = draft.w! < 0 ? (draft.x || 0) + draft.w! : (draft.x || 0);
-            const finalY = draft.h! < 0 ? (draft.y || 0) + draft.h! : (draft.y || 0);
-            const finalW = Math.abs(draft.w || 0);
-            const finalH = Math.abs(draft.h || 0);
 
-            if (finalW > 5 && finalH > 5) {
-                const newNode: BoardNode = {
-                    id: crypto.randomUUID(),
-                    type: draft.type as any,
-                    x: finalX,
-                    y: finalY,
-                    w: finalW,
-                    h: finalH,
-                    zIndex: state.order.length + 1,
-                    content: draft.content || {},
-                    createdAt: Date.now(),
-                    updatedAt: Date.now()
-                };
+            // Validate Dimensions (Click vs Drag)
+            let finalW = Math.abs(draft.w);
+            let finalH = Math.abs(draft.h);
+            const isClick = finalW < 5 && finalH < 5;
 
-                pizarronStore.addNode(newNode);
-                pizarronStore.setSelection([newNode.id]);
-                pizarronStore.setActiveTool('pointer'); // Reset tool
+            if (isClick) {
+                // Apply Defaults
+                if (draft.type === 'text') {
+                    finalW = 200; finalH = 50;
+                } else if (draft.type === 'shape') {
+                    finalW = 100; finalH = 100;
+                } else if (draft.type === 'line') {
+                    finalW = 100; finalH = 10; // Line length / thickness box
+                } else if (draft.type === 'image') {
+                    finalW = 200; finalH = 200;
+                }
             }
 
+            // Normalize X,Y if w/h were negative (dragged left/up)
+            let finalX = draft.w < 0 ? draft.x + draft.w : draft.x;
+            let finalY = draft.h < 0 ? draft.y + draft.h : draft.y;
+
+            // If it was a click, center it on the mouse point (optional, or just top-left)
+            // Let's keep top-left as click point for simplicity
+
+            const newNode: BoardNode = {
+                ...draft,
+                x: finalX,
+                y: finalY,
+                w: finalW,
+                h: finalH,
+                id: crypto.randomUUID(), // New ID or keep draft ID? Draft has ID.
+                zIndex: state.order.length + 1,
+                updatedAt: Date.now(),
+                createdAt: Date.now()
+            };
+
+            pizarronStore.addNode(newNode);
+            pizarronStore.setSelection([newNode.id]);
+
+            // Reset
             pizarronStore.updateInteractionState({ creationDraft: undefined });
-        }
+            pizarronStore.setActiveTool('pointer');
 
-        // Create Text on Click
-        if (state.uiFlags.activeTool === 'text' && !this.isPanning && !this.isDragging) {
-            // Check distance for clean click
-            const dist = Math.hypot(worldPoint.x - this.dragStart.x, worldPoint.y - this.dragStart.y);
-            if (dist < 5) {
-                const newNode: BoardNode = {
-                    id: crypto.randomUUID(),
-                    type: 'text',
-                    x: worldPoint.x,
-                    y: worldPoint.y,
-                    w: 200,
-                    h: 50,
-                    zIndex: state.order.length + 1,
-                    content: { title: 'New Text', color: '#1e293b' }, // Default text
-                    createdAt: Date.now(),
-                    updatedAt: Date.now()
-                };
-
-                pizarronStore.addNode(newNode);
-                pizarronStore.setSelection([newNode.id]);
-                pizarronStore.setActiveTool('pointer');
+            // Special case for Text: Open editing? 
+            if (newNode.type === 'text') {
+                // The ConfigModalRouter will open TextModal. 
+                // If we want inline editing, we might set editingNodeId.
+                // But user asked for "Modal Reconnection", so TextModal is fine.
+                // Wait, "TextConfigModal" is separate from "Inline Editing" (Double Click).
+                // User said "Text... abren su modal correspondiente".
+                // So selecting it is enough.
             }
+
+            // Clean up (these are now handled at the very beginning of onPointerUp)
+            // this.isDragging = false;
+            // this.isPanning = false;
+            // (e.target as HTMLElement).releasePointerCapture(e.pointerId);
+            // (e.target as HTMLElement).style.cursor = 'default';
+            return;
         }
 
-        if (state.interactionState.marquee) {
-            // Clear Marquee
-            pizarronStore.updateInteractionState({ marquee: undefined });
-        }
+        // These are now handled at the very beginning of onPointerUp
+        // this.isDragging = false;
+        // this.isPanning = false;
+        // (e.target as HTMLElement).releasePointerCapture(e.pointerId);
+        // (e.target as HTMLElement).style.cursor = 'default';
 
-        this.isDragging = false;
-        this.isPanning = false;
-        (e.target as HTMLElement).releasePointerCapture(e.pointerId);
-        (e.target as HTMLElement).style.cursor = 'default';
-
-        // Sync Logic will happen here eventually (notify flush)
-    }
-
-    // --- Helpers ---
-
-    private screenToWorld(point: Point, viewport: Viewport): Point {
-        // screen = world * zoom + pan
-        // world = (screen - pan) / zoom
-
-        // Note: ClientX/Y includes window coords. 
-        // We usually need relative to Canvas Container if the canvas is not full screen absolute.
-        // Assuming CanvasStage is essentially the screen or we correct for offset in the View.
-        // Ideally we should use e.nativeEvent.offsetX if possible, or track canvas rect.
-        // For Full Screen Engine, ClientX matches (if no margins).
-        // Let's assume standard behavior for now, but correction might be needed.
-
-        return {
-            x: (point.x - viewport.x) / viewport.zoom,
-            y: (point.y - viewport.y) / viewport.zoom
-        };
-    }
-
-    private isPointInNode(point: Point, node: BoardNode): boolean {
-        return (
-            point.x >= node.x &&
-            point.x <= node.x + node.w &&
-            point.y >= node.y &&
-            point.y <= node.y + node.h
-        );
     }
 }
 
