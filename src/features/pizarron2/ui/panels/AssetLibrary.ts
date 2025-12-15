@@ -13,6 +13,7 @@ export interface AssetDefinition {
     label: string;
     icon: string; // SVG Path string or Emoji
     type: 'icon' | 'shape' | 'sticker' | 'template';
+    tags?: string[];
     data: any; // Node payload
 }
 
@@ -241,6 +242,73 @@ export const TEMPLATE_LIBRARIES: AssetCategory[] = [
             { id: 'tmpl-brain', label: 'Brainstorm', icon: '🧠', type: 'template', data: T_BRAINSTORM },
             { id: 'tmpl-persona', label: 'Persona', icon: '👤', type: 'template', data: T_PERSONA },
             { id: 'tmpl-flow', label: 'Flow', icon: '➡️', type: 'template', data: T_FLOW },
+        ]
+    }
+];
+
+export const COMPOSITE_SHAPES: AssetCategory[] = [
+    {
+        id: 'frameworks',
+        label: 'Frameworks',
+        items: [
+            {
+                id: 'comp-swot', label: 'DAFO / SWOT', icon: 'DAFO', type: 'template',
+                data: {
+                    nodes: [{
+                        id: 'swot-1', type: 'composite', x: 0, y: 0, w: 600, h: 400,
+                        content: {
+                            composite: {
+                                layout: 'swot',
+                                structure: { rows: 2, cols: 2, gap: 10, padding: 20 },
+                                cells: [
+                                    { id: 'c1', row: 0, col: 0, text: 'DEBILIDADES', color: '#fee2e2' },
+                                    { id: 'c2', row: 0, col: 1, text: 'AMENAZAS', color: '#ffedd5' },
+                                    { id: 'c3', row: 1, col: 0, text: 'FORTALEZAS', color: '#dcfce7' },
+                                    { id: 'c4', row: 1, col: 1, text: 'OPORTUNIDADES', color: '#dbeafe' },
+                                ]
+                            }
+                        }
+                    }]
+                }
+            },
+            {
+                id: 'comp-grid-3x3', label: 'Grid 3x3', icon: 'GRID', type: 'template',
+                data: {
+                    nodes: [{
+                        id: 'grid-3x3', type: 'composite', x: 0, y: 0, w: 400, h: 400,
+                        content: {
+                            borderRadius: 8, borderColor: '#cbd5e1', borderWidth: 1,
+                            composite: {
+                                layout: 'grid',
+                                structure: { rows: 3, cols: 3, gap: 1, padding: 0 },
+                                cells: Array.from({ length: 9 }, (_, i) => ({
+                                    id: `c-${i}`, row: Math.floor(i / 3), col: i % 3, text: '', color: '#ffffff'
+                                }))
+                            }
+                        }
+                    }]
+                }
+            },
+            {
+                id: 'comp-eisenhower', label: 'Eisenhower', icon: 'E.H.', type: 'template',
+                data: {
+                    nodes: [{
+                        id: 'eisenhower-1', type: 'composite', x: 0, y: 0, w: 600, h: 600,
+                        content: {
+                            composite: {
+                                layout: 'swot', // Reusing swot 2x2 layout mechanic
+                                structure: { rows: 2, cols: 2, gap: 20, padding: 40 },
+                                cells: [
+                                    { id: 'e1', row: 0, col: 0, text: 'URGENTE\nIMPORTANTE', color: '#fecaca', textColor: '#b91c1c' },
+                                    { id: 'e2', row: 0, col: 1, text: 'NO URGENTE\nIMPORTANTE', color: '#bfdbfe', textColor: '#1d4ed8' },
+                                    { id: 'e3', row: 1, col: 0, text: 'URGENTE\nNO IMPORTANTE', color: '#fde68a', textColor: '#b45309' },
+                                    { id: 'e4', row: 1, col: 1, text: 'NI URGENTE\nNI IMPORTANTE', color: '#e5e7eb', textColor: '#374151' },
+                                ]
+                            }
+                        }
+                    }]
+                }
+            }
         ]
     }
 ];

@@ -258,14 +258,56 @@ export class InteractionManager {
         const now = Date.now();
         if (hitId && hitId === this.lastClickId && (now - this.lastClickTime) < 300) {
             const node = nodes[hitId];
-            if (node.type === 'text') {
-                pizarronStore.updateInteractionState({ editingNodeId: hitId });
+
+            // Composite Logic
+            if (node.type === 'composite' && node.content.composite) {
+                const { composite } = node.content;
+                const { structure, cells } = composite;
+                const { rows, cols, gap = 0, padding = 0 } = structure;
+
+                const availW = node.w - (padding * 2);
+                const availH = node.h - (padding * 2);
+                const cellW = (availW - ((cols - 1) * gap)) / cols;
+                const cellH = (availH - ((rows - 1) * gap)) / rows;
+
+                // Local transform
+                let localP = { x: worldPoint.x - node.x, y: worldPoint.y - node.y };
+                if (node.rotation) {
+                    const cx = node.w / 2;
+                    const cy = node.h / 2;
+                    const dx = localP.x - cx;
+                    const dy = localP.y - cy;
+                    const cos = Math.cos(-node.rotation);
+                    const sin = Math.sin(-node.rotation);
+                    localP.x = cx + (dx * cos - dy * sin);
+                    localP.y = cy + (dx * sin + dy * cos);
+                }
+
+                // Check cells
+                for (const cell of cells) {
+                    const cellX = padding + (cell.col * (cellW + gap));
+                    const cellY = padding + (cell.row * (cellH + gap));
+
+                    if (localP.x >= cellX && localP.x <= cellX + cellW &&
+                        localP.y >= cellY && localP.y <= cellY + cellH) {
+
+                        pizarronStore.updateInteractionState({
+                            editingNodeId: hitId,
+                            editingSubId: cell.id
+                        });
+                        this.lastClickId = null;
+                        return;
+                    }
+                }
+                // If background clicked, maybe edit generic text? Or just ignore
+            }
+
+            if (node.type === 'text' || node.type === 'card' || node.type === 'board') {
+                pizarronStore.updateInteractionState({ editingNodeId: hitId, editingSubId: undefined });
                 this.lastClickId = null;
                 return;
             }
         }
-        this.lastClickTime = now;
-        this.lastClickId = hitId;
 
         // 2. Logic: Pan vs Select/Drag vs Marquee
         const isMiddleClick = e.button === 1;

@@ -5,95 +5,120 @@ export interface LineBinding {
     side: 'left' | 'right' | 'top' | 'bottom';
 }
 
+export interface CompositeCell {
+    id: string;
+    row: number;
+    col: number;
+    text?: string;
+    color?: string; // Background color override
+    textColor?: string;
+    // Optional rendering overrides
+}
+
+export interface CompositeContent {
+    layout: 'grid' | 'swot' | 'list' | 'card';
+    structure: {
+        rows: number;
+        cols: number;
+        padding?: number;
+        gap?: number;
+        headers?: string[]; // For lists/tables
+        rowHeaders?: string[];
+    };
+    cells: CompositeCell[];
+    // Base styles for the container
+    borderColor?: string;
+    borderWidth?: number;
+    borderRadius?: number;
+}
+
 export interface BoardNode {
     id: string;
-    type: NodeType;
+    type: 'text' | 'shape' | 'sticker' | 'image' | 'line' | 'group' | 'board' | 'card' | 'composite';
     x: number;
     y: number;
     w: number;
     h: number;
-    rotation?: number; // radians
-    zIndex: number;
-
-    // Group Props
+    rotation?: number;
+    zIndex?: number;
+    locked?: boolean;
+    isFixed?: boolean;
     parentId?: string;
-    childrenIds?: string[];
-
-    // Content Data
-    // Content Data
-    // Content Data
+    childrenIds?: string[]; // For groups
     content: {
         title?: string;
-        body?: string;
-        // Fill props
-        color?: string; // hex or theme var
+        body?: string; // For notes/cards
+        color?: string; // Fill color or Text color
+        opacity?: number;
+
+        // Gradient Support
         gradient?: {
             type: 'linear' | 'radial';
-            start: string; // color
-            end: string;   // color
-            angle?: number; // deg
+            start: string;
+            end: string;
+            angle?: number;
         };
 
-        // Advanced Filters
+        // Effects
         filters?: {
-            blur?: number; // px
+            blur?: number;
             shadow?: {
                 color: string;
-                blur: number; // px
+                blur: number;
                 offsetX: number;
                 offsetY: number;
                 opacity?: number;
             };
         };
 
-        // Typography (TextNode)
+        // Text Specific
         fontSize?: number;
-        textAlign?: 'left' | 'center' | 'right';
-        fontWeight?: 'normal' | 'bold';
+        fontWeight?: 'normal' | 'bold' | 'light';
         fontStyle?: 'normal' | 'italic';
-        textDecoration?: 'none' | 'underline';
-        textSizing?: 'auto' | 'fixed'; // New
+        textDecoration?: 'none' | 'underline' | 'line-through';
+        align?: 'left' | 'center' | 'right';
+        fontFamily?: string;
 
-        // Shape/Board props
-        shapeType?: 'rectangle' | 'circle' | 'triangle' | 'star' | 'freeform';
-        borderColor?: string;
+        // Shape Specific
+        shapeType?: 'rectangle' | 'circle' | 'triangle' | 'diamond' | 'hexagon' | 'arrow_right' | 'star' | 'speech_bubble' | 'cloud' | 'pill';
         borderWidth?: number;
-        borderStyle?: 'solid' | 'dashed' | 'dotted';
+        borderColor?: string;
         borderRadius?: number;
+
+        // Line Specific
+        startArrow?: boolean;
+        endArrow?: boolean;
+        lineType?: 'straight' | 'curved' | 'elbow';
+        strokeWidth?: number;
+
+        // Image Specific
+        src?: string; // URL or Base64
 
         // Board Specific
         grid?: {
             columns: number;
-            rows: number;
-            gap: number;
-            showLines?: boolean;
+            // Board Specific
+            grid?: {
+                columns: number;
+                rows: number;
+                gap: number;
+            };
+
+            // Card Specific
+            status?: 'todo' | 'in-progress' | 'done';
+            tags?: string[];
+
+            // Composite Specific
+            composite?: CompositeContent;
         };
 
-        // Image props
-        src?: string;
-        caption?: string;
-        opacity?: number; // 0-1
-
-        // Line props
-        lineType?: 'straight' | 'curved';
-        strokeWidth?: number;
-        startArrow?: boolean;
-        endArrow?: boolean;
-        startBinding?: LineBinding;
-        endBinding?: LineBinding;
-
-        // Card props (Task/Idea)
-        status?: 'todo' | 'in-progress' | 'done';
-        tags?: string[];
-    };
-
-    // Meta
-    createdAt: number;
-    updatedAt: number;
-    locked?: boolean;
-    isFixed?: boolean; // Background mode
-    parentId?: string; // For grouping (future)
-}
+        // Meta
+        createdAt: number;
+        updatedAt: number;
+        locked?: boolean;
+        isFixed?: boolean; // Background mode
+        parentId?: string; // For grouping (future)
+    }
 
 export interface Viewport {
     x: number;
@@ -124,6 +149,8 @@ export interface BoardState {
         creationDraft?: any; // BoardNode partial
         editingImageId?: string;
         editingGroupId?: string;
+        editingNodeId?: string; // Currently active text editor
+        editingSubId?: string; // Currently active cell in composite
         snapLines?: Array<{
             type: 'horizontal' | 'vertical';
             x?: number;

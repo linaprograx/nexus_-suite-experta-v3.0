@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { pizarronStore } from '../../state/store';
-import { ICON_LIBRARIES, SHAPE_LIBRARIES, GRAPHIC_LIBRARIES, PALETTE_LIBRARIES, TEXT_PRESETS, AVAILABLE_FONTS } from './AssetLibrary';
+import { ICON_LIBRARIES, SHAPE_LIBRARIES, GRAPHIC_LIBRARIES, PALETTE_LIBRARIES, TEXT_PRESETS, AVAILABLE_FONTS, COMPOSITE_SHAPES } from './AssetLibrary';
 import { BoardNode } from '../../engine/types';
 import { FontLoader } from '../../engine/FontLoader';
 
-type LibraryTab = 'templates' | 'text' | 'shapes' | 'icons' | 'graphics' | 'uploads';
+type LibraryTab = 'templates' | 'text' | 'shapes' | 'icons' | 'graphics' | 'uploads' | 'frameworks';
 
 const TABS: { id: LibraryTab, label: string, icon: string }[] = [
     { id: 'templates', label: 'Plantillas', icon: '⧉' },
+    { id: 'frameworks', label: 'Estructuras', icon: '▦' },
     { id: 'text', label: 'Texto', icon: 'T' },
     { id: 'shapes', label: 'Formas', icon: '○' },
     { id: 'icons', label: 'Iconos', icon: '★' },
@@ -87,6 +88,7 @@ export const LibrarySidePanel: React.FC = () => {
             case 'shapes': return SHAPE_LIBRARIES;
             case 'graphics': return GRAPHIC_LIBRARIES;
             case 'text': return TEXT_PRESETS;
+            case 'frameworks': return COMPOSITE_SHAPES;
             default: return [];
         }
     };

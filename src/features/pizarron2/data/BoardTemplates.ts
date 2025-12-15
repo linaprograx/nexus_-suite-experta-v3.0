@@ -4,54 +4,75 @@ export const BOARD_TEMPLATES: BoardTemplate[] = [
     {
         id: 'creative',
         name: 'Pizarra Creativa',
-        description: 'Espacio fluido para la invención de cócteles y conceptos.',
+        description: 'Ideación, conceptos y exploración visual.',
         icon: '🎨',
-        focus: 'Creación de cócteles',
+        focus: 'Ideación y Concepto',
         structure: [
-            { title: 'Inspiración', type: 'moodboard', description: 'Referencias visuales y conceptos' },
-            { title: 'Ingredientes', type: 'database', description: 'Banco de sabores y componentes' },
-            { title: 'Laboratorio', type: 'canvas', description: 'Espacio de pruebas y combinaciones' },
-            { title: 'Notas', type: 'docs', description: 'Registro de ideas y feedback' }
+            { title: 'Concepto Principal', type: 'board', description: 'El núcleo de la idea' },
+            { title: 'Inspiración Visual', type: 'board', description: 'Moodboard de referencias' },
+            { title: 'Notas & Ideas', type: 'board', description: 'Brainstorming rápido' },
+            { title: 'Iteraciones', type: 'board', description: 'Variaciones del concepto' }
         ]
     },
     {
         id: 'mixologist',
         name: 'Pizarra Mixólogo',
-        description: 'Estructuración profesional de menús y ofertas gastronómicas.',
+        description: 'Desarrollo técnico y creativo de recetas.',
         icon: '🍸',
-        focus: 'Creación de menús',
+        focus: 'Desarrollo de Recetas',
         structure: [
-            { title: 'Estructura', type: 'hierarchy', description: 'Arquitectura del menú' },
-            { title: 'Recetario', type: 'catalog', description: 'Fichas técnicas detalladas' },
-            { title: 'Costes', type: 'finance', description: 'Análisis de rentabilidad' },
-            { title: 'Storytelling', type: 'narrative', description: 'Narrativa de venta' }
+            { title: 'Receta Base', type: 'board', description: 'La fórmula inicial' },
+            { title: 'Ingredientes', type: 'board', description: 'Componentes clave' },
+            { title: 'Técnicas', type: 'board', description: 'Métodos de preparación' },
+            { title: 'Pruebas', type: 'board', description: 'Registro de intentos' }
         ]
     },
     {
         id: 'productive',
-        name: 'Pizarra Productivo',
-        description: 'Gestión operativa eficiente del equipo y los recursos.',
+        name: 'Pizarra Productiva',
+        description: 'Organización de tareas, turnos y servicios.',
         icon: '⚡',
-        focus: 'Gestión operativa',
+        focus: 'Planificación Operativa',
         structure: [
-            { title: 'Tareas', type: 'kanban', description: 'Flujo de trabajo' },
-            { title: 'Turnos', type: 'calendar', description: 'Horarios y rotaciones' },
-            { title: 'Servicios', type: 'checklist', description: 'Protocolos de servicio' },
-            { title: 'Planificación', type: 'timeline', description: 'Vista semanal/mensual' }
+            { title: 'Kanban', type: 'board', description: 'Flujo de trabajo' },
+            { title: 'Planificación Semanal', type: 'board', description: 'Vista calendario' },
+            { title: 'Operativa', type: 'board', description: 'Notas y protocolos' }
         ]
     },
     {
         id: 'nexus',
         name: 'Pizarra Nexus',
-        description: 'El sistema definitivo para el diseño integral de experiencias.',
+        description: 'Diseño integral de menús y experiencias.',
         icon: '💠',
-        focus: 'Diseño integral',
+        focus: 'Diseño de Menús',
         structure: [
-            { title: 'Concepto', type: 'moodboard', description: 'Visión global' },
-            { title: 'Recetas Maestras', type: 'catalog', description: 'Fórmulas perfeccionadas' },
-            { title: 'Narrativa', type: 'narrative', description: 'Viaje del cliente' },
-            { title: 'Diseño Menú', type: 'layout', description: 'Aspecto visual final' },
-            { title: 'Control', type: 'dashboard', description: 'KPIs y validación' }
+            { title: 'Estructura Menú', type: 'board', description: 'Arquitectura de venta' },
+            { title: 'Cócteles', type: 'board', description: 'Desarrollo de tragos' },
+            { title: 'Storytelling', type: 'board', description: 'Narrativa del concepto' },
+            { title: 'Visual & Layout', type: 'board', description: 'Diseño gráfico' }
+        ]
+    },
+    {
+        id: 'analytical',
+        name: 'Pizarra Analítica',
+        description: 'Evaluación estratégica y toma de decisiones.',
+        icon: '📊',
+        focus: 'Análisis y Decisión',
+        structure: [
+            { title: 'DAFO', type: 'swot', description: 'Análisis Estratégico' },
+            { title: 'Pros / Contras', type: 'board', description: 'Balanza de decisión' },
+            { title: 'Conclusión', type: 'board', description: 'Decisión final' }
+        ]
+    },
+    {
+        id: 'advanced',
+        name: 'Pizarra Libre Avanzada',
+        description: 'Lienzo modular para usuarios expertos.',
+        icon: '🚀',
+        focus: 'Canvas Modular',
+        structure: [
+            { title: 'Zona de Trabajo', type: 'grid', description: 'Espacio principal' },
+            { title: 'Recursos', type: 'board', description: 'Banco de assets' }
         ]
     }
 ];

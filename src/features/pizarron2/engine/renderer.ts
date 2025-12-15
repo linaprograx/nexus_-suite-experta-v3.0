@@ -196,12 +196,89 @@ export class PizarronRenderer {
         ctx.fillText(line, x, ly);
     }
 
+    private drawComposite(ctx: CanvasRenderingContext2D, node: BoardNode) {
+        const { composite } = node.content;
+        if (!composite) return;
+
+        const { structure, cells } = composite;
+        const { rows, cols, gap = 0, padding = 0 } = structure;
+
+        // Calculate available area
+        const availW = node.w - (padding * 2);
+        const availH = node.h - (padding * 2);
+
+        const cellW = (availW - ((cols - 1) * gap)) / cols;
+        const cellH = (availH - ((rows - 1) * gap)) / rows;
+
+        ctx.save();
+
+        // Draw Container Background if generic color is set (usually transparent for composites if cells have color)
+        // But if borderWidth is set on parent, draw border
+        if (node.content.borderWidth || node.content.borderColor) {
+            ctx.strokeStyle = node.content.borderColor || '#cbd5e1';
+            ctx.lineWidth = node.content.borderWidth || 1;
+            ctx.beginPath();
+            if (ctx.roundRect) ctx.roundRect(0, 0, node.w, node.h, node.content.borderRadius || 0);
+            else ctx.rect(0, 0, node.w, node.h);
+            ctx.stroke();
+        }
+
+        cells.forEach(cell => {
+            // Calculate Cell Rect
+            const cellX = padding + (cell.col * (cellW + gap));
+            const cellY = padding + (cell.row * (cellH + gap));
+
+            // Draw Cell Background
+            if (cell.color) {
+                ctx.fillStyle = cell.color;
+                ctx.beginPath();
+                const r = 8; // Internal radius
+                if (ctx.roundRect) ctx.roundRect(cellX, cellY, cellW, cellH, r);
+                else ctx.rect(cellX, cellY, cellW, cellH);
+                ctx.fill();
+            }
+
+            // Draw Cell Text
+            if (cell.text) {
+                ctx.fillStyle = cell.textColor || node.content.color || '#1e293b';
+                // Use node font styles as base
+                const fontSize = node.content.fontSize || 14;
+                ctx.font = `bold ${fontSize}px "${node.content.fontFamily || 'Inter'}", sans-serif`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+
+                // Center text in cell
+                const textX = cellX + cellW / 2;
+                const textY = cellY + cellH / 2;
+
+                // Simple multi-line support
+                const lines = cell.text.split('\n');
+                const lineHeight = fontSize * 1.4;
+                const totalH = lines.length * lineHeight;
+                let startY = textY - (totalH / 2) + (lineHeight / 2);
+
+                lines.forEach((line, i) => {
+                    // Clip text to cell?
+                    // ctx.save();
+                    // ctx.beginPath(); ctx.rect(cellX, cellY, cellW, cellH); ctx.clip();
+                    ctx.fillText(line, textX, startY + (i * lineHeight));
+                    // ctx.restore();
+                });
+            }
+        });
+
+        ctx.restore();
+    }
+
     private drawNode(ctx: CanvasRenderingContext2D, node: BoardNode, isSelected: boolean, zoom: number, nodes?: Record<string, BoardNode>) {
         ctx.save();
         ctx.translate(node.x, node.y);
         ctx.rotate(node.rotation || 0);
 
-        if (node.type === 'group' && node.childrenIds && nodes) {
+        if (node.type === 'composite') {
+            this.drawComposite(ctx, node);
+        }
+        else if (node.type === 'group' && node.childrenIds && nodes) {
             // Draw Group debug border if needed, or rely on Selection Overlay
 
             // Draw Children (Absolute Coords -> Reset Transform)

@@ -1,10 +1,8 @@
 import { useQuery } from '@tanstack/react-query';
 import { collection, query, orderBy, limit, doc, getDoc, getDocs } from 'firebase/firestore';
-import { useApp } from '../context/AppContext';
 import { AppNotification, UserProfile } from '../types';
 
-export const useNexusProfile = () => {
-    const { db, userId, appId } = useApp();
+export const useNexusProfile = (db: any, userId: any, appId: any) => {
     const enabled = !!db && !!userId;
 
     // Fetch Profile

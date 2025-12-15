@@ -42,7 +42,7 @@ const MainAppContent: React.FC = () => {
     const { isSidebarCollapsed } = useUI();
 
     // Modular Hooks
-    const { notifications } = useNexusProfile();
+    const { notifications } = useNexusProfile(db, userId, appId);
     const { ingredients: allIngredients } = useIngredients();
 
     const [showNotificationsDrawer, setShowNotificationsDrawer] = React.useState(false);
