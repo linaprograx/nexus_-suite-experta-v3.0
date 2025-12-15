@@ -114,7 +114,10 @@ export interface BoardState {
         activeTool: 'pointer' | 'hand' | 'rectangle' | 'text' | 'shape' | 'line' | 'image';
         activeShapeType?: 'rectangle' | 'circle' | 'triangle' | 'star' | 'freeform';
         toolbarPinned?: boolean;
+        showLibrary?: boolean;
+        showProjectManager?: boolean; // New flag
     };
+    activePizarra?: PizarraMetadata;
     interactionState: {
         selectionBounds?: { x: number; y: number; w: number; h: number };
         marquee?: { x: number; y: number; w: number; h: number };
@@ -134,4 +137,42 @@ export interface BoardState {
         route: 'order' | 'selection';
         currentIndex: number;
     };
+}
+// --- Pizarra (Project) System ---
+
+export interface PizarraMetadata {
+    id: string;
+    title: string;
+    description?: string; // Optional description
+    ownerId: string;      // User ID of owner
+    createdAt: number;
+    updatedAt: number;
+    lastOpenedAt: number; // For "Recent" sorting
+    isArchived?: boolean; // Soft delete
+    thumbnail?: string;   // URL or Base64 placeholder
+
+    // State Snapshot for Preview/Restore
+    canvasState?: {
+        viewport: { x: number; y: number; zoom: number };
+    };
+
+    boards: {
+        id: string;
+        title: string;
+        type: string;
+        order: number;
+    }[];
+}
+
+export interface BoardTemplate {
+    id: string;
+    name: string;
+    description: string;
+    icon: string;
+    focus: string;
+    structure: {
+        title: string;
+        type: string;
+        description?: string;
+    }[];
 }

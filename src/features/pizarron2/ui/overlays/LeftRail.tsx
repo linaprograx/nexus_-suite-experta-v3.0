@@ -4,7 +4,9 @@ import { pizarronStore } from '../../state/store';
 const TOOLS = [
     { id: 'pointer', icon: '👆', label: 'Pointer' },
     { id: 'hand', icon: '✋', label: 'Pan' },
-    { id: 'shape', icon: '🔷', label: 'Shapes' }, // Replaced Rectangle
+    { id: 'project', icon: '📂', label: 'Project', isAction: true },
+    { id: 'library', icon: '📚', label: 'Library', isAction: true },
+    { id: 'shape', icon: '🔷', label: 'Shapes' },
     { id: 'line', icon: '📏', label: 'Line' },
     { id: 'text', icon: 'T', label: 'Text' },
     { id: 'image', icon: '🖼️', label: 'Image', isAction: true },
@@ -45,7 +47,7 @@ export const LeftRail: React.FC = () => {
             const cx = (window.innerWidth / 2 - vp.x) / vp.zoom;
             const cy = (window.innerHeight / 2 - vp.y) / vp.zoom;
 
-            const newNode = {
+            const newNode: any = { // Temporary any to bypass strict checks for now, or use BoardNode if imported
                 id: crypto.randomUUID(),
                 type: 'image',
                 x: cx - 100, y: cy - 100, w: 200, h: 200,
@@ -91,6 +93,18 @@ export const LeftRail: React.FC = () => {
 
             pizarronStore.addNode(newNode);
             pizarronStore.setSelection([newNode.id]);
+            return;
+        }
+
+        if (tool.id === 'library') {
+            const current = pizarronStore.getState().uiFlags.showLibrary;
+            pizarronStore.setUIFlag('showLibrary', !current);
+            return;
+        }
+
+        if (tool.id === 'project') {
+            const current = pizarronStore.getState().uiFlags.showProjectManager;
+            pizarronStore.setUIFlag('showProjectManager', !current);
             return;
         }
 

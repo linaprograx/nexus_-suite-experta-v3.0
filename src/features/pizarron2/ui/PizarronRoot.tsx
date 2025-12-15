@@ -12,6 +12,8 @@ import { ImageModal } from './overlays/ImageModal';
 import { ConfigModalRouter } from './overlays/ConfigModalRouter';
 import { MiniToolbar } from './overlays/MiniToolbar';
 import { Firestore } from 'firebase/firestore'; // Assuming Firestore type is available or needs to be imported
+import { LibrarySidePanel } from './panels/LibrarySidePanel';
+import { PizarraManager } from './overlays/PizarraManager';
 
 interface PizarronRootProps {
     appId: string;
@@ -23,6 +25,8 @@ interface PizarronRootProps {
 export const PizarronRoot: React.FC<PizarronRootProps> = ({ appId, boardId, userId, db }) => {
     const [isPresenting, setIsPresenting] = React.useState(false);
     const [editingImageId, setEditingImageId] = React.useState<string | undefined>(undefined);
+    const [showLibrary, setShowLibrary] = React.useState(false);
+    const [showProjectManager, setShowProjectManager] = React.useState(false);
 
     // Initialize Sync Adapter
     React.useEffect(() => {
@@ -41,6 +45,8 @@ export const PizarronRoot: React.FC<PizarronRootProps> = ({ appId, boardId, user
             const state = pizarronStore.getState();
             setIsPresenting(state.presentationState.isActive);
             setEditingImageId(state.interactionState.editingImageId);
+            setShowLibrary(!!state.uiFlags.showLibrary);
+            setShowProjectManager(!!state.uiFlags.showProjectManager);
         });
     }, []);
 
@@ -98,6 +104,9 @@ export const PizarronRoot: React.FC<PizarronRootProps> = ({ appId, boardId, user
                     <>
                         <TopBar />
                         <LeftRail />
+                        <MiniToolbar />
+                        {showLibrary && <LibrarySidePanel />}
+                        {showProjectManager && <PizarraManager onClose={() => pizarronStore.setUIFlag('showProjectManager', false)} />}
                         <Inspector />
                         <TextEditor />
                         <ConfigModalRouter />

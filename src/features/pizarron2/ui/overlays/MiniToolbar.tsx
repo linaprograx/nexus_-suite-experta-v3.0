@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { pizarronStore } from '../../state/store';
 import { BoardNode } from '../../engine/types';
+import { FontSelector } from '../shared/FontSelector';
 
 export const MiniToolbar: React.FC = () => {
     const [selection, setSelection] = useState<Set<string>>(new Set());
@@ -182,6 +183,12 @@ export const MiniToolbar: React.FC = () => {
             {/* --- Text Tools --- */}
             {!isMulti && firstNode.type === 'text' && (
                 <>
+                    <FontSelector
+                        currentFont={firstNode.content.fontFamily || 'Inter'}
+                        onChange={(f) => pizarronStore.updateNode(firstNode.id, { content: { ...firstNode.content, fontFamily: f } })}
+                    />
+                    <div className="w-px h-4 bg-slate-200 mx-0.5"></div>
+
                     <button onClick={toggleBold} className={`p-1.5 rounded ${firstNode.content.fontWeight === 'bold' ? 'bg-indigo-50 text-indigo-600' : 'hover:bg-slate-100 text-slate-600'}`} title="Bold">
                         <span className="font-bold">B</span>
                     </button>
@@ -212,8 +219,15 @@ export const MiniToolbar: React.FC = () => {
             )}
 
             {/* --- Shape / Board Tools --- */}
-            {!isMulti && (firstNode.type === 'shape' || firstNode.type === 'board') && (
+            {!isMulti && (firstNode.type === 'shape' || firstNode.type === 'board' || firstNode.type === 'sticker') && (
                 <>
+                    {/* Typography */}
+                    <FontSelector
+                        currentFont={firstNode.content.fontFamily || 'Inter'}
+                        onChange={(f) => pizarronStore.updateNode(firstNode.id, { content: { ...firstNode.content, fontFamily: f } })}
+                    />
+                    <div className="w-px h-4 bg-slate-200 mx-0.5"></div>
+
                     {/* Fill Color Picker */}
                     <div className="relative group">
                         <div className="p-1.5 cursor-pointer hover:bg-slate-100 rounded flex items-center gap-1">

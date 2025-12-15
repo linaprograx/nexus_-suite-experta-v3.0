@@ -1,7 +1,7 @@
-import { collection, onSnapshot, doc, setDoc, deleteDoc, writeBatch } from 'firebase/firestore';
+import { collection, onSnapshot, doc, setDoc, deleteDoc, writeBatch, getDocs, query, where, orderBy } from 'firebase/firestore';
 import { db } from '../../../config/firebaseApp';
 import { pizarronStore } from '../state/store';
-import { BoardNode } from '../engine/types';
+import { BoardNode, PizarraMetadata } from '../engine/types';
 
 class FirestoreAdapter {
     private unsubscribeSnapshot: (() => void) | null = null;
@@ -174,6 +174,68 @@ class FirestoreAdapter {
             console.log(`[Sync] Flushed batch to Firestore`);
         } catch (err) {
             console.error("[Sync] Write Failed", err);
+        }
+    }
+    async createPizarraFromTemplate(metadata: PizarraMetadata, nodes: BoardNode[]) {
+        if (!this.currentAppId) {
+            console.warn("No AppID for creating Pizarra");
+            return;
+        }
+
+        const batch = writeBatch(db);
+
+        // 1. Save Metadata
+        const metaRef = doc(db, `artifacts/${this.currentAppId}/public/data/pizarras/${metadata.id}`);
+        batch.set(metaRef, metadata);
+
+        // 2. Save Nodes (Assigned to the first board of the pizarra)
+        const nodesCol = collection(db, `artifacts/${this.currentAppId}/public/data/pizarron-tasks`);
+        const firstBoardId = metadata.boards[0].id;
+
+        nodes.forEach(node => {
+            const nodeRef = doc(nodesCol, node.id);
+            const data = {
+                type: node.type,
+                x: node.x, y: node.y,
+                width: node.w, height: node.h,
+                zIndex: node.zIndex,
+                title: node.content.title || '',
+                texto: node.content.title || '',
+                body: node.content.body || '',
+                style: { backgroundColor: node.content.color || '#ffffff' },
+                shapeType: node.content.shapeType || 'rectangle',
+                boardId: firstBoardId,
+                updatedAt: node.updatedAt,
+                createdAt: node.createdAt
+            };
+            batch.set(nodeRef, data);
+        });
+
+        await batch.commit();
+    }
+
+    // --- Pizarra Management ---
+
+    async savePizarraMetadata(metadata: PizarraMetadata) {
+        if (!this.currentAppId) {
+            console.warn("No AppID for saving Pizarra");
+            return;
+        }
+        const ref = doc(db, `artifacts/${this.currentAppId}/public/data/pizarras/${metadata.id}`);
+        await setDoc(ref, metadata, { merge: true });
+    }
+
+    async listPizarras(): Promise<PizarraMetadata[]> {
+        if (!this.currentAppId) return [];
+        const colRef = collection(db, `artifacts/${this.currentAppId}/public/data/pizarras`);
+        const q = query(colRef, orderBy('lastOpenedAt', 'desc'));
+
+        try {
+            const snap = await getDocs(q);
+            return snap.docs.map(d => d.data() as PizarraMetadata);
+        } catch (e) {
+            console.error("Error listing pizarras:", e);
+            return [];
         }
     }
 }

@@ -135,6 +135,67 @@ export class PizarronRenderer {
 
     private imageCache = new Map<string, HTMLImageElement>();
 
+    private drawIcon(ctx: CanvasRenderingContext2D, node: BoardNode) {
+        const { x, y, w, h } = node;
+        const color = node.content.color || '#334155';
+        const pathData = node.content.path;
+
+        if (!pathData) return;
+
+        ctx.save();
+        ctx.translate(x, y);
+
+        // Scale to fit. Standard viewbox 24x24 assumed for these paths.
+        const scaleX = w / 24;
+        const scaleY = h / 24;
+        ctx.scale(scaleX, scaleY);
+
+        const p = new Path2D(pathData);
+        ctx.fillStyle = color;
+        ctx.fill(p);
+
+        ctx.restore();
+    }
+
+    private drawText(ctx: CanvasRenderingContext2D, node: BoardNode) {
+        const { x, y, w, h } = node;
+        const { title, fontSize = 20, fontWeight = 'normal', fontStyle = 'normal', fontFamily = 'Inter', color = '#000000', align = 'left' } = node.content;
+
+        // Ensure font is loaded
+        // In a real loop, we shouldn't call this every frame if it's expensive, 
+        // but FontLoader.loadFont converts to a no-op promise if loaded.
+        // To be safe, we could check isFontAvailable first.
+        // For now, valid font families are usually loaded by Library or Board init.
+
+        ctx.font = `${fontStyle} ${fontWeight} ${fontSize}px "${fontFamily}", sans-serif`;
+        ctx.fillStyle = color;
+        ctx.textAlign = align as CanvasTextAlign || 'left';
+        ctx.textBaseline = 'top';
+
+        // Word wrap logic (simplified)
+        const words = (title || '').split(' ');
+        let line = '';
+        let testLine = '';
+        let metrics;
+        let ly = y;
+
+        // Simple single line for now for titles, or wrap??
+        // Let's do simple wrap
+        for (let n = 0; n < words.length; n++) {
+            testLine = line + words[n] + ' ';
+            metrics = ctx.measureText(testLine);
+            if (metrics.width > w && n > 0) {
+                ctx.fillText(line, x, ly);
+                line = words[n] + ' ';
+                ly += (fontSize * 1.2);
+            }
+            else {
+                line = testLine;
+            }
+        }
+        ctx.fillText(line, x, ly);
+    }
+
     private drawNode(ctx: CanvasRenderingContext2D, node: BoardNode, isSelected: boolean, zoom: number, nodes?: Record<string, BoardNode>) {
         ctx.save();
         ctx.translate(node.x, node.y);
@@ -204,27 +265,30 @@ export class PizarronRenderer {
 
             // Enhanced Gradient Logic
             if (node.content.gradient) {
-                const g = node.content.gradient;
-                let grd: CanvasGradient;
+                try {
+                    const g = node.content.gradient;
+                    // Simple heuristic for linear gradient string: "linear-gradient(deg, #color1 pos, #color2 pos)"
+                    // For now, we enforce a simple diagonal gradient from TopLeft to BottomRight
+                    // extracting the first two colors found.
 
-                if (g.type === 'radial') {
-                    const cx = node.w / 2;
-                    const cy = node.h / 2;
-                    const r = Math.max(node.w, node.h) / 2;
-                    grd = ctx.createRadialGradient(cx, cy, 0, cx, cy, r);
-                } else {
-                    // Linear
-                    // Simple Angle support: 0 (Vertical), 90 (Horizontal), 45 (Diagonal)
-                    let x0 = 0, y0 = 0, x1 = 0, y1 = node.h; // Default Vertical
-                    if (g.angle === 90) { x1 = node.w; y1 = 0; }
-                    else if (g.angle === 45) { x1 = node.w; y1 = node.h; } // Approx diagonal
+                    const grd = ctx.createLinearGradient(0, 0, node.w, node.h);
 
-                    grd = ctx.createLinearGradient(x0, y0, x1, y1);
+                    // Regex to find hex colors
+                    const colors = typeof g === 'string' ? g.match(/#[a-fA-F0-9]{6}/g) : null;
+
+                    if (colors && colors.length >= 2) {
+                        grd.addColorStop(0, colors[0]);
+                        grd.addColorStop(1, colors[1]);
+                    } else {
+                        // Fallback if parsing fails
+                        grd.addColorStop(0, '#cbd5e1');
+                        grd.addColorStop(1, '#94a3b8');
+                    }
+                    ctx.fillStyle = grd;
+                } catch (e) {
+                    // Fallback on error
+                    ctx.fillStyle = node.content.color || '#cbd5e1';
                 }
-
-                grd.addColorStop(0, g.start);
-                grd.addColorStop(1, g.end);
-                ctx.fillStyle = grd;
             } else {
                 ctx.fillStyle = node.content.color || '#cbd5e1';
             }
@@ -232,26 +296,93 @@ export class PizarronRenderer {
             ctx.lineWidth = borderWidth;
 
             ctx.beginPath();
+            // Use 0, 0, node.w, node.h because the context is already translated
+            const currentX = 0;
+            const currentY = 0;
+            const currentW = node.w;
+            const currentH = node.h;
+
             if (shape === 'circle') {
-                ctx.ellipse(node.w / 2, node.h / 2, node.w / 2, node.h / 2, 0, 0, Math.PI * 2);
+                ctx.ellipse(currentX + currentW / 2, currentY + currentH / 2, currentW / 2, currentH / 2, 0, 0, Math.PI * 2);
             } else if (shape === 'triangle') {
-                const pad = borderWidth / 2;
-                ctx.moveTo(node.w / 2, pad);
-                ctx.lineTo(node.w - pad, node.h - pad);
-                ctx.lineTo(pad, node.h - pad);
+                ctx.moveTo(currentX + currentW / 2, currentY);
+                ctx.lineTo(currentX + currentW, currentY + currentH);
+                ctx.lineTo(currentX, currentY + currentH);
+                ctx.closePath();
+            } else if (shape === 'diamond') {
+                ctx.moveTo(currentX + currentW / 2, currentY);
+                ctx.lineTo(currentX + currentW, currentY + currentH / 2);
+                ctx.lineTo(currentX + currentW / 2, currentY + currentH);
+                ctx.lineTo(currentX, currentY + currentH / 2);
+                ctx.closePath();
+            } else if (shape === 'pill') {
+                const r = Math.min(currentW, currentH) / 2;
+                ctx.roundRect(currentX, currentY, currentW, currentH, r);
+            } else if (shape === 'hexagon') {
+                const cx = currentX + currentW / 2;
+                const cy = currentY + currentH / 2;
+                const r = Math.min(currentW, currentH) / 2;
+                for (let i = 0; i < 6; i++) {
+                    const angle = (Math.PI / 3) * i;
+                    const px = cx + r * Math.cos(angle);
+                    const py = cy + r * Math.sin(angle);
+                    if (i === 0) ctx.moveTo(px, py);
+                    else ctx.lineTo(px, py);
+                }
                 ctx.closePath();
             } else if (shape === 'star') {
-                ctx.moveTo(node.w / 2, 0);
-                // ... (simplified star)
-                ctx.lineTo(node.w * 0.8, node.h / 2);
-                ctx.lineTo(node.w, node.h);
-                ctx.lineTo(node.w / 2, node.h * 0.8);
-                ctx.lineTo(0, node.h);
-                ctx.lineTo(node.w * 0.2, node.h / 2);
+                const cx = currentX + currentW / 2;
+                const cy = currentY + currentH / 2;
+                const outerRadius = Math.min(currentW, currentH) / 2;
+                const innerRadius = outerRadius / 2;
+                const spikes = 5;
+                let rot = Math.PI / 2 * 3;
+                let x1 = cx;
+                let y1 = cy;
+                const step = Math.PI / spikes;
+
+                ctx.moveTo(cx, cy - outerRadius)
+                for (let i = 0; i < spikes; i++) {
+                    x1 = cx + Math.cos(rot) * outerRadius;
+                    y1 = cy + Math.sin(rot) * outerRadius;
+                    ctx.lineTo(x1, y1)
+                    rot += step
+
+                    x1 = cx + Math.cos(rot) * innerRadius;
+                    y1 = cy + Math.sin(rot) * innerRadius;
+                    ctx.lineTo(x1, y1)
+                    rot += step
+                }
+                ctx.lineTo(cx, cy - outerRadius)
+                ctx.closePath();
+            } else if (shape === 'bubble' || shape === 'speech_bubble') {
+                const r = 10;
+                ctx.roundRect(currentX, currentY, currentW, currentH - 10, r);
+                ctx.moveTo(currentX + 20, currentY + currentH - 10);
+                ctx.lineTo(currentX + 10, currentY + currentH);
+                ctx.lineTo(currentX + 30, currentY + currentH - 10);
+            } else if (shape === 'cloud') {
+                // Simple cloud approx
+                const cx = currentX + currentW / 2;
+                const cy = currentY + currentH / 2;
+                ctx.moveTo(cx - currentW * 0.4, cy);
+                ctx.arc(cx - currentW * 0.2, cy, currentH * 0.3, 0, Math.PI * 2);
+                ctx.arc(cx + currentW * 0.2, cy, currentH * 0.3, 0, Math.PI * 2);
+                ctx.arc(cx, cy - currentH * 0.2, currentH * 0.4, 0, Math.PI * 2);
+            } else if (shape === 'arrow_right') {
+                // Simple arrow shape
+                const headW = currentW * 0.4;
+                const barH = currentH * 0.5;
+                const barY = currentY + (currentH - barH) / 2;
+                ctx.rect(currentX, barY, currentW - headW, barH);
+                ctx.moveTo(currentX + currentW - headW, currentY);
+                ctx.lineTo(currentX + currentW, currentY + currentH / 2);
+                ctx.lineTo(currentX + currentW - headW, currentY + currentH);
                 ctx.closePath();
             } else {
-                if (ctx.roundRect) ctx.roundRect(0, 0, node.w, node.h, radius);
-                else ctx.rect(0, 0, node.w, node.h);
+                // Fallback
+                if (ctx.roundRect) ctx.roundRect(currentX, currentY, currentW, currentH, radius);
+                else ctx.rect(currentX, currentY, currentW, currentH);
             }
 
             ctx.fill();
@@ -342,33 +473,7 @@ export class PizarronRenderer {
             }
         }
         else if (node.type === 'text') {
-            const fontSize = node.content.fontSize || 16;
-            const fontWeight = node.content.fontWeight || 'normal';
-            // ... (keep text logic)
-            // Re-implementing briefly to keep context valid
-            const fontStyle = node.content.fontStyle || 'normal';
-            const align = node.content.textAlign || 'left';
-            const decoration = node.content.textDecoration || 'none';
-            ctx.font = `${fontStyle} ${fontWeight} ${fontSize}px Inter, sans-serif`;
-            ctx.fillStyle = node.content.color || '#1e293b';
-            ctx.textBaseline = 'top';
-            let xAnchor = 5;
-            if (align === 'center') xAnchor = node.w / 2;
-            if (align === 'right') xAnchor = node.w - 5;
-            ctx.textAlign = align;
-            const lines = (node.content.title || '').split('\n');
-            lines.forEach((line, i) => {
-                const y = 5 + (i * (fontSize * 1.2));
-                ctx.fillText(line, xAnchor, y);
-                if (decoration === 'underline') {
-                    const width = ctx.measureText(line).width;
-                    let ux = xAnchor;
-                    if (align === 'center') ux -= width / 2;
-                    if (align === 'right') ux -= width;
-                    ctx.fillRect(ux, y + fontSize, width, 1);
-                }
-            });
-            ctx.textAlign = 'left';
+            this.drawText(ctx, node);
         }
         else if (node.type === 'board') {
             if (node.content.gradient) {
@@ -426,7 +531,7 @@ export class PizarronRenderer {
 
             // Title
             ctx.fillStyle = '#94a3b8';
-            ctx.font = 'bold 12px sans-serif';
+            ctx.font = `bold 12px "${node.content.fontFamily || 'Inter'}", sans-serif`;
             ctx.textBaseline = 'top';
             ctx.fillText((node.content.title || 'BOARD').toUpperCase(), 20, 20);
 
@@ -435,7 +540,7 @@ export class PizarronRenderer {
                 const startY = 50;
                 let cursorY = startY;
                 ctx.fillStyle = '#334155';
-                ctx.font = '14px Inter, sans-serif';
+                ctx.font = `14px "${node.content.fontFamily || 'Inter'}", sans-serif`;
                 const lineHeight = 20;
 
                 const lines = node.content.body.split('\n');
@@ -484,7 +589,7 @@ export class PizarronRenderer {
             ctx.strokeStyle = '#e2e8f0';
             ctx.strokeRect(0, 0, node.w, node.h);
             ctx.fillStyle = '#0f172a';
-            ctx.font = '14px sans-serif';
+            ctx.font = `14px "${node.content.fontFamily || 'Inter'}", sans-serif`;
             ctx.textBaseline = 'top';
             ctx.fillText(node.content.title || '', 10, 10);
 

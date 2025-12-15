@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { pizarronStore } from '../../state/store';
 import { BoardNode } from '../../engine/types';
+import { FontSelector } from '../shared/FontSelector';
 
 export const Inspector: React.FC = () => {
     const [selection, setSelection] = useState<string[]>([]);
@@ -41,6 +42,16 @@ export const Inspector: React.FC = () => {
                                 className="w-full text-sm bg-slate-50 border border-slate-200 rounded px-2 py-1 text-slate-700"
                             />
                         </div>
+                        {firstNode.type === 'text' && (
+                            <div>
+                                <label className="text-xs text-slate-500 block mb-1">Typography</label>
+                                <FontSelector 
+                                    className="w-full"
+                                    currentFont={firstNode.content.fontFamily || 'Inter'}
+                                    onChange={(f) => pizarronStore.updateNode(firstNode.id, { content: { ...firstNode.content, fontFamily: f } })}
+                                />
+                            </div>
+                        )}
                         <div className="grid grid-cols-2 gap-2">
                             <div>
                                 <label className="text-xs text-slate-500 block mb-1">X</label>

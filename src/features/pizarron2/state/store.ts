@@ -1,4 +1,4 @@
-import { BoardState, BoardNode, Viewport } from '../engine/types';
+import { BoardState, BoardNode, Viewport, PizarraMetadata } from '../engine/types';
 
 // Initial State
 const INITIAL_STATE: BoardState = {
@@ -13,8 +13,11 @@ const INITIAL_STATE: BoardState = {
         debug: false,
         activeTool: 'pointer',
         activeShapeType: 'rectangle' as 'rectangle' | 'circle' | 'triangle' | 'star',
-        toolbarPinned: false
+        toolbarPinned: false,
+        showLibrary: false
     },
+    // Active Project Metadata
+    activePizarra: undefined,
     interactionState: {},
     presentationState: {
         isActive: false,
@@ -141,6 +144,58 @@ class PizarronStore {
         this.setSelection([]);
     }
 
+    resetBoard() {
+        this.setState(state => {
+            state.nodes = {};
+            state.order = [];
+            state.selection = new Set();
+            state.viewport = { x: 0, y: 0, zoom: 1 };
+        });
+    }
+
+    fitContent(padding = 100) {
+        this.setState(state => {
+            const nodeIds = Object.keys(state.nodes);
+            if (nodeIds.length === 0) {
+                state.viewport = { x: 0, y: 0, zoom: 1 };
+                return;
+            }
+
+            let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+            nodeIds.forEach(id => {
+                const node = state.nodes[id];
+                minX = Math.min(minX, node.x);
+                minY = Math.min(minY, node.y);
+                maxX = Math.max(maxX, node.x + node.w);
+                maxY = Math.max(maxY, node.y + node.h);
+            });
+
+            const contentW = maxX - minX;
+            const contentH = maxY - minY;
+            // Use browser window dimensions as approximation for canvas size
+            const containerW = window.innerWidth || 1920;
+            const containerH = window.innerHeight || 1080;
+
+            const scaleX = (containerW - padding * 2) / contentW;
+            const scaleY = (containerH - padding * 2) / contentH;
+            let zoom = Math.min(scaleX, scaleY);
+
+            // Clamp zoom
+            zoom = Math.min(Math.max(zoom, 0.1), 1.2);
+
+            const centerX = minX + contentW / 2;
+            const centerY = minY + contentH / 2;
+
+            // Calculate viewport offset to center content
+            // Formula: vp.x = (ContainerCenter) - (WorldCenter * Zoom)
+            state.viewport = {
+                x: (containerW / 2) - (centerX * zoom),
+                y: (containerH / 2) - (centerY * zoom),
+                zoom
+            };
+        });
+    }
+
     getSelectedNodes(): BoardNode[] {
         return Array.from(this.state.selection).map(id => this.state.nodes[id]).filter(Boolean);
     }
@@ -154,6 +209,18 @@ class PizarronStore {
     setActiveShapeType(type: any) {
         this.setState(state => {
             state.uiFlags.activeShapeType = type;
+        });
+    }
+
+    setUIFlag(key: keyof BoardState['uiFlags'], value: any) {
+        this.setState(state => {
+            (state.uiFlags as any)[key] = value;
+        });
+    }
+
+    setActivePizarra(metadata: PizarraMetadata | undefined) {
+        this.setState(state => {
+            state.activePizarra = metadata;
         });
     }
 

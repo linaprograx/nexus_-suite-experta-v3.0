@@ -110,17 +110,12 @@ export const TextEditor: React.FC = () => {
                 }}
                 className="w-full h-full bg-transparent resize-none outline-none overflow-hidden"
                 style={{
-                    fontSize: `${16 * viewport.zoom}px`, // Simple scaling
+                    fontSize: `${(node.content.fontSize || 16) * viewport.zoom}px`,
                     color: node.content.color || '#1e293b',
-                    // Match renderer styles
-                    fontFamily: 'sans-serif',
-                    fontWeight: 'bold',
+                    fontFamily: node.content.fontFamily || 'Inter',
+                    fontWeight: node.content.fontWeight || 'normal',
                     lineHeight: 1.2,
-                    padding: '8px 16px', // Match renderer offset
-                    // Renderer text draws at x+16, y+24. 
-                    // So we must align padding carefully.
-                    // Renderer: roundRect(x,y). Text at x+16, y+24.
-                    // Textarea is at x,y.
+                    padding: node.type === 'text' ? '0px' : node.type === 'board' ? '20px' : '10px',
                 }}
             />
         </div>
