@@ -284,9 +284,94 @@ export class InteractionManager {
         if (hitId && hitId === this.lastClickId && (now - this.lastClickTime) < 400) {
             const node = nodes[hitId];
 
-            // Structured Board Logic (Phase 6.2.10)
-            if (node.structure) {
-                const { rows, cols } = node.structure;
+            // Structured Board Logic (Zones - Phase 7)
+            if (node.structure && node.structure.zones) {
+                const cx = node.x + node.w / 2;
+                const cy = node.y + node.h / 2;
+                const unrotatedPoint = this.rotatePoint(worldPoint, { x: cx, y: cy }, -(node.rotation || 0));
+                const localX = unrotatedPoint.x - node.x;
+                const localY = unrotatedPoint.y - node.y;
+
+                // Check Zones
+                const hitZone = node.structure.zones.find(z => {
+                    const zx = z.x * node.w;
+                    const zy = z.y * node.h;
+                    const zw = z.w * node.w;
+                    const zh = z.h * node.h;
+                    return localX >= zx && localX <= zx + zw && localY >= zy && localY <= zy + zh;
+                });
+
+                if (hitZone) {
+                    // Action: Create Content in Zone
+                    // 1. Calculate ideal box for content (with padding)
+                    const padding = 10;
+                    const zx = hitZone.x * node.w;
+                    const zy = hitZone.y * node.h;
+                    const zw = hitZone.w * node.w;
+                    const zh = hitZone.h * node.h;
+
+                    const contentX = node.x + zx + padding; // Absolute X (approx, ignoring rotation for creation simplicity)
+                    const contentY = node.y + zy + padding;
+                    const contentW = Math.max(50, zw - padding * 2);
+                    const contentH = Math.max(20, zh - padding * 2);
+
+                    // 2. Determine Type
+                    const type = hitZone.defaultType || 'text';
+
+                    if (type === 'text' || type === 'list') {
+                        const newId = crypto.randomUUID();
+                        const textNode = {
+                            id: newId,
+                            type: 'text' as const,
+                            x: contentX,
+                            y: contentY,
+                            w: contentW,
+                            h: contentH, // Let it auto-height?
+                            content: {
+                                title: hitZone.placeholderText || hitZone.label || 'Text',
+                                fontSize: 16,
+                                color: '#1e293b',
+                                align: 'left' as const
+                            },
+                            zIndex: (node.zIndex || 1) + 1,
+                            createdAt: Date.now()
+                        };
+                        pizarronStore.addNode(textNode);
+                        // Auto-edit
+                        requestAnimationFrame(() => {
+                            pizarronStore.setFocus(newId);
+                            pizarronStore.updateInteractionState({ editingTextId: newId });
+                        });
+                        this.lastClickId = null;
+                        return;
+                    }
+                    else if (type === 'image') {
+                        // Placeholder Image
+                        const newId = crypto.randomUUID();
+                        const imgNode = {
+                            id: newId,
+                            type: 'image' as const,
+                            x: contentX,
+                            y: contentY,
+                            w: contentW,
+                            h: contentH,
+                            content: {
+                                title: 'Image Placeholder',
+                                opacity: 0.5
+                            },
+                            zIndex: (node.zIndex || 1) + 1
+                        };
+                        pizarronStore.addNode(imgNode);
+                        this.lastClickId = null;
+                        return;
+                    }
+                }
+            }
+
+            // Legacy Grid Logic
+            if (node.structure && (node.structure as any).rows) {
+                const rows = (node.structure as any).rows;
+                const cols = (node.structure as any).cols;
 
                 // Calculate Un-Rotated Point relative to TopLeft
                 const cx = node.x + node.w / 2;
@@ -298,8 +383,8 @@ export class InteractionManager {
 
                 if (localX >= 0 && localX <= node.w && localY >= 0 && localY <= node.h) {
                     // Calculation
-                    const totalRowHeight = rows.reduce((acc, r) => acc + (r.height || 1), 0);
-                    const totalColWidth = cols.reduce((acc, c) => acc + (c.width || 1), 0);
+                    const totalRowHeight = rows.reduce((acc: number, r: any) => acc + (r.height || 1), 0);
+                    const totalColWidth = cols.reduce((acc: number, c: any) => acc + (c.width || 1), 0);
 
                     let foundRowId = null;
                     let currentY = 0;
@@ -380,6 +465,77 @@ export class InteractionManager {
             if (node.type === 'text' || node.type === 'card' || node.type === 'board') {
                 pizarronStore.updateInteractionState({ editingNodeId: hitId, editingSubId: undefined });
                 this.lastClickId = null;
+                return;
+            }
+        }
+
+        // Check Double Click
+        const clickTime = Date.now();
+        const doubleClickThreshold = 300;
+        const isDoubleClick = (clickTime - this.lastClickTime < doubleClickThreshold);
+        this.lastClickTime = clickTime;
+
+        if (isDoubleClick) {
+            console.log("Double Click Detected!");
+
+            // 1. If Locked Node, ignore
+            if (hitId && nodes[hitId] && nodes[hitId].locked) return;
+
+            // 2. If Text Node -> Edit Mode
+            if (hitId && nodes[hitId] && nodes[hitId].type === 'text') {
+                pizarronStore.setUIFlag('activeTool', 'pointer'); // Ensure pointer
+                pizarronStore.updateInteractionState({ editingTextId: nodes[hitId].id });
+                return;
+            }
+
+            // 3. If Board or Canvas (Empty) -> Create Text
+            // We need world coordinates for where the click happened
+            const rect = this.canvas.getBoundingClientRect();
+            const worldPos = this.screenToWorld({ x: e.clientX - rect.left, y: e.clientY - rect.top }, state.viewport);
+
+            // Determine if we clicked on a board or "nothing" (which means canvas)
+            // 'node' variable holds the clicked target. 
+            // If node is undefined, it's canvas.
+            // If node is 'board', it's board.
+            const clickedNode = hitId ? nodes[hitId] : undefined;
+
+            if (!clickedNode || clickedNode.type === 'board') {
+                console.log("Creating Quick Text Node at", worldPos);
+
+                const newTextId = crypto.randomUUID();
+                const newTextNode: any = {
+                    id: newTextId,
+                    type: 'text',
+                    x: worldPos.x,
+                    y: worldPos.y,
+                    w: 200, // Default width
+                    h: 50,  // Default height estimate
+                    zIndex: (state.order.length || 0) + 100,
+                    content: {
+                        title: 'Type something...',
+                        fontSize: 24,
+                        fontFamily: 'Inter',
+                        color: '#1e293b'
+                    },
+                    createdAt: clickTime,
+                    updatedAt: clickTime,
+                    parentId: clickedNode ? clickedNode.id : undefined // If double clicked on a board, parent it!
+                };
+
+                // Adjust position to center on click?
+                // Text creation usually starts top-left at click. Middle-left is better UX.
+                newTextNode.y -= 12; // Approximation for font baseline center
+
+                pizarronStore.addNode(newTextNode);
+                pizarronStore.setSelection([newTextId]);
+
+                // Enter Edit Mode immediately
+                // We need to wait a tick for the node to be in store/DOM?
+                // Usually React sequence handles it if store updates fast enough.
+                setTimeout(() => {
+                    pizarronStore.updateInteractionState({ editingTextId: newTextId });
+                }, 50);
+
                 return;
             }
         }

@@ -44,7 +44,7 @@ export interface BoardNode {
     type: 'text' | 'shape' | 'sticker' | 'image' | 'line' | 'group' | 'board' | 'card' | 'composite' | 'icon';
 
     // Structure & Scalability
-    structure?: BoardStructure;
+    // structure property moved to specific extended interface below or consolidated
     collapsed?: boolean;
     isFocus?: boolean;
 
@@ -59,6 +59,19 @@ export interface BoardNode {
     locked?: boolean;
     isFixed?: boolean;
     parentId?: string;
+    // Structure
+    structureId?: string;
+    structure?: {
+        id: string;
+        zones: Array<{
+            id: string;
+            label: string;
+            x: number; y: number; w: number; h: number; // Percentages
+            defaultType?: 'text' | 'image' | 'list';
+            placeholderText?: string;
+            style?: { shading?: string; dashed?: boolean; };
+        }>;
+    };
     childrenIds?: string[]; // For groups
     content: {
         title?: string;
@@ -170,13 +183,16 @@ export interface BoardState {
     };
     activePizarra?: PizarraMetadata;
     interactionState: {
-        selectionBounds?: { x: number; y: number; w: number; h: number };
-        marquee?: { x: number; y: number; w: number; h: number };
-        creationDraft?: any; // BoardNode partial
-        editingImageId?: string;
-        editingGroupId?: string;
-        editingNodeId?: string; // Currently active text editor
-        editingSubId?: string; // Currently active cell in composite
+        // Interaction
+        selectionBounds?: { x: number, y: number, w: number, h: number };
+        marquee?: { x: number, y: number, w: number, h: number };
+        creationDraft?: any; // To visualize what's being drawn
+        editingTextId?: string; // ID of text node currently being edited
+        editingImageId?: string; // ID of image node currently being cropped/adjusted
+        editingGroupId?: string; // ID of group currently being "entered"
+        editingNodeId?: string; // Generic editing (popover)
+        editingSubId?: string; // Sub-element ID (e.g. cell in a grid)
+        targetViewport?: Viewport; // For cinematic transitions
         guides?: GuideLine[];
         snapLines?: Array<{
             type: 'horizontal' | 'vertical';
@@ -189,12 +205,13 @@ export interface BoardState {
         focusTargetId?: string | null;
 
         // Choreography
-        targetViewport?: Viewport; // Smooth transition target
+        // targetViewport?: Viewport; // Removed duplicate
     };
     presentationState: {
         isActive: boolean;
         route: 'order' | 'selection';
         currentIndex: number;
+        storyPath: string[]; // List of Node IDs in presentation order
     };
 }
 

@@ -17,6 +17,8 @@ const TOOLS = [
     { id: 'new-task', icon: '✅', label: 'Task', isAction: true },
     { id: 'new-idea', icon: '💡', label: 'Idea', isAction: true },
 
+    { id: 'presentation', icon: '📽️', label: 'Present (P)', isAction: true }, // Added Presentation Tool
+
     { id: 'duplicate', icon: '📄', label: 'Duplicate', isAction: true },
     { id: 'delete', icon: '🗑️', label: 'Delete', isAction: true },
 ] as const;
@@ -35,6 +37,12 @@ export const LeftRail: React.FC = () => {
     }, []);
 
     const handleTool = (tool: any) => {
+        // Presentation Action
+        if (tool.id === 'presentation') {
+            pizarronStore.setPresentationMode(true);
+            return;
+        }
+
         // Image Action
         if (tool.id === 'image') {
             const state = pizarronStore.getState();

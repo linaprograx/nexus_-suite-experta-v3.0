@@ -50,6 +50,15 @@ export const PizarraManager: React.FC<{ onClose: () => void }> = ({ onClose }) =
     const [pizarras, setPizarras] = useState<PizarraMetadata[]>([]);
     const [loading, setLoading] = useState(false);
 
+    // Handle Escape Key
+    useEffect(() => {
+        const handleEsc = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') onClose();
+        };
+        window.addEventListener('keydown', handleEsc);
+        return () => window.removeEventListener('keydown', handleEsc);
+    }, [onClose]);
+
     // Initial Load
     useEffect(() => {
         if (activeTab === 'my-projects') {
@@ -116,10 +125,10 @@ export const PizarraManager: React.FC<{ onClose: () => void }> = ({ onClose }) =
     return (
         <div
             className="fixed inset-0 z-[200] flex items-center justify-center bg-black/60 backdrop-blur-sm pointer-events-auto"
+            onClick={onClose} // Backdrop Click
         >
             <div
-                className="bg-white rounded-2xl shadow-2xl w-[900px] h-[600px] flex overflow-hidden pointer-events-auto"
-                onMouseDown={e => e.stopPropagation()}
+                className="bg-white rounded-2xl shadow-2xl w-[900px] h-[600px] flex overflow-hidden pointer-events-auto animate-in fade-in zoom-in duration-200"
                 onClick={e => e.stopPropagation()}
             >
                 {/* Sidebar */}

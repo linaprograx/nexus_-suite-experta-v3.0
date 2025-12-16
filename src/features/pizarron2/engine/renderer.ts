@@ -1,4 +1,5 @@
-import { BoardState, BoardNode, Viewport } from './types';
+import { BoardState, BoardNode, Viewport, InteractionState } from './types';
+import { STRUCTURE_TEMPLATES } from './structures';
 
 export class PizarronRenderer {
     private ctx: CanvasRenderingContext2D | null = null;
@@ -122,13 +123,42 @@ export class PizarronRenderer {
             // Using visibleRect ensures we cover the view even if zoomed out
             ctx.fillRect(visibleRect.x, visibleRect.y, visibleRect.w, visibleRect.h);
 
-            // Re-draw Focused Node on TOP of overlay
+            // Re-draw Focused Node AND its children on TOP of overlay
             if (interactionState.focusTargetId) {
                 const fNode = nodes[interactionState.focusTargetId];
                 if (fNode) {
-                    // Force full opacity for the focused node
+                    // 1. Draw the Parent (Board)
                     // Elevate it using the overlay opacity as the lift factor (0 -> 1)
                     this.drawNode(ctx, fNode, true, viewport.zoom, nodes, this.focusOverlayOpacity);
+
+                    // 2. Draw Children (Content on the board)
+
+                    // Helper: Check spatial containment
+                    const isContained = (inner: BoardNode, outer: BoardNode) => {
+                        return inner.x >= outer.x &&
+                            inner.y >= outer.y &&
+                            inner.x + inner.w <= outer.x + outer.w &&
+                            inner.y + inner.h <= outer.y + outer.h;
+                    };
+
+                    const children = order
+                        .map(id => nodes[id])
+                        .filter(n => {
+                            if (!n || n.id === fNode.id || n.collapsed) return false;
+
+                            // Check 1: Strict Parent
+                            if (n.parentId === fNode.id) return true;
+
+                            // Check 2: Spatial Containment (Visual Parent) for Presentation
+                            // Only if we are IN presentation mode or just want lenient focus?
+                            // Let's be lenient for Focus Mode in general.
+                            return isContained(n, fNode);
+                        })
+                        .sort((a, b) => (a.zIndex || 0) - (b.zIndex || 0));
+
+                    for (const child of children) {
+                        this.drawNode(ctx, child, selection.has(child.id), viewport.zoom, nodes, this.focusOverlayOpacity);
+                    }
                 }
             }
         }
@@ -859,7 +889,8 @@ export class PizarronRenderer {
             ctx.fill();
 
             // LOD: Skip details ONLY if zoom is very low (e.g. < 15%)
-            if (zoom < 0.15) {
+            // LOD: Skip details ONLY if zoom is very low (e.g. < 5%)
+            if (zoom < 0.05) {
                 ctx.lineWidth = borderWidth;
                 ctx.strokeStyle = borderColor;
                 if (borderWidth > 0) ctx.stroke();
@@ -963,6 +994,10 @@ export class PizarronRenderer {
                 });
             }
         }
+        else if (node.type === 'group') {
+            // Groups are transparent logic wrappers.
+            // Do not draw background. Fall through to restore.
+        }
         else {
             // Card / Generic
             ctx.fillStyle = node.content.color || '#ffffff';
@@ -1010,22 +1045,76 @@ export class PizarronRenderer {
 
     private drawBoardStructure(ctx: CanvasRenderingContext2D, node: BoardNode, zoom: number) {
         if (!node.structure) return;
-        const { rows, cols, cells } = node.structure;
+
+        // --- NEW: Zone Based Structure ---
+        if (node.structure.zones) {
+            const { w, h } = node;
+            ctx.save();
+
+            // Text Style for Labels
+            ctx.font = `500 ${Math.max(10, 12 / zoom)}px Inter, sans-serif`;
+            ctx.textBaseline = 'top';
+
+            node.structure.zones.forEach(zone => {
+                const zx = zone.x * w;
+                const zy = zone.y * h;
+                const zw = zone.w * w;
+                const zh = zone.h * h;
+
+                // 1. Draw Background Shading (if any)
+                if (zone.style?.shading) {
+                    ctx.fillStyle = zone.style.shading;
+                    ctx.fillRect(zx, zy, zw, zh);
+                }
+
+                // 2. Draw Outline (Dashed guide)
+                // Only draw guides if selected or specific debug flag?
+                // User wants "visible en modo edición". We assume 'isSelected' context if we want,
+                // but this function matches 'drawNode' which implies we want to see the structure
+                // if it's there.
+                // Let's make it subtle.
+                ctx.beginPath();
+                ctx.strokeStyle = zone.style?.dashed ? '#94a3b8' : '#cbd5e1';
+                ctx.lineWidth = 1 / zoom;
+                if (zone.style?.dashed) ctx.setLineDash([4 / zoom, 4 / zoom]);
+                else ctx.setLineDash([]);
+
+                ctx.rect(zx, zy, zw, zh);
+                ctx.stroke();
+
+                // 3. Label (Placeholder) - Only if empty?
+                // Always show label as a hint if zoom is high enough
+                if (zoom > 0.4) {
+                    ctx.fillStyle = '#94a3b8'; // Subtle text
+                    // ctx.fillText(zone.label.toUpperCase(), zx + 8, zy + 8);
+                    // Draw localized label
+                    // Tiny padding
+                    ctx.fillText(zone.label, zx + (10 / zoom), zy + (10 / zoom));
+                }
+            });
+
+            ctx.restore();
+            return;
+        }
+
+        // --- LEGACY: Grid Based Structure (Keep for backward compatibility) ---
+        // (Only runs if 'zones' is undefined)
+        const rows = (node.structure as any).rows;
+        const cols = (node.structure as any).cols;
         if (!rows || !cols) return;
 
         // Calculation
-        const totalRowHeight = rows.reduce((acc, r) => acc + (r.height || 1), 0);
-        const totalColWidth = cols.reduce((acc, c) => acc + (c.width || 1), 0);
+        const totalRowHeight = rows.reduce((acc: number, r: any) => acc + (r.height || 1), 0);
+        const totalColWidth = cols.reduce((acc: number, c: any) => acc + (c.width || 1), 0);
 
         // Draw Grid
         ctx.save();
-        // Use darker default color for visibility
-        ctx.strokeStyle = node.content.borderColor ? node.content.borderColor + '80' : '#94a3b8'; // Slate-400
+        ctx.strokeStyle = node.content.borderColor ? node.content.borderColor + '80' : '#94a3b8';
         ctx.lineWidth = 1;
 
         // Calculate and Draw
         let currentY = 0;
-        const computedRows = rows.map(r => {
+        const computedRows = rows.map((r: any) => {
             const h = (r.height / totalRowHeight) * node.h;
             const startY = currentY;
             currentY += h;
@@ -1033,7 +1122,7 @@ export class PizarronRenderer {
         });
 
         let currentX = 0;
-        const computedCols = cols.map(c => {
+        const computedCols = cols.map((c: any) => {
             const w = (c.width / totalColWidth) * node.w;
             const startX = currentX;
             currentX += w;
@@ -1059,13 +1148,14 @@ export class PizarronRenderer {
         // LOD check already done in parent, but cells might be small
         // If zoom is okay, draw text
         if (zoom > 0.5) {
+            const cells = (node.structure as any).cells; // Need to get cells here
             ctx.fillStyle = '#64748b'; // Muted text
             ctx.font = '12px Inter, sans-serif';
             ctx.textAlign = 'left';
             ctx.textBaseline = 'top';
 
-            computedRows.forEach(row => {
-                computedCols.forEach(col => {
+            computedRows.forEach((row: any) => {
+                computedCols.forEach((col: any) => {
                     const cellId = `${row.id}_${col.id}`;
                     if (cells && cells[cellId] && cells[cellId].content) {
                         const content = cells[cellId].content;

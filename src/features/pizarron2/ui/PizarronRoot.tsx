@@ -79,6 +79,16 @@ export const PizarronRoot: React.FC<PizarronRootProps> = ({ appId, boardId, user
                 pizarronStore.paste();
             }
 
+            // Presentation Mode Toggle (Global)
+            // Presentation Mode Toggle (Global)
+            if (e.code === 'KeyP') {
+                // Ensure we aren't editing text
+                console.log("[PizarronRoot] 'P' Key detected. Toggling presentation...");
+                e.preventDefault();
+                e.stopImmediatePropagation(); // Strongest stop
+                pizarronStore.setPresentationMode(!pizarronStore.getState().presentationState.isActive);
+            }
+
             // Layer Shortcuts
             if (isCmd && e.key === 'ArrowUp') {
                 e.preventDefault();

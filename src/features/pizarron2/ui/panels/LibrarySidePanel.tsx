@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { pizarronStore } from '../../state/store';
 import { ICON_LIBRARIES, SHAPE_LIBRARIES, GRAPHIC_LIBRARIES, PALETTE_LIBRARIES, TEXT_PRESETS, AVAILABLE_FONTS, COMPOSITE_SHAPES, TEMPLATE_LIBRARIES } from './AssetLibrary';
 import { BoardNode } from '../../engine/types';
 import { FontLoader } from '../../engine/FontLoader';
 import { AssetDefinition } from './AssetLibrary';
+import { useOnClickOutside } from '../../../../hooks/useOnClickOutside';
 
 type LibraryTab = 'templates' | 'text' | 'shapes' | 'icons' | 'graphics' | 'uploads' | 'frameworks';
 
@@ -21,6 +22,21 @@ export const LibrarySidePanel: React.FC = () => {
     const [activeTab, setActiveTab] = useState<LibraryTab>('templates'); // Default to templates as requested
     const [search, setSearch] = useState('');
     const [recentTemplateIds, setRecentTemplateIds] = useState<string[]>([]);
+
+    // Dismissal Logic
+    const ref = useRef<HTMLDivElement>(null);
+    useOnClickOutside(ref, () => {
+        // Only close if it's open (it is, since this component is rendered conditionally)
+        pizarronStore.setUIFlag('showLibrary', false);
+    });
+
+    useEffect(() => {
+        const handleEsc = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') pizarronStore.setUIFlag('showLibrary', false);
+        };
+        window.addEventListener('keydown', handleEsc);
+        return () => window.removeEventListener('keydown', handleEsc);
+    }, []);
 
     useEffect(() => {
         // Preload fonts so previews look good
@@ -72,6 +88,10 @@ export const LibrarySidePanel: React.FC = () => {
                     updatedAt: Date.now()
                 });
             });
+            // Auto close on add?
+            // pizarronStore.setUIFlag('showLibrary', false); 
+            // Keep open for multiple adds usually, but for templates maybe close?
+            // Let's keep open for better UX unless requested otherwise.
             return;
         }
 
@@ -141,7 +161,10 @@ export const LibrarySidePanel: React.FC = () => {
         .filter(t => t !== undefined) as AssetDefinition[];
 
     return (
-        <div className="absolute top-14 left-0 bottom-0 w-80 bg-white border-r border-slate-200 shadow-xl flex z-[60] pointer-events-auto">
+        <div
+            ref={ref}
+            className="absolute top-14 left-0 bottom-0 w-80 bg-white border-r border-slate-200 shadow-xl flex z-[60] pointer-events-auto animate-in slide-in-from-left duration-200"
+        >
             {/* Tabs Rail */}
             <div className="w-20 bg-slate-50 border-r border-slate-200 flex flex-col items-center py-4 gap-4 overflow-y-auto custom-scrollbar">
                 {TABS.map(tab => (

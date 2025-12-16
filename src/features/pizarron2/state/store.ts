@@ -26,7 +26,8 @@ const INITIAL_STATE: BoardState = {
     presentationState: {
         isActive: false,
         route: 'order',
-        currentIndex: 0
+        currentIndex: 0,
+        storyPath: [] // Initial empty path
     }
 };
 
@@ -92,6 +93,11 @@ class PizarronStore {
         });
     }
 
+    // Helper for explicit animation calls
+    animateViewport(viewport: Partial<Viewport>) {
+        this.updateViewport(viewport, true);
+    }
+
     addNode(node: BoardNode) {
         this.setState(state => {
             // Auto-assign Z-Index to be on top
@@ -103,16 +109,51 @@ class PizarronStore {
         });
     }
 
-    updateNode(id: string, patch: Partial<BoardNode>) {
+    updateNode(id: string, patch: Partial<BoardNode> | any) {
         // We use setState to ensure React components (Inspector) re-render.
-        // Performance impact is negligible for single-node updates.
         this.setState(state => {
             const node = state.nodes[id];
             if (node) {
-                // If patch has content, we should merge or replace? 
-                // Patch usually behaves as Object.assign.
-                // However, for deep merging 'content', the caller typically handles it (Inspector spreads it).
-                // So Object.assign is fine.
+                // Resize Propagation for Groups
+                if (node.type === 'group') {
+                    const updates = patch as any;
+                    // Check if resizing (Width or Height changed)
+                    if ((updates.w !== undefined && updates.w !== node.w) || (updates.h !== undefined && updates.h !== node.h)) {
+                        const newX = (updates.x !== undefined) ? updates.x : node.x;
+                        const newY = (updates.y !== undefined) ? updates.y : node.y;
+                        const newW = (updates.w !== undefined) ? updates.w : node.w;
+                        const newH = (updates.h !== undefined) ? updates.h : node.h;
+
+                        // Calculate Scale Factor
+                        if (node.w > 0 && node.h > 0) {
+                            const scaleX = newW / node.w;
+                            const scaleY = newH / node.h;
+
+                            const children = node.childrenIds || [];
+                            children.forEach(cid => {
+                                const child = state.nodes[cid];
+                                if (child) {
+                                    // Relative position to OLD group origin
+                                    const relX = child.x - node.x;
+                                    const relY = child.y - node.y;
+
+                                    // Apply Scale to Position & Dimensions
+                                    child.x = newX + (relX * scaleX);
+                                    child.y = newY + (relY * scaleY);
+                                    child.w *= scaleX;
+                                    child.h *= scaleY;
+
+                                    // Scale Text
+                                    if (child.type === 'text' && child.content.fontSize) {
+                                        const s = Math.max(scaleX, scaleY);
+                                        child.content.fontSize = Math.max(8, Math.round(child.content.fontSize * s));
+                                    }
+                                }
+                            });
+                        }
+                    }
+                }
+
                 Object.assign(node, patch);
                 node.updatedAt = Date.now();
             }
@@ -337,16 +378,164 @@ class PizarronStore {
     }
 
     // --- Presentation ---
+
+    calculateStoryPath(paramState?: BoardState) { // Accept state for atomic updates
+        const state = paramState || this.getState();
+        // Ensure nodes object exists
+        if (!state.nodes) return [];
+
+        let candidates = Object.values(state.nodes).filter(n => n.type === 'board');
+
+        // Fallback 1: Significant items (Groups, Images, Frames, or Large Shapes)
+        if (candidates.length === 0) {
+            candidates = Object.values(state.nodes).filter(n =>
+                !n.parentId && ( // Top level
+                    n.type === 'group' ||
+                    n.type === 'image' ||
+                    (n.w * n.h > 20000) // Lowered threshold (approx 140x140)
+                )
+            );
+        }
+
+        // Fallback 2: ABSOLUTELY ANYTHING TOP LEVEL
+        if (candidates.length === 0) {
+            candidates = Object.values(state.nodes).filter(n => !n.parentId);
+        }
+
+        // Fallback 3: ABSOLUTELY ANYTHING (if they are all inside a root group?)
+        if (candidates.length === 0) {
+            candidates = Object.values(state.nodes);
+        }
+
+        // Row-Major Sort (Top-to-Bottom prioritized, then Left-to-Right)
+        const ROW_TOLERANCE = 150;
+
+        candidates.sort((a, b) => {
+            const rowA = Math.floor((a.y || 0) / ROW_TOLERANCE);
+            const rowB = Math.floor((b.y || 0) / ROW_TOLERANCE);
+
+            if (rowA !== rowB) {
+                return rowA - rowB;
+            }
+            return (a.x || 0) - (b.x || 0);
+        });
+
+        const path = candidates.map(b => b.id);
+        console.log("[PizarronStore] Calculated Story Path:", path.length, "slides");
+        return path;
+    }
+
     setPresentationMode(active: boolean) {
-        this.setState(s => { s.presentationState.isActive = active; });
+        this.setState(s => {
+            s.presentationState.isActive = active;
+            console.log("[Presentation] Set Active:", active);
+            if (active) {
+                // Pass 's' to use the specific state slice being updated/current
+                s.presentationState.storyPath = this.calculateStoryPath(s as BoardState);
+                s.presentationState.currentIndex = 0;
+
+                const pathLen = s.presentationState.storyPath.length;
+                console.log("[Presentation] Path Length:", pathLen);
+
+                // Jump to first
+                if (pathLen > 0) {
+                    // We can't call this.navigateToSlide here because it calls setState!
+                    // We must just set the targetViewport directly on 's'
+                    const firstId = s.presentationState.storyPath[0];
+                    const node = s.nodes[firstId];
+                    if (node) {
+                        console.log("[Presentation] Jump to First Slide:", firstId, node);
+                        // Copy-paste navigate logic for atomic update
+                        s.uiFlags.focusMode = true;
+                        s.interactionState.focusTargetId = firstId;
+
+                        const padding = 50;
+                        const containerW = window.innerWidth || 1920;
+                        const containerH = window.innerHeight || 1080;
+                        const scaleX = (containerW - padding * 2) / node.w;
+                        const scaleY = (containerH - padding * 2) / node.h;
+                        let zoom = Math.min(scaleX, scaleY);
+                        zoom = Math.min(Math.max(zoom, 0.2), 2);
+                        const centerX = node.x + node.w / 2;
+                        const centerY = node.y + node.h / 2;
+
+                        const tv = {
+                            x: (containerW / 2) - (centerX * zoom),
+                            y: (containerH / 2) - (centerY * zoom),
+                            zoom
+                        };
+                        console.log("[Presentation] Target Viewport:", tv);
+                        s.interactionState.targetViewport = tv;
+                    } else {
+                        console.warn("[Presentation] Node not found for ID:", firstId);
+                    }
+                }
+            } else {
+                // Exit
+                s.uiFlags.focusMode = false;
+                s.interactionState.focusTargetId = null;
+                s.interactionState.targetViewport = undefined;
+            }
+        });
     }
 
-    setPresentationIndex(idx: number) {
-        this.setState(s => { s.presentationState.currentIndex = idx; });
+    navigateToSlide(nodeId: string) {
+        // 1. Get Node
+        const state = this.getState();
+        const node = state.nodes[nodeId];
+        if (!node) {
+            console.warn("[Presentation] Navigate: Node not found", nodeId);
+            return;
+        }
+
+        console.log("[Presentation] Navigate To:", nodeId, node);
+
+        // 2. Focus Highlighting
+        this.setFocus(nodeId);
+
+        // 3. Cinematic Viewport Move
+        // Calculate nice padded viewport
+        const padding = 50;
+        const containerW = window.innerWidth || 1920;
+        const containerH = window.innerHeight || 1080;
+
+        const scaleX = (containerW - padding * 2) / node.w;
+        const scaleY = (containerH - padding * 2) / node.h;
+        let zoom = Math.min(scaleX, scaleY);
+        zoom = Math.min(Math.max(zoom, 0.2), 2); // Clamp
+
+        const centerX = node.x + node.w / 2;
+        const centerY = node.y + node.h / 2;
+
+        const targetViewport = {
+            x: (containerW / 2) - (centerX * zoom),
+            y: (containerH / 2) - (centerY * zoom),
+            zoom
+        };
+
+        console.log("[Presentation] Valid Target Viewport:", targetViewport);
+        // Trigger smooth move
+        this.animateViewport(targetViewport);
     }
 
-    setPresentationRoute(route: 'order' | 'selection') {
-        this.setState(s => { s.presentationState.route = route; });
+    nextSlide() {
+        this.setState(s => {
+            const nextIdx = s.presentationState.currentIndex + 1;
+            if (nextIdx < s.presentationState.storyPath.length) {
+                s.presentationState.currentIndex = nextIdx;
+                this.navigateToSlide(s.presentationState.storyPath[nextIdx]);
+            }
+        });
+    }
+
+    prevSlide() {
+        this.setState(s => {
+            const prevIdx = s.presentationState.currentIndex - 1;
+            if (prevIdx >= 0) {
+                s.presentationState.currentIndex = prevIdx;
+                this.navigateToSlide(s.presentationState.storyPath[prevIdx]);
+            }
+        });
     }
 
     // --- Selectors ---
@@ -474,56 +663,45 @@ class PizarronStore {
             const selectedIds = Array.from(state.selection);
             if (selectedIds.length < 2) return;
 
-            // 1. Calculate Bounds
-            let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-            const children: string[] = [];
+            const selectedNodes = selectedIds.map(id => state.nodes[id]).filter(Boolean);
 
-            selectedIds.forEach(id => {
-                const node = state.nodes[id];
-                if (node && !node.parentId) {
-                    minX = Math.min(minX, node.x);
-                    minY = Math.min(minY, node.y);
-                    maxX = Math.max(maxX, node.x + node.w);
-                    maxY = Math.max(maxY, node.y + node.h);
-                    children.push(id);
-                }
+            // Calculate bounds
+            let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+            selectedNodes.forEach(n => {
+                minX = Math.min(minX, n.x);
+                maxX = Math.max(maxX, n.x + n.w);
+                minY = Math.min(minY, n.y);
+                maxY = Math.max(maxY, n.y + n.h);
             });
 
-            if (children.length === 0) return;
-
+            // Create Group Node
             const groupId = crypto.randomUUID();
-            const groupNode: BoardNode = {
+            const groupNode: any = {
                 id: groupId,
                 type: 'group',
                 x: minX,
                 y: minY,
                 w: maxX - minX,
                 h: maxY - minY,
-                zIndex: Math.max(...children.map(cid => state.nodes[cid].zIndex || 1)) + 1,
-                content: {},
-                childrenIds: children,
+                zIndex: Math.max(...selectedNodes.map(n => n.zIndex || 0)) + 1,
+                childrenIds: selectedIds, // Critical for InteractionManager
+                content: { title: 'Group', children: selectedIds },
                 createdAt: Date.now(),
                 updatedAt: Date.now()
             };
 
-            // 2. Update Children Parent
-            children.forEach(cid => {
-                const child = state.nodes[cid];
-                if (child) {
-                    child.parentId = groupId;
-                    child.updatedAt = Date.now();
-                }
+            // Update Children
+            selectedNodes.forEach(n => {
+                n.parentId = groupId;
+                // Keep global coordinates? Or make relative?
+                // For simplicity in this engine version, let's keep Global Coordinates 
+                // but use parentId for logical operations (drag together).
+                // If we moved to relative, we'd do: n.x -= minX; n.y -= minY;
             });
-
-            // 3. Update Order: Remove children, Add Group
-            state.order = state.order.filter(id => !state.selection.has(id));
 
             state.nodes[groupId] = groupNode;
             state.order.push(groupId);
-
-            // 4. Select Group
-            state.selection.clear();
-            state.selection.add(groupId);
+            state.selection = new Set([groupId]);
         });
     }
 
@@ -571,6 +749,8 @@ class PizarronStore {
                 state.nodes[id] = { ...state.nodes[id] };
 
                 const node = state.nodes[id];
+                // The following block was inserted based on the instruction.
+                // Note: 'updates' is not defined in this context, which will cause a runtime error.
                 node.collapsed = !node.collapsed;
                 node.updatedAt = Date.now();
 

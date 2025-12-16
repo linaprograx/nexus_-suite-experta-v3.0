@@ -84,6 +84,66 @@ export const Inspector: React.FC = () => {
                         </div>
 
 
+                        {/* Structure Selector */}
+                        <div>
+                            <label className="text-xs font-medium text-slate-600 block mb-1">Layout Structure</label>
+                            <select
+                                className="w-full text-xs border border-slate-300 rounded p-1 mb-2 bg-white"
+                                value={firstNode.structureId || ''}
+                                onChange={(e) => {
+                                    const val = e.target.value;
+                                    if (!val) {
+                                        pizarronStore.updateNode(firstNode.id, { structureId: undefined, structure: undefined });
+                                    } else {
+                                        // Dynamic Import to avoid circular dependencies if possible, or just regular import
+                                        // For now assuming we can import STRUCTURE_TEMPLATES or use a helper
+                                        // We need to import STRUCTURE_TEMPLATES from engine/structures
+                                        // Since we can't easily add top-level imports in this specific tool call without viewing top of file,
+                                        // I will assume the import is added or I will use a known hardcoded list if import is tricky.
+                                        // BETTER: I will add the import in a separate edit or use a callback if available.
+                                        // WAIT, I can't add an import here easily without replacing the whole file or using multi-replace.
+                                        // I will replace this block assuming I'll fix imports next, OR I can define the options here if they are static? No, they are dynamic.
+
+                                        // Taking a safer bet: I will use a hardcoded list of IDs for the UI for now, 
+                                        // and assume the store/logic handles the actual object assignment? 
+                                        // No, the requirement is "The structure is applied".
+                                        // I need to import `STRUCTURE_TEMPLATES`.
+
+                                        // Let's rely on a helper function or assume I will add the import at the top.
+                                        // I'll emit the event and let the store handle it? 
+                                        // No, Inspector calls updateNode directly usually.
+
+                                        // I will write the code to use a global or imported 'STRUCTURE_TEMPLATES'.
+                                        // I'll fix the import in the next step.
+                                        // Actually, I can try to use a require or just set the ID and let the renderer lookup?
+                                        // Renderer lookup is better for data size. Storage shouldn't duplicate the whole structure if it's static?
+                                        // BUT user request says "Structure can be changed... content reflow...". 
+                                        // If we store just ID, we can't customize zones?
+                                        // The requirement "Every zone... styles editable" suggests we might copy the structure to the node.
+
+                                        // Decision: Copy structure to node to allow divergence.
+                                        import('../../engine/structures').then(({ STRUCTURE_TEMPLATES }) => {
+                                            const template = STRUCTURE_TEMPLATES[val];
+                                            if (template) {
+                                                pizarronStore.updateNode(firstNode.id, {
+                                                    structureId: val,
+                                                    structure: JSON.parse(JSON.stringify(template)) // Deep copy
+                                                });
+                                            }
+                                        });
+                                    }
+                                }}
+                            >
+                                <option value="">None (Empty)</option>
+                                <option value="cocktail-recipe-structure">Cocktail Recipe</option>
+                                <option value="menu-layout-structure">Menu Layout</option>
+                                <option value="storytelling-structure">Storytelling</option>
+                                <option value="comparison-structure">Comparison</option>
+                                <option value="technical-grid-structure">Technical Grid</option>
+                                <option value="visual-moodboard-structure">Moodboard</option>
+                            </select>
+                        </div>
+
                         {/* DEBUG: Add Structure */}
                         <div>
                             <label className="text-xs font-medium text-rose-600 block mb-1">Debug: Internal Structure</label>
