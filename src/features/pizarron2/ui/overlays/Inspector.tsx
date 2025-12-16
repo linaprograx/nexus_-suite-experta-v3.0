@@ -2,28 +2,10 @@ import React from 'react';
 import { pizarronStore } from '../../state/store';
 import { FontLoader } from '../../engine/FontLoader';
 import { BoardNode } from '../../engine/types';
-
-// Simple Font Selector Component
-const FontSelector: React.FC<{ currentFont: string, onChange: (font: string) => void, className?: string }> = ({ currentFont, onChange, className }) => {
-    return (
-        <select
-            className={`border rounded px-2 py-1 text-xs ${className}`}
-            value={currentFont}
-            onChange={(e) => {
-                const font = e.target.value;
-                FontLoader.loadFont(font);
-                onChange(font);
-            }}
-        >
-            <option value="Inter">Inter</option>
-            <option value="Roboto">Roboto</option>
-            <option value="Playfair Display">Playfair</option>
-            <option value="Fira Code">Monospace</option>
-            <option value="Lobster">Lobster</option>
-            <option value="Oswald">Oswald</option>
-        </select>
-    );
-};
+import { ColorPicker } from '../components/ColorPicker';
+import { FontSelector } from '../components/FontSelector';
+import { TextStyleController } from '../components/TextStyleController';
+import { VisualEffectsController } from '../components/VisualEffectsController';
 
 export const Inspector: React.FC = () => {
     const { selection, nodes, viewport, boardResources, interactionState } = pizarronStore.useState();
@@ -243,391 +225,194 @@ export const Inspector: React.FC = () => {
                                 )}
                             </div>
 
-                            {/* Font Styles (Context Aware) */}
-                            <div className="grid grid-cols-2 gap-2">
+                            {/* Unified Text Style Controller */}
+                            <div className="bg-slate-50 p-2 rounded border border-slate-200">
+                                <TextStyleController
+                                    fontSize={(() => {
+                                        if (activeZoneSection === 'title') return activeZone.style?.titleFontSize || 14;
+                                        if (activeZoneSection === 'content') return activeZone.content?.style?.fontSize || 14;
+                                        return activeZone.sections?.find((s: any) => s.id === activeZoneSection)?.content?.style?.fontSize || 14;
+                                    })()}
+                                    lineHeight={(() => {
+                                        if (activeZoneSection === 'title') return 1.2;
+                                        if (activeZoneSection === 'content') return activeZone.content?.style?.lineHeight || 1.2;
+                                        return activeZone.sections?.find((s: any) => s.id === activeZoneSection)?.content?.style?.lineHeight || 1.2;
+                                    })()}
+                                    textAlign={(() => {
+                                        if (activeZoneSection === 'title') return activeZone.style?.titleAlign || 'left';
+                                        if (activeZoneSection === 'content') return activeZone.content?.style?.align || 'left';
+                                        return activeZone.sections?.find((s: any) => s.id === activeZoneSection)?.content?.style?.align || 'left';
+                                    })()}
+                                    onChange={(styles) => {
+                                        const newStructure = JSON.parse(JSON.stringify(firstNode.structure));
+                                        const z = newStructure.zones.find((z: any) => z.id === activeZoneId);
+
+                                        // Helper to apply styles based on section
+                                        if (activeZoneSection === 'title') {
+                                            if (!z.style) z.style = {};
+                                            if (styles.fontSize) z.style.titleFontSize = styles.fontSize;
+                                            if (styles.textAlign) z.style.titleAlign = styles.textAlign;
+                                        } else {
+                                            let targetContent = (activeZoneSection === 'content')
+                                                ? z.content
+                                                : z.sections?.find((s: any) => s.id === activeZoneSection)?.content;
+
+                                            if (!targetContent) {
+                                                if (activeZoneSection === 'content') { z.content = {}; targetContent = z.content; }
+                                            }
+
+                                            if (targetContent) {
+                                                if (!targetContent.style) targetContent.style = {};
+                                                if (styles.fontSize) targetContent.style.fontSize = styles.fontSize;
+                                                if (styles.lineHeight) targetContent.style.lineHeight = styles.lineHeight;
+                                                if (styles.textAlign) targetContent.style.align = styles.textAlign;
+                                            }
+                                        }
+                                        pizarronStore.updateNode(firstNode.id, { structure: newStructure });
+                                    }}
+                                />
+                            </div>
+
+                            {/* --- Zone Styling (Unified) --- */}
+                            <div className="pt-4 mt-4 border-t border-slate-200 space-y-4">
+
+                                {/* Text Color */}
+                                <ColorPicker
+                                    label="Text Color"
+                                    value={(() => {
+                                        if (activeZoneSection === 'title') return activeZone.style?.titleColor || '#000000';
+                                        if (activeZoneSection === 'content') return activeZone.content?.style?.color || '#000000';
+                                        return activeZone.sections?.find((s: any) => s.id === activeZoneSection)?.content?.style?.color || '#000000';
+                                    })()}
+                                    onChange={(c) => {
+                                        const newStructure = JSON.parse(JSON.stringify(firstNode.structure));
+                                        const z = newStructure.zones.find((z: any) => z.id === activeZoneId);
+                                        const color = typeof c === 'string' ? c : c.start; // Force string for text color
+
+                                        if (activeZoneSection === 'title') {
+                                            if (!z.style) z.style = {};
+                                            z.style.titleColor = color;
+                                        } else {
+                                            let targetContent = (activeZoneSection === 'content')
+                                                ? z.content
+                                                : z.sections?.find((s: any) => s.id === activeZoneSection)?.content;
+
+                                            if (!targetContent && activeZoneSection === 'content') { z.content = {}; targetContent = z.content; }
+
+                                            if (targetContent) {
+                                                if (!targetContent.style) targetContent.style = {};
+                                                targetContent.style.color = color;
+                                            }
+                                        }
+                                        pizarronStore.updateNode(firstNode.id, { structure: newStructure });
+                                    }}
+                                />
+
+                                {/* Fill Color (Relleno) */}
+                                <ColorPicker
+                                    label="Fill Color (Relleno)"
+                                    allowTransparent={true}
+                                    value={(() => {
+                                        if (activeZoneSection === 'title') return activeZone.style?.titleBackgroundColor || 'transparent';
+                                        if (activeZoneSection === 'content') return activeZone.content?.style?.backgroundColor || 'transparent';
+                                        return activeZone.sections?.find((s: any) => s.id === activeZoneSection)?.style?.backgroundColor || 'transparent';
+                                    })()}
+                                    onChange={(c) => {
+                                        const newStructure = JSON.parse(JSON.stringify(firstNode.structure));
+                                        const z = newStructure.zones.find((z: any) => z.id === activeZoneId);
+                                        const color = typeof c === 'string' ? c : c.start;
+
+                                        if (activeZoneSection === 'title') {
+                                            if (!z.style) z.style = {};
+                                            z.style.titleBackgroundColor = color;
+                                        } else if (activeZoneSection === 'content') {
+                                            if (!z.content) z.content = {};
+                                            if (!z.content.style) z.content.style = {};
+                                            z.content.style.backgroundColor = color;
+                                        } else {
+                                            const sec = z.sections?.find((s: any) => s.id === activeZoneSection);
+                                            if (sec) {
+                                                if (!sec.style) sec.style = {};
+                                                sec.style.backgroundColor = color;
+                                            }
+                                        }
+                                        pizarronStore.updateNode(firstNode.id, { structure: newStructure });
+                                    }}
+                                />
+
+                                {/* Divider */}
+                                <div className="border-t border-slate-100 my-2"></div>
+                                <label className="text-xs font-bold text-slate-800 block mb-3">Zone Container Appearance</label>
+
+                                {/* Background & Gradient (Zone Container) */}
+                                <ColorPicker
+                                    label="Container Background"
+                                    allowGradient={true}
+                                    value={activeZone.style?.gradient || activeZone.style?.backgroundColor || '#ffffff'}
+                                    onChange={(val) => {
+                                        const newStructure = JSON.parse(JSON.stringify(firstNode.structure));
+                                        const z = newStructure.zones.find((z: any) => z.id === activeZoneId);
+                                        if (!z.style) z.style = {};
+
+                                        if (typeof val === 'string') {
+                                            z.style.backgroundColor = val;
+                                            delete z.style.gradient;
+                                        } else {
+                                            z.style.gradient = val;
+                                            // Keep opacity/shading logic if needed, but gradient usually overrides
+                                        }
+                                        pizarronStore.updateNode(firstNode.id, { structure: newStructure });
+                                    }}
+                                />
+
+                                {/* Border Color */}
+                                <ColorPicker
+                                    label="Border Color"
+                                    value={activeZone.style?.borderColor || '#cbd5e1'}
+                                    onChange={(c) => {
+                                        const newStructure = JSON.parse(JSON.stringify(firstNode.structure));
+                                        const z = newStructure.zones.find((z: any) => z.id === activeZoneId);
+                                        if (!z.style) z.style = {};
+                                        z.style.borderColor = typeof c === 'string' ? c : c.start;
+                                        pizarronStore.updateNode(firstNode.id, { structure: newStructure });
+                                    }}
+                                />
+
+                                {/* Visual Effects (Radius, Border Width, Shadow) */}
+                                <VisualEffectsController
+                                    borderRadius={activeZone.style?.borderRadius ?? 0}
+                                    borderWidth={activeZone.style?.borderWidth ?? 0}
+                                    shadow={activeZone.style?.shadow}
+                                    opacity={1} // Zone opacity not currently tracked in model, default 1
+                                    onChange={(effects) => {
+                                        const newStructure = JSON.parse(JSON.stringify(firstNode.structure));
+                                        const z = newStructure.zones.find((z: any) => z.id === activeZoneId);
+                                        if (!z.style) z.style = {};
+
+                                        if (effects.borderRadius !== undefined) z.style.borderRadius = effects.borderRadius;
+                                        if (effects.borderWidth !== undefined) z.style.borderWidth = effects.borderWidth;
+                                        if (effects.shadow !== undefined) {
+                                            if (effects.shadow === null) delete z.style.shadow;
+                                            else z.style.shadow = effects.shadow;
+                                        }
+                                        pizarronStore.updateNode(firstNode.id, { structure: newStructure });
+                                    }}
+                                />
+
+                                {/* Title Gap specific control */}
                                 <div>
-                                    <label className="text-xs font-medium text-slate-600 block mb-1">Font Size</label>
-                                    <input type="number" className="w-full text-xs border rounded p-1"
-                                        value={(() => {
-                                            if (activeZoneSection === 'title') return activeZone.style?.titleFontSize || 14;
-                                            if (activeZoneSection === 'content') return activeZone.content?.style?.fontSize || 14;
-                                            const sec = activeZone.sections?.find((s: any) => s.id === activeZoneSection);
-                                            return sec?.content?.style?.fontSize || 14;
-                                        })()}
+                                    <label className="text-[10px] text-slate-500 block mb-1">Title Spacing</label>
+                                    <input type="number" min="0" max="50" className="w-full text-xs border rounded p-1"
+                                        value={activeZone.style?.titleGap ?? 2}
                                         onChange={(e) => {
                                             const val = parseInt(e.target.value);
                                             const newStructure = JSON.parse(JSON.stringify(firstNode.structure));
                                             const z = newStructure.zones.find((z: any) => z.id === activeZoneId);
-
-                                            if (activeZoneSection === 'title') {
-                                                if (!z.style) z.style = {};
-                                                z.style.titleFontSize = val;
-                                            } else if (activeZoneSection === 'content') {
-                                                if (!z.content) z.content = { style: {} };
-                                                if (!z.content.style) z.content.style = {};
-                                                z.content.style.fontSize = val;
-                                            } else {
-                                                const sec = z.sections?.find((s: any) => s.id === activeZoneSection);
-                                                if (sec) {
-                                                    if (!sec.content) sec.content = { style: {} };
-                                                    if (!sec.content.style) sec.content.style = {};
-                                                    sec.content.style.fontSize = val;
-                                                }
-                                            }
+                                            if (!z.style) z.style = {};
+                                            z.style.titleGap = val;
                                             pizarronStore.updateNode(firstNode.id, { structure: newStructure });
                                         }}
                                     />
-                                </div>
-                                <div>
-                                    <label className="text-xs font-medium text-slate-600 block mb-1">Line Height</label>
-                                    <input type="number" step="0.1" className="w-full text-xs border rounded p-1"
-                                        value={(() => {
-                                            if (activeZoneSection === 'title') return 1.2; // Title usually doesn't have line height control
-                                            if (activeZoneSection === 'content') return activeZone.content?.style?.lineHeight || 1.2;
-                                            const sec = activeZone.sections?.find((s: any) => s.id === activeZoneSection);
-                                            return sec?.content?.style?.lineHeight || 1.2;
-                                        })()}
-                                        disabled={activeZoneSection === 'title'}
-                                        onChange={(e) => {
-                                            const val = parseFloat(e.target.value);
-                                            const newStructure = JSON.parse(JSON.stringify(firstNode.structure));
-                                            const z = newStructure.zones.find((z: any) => z.id === activeZoneId);
-                                            // Handle specific section line height logic if needed, currently global default?
-                                            // Or duplicate logic above. For brevity, linking to content or current section.
-                                            if (activeZoneSection === 'content') {
-                                                if (!z.content) z.content = { style: {} };
-                                                z.content.style.lineHeight = val;
-                                            } else {
-                                                const sec = z.sections?.find((s: any) => s.id === activeZoneSection);
-                                                if (sec) {
-                                                    if (!sec.content) sec.content = { style: {} };
-                                                    if (!sec.content.style) sec.content.style = {};
-                                                    sec.content.style.lineHeight = val;
-                                                }
-                                            }
-                                            pizarronStore.updateNode(firstNode.id, { structure: newStructure });
-                                        }}
-                                    />
-                                </div>
-                            </div>
-
-                            {/* Alignment & Lists */}
-                            <div className="flex gap-2 bg-slate-100 p-1 rounded justify-center">
-                                {['left', 'center', 'right'].map(align => {
-                                    const currentAlign = (() => {
-                                        if (activeZoneSection === 'title') return activeZone.style?.titleAlign || 'left';
-                                        if (activeZoneSection === 'content') return activeZone.content?.style?.align || 'left';
-                                        const sec = activeZone.sections?.find((s: any) => s.id === activeZoneSection);
-                                        return sec?.content?.style?.align || 'left';
-                                    })();
-
-                                    return (
-                                        <button
-                                            key={align}
-                                            className={`p-1 rounded ${currentAlign === align ? 'bg-white shadow text-indigo-600' : 'text-slate-400 hover:text-slate-600'}`}
-                                            onClick={() => {
-                                                const newStructure = JSON.parse(JSON.stringify(firstNode.structure));
-                                                const z = newStructure.zones.find((z: any) => z.id === activeZoneId);
-                                                if (activeZoneSection === 'title') {
-                                                    if (!z.style) z.style = {};
-                                                    z.style.titleAlign = align;
-                                                } else if (activeZoneSection === 'content') {
-                                                    if (!z.content) z.content = {};
-                                                    if (!z.content.style) z.content.style = {};
-                                                    z.content.style.align = align;
-                                                } else {
-                                                    const sec = z.sections?.find((s: any) => s.id === activeZoneSection);
-                                                    if (sec) {
-                                                        if (!sec.content) sec.content = {};
-                                                        if (!sec.content.style) sec.content.style = {};
-                                                        sec.content.style.align = align;
-                                                    }
-                                                }
-                                                pizarronStore.updateNode(firstNode.id, { structure: newStructure });
-                                            }}
-                                        >
-                                            {align === 'left' && <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h10M4 18h16" /></svg>}
-                                            {align === 'center' && <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M7 12h10M4 18h16" /></svg>}
-                                            {align === 'right' && <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M10 12h10M4 18h16" /></svg>}
-                                        </button>
-                                    );
-                                })}
-                            </div>
-
-                            {/* Colors (Text & Fill) */}
-                            <div className="space-y-2">
-                                {/* Text Color */}
-                                <div>
-                                    <label className="text-xs font-medium text-slate-600 block mb-1">Text Color</label>
-                                    <div className="flex gap-1.5 flex-wrap items-center">
-                                        {['#ffffff', '#f8fafc', '#1e293b', '#64748b', '#ef4444', '#f97316', '#f59e0b', '#84cc16', '#10b981', '#06b6d4', '#3b82f6', '#8b5cf6', '#d946ef', '#f43f5e'].map(c => {
-                                            const currentColor = (() => {
-                                                if (activeZoneSection === 'title') return activeZone.style?.titleColor;
-                                                if (activeZoneSection === 'content') return activeZone.content?.style?.color;
-                                                return activeZone.sections?.find((s: any) => s.id === activeZoneSection)?.content?.style?.color;
-                                            })();
-
-                                            return (
-                                                <button
-                                                    key={c}
-                                                    onClick={() => {
-                                                        const newStructure = JSON.parse(JSON.stringify(firstNode.structure));
-                                                        const z = newStructure.zones.find((z: any) => z.id === activeZoneId);
-
-                                                        if (activeZoneSection === 'title') {
-                                                            if (!z.style) z.style = {};
-                                                            z.style.titleColor = c;
-                                                        } else if (activeZoneSection === 'content') {
-                                                            if (!z.content) z.content = {};
-                                                            if (!z.content.style) z.content.style = {};
-                                                            z.content.style.color = c;
-                                                        } else {
-                                                            const sec = z.sections?.find((s: any) => s.id === activeZoneSection);
-                                                            if (sec) {
-                                                                if (!sec.content) sec.content = {};
-                                                                if (!sec.content.style) sec.content.style = {};
-                                                                sec.content.style.color = c;
-                                                            }
-                                                        }
-                                                        pizarronStore.updateNode(firstNode.id, { structure: newStructure });
-                                                    }}
-                                                    className={`w-5 h-5 rounded-full border border-slate-200 transition-transform hover:scale-110 ${currentColor === c ? 'ring-2 ring-indigo-500 ring-offset-1' : ''}`}
-                                                    style={{ backgroundColor: c }}
-                                                />
-                                            );
-                                        })}
-                                        <input
-                                            type="color"
-                                            className="w-6 h-6 p-0 border-0 rounded overflow-hidden cursor-pointer"
-                                            onChange={(e) => {
-                                                const c = e.target.value;
-                                                const newStructure = JSON.parse(JSON.stringify(firstNode.structure));
-                                                const z = newStructure.zones.find((z: any) => z.id === activeZoneId);
-
-                                                if (activeZoneSection === 'title') {
-                                                    if (!z.style) z.style = {};
-                                                    z.style.titleColor = c;
-                                                } else if (activeZoneSection === 'content') {
-                                                    if (!z.content) z.content = {};
-                                                    if (!z.content.style) z.content.style = {};
-                                                    z.content.style.color = c;
-                                                } else {
-                                                    const sec = z.sections?.find((s: any) => s.id === activeZoneSection);
-                                                    if (sec) {
-                                                        if (!sec.content) sec.content = {};
-                                                        if (!sec.content.style) sec.content.style = {};
-                                                        sec.content.style.color = c;
-                                                    }
-                                                }
-                                                pizarronStore.updateNode(firstNode.id, { structure: newStructure });
-                                            }}
-                                        />
-                                    </div>
-                                </div>
-                                {/* Background Fill (Relleno) */}
-                                <div>
-                                    <label className="text-xs font-medium text-slate-600 block mb-1">Fill Color (Relleno)</label>
-                                    <div className="flex gap-1.5 flex-wrap items-center">
-                                        {/* Transparent Option */}
-                                        <button
-                                            title="No Fill (Transparent)"
-                                            onClick={() => {
-                                                const newStructure = JSON.parse(JSON.stringify(firstNode.structure));
-                                                const z = newStructure.zones.find((z: any) => z.id === activeZoneId);
-                                                if (activeZoneSection === 'title') {
-                                                    if (!z.style) z.style = {};
-                                                    z.style.titleBackgroundColor = 'transparent';
-                                                } else {
-                                                    if (!z.content) z.content = {};
-                                                    if (!z.content.style) z.content.style = {};
-                                                    z.content.style.backgroundColor = 'transparent';
-                                                }
-                                                pizarronStore.updateNode(firstNode.id, { structure: newStructure });
-                                            }}
-                                            className="w-5 h-5 rounded-full border border-slate-300 flex items-center justify-center bg-slate-50 relative overflow-hidden group"
-                                        >
-                                            <div className="absolute inset-0 border-t border-red-500 transform rotate-45 opacity-50"></div>
-                                        </button>
-
-                                        {['#ffffff', '#f1f5f9', '#fee2e2', '#ffedd5', '#fef3c7', '#dcfce7', '#d1fae5', '#cffafe', '#dbeafe', '#e0e7ff', '#fae8ff', '#ffe4e6'].map(c => (
-                                            <button
-                                                key={c}
-                                                onClick={() => {
-                                                    const newStructure = JSON.parse(JSON.stringify(firstNode.structure));
-                                                    const z = newStructure.zones.find((z: any) => z.id === activeZoneId);
-
-                                                    if (activeZoneSection === 'title') {
-                                                        if (!z.style) z.style = {};
-                                                        z.style.titleBackgroundColor = c;
-                                                    } else if (activeZoneSection === 'content') {
-                                                        if (!z.content) z.content = {};
-                                                        if (!z.content.style) z.content.style = {};
-                                                        z.content.style.backgroundColor = c;
-                                                    } else {
-                                                        const sec = z.sections?.find((s: any) => s.id === activeZoneSection);
-                                                        if (sec) {
-                                                            if (!sec.style) sec.style = {};
-                                                            sec.style.backgroundColor = c;
-                                                        }
-                                                    }
-                                                    pizarronStore.updateNode(firstNode.id, { structure: newStructure });
-                                                }}
-                                                className="w-5 h-5 rounded-full border border-slate-200 transition-transform hover:scale-110"
-                                                style={{ backgroundColor: c }}
-                                            />
-                                        ))}
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* --- Zone Styling (New) --- */}
-                            <div className="pt-4 mt-4 border-t border-slate-200">
-                                <label className="text-xs font-bold text-slate-800 block mb-3">Zone Appearance</label>
-
-                                {/* Background & Gradient */}
-                                <div className="space-y-3">
-                                    <div className="flex gap-2 items-center">
-                                        <div className="flex-1">
-                                            <label className="text-[10px] text-slate-500 block mb-1">Fill Color</label>
-                                            <input type="color" className="w-full h-8 rounded cursor-pointer"
-                                                value={activeZone.style?.backgroundColor || '#ffffff'}
-                                                onChange={(e) => {
-                                                    const newStructure = JSON.parse(JSON.stringify(firstNode.structure));
-                                                    const z = newStructure.zones.find((z: any) => z.id === activeZoneId);
-                                                    if (!z.style) z.style = {};
-                                                    z.style.backgroundColor = e.target.value;
-                                                    pizarronStore.updateNode(firstNode.id, { structure: newStructure });
-                                                }}
-                                            />
-                                        </div>
-                                        <div className="flex-1">
-                                            <label className="text-[10px] text-slate-500 block mb-1">Border Color</label>
-                                            <input type="color" className="w-full h-8 rounded cursor-pointer"
-                                                value={activeZone.style?.borderColor || '#cbd5e1'}
-                                                onChange={(e) => {
-                                                    const newStructure = JSON.parse(JSON.stringify(firstNode.structure));
-                                                    const z = newStructure.zones.find((z: any) => z.id === activeZoneId);
-                                                    if (!z.style) z.style = {};
-                                                    z.style.borderColor = e.target.value;
-                                                    pizarronStore.updateNode(firstNode.id, { structure: newStructure });
-                                                }}
-                                            />
-                                        </div>
-                                    </div>
-
-                                    {/* Border Dims */}
-                                    <div className="grid grid-cols-2 gap-2">
-                                        <div>
-                                            <label className="text-[10px] text-slate-500 block mb-1">Title Spacing</label>
-                                            <input type="number" min="0" max="50" className="w-full text-xs border rounded p-1"
-                                                value={activeZone.style?.titleGap ?? 2}
-                                                onChange={(e) => {
-                                                    const val = parseInt(e.target.value);
-                                                    const newStructure = JSON.parse(JSON.stringify(firstNode.structure));
-                                                    const z = newStructure.zones.find((z: any) => z.id === activeZoneId);
-                                                    if (!z.style) z.style = {};
-                                                    z.style.titleGap = val;
-                                                    pizarronStore.updateNode(firstNode.id, { structure: newStructure });
-                                                }}
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="text-[10px] text-slate-500 block mb-1">Border Width</label>
-                                            <input type="number" min="0" max="10" className="w-full text-xs border rounded p-1"
-                                                value={activeZone.style?.borderWidth ?? 0}
-                                                onChange={(e) => {
-                                                    const val = parseInt(e.target.value);
-                                                    const newStructure = JSON.parse(JSON.stringify(firstNode.structure));
-                                                    const z = newStructure.zones.find((z: any) => z.id === activeZoneId);
-                                                    if (!z.style) z.style = {};
-                                                    z.style.borderWidth = val;
-                                                    pizarronStore.updateNode(firstNode.id, { structure: newStructure });
-                                                }}
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="text-[10px] text-slate-500 block mb-1">Rounding</label>
-                                            <input type="number" min="0" max="20" className="w-full text-xs border rounded p-1"
-                                                value={activeZone.style?.borderRadius ?? 0}
-                                                onChange={(e) => {
-                                                    const val = parseInt(e.target.value);
-                                                    const newStructure = JSON.parse(JSON.stringify(firstNode.structure));
-                                                    const z = newStructure.zones.find((z: any) => z.id === activeZoneId);
-                                                    if (!z.style) z.style = {};
-                                                    z.style.borderRadius = val;
-                                                    pizarronStore.updateNode(firstNode.id, { structure: newStructure });
-                                                }}
-                                            />
-                                        </div>
-                                    </div>
-
-                                    {/* Shadow Toggle */}
-                                    <div className="flex items-center gap-2">
-                                        <input type="checkbox" id="zoneShadow"
-                                            checked={!!activeZone.style?.shadow}
-                                            onChange={(e) => {
-                                                const checked = e.target.checked;
-                                                const newStructure = JSON.parse(JSON.stringify(firstNode.structure));
-                                                const z = newStructure.zones.find((z: any) => z.id === activeZoneId);
-                                                if (!z.style) z.style = {};
-
-                                                if (checked) {
-                                                    z.style.shadow = { color: 'rgba(0,0,0,0.1)', blur: 10, offsetX: 0, offsetY: 4 };
-                                                } else {
-                                                    delete z.style.shadow;
-                                                }
-                                                pizarronStore.updateNode(firstNode.id, { structure: newStructure });
-                                            }}
-                                        />
-                                        <label htmlFor="zoneShadow" className="text-xs text-slate-700 select-none cursor-pointer">Enable Shadow</label>
-                                    </div>
-
-                                    {/* Gradient (Optional) */}
-                                    {/* Simplified Gradient Input */}
-                                    <div className="space-y-1">
-                                        <div className="flex items-center gap-2">
-                                            <input type="checkbox" id="zoneGradient"
-                                                checked={!!activeZone.style?.gradient}
-                                                onChange={(e) => {
-                                                    const checked = e.target.checked;
-                                                    const newStructure = JSON.parse(JSON.stringify(firstNode.structure));
-                                                    const z = newStructure.zones.find((z: any) => z.id === activeZoneId);
-                                                    if (!z.style) z.style = {};
-
-                                                    if (checked) {
-                                                        z.style.gradient = { start: z.style.backgroundColor || '#ffffff', end: '#f1f5f9' };
-                                                    } else {
-                                                        delete z.style.gradient;
-                                                    }
-                                                    pizarronStore.updateNode(firstNode.id, { structure: newStructure });
-                                                }}
-                                            />
-                                            <label htmlFor="zoneGradient" className="text-xs text-slate-700 select-none cursor-pointer">Gradient Overlay</label>
-                                        </div>
-
-                                        {activeZone.style?.gradient && (
-                                            <div className="flex gap-2">
-                                                <input type="color" className="flex-1 h-6 rounded"
-                                                    value={activeZone.style.gradient.start}
-                                                    onChange={(e) => {
-                                                        const newStructure = JSON.parse(JSON.stringify(firstNode.structure));
-                                                        const z = newStructure.zones.find((z: any) => z.id === activeZoneId);
-                                                        if (z.style?.gradient) z.style.gradient.start = e.target.value;
-                                                        pizarronStore.updateNode(firstNode.id, { structure: newStructure });
-                                                    }}
-                                                />
-                                                <input type="color" className="flex-1 h-6 rounded"
-                                                    value={activeZone.style.gradient.end}
-                                                    onChange={(e) => {
-                                                        const newStructure = JSON.parse(JSON.stringify(firstNode.structure));
-                                                        const z = newStructure.zones.find((z: any) => z.id === activeZoneId);
-                                                        if (z.style?.gradient) z.style.gradient.end = e.target.value;
-                                                        pizarronStore.updateNode(firstNode.id, { structure: newStructure });
-                                                    }}
-                                                />
-                                            </div>
-                                        )}
-                                    </div>
                                 </div>
                             </div>
 
@@ -670,29 +455,30 @@ export const Inspector: React.FC = () => {
                 return (
                     <div className="space-y-4">
                         {/* Board Title Editor */}
-                        <div className="bg-slate-50 p-2 rounded border border-slate-200">
-                            <label className="text-xs font-bold text-slate-700 block mb-1">Board Title</label>
-                            <input
-                                type="text"
-                                className="w-full text-xs border border-slate-300 rounded p-1 mb-2 font-bold text-slate-700"
-                                value={primaryTarget.content.title || 'BOARD'}
-                                onChange={(e) => updateNode({ title: e.target.value })}
-                            />
-                            <div className="flex gap-2">
-                                <div className="flex-1">
-                                    <label className="text-[10px] text-slate-500 block mb-1">Color</label>
-                                    <input type="color" className="w-full h-6 rounded cursor-pointer"
-                                        value={primaryTarget.content.titleColor || '#94a3b8'}
-                                        onChange={(e) => updateNode({ titleColor: e.target.value })}
-                                    />
-                                </div>
-                                <div className="flex-1">
-                                    <label className="text-[10px] text-slate-500 block mb-1">Size</label>
-                                    <input type="number" className="w-full h-6 text-xs border rounded px-1"
-                                        value={primaryTarget.content.fontSize || 14}
-                                        onChange={(e) => updateNode({ fontSize: parseInt(e.target.value) })}
-                                    />
-                                </div>
+                        <div className="bg-slate-50 p-2 rounded border border-slate-200 space-y-3">
+                            <div>
+                                <label className="text-xs font-bold text-slate-700 block mb-1">Board Title</label>
+                                <input
+                                    type="text"
+                                    className="w-full text-xs border border-slate-300 rounded p-1 font-bold text-slate-700"
+                                    value={primaryTarget.content.title || 'BOARD'}
+                                    onChange={(e) => updateNode({ title: e.target.value })}
+                                />
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-2">
+                                <ColorPicker
+                                    label="Title Color"
+                                    value={primaryTarget.content.titleColor || '#94a3b8'}
+                                    onChange={(c) => updateNode({ titleColor: typeof c === 'string' ? c : c.start })}
+                                />
+                                <TextStyleController
+                                    fontSize={primaryTarget.content.fontSize || 14}
+                                    onChange={(s) => {
+                                        if (s.fontSize) updateNode({ fontSize: s.fontSize });
+                                    }}
+                                    showAlign={false}
+                                />
                             </div>
                         </div>
 
@@ -869,26 +655,20 @@ export const Inspector: React.FC = () => {
 
 
                         {/* Existing Color Picker */}
-                        <div>
-                            <label className="text-xs font-medium text-slate-600 block mb-1">Background</label>
-                            <div className="flex gap-2 flex-wrap">
-                                {['#cbd5e1', '#f87171', '#fbbf24', '#4ade80', '#60a5fa', '#c084fc', 'transparent'].map(c => (
-                                    <button
-                                        key={c}
-                                        onClick={() => updateNode({ color: c, gradient: undefined })}
-                                        className={`w-6 h-6 rounded-full border ${firstNode.content.color === c ? 'border-indigo-500 ring-1 ring-indigo-500' : 'border-slate-300'}`}
-                                        style={{ backgroundColor: c === 'transparent' ? 'white' : c }}
-                                        title={c}
-                                    />
-                                ))}
-                                <input
-                                    type="color"
-                                    value={firstNode.content.color === 'transparent' ? '#ffffff' : firstNode.content.color}
-                                    onChange={(e) => updateNode({ color: e.target.value, gradient: undefined })}
-                                    className="w-6 h-6 p-0 border-0 rounded-full overflow-hidden"
-                                />
-                            </div>
-                        </div>
+                        {/* Existing Color Picker -> Unified */}
+                        <ColorPicker
+                            label="Board Background"
+                            allowGradient={true}
+                            allowTransparent={true}
+                            value={firstNode.content.color || '#ffffff'} // Board color logic might need check if gradient exists? Existing logic was simple color.
+                            onChange={(c) => {
+                                if (typeof c === 'string') {
+                                    updateNode({ color: c, gradient: undefined });
+                                } else {
+                                    updateNode({ gradient: c });
+                                }
+                            }}
+                        />
 
                         {/* --- Board Resources (Prefabs) --- */}
                         <div className="mt-4 border-t border-slate-200 pt-2">
@@ -962,54 +742,40 @@ export const Inspector: React.FC = () => {
             case 'shape':
                 return (
                     <div className="space-y-4">
-                        {/* Fill Color */}
-                        <div>
-                            <label className="text-xs font-medium text-slate-600 block mb-1">Fill Color</label>
-                            <div className="flex gap-2 flex-wrap">
-                                {['#cbd5e1', '#f87171', '#fbbf24', '#4ade80', '#60a5fa', '#c084fc', 'transparent'].map(c => (
-                                    <button
-                                        key={c}
-                                        onClick={() => updateNode({ color: c, gradient: undefined })}
-                                        className={`w-6 h-6 rounded-full border ${firstNode.content.color === c ? 'border-indigo-500 ring-1 ring-indigo-500' : 'border-slate-300'}`}
-                                        style={{ backgroundColor: c === 'transparent' ? 'white' : c }}
-                                        title={c}
-                                    />
-                                ))}
-                                <input
-                                    type="color"
-                                    value={firstNode.content.color === 'transparent' ? '#ffffff' : firstNode.content.color}
-                                    onChange={(e) => updateNode({ color: e.target.value, gradient: undefined })}
-                                    className="w-6 h-6 p-0 border-0 rounded-full overflow-hidden"
-                                />
-                            </div>
-                        </div>
+                        {/* Fill & Gradient Unified */}
+                        <ColorPicker
+                            label="Fill / Gradient"
+                            allowGradient={true}
+                            allowTransparent={true}
+                            value={firstNode.content.gradient || firstNode.content.color || 'transparent'}
+                            onChange={(c) => {
+                                if (typeof c === 'string') {
+                                    updateNode({ color: c, gradient: undefined });
+                                } else {
+                                    updateNode({ gradient: c });
+                                }
+                            }}
+                        />
 
-                        {/* Gradients */}
-                        <div>
-                            <label className="text-xs font-medium text-slate-600 block mb-1">Gradients</label>
-                            <div className="flex gap-2 flex-wrap">
-                                <button
-                                    onClick={() => updateNode({ gradient: { type: 'linear', start: '#60a5fa', end: '#a78bfa', angle: 135 } })}
-                                    className="w-6 h-6 rounded-full border border-slate-300"
-                                    style={{ background: 'linear-gradient(135deg, #60a5fa 0%, #a78bfa 100%)' }}
-                                    title="Blue-Purple"
-                                />
-                                <button
-                                    onClick={() => updateNode({ gradient: { type: 'linear', start: '#f472b6', end: '#fbbf24', angle: 135 } })}
-                                    className="w-6 h-6 rounded-full border border-slate-300"
-                                    style={{ background: 'linear-gradient(135deg, #f472b6 0%, #fbbf24 100%)' }}
-                                    title="Pink-Yellow"
-                                />
-                                <button
-                                    onClick={() => updateNode({ gradient: { type: 'linear', start: '#34d399', end: '#60a5fa', angle: 135 } })}
-                                    className="w-6 h-6 rounded-full border border-slate-300"
-                                    style={{ background: 'linear-gradient(135deg, #34d399 0%, #60a5fa 100%)' }}
-                                    title="Green-Blue"
-                                />
-                            </div>
-                        </div>
+                        {/* Border Color */}
+                        <ColorPicker
+                            label="Border Color"
+                            value={firstNode.content.borderColor || '#cbd5e1'}
+                            onChange={(c) => updateNode({ borderColor: typeof c === 'string' ? c : c.start })}
+                        />
 
-                        {/* DEBUG: Structure for Shapes */}
+                        {/* Visual Effects */}
+                        <VisualEffectsController
+                            borderWidth={firstNode.content.borderWidth || 0}
+                            borderRadius={0} // shapes usually sharp? or maybe allow rounding? existing code only had border width
+                            opacity={1}
+                            shadow={null} // Shapes didn't have shadow in Inspector?
+                            onChange={(eff) => {
+                                if (eff.borderWidth !== undefined) updateNode({ borderWidth: eff.borderWidth });
+                            }}
+                        />
+
+                        {/* DEBUG: Structure for Shapes (Preserved) */}
                         <div>
                             <label className="text-xs font-medium text-rose-600 block mb-1">Internal Structure</label>
                             <button
@@ -1038,32 +804,74 @@ export const Inspector: React.FC = () => {
                                 Inject 2x2 Grid
                             </button>
                         </div>
+                    </div >
+                );
 
-                        {/* Border */}
-                        <div>
-                            <label className="text-xs font-medium text-slate-600 flex justify-between">
-                                <span>Border</span>
-                                <span>{firstNode.content.borderWidth || 0}px</span>
-                            </label>
-                            <input
-                                type="range" min="0" max="10"
-                                value={firstNode.content.borderWidth || 0}
-                                onChange={(e) => updateNode({ borderWidth: Number(e.target.value) })}
-                                className="w-full mt-1 accent-indigo-500"
-                            />
-                            <div className="flex gap-2 mt-2 flex-wrap">
-                                {['#1e293b', '#64748b', '#ef4444', '#3b82f6'].map(c => (
-                                    <button
-                                        key={c}
-                                        onClick={() => updateNode({ borderColor: c, borderWidth: (firstNode.content.borderWidth || 0) === 0 ? 2 : firstNode.content.borderWidth })}
-                                        className={`w-5 h-5 rounded border ${firstNode.content.borderColor === c ? 'border-indigo-500 ring-1 ring-indigo-500' : 'border-slate-300'}`}
-                                        style={{ backgroundColor: c }}
-                                    />
-                                ))}
-                            </div>
+            case 'group':
+                return (
+                    <div className="space-y-4">
+                        <div className="bg-slate-50 p-2 rounded border border-slate-200 text-center">
+                            <span className="text-xs font-medium text-slate-500">
+                                {getTargets().length} items selected
+                            </span>
                         </div>
 
-                    </div >
+                        {/* Bulk Color - Affects all children that have 'color' or 'borderColor' */}
+                        <ColorPicker
+                            label="Color Modification"
+                            value={'#000000'} // Mixed state? Just show black or transparent
+                            onChange={(c) => {
+                                const color = typeof c === 'string' ? c : c.start;
+                                const targets = getTargets();
+                                targets.forEach(n => {
+                                    const patch: any = {};
+                                    // Intelligent patching based on type
+                                    if (n.type === 'text' || n.type === 'shape' || n.type === 'line') {
+                                        patch.color = color;
+                                    }
+                                    if (n.type === 'shape' || n.type === 'board') {
+                                        patch.borderColor = color;
+                                    }
+                                    if (Object.keys(patch).length > 0) {
+                                        pizarronStore.updateNode(n.id, { content: { ...n.content, ...patch } });
+                                    }
+                                });
+                            }}
+                        />
+
+                        {/* Bulk Fill - For Shapes/Boards */}
+                        <ColorPicker
+                            label="Fill Color"
+                            value={'transparent'}
+                            onChange={(c) => {
+                                const color = typeof c === 'string' ? c : c.start;
+                                const targets = getTargets();
+                                targets.forEach(n => {
+                                    if (n.type === 'shape' || n.type === 'board') {
+                                        pizarronStore.updateNode(n.id, { content: { ...n.content, color: color } });
+                                    }
+                                });
+                            }}
+                        />
+
+                        {/* Visual Effects - Opacity & Border */}
+                        <VisualEffectsController
+                            opacity={1}
+                            borderWidth={0}
+                            borderRadius={0}
+                            onChange={(eff) => {
+                                const targets = getTargets();
+                                targets.forEach(n => {
+                                    const patch: any = {};
+                                    if (eff.opacity !== undefined) patch.opacity = eff.opacity;
+                                    if (eff.borderWidth !== undefined) patch.borderWidth = eff.borderWidth;
+                                    if (Object.keys(patch).length > 0) {
+                                        pizarronStore.updateNode(n.id, { content: { ...n.content, ...patch } });
+                                    }
+                                });
+                            }}
+                        />
+                    </div>
                 );
 
             case 'text':
@@ -1080,47 +888,33 @@ export const Inspector: React.FC = () => {
                             />
                         </div>
                         {/* Typography */}
-                        <div>
-                            <label className="text-xs font-medium text-slate-600 block mb-1">Typography</label>
-                            <div className="flex gap-2 mb-2">
-                                <FontSelector
-                                    className="flex-1"
-                                    currentFont={firstNode.content.fontFamily || 'Inter'}
-                                    onChange={(f) => updateNode({ fontFamily: f })}
+                        <div className="bg-slate-50 p-2 rounded border border-slate-200">
+                            <FontSelector
+                                currentFont={firstNode.content.fontFamily || 'Inter'}
+                                onChange={(f) => updateNode({ fontFamily: f })}
+                            />
+                            <div className="mt-2 text-xs">
+                                <TextStyleController
+                                    fontSize={firstNode.content.fontSize || 16}
+                                    textAlign={firstNode.content.textAlign || 'left'}
+                                    lineHeight={firstNode.content.lineHeight || 1.5}
+                                    onChange={(s) => {
+                                        const patch: any = {};
+                                        if (s.fontSize) patch.fontSize = s.fontSize;
+                                        if (s.textAlign) patch.textAlign = s.textAlign;
+                                        if (s.lineHeight) patch.lineHeight = s.lineHeight;
+                                        updateNode(patch);
+                                    }}
                                 />
-                                <input
-                                    type="number"
-                                    className="w-16 border rounded px-1 text-xs py-1"
-                                    value={firstNode.content.fontSize || 16}
-                                    onChange={(e) => updateNode({ fontSize: Number(e.target.value) })}
-                                />
-                            </div>
-                            <div className="flex gap-1 border rounded p-1 bg-slate-50">
-                                {['left', 'center', 'right'].map((align) => (
-                                    <button
-                                        key={align}
-                                        className={`flex-1 py-1 text-[10px] rounded ${firstNode.content.textAlign === align ? 'bg-white shadow text-indigo-600' : 'text-slate-500'}`}
-                                        onClick={() => updateNode({ textAlign: align as any })}
-                                    >
-                                        {align.toUpperCase()}
-                                    </button>
-                                ))}
                             </div>
                         </div>
+
                         {/* Color */}
-                        <div>
-                            <label className="text-xs font-medium text-slate-600 block mb-1">Color</label>
-                            <div className="flex gap-2 flex-wrap">
-                                {['#1e293b', '#ef4444', '#f59e0b', '#10b981', '#3b82f6'].map(c => (
-                                    <button
-                                        key={c}
-                                        onClick={() => updateNode({ color: c })}
-                                        className={`w-6 h-6 rounded-full border ${firstNode.content.color === c ? 'border-indigo-500 ring-1 ring-indigo-500' : 'border-slate-300'}`}
-                                        style={{ backgroundColor: c }}
-                                    />
-                                ))}
-                            </div>
-                        </div>
+                        <ColorPicker
+                            label="Text Color"
+                            value={firstNode.content.color || '#000000'}
+                            onChange={(c) => updateNode({ color: typeof c === 'string' ? c : c.start })}
+                        />
                     </div>
                 );
 
@@ -1148,18 +942,43 @@ export const Inspector: React.FC = () => {
                             </div>
                         </div>
                         <div>
-                            <label className="text-xs font-medium text-slate-600 block mb-1">Color</label>
-                            <div className="flex gap-2 flex-wrap">
-                                {['#64748b', '#ef4444', '#f59e0b', '#10b981', '#3b82f6'].map(c => (
-                                    <button
-                                        key={c}
-                                        onClick={() => updateNode({ color: c })}
-                                        className={`w-6 h-6 rounded-full border ${firstNode.content.color === c ? 'border-indigo-500 ring-1 ring-indigo-500' : 'border-slate-300'}`}
-                                        style={{ backgroundColor: c }}
-                                    />
-                                ))}
-                            </div>
+                            <ColorPicker
+                                label="Line Color"
+                                value={firstNode.content.color || '#64748b'}
+                                onChange={(c) => updateNode({ color: typeof c === 'string' ? c : c.start })}
+                            />
                         </div>
+                    </div>
+                );
+
+            case 'icon':
+                return (
+                    <div className="space-y-4">
+                        {/* Icon Color */}
+                        <ColorPicker
+                            label="Color del Icono"
+                            value={firstNode.content.color || '#000000'}
+                            onChange={(c) => updateNode({ color: typeof c === 'string' ? c : c.start })}
+                        />
+
+                        {/* Visual Effects */}
+                        <VisualEffectsController
+                            opacity={firstNode.content.opacity ?? 1}
+                            shadow={!!firstNode.content.filters?.shadow}
+                            borderRadius={0}
+                            borderWidth={0}
+                            onChange={(eff) => {
+                                const patch: any = {};
+                                if (eff.opacity !== undefined) patch.opacity = eff.opacity;
+                                if (eff.shadow !== undefined) {
+                                    patch.filters = {
+                                        ...firstNode.content.filters,
+                                        shadow: eff.shadow ? { color: 'rgba(0,0,0,0.2)', blur: 10, offsetX: 0, offsetY: 4 } : undefined
+                                    };
+                                }
+                                updateNode(patch);
+                            }}
+                        />
                     </div>
                 );
 

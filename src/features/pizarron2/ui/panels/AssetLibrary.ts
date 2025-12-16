@@ -121,6 +121,19 @@ export const SHAPE_LIBRARIES: AssetCategory[] = [
     { id: 'basic', label: 'Basic', items: UNIQUE_BASIC },
     { id: 'geometric', label: 'Geometric', items: UNIQUE_GEOMETRIC },
     { id: 'arrows', label: 'Arrows', items: UNIQUE_ARROWS },
+    {
+        id: 'lines', label: 'Lines', items: [
+            { id: 'l-solid', label: 'Solid', icon: '━', type: 'line', data: { type: 'line', w: 200, h: 0, content: { color: '#64748b', strokeWidth: 4, strokeStyle: 'solid' } } },
+            { id: 'l-dashed', label: 'Dashed', icon: '┅', type: 'line', data: { type: 'line', w: 200, h: 0, content: { color: '#64748b', strokeWidth: 4, strokeStyle: 'dashed' } } },
+            { id: 'l-dotted', label: 'Dotted', icon: '┄', type: 'line', data: { type: 'line', w: 200, h: 0, content: { color: '#64748b', strokeWidth: 4, strokeStyle: 'dotted' } } },
+        ]
+    },
+    {
+        id: 'workflow', label: 'Workflow', items: [
+            { id: 'p-task', label: 'New Task', icon: '✅', type: 'shape', data: { type: 'card', w: 200, h: 100, content: { title: 'New Task', body: 'Description...', color: '#dcfce7' } } },
+            { id: 'p-idea', label: 'New Idea', icon: '💡', type: 'shape', data: { type: 'card', w: 200, h: 100, content: { title: 'New Idea', body: 'Brainstorm...', color: '#dbeafe' } } },
+        ]
+    },
     { id: 'flow', label: 'Flowchart', items: UNIQUE_FLOW },
     { id: 'containers', label: 'Containers', items: UNIQUE_CONTAINERS }
 ];
@@ -172,64 +185,8 @@ export const ICON_LIBRARIES: AssetCategory[] = [
 ];
 
 // --- Composite / Frameworks ---
-export const COMPOSITE_SHAPES: AssetCategory[] = [
-    {
-        id: 'frameworks',
-        label: 'Frameworks',
-        items: [
-            {
-                id: 'comp-swot', label: 'SWOT', icon: '⊞', type: 'template',
-                data: {
-                    nodes: [{
-                        id: 'swot-1', type: 'composite', x: 0, y: 0, w: 600, h: 400,
-                        content: {
-                            composite: {
-                                layout: 'swot',
-                                structure: { rows: 2, cols: 2, gap: 10, padding: 20 },
-                                cells: [
-                                    { id: 'c1', row: 0, col: 0, text: 'STRENGTHS', color: '#dcfce7' },
-                                    { id: 'c2', row: 0, col: 1, text: 'WEAKNESSES', color: '#fee2e2' },
-                                    { id: 'c3', row: 1, col: 0, text: 'OPPORTUNITIES', color: '#dbeafe' },
-                                    { id: 'c4', row: 1, col: 1, text: 'THREATS', color: '#ffedd5' },
-                                ]
-                            }
-                        }
-                    }]
-                }
-            },
-            {
-                id: 'comp-grid-2x2', label: '2x2 Grid', icon: '田', type: 'template',
-                data: {
-                    nodes: [{
-                        id: 'grid-2x2', type: 'composite', x: 0, y: 0, w: 400, h: 400,
-                        content: {
-                            composite: {
-                                layout: 'grid',
-                                structure: { rows: 2, cols: 2, gap: 10, padding: 0 },
-                                cells: Array.from({ length: 4 }, (_, i) => ({
-                                    id: `c-${i}`, row: Math.floor(i / 2), col: i % 2, text: '', color: '#ffffff'
-                                }))
-                            }
-                        }
-                    }]
-                }
-            },
-            {
-                id: 'comp-kanban-3', label: 'Kanban (3 Col)', icon: '|||', type: 'template',
-                data: {
-                    nodes: [
-                        { id: 'k1', type: 'shape', x: 0, y: 0, w: 200, h: 500, content: { color: '#f8fafc', borderColor: '#e2e8f0', borderWidth: 1 } },
-                        { id: 'kt1', type: 'text', x: 10, y: 10, w: 180, h: 30, content: { title: 'TO DO', fontWeight: 'bold', textAlign: 'center' } },
-                        { id: 'k2', type: 'shape', x: 210, y: 0, w: 200, h: 500, content: { color: '#f8fafc', borderColor: '#e2e8f0', borderWidth: 1 } },
-                        { id: 'kt2', type: 'text', x: 220, y: 10, w: 180, h: 30, content: { title: 'DOING', fontWeight: 'bold', textAlign: 'center' } },
-                        { id: 'k3', type: 'shape', x: 420, y: 0, w: 200, h: 500, content: { color: '#f8fafc', borderColor: '#e2e8f0', borderWidth: 1 } },
-                        { id: 'kt3', type: 'text', x: 430, y: 10, w: 180, h: 30, content: { title: 'DONE', fontWeight: 'bold', textAlign: 'center' } },
-                    ]
-                }
-            }
-        ]
-    }
-];
+// Merged into TEMPLATE_LIBRARIES below
+export const COMPOSITE_SHAPES: AssetCategory[] = [];
 
 // --- TEMPLATES (The Big Catalog) ---
 
@@ -465,10 +422,52 @@ export const TEMPLATE_LIBRARIES: AssetCategory[] = [
         id: 'frameworks',
         label: 'Frameworks',
         items: [
+            {
+                id: 't-empty', label: 'Pizarra Vacía', icon: '⬜', type: 'template', tags: ['empty', 'blank'],
+                data: { nodes: [{ id: 'board-empty', type: 'board', x: 0, y: 0, w: 800, h: 600, content: { title: 'Nueva Pizarra', color: '#ffffff' } }] }
+            },
             { id: 't-dafo', label: 'DAFO Analysis', icon: '⊞', type: 'template', data: T_DAFO, tags: ['swot', 'strategy'] },
             { id: 't-matrix', label: '2x2 Matrix', icon: '田', type: 'template', data: T_MATRIX_2X2, tags: ['priority', 'grid'] },
             { id: 't-bmc', label: 'Business Canvas', icon: '📰', type: 'template', data: T_BMC, tags: ['business', 'model'] },
             { id: 't-kanban', label: 'Kanban Board', icon: '📋', type: 'template', data: T_KANBAN_SIMPLE, tags: ['agile', 'task'] },
+            // COMPOSITES MERGED HERE
+            {
+                id: 'comp-swot', label: 'Smart SWOT', icon: '⊞', type: 'template',
+                data: {
+                    nodes: [{
+                        id: 'swot-1', type: 'composite', x: 0, y: 0, w: 600, h: 400,
+                        content: {
+                            composite: {
+                                layout: 'swot',
+                                structure: { rows: 2, cols: 2, gap: 10, padding: 20 },
+                                cells: [
+                                    { id: 'c1', row: 0, col: 0, text: 'STRENGTHS', color: '#dcfce7' },
+                                    { id: 'c2', row: 0, col: 1, text: 'WEAKNESSES', color: '#fee2e2' },
+                                    { id: 'c3', row: 1, col: 0, text: 'OPPORTUNITIES', color: '#dbeafe' },
+                                    { id: 'c4', row: 1, col: 1, text: 'THREATS', color: '#ffedd5' },
+                                ]
+                            }
+                        }
+                    }]
+                }
+            },
+            {
+                id: 'comp-grid-2x2', label: 'Smart Grid 2x2', icon: '田', type: 'template',
+                data: {
+                    nodes: [{
+                        id: 'grid-2x2', type: 'composite', x: 0, y: 0, w: 400, h: 400,
+                        content: {
+                            composite: {
+                                layout: 'grid',
+                                structure: { rows: 2, cols: 2, gap: 10, padding: 0 },
+                                cells: Array.from({ length: 4 }, (_, i) => ({
+                                    id: `c-${i}`, row: Math.floor(i / 2), col: i % 2, text: '', color: '#ffffff'
+                                }))
+                            }
+                        }
+                    }]
+                }
+            }
         ]
     },
     {
@@ -516,15 +515,6 @@ export const TEMPLATE_LIBRARIES: AssetCategory[] = [
 // --- Graphics (Lines, Gradients, Stickers) ---
 export const GRAPHIC_LIBRARIES: AssetCategory[] = [
     {
-        id: 'lines',
-        label: 'Lines',
-        items: [
-            { id: 'l-solid', label: 'Solid', icon: '━', type: 'line', data: { type: 'line', w: 200, h: 0, content: { color: '#64748b', strokeWidth: 4, strokeStyle: 'solid' } } },
-            { id: 'l-dashed', label: 'Dashed', icon: '┅', type: 'line', data: { type: 'line', w: 200, h: 0, content: { color: '#64748b', strokeWidth: 4, strokeStyle: 'dashed' } } },
-            { id: 'l-dotted', label: 'Dotted', icon: '┄', type: 'line', data: { type: 'line', w: 200, h: 0, content: { color: '#64748b', strokeWidth: 4, strokeStyle: 'dotted' } } },
-        ]
-    },
-    {
         id: 'stickers',
         label: 'Stickers & Emojis',
         items: [
@@ -547,12 +537,13 @@ export const TEXT_PRESETS: AssetCategory[] = [
         id: 'headings',
         label: 'Headings',
         items: [
-            { id: 'h1', label: 'H1 Title', icon: 'H1', type: 'template', data: { nodes: [{ id: 'n1', type: 'text', w: 400, h: 60, content: { title: 'Big Heading', fontSize: 48, fontWeight: 'bold', fontFamily: 'Inter' } }] } },
-            { id: 'h2', label: 'H2 Sub', icon: 'H2', type: 'template', data: { nodes: [{ id: 'n2', type: 'text', w: 300, h: 40, content: { title: 'Sub Heading', fontSize: 32, fontWeight: '600', fontFamily: 'Inter' } }] } },
-            { id: 'h3', label: 'H3 Small', icon: 'H3', type: 'template', data: { nodes: [{ id: 'n2b', type: 'text', w: 250, h: 30, content: { title: 'Small Heading', fontSize: 24, fontWeight: '600', fontFamily: 'Inter' } }] } },
-            { id: 'p', label: 'Paragraph', icon: '¶', type: 'template', data: { nodes: [{ id: 'n3', type: 'text', w: 300, h: 100, content: { title: 'Start typing here...', fontSize: 16, fontFamily: 'Inter' } }] } },
-            { id: 'code', label: 'Code', icon: '</>', type: 'template', data: { nodes: [{ id: 'n4', type: 'text', w: 300, h: 100, content: { title: 'const foo = "bar";', fontSize: 14, fontFamily: 'Fira Code', backgroundColor: '#f1f5f9', color: '#0f172a' } }] } },
-            { id: 'quote', label: 'Quote', icon: '“', type: 'template', data: { nodes: [{ id: 'n5', type: 'text', w: 300, h: 80, content: { title: '“To be or not to be...”', fontSize: 20, fontFamily: 'Playfair Display', fontStyle: 'italic', color: '#475569' } }] } },
+            { id: 'text-basic', label: 'Texto Simple', icon: 'T', type: 'template', data: { nodes: [{ id: 'n-txt', type: 'text', x: 0, y: 0, w: 200, h: 40, content: { title: 'Tu texto aquí', fontSize: 16, fontFamily: 'Inter' } }] } },
+            { id: 'h1', label: 'H1 Title', icon: 'H1', type: 'template', data: { nodes: [{ id: 'n1', type: 'text', x: 0, y: 0, w: 400, h: 60, content: { title: 'Big Heading', fontSize: 48, fontWeight: 'bold', fontFamily: 'Inter' } }] } },
+            { id: 'h2', label: 'H2 Sub', icon: 'H2', type: 'template', data: { nodes: [{ id: 'n2', type: 'text', x: 0, y: 0, w: 300, h: 40, content: { title: 'Sub Heading', fontSize: 32, fontWeight: '600', fontFamily: 'Inter' } }] } },
+            { id: 'h3', label: 'H3 Small', icon: 'H3', type: 'template', data: { nodes: [{ id: 'n2b', type: 'text', x: 0, y: 0, w: 250, h: 30, content: { title: 'Small Heading', fontSize: 24, fontWeight: '600', fontFamily: 'Inter' } }] } },
+            { id: 'p', label: 'Paragraph', icon: '¶', type: 'template', data: { nodes: [{ id: 'n3', type: 'text', x: 0, y: 0, w: 300, h: 100, content: { title: 'Start typing here...', fontSize: 16, fontFamily: 'Inter' } }] } },
+            { id: 'code', label: 'Code', icon: '</>', type: 'template', data: { nodes: [{ id: 'n4', type: 'text', x: 0, y: 0, w: 300, h: 100, content: { title: 'const foo = "bar";', fontSize: 14, fontFamily: 'Fira Code', backgroundColor: '#f1f5f9', color: '#0f172a' } }] } },
+            { id: 'quote', label: 'Quote', icon: '“', type: 'template', data: { nodes: [{ id: 'n5', type: 'text', x: 0, y: 0, w: 300, h: 80, content: { title: '“To be or not to be...”', fontSize: 20, fontFamily: 'Playfair Display', fontStyle: 'italic', color: '#475569' } }] } },
         ]
     }
 ];

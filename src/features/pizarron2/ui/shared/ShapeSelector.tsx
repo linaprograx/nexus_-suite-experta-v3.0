@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { SHAPE_LIBRARIES, COMPOSITE_SHAPES, AssetDefinition } from '../panels/AssetLibrary';
+import { SHAPE_LIBRARIES, TEMPLATE_LIBRARIES, AssetDefinition } from '../panels/AssetLibrary';
 
 interface ShapeSelectorProps {
     currentShapeType: string;
@@ -91,7 +91,7 @@ export const ShapeSelector: React.FC<ShapeSelectorProps> = ({ currentShapeType, 
                             <div className="mt-2 pt-2 border-t border-slate-100">
                                 <h4 className="px-2 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Presets</h4>
                                 <div className="grid grid-cols-4 gap-2">
-                                    {COMPOSITE_SHAPES[0].items.slice(0, 4).map(item => (
+                                    {TEMPLATE_LIBRARIES[0].items.slice(0, 4).map(item => (
                                         <button
                                             key={item.id}
                                             onClick={() => handleSelect(item)}

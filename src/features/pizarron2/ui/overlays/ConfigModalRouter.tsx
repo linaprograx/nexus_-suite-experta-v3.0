@@ -7,6 +7,9 @@ export const ConfigModalRouter: React.FC = () => {
     const [selectedNode, setSelectedNode] = useState<BoardNode | null>(null);
 
     useEffect(() => {
+        // DISABLED: Automatic opening of legacy modals causes issues with new assets (Cards, Text).
+        // Modals should now be triggered explicitly (e.g. double click or edit button) if needed.
+        /*
         const unsub = pizarronStore.subscribe(() => {
             const state = pizarronStore.getState();
             if (state.selection.size === 1) {
@@ -21,6 +24,7 @@ export const ConfigModalRouter: React.FC = () => {
             setSelectedNode(null);
         });
         return unsub;
+        */
     }, []);
 
     if (!selectedNode) return null;

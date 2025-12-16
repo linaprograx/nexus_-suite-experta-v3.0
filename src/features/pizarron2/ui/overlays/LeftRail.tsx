@@ -1,37 +1,27 @@
 import React, { useEffect, useState } from 'react';
 import { pizarronStore } from '../../state/store';
-import { ShapeSelector } from '../shared/ShapeSelector';
-import { AssetDefinition } from '../panels/AssetLibrary';
+// import { ShapeSelector } from '../shared/ShapeSelector';
+// import { AssetDefinition } from '../panels/AssetLibrary';
 
 const TOOLS = [
     { id: 'pointer', icon: '👆', label: 'Pointer' },
     { id: 'hand', icon: '✋', label: 'Pan' },
-    { id: 'project', icon: '📂', label: 'Project', isAction: true },
+    { id: 'project', icon: '📂', label: 'Pizarras', isAction: true },
     { id: 'library', icon: '📚', label: 'Library', isAction: true },
-    { id: 'shape', icon: '🔷', label: 'Shapes' },
-    { id: 'line', icon: '📏', label: 'Line' },
-    { id: 'text', icon: 'T', label: 'Text' },
     { id: 'image', icon: '🖼️', label: 'Image', isAction: true },
-    // Presets
-    { id: 'new-board', icon: '🔲', label: 'Board', isAction: true },
-    { id: 'new-task', icon: '✅', label: 'Task', isAction: true },
-    { id: 'new-idea', icon: '💡', label: 'Idea', isAction: true },
 
-    { id: 'presentation', icon: '📽️', label: 'Present (P)', isAction: true }, // Added Presentation Tool
+    { id: 'presentation', icon: '📽️', label: 'Present (P)', isAction: true },
 
-    { id: 'duplicate', icon: '📄', label: 'Duplicate', isAction: true },
     { id: 'delete', icon: '🗑️', label: 'Delete', isAction: true },
 ] as const;
 
 export const LeftRail: React.FC = () => {
     const [activeTool, setActiveTool] = useState('pointer');
-    const [activeShape, setActiveShape] = useState('rectangle');
 
     useEffect(() => {
         const unsub = pizarronStore.subscribe(() => {
             const state = pizarronStore.getState();
             setActiveTool(state.uiFlags.activeTool);
-            setActiveShape(state.uiFlags.activeShapeType || 'rectangle');
         });
         return unsub;
     }, []);
@@ -50,7 +40,7 @@ export const LeftRail: React.FC = () => {
             const cx = (window.innerWidth / 2 - vp.x) / vp.zoom;
             const cy = (window.innerHeight / 2 - vp.y) / vp.zoom;
 
-            const newNode: any = { // Temporary any to bypass strict checks for now, or use BoardNode if imported
+            const newNode: any = {
                 id: crypto.randomUUID(),
                 type: 'image',
                 x: cx - 100, y: cy - 100, w: 200, h: 200,
@@ -62,40 +52,6 @@ export const LeftRail: React.FC = () => {
 
             pizarronStore.addNode(newNode);
             pizarronStore.updateInteractionState({ editingImageId: newNode.id });
-            return;
-        }
-
-        // Preset Actions
-        if (['new-board', 'new-task', 'new-idea'].includes(tool.id)) {
-            const state = pizarronStore.getState();
-            const vp = state.viewport;
-            const cx = (window.innerWidth / 2 - vp.x) / vp.zoom;
-            const cy = (window.innerHeight / 2 - vp.y) / vp.zoom;
-            const z = Object.keys(state.nodes).length + 1;
-
-            let newNode: any = {
-                id: crypto.randomUUID(),
-                x: cx - 100, y: cy - 50, w: 200, h: 100,
-                zIndex: z,
-                updatedAt: Date.now(), createdAt: Date.now()
-            };
-
-            if (tool.id === 'new-board') {
-                newNode.type = 'board';
-                newNode.w = 500; newNode.h = 400;
-                newNode.content = { title: 'New Board', color: '#f1f5f9' };
-                // Send board to back? 
-                newNode.zIndex = -1;
-            } else if (tool.id === 'new-task') {
-                newNode.type = 'card';
-                newNode.content = { title: 'New Task', body: 'Description...', color: '#dcfce7' }; // Green
-            } else if (tool.id === 'new-idea') {
-                newNode.type = 'card';
-                newNode.content = { title: 'New Idea', body: 'Brainstorm...', color: '#dbeafe' }; // Blue
-            }
-
-            pizarronStore.addNode(newNode);
-            pizarronStore.setSelection([newNode.id]);
             return;
         }
 
@@ -118,25 +74,6 @@ export const LeftRail: React.FC = () => {
             if (tool.id === 'delete') {
                 selection.forEach(id => pizarronStore.deleteNode(id));
                 pizarronStore.setSelection([]);
-            }
-            else if (tool.id === 'duplicate') {
-                const newIds: string[] = [];
-                selection.forEach(id => {
-                    const node = state.nodes[id];
-                    if (!node) return;
-                    const newNode = {
-                        ...node,
-                        id: crypto.randomUUID(),
-                        x: node.x + 20,
-                        y: node.y + 20,
-                        updatedAt: Date.now()
-                    };
-                    pizarronStore.addNode(newNode);
-                    newIds.push(newNode.id);
-                });
-                if (newIds.length > 0) {
-                    pizarronStore.setSelection(newIds);
-                }
             }
         } else {
             pizarronStore.setActiveTool(tool.id);
@@ -171,18 +108,7 @@ export const LeftRail: React.FC = () => {
             {/* Main Strip */}
             <div className="bg-white/90 backdrop-blur shadow-sm border border-slate-200 rounded-2xl p-2 flex flex-col gap-2">
                 {TOOLS.map(tool => {
-                    const isActive = activeTool === tool.id ||
-                        (tool.id === 'shape' && ['rectangle', 'circle', 'triangle', 'star', 'diamond', 'hexagon', 'cloud'].includes(activeTool));
-
-                    if (tool.id === 'shape') {
-                        return (
-                            <ShapeSelector
-                                key={tool.id}
-                                currentShapeType={activeShape}
-                                onSelect={handleShapeSelect}
-                            />
-                        )
-                    }
+                    const isActive = activeTool === tool.id;
 
                     return (
                         <button

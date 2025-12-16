@@ -19,7 +19,7 @@ export const ShapeConfigModal: React.FC<{ node: BoardNode }> = ({ node }) => {
 
     return (
         <div
-            className="fixed top-24 right-4 bg-white p-4 rounded-xl shadow-xl border border-slate-200 w-64 z-50 animate-in fade-in slide-in-from-right-4 pointer-events-auto"
+            className="fixed top-24 right-4 bg-white dark:bg-slate-900 p-4 rounded-xl shadow-xl border border-slate-200 dark:border-slate-700 w-64 z-50 animate-in fade-in slide-in-from-right-4 pointer-events-auto"
             onPointerDown={stopProp}
             onClick={stopProp}
         >
@@ -28,7 +28,7 @@ export const ShapeConfigModal: React.FC<{ node: BoardNode }> = ({ node }) => {
             <div className="space-y-4">
                 {/* Fill Color */}
                 <div>
-                    <label className="text-xs font-medium text-slate-600">Fill Color</label>
+                    <label className="text-xs font-medium text-slate-600 dark:text-slate-400">Fill Color</label>
                     <div className="flex gap-2 mt-1 flex-wrap">
                         {['#cbd5e1', '#f87171', '#fbbf24', '#4ade80', '#60a5fa', '#c084fc', 'transparent'].map(c => (
                             <button
@@ -44,7 +44,7 @@ export const ShapeConfigModal: React.FC<{ node: BoardNode }> = ({ node }) => {
 
                 {/* Border */}
                 <div>
-                    <label className="text-xs font-medium text-slate-600 flex justify-between">
+                    <label className="text-xs font-medium text-slate-600 dark:text-slate-400 flex justify-between">
                         <span>Border Width</span>
                         <span>{node.content.borderWidth || 0}px</span>
                     </label>
@@ -68,7 +68,7 @@ export const ShapeConfigModal: React.FC<{ node: BoardNode }> = ({ node }) => {
 
                 {/* Radius */}
                 <div>
-                    <label className="text-xs font-medium text-slate-600 flex justify-between">
+                    <label className="text-xs font-medium text-slate-600 dark:text-slate-400 flex justify-between">
                         <span>Radius</span>
                         <span>{node.content.borderRadius || 0}px</span>
                     </label>
@@ -82,7 +82,7 @@ export const ShapeConfigModal: React.FC<{ node: BoardNode }> = ({ node }) => {
 
                 {/* Opacity */}
                 <div>
-                    <label className="text-xs font-medium text-slate-600 flex justify-between">
+                    <label className="text-xs font-medium text-slate-600 dark:text-slate-400 flex justify-between">
                         <span>Opacity</span>
                         <span>{Math.round((node.content.opacity ?? 1) * 100)}%</span>
                     </label>
@@ -110,7 +110,7 @@ export const LineConfigModal: React.FC<{ node: BoardNode }> = ({ node }) => {
 
     return (
         <div
-            className="fixed top-24 right-4 bg-white p-4 rounded-xl shadow-xl border border-slate-200 w-64 z-50 animate-in fade-in slide-in-from-right-4 pointer-events-auto"
+            className="fixed top-24 right-4 bg-white dark:bg-slate-900 p-4 rounded-xl shadow-xl border border-slate-200 dark:border-slate-700 w-64 z-50 animate-in fade-in slide-in-from-right-4 pointer-events-auto"
             onPointerDown={stopProp}
             onClick={stopProp}
         >
@@ -119,7 +119,7 @@ export const LineConfigModal: React.FC<{ node: BoardNode }> = ({ node }) => {
             <div className="space-y-4">
                 {/* Stroke */}
                 <div>
-                    <label className="text-xs font-medium text-slate-600">Stroke Width ({node.content.strokeWidth || 4}px)</label>
+                    <label className="text-xs font-medium text-slate-600 dark:text-slate-400">Stroke Width ({node.content.strokeWidth || 4}px)</label>
                     <input
                         type="range" min="1" max="20"
                         value={node.content.strokeWidth || 4}
@@ -131,13 +131,13 @@ export const LineConfigModal: React.FC<{ node: BoardNode }> = ({ node }) => {
                 {/* Arrows & Type */}
                 <div className="flex gap-2">
                     <button
-                        className={`flex-1 border rounded py-1 text-[10px] ${node.content.startArrow ? 'bg-indigo-50 border-indigo-200 text-indigo-700' : 'text-slate-500'}`}
+                        className={`flex-1 border rounded py-1 text-[10px] ${node.content.startArrow ? 'bg-indigo-50 dark:bg-indigo-900/50 border-indigo-200 dark:border-indigo-700 text-indigo-700 dark:text-indigo-300' : 'text-slate-500 dark:text-slate-400'}`}
                         onClick={() => update({ startArrow: !node.content.startArrow })}
                     >
                         Start Arrow
                     </button>
                     <button
-                        className={`flex-1 border rounded py-1 text-[10px] ${node.content.endArrow ? 'bg-indigo-50 border-indigo-200 text-indigo-700' : 'text-slate-500'}`}
+                        className={`flex-1 border rounded py-1 text-[10px] ${node.content.endArrow ? 'bg-indigo-50 dark:bg-indigo-900/50 border-indigo-200 dark:border-indigo-700 text-indigo-700 dark:text-indigo-300' : 'text-slate-500 dark:text-slate-400'}`}
                         onClick={() => update({ endArrow: !node.content.endArrow })}
                     >
                         End Arrow
@@ -145,7 +145,7 @@ export const LineConfigModal: React.FC<{ node: BoardNode }> = ({ node }) => {
                 </div>
                 <div className="flex gap-2">
                     <button
-                        className={`flex-1 border rounded py-1 text-[10px] ${node.content.lineType === 'curved' ? 'bg-indigo-50 border-indigo-200 text-indigo-700' : 'text-slate-500'}`}
+                        className={`flex-1 border rounded py-1 text-[10px] ${node.content.lineType === 'curved' ? 'bg-indigo-50 dark:bg-indigo-900/50 border-indigo-200 dark:border-indigo-700 text-indigo-700 dark:text-indigo-300' : 'text-slate-500 dark:text-slate-400'}`}
                         onClick={() => update({ lineType: node.content.lineType === 'curved' ? 'straight' : 'curved' })}
                     >
                         {node.content.lineType === 'curved' ? 'Curved' : 'Straight'}
@@ -154,7 +154,7 @@ export const LineConfigModal: React.FC<{ node: BoardNode }> = ({ node }) => {
 
                 {/* Color */}
                 <div>
-                    <label className="text-xs font-medium text-slate-600">Color</label>
+                    <label className="text-xs font-medium text-slate-600 dark:text-slate-400">Color</label>
                     <div className="flex gap-2 mt-1 flex-wrap">
                         {['#334155', '#ef4444', '#f59e0b', '#10b981', '#3b82f6'].map(c => (
                             <button
@@ -187,7 +187,7 @@ export const TextConfigModal: React.FC<{ node: BoardNode }> = ({ node }) => {
 
     return (
         <div
-            className="fixed top-24 right-4 bg-white p-4 rounded-xl shadow-xl border border-slate-200 w-64 z-50 animate-in fade-in slide-in-from-right-4 pointer-events-auto"
+            className="fixed top-24 right-4 bg-white dark:bg-slate-900 p-4 rounded-xl shadow-xl border border-slate-200 dark:border-slate-700 w-64 z-50 animate-in fade-in slide-in-from-right-4 pointer-events-auto"
             onPointerDown={stopProp}
             onClick={stopProp}
         >
@@ -196,9 +196,9 @@ export const TextConfigModal: React.FC<{ node: BoardNode }> = ({ node }) => {
             <div className="space-y-4">
                 {/* Content */}
                 <div>
-                    <label className="text-xs font-medium text-slate-600">Content</label>
+                    <label className="text-xs font-medium text-slate-600 dark:text-slate-400">Content</label>
                     <textarea
-                        className="w-full mt-1 p-2 border rounded text-sm min-h-[60px]"
+                        className="w-full mt-1 p-2 border rounded text-sm min-h-[60px] bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-white"
                         value={node.content.title || ''}
                         onChange={(e) => update({ title: e.target.value })}
                         placeholder="Type something..."
@@ -222,7 +222,7 @@ export const TextConfigModal: React.FC<{ node: BoardNode }> = ({ node }) => {
                             {['left', 'center', 'right'].map((align) => (
                                 <button
                                     key={align}
-                                    className={`flex-1 py-1 text-[10px] ${node.content.textAlign === align ? 'bg-indigo-100 text-indigo-700' : 'bg-white text-slate-500'}`}
+                                    className={`flex-1 py-1 text-[10px] ${node.content.textAlign === align ? 'bg-indigo-100 dark:bg-indigo-900/60 text-indigo-700 dark:text-indigo-300' : 'bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400'}`}
                                     onClick={() => update({ textAlign: align as any })}
                                 >
                                     {align[0].toUpperCase()}
@@ -234,19 +234,19 @@ export const TextConfigModal: React.FC<{ node: BoardNode }> = ({ node }) => {
 
                 <div className="flex gap-2">
                     <button
-                        className={`flex-1 border rounded py-1 text-xs font-bold ${node.content.fontWeight === 'bold' ? 'bg-indigo-50 border-indigo-200 text-indigo-700' : 'text-slate-600'}`}
+                        className={`flex-1 border rounded py-1 text-xs font-bold ${node.content.fontWeight === 'bold' ? 'bg-indigo-50 dark:bg-indigo-900/50 border-indigo-200 dark:border-indigo-700 text-indigo-700 dark:text-indigo-300' : 'text-slate-600 dark:text-slate-400'}`}
                         onClick={() => update({ fontWeight: node.content.fontWeight === 'bold' ? 'normal' : 'bold' })}
                     >
                         B
                     </button>
                     <button
-                        className={`flex-1 border rounded py-1 text-xs italic ${node.content.fontStyle === 'italic' ? 'bg-indigo-50 border-indigo-200 text-indigo-700' : 'text-slate-600'}`}
+                        className={`flex-1 border rounded py-1 text-xs italic ${node.content.fontStyle === 'italic' ? 'bg-indigo-50 dark:bg-indigo-900/50 border-indigo-200 dark:border-indigo-700 text-indigo-700 dark:text-indigo-300' : 'text-slate-600 dark:text-slate-400'}`}
                         onClick={() => update({ fontStyle: node.content.fontStyle === 'italic' ? 'normal' : 'italic' })}
                     >
                         I
                     </button>
                     <button
-                        className={`flex-1 border rounded py-1 text-xs underline ${node.content.textDecoration === 'underline' ? 'bg-indigo-50 border-indigo-200 text-indigo-700' : 'text-slate-600'}`}
+                        className={`flex-1 border rounded py-1 text-xs underline ${node.content.textDecoration === 'underline' ? 'bg-indigo-50 dark:bg-indigo-900/50 border-indigo-200 dark:border-indigo-700 text-indigo-700 dark:text-indigo-300' : 'text-slate-600 dark:text-slate-400'}`}
                         onClick={() => update({ textDecoration: node.content.textDecoration === 'underline' ? 'none' : 'underline' })}
                     >
                         U
@@ -255,7 +255,7 @@ export const TextConfigModal: React.FC<{ node: BoardNode }> = ({ node }) => {
 
                 {/* Color */}
                 <div>
-                    <label className="text-xs font-medium text-slate-600">Color</label>
+                    <label className="text-xs font-medium text-slate-600 dark:text-slate-400">Color</label>
                     <div className="flex gap-2 mt-1 flex-wrap">
                         {['#1e293b', '#ef4444', '#f59e0b', '#10b981', '#3b82f6'].map(c => (
                             <button
@@ -283,7 +283,7 @@ export const BoardConfigModal: React.FC<{ node: BoardNode }> = ({ node }) => {
 
     return (
         <div
-            className="fixed top-24 right-4 bg-white p-4 rounded-xl shadow-xl border border-slate-200 w-64 z-50 animate-in fade-in slide-in-from-right-4 pointer-events-auto"
+            className="fixed top-24 right-4 bg-white dark:bg-slate-900 p-4 rounded-xl shadow-xl border border-slate-200 dark:border-slate-700 w-64 z-50 animate-in fade-in slide-in-from-right-4 pointer-events-auto"
             onPointerDown={stopProp}
             onClick={stopProp}
         >
@@ -291,15 +291,15 @@ export const BoardConfigModal: React.FC<{ node: BoardNode }> = ({ node }) => {
 
             <div className="space-y-4">
                 <div>
-                    <label className="text-xs font-medium text-slate-600">Title</label>
+                    <label className="text-xs font-medium text-slate-600 dark:text-slate-400">Title</label>
                     <input
-                        className="w-full mt-1 p-2 border rounded text-sm"
+                        className="w-full mt-1 p-2 border rounded text-sm bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-white"
                         value={node.content.title || ''}
                         onChange={(e) => update({ title: e.target.value })}
                     />
                 </div>
                 <div>
-                    <label className="text-xs font-medium text-slate-600">Theme</label>
+                    <label className="text-xs font-medium text-slate-600 dark:text-slate-400">Theme</label>
                     <div className="flex gap-2 mt-1 flex-wrap">
                         {['#f8fafc', '#fdf2f8', '#fffbeb', '#f0fdf4'].map(c => (
                             <button
@@ -314,7 +314,7 @@ export const BoardConfigModal: React.FC<{ node: BoardNode }> = ({ node }) => {
 
                 {/* Border */}
                 <div>
-                    <label className="text-xs font-medium text-slate-600 block mb-1">Border</label>
+                    <label className="text-xs font-medium text-slate-600 dark:text-slate-400 block mb-1">Border</label>
                     <div className="flex gap-2 items-center">
                         <input
                             type="range" min="0" max="10"
@@ -338,7 +338,7 @@ export const BoardConfigModal: React.FC<{ node: BoardNode }> = ({ node }) => {
 
                 {/* Opacity */}
                 <div>
-                    <label className="text-xs font-medium text-slate-600 flex justify-between">
+                    <label className="text-xs font-medium text-slate-600 dark:text-slate-400 flex justify-between">
                         <span>Opacity</span>
                         <span>{Math.round((node.content.opacity ?? 1) * 100)}%</span>
                     </label>
@@ -352,9 +352,9 @@ export const BoardConfigModal: React.FC<{ node: BoardNode }> = ({ node }) => {
 
                 {/* Content Body */}
                 <div>
-                    <label className="text-xs font-medium text-slate-600">Content</label>
+                    <label className="text-xs font-medium text-slate-600 dark:text-slate-400">Content</label>
                     <textarea
-                        className="w-full mt-1 p-2 border rounded text-xs font-mono min-h-[100px]"
+                        className="w-full mt-1 p-2 border rounded text-xs font-mono min-h-[100px] bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-white"
                         value={node.content.body || ''}
                         onChange={(e) => update({ body: e.target.value })}
                         placeholder="- Item 1&#10;1. Ordered&#10;--- (Separator)"
@@ -380,7 +380,7 @@ export const CardConfigModal: React.FC<{ node: BoardNode }> = ({ node }) => {
 
     return (
         <div
-            className="fixed top-24 right-4 bg-white p-4 rounded-xl shadow-xl border border-slate-200 w-64 z-50 animate-in fade-in slide-in-from-right-4 pointer-events-auto"
+            className="fixed top-24 right-4 bg-white dark:bg-slate-900 p-4 rounded-xl shadow-xl border border-slate-200 dark:border-slate-700 w-64 z-50 animate-in fade-in slide-in-from-right-4 pointer-events-auto"
             onPointerDown={stopProp}
             onClick={stopProp}
         >
@@ -388,9 +388,9 @@ export const CardConfigModal: React.FC<{ node: BoardNode }> = ({ node }) => {
 
             <div className="space-y-4">
                 <div>
-                    <label className="text-xs font-medium text-slate-600">Title</label>
+                    <label className="text-xs font-medium text-slate-600 dark:text-slate-400">Title</label>
                     <input
-                        className="w-full mt-1 p-2 border rounded text-sm font-bold"
+                        className="w-full mt-1 p-2 border rounded text-sm font-bold bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-white"
                         value={node.content.title || ''}
                         onChange={(e) => update({ title: e.target.value })}
                     />
@@ -398,7 +398,7 @@ export const CardConfigModal: React.FC<{ node: BoardNode }> = ({ node }) => {
 
                 {/* Status */}
                 <div>
-                    <label className="text-xs font-medium text-slate-600">Status</label>
+                    <label className="text-xs font-medium text-slate-600 dark:text-slate-400">Status</label>
                     <div className="flex border rounded mt-1 overflow-hidden">
                         {['todo', 'in-progress', 'done'].map(s => (
                             <button
@@ -406,7 +406,7 @@ export const CardConfigModal: React.FC<{ node: BoardNode }> = ({ node }) => {
                                 onClick={() => update({ status: s as any })}
                                 className={`flex-1 py-1 text-[10px] uppercase font-bold ${node.content.status === s ?
                                     (s === 'done' ? 'bg-green-100 text-green-700' : s === 'in-progress' ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-700')
-                                    : 'bg-white text-slate-400 hover:bg-slate-50'}`}
+                                    : 'bg-white dark:bg-slate-800 text-slate-400 dark:text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-700'}`}
                             >
                                 {s === 'in-progress' ? 'Doing' : s}
                             </button>
@@ -415,9 +415,9 @@ export const CardConfigModal: React.FC<{ node: BoardNode }> = ({ node }) => {
                 </div>
 
                 <div>
-                    <label className="text-xs font-medium text-slate-600">Body</label>
+                    <label className="text-xs font-medium text-slate-600 dark:text-slate-400">Body</label>
                     <textarea
-                        className="w-full mt-1 p-2 border rounded text-sm min-h-[80px]"
+                        className="w-full mt-1 p-2 border rounded text-sm min-h-[80px] bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-white"
                         value={node.content.body || ''}
                         onChange={(e) => update({ body: e.target.value })}
                     />
@@ -425,9 +425,9 @@ export const CardConfigModal: React.FC<{ node: BoardNode }> = ({ node }) => {
 
                 {/* Tags */}
                 <div>
-                    <label className="text-xs font-medium text-slate-600">Tags (comma separated)</label>
+                    <label className="text-xs font-medium text-slate-600 dark:text-slate-400">Tags (comma separated)</label>
                     <input
-                        className="w-full mt-1 p-2 border rounded text-xs"
+                        className="w-full mt-1 p-2 border rounded text-xs bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-white"
                         value={(node.content.tags || []).join(', ')}
                         onChange={(e) => update({ tags: e.target.value.split(',').map(t => t.trim()).filter(Boolean) })}
                         placeholder="design, urgent..."
@@ -435,7 +435,7 @@ export const CardConfigModal: React.FC<{ node: BoardNode }> = ({ node }) => {
                 </div>
 
                 <div>
-                    <label className="text-xs font-medium text-slate-600">Color</label>
+                    <label className="text-xs font-medium text-slate-600 dark:text-slate-400">Color</label>
                     <div className="flex gap-2 mt-1 flex-wrap">
                         {['#ffffff', '#dcfce7', '#dbeafe', '#fef9c3', '#fee2e2'].map(c => (
                             <button
@@ -473,7 +473,7 @@ export const ImageConfigModal: React.FC<{ node: BoardNode }> = ({ node }) => {
 
     return (
         <div
-            className="fixed top-24 right-4 bg-white p-4 rounded-xl shadow-xl border border-slate-200 w-64 z-50 animate-in fade-in slide-in-from-right-4 pointer-events-auto"
+            className="fixed top-24 right-4 bg-white dark:bg-slate-900 p-4 rounded-xl shadow-xl border border-slate-200 dark:border-slate-700 w-64 z-50 animate-in fade-in slide-in-from-right-4 pointer-events-auto"
             onPointerDown={stopProp}
             onClick={stopProp}
         >
@@ -481,7 +481,7 @@ export const ImageConfigModal: React.FC<{ node: BoardNode }> = ({ node }) => {
 
             <div className="space-y-4">
                 <div>
-                    <label className="text-xs font-medium text-slate-600 block mb-1">Upload / Replace</label>
+                    <label className="text-xs font-medium text-slate-600 dark:text-slate-400 block mb-1">Upload / Replace</label>
                     <button
                         onClick={() => pizarronStore.updateInteractionState({ editingImageId: node.id })}
                         className="w-full py-2 bg-indigo-50 text-indigo-600 rounded text-xs font-medium hover:bg-indigo-100 transition-colors"
@@ -491,9 +491,9 @@ export const ImageConfigModal: React.FC<{ node: BoardNode }> = ({ node }) => {
                 </div>
 
                 <div>
-                    <label className="text-xs font-medium text-slate-600">Caption</label>
+                    <label className="text-xs font-medium text-slate-600 dark:text-slate-400">Caption</label>
                     <input
-                        className="w-full mt-1 p-2 border rounded text-sm"
+                        className="w-full mt-1 p-2 border rounded text-sm bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-white"
                         value={node.content.caption || ''}
                         onChange={(e) => update({ caption: e.target.value })}
                         placeholder="Add caption..."
@@ -501,7 +501,7 @@ export const ImageConfigModal: React.FC<{ node: BoardNode }> = ({ node }) => {
                 </div>
 
                 <div>
-                    <label className="text-xs font-medium text-slate-600">Opacity ({Math.round((node.content.opacity ?? 1) * 100)}%)</label>
+                    <label className="text-xs font-medium text-slate-600 dark:text-slate-400">Opacity ({Math.round((node.content.opacity ?? 1) * 100)}%)</label>
                     <input
                         type="range" min="0" max="1" step="0.1"
                         value={node.content.opacity ?? 1}
@@ -511,7 +511,7 @@ export const ImageConfigModal: React.FC<{ node: BoardNode }> = ({ node }) => {
                 </div>
 
                 <div>
-                    <label className="text-xs font-medium text-slate-600">Border Radius ({node.content.borderRadius || 0}px)</label>
+                    <label className="text-xs font-medium text-slate-600 dark:text-slate-400">Border Radius ({node.content.borderRadius || 0}px)</label>
                     <input
                         type="range" min="0" max="100" step="4"
                         value={node.content.borderRadius || 0}

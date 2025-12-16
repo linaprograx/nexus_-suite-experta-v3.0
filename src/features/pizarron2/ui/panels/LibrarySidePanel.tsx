@@ -6,20 +6,20 @@ import { FontLoader } from '../../engine/FontLoader';
 import { AssetDefinition } from './AssetLibrary';
 import { useOnClickOutside } from '../../../../hooks/useOnClickOutside';
 
-type LibraryTab = 'templates' | 'text' | 'shapes' | 'icons' | 'graphics' | 'uploads' | 'frameworks';
+import { LuLayoutTemplate, LuShapes, LuType, LuLayoutGrid, LuSticker, LuCloudUpload, LuSettings, LuSearch, LuX, LuHistory } from 'react-icons/lu';
 
-const TABS: { id: LibraryTab, label: string, icon: string }[] = [
-    { id: 'templates', label: 'Plantillas', icon: '⧉' },
-    { id: 'frameworks', label: 'Estructuras', icon: '▦' },
-    { id: 'text', label: 'Texto', icon: 'T' },
-    { id: 'shapes', label: 'Formas', icon: '○' },
-    { id: 'icons', label: 'Iconos', icon: '★' },
-    { id: 'graphics', label: 'Gráficos', icon: '🎨' },
-    { id: 'uploads', label: 'Subidos', icon: '☁️' },
+type LibraryTab = 'boards' | 'elements' | 'text' | 'assets' | 'uploads' | 'settings';
+
+const TABS: { id: LibraryTab, label: string, icon: React.ReactNode }[] = [
+    { id: 'boards', label: 'Estructuras', icon: <LuLayoutTemplate size={24} /> },
+    { id: 'elements', label: 'Elementos', icon: <LuShapes size={24} /> },
+    { id: 'text', label: 'Texto', icon: <LuType size={24} /> },
+    { id: 'assets', label: 'Gráficos', icon: <LuSticker size={24} /> },
+    { id: 'uploads', label: 'Recursos', icon: <LuCloudUpload size={24} /> },
 ];
 
 export const LibrarySidePanel: React.FC = () => {
-    const [activeTab, setActiveTab] = useState<LibraryTab>('templates'); // Default to templates as requested
+    const [activeTab, setActiveTab] = useState<LibraryTab>('boards'); // Default to boards
     const [search, setSearch] = useState('');
     const [recentTemplateIds, setRecentTemplateIds] = useState<string[]>([]);
 
@@ -142,12 +142,11 @@ export const LibrarySidePanel: React.FC = () => {
 
     const getActiveLibrary = () => {
         switch (activeTab) {
-            case 'templates': return TEMPLATE_LIBRARIES; // Now populated
-            case 'icons': return ICON_LIBRARIES;
-            case 'shapes': return SHAPE_LIBRARIES;
-            case 'graphics': return GRAPHIC_LIBRARIES;
+            case 'boards': return TEMPLATE_LIBRARIES;
+            case 'elements': return SHAPE_LIBRARIES;
             case 'text': return TEXT_PRESETS;
-            case 'frameworks': return COMPOSITE_SHAPES;
+            // case 'structures': return COMPOSITE_SHAPES;
+            case 'assets': return [...ICON_LIBRARIES, ...GRAPHIC_LIBRARIES];
             default: return [];
         }
     };
@@ -163,55 +162,77 @@ export const LibrarySidePanel: React.FC = () => {
     return (
         <div
             ref={ref}
-            className="absolute top-14 left-0 bottom-0 w-80 bg-white border-r border-slate-200 shadow-xl flex z-[60] pointer-events-auto animate-in slide-in-from-left duration-200"
+            className="absolute top-14 left-0 bottom-0 w-80 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 shadow-xl flex z-[60] pointer-events-auto animate-in slide-in-from-left duration-200"
         >
             {/* Tabs Rail */}
-            <div className="w-20 bg-slate-50 border-r border-slate-200 flex flex-col items-center py-4 gap-4 overflow-y-auto custom-scrollbar">
-                {TABS.map(tab => (
+            <div className="w-20 bg-slate-50 dark:bg-slate-950 border-r border-slate-200 dark:border-slate-800 flex flex-col items-center py-4 gap-2 h-full">
+                {/* Main Tabs */}
+                <div className="flex-1 flex flex-col gap-2 w-full px-2 overflow-y-auto custom-scrollbar">
+                    {TABS.map(tab => (
+                        <button
+                            key={tab.id}
+                            onClick={() => setActiveTab(tab.id)}
+                            className={`w-full aspect-square rounded-xl shrink-0 flex flex-col items-center justify-center gap-1 transition-all ${activeTab === tab.id
+                                ? 'bg-blue-600 dark:bg-blue-700 text-white shadow-md scale-105'
+                                : 'text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800'
+                                }`}
+                        >
+                            <span className="text-2xl">{tab.icon}</span>
+                            <span className="text-[9px] font-medium truncate w-full text-center px-0.5">{tab.label}</span>
+                        </button>
+                    ))}
+                </div>
+
+                {/* Bottom Tabs (Settings) */}
+                <div className="w-full px-2 pt-2 border-t border-slate-200 dark:border-slate-800 mt-2">
                     <button
-                        key={tab.id}
-                        onClick={() => setActiveTab(tab.id)}
-                        className={`w-14 h-14 rounded-xl shrink-0 flex flex-col items-center justify-center gap-1 transition-all ${activeTab === tab.id
-                            ? 'bg-blue-600 text-white shadow-md scale-105'
-                            : 'text-slate-500 hover:bg-slate-200'
+                        onClick={() => setActiveTab('settings')}
+                        className={`w-full aspect-square rounded-xl shrink-0 flex flex-col items-center justify-center gap-1 transition-all ${activeTab === 'settings'
+                            ? 'bg-slate-800 dark:bg-slate-700 text-white shadow-md'
+                            : 'text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800'
                             }`}
                     >
-                        <span className="text-2xl">{tab.icon}</span>
-                        <span className="text-[10px] font-medium truncate w-full text-center px-1">{tab.label}</span>
+                        <LuSettings size={24} />
+                        <span className="text-[9px] font-medium truncate w-full text-center">Ajustes</span>
                     </button>
-                ))}
+                </div>
             </div>
 
             {/* Content Area */}
-            <div className="flex-1 flex flex-col h-full overflow-hidden bg-slate-50/50">
+            <div className="flex-1 flex flex-col h-full overflow-hidden bg-slate-50/50 dark:bg-slate-900/50">
 
                 {/* Header & Search */}
-                <div className="p-4 border-b border-slate-200 bg-white flex flex-col gap-3">
+                <div className="p-4 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex flex-col gap-3">
                     <div className="flex items-center justify-between">
-                        <h2 className="text-sm font-bold text-slate-700 uppercase tracking-wide">Biblioteca</h2>
+                        <h2 className="text-sm font-bold text-slate-700 dark:text-white uppercase tracking-wide">
+                            {activeTab === 'settings' ? 'Ajustes' : TABS.find(t => t.id === activeTab)?.label}
+                        </h2>
                         <button
                             onClick={() => pizarronStore.setUIFlag('showLibrary', false)}
-                            className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors"
+                            className="p-1.5 text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
                         >
-                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                            </svg>
+                            <LuX size={20} />
                         </button>
                     </div>
-                    <input
-                        type="text"
-                        placeholder={`Buscar en ${activeTab}...`}
-                        className="w-full px-4 py-2 rounded-lg bg-slate-100 border-none focus:ring-2 focus:ring-blue-500 text-sm"
-                        value={search}
-                        onChange={(e) => setSearch(e.target.value)}
-                    />
+                    {activeTab !== 'settings' && (
+                        <div className="relative">
+                            <LuSearch className="absolute left-3 top-2.5 text-slate-400" size={16} />
+                            <input
+                                type="text"
+                                placeholder={`Buscar...`}
+                                className="w-full pl-9 pr-4 py-2 rounded-lg bg-slate-100 dark:bg-slate-800 dark:text-white border-none focus:ring-2 focus:ring-blue-500 text-sm placeholder-slate-400"
+                                value={search}
+                                onChange={(e) => setSearch(e.target.value)}
+                            />
+                        </div>
+                    )}
                 </div>
 
                 {/* Grid */}
                 <div className="flex-1 overflow-y-auto p-4 space-y-6 custom-scrollbar">
 
                     {/* Recents Section (Templates Only) */}
-                    {activeTab === 'templates' && !search && recentItems.length > 0 && (
+                    {activeTab === 'boards' && !search && recentItems.length > 0 && (
                         <div className="mb-6">
                             <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 ml-1 flex items-center gap-2">
                                 <span className="text-orange-500">History</span> Recientes
@@ -221,15 +242,15 @@ export const LibrarySidePanel: React.FC = () => {
                                     <button
                                         key={`recent-${item.id}`}
                                         onClick={() => handleAdd(item)}
-                                        className="h-20 flex flex-col items-center justify-center bg-white rounded-lg border border-orange-100 shadow-sm hover:border-orange-300 hover:shadow-md transition-all relative group"
+                                        className="h-20 flex flex-col items-center justify-center bg-white dark:bg-slate-800 rounded-lg border border-orange-100 dark:border-orange-900 shadow-sm hover:border-orange-300 dark:hover:border-orange-500 hover:shadow-md transition-all relative group"
                                         title={item.label}
                                     >
                                         <span className="text-2xl mb-1">{item.icon}</span>
-                                        <span className="text-[10px] font-medium text-slate-600">{item.label}</span>
+                                        <span className="text-[10px] font-medium text-slate-600 dark:text-slate-300">{item.label}</span>
                                     </button>
                                 ))}
                             </div>
-                            <div className="h-px bg-slate-200 w-full mt-6" />
+                            <div className="h-px bg-slate-200 dark:bg-slate-800 w-full mt-6" />
                         </div>
                     )}
 
@@ -256,8 +277,8 @@ export const LibrarySidePanel: React.FC = () => {
                                             onClick={() => handleAdd(item)}
                                             className={`${activeTab === 'text'
                                                 ? 'w-full h-auto p-3 flex flex-col items-start'
-                                                : activeTab === 'templates' ? 'aspect-video flex-col items-center justify-center' : 'aspect-square flex-col items-center justify-center'
-                                                } bg-white rounded-lg border border-slate-200 hover:border-blue-400 hover:shadow-md transition-all flex group relative overflow-hidden`}
+                                                : activeTab === 'boards' ? 'aspect-video flex-col items-center justify-center' : 'aspect-square flex-col items-center justify-center'
+                                                } bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 hover:border-blue-400 dark:hover:border-blue-500 hover:shadow-md transition-all flex group relative overflow-hidden`}
                                             title={item.label}
                                         >
                                             <div className={`${activeTab === 'text' ? '' : 'text-2xl group-hover:scale-110 mb-1'} transition-transform`}>
@@ -266,8 +287,11 @@ export const LibrarySidePanel: React.FC = () => {
                                                     <div style={{
                                                         fontFamily: item.data?.nodes?.[0]?.content?.fontFamily || 'Inter',
                                                         fontSize: '14px',
-                                                        color: '#334155'
-                                                    }}>
+                                                        // Color fix for dark module
+                                                        color: 'currentColor'
+                                                    }}
+                                                        className="text-slate-700 dark:text-slate-200 w-full text-left"
+                                                    >
                                                         {item.label}
                                                         <span className="text-xs text-slate-400 ml-2 font-normal opacity-50">
                                                             {item.data?.nodes?.[0]?.content?.fontFamily}
@@ -283,22 +307,30 @@ export const LibrarySidePanel: React.FC = () => {
                                                         </div>
                                                     </div>
                                                 ) : item.data?.path ? (
-                                                    <svg viewBox="0 0 24 24" className="w-8 h-8 fill-current text-slate-700">
+                                                    <svg viewBox="0 0 24 24" className="w-8 h-8 fill-current text-slate-700 dark:text-slate-300">
                                                         <path d={item.data.path} />
                                                     </svg>
                                                 ) : item.data?.shapeType ? (
-                                                    <div className="w-8 h-8 bg-slate-100 border-2 border-slate-600"
+                                                    <div className="w-8 h-8 bg-slate-100 dark:bg-slate-700 border-2 border-slate-600 dark:border-slate-400"
                                                         style={{
                                                             borderRadius: item.data.shapeType === 'circle' ? '50%' : item.data.shapeType === 'pill' ? '99px' : '2px',
                                                             transform: item.data.shapeType === 'diamond' ? 'rotate(45deg) scale(0.8)' : 'none',
                                                             clipPath: item.data.shapeType === 'triangle' ? 'polygon(50% 0%, 0% 100%, 100% 100%)' :
                                                                 item.data.shapeType === 'pentagon' ? 'polygon(50% 0%, 100% 38%, 82% 100%, 18% 100%, 0% 38%)' :
-                                                                    item.data.shapeType === 'star' ? 'polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%)' :
-                                                                        'none'
+                                                                    item.data.shapeType === 'octagon' ? 'polygon(30% 0%, 70% 0%, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0% 70%, 0% 30%)' :
+                                                                        item.data.shapeType === 'star' ? 'polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%)' :
+                                                                            item.data.shapeType === 'parallelogram' ? 'polygon(25% 0%, 100% 0%, 75% 100%, 0% 100%)' :
+                                                                                item.data.shapeType === 'trapezoid' ? 'polygon(20% 0%, 80% 0%, 100% 100%, 0% 100%)' :
+                                                                                    item.data.shapeType === 'cross' ? 'polygon(20% 0%, 80% 0%, 80% 20%, 100% 20%, 100% 80%, 80% 80%, 80% 100%, 20% 100%, 20% 80%, 0% 80%, 0% 20%, 20% 20%)' :
+                                                                                        item.data.shapeType === 'arrow_right' ? 'polygon(0% 25%, 75% 25%, 75% 0%, 100% 50%, 75% 100%, 75% 75%, 0% 75%)' :
+                                                                                            item.data.shapeType === 'arrow_left' ? 'polygon(25% 0%, 25% 25%, 100% 25%, 100% 75%, 25% 75%, 25% 100%, 0% 50%)' :
+                                                                                                item.data.shapeType === 'arrow_up' ? 'polygon(25% 100%, 25% 25%, 0% 25%, 50% 0%, 100% 25%, 75% 25%, 75% 100%)' :
+                                                                                                    item.data.shapeType === 'arrow_down' ? 'polygon(25% 0%, 75% 0%, 75% 75%, 100% 75%, 50% 100%, 0% 75%, 25% 75%)' :
+                                                                                                        'none'
                                                         }}
                                                     />
                                                 ) : item.type === 'line' ? (
-                                                    <div className="w-8 h-0 border-t-2 border-slate-600"
+                                                    <div className="w-8 h-0 border-t-2 border-slate-600 dark:border-slate-400"
                                                         style={{
                                                             borderStyle: item.data?.content?.strokeStyle || 'solid',
                                                             width: '32px',
@@ -310,7 +342,7 @@ export const LibrarySidePanel: React.FC = () => {
                                                 )}
                                             </div>
                                             {activeTab !== 'text' && (
-                                                <span className="text-[9px] text-slate-500 truncate w-full px-1 text-center">
+                                                <span className="text-[9px] text-slate-500 dark:text-slate-400 truncate w-full px-1 text-center">
                                                     {item.label}
                                                 </span>
                                             )}
