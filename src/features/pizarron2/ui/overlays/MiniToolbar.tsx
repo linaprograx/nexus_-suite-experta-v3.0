@@ -190,18 +190,66 @@ export const MiniToolbar: React.FC = () => {
 
                     {/* Text Color Picker */}
                     <div className="relative group">
-                        <div className="p-1.5 cursor-pointer hover:bg-slate-100 rounded">
-                            <div className="w-4 h-4 rounded-full border border-slate-300" style={{ backgroundColor: firstNode.content.color || '#000' }}></div>
+                        <div className="p-1.5 cursor-pointer hover:bg-slate-100 rounded" title="Text Color">
+                            <div className="flex items-center gap-1">
+                                <span className="text-xs font-bold text-slate-500">T</span>
+                                <div className="w-3 h-3 rounded-full border border-slate-300" style={{ backgroundColor: firstNode.content.color || '#000' }}></div>
+                            </div>
                         </div>
                         <div className="absolute top-full left-0 mt-1 hidden group-hover:flex bg-white border border-slate-200 shadow-xl rounded-lg p-1 gap-1 min-w-max z-50">
-                            {/* Hover Bridge */}
                             <div className="absolute -top-3 left-0 w-full h-3 bg-transparent"></div>
-
                             {colors.map(c => (
                                 <button key={c} onClick={() => changeColor(c)} className="w-5 h-5 rounded-full border border-slate-200 hover:scale-110 transition-transform" style={{ backgroundColor: c }} />
                             ))}
                         </div>
                     </div>
+
+                    <div className="w-px h-4 bg-slate-200 mx-0.5"></div>
+
+                    {/* Box Fill (Background) */}
+                    <div className="relative group">
+                        <div className="p-1.5 cursor-pointer hover:bg-slate-100 rounded" title="Background Color">
+                            <div className="flex items-center gap-1">
+                                <svg className="w-3 h-3 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" /></svg>
+                                <div className="w-3 h-3 rounded border border-slate-300" style={{ backgroundColor: firstNode.content.backgroundColor || 'transparent' }}></div>
+                            </div>
+                        </div>
+                        <div className="absolute top-full left-0 mt-1 hidden group-hover:flex bg-white border border-slate-200 shadow-xl rounded-lg p-1 gap-1 min-w-max z-50">
+                            <div className="absolute -top-3 left-0 w-full h-3 bg-transparent"></div>
+                            <button onClick={() => pizarronStore.updateNode(firstNode.id, { content: { ...firstNode.content, backgroundColor: undefined } })} className="w-5 h-5 rounded border border-slate-200 hover:scale-110 text-[8px] flex items-center justify-center text-slate-400">∅</button>
+                            {fillColors.map(c => (
+                                <button key={c} onClick={() => pizarronStore.updateNode(firstNode.id, { content: { ...firstNode.content, backgroundColor: c } })} className="w-5 h-5 rounded border border-slate-200 hover:scale-110 transition-transform" style={{ backgroundColor: c }} />
+                            ))}
+                        </div>
+                    </div>
+
+                    <div className="w-px h-4 bg-slate-200 mx-0.5"></div>
+
+                    {/* Lists */}
+                    <button
+                        onClick={() => {
+                            const current = firstNode.content.listType || 'none';
+                            const next = current === 'none' ? 'bullet' : current === 'bullet' ? 'number' : 'none';
+                            pizarronStore.updateNode(firstNode.id, { content: { ...firstNode.content, listType: next } });
+                        }}
+                        className={`p-1.5 rounded ${firstNode.content.listType && firstNode.content.listType !== 'none' ? 'bg-indigo-50 text-indigo-600' : 'hover:bg-slate-100 text-slate-600'}`}
+                        title="Toggle List"
+                    >
+                        {firstNode.content.listType === 'number' ? <span className="text-xs font-bold">1.</span> : <span className="text-xs font-bold">•</span>}
+                    </button>
+
+                    {/* Line Height */}
+                    <button
+                        onClick={() => {
+                            const current = firstNode.content.lineHeight || 1.2;
+                            const next = current >= 2.0 ? 1.0 : current + 0.2;
+                            pizarronStore.updateNode(firstNode.id, { content: { ...firstNode.content, lineHeight: next } });
+                        }}
+                        className="p-1.5 hover:bg-slate-100 rounded text-slate-600 flex items-center gap-0.5"
+                        title="Line Height"
+                    >
+                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" /></svg>
+                    </button>
                 </>
             )}
 

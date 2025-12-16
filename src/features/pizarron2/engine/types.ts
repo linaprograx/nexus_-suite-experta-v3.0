@@ -32,11 +32,59 @@ export interface CompositeContent {
     borderRadius?: number;
 }
 
+
+export interface ZoneStyle {
+    shading?: string; // Legacy? Keep for compat
+    backgroundColor?: string;
+    dashed?: boolean;
+    borderColor?: string;
+    borderWidth?: number;
+    borderRadius?: number;
+    titleGap?: number;
+    titleFontSize?: number;
+    titleAlign?: 'left' | 'center' | 'right';
+    titleColor?: string;
+    titleBackgroundColor?: string; // Background for title section
+    gradient?: { start: string; end: string; angle?: number };
+    shadow?: { color: string; blur: number; offsetX: number; offsetY: number };
+}
+
+export interface BoardZone {
+    id: string;
+    label: string;
+    x: number; y: number; w: number; h: number; // Percentages
+    defaultType?: 'text' | 'image' | 'list';
+    placeholderText?: string;
+    style?: ZoneStyle;
+    content?: {
+        text?: string;
+        style?: {
+            fontSize?: number;
+            fontWeight?: 'normal' | 'bold' | 'light';
+            fontStyle?: 'normal' | 'italic';
+            textDecoration?: 'none' | 'underline' | 'line-through';
+            align?: 'left' | 'center' | 'right';
+            color?: string;
+            fontFamily?: string;
+            lineHeight?: number;
+            listType?: 'none' | 'bullet' | 'number';
+            padding?: number;
+            verticalAlign?: 'top' | 'middle' | 'bottom';
+        };
+    };
+}
+
 export interface BoardStructure {
-    template: 'custom' | 'kanban' | 'grid';
-    rows: Array<{ height: number, id: string }>; // Proportional (flex) weights
-    cols: Array<{ width: number, id: string }>; // Proportional (flex) weights
-    cells: Record<string, { content: string, style?: any }>; // Key: "rowId_colId"
+    id: string;
+    name?: string; // For templates
+    description?: string; // For templates
+    gap?: number; // Spacing between zones (px)
+    zones: BoardZone[];
+    // Legacy support (optional)
+    rows?: any[];
+    cols?: any[];
+    cells?: any;
+    template?: string;
 }
 
 export interface BoardNode {
@@ -61,17 +109,7 @@ export interface BoardNode {
     parentId?: string;
     // Structure
     structureId?: string;
-    structure?: {
-        id: string;
-        zones: Array<{
-            id: string;
-            label: string;
-            x: number; y: number; w: number; h: number; // Percentages
-            defaultType?: 'text' | 'image' | 'list';
-            placeholderText?: string;
-            style?: { shading?: string; dashed?: boolean; };
-        }>;
-    };
+    structure?: BoardStructure;
     childrenIds?: string[]; // For groups
     content: {
         title?: string;
@@ -110,6 +148,13 @@ export interface BoardNode {
         align?: 'left' | 'center' | 'right';
         fontFamily?: string;
         textAlign?: 'left' | 'center' | 'right';
+
+        // Rich Text Props
+        lineHeight?: number;
+        listType?: 'none' | 'bullet' | 'number';
+        padding?: number;
+        verticalAlign?: 'top' | 'middle' | 'bottom';
+        backgroundColor?: string; // Box background (distinct from text color)
 
         // Shape Specific
         shapeType?: 'rectangle' | 'circle' | 'triangle' | 'diamond' | 'hexagon' | 'arrow_right' | 'arrow_left' | 'arrow_up' | 'arrow_down' | 'star' | 'speech_bubble' | 'bubble' | 'cloud' | 'pill' | 'pentagon' | 'octagon' | 'trapezoid' | 'parallelogram' | 'triangle_right' | 'cross' | 'chevron_right';
@@ -182,37 +227,55 @@ export interface BoardState {
         focusMode?: boolean;
     };
     activePizarra?: PizarraMetadata;
-    interactionState: {
-        // Interaction
-        selectionBounds?: { x: number, y: number, w: number, h: number };
-        marquee?: { x: number, y: number, w: number, h: number };
-        creationDraft?: any; // To visualize what's being drawn
-        editingTextId?: string; // ID of text node currently being edited
-        editingImageId?: string; // ID of image node currently being cropped/adjusted
-        editingGroupId?: string; // ID of group currently being "entered"
-        editingNodeId?: string; // Generic editing (popover)
-        editingSubId?: string; // Sub-element ID (e.g. cell in a grid)
-        targetViewport?: Viewport; // For cinematic transitions
-        guides?: GuideLine[];
-        snapLines?: Array<{
-            type: 'horizontal' | 'vertical';
-            x?: number;
-            y?: number;
-            start: number;
-            end: number;
-        }>;
-        // Focus Mode
-        focusTargetId?: string | null;
 
-        // Choreography
-        // targetViewport?: Viewport; // Removed duplicate
-    };
+    interactionState: InteractionState;
     presentationState: {
         isActive: boolean;
-        route: 'order' | 'selection';
+        route: 'order' | 'manual';
         currentIndex: number;
-        storyPath: string[]; // List of Node IDs in presentation order
+        storyPath: string[]; // Node IDs
     };
+    savedTemplates?: BoardStructure[]; // User saved templates (Structure Only)
+    boardResources?: BoardResource[]; // User saved boards (Full Content Prefabs)
+}
+
+export interface BoardResource {
+    id: string;
+    name: string;
+    description?: string;
+    nodes: BoardNode[]; // [0] is root. Others are relative children.
+    createdAt: number;
+}
+
+
+export interface InteractionState {
+    // Interaction
+    selectionBounds?: { x: number, y: number, w: number, h: number };
+    marquee?: { x: number, y: number, w: number, h: number };
+    creationDraft?: any; // To visualize what's being drawn
+    editingTextId?: string; // ID of text node currently being edited
+    editingImageId?: string; // ID of image node currently being cropped/adjusted
+    editingGroupId?: string; // ID of group currently being "entered"
+    editingNodeId?: string; // Generic editing (popover)
+    editingSubId?: string; // Sub-element ID (e.g. cell in a grid)
+    resizeHandle?: ResizeHandle;
+    isDraggingMap?: boolean;
+    activeZoneId?: string; // ID of the specific zone selected within a board
+    activeZoneSection?: 'title' | 'content'; // Specific section within the zone
+    targetViewport?: Viewport; // For cinematic transitions
+    guides?: GuideLine[];
+    snapLines?: Array<{
+        type: 'horizontal' | 'vertical';
+        x?: number;
+        y?: number;
+        start: number;
+        end: number;
+    }>;
+    // Focus Mode
+    focusTargetId?: string | null;
+
+    // Choreography
+    // targetViewport?: Viewport; // Removed duplicate
 }
 
 export interface GuideLine {

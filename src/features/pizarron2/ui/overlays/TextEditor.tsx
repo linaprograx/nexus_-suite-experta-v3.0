@@ -67,8 +67,22 @@ export const TextEditor: React.FC = () => {
                         composite: { ...node.content.composite, cells: newCells }
                     }
                 });
+            } else if (node.type === 'board' && node.structure?.zones && subId) {
+                // Zone Update
+                const newStructure = JSON.parse(JSON.stringify(node.structure));
+                const zIndex = newStructure.zones.findIndex((z: any) => z.id === subId);
+                if (zIndex >= 0) {
+                    if (!newStructure.zones[zIndex].content) newStructure.zones[zIndex].content = { style: { fontSize: 16 } };
+                    newStructure.zones[zIndex].content.text = val;
+
+                    pizarronStore.updateNode(editingId, { structure: newStructure });
+                    setNode({
+                        ...node,
+                        structure: newStructure
+                    });
+                }
             } else if (node.structure && subId) {
-                // Structured Board Update
+                // Structured Board Update (Legacy Grid)
                 const newCells = { ...(node.structure.cells || {}) };
                 newCells[subId] = { content: val, style: newCells[subId]?.style };
 
@@ -139,6 +153,36 @@ export const TextEditor: React.FC = () => {
         areaH = cellH * viewport.zoom;
         displayText = cells?.[subId]?.content || '';
         targetPadding = '5px';
+    }
+    // Zone Logic (New: For Pizarra Structure)
+    else if (node.type === 'board' && node.structure?.zones && subId) {
+        const zone = node.structure.zones.find(z => z.id === subId);
+        if (zone) {
+            const gap = node.structure.gap || 0;
+            // Zone coords are %)
+            const zx = (zone.x * node.w) + (gap / 2);
+            const zy = (zone.y * node.h) + (gap / 2);
+            const zw = (zone.w * node.w) - gap;
+            const zh = (zone.h * node.h) - gap;
+
+            // Align with Renderer's "Title Height" offset (World Units)
+            const titleHeightBase = 24;
+            const titleGap = zone.style?.titleGap ?? 2;
+            const worldOffset = titleHeightBase + titleGap;
+
+            areaX = zx * viewport.zoom;
+            areaY = (zy + worldOffset) * viewport.zoom; // Scale World Gap to Screen
+            areaW = zw * viewport.zoom;
+            areaH = (zh - worldOffset) * viewport.zoom;
+
+            displayText = zone.content?.text || '';
+            targetPadding = '4px 6px'; // Match renderer padding
+
+            // Override update logic for Zones
+            // This requires a custom commit strategy or just handled in handleChange/handleCommit if generic
+            // Note: handleChange below handles generic 'structure' updates via cells, but zones are different array.
+            // We need to update handleChange to handle 'zones'.
+        }
     }
     // Composite Cell Logic (Legacy)
     else if (node.type === 'composite' && subId && node.content.composite) {

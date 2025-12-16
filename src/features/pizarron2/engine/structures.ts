@@ -1,25 +1,6 @@
 
-export interface StructureZone {
-    id: string; // 'header', 'ingredients', 'image', etc.
-    label: string; // Displayed placeholder
-    x: number; // Percentage 0-1
-    y: number; // Percentage 0-1
-    w: number; // Percentage 0-1
-    h: number; // Percentage 0-1
-    defaultType?: 'text' | 'image' | 'list';
-    placeholderText?: string;
-    style?: {
-        shading?: string; // Hex color for background
-        dashed?: boolean;
-    };
-}
+import { BoardStructure, BoardZone as StructureZone } from './types';
 
-export interface BoardStructure {
-    id: string;
-    name: string;
-    description: string;
-    zones: StructureZone[];
-}
 
 export const STRUCTURE_TEMPLATES: Record<string, BoardStructure> = {
     'cocktail-recipe-structure': {

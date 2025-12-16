@@ -1,5 +1,6 @@
+
 import { useSyncExternalStore } from 'react';
-import { BoardState, BoardNode, Viewport, PizarraMetadata, BoardStructure } from '../engine/types';
+import { BoardState, BoardNode, Viewport, PizarraMetadata, BoardStructure, BoardResource } from '../engine/types';
 
 // Initial State
 const INITIAL_STATE: BoardState = {
@@ -28,7 +29,8 @@ const INITIAL_STATE: BoardState = {
         route: 'order',
         currentIndex: 0,
         storyPath: [] // Initial empty path
-    }
+    },
+    savedTemplates: [] // Custom User Templates for Structures
 };
 
 type Listener = () => void;
@@ -114,8 +116,8 @@ class PizarronStore {
         this.setState(state => {
             const node = state.nodes[id];
             if (node) {
-                // Resize Propagation for Groups
-                if (node.type === 'group') {
+                // Resize/Move Propagation for Groups & Boards
+                if (node.type === 'group' || node.type === 'board') {
                     const updates = patch as any;
                     // Check if resizing (Width or Height changed)
                     if ((updates.w !== undefined && updates.w !== node.w) || (updates.h !== undefined && updates.h !== node.h)) {
@@ -152,7 +154,22 @@ class PizarronStore {
                             });
                         }
                     }
+                    // Check if translation ONLY (X or Y changed, but W/H same)
+                    else if ((updates.x !== undefined && updates.x !== node.x) || (updates.y !== undefined && updates.y !== node.y)) {
+                        const dx = (updates.x !== undefined ? updates.x : node.x) - node.x;
+                        const dy = (updates.y !== undefined ? updates.y : node.y) - node.y;
+
+                        const children = node.childrenIds || [];
+                        children.forEach(cid => {
+                            const child = state.nodes[cid];
+                            if (child) {
+                                child.x += dx;
+                                child.y += dy;
+                            }
+                        });
+                    }
                 }
+
 
                 Object.assign(node, patch);
                 node.updatedAt = Date.now();
@@ -294,6 +311,143 @@ class PizarronStore {
     setActivePizarra(metadata: PizarraMetadata | undefined) {
         this.setState(state => {
             state.activePizarra = metadata;
+        });
+    }
+
+    // --- Templates ---
+
+    saveTemplate(template: BoardStructure) {
+        this.setState(state => {
+            if (!state.savedTemplates) state.savedTemplates = [];
+            // generate ID if needed or check overwrite
+            const newTemplate = { ...template, id: template.id || crypto.randomUUID() };
+            state.savedTemplates.push(newTemplate);
+        });
+    }
+
+    deleteTemplate(templateId: string) {
+        this.setState(state => {
+            if (!state.savedTemplates) return;
+            state.savedTemplates = state.savedTemplates.filter(t => t.id !== templateId);
+        });
+    }
+
+    // --- Board Resources (Prefabs) ---
+
+    saveBoardAsResource(boardId: string, name: string, customId?: string) {
+        this.setState(state => {
+            if (!state.boardResources) state.boardResources = [];
+
+            const rootNode = state.nodes[boardId];
+            if (!rootNode) return;
+
+            // Gather all descendants
+            const gatheredNodes: BoardNode[] = [];
+            const queue = [rootNode];
+            const visited = new Set<string>();
+
+            while (queue.length > 0) {
+                const curr = queue.shift()!;
+                if (visited.has(curr.id)) continue;
+                visited.add(curr.id);
+
+                // Clone node to detach references
+                gatheredNodes.push(JSON.parse(JSON.stringify(curr)));
+
+                // Add children
+                if (curr.childrenIds) {
+                    curr.childrenIds.forEach(childId => {
+                        if (state.nodes[childId]) queue.push(state.nodes[childId]);
+                    });
+                }
+            }
+
+            const resource: BoardResource = {
+                id: customId || crypto.randomUUID(),
+                name: name,
+                nodes: gatheredNodes,
+                createdAt: Date.now()
+            };
+
+            state.boardResources.push(resource);
+        });
+    }
+
+    applyResourceToBoard(targetBoardId: string, resourceId: string) {
+        this.setState(state => {
+            const resource = state.boardResources?.find(r => r.id === resourceId);
+            const targetNode = state.nodes[targetBoardId];
+            if (!resource || !targetNode) return;
+
+            // 1. Clear existing children of target
+            // (We should arguably delete them from state, but for simplicity just detaching)
+            // Better to delete them to avoid orphans.
+            const deleteQueue = [...(targetNode.childrenIds || [])];
+            while (deleteQueue.length > 0) {
+                const id = deleteQueue.pop()!;
+                const node = state.nodes[id];
+                if (node) {
+                    if (node.childrenIds) deleteQueue.push(...node.childrenIds);
+                    delete state.nodes[id];
+                }
+            }
+            targetNode.childrenIds = [];
+
+            // 2. Clone and Remap Resource Nodes
+            // We must generate new IDs for all resource nodes to allow multiple instances
+            const idMap = new Map<string, string>();
+            resource.nodes.forEach(n => idMap.set(n.id, crypto.randomUUID()));
+
+            resource.nodes.forEach((n, index) => {
+                const newId = idMap.get(n.id)!;
+                const isRoot = index === 0; // First node in resource is root
+
+                if (isRoot) {
+                    // Update Target Node Properties (Merge)
+                    // Keep Target's Identity (ID, Position, ZIndex)
+                    // Overwrite Content, Size, Style, Structure
+                    state.nodes[targetBoardId] = {
+                        ...targetNode,
+                        w: n.w,
+                        h: n.h,
+                        content: JSON.parse(JSON.stringify(n.content)), // Deep copy content
+                        structure: n.structure ? JSON.parse(JSON.stringify(n.structure)) : undefined,
+                        structureId: n.structureId,
+                        // Children will be repopulated below
+                        childrenIds: []
+                    };
+                } else {
+                    // Create New Child Node
+                    const newNode: BoardNode = {
+                        ...JSON.parse(JSON.stringify(n)),
+                        id: newId,
+                        // Remap children IDs if they exist
+                        childrenIds: n.childrenIds?.map(cid => idMap.get(cid) || cid).filter(cid => idMap.has(cid as string))
+                    };
+                    state.nodes[newId] = newNode;
+                }
+            });
+
+            // 3. Re-link Children for Root (Target) and others
+            resource.nodes.forEach((n, index) => {
+                const newId = idMap.get(n.id)!;
+                if (index === 0) {
+                    // Root's children -> Target's children
+                    if (n.childrenIds) {
+                        state.nodes[targetBoardId].childrenIds = n.childrenIds.map(cid => idMap.get(cid)!).filter(Boolean);
+                    }
+                }
+            });
+
+            // 4. Force selection update to target?
+            state.selection = new Set([targetBoardId]);
+        });
+    }
+
+    deleteBoardResource(resourceId: string) {
+        this.setState(state => {
+            if (!state.boardResources) return;
+            state.boardResources = state.boardResources.filter(r => r.id !== resourceId);
         });
     }
 

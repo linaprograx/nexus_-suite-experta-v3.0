@@ -19,30 +19,28 @@ class FirestoreAdapter {
         this.currentAppId = appId;
         this.currentBoardId = boardId;
 
+        // Init Template Sync
+        this.initTemplates(appId);
+        this.initBoardResources(appId);
+
+
         const colRef = collection(db, `artifacts/${appId}/public/data/pizarron-tasks`);
 
         // 1. Inbound (Remote -> Local)
-        // Note: We might want a query to filter by boardId if sharing same collection
-        // For now, assuming collection matches or we filter client side (less efficient but okay for prototype)
-        // Or better: `query(colRef, where('boardId', '==', boardId))` if index exists.
-        // Let's assume broad subscription for now or filtered if safe.
-
+        // ... (existing code) ...
         this.unsubscribeSnapshot = onSnapshot(colRef, (snapshot) => {
+            // ...
             this.isApplyingRemote = true;
-
             snapshot.docChanges().forEach((change) => {
+                // ... existing node logic ...
                 const data = change.doc.data() as any;
                 const id = change.doc.id;
-
-                // Mapper: Firestore Data -> BoardNode
-                // We map existing fields.
 
                 if (change.type === 'removed') {
                     pizarronStore.deleteNode(id);
                     return;
                 }
-
-                // If BoardId doesn't match, ignore (if we didn't filter in query)
+                // ... rest of node sync ...
                 if (data.boardId && data.boardId !== boardId) return;
 
                 const remoteNode: BoardNode = {
@@ -54,43 +52,44 @@ class FirestoreAdapter {
                     h: data.height || 100,
                     zIndex: data.zIndex || 0,
                     content: {
-                        title: data.title || data.texto, // Mapping legacy
+                        title: data.title || data.texto,
                         body: data.body || data.descripcion,
                         color: data.style?.backgroundColor || data.color,
                         shapeType: data.shapeType
                     },
                     createdAt: data.createdAt?.seconds ? data.createdAt.seconds * 1000 : Date.now(),
-                    updatedAt: data.updatedAt || Date.now()
+                    updatedAt: data.updatedAt || Date.now(),
+                    // Sync Structure Data (for Board Nodes)
+                    structureId: data.structureId,
+                    structure: data.structure,
+                    childrenIds: data.childrenIds // Sync Children
                 };
-
-                // Conflict Resolution: Last Write Wins
+                // ...
                 const localNode = pizarronStore.getState().nodes[id];
                 if (!localNode || remoteNode.updatedAt > localNode.updatedAt) {
-                    // Update Store without triggering a new sync back
-                    pizarronStore.addNode(remoteNode); // addNode works for update too in our store logic (overwrite key)
+                    pizarronStore.addNode(remoteNode);
                     this.lastKnownState[id] = remoteNode.updatedAt;
                 }
             });
-
             this.isApplyingRemote = false;
         });
 
-        // 2. Outbound (Local -> Remote)
+        // 2. Outbound
         this.unsubscribeStore = pizarronStore.subscribe(() => {
-            if (this.isApplyingRemote) return; // Don't echo back remote changes immediately
+            if (this.isApplyingRemote) return;
 
-            const nodes = pizarronStore.getState().nodes;
+            const state = pizarronStore.getState();
+            const nodes = state.nodes;
 
+            // Sync Nodes
             Object.values(nodes).forEach(node => {
-                // Check if dirty
                 const lastKnown = this.lastKnownState[node.id];
                 if (!lastKnown || node.updatedAt > lastKnown) {
                     this.pendingWrites.set(node.id, node);
                     this.lastKnownState[node.id] = node.updatedAt;
                 }
             });
-
-            // Detect Deletions
+            // ... deletes ...
             Object.keys(this.lastKnownState).forEach(id => {
                 if (!nodes[id]) {
                     this.pendingDeletes.add(id);
@@ -99,6 +98,23 @@ class FirestoreAdapter {
             });
 
             this.scheduleFlush(appId, boardId);
+
+            // Sync Templates (Simple One-way/Upsert for now)
+            // Ideally we'd map "pendingTemplateWrites" but direct is safer for now
+            state.savedTemplates?.forEach(t => {
+                // If it's a new template (we could track lastSavedTemplates to compare)
+                // For now, we trust the UI calls persistTemplate? 
+                // NO, we want automatic sync.
+                // But blindly writing every subscription is bad.
+                // Let's assume for this sprint: The UI calls `adapter.persistTemplate` manually?
+                // Or we check a `dirty` flag?
+                // `store.ts` actions are synchronous. 
+                // Let's modify store to call adapter? No.
+
+                // Hack: We will rely on `persistTemplate` helper being called by UI for now 
+                // OR we can just write them if we don't have them in a local cache.
+                // Let's just expose `persistTemplate` and update the Inspector to use it.
+            });
         });
     }
 
@@ -106,13 +122,20 @@ class FirestoreAdapter {
         if (this.writeTimeout) {
             clearTimeout(this.writeTimeout);
             this.writeTimeout = null;
-            // Force flush if we have context
             if (this.currentAppId && this.currentBoardId) {
                 this.flush(this.currentAppId, this.currentBoardId);
             }
         }
         if (this.unsubscribeSnapshot) this.unsubscribeSnapshot();
         if (this.unsubscribeStore) this.unsubscribeStore();
+        if (this.unsubscribeTemplates) {
+            this.unsubscribeTemplates();
+            this.unsubscribeTemplates = null;
+        }
+        if (this.unsubscribeResources) {
+            this.unsubscribeResources();
+            this.unsubscribeResources = null;
+        }
 
         this.currentAppId = null;
         this.currentBoardId = null;
@@ -158,7 +181,11 @@ class FirestoreAdapter {
                 shapeType: node.content.shapeType,
                 // Meta
                 boardId: boardId,
-                updatedAt: node.updatedAt
+                updatedAt: node.updatedAt,
+                // Structure Persistence
+                structureId: node.structureId,
+                structure: node.structure,
+                childrenIds: node.childrenIds
             };
 
             const cleanData = JSON.parse(JSON.stringify(rawData)); // Removes undefined
@@ -237,6 +264,83 @@ class FirestoreAdapter {
             console.error("Error listing pizarras:", e);
             return [];
         }
+    }
+
+    // --- Template Persistence ---
+    // Minimal implementation: Sync whole list on change (or individual logic)
+    // For simplicity given low volume, we'll listen to separate collection
+
+    // Call this from init
+    private unsubscribeTemplates: (() => void) | null = null;
+
+    initTemplates(appId: string) {
+        if (this.unsubscribeTemplates) this.unsubscribeTemplates();
+
+        const colRef = collection(db, `artifacts/${appId}/public/data/pizarron-templates`);
+
+        // Read (Inbound)
+        this.unsubscribeTemplates = onSnapshot(colRef, (snapshot) => {
+            const templates: any[] = [];
+            snapshot.forEach(doc => {
+                templates.push(doc.data());
+            });
+            // Update Store
+            pizarronStore.setState(state => {
+                state.savedTemplates = templates;
+            });
+        });
+
+        // Write (Outbound) - We hook into the main subscribe or adding a specific one?
+        // Let's hook into the main store listener in init() but we need to track diffs or just overwrite?
+        // Overwriting specific docs is better.
+    }
+
+    // We'll add this to the main sync loop or make it demand-driven?
+    // The Store actions `saveTemplate` update the state.
+    // We can just add a helper `persistTemplate` called by the UI or Store?
+    // ideally adapter observes store.
+
+    async persistTemplate(template: any) {
+        if (!this.currentAppId) return;
+        const colRef = collection(db, `artifacts/${this.currentAppId}/public/data/pizarron-templates`);
+        const docRef = doc(colRef, template.id);
+        await setDoc(docRef, template);
+    }
+
+    async removeTemplate(templateId: string) {
+        if (!this.currentAppId) return;
+        const colRef = collection(db, `artifacts/${this.currentAppId}/public/data/pizarron-templates`);
+        await deleteDoc(doc(colRef, templateId));
+    }
+
+    // --- Board Resources (Prefabs) ---
+    private unsubscribeResources: (() => void) | null = null;
+
+    initBoardResources(appId: string) {
+        if (this.unsubscribeResources) this.unsubscribeResources();
+
+        const colRef = collection(db, `artifacts/${appId}/public/data/pizarron-board-resources`);
+
+        this.unsubscribeResources = onSnapshot(colRef, (snapshot) => {
+            const resources: any[] = [];
+            snapshot.forEach(doc => resources.push(doc.data()));
+            pizarronStore.setState(state => {
+                state.boardResources = resources;
+            });
+        });
+    }
+
+    async persistBoardResource(resource: any) {
+        if (!this.currentAppId) return;
+        const colRef = collection(db, `artifacts/${this.currentAppId}/public/data/pizarron-board-resources`);
+        const docRef = doc(colRef, resource.id);
+        await setDoc(docRef, resource);
+    }
+
+    async removeBoardResource(resourceId: string) {
+        if (!this.currentAppId) return;
+        const colRef = collection(db, `artifacts/${this.currentAppId}/public/data/pizarron-board-resources`);
+        await deleteDoc(doc(colRef, resourceId));
     }
 }
 

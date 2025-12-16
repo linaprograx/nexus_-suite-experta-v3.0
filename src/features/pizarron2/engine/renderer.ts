@@ -262,51 +262,100 @@ export class PizarronRenderer {
         ctx.restore();
     }
 
-    private drawText(ctx: CanvasRenderingContext2D, node: BoardNode, zoom: number = 1) { // Added zoom param to signature if not present, check call site
+    private drawText(ctx: CanvasRenderingContext2D, node: BoardNode, zoom: number = 1) {
         // LOD Check
         if (zoom < 0.4) {
-            // Draw placeholder blocks? Or just skip?
-            // User requirement: "Simplificación visual". Skipping is fastest.
-            // Maybe draw a grey rect?
-            ctx.fillStyle = '#cbd5e1';
-            ctx.fillRect(0, 0, node.w, Math.min(node.h, 10)); // Title bar mock
+            ctx.fillStyle = node.content.backgroundColor || '#cbd5e1'; // Use bg or default grey
+            ctx.fillRect(0, 0, node.w, Math.min(node.h, 10));
             return;
         }
 
         const { w, h } = node;
-        const { title, fontSize = 20, fontWeight = 'normal', fontStyle = 'normal', fontFamily = 'Inter', color = '#000000', align = 'left' } = node.content;
+        const {
+            title,
+            fontSize = 20,
+            fontWeight = 'normal',
+            fontStyle = 'normal',
+            fontFamily = 'Inter',
+            color = '#000000',
+            align = 'left',
+            // New Props
+            lineHeight = 1.2,
+            padding = 0,
+            backgroundColor,
+            listType = 'none'
+        } = node.content;
 
+        // 1. Draw Background
+        if (backgroundColor) {
+            ctx.fillStyle = backgroundColor;
+            ctx.fillRect(0, 0, w, h);
+        }
+
+        // 2. Setup Font
         ctx.font = `${fontStyle} ${fontWeight} ${fontSize}px "${fontFamily}", sans-serif`;
         ctx.fillStyle = color;
         ctx.textAlign = align as CanvasTextAlign || 'left';
         ctx.textBaseline = 'top';
 
-        // Word wrap logic
-        const words = (title || '').split(' ');
-        let line = '';
-        let testLine = '';
-        let metrics;
+        // 3. Layout Limits
+        const availW = w - (padding * 2);
+        let currentY = padding;
+        const lineSpacing = fontSize * (lineHeight || 1.2);
 
-        // Start drawing at (0, 0) relative to node top-left
-        let x = 0;
-        let ly = 0; // Local Y
+        // 4. Split by logical newlines (paragraphs)
+        const paragraphs = (title || '').split('\n');
 
-        if (align === 'center') x = w / 2;
-        if (align === 'right') x = w;
-
-        for (let n = 0; n < words.length; n++) {
-            testLine = line + words[n] + ' ';
-            metrics = ctx.measureText(testLine);
-            if (metrics.width > w && n > 0) {
-                ctx.fillText(line, x, ly);
-                line = words[n] + ' ';
-                ly += (fontSize * 1.2);
+        paragraphs.forEach((para, i) => {
+            // Bullet / Numbering
+            let prefix = '';
+            let indent = 0;
+            if (listType === 'bullet') {
+                prefix = '• ';
+                indent = fontSize;
+            } else if (listType === 'number') {
+                prefix = `${i + 1}. `;
+                indent = fontSize * 1.5;
             }
-            else {
-                line = testLine;
+
+            // Word Wrapping logic per paragraph
+            const words = para.split(' ');
+            let line = '';
+
+            // X position logic
+            let x = padding;
+            if (align === 'center') x = w / 2;
+            if (align === 'right') x = w - padding;
+
+            // Align adjustments for list (lists usually left aligned)
+            if (listType !== 'none' && align === 'left') {
+                x += indent;
             }
-        }
-        ctx.fillText(line, x, ly);
+
+            // Draw Bullet/Number once per paragraph
+            if (listType !== 'none' && align === 'left') {
+                ctx.fillText(prefix, padding, currentY);
+            }
+
+            for (let n = 0; n < words.length; n++) {
+                const testLine = line + words[n] + ' ';
+                const metrics = ctx.measureText(testLine);
+                const testWidth = metrics.width;
+
+                if (testWidth > (availW - indent) && n > 0) {
+                    ctx.fillText(line, x, currentY);
+                    line = words[n] + ' ';
+                    currentY += lineSpacing;
+                } else {
+                    line = testLine;
+                }
+            }
+            ctx.fillText(line, x, currentY);
+            currentY += lineSpacing;
+        });
+
+        // Vertical Align (Future: Calculate total height first then shift start Y)
+        // For now, simple top-down flow.
     }
 
     private drawComposite(ctx: CanvasRenderingContext2D, node: BoardNode) {
@@ -1056,40 +1105,149 @@ export class PizarronRenderer {
             ctx.textBaseline = 'top';
 
             node.structure.zones.forEach(zone => {
-                const zx = zone.x * w;
-                const zy = zone.y * h;
-                const zw = zone.w * w;
-                const zh = zone.h * h;
+                const gap = node.structure.gap || 0;
+                // Calculate percentages to pixels
+                const baseZx = zone.x * w;
+                const baseZy = zone.y * h;
+                const baseZw = zone.w * w;
+                const baseZh = zone.h * h;
 
-                // 1. Draw Background Shading (if any)
-                if (zone.style?.shading) {
-                    ctx.fillStyle = zone.style.shading;
-                    ctx.fillRect(zx, zy, zw, zh);
+                // Apply Gap (Shrink inwards)
+                const zx = baseZx + (gap / 2);
+                const zy = baseZy + (gap / 2);
+                const zw = Math.max(0, baseZw - gap);
+                const zh = Math.max(0, baseZh - gap);
+
+                // 1. Zone Styling (Enhanced)
+                ctx.save();
+
+                // Shadow
+                if (zone.style?.shadow) {
+                    const { color, blur, offsetX, offsetY } = zone.style.shadow;
+                    ctx.shadowColor = color;
+                    ctx.shadowBlur = blur;
+                    ctx.shadowOffsetX = offsetX;
+                    ctx.shadowOffsetY = offsetY;
                 }
 
-                // 2. Draw Outline (Dashed guide)
-                // Only draw guides if selected or specific debug flag?
-                // User wants "visible en modo edición". We assume 'isSelected' context if we want,
-                // but this function matches 'drawNode' which implies we want to see the structure
-                // if it's there.
-                // Let's make it subtle.
-                ctx.beginPath();
-                ctx.strokeStyle = zone.style?.dashed ? '#94a3b8' : '#cbd5e1';
-                ctx.lineWidth = 1 / zoom;
-                if (zone.style?.dashed) ctx.setLineDash([4 / zoom, 4 / zoom]);
-                else ctx.setLineDash([]);
+                // Background & Gradient
+                if (zone.style?.gradient) {
+                    const g = zone.style.gradient;
+                    const grad = ctx.createLinearGradient(zx, zy, zx + zw, zy + zh);
+                    grad.addColorStop(0, g.start);
+                    grad.addColorStop(1, g.end);
+                    ctx.fillStyle = grad;
 
-                ctx.rect(zx, zy, zw, zh);
-                ctx.stroke();
+                    if (ctx.roundRect) ctx.roundRect(zx, zy, zw, zh, zone.style?.borderRadius || 0);
+                    else ctx.rect(zx, zy, zw, zh);
+                    ctx.fill();
+                } else if (zone.style?.backgroundColor || zone.style?.shading) {
+                    ctx.fillStyle = zone.style.backgroundColor || zone.style.shading!;
+                    if (ctx.roundRect) ctx.roundRect(zx, zy, zw, zh, zone.style?.borderRadius || 0);
+                    else ctx.rect(zx, zy, zw, zh);
+                    ctx.fill();
+                }
+
+                // Reset Shadow for Border
+                ctx.shadowColor = 'transparent';
+
+                // Border
+                if (zone.style?.borderWidth || zone.style?.dashed) {
+                    ctx.beginPath();
+                    ctx.strokeStyle = zone.style.borderColor || (zone.style.dashed ? '#94a3b8' : 'transparent');
+                    ctx.lineWidth = (zone.style.borderWidth || 1) / zoom; // Scale border correctly? Usually we want screen pixels or world pixels? If resizing, world is better.
+                    // Wait, renderer scale is applied at top level. 
+                    // But here we are drawing in world coords?
+                    // Ah, `drawBoardStructure` is called inside `drawNode`? No, let's check context.
+                    // Yes, `drawBoardStructure` seems to use `ctx` which is already transformed or we calculate zx/zy manually?
+                    // Re-checking lines 1109: zx = zone.x * w. These are world internal coordinates.
+                    // So we are in world space. `lineWidth` should be in world units.
+                    // If we want 1px visual border, it should be 1/zoom.
+                    // However, user input is likely "pixels". Let's treat it as world pixels (standard).
+                    ctx.lineWidth = Math.max(1 / zoom, zone.style?.borderWidth || 1); // Ensure at least 1 screen pixel
+
+                    if (zone.style?.dashed) ctx.setLineDash([4 / zoom, 4 / zoom]);
+                    else ctx.setLineDash([]);
+
+                    if (ctx.roundRect) ctx.roundRect(zx, zy, zw, zh, zone.style?.borderRadius || 0);
+                    else ctx.rect(zx, zy, zw, zh);
+                    ctx.stroke();
+                }
+
+                ctx.restore();
 
                 // 3. Label (Placeholder) - Only if empty?
                 // Always show label as a hint if zoom is high enough
                 if (zoom > 0.4) {
-                    ctx.fillStyle = '#94a3b8'; // Subtle text
-                    // ctx.fillText(zone.label.toUpperCase(), zx + 8, zy + 8);
-                    // Draw localized label
-                    // Tiny padding
-                    ctx.fillText(zone.label, zx + (10 / zoom), zy + (10 / zoom));
+                    // Draw Dashed Border if enabled
+                    if (zone.style?.dashed) {
+                        ctx.save();
+                        ctx.strokeStyle = '#94a3b8';
+                        ctx.setLineDash([4, 4]);
+                        ctx.strokeRect(zx, zy, zw, zh);
+                        ctx.restore();
+                    }
+
+                    // 3. Label (Title Section)
+                    const titleHeightBase = 24;
+                    const titleGap = zone.style?.titleGap ?? 2;
+                    const contentOffsetY = titleHeightBase + titleGap;
+
+                    // Draw Title Background
+                    if (zone.style?.titleBackgroundColor && zone.style.titleBackgroundColor !== 'transparent') {
+                        ctx.fillStyle = zone.style.titleBackgroundColor;
+                        ctx.fillRect(zx, zy, zw, titleHeightBase);
+                    }
+
+                    if (zoom > 0.4) {
+                        ctx.fillStyle = zone.style?.titleColor || '#64748b';
+                        const tSize = zone.style?.titleFontSize || 12;
+                        ctx.font = `700 ${Math.max(10, tSize / zoom)}px Inter, sans-serif`;
+                        ctx.textBaseline = 'middle'; // Center vertically in title bar
+
+                        const align = zone.style?.titleAlign || 'left';
+                        ctx.textAlign = align;
+
+                        let tx = zx + 6;
+                        if (align === 'center') tx = zx + zw / 2;
+                        if (align === 'right') tx = zx + zw - 6;
+
+                        ctx.fillText(zone.label || 'Zone', tx, zy + (titleHeightBase / 2));
+                        ctx.textAlign = 'left'; // Reset
+                    }
+
+                    // 4. Render Zone Content (Body Text Section)
+                    if (zone.content && zone.content.text) {
+                        ctx.save();
+                        ctx.translate(zx, zy + contentOffsetY); // Offset Body by Title + Gap
+
+                        // Clip to remaining zone area
+                        const bodyH = Math.max(0, zh - contentOffsetY);
+                        ctx.beginPath();
+                        ctx.rect(0, 0, zw, bodyH);
+                        ctx.clip();
+
+                        // Content Background
+                        if (zone.content.style?.backgroundColor && zone.content.style.backgroundColor !== 'transparent') {
+                            ctx.fillStyle = zone.content.style.backgroundColor;
+                            ctx.fillRect(0, 0, zw, bodyH);
+                        }
+
+                        const proxyNode: any = {
+                            w: zw,
+                            h: bodyH,
+                            content: {
+                                title: zone.content.text,
+                                fontSize: 14,
+                                color: '#334155', // slate-700
+                                ...zone.content.style,
+                                padding: 4 // Internal padding
+                            }
+                        };
+
+                        this.drawText(ctx, proxyNode, zoom);
+                        ctx.restore();
+                    }
                 }
             });
 

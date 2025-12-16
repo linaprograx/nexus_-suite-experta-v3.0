@@ -26,7 +26,7 @@ const FontSelector: React.FC<{ currentFont: string, onChange: (font: string) => 
 };
 
 export const Inspector: React.FC = () => {
-    const { selection, nodes, viewport } = pizarronStore.useState();
+    const { selection, nodes, viewport, boardResources, interactionState } = pizarronStore.useState();
     const selectionIds = Array.from(selection);
 
     if (selectionIds.length === 0) return null;
@@ -45,37 +45,469 @@ export const Inspector: React.FC = () => {
 
     // Helper for updates
     const updateNode = (patch: Partial<BoardNode['content']>) => {
-        if (firstNode) {
-            pizarronStore.updateNode(firstNode.id, {
-                content: { ...firstNode.content, ...patch }
+        const targets = getTargets();
+        targets.forEach(node => {
+            pizarronStore.updateNode(node.id, {
+                content: { ...node.content, ...patch }
             });
-        }
+        });
     };
+
+    // Helper: Determine Targets (Single, Group Children, or Multi-Selection)
+    const getTargets = (): BoardNode[] => {
+        if (!firstNode) return [];
+        if (firstNode.type === 'group' && firstNode.childrenIds) {
+            const children = firstNode.childrenIds.map(id => nodes[id]).filter(Boolean) as BoardNode[];
+            // Recursive? For now, flat.
+            return children;
+        }
+        return [firstNode];
+    };
+
+    // Determine Effective Type
+    const getEffectiveType = () => {
+        if (!firstNode) return null;
+        if (firstNode.type === 'group') {
+            const targets = getTargets();
+            if (targets.length > 0 && targets.every(n => n.type === 'board')) return 'board';
+            if (targets.length > 0 && targets.every(n => n.type === 'shape')) return 'shape';
+            return 'group';
+        }
+        return firstNode.type;
+    };
+
+    const effectiveType = getEffectiveType();
+    const primaryTarget = getTargets()[0] || firstNode;
 
     // Render Content based on Type
     const renderContent = () => {
         if (!firstNode) return <div className="text-sm text-slate-500 italic text-center py-4">Multiple Selection</div>;
 
-        switch (firstNode.type) {
+        switch (effectiveType) {
             case 'board':
+                // Check for Active Zone Editing (Only valid if single board selected, not group)
+                // If group, we probably disable detailed zone editing?
+                const activeZoneId = interactionState?.activeZoneId;
+                const activeZoneSection = interactionState?.activeZoneSection || 'content'; // Default to content
+                const activeZone = (activeZoneId && firstNode.type === 'board') ? firstNode.structure?.zones?.find(z => z.id === activeZoneId) : undefined;
+
+                if (activeZone) {
+                    // ... Zone Editor (keep existing logic uses 'firstNode' directly, which is correct for activeZoneId context)
+                    // We need to ensure the Zone Editor uses 'updateNode' or 'pizarronStore.updateNode(firstNode.id...)'
+                    // The existing code uses specific update logic. We can leave it as it accesses 'firstNode' directly.
+                    return (
+                        <div className="space-y-4">
+                            {/* ... Zone Editor Header ... */}
+                            {/* Start of Zone Editor Block */}
+                            <div className="flex items-center justify-between pb-2 border-b border-slate-200 bg-indigo-50 -mx-3 -mt-3 px-3 py-2 rounded-t gap-2">
+                                <div className="flex-1 flex items-center gap-1 min-w-0">
+                                    <svg className="w-3 h-3 text-indigo-800 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16m-7 6h7" /></svg>
+                                    <input
+                                        type="text"
+                                        className="bg-transparent text-xs font-bold text-indigo-800 focus:bg-white focus:outline-none focus:ring-1 focus:ring-indigo-500 rounded px-1 w-full"
+                                        value={activeZone.label || ''}
+                                        onPointerDown={(e) => e.stopPropagation()}
+                                        onKeyDown={(e) => e.stopPropagation()}
+                                        onChange={(e) => {
+                                            const val = e.target.value;
+                                            const newStructure = JSON.parse(JSON.stringify(firstNode.structure));
+                                            const z = newStructure.zones.find((z: any) => z.id === activeZoneId);
+                                            if (z) {
+                                                z.label = val;
+                                                pizarronStore.updateNode(firstNode.id, { structure: newStructure });
+                                            }
+                                        }}
+                                    />
+                                </div>
+                                <button
+                                    onClick={() => pizarronStore.updateInteractionState({ activeZoneId: undefined })}
+                                    className="text-[10px] text-indigo-500 hover:text-indigo-800 font-medium px-2 py-1 rounded hover:bg-indigo-100 flex-shrink-0"
+                                >
+                                    Done
+                                </button>
+                            </div>
+
+                            {/* ... Content ... */}
+                            <div>
+                                <label className="text-xs font-medium text-slate-600 block mb-1">Content</label>
+                                <textarea
+                                    className="w-full text-xs border border-slate-300 rounded p-2 min-h-[100px] focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
+                                    placeholder={`Type content for ${activeZone.label}...`}
+                                    value={activeZone.content?.text || ''}
+                                    onChange={(e) => {
+                                        const newStructure = JSON.parse(JSON.stringify(firstNode.structure));
+                                        const zIndex = newStructure.zones.findIndex((z: any) => z.id === activeZoneId);
+                                        if (zIndex >= 0) {
+                                            if (!newStructure.zones[zIndex].content) newStructure.zones[zIndex].content = { style: { fontSize: 16 } };
+                                            newStructure.zones[zIndex].content.text = e.target.value;
+                                            pizarronStore.updateNode(firstNode.id, { structure: newStructure });
+                                        }
+                                    }}
+                                />
+                            </div>
+
+                            {/* Rich Text Styles */}
+                            {/* Dynamic Section Header */}
+                            <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-2 mt-4 pt-4 border-t border-slate-200">
+                                <span className={activeZoneSection === 'title' ? 'text-indigo-600' : ''}>Title Section</span>
+                                <span className="text-slate-300">/</span>
+                                <span className={activeZoneSection === 'content' ? 'text-indigo-600' : ''}>Content Section</span>
+                            </div>
+
+                            {/* Font Styles (Context Aware) */}
+                            <div className="grid grid-cols-2 gap-2">
+                                <div>
+                                    <label className="text-xs font-medium text-slate-600 block mb-1">Font Size</label>
+                                    <input type="number" className="w-full text-xs border rounded p-1"
+                                        value={activeZoneSection === 'title' ? (activeZone.style?.titleFontSize || 14) : (activeZone.content?.style?.fontSize || 14)}
+                                        onChange={(e) => {
+                                            const val = parseInt(e.target.value);
+                                            const newStructure = JSON.parse(JSON.stringify(firstNode.structure));
+                                            const z = newStructure.zones.find((z: any) => z.id === activeZoneId);
+
+                                            if (activeZoneSection === 'title') {
+                                                if (!z.style) z.style = {};
+                                                z.style.titleFontSize = val;
+                                            } else {
+                                                if (!z.content) z.content = { style: {} };
+                                                if (!z.content.style) z.content.style = {};
+                                                z.content.style.fontSize = val;
+                                            }
+                                            pizarronStore.updateNode(firstNode.id, { structure: newStructure });
+                                        }}
+                                    />
+                                </div>
+                                <div>
+                                    <label className="text-xs font-medium text-slate-600 block mb-1">Line Height</label>
+                                    <input type="number" step="0.1" className="w-full text-xs border rounded p-1"
+                                        value={activeZone.content?.style?.lineHeight || 1.2} // LineHeight mostly for content
+                                        disabled={activeZoneSection === 'title'}
+                                        onChange={(e) => {
+                                            const val = parseFloat(e.target.value);
+                                            const newStructure = JSON.parse(JSON.stringify(firstNode.structure));
+                                            const z = newStructure.zones.find((z: any) => z.id === activeZoneId);
+                                            if (!z.content) z.content = { style: {} };
+                                            z.content.style.lineHeight = val;
+                                            pizarronStore.updateNode(firstNode.id, { structure: newStructure });
+                                        }}
+                                    />
+                                </div>
+                            </div>
+
+                            {/* Alignment & Lists */}
+                            <div className="flex gap-2 bg-slate-100 p-1 rounded justify-center">
+                                {['left', 'center', 'right'].map(align => {
+                                    const currentAlign = activeZoneSection === 'title' ? (activeZone.style?.titleAlign || 'left') : (activeZone.content?.style?.align || 'left');
+                                    return (
+                                        <button
+                                            key={align}
+                                            className={`p-1 rounded ${currentAlign === align ? 'bg-white shadow text-indigo-600' : 'text-slate-400 hover:text-slate-600'}`}
+                                            onClick={() => {
+                                                const newStructure = JSON.parse(JSON.stringify(firstNode.structure));
+                                                const z = newStructure.zones.find((z: any) => z.id === activeZoneId);
+                                                if (activeZoneSection === 'title') {
+                                                    if (!z.style) z.style = {};
+                                                    z.style.titleAlign = align;
+                                                } else {
+                                                    if (!z.content) z.content = {};
+                                                    if (!z.content.style) z.content.style = {};
+                                                    z.content.style.align = align;
+                                                }
+                                                pizarronStore.updateNode(firstNode.id, { structure: newStructure });
+                                            }}
+                                        >
+                                            {align === 'left' && <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h10M4 18h16" /></svg>}
+                                            {align === 'center' && <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M7 12h10M4 18h16" /></svg>}
+                                            {align === 'right' && <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M10 12h10M4 18h16" /></svg>}
+                                        </button>
+                                    );
+                                })}
+                            </div>
+
+                            {/* Colors (Text & Fill) */}
+                            <div className="space-y-2">
+                                {/* Text Color */}
+                                <div>
+                                    <label className="text-xs font-medium text-slate-600 block mb-1">Text Color</label>
+                                    <div className="flex gap-1.5 flex-wrap">
+                                        {['#1e293b', '#64748b', '#ef4444', '#f97316', '#f59e0b', '#84cc16', '#10b981', '#06b6d4', '#3b82f6', '#8b5cf6', '#d946ef', '#f43f5e'].map(c => (
+                                            <button
+                                                key={c}
+                                                onClick={() => {
+                                                    const newStructure = JSON.parse(JSON.stringify(firstNode.structure));
+                                                    const z = newStructure.zones.find((z: any) => z.id === activeZoneId);
+                                                    if (activeZoneSection === 'title') {
+                                                        if (!z.style) z.style = {};
+                                                        z.style.titleColor = c;
+                                                    } else {
+                                                        if (!z.content) z.content = {};
+                                                        if (!z.content.style) z.content.style = {};
+                                                        z.content.style.color = c;
+                                                    }
+                                                    pizarronStore.updateNode(firstNode.id, { structure: newStructure });
+                                                }}
+                                                className={`w-5 h-5 rounded-full border border-slate-200 transition-transform hover:scale-110 ${((activeZoneSection === 'title' ? activeZone.style?.titleColor : activeZone.content?.style?.color) === c) ? 'ring-2 ring-indigo-500 ring-offset-1' : ''}`}
+                                                style={{ backgroundColor: c }}
+                                            />
+                                        ))}
+                                    </div>
+                                </div>
+                                {/* Background Fill (Relleno) */}
+                                <div>
+                                    <label className="text-xs font-medium text-slate-600 block mb-1">Fill Color (Relleno)</label>
+                                    <div className="flex gap-1.5 flex-wrap items-center">
+                                        {/* Transparent Option */}
+                                        <button
+                                            title="No Fill (Transparent)"
+                                            onClick={() => {
+                                                const newStructure = JSON.parse(JSON.stringify(firstNode.structure));
+                                                const z = newStructure.zones.find((z: any) => z.id === activeZoneId);
+                                                if (activeZoneSection === 'title') {
+                                                    if (!z.style) z.style = {};
+                                                    z.style.titleBackgroundColor = 'transparent';
+                                                } else {
+                                                    if (!z.content) z.content = {};
+                                                    if (!z.content.style) z.content.style = {};
+                                                    z.content.style.backgroundColor = 'transparent';
+                                                }
+                                                pizarronStore.updateNode(firstNode.id, { structure: newStructure });
+                                            }}
+                                            className="w-5 h-5 rounded-full border border-slate-300 flex items-center justify-center bg-slate-50 relative overflow-hidden group"
+                                        >
+                                            <div className="absolute inset-0 border-t border-red-500 transform rotate-45 opacity-50"></div>
+                                        </button>
+
+                                        {['#ffffff', '#f1f5f9', '#fee2e2', '#ffedd5', '#fef3c7', '#dcfce7', '#d1fae5', '#cffafe', '#dbeafe', '#e0e7ff', '#fae8ff', '#ffe4e6'].map(c => (
+                                            <button
+                                                key={c}
+                                                onClick={() => {
+                                                    const newStructure = JSON.parse(JSON.stringify(firstNode.structure));
+                                                    const z = newStructure.zones.find((z: any) => z.id === activeZoneId);
+                                                    if (activeZoneSection === 'title') {
+                                                        if (!z.style) z.style = {};
+                                                        z.style.titleBackgroundColor = c;
+                                                    } else {
+                                                        if (!z.content) z.content = {};
+                                                        if (!z.content.style) z.content.style = {};
+                                                        z.content.style.backgroundColor = c;
+                                                    }
+                                                    pizarronStore.updateNode(firstNode.id, { structure: newStructure });
+                                                }}
+                                                className="w-5 h-5 rounded-full border border-slate-200 transition-transform hover:scale-110"
+                                                style={{ backgroundColor: c }}
+                                            />
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* --- Zone Styling (New) --- */}
+                            <div className="pt-4 mt-4 border-t border-slate-200">
+                                <label className="text-xs font-bold text-slate-800 block mb-3">Zone Appearance</label>
+
+                                {/* Background & Gradient */}
+                                <div className="space-y-3">
+                                    <div className="flex gap-2 items-center">
+                                        <div className="flex-1">
+                                            <label className="text-[10px] text-slate-500 block mb-1">Fill Color</label>
+                                            <input type="color" className="w-full h-8 rounded cursor-pointer"
+                                                value={activeZone.style?.backgroundColor || '#ffffff'}
+                                                onChange={(e) => {
+                                                    const newStructure = JSON.parse(JSON.stringify(firstNode.structure));
+                                                    const z = newStructure.zones.find((z: any) => z.id === activeZoneId);
+                                                    if (!z.style) z.style = {};
+                                                    z.style.backgroundColor = e.target.value;
+                                                    pizarronStore.updateNode(firstNode.id, { structure: newStructure });
+                                                }}
+                                            />
+                                        </div>
+                                        <div className="flex-1">
+                                            <label className="text-[10px] text-slate-500 block mb-1">Border Color</label>
+                                            <input type="color" className="w-full h-8 rounded cursor-pointer"
+                                                value={activeZone.style?.borderColor || '#cbd5e1'}
+                                                onChange={(e) => {
+                                                    const newStructure = JSON.parse(JSON.stringify(firstNode.structure));
+                                                    const z = newStructure.zones.find((z: any) => z.id === activeZoneId);
+                                                    if (!z.style) z.style = {};
+                                                    z.style.borderColor = e.target.value;
+                                                    pizarronStore.updateNode(firstNode.id, { structure: newStructure });
+                                                }}
+                                            />
+                                        </div>
+                                    </div>
+
+                                    {/* Border Dims */}
+                                    <div className="grid grid-cols-2 gap-2">
+                                        <div>
+                                            <label className="text-[10px] text-slate-500 block mb-1">Title Spacing</label>
+                                            <input type="number" min="0" max="50" className="w-full text-xs border rounded p-1"
+                                                value={activeZone.style?.titleGap ?? 2}
+                                                onChange={(e) => {
+                                                    const val = parseInt(e.target.value);
+                                                    const newStructure = JSON.parse(JSON.stringify(firstNode.structure));
+                                                    const z = newStructure.zones.find((z: any) => z.id === activeZoneId);
+                                                    if (!z.style) z.style = {};
+                                                    z.style.titleGap = val;
+                                                    pizarronStore.updateNode(firstNode.id, { structure: newStructure });
+                                                }}
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="text-[10px] text-slate-500 block mb-1">Border Width</label>
+                                            <input type="number" min="0" max="10" className="w-full text-xs border rounded p-1"
+                                                value={activeZone.style?.borderWidth ?? 0}
+                                                onChange={(e) => {
+                                                    const val = parseInt(e.target.value);
+                                                    const newStructure = JSON.parse(JSON.stringify(firstNode.structure));
+                                                    const z = newStructure.zones.find((z: any) => z.id === activeZoneId);
+                                                    if (!z.style) z.style = {};
+                                                    z.style.borderWidth = val;
+                                                    pizarronStore.updateNode(firstNode.id, { structure: newStructure });
+                                                }}
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="text-[10px] text-slate-500 block mb-1">Rounding</label>
+                                            <input type="number" min="0" max="20" className="w-full text-xs border rounded p-1"
+                                                value={activeZone.style?.borderRadius ?? 0}
+                                                onChange={(e) => {
+                                                    const val = parseInt(e.target.value);
+                                                    const newStructure = JSON.parse(JSON.stringify(firstNode.structure));
+                                                    const z = newStructure.zones.find((z: any) => z.id === activeZoneId);
+                                                    if (!z.style) z.style = {};
+                                                    z.style.borderRadius = val;
+                                                    pizarronStore.updateNode(firstNode.id, { structure: newStructure });
+                                                }}
+                                            />
+                                        </div>
+                                    </div>
+
+                                    {/* Shadow Toggle */}
+                                    <div className="flex items-center gap-2">
+                                        <input type="checkbox" id="zoneShadow"
+                                            checked={!!activeZone.style?.shadow}
+                                            onChange={(e) => {
+                                                const checked = e.target.checked;
+                                                const newStructure = JSON.parse(JSON.stringify(firstNode.structure));
+                                                const z = newStructure.zones.find((z: any) => z.id === activeZoneId);
+                                                if (!z.style) z.style = {};
+
+                                                if (checked) {
+                                                    z.style.shadow = { color: 'rgba(0,0,0,0.1)', blur: 10, offsetX: 0, offsetY: 4 };
+                                                } else {
+                                                    delete z.style.shadow;
+                                                }
+                                                pizarronStore.updateNode(firstNode.id, { structure: newStructure });
+                                            }}
+                                        />
+                                        <label htmlFor="zoneShadow" className="text-xs text-slate-700 select-none cursor-pointer">Enable Shadow</label>
+                                    </div>
+
+                                    {/* Gradient (Optional) */}
+                                    {/* Simplified Gradient Input */}
+                                    <div className="space-y-1">
+                                        <div className="flex items-center gap-2">
+                                            <input type="checkbox" id="zoneGradient"
+                                                checked={!!activeZone.style?.gradient}
+                                                onChange={(e) => {
+                                                    const checked = e.target.checked;
+                                                    const newStructure = JSON.parse(JSON.stringify(firstNode.structure));
+                                                    const z = newStructure.zones.find((z: any) => z.id === activeZoneId);
+                                                    if (!z.style) z.style = {};
+
+                                                    if (checked) {
+                                                        z.style.gradient = { start: z.style.backgroundColor || '#ffffff', end: '#f1f5f9' };
+                                                    } else {
+                                                        delete z.style.gradient;
+                                                    }
+                                                    pizarronStore.updateNode(firstNode.id, { structure: newStructure });
+                                                }}
+                                            />
+                                            <label htmlFor="zoneGradient" className="text-xs text-slate-700 select-none cursor-pointer">Gradient Overlay</label>
+                                        </div>
+
+                                        {activeZone.style?.gradient && (
+                                            <div className="flex gap-2">
+                                                <input type="color" className="flex-1 h-6 rounded"
+                                                    value={activeZone.style.gradient.start}
+                                                    onChange={(e) => {
+                                                        const newStructure = JSON.parse(JSON.stringify(firstNode.structure));
+                                                        const z = newStructure.zones.find((z: any) => z.id === activeZoneId);
+                                                        if (z.style?.gradient) z.style.gradient.start = e.target.value;
+                                                        pizarronStore.updateNode(firstNode.id, { structure: newStructure });
+                                                    }}
+                                                />
+                                                <input type="color" className="flex-1 h-6 rounded"
+                                                    value={activeZone.style.gradient.end}
+                                                    onChange={(e) => {
+                                                        const newStructure = JSON.parse(JSON.stringify(firstNode.structure));
+                                                        const z = newStructure.zones.find((z: any) => z.id === activeZoneId);
+                                                        if (z.style?.gradient) z.style.gradient.end = e.target.value;
+                                                        pizarronStore.updateNode(firstNode.id, { structure: newStructure });
+                                                    }}
+                                                />
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Mass Actions */}
+                            <div className="mt-4 pt-3 border-t border-slate-100">
+                                <button
+                                    className="w-full py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 text-[10px] font-medium rounded flex items-center justify-center gap-2 transition-colors"
+                                    onClick={() => {
+                                        const newStructure = JSON.parse(JSON.stringify(firstNode.structure));
+                                        const sourceZone = newStructure.zones.find((z: any) => z.id === activeZoneId);
+
+                                        if (sourceZone) {
+                                            // Apply to all
+                                            newStructure.zones.forEach((z: any) => {
+                                                if (z.id === activeZoneId) return; // Skip self
+
+                                                // Copy Appearance
+                                                z.style = JSON.parse(JSON.stringify(sourceZone.style || {}));
+
+                                                // Copy Text Content Style (Font, Align, Color) BUT NOT TEXT
+                                                if (!z.content) z.content = {};
+                                                if (!z.content.style) z.content.style = {};
+                                                if (sourceZone.content?.style) {
+                                                    z.content.style = { ...z.content.style, ...sourceZone.content.style };
+                                                }
+                                            });
+                                            pizarronStore.updateNode(firstNode.id, { structure: newStructure });
+                                        }
+                                    }}
+                                >
+                                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+                                    Apply Style to All Zones
+                                </button>
+                            </div>
+                        </div>
+                    );
+                }
+
+                // --- BOARD INSPECTOR (Multi-Edit Capable) ---
                 return (
                     <div className="space-y-4">
-                        {/* Title & Body */}
+                        {/* Title & Body - Using 'primaryTarget' instead of 'firstNode' where likely to read */}
                         <div>
-                            <label className="text-xs font-medium text-slate-600 block mb-1">Title Size</label>
                             <input
                                 type="range" min="12" max="72"
-                                value={firstNode.content.fontSize || 20}
+                                value={primaryTarget.content.fontSize || 20}
                                 onChange={(e) => updateNode({ fontSize: Number(e.target.value) })}
                                 className="w-full h-1 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-500"
                             />
                         </div>
 
-                        {/* Collapse / Expand */}
+                        {/* Collapse / Expand (Only valid for explicit board nodes, groups might not collapse same way) */}
                         <div>
                             <label className="text-xs font-medium text-slate-600 block mb-1">Visibility</label>
                             <button
-                                onClick={() => pizarronStore.toggleCollapse(firstNode.id)}
+                                onClick={() => {
+                                    const targets = getTargets();
+                                    targets.forEach(t => pizarronStore.toggleCollapse(t.id));
+                                }}
                                 className="w-full py-2 bg-indigo-50 text-indigo-600 border border-indigo-200 rounded text-xs hover:bg-indigo-100 flex items-center justify-center gap-2"
                             >
                                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
@@ -95,36 +527,19 @@ export const Inspector: React.FC = () => {
                                     if (!val) {
                                         pizarronStore.updateNode(firstNode.id, { structureId: undefined, structure: undefined });
                                     } else {
-                                        // Dynamic Import to avoid circular dependencies if possible, or just regular import
-                                        // For now assuming we can import STRUCTURE_TEMPLATES or use a helper
-                                        // We need to import STRUCTURE_TEMPLATES from engine/structures
-                                        // Since we can't easily add top-level imports in this specific tool call without viewing top of file,
-                                        // I will assume the import is added or I will use a known hardcoded list if import is tricky.
-                                        // BETTER: I will add the import in a separate edit or use a callback if available.
-                                        // WAIT, I can't add an import here easily without replacing the whole file or using multi-replace.
-                                        // I will replace this block assuming I'll fix imports next, OR I can define the options here if they are static? No, they are dynamic.
-
-                                        // Taking a safer bet: I will use a hardcoded list of IDs for the UI for now, 
-                                        // and assume the store/logic handles the actual object assignment? 
-                                        // No, the requirement is "The structure is applied".
-                                        // I need to import `STRUCTURE_TEMPLATES`.
-
-                                        // Let's rely on a helper function or assume I will add the import at the top.
-                                        // I'll emit the event and let the store handle it? 
-                                        // No, Inspector calls updateNode directly usually.
-
-                                        // I will write the code to use a global or imported 'STRUCTURE_TEMPLATES'.
-                                        // I'll fix the import in the next step.
-                                        // Actually, I can try to use a require or just set the ID and let the renderer lookup?
-                                        // Renderer lookup is better for data size. Storage shouldn't duplicate the whole structure if it's static?
-                                        // BUT user request says "Structure can be changed... content reflow...". 
-                                        // If we store just ID, we can't customize zones?
-                                        // The requirement "Every zone... styles editable" suggests we might copy the structure to the node.
-
-                                        // Decision: Copy structure to node to allow divergence.
+                                        // 1. Try Standard Templates
                                         import('../../engine/structures').then(({ STRUCTURE_TEMPLATES }) => {
-                                            const template = STRUCTURE_TEMPLATES[val];
+                                            let template = STRUCTURE_TEMPLATES[val];
+
+                                            // 2. Try Saved Templates
+                                            if (!template) {
+                                                const saved = pizarronStore.getState().savedTemplates?.find(t => t.id === val);
+                                                if (saved) template = saved;
+                                            }
+
                                             if (template) {
+                                                // If it's a saved template, it might have an ID we want to preserve or regenerate? 
+                                                // Usually structure.id isn't critical, but structureId on node is.
                                                 pizarronStore.updateNode(firstNode.id, {
                                                     structureId: val,
                                                     structure: JSON.parse(JSON.stringify(template)) // Deep copy
@@ -141,7 +556,108 @@ export const Inspector: React.FC = () => {
                                 <option value="comparison-structure">Comparison</option>
                                 <option value="technical-grid-structure">Technical Grid</option>
                                 <option value="visual-moodboard-structure">Moodboard</option>
+                                {pizarronStore.getState().savedTemplates?.map(t => (
+                                    <option key={t.id} value={t.id}>{t.template || 'Custom Template'}</option>
+                                ))}
                             </select>
+
+                            {/* Template Management */}
+                            {firstNode.structure && (
+                                <div className="flex justify-end mb-2">
+                                    <button
+                                        onClick={() => {
+                                            const name = prompt("Template Name:");
+                                            if (name) {
+                                                const newTemplate = {
+                                                    ...firstNode.structure!,
+                                                    id: crypto.randomUUID(),
+                                                    template: name
+                                                };
+                                                pizarronStore.saveTemplate(newTemplate);
+                                                // Persist to Cloud
+                                                import('../../sync/firestoreAdapter').then(({ firestoreAdapter }) => {
+                                                    firestoreAdapter.persistTemplate(newTemplate);
+                                                });
+                                            }
+                                        }}
+                                        className="text-[10px] text-blue-600 hover:text-blue-800 font-medium"
+                                    >
+                                        + Save as Template
+                                    </button>
+                                </div>
+                            )}
+
+                            {/* Gap Control */}
+                            {firstNode.structure && (
+                                <div className="mb-3">
+                                    <div className="flex justify-between items-center mb-1">
+                                        <label className="text-xs font-medium text-slate-600">Spacing (Gap)</label>
+                                        <span className="text-[10px] text-slate-400">{firstNode.structure.gap || 0}px</span>
+                                    </div>
+                                    <input
+                                        type="range"
+                                        min="0" max="40" step="4"
+                                        className="w-full h-1 bg-slate-200 rounded-lg appearance-none cursor-pointer"
+                                        value={firstNode.structure.gap || 0}
+                                        onChange={(e) => {
+                                            const val = parseInt(e.target.value);
+                                            pizarronStore.updateNode(firstNode.id, {
+                                                structure: { ...firstNode.structure, gap: val }
+                                            });
+                                        }}
+                                    />
+                                </div>
+                            )}
+
+                            {/* Zone Editor */}
+                            {firstNode.structure && firstNode.structure.zones && (
+                                <div className="mt-4 border-t border-slate-200 pt-2">
+                                    <label className="text-xs font-bold text-slate-700 block mb-2">Zone Styles</label>
+                                    <div className="space-y-2 max-h-40 overflow-y-auto pr-1 custom-scrollbar">
+                                        {firstNode.structure.zones.map((zone, idx) => (
+                                            <div key={zone.id} className="flex flex-col gap-1 p-2 bg-slate-50 rounded border border-slate-200">
+                                                <span className="text-xs font-medium text-slate-700 truncate">{zone.label}</span>
+                                                <div className="flex items-center justify-between">
+                                                    {/* Shading */}
+                                                    <div className="flex items-center gap-1">
+                                                        <span className="text-[10px] text-slate-500">Bg:</span>
+                                                        <input
+                                                            type="color"
+                                                            className="w-5 h-5 rounded cursor-pointer border-none p-0 bg-transparent"
+                                                            value={zone.style?.shading || '#ffffff'}
+                                                            onChange={(e) => {
+                                                                const newStructure = JSON.parse(JSON.stringify(firstNode.structure));
+                                                                if (newStructure.zones[idx]) {
+                                                                    const currentStyle = newStructure.zones[idx].style || {};
+                                                                    newStructure.zones[idx].style = { ...currentStyle, shading: e.target.value };
+                                                                    pizarronStore.updateNode(firstNode.id, { structure: newStructure });
+                                                                }
+                                                            }}
+                                                        />
+                                                    </div>
+                                                    {/* Dashed */}
+                                                    <label className="flex items-center gap-1 cursor-pointer select-none">
+                                                        <input
+                                                            type="checkbox"
+                                                            className="w-3 h-3 rounded border-slate-300 text-blue-500 focus:ring-blue-500"
+                                                            checked={!!zone.style?.dashed}
+                                                            onChange={(e) => {
+                                                                const newStructure = JSON.parse(JSON.stringify(firstNode.structure));
+                                                                if (newStructure.zones[idx]) {
+                                                                    const currentStyle = newStructure.zones[idx].style || {};
+                                                                    newStructure.zones[idx].style = { ...currentStyle, dashed: e.target.checked };
+                                                                    pizarronStore.updateNode(firstNode.id, { structure: newStructure });
+                                                                }
+                                                            }}
+                                                        />
+                                                        <span className="text-[10px] text-slate-500">Dashed</span>
+                                                    </label>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
                         </div>
 
                         {/* DEBUG: Add Structure */}
@@ -198,7 +714,70 @@ export const Inspector: React.FC = () => {
                                 />
                             </div>
                         </div>
-                    </div>
+
+                        {/* --- Board Resources (Prefabs) --- */}
+                        <div className="mt-4 border-t border-slate-200 pt-2">
+                            <label className="text-xs font-bold text-slate-700 block mb-2">Saved Prefabs</label>
+
+                            <div className="space-y-1 mb-2 max-h-32 overflow-y-auto custom-scrollbar">
+                                {boardResources?.map(r => (
+                                    <div key={r.id} className="flex items-center justify-between p-1.5 bg-slate-50 hover:bg-slate-100 rounded border border-slate-200 group">
+                                        <span className="text-xs text-slate-700 truncate flex-1" title={r.name}>{r.name}</span>
+                                        <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                            <button
+                                                title="Delete Resource"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    if (confirm("Delete this prefab?")) {
+                                                        pizarronStore.deleteBoardResource(r.id);
+                                                        import('../../sync/firestoreAdapter').then(({ firestoreAdapter }) => firestoreAdapter.removeBoardResource(r.id));
+                                                    }
+                                                }}
+                                                className="text-red-500 hover:text-red-700 px-1 font-bold"
+                                            >
+                                                ×
+                                            </button>
+                                            <button
+                                                title="Apply to Board (Replace Content)"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    if (confirm("Replace current board content with this prefab?")) {
+                                                        pizarronStore.applyResourceToBoard(firstNode.id, r.id);
+                                                    }
+                                                }}
+                                                className="text-blue-500 hover:text-blue-700 px-1 font-bold text-[10px]"
+                                            >
+                                                APPLY
+                                            </button>
+                                        </div>
+                                    </div>
+                                ))}
+                                {(!boardResources || boardResources.length === 0) && (
+                                    <div className="text-[10px] text-slate-400 italic text-center">No saved prefabs</div>
+                                )}
+                            </div>
+
+                            <button
+                                onClick={() => {
+                                    const name = prompt("Prefab Name (saves current board + content):");
+                                    if (name) {
+                                        const id = crypto.randomUUID();
+                                        pizarronStore.saveBoardAsResource(firstNode.id, name, id);
+                                        // Persist
+                                        import('../../sync/firestoreAdapter').then(({ firestoreAdapter }) => {
+                                            // Ideally we pass the full resource object, but here we can only reconstruct it or fetch from state?
+                                            // The state update is synchronous.
+                                            const res = pizarronStore.getState().boardResources?.find(r => r.id === id);
+                                            if (res) firestoreAdapter.persistBoardResource(res);
+                                        });
+                                    }
+                                }}
+                                className="w-full py-1.5 bg-white border border-slate-300 text-slate-600 rounded text-xs hover:bg-slate-50 flex items-center justify-center gap-1 shadow-sm font-medium"
+                            >
+                                <span className="text-lg leading-none">+</span> Save Board as Prefab
+                            </button>
+                        </div>
+                    </div >
                 );
 
             case 'shape':
@@ -424,7 +1003,7 @@ export const Inspector: React.FC = () => {
 
     return (
         <div
-            className="fixed w-72 pointer-events-auto z-40 transition-all duration-500 ease-out-expo"
+            className="fixed w-72 pointer-events-auto z-[100] transition-all duration-500 ease-out-expo"
             style={{
                 top: 100,
                 left: '50%',
@@ -433,7 +1012,7 @@ export const Inspector: React.FC = () => {
             onPointerDown={(e) => e.stopPropagation()} // Prevent canvas drag
         >
             <div className="bg-white/95 backdrop-blur shadow-2xl border border-slate-200 rounded-2xl p-4 flex flex-col gap-4 animate-in fade-in zoom-in-95 duration-500 slide-in-from-bottom-2">
-                <div className="flex justify-between items-center border-b border-slate-100 pb-2">
+                <div className="flex justify-between items-center border-b border-slate-100 pb-2 flex-shrink-0">
                     <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">{firstNode?.type.toUpperCase() || 'SELECTION'} STYLE</span>
                     <div className="flex gap-1">
                         <button onClick={() => { pizarronStore.copySelection(); pizarronStore.paste(); }} className="p-1 hover:bg-slate-100 rounded text-slate-400" title="Duplicate">
@@ -445,7 +1024,9 @@ export const Inspector: React.FC = () => {
                     </div>
                 </div>
 
-                {renderContent()}
+                <div className="overflow-y-auto max-h-[calc(80vh-100px)] pr-1 custom-scrollbar">
+                    {renderContent()}
+                </div>
 
             </div>
         </div>

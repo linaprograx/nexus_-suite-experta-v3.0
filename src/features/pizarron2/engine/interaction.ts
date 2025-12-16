@@ -302,69 +302,41 @@ export class InteractionManager {
                 });
 
                 if (hitZone) {
-                    // Action: Create Content in Zone
-                    // 1. Calculate ideal box for content (with padding)
-                    const padding = 10;
-                    const zx = hitZone.x * node.w;
-                    const zy = hitZone.y * node.h;
-                    const zw = hitZone.w * node.w;
-                    const zh = hitZone.h * node.h;
+                    // Phase 10: Zone Content Editing (No floating nodes)
 
-                    const contentX = node.x + zx + padding; // Absolute X (approx, ignoring rotation for creation simplicity)
-                    const contentY = node.y + zy + padding;
-                    const contentW = Math.max(50, zw - padding * 2);
-                    const contentH = Math.max(20, zh - padding * 2);
+                    // 1. Ensure Zone Content is Initialized
+                    if (!hitZone.content) {
+                        // We need to clone the structure to avoid direct mutation
+                        const updatedStructure = JSON.parse(JSON.stringify(node.structure));
+                        const idx = updatedStructure.zones.findIndex((z: any) => z.id === hitZone.id);
+                        if (idx >= 0) {
+                            updatedStructure.zones[idx].content = {
+                                text: hitZone.placeholderText || hitZone.label || 'Text',
+                                style: { fontSize: 16, color: '#1e293b' }
+                            };
+                            pizarronStore.updateNode(node.id, { structure: updatedStructure });
+                        }
+                    }
 
-                    // 2. Determine Type
-                    const type = hitZone.defaultType || 'text';
+                    // 2. Select Zone for Editing
+                    // Ensure the board itself is selected first (Double click assumes it is, but just in case)
+                    if (!this.keys.shift) {
+                        pizarronStore.setSelection([node.id]);
+                    }
 
-                    if (type === 'text' || type === 'list') {
-                        const newId = crypto.randomUUID();
-                        const textNode = {
-                            id: newId,
-                            type: 'text' as const,
-                            x: contentX,
-                            y: contentY,
-                            w: contentW,
-                            h: contentH, // Let it auto-height?
-                            content: {
-                                title: hitZone.placeholderText || hitZone.label || 'Text',
-                                fontSize: 16,
-                                color: '#1e293b',
-                                align: 'left' as const
-                            },
-                            zIndex: (node.zIndex || 1) + 1,
-                            createdAt: Date.now()
-                        };
-                        pizarronStore.addNode(textNode);
-                        // Auto-edit
-                        requestAnimationFrame(() => {
-                            pizarronStore.setFocus(newId);
-                            pizarronStore.updateInteractionState({ editingTextId: newId });
+                    // Activate Inspector
+                    pizarronStore.updateInteractionState({ activeZoneId: hitZone.id });
+
+                    // Activate Inline Text Editor (Visual Cursor)
+                    requestAnimationFrame(() => {
+                        pizarronStore.updateInteractionState({
+                            editingNodeId: node.id,
+                            editingSubId: hitZone.id // Use Zone ID as SubId
                         });
-                        this.lastClickId = null;
-                        return;
-                    }
-                    else if (type === 'image') {
-                        // Placeholder Image
-                        const newId = crypto.randomUUID();
-                        const imgNode = {
-                            id: newId,
-                            type: 'image' as const,
-                            x: contentX,
-                            y: contentY,
-                            w: contentW,
-                            h: contentH,
-                            content: {
-                                title: 'Image Placeholder',
-                                opacity: 0.5
-                            },
-                            zIndex: (node.zIndex || 1) + 1
-                        };
-                        pizarronStore.addNode(imgNode);
-                        this.lastClickId = null;
-                        return;
-                    }
+                    });
+
+                    this.lastClickId = null;
+                    return;
                 }
             }
 
@@ -499,7 +471,7 @@ export class InteractionManager {
             // If node is 'board', it's board.
             const clickedNode = hitId ? nodes[hitId] : undefined;
 
-            if (!clickedNode || clickedNode.type === 'board') {
+            if (!clickedNode || (clickedNode.type === 'board' && !clickedNode.structure?.zones && !clickedNode.structure?.cells)) {
                 console.log("Creating Quick Text Node at", worldPos);
 
                 const newTextId = crypto.randomUUID();
@@ -609,6 +581,44 @@ export class InteractionManager {
 
                 // 1. Handle Selection
                 const isMultiSelect = e.ctrlKey || e.metaKey || e.shiftKey;
+
+                // ZONE SELECTION LOGIC
+                const hitNode = nodes[hitId];
+                if (hitNode && hitNode.structure && hitNode.structure.zones) {
+                    const cx = hitNode.x + hitNode.w / 2;
+                    const cy = hitNode.y + hitNode.h / 2;
+                    const unrotatedPoint = this.rotatePoint(worldPoint, { x: cx, y: cy }, -(hitNode.rotation || 0));
+                    const localX = unrotatedPoint.x - hitNode.x;
+                    const localY = unrotatedPoint.y - hitNode.y;
+
+                    const hitZone = hitNode.structure.zones.find(z => {
+                        const zx = z.x * hitNode.w;
+                        const zy = z.y * hitNode.h;
+                        const zw = z.w * hitNode.w;
+                        const zh = z.h * hitNode.h;
+                        return localX >= zx && localX <= zx + zw && localY >= zy && localY <= zy + zh;
+                    });
+
+                    if (hitZone) {
+                        const zy = hitZone.y * hitNode.h;
+                        const localYInZone = localY - zy;
+                        const titleBoundary = 24 + (hitZone.style?.titleGap ?? 2);
+
+                        const section = localYInZone < titleBoundary ? 'title' : 'content';
+
+                        pizarronStore.updateInteractionState({
+                            activeZoneId: hitZone.id,
+                            activeZoneSection: section
+                        });
+                    } else {
+                        pizarronStore.updateInteractionState({
+                            activeZoneId: undefined,
+                            activeZoneSection: undefined
+                        });
+                    }
+                } else {
+                    if (!isMultiSelect) pizarronStore.updateInteractionState({ activeZoneId: undefined });
+                }
 
                 // Group Hierarchy Logic
                 let targetId = hitId;
