@@ -109,7 +109,6 @@ export const PizarronRoot: React.FC<PizarronRootProps> = ({ appId, boardId, user
                         {showProjectManager && <PizarraManager onClose={() => pizarronStore.setUIFlag('showProjectManager', false)} />}
                         <Inspector />
                         <TextEditor />
-                        <ConfigModalRouter />
                         <MiniToolbar />
                         {editingImageId && <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm pointer-events-auto">
                             <ImageModal

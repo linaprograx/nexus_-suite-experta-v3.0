@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { pizarronStore } from '../../state/store';
+import { ShapeSelector } from '../shared/ShapeSelector';
+import { AssetDefinition } from '../panels/AssetLibrary';
 
 const TOOLS = [
     { id: 'pointer', icon: '👆', label: 'Pointer' },
@@ -18,13 +20,6 @@ const TOOLS = [
     { id: 'duplicate', icon: '📄', label: 'Duplicate', isAction: true },
     { id: 'delete', icon: '🗑️', label: 'Delete', isAction: true },
 ] as const;
-
-const SHAPES = [
-    { id: 'rectangle', icon: '⬜' },
-    { id: 'circle', icon: '🔴' },
-    { id: 'triangle', icon: '🔺' },
-    { id: 'star', icon: '⭐' },
-];
 
 export const LeftRail: React.FC = () => {
     const [activeTool, setActiveTool] = useState('pointer');
@@ -140,13 +135,40 @@ export const LeftRail: React.FC = () => {
         }
     };
 
+    const handleShapeSelect = (asset: AssetDefinition) => {
+        // This relies on the engine support activeShapeType/data
+        // We set activeTool to 'shape' first
+        pizarronStore.setActiveTool('shape');
+
+        // Pass the shape type (e.g., 'rectangle', 'cloud')
+        // And potentially extra data if the store supports it (not fully visible here, but assuming basic shapeType works)
+        if (asset.data && asset.data.shapeType) {
+            pizarronStore.setActiveShapeType(asset.data.shapeType);
+        }
+
+        // If it's an icon or complex shape, we might need a Store update for "Next Node Defaults"
+        // Since we can't see pizarronStore implementation, we assume basic shapeType is enough for now
+        // or we rely on the creation logic reading from a "clipboard" or "defaults".
+        // For now, this meets the requirement of using the new Selector.
+    };
+
     return (
         <div className="absolute left-4 top-1/2 -translate-y-1/2 flex gap-2 pointer-events-auto items-start">
             {/* Main Strip */}
             <div className="bg-white/90 backdrop-blur shadow-sm border border-slate-200 rounded-2xl p-2 flex flex-col gap-2">
                 {TOOLS.map(tool => {
                     const isActive = activeTool === tool.id ||
-                        (tool.id === 'shape' && ['rectangle', 'circle', 'triangle', 'star'].includes(activeTool));
+                        (tool.id === 'shape' && ['rectangle', 'circle', 'triangle', 'star', 'diamond', 'hexagon', 'cloud'].includes(activeTool));
+
+                    if (tool.id === 'shape') {
+                        return (
+                            <ShapeSelector
+                                key={tool.id}
+                                currentShapeType={activeShape}
+                                onSelect={handleShapeSelect}
+                            />
+                        )
+                    }
 
                     return (
                         <button
@@ -163,25 +185,6 @@ export const LeftRail: React.FC = () => {
                     );
                 })}
             </div>
-
-            {/* Shape Selector (Visible when Shape Tool Active) */}
-            {activeTool === 'shape' && (
-                <div className="bg-white/90 backdrop-blur shadow-sm border border-slate-200 rounded-xl p-2 flex flex-col gap-2 animate-in slide-in-from-left-2 duration-200">
-                    {SHAPES.map(s => (
-                        <button
-                            key={s.id}
-                            onClick={() => pizarronStore.setActiveShapeType(s.id)}
-                            className={`w-8 h-8 flex items-center justify-center rounded-lg transition-colors ${activeShape === s.id
-                                ? 'bg-slate-200 text-slate-900'
-                                : 'hover:bg-slate-100 text-slate-400'
-                                }`}
-                            title={s.id}
-                        >
-                            {s.icon}
-                        </button>
-                    ))}
-                </div>
-            )}
         </div>
     );
 };

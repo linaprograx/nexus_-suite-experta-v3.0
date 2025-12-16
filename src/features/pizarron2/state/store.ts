@@ -1,3 +1,4 @@
+import { useSyncExternalStore } from 'react';
 import { BoardState, BoardNode, Viewport, PizarraMetadata } from '../engine/types';
 
 // Initial State
@@ -43,12 +44,20 @@ class PizarronStore {
         return this.state;
     }
 
+    useState(): BoardState {
+        return useSyncExternalStore(
+            this.subscribe.bind(this),
+            this.getState.bind(this)
+        );
+    }
+
     /**
      * Updates state and notifies subscribers efficiently.
      * We don't use immutability libraries for perf, but we try to replace top-level objects.
      */
     setState(updater: (draft: BoardState) => void) {
         updater(this.state);
+        this.state = { ...this.state }; // Force reference change for useSyncExternalStore
         this.itemCount = Object.keys(this.state.nodes).length; // Cache simple metric
         this.notify();
     }
@@ -72,6 +81,10 @@ class PizarronStore {
 
     addNode(node: BoardNode) {
         this.setState(state => {
+            // Auto-assign Z-Index to be on top
+            const maxZ = state.order.reduce((max, id) => Math.max(max, state.nodes[id]?.zIndex || 0), 0);
+            node.zIndex = maxZ + 1;
+
             state.nodes[node.id] = node;
             state.order.push(node.id);
         });
@@ -556,6 +569,63 @@ class PizarronStore {
                     currentX += node.w + gap;
                 });
             }
+        });
+    }
+
+    autoLayoutGrid(cols: number = 3, gap: number = 20) {
+        this.setState(state => {
+            const selected = Array.from(state.selection).map(id => state.nodes[id]).filter(Boolean);
+            if (selected.length === 0) return;
+
+            // Sort roughly by reading order (top-left to bottom-right)
+            selected.sort((a, b) => (a.y - b.y) || (a.x - b.x));
+
+            const startX = selected[0].x;
+            const startY = selected[0].y;
+            let currentX = startX;
+            let currentY = startY;
+            let maxHeightInRow = 0;
+
+            selected.forEach((node, index) => {
+                const colIndex = index % cols;
+                if (colIndex === 0 && index !== 0) {
+                    currentX = startX;
+                    currentY += maxHeightInRow + gap;
+                    maxHeightInRow = 0;
+                }
+
+                node.x = currentX;
+                node.y = currentY;
+
+                currentX += node.w + gap;
+                maxHeightInRow = Math.max(maxHeightInRow, node.h);
+            });
+        });
+    }
+
+    autoLayoutRadial(radius: number = 200) {
+        this.setState(state => {
+            const selected = Array.from(state.selection).map(id => state.nodes[id]).filter(Boolean);
+            if (selected.length === 0) return;
+
+            // Center of the group
+            let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+            selected.forEach(n => {
+                minX = Math.min(minX, n.x);
+                maxX = Math.max(maxX, n.x + n.w);
+                minY = Math.min(minY, n.y);
+                maxY = Math.max(maxY, n.y + n.h);
+            });
+            const centerX = minX + (maxX - minX) / 2;
+            const centerY = minY + (maxY - minY) / 2;
+
+            const angleStep = (2 * Math.PI) / selected.length;
+
+            selected.forEach((node, index) => {
+                const angle = index * angleStep - (Math.PI / 2); // Start top
+                node.x = centerX + Math.cos(angle) * radius - (node.w / 2);
+                node.y = centerY + Math.sin(angle) * radius - (node.h / 2);
+            });
         });
     }
 

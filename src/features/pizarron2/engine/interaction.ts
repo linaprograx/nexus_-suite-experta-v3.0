@@ -426,7 +426,7 @@ export class InteractionManager {
                     marquee: { x: worldPoint.x, y: worldPoint.y, w: 0, h: 0 }
                 });
 
-                if (!state.uiFlags.toolbarPinned && !e.shiftKey) {
+                if (!e.shiftKey) {
                     pizarronStore.setSelection([]);
                 }
                 (e.target as HTMLElement).setPointerCapture(e.pointerId);

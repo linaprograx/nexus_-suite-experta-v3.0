@@ -1,73 +1,274 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { pizarronStore } from '../../state/store';
+import { FontLoader } from '../../engine/FontLoader';
 import { BoardNode } from '../../engine/types';
-import { FontSelector } from '../shared/FontSelector';
+
+// Simple Font Selector Component
+const FontSelector: React.FC<{ currentFont: string, onChange: (font: string) => void, className?: string }> = ({ currentFont, onChange, className }) => {
+    return (
+        <select
+            className={`border rounded px-2 py-1 text-xs ${className}`}
+            value={currentFont}
+            onChange={(e) => {
+                const font = e.target.value;
+                FontLoader.loadFont(font);
+                onChange(font);
+            }}
+        >
+            <option value="Inter">Inter</option>
+            <option value="Roboto">Roboto</option>
+            <option value="Playfair Display">Playfair</option>
+            <option value="Fira Code">Monospace</option>
+            <option value="Lobster">Lobster</option>
+            <option value="Oswald">Oswald</option>
+        </select>
+    );
+};
 
 export const Inspector: React.FC = () => {
-    const [selection, setSelection] = useState<string[]>([]);
-    const [firstNode, setFirstNode] = useState<BoardNode | null>(null);
+    const { selection, nodes, viewport } = pizarronStore.useState();
+    const selectionIds = Array.from(selection);
 
-    useEffect(() => {
-        const unsub = pizarronStore.subscribe(() => {
-            const state = pizarronStore.getState();
-            const sel = Array.from(state.selection);
-            setSelection(sel);
+    if (selectionIds.length === 0) return null;
 
-            if (sel.length === 1) {
-                setFirstNode(state.nodes[sel[0]] || null);
-            } else {
-                setFirstNode(null);
-            }
-        });
-        return unsub;
-    }, []);
+    const firstNode = nodes[selectionIds[0]];
+    if (!firstNode) return null; // Safety check
 
-    if (selection.length === 0) return null;
+    // Position Logic: Fixed Screen Position next to Toolbar
+    // Toolbar is at Top: 100, Left: 50% (Center)
+    // We want this "al lado" (next to it).
+    // Let's place it slightly to the right of the center.
+    // Assuming Toolbar is ~400px wide, "Center" is at 200px of it.
+    // So Left: 50% + 220px.
 
-    return (
-        <div className="absolute right-4 top-20 w-64 pointer-events-auto">
-            <div className="bg-white/90 backdrop-blur shadow-lg border border-slate-200 rounded-2xl p-4 flex flex-col gap-4 animate-in slide-in-from-right duration-200">
-                <div className="flex justify-between items-center border-b border-slate-100 pb-2">
-                    <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Properties</span>
-                    <span className="text-xs bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full">{selection.length} Selected</span>
-                </div>
+    const stopProp = (e: React.PointerEvent | React.MouseEvent) => e.stopPropagation();
 
-                {firstNode ? (
-                    <div className="space-y-3">
+    // Helper for updates
+    const updateNode = (patch: Partial<BoardNode['content']>) => {
+        if (firstNode) {
+            pizarronStore.updateNode(firstNode.id, {
+                content: { ...firstNode.content, ...patch }
+            });
+        }
+    };
+
+    // Render Content based on Type
+    const renderContent = () => {
+        if (!firstNode) return <div className="text-sm text-slate-500 italic text-center py-4">Multiple Selection</div>;
+
+        switch (firstNode.type) {
+            case 'shape':
+                return (
+                    <div className="space-y-4">
+                        {/* Fill Color */}
                         <div>
-                            <label className="text-xs text-slate-500 block mb-1">Title</label>
-                            <input
-                                disabled
-                                value={firstNode.content.title || ''}
-                                className="w-full text-sm bg-slate-50 border border-slate-200 rounded px-2 py-1 text-slate-700"
-                            />
-                        </div>
-                        {firstNode.type === 'text' && (
-                            <div>
-                                <label className="text-xs text-slate-500 block mb-1">Typography</label>
-                                <FontSelector 
-                                    className="w-full"
-                                    currentFont={firstNode.content.fontFamily || 'Inter'}
-                                    onChange={(f) => pizarronStore.updateNode(firstNode.id, { content: { ...firstNode.content, fontFamily: f } })}
+                            <label className="text-xs font-medium text-slate-600 block mb-1">Fill Color</label>
+                            <div className="flex gap-2 flex-wrap">
+                                {['#cbd5e1', '#f87171', '#fbbf24', '#4ade80', '#60a5fa', '#c084fc', 'transparent'].map(c => (
+                                    <button
+                                        key={c}
+                                        onClick={() => updateNode({ color: c })}
+                                        className={`w-6 h-6 rounded-full border ${firstNode.content.color === c ? 'border-indigo-500 ring-1 ring-indigo-500' : 'border-slate-300'}`}
+                                        style={{ backgroundColor: c === 'transparent' ? 'white' : c }}
+                                        title={c}
+                                    />
+                                ))}
+                                <input
+                                    type="color"
+                                    value={firstNode.content.color === 'transparent' ? '#ffffff' : firstNode.content.color}
+                                    onChange={(e) => updateNode({ color: e.target.value })}
+                                    className="w-6 h-6 p-0 border-0 rounded-full overflow-hidden"
                                 />
                             </div>
-                        )}
-                        <div className="grid grid-cols-2 gap-2">
+                        </div>
+
+                        {/* Border */}
+                        <div>
+                            <label className="text-xs font-medium text-slate-600 flex justify-between">
+                                <span>Border</span>
+                                <span>{firstNode.content.borderWidth || 0}px</span>
+                            </label>
+                            <input
+                                type="range" min="0" max="10"
+                                value={firstNode.content.borderWidth || 0}
+                                onChange={(e) => updateNode({ borderWidth: Number(e.target.value) })}
+                                className="w-full mt-1 accent-indigo-500"
+                            />
+                            <div className="flex gap-2 mt-2 flex-wrap">
+                                {['#1e293b', '#64748b', '#ef4444', '#3b82f6'].map(c => (
+                                    <button
+                                        key={c}
+                                        onClick={() => updateNode({ borderColor: c, borderWidth: (firstNode.content.borderWidth || 0) === 0 ? 2 : firstNode.content.borderWidth })}
+                                        className={`w-5 h-5 rounded border ${firstNode.content.borderColor === c ? 'border-indigo-500 ring-1 ring-indigo-500' : 'border-slate-300'}`}
+                                        style={{ backgroundColor: c }}
+                                    />
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Radius & Opacity */}
+                        <div className="grid grid-cols-2 gap-3">
                             <div>
-                                <label className="text-xs text-slate-500 block mb-1">X</label>
-                                <div className="text-sm font-mono text-slate-600 bg-slate-50 px-2 py-1 rounded">{Math.round(firstNode.x)}</div>
+                                <label className="text-xs font-medium text-slate-600 block mb-1">Radius</label>
+                                <input
+                                    type="number" min="0" max="100"
+                                    value={firstNode.content.borderRadius || 0}
+                                    onChange={(e) => updateNode({ borderRadius: Number(e.target.value) })}
+                                    className="w-full border rounded px-1 text-xs py-1"
+                                />
                             </div>
                             <div>
-                                <label className="text-xs text-slate-500 block mb-1">Y</label>
-                                <div className="text-sm font-mono text-slate-600 bg-slate-50 px-2 py-1 rounded">{Math.round(firstNode.y)}</div>
+                                <label className="text-xs font-medium text-slate-600 block mb-1">Opacity</label>
+                                <input
+                                    type="number" min="0" max="100" step="10"
+                                    value={Math.round((firstNode.content.opacity ?? 1) * 100)}
+                                    onChange={(e) => updateNode({ opacity: Number(e.target.value) / 100 })}
+                                    className="w-full border rounded px-1 text-xs py-1"
+                                />
                             </div>
                         </div>
                     </div>
-                ) : (
-                    <div className="text-sm text-slate-500 italic py-4 text-center">
-                        Multiple items selected
+                );
+
+            case 'text':
+                return (
+                    <div className="space-y-4">
+                        {/* Content Edit */}
+                        <div>
+                            <label className="text-xs font-medium text-slate-600 block mb-1">Content</label>
+                            <textarea
+                                className="w-full p-2 border rounded text-sm text-slate-700 font-sans"
+                                rows={3}
+                                value={firstNode.content.title || ''}
+                                onChange={(e) => updateNode({ title: e.target.value })}
+                            />
+                        </div>
+                        {/* Typography */}
+                        <div>
+                            <label className="text-xs font-medium text-slate-600 block mb-1">Typography</label>
+                            <div className="flex gap-2 mb-2">
+                                <FontSelector
+                                    className="flex-1"
+                                    currentFont={firstNode.content.fontFamily || 'Inter'}
+                                    onChange={(f) => updateNode({ fontFamily: f })}
+                                />
+                                <input
+                                    type="number"
+                                    className="w-16 border rounded px-1 text-xs py-1"
+                                    value={firstNode.content.fontSize || 16}
+                                    onChange={(e) => updateNode({ fontSize: Number(e.target.value) })}
+                                />
+                            </div>
+                            <div className="flex gap-1 border rounded p-1 bg-slate-50">
+                                {['left', 'center', 'right'].map((align) => (
+                                    <button
+                                        key={align}
+                                        className={`flex-1 py-1 text-[10px] rounded ${firstNode.content.textAlign === align ? 'bg-white shadow text-indigo-600' : 'text-slate-500'}`}
+                                        onClick={() => updateNode({ textAlign: align as any })}
+                                    >
+                                        {align.toUpperCase()}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                        {/* Color */}
+                        <div>
+                            <label className="text-xs font-medium text-slate-600 block mb-1">Color</label>
+                            <div className="flex gap-2 flex-wrap">
+                                {['#1e293b', '#ef4444', '#f59e0b', '#10b981', '#3b82f6'].map(c => (
+                                    <button
+                                        key={c}
+                                        onClick={() => updateNode({ color: c })}
+                                        className={`w-6 h-6 rounded-full border ${firstNode.content.color === c ? 'border-indigo-500 ring-1 ring-indigo-500' : 'border-slate-300'}`}
+                                        style={{ backgroundColor: c }}
+                                    />
+                                ))}
+                            </div>
+                        </div>
                     </div>
-                )}
+                );
+
+            case 'line':
+                return (
+                    <div className="space-y-4">
+                        <div>
+                            <label className="text-xs font-medium text-slate-600 block mb-1">Stroke Style</label>
+                            <div className="flex gap-2 mb-2">
+                                <button onClick={() => updateNode({ strokeStyle: 'solid' })} className={`flex-1 text-xs py-1 border rounded ${firstNode.content.strokeStyle === 'solid' ? 'bg-indigo-50 border-indigo-500 text-indigo-700' : ''}`}>Solid</button>
+                                <button onClick={() => updateNode({ strokeStyle: 'dashed' })} className={`flex-1 text-xs py-1 border rounded ${firstNode.content.strokeStyle === 'dashed' ? 'bg-indigo-50 border-indigo-500 text-indigo-700' : ''}`}>Dashed</button>
+                            </div>
+                            <input
+                                type="range" min="1" max="20"
+                                value={firstNode.content.strokeWidth || 4}
+                                onChange={(e) => updateNode({ strokeWidth: Number(e.target.value) })}
+                                className="w-full accent-indigo-500"
+                            />
+                        </div>
+                        <div>
+                            <label className="text-xs font-medium text-slate-600 block mb-1">Arrows</label>
+                            <div className="flex gap-2">
+                                <button onClick={() => updateNode({ startArrow: !firstNode.content.startArrow })} className={`flex-1 text-xs py-1 border rounded ${firstNode.content.startArrow ? 'bg-indigo-50 border-indigo-500 text-indigo-700' : ''}`}>Start</button>
+                                <button onClick={() => updateNode({ endArrow: !firstNode.content.endArrow })} className={`flex-1 text-xs py-1 border rounded ${firstNode.content.endArrow ? 'bg-indigo-50 border-indigo-500 text-indigo-700' : ''}`}>End</button>
+                            </div>
+                        </div>
+                        <div>
+                            <label className="text-xs font-medium text-slate-600 block mb-1">Color</label>
+                            <div className="flex gap-2 flex-wrap">
+                                {['#64748b', '#ef4444', '#f59e0b', '#10b981', '#3b82f6'].map(c => (
+                                    <button
+                                        key={c}
+                                        onClick={() => updateNode({ color: c })}
+                                        className={`w-6 h-6 rounded-full border ${firstNode.content.color === c ? 'border-indigo-500 ring-1 ring-indigo-500' : 'border-slate-300'}`}
+                                        style={{ backgroundColor: c }}
+                                    />
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                );
+
+            default:
+                // Generic/Shared fallback
+                return (
+                    <div className="space-y-4">
+                        <div>
+                            <label className="text-xs font-medium text-slate-600 block mb-1">Title</label>
+                            <input className="w-full border rounded text-sm px-2 py-1" value={firstNode.content.title || ''} onChange={(e) => updateNode({ title: e.target.value })} />
+                        </div>
+                        <div className="grid grid-cols-2 gap-2">
+                            <div><label className="text-xs text-slate-500">X</label><div className="bg-slate-50 px-2 py-1 rounded text-sm">{Math.round(firstNode.x)}</div></div>
+                            <div><label className="text-xs text-slate-500">Y</label><div className="bg-slate-50 px-2 py-1 rounded text-sm">{Math.round(firstNode.y)}</div></div>
+                        </div>
+                    </div>
+                );
+        }
+    };
+
+    return (
+        <div
+            className="fixed w-72 pointer-events-auto z-40 transition-all duration-200"
+            style={{
+                top: 100,
+                left: '50%',
+                marginLeft: '220px' // Offset from center to right
+            }}
+            onPointerDown={(e) => e.stopPropagation()} // Prevent canvas drag
+        >
+            <div className="bg-white/95 backdrop-blur shadow-2xl border border-slate-200 rounded-2xl p-4 flex flex-col gap-4 animate-in fade-in zoom-in-95 duration-200">
+                <div className="flex justify-between items-center border-b border-slate-100 pb-2">
+                    <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">{firstNode?.type.toUpperCase() || 'SELECTION'} STYLE</span>
+                    <div className="flex gap-1">
+                        <button onClick={() => { pizarronStore.copySelection(); pizarronStore.paste(); }} className="p-1 hover:bg-slate-100 rounded text-slate-400" title="Duplicate">
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+                        </button>
+                        <button onClick={() => { const sel = pizarronStore.getState().selection; pizarronStore.deleteNodes(Array.from(sel)); }} className="p-1 hover:bg-red-50 rounded text-red-500" title="Delete">
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                        </button>
+                    </div>
+                </div>
+
+                {renderContent()}
+
             </div>
         </div>
     );

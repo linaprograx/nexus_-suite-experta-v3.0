@@ -4,23 +4,8 @@ import { BoardNode } from '../../engine/types';
 import { FontSelector } from '../shared/FontSelector';
 
 export const MiniToolbar: React.FC = () => {
-    const [selection, setSelection] = useState<Set<string>>(new Set());
-    const [nodes, setNodes] = useState<Record<string, BoardNode>>({});
-    const [zoom, setZoom] = useState(1);
-    const [pan, setPan] = useState({ x: 0, y: 0 });
-    const [toolbarPinned, setToolbarPinned] = useState(false);
+    const { selection, nodes, viewport, uiFlags } = pizarronStore.useState();
     const [activeMenu, setActiveMenu] = useState<'none' | 'align' | 'distribute'>('none');
-
-    useEffect(() => {
-        return pizarronStore.subscribe(() => {
-            const state = pizarronStore.getState();
-            setSelection(state.selection);
-            setNodes(state.nodes);
-            setZoom(state.viewport.zoom);
-            setPan({ x: state.viewport.x, y: state.viewport.y });
-            setToolbarPinned(state.uiFlags.toolbarPinned || false);
-        });
-    }, []);
 
     const selectedNodes = useMemo(() => {
         return Array.from(selection).map(id => nodes[id]).filter(Boolean);
@@ -28,24 +13,22 @@ export const MiniToolbar: React.FC = () => {
 
     if (selectedNodes.length === 0) return null;
 
-    // Calculate Bounds for positioning
-    let minX = Infinity, maxX = -Infinity, minY = Infinity;
-    selectedNodes.forEach(n => {
-        minX = Math.min(minX, n.x);
-        maxX = Math.max(maxX, n.x + n.w);
-        minY = Math.min(minY, n.y);
-    });
+    // Anchor: Fixed Top Center (Heads-Up Display)
+    // User requested: "fijas las 2, sin moverse" (Fixed screen position)
 
-    const screenX = minX * zoom + pan.x;
-    const screenY = minY * zoom + pan.y;
+    // We don't need world calculation anymore for POSITION, only for data.
 
-    const top = screenY - 50;
-    const left = screenX;
-
+    // Logic Variables
     const isMulti = selectedNodes.length > 1;
     const firstNode = selectedNodes[0];
 
     // Helpers for Text
+    const updateFontSize = (delta: number) => {
+        const currentSize = firstNode.content.fontSize || 16;
+        const newSize = Math.max(8, Math.min(128, currentSize + delta));
+        pizarronStore.updateNode(firstNode.id, { content: { ...firstNode.content, fontSize: newSize } });
+    };
+
     const toggleBold = () => {
         const current = firstNode.content.fontWeight === 'bold';
         pizarronStore.updateNode(firstNode.id, { content: { ...firstNode.content, fontWeight: current ? 'normal' : 'bold' } });
@@ -70,10 +53,11 @@ export const MiniToolbar: React.FC = () => {
 
     return (
         <div
-            className="fixed z-50 flex items-center gap-1 p-1 bg-white border border-slate-200 shadow-xl rounded-lg pointer-events-auto transform transition-all duration-200"
+            className="fixed z-50 flex items-center gap-1 p-1 bg-white border border-slate-200 shadow-xl rounded-lg pointer-events-auto transition-all duration-200"
             style={{
-                top: Math.max(60, top), // Don't go under top bar
-                left: Math.max(10, left),
+                top: 100,
+                left: '50%',
+                transform: 'translateX(-50%)' // Center horizontally
             }}
             onPointerDown={e => e.stopPropagation()}
         >
@@ -82,14 +66,6 @@ export const MiniToolbar: React.FC = () => {
                 <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24"><path d="M8 6h8M8 12h8M8 18h8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" /></svg>
             </div>
 
-            {/* PIN TOGGLE */}
-            <button
-                onClick={() => pizarronStore.setState(s => { s.uiFlags.toolbarPinned = !s.uiFlags.toolbarPinned; })}
-                className={`p-1.5 rounded transition-colors ${toolbarPinned ? 'text-blue-600 bg-blue-50' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-50'}`}
-                title={toolbarPinned ? "Unpin Toolbar" : "Pin Toolbar"}
-            >
-                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2v16z" /></svg>
-            </button>
             <div className="w-px h-4 bg-slate-200 mx-1"></div>
 
             {/* --- Multi Selection Tools --- */}
@@ -149,6 +125,9 @@ export const MiniToolbar: React.FC = () => {
                             <div className="absolute top-full left-0 mt-1 flex bg-white border border-slate-200 shadow-xl rounded-lg p-1 gap-1 min-w-max z-50">
                                 <button onClick={() => pizarronStore.distributeSelected('horizontal')} className="p-1 hover:bg-slate-100 rounded text-xs" title="Horizontal">↔</button>
                                 <button onClick={() => pizarronStore.distributeSelected('vertical')} className="p-1 hover:bg-slate-100 rounded text-xs" title="Vertical">↕</button>
+                                <div className="w-px h-4 bg-slate-200 mx-1"></div>
+                                <button onClick={() => pizarronStore.autoLayoutGrid(3, 20)} className="p-1 hover:bg-slate-100 rounded text-xs px-2" title="Grid Layout">Grid</button>
+                                <button onClick={() => pizarronStore.autoLayoutRadial(200)} className="p-1 hover:bg-slate-100 rounded text-xs px-2" title="Radial">Circle</button>
                             </div>
                         )}
                     </div>
@@ -183,6 +162,14 @@ export const MiniToolbar: React.FC = () => {
             {/* --- Text Tools --- */}
             {!isMulti && firstNode.type === 'text' && (
                 <>
+                    {/* Font Size Controls */}
+                    <div className="flex items-center gap-0.5 bg-slate-100 rounded p-0.5">
+                        <button onClick={() => updateFontSize(-2)} className="w-6 h-6 flex items-center justify-center hover:bg-white rounded text-xs font-bold text-slate-600">-</button>
+                        <span className="text-xs font-mono w-6 text-center text-slate-700">{firstNode.content.fontSize || 16}</span>
+                        <button onClick={() => updateFontSize(2)} className="w-6 h-6 flex items-center justify-center hover:bg-white rounded text-xs font-bold text-slate-600">+</button>
+                    </div>
+                    <div className="w-px h-4 bg-slate-200 mx-1"></div>
+
                     <FontSelector
                         currentFont={firstNode.content.fontFamily || 'Inter'}
                         onChange={(f) => pizarronStore.updateNode(firstNode.id, { content: { ...firstNode.content, fontFamily: f } })}

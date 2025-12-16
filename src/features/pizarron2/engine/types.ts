@@ -1,4 +1,4 @@
-export type NodeType = 'card' | 'group' | 'image' | 'text' | 'shape' | 'line' | 'board';
+export type NodeType = 'card' | 'group' | 'image' | 'text' | 'shape' | 'line' | 'board' | 'icon';
 
 export interface LineBinding {
     nodeId: string;
@@ -34,13 +34,15 @@ export interface CompositeContent {
 
 export interface BoardNode {
     id: string;
-    type: 'text' | 'shape' | 'sticker' | 'image' | 'line' | 'group' | 'board' | 'card' | 'composite';
+    type: 'text' | 'shape' | 'sticker' | 'image' | 'line' | 'group' | 'board' | 'card' | 'composite' | 'icon';
     x: number;
     y: number;
     w: number;
     h: number;
     rotation?: number;
     zIndex?: number;
+    createdAt?: number;
+    updatedAt?: number;
     locked?: boolean;
     isFixed?: boolean;
     parentId?: string;
@@ -78,6 +80,7 @@ export interface BoardNode {
         textDecoration?: 'none' | 'underline' | 'line-through';
         align?: 'left' | 'center' | 'right';
         fontFamily?: string;
+        textAlign?: 'left' | 'center' | 'right';
 
         // Shape Specific
         shapeType?: 'rectangle' | 'circle' | 'triangle' | 'diamond' | 'hexagon' | 'arrow_right' | 'star' | 'speech_bubble' | 'cloud' | 'pill';
@@ -90,35 +93,36 @@ export interface BoardNode {
         endArrow?: boolean;
         lineType?: 'straight' | 'curved' | 'elbow';
         strokeWidth?: number;
+        strokeStyle?: 'solid' | 'dashed' | 'dotted';
 
         // Image Specific
         src?: string; // URL or Base64
+        url?: string; // Alias for src
+
+        // Icon Specific
+        path?: string;
 
         // Board Specific
         grid?: {
             columns: number;
-            // Board Specific
-            grid?: {
-                columns: number;
-                rows: number;
-                gap: number;
-            };
+            rows: number;
+            gap: number;
 
             // Card Specific
             status?: 'todo' | 'in-progress' | 'done';
             tags?: string[];
 
-            // Composite Specific
-            composite?: CompositeContent;
         };
 
+        // Composite Specific
+        composite?: CompositeContent;
+
         // Meta
-        createdAt: number;
-        updatedAt: number;
         locked?: boolean;
         isFixed?: boolean; // Background mode
         parentId?: string; // For grouping (future)
     }
+}
 
 export interface Viewport {
     x: number;

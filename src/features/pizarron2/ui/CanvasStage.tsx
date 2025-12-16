@@ -92,7 +92,10 @@ export const CanvasStage: React.FC = () => {
                 // Events delegated manually or via React?
                 // React events are fine for Pointer, but Wheel needs non-passive.
                 // Pointer inputs:
-                onPointerDown={(e) => interactionManager.onPointerDown(e)}
+                onPointerDown={(e) => {
+                    pizarronStore.setUIFlag('showLibrary', false);
+                    interactionManager.onPointerDown(e);
+                }}
                 onPointerMove={(e) => interactionManager.onPointerMove(e)}
                 onPointerUp={(e) => interactionManager.onPointerUp(e)}
                 onPointerLeave={(e) => interactionManager.onPointerUp(e)}
