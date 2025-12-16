@@ -64,9 +64,8 @@ export const PizarronCard: React.FC<PizarronCardProps> = ({ task, onDragStart, o
       whileHover={{ y: -4, transition: { duration: 0.2 } }}
       className={`
         relative group cursor-pointer
-        bg-white/90 dark:bg-slate-900/90 backdrop-blur-sm
-        border border-slate-200/60 dark:border-slate-700/60
-        rounded-2xl shadow-sm hover:shadow-xl hover:border-orange-400/50 transition-all duration-300
+        glass
+        hover:shadow-premium hover:border-nexus-orange/50 transition-all duration-300
         ${isUrgent ? 'ring-2 ring-rose-500/30' : ''}
         ${compactMode ? 'p-3' : 'p-5 min-h-[140px] flex flex-col'}
       `}

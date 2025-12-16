@@ -152,8 +152,14 @@ export const LeftRail: React.FC = () => {
         // For now, this meets the requirement of using the new Selector.
     };
 
+    const [mounted, setMounted] = useState(false);
+
+    useEffect(() => {
+        setMounted(true);
+    }, []);
+
     return (
-        <div className="absolute left-4 top-1/2 -translate-y-1/2 flex gap-2 pointer-events-auto items-start">
+        <div className={`absolute left-4 top-1/2 -translate-y-1/2 flex gap-2 pointer-events-auto items-start transition-all duration-700 ease-out-expo ${mounted ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-12'}`}>
             {/* Main Strip */}
             <div className="bg-white/90 backdrop-blur shadow-sm border border-slate-200 rounded-2xl p-2 flex flex-col gap-2">
                 {TOOLS.map(tool => {
@@ -174,9 +180,9 @@ export const LeftRail: React.FC = () => {
                         <button
                             key={tool.id}
                             onClick={() => handleTool(tool)}
-                            className={`w-10 h-10 flex items-center justify-center rounded-xl transition-colors ${isActive
-                                ? 'bg-orange-100 text-orange-600 border border-orange-200'
-                                : 'hover:bg-slate-100 text-slate-600 border border-transparent'
+                            className={`w-10 h-10 flex items-center justify-center rounded-xl transition-all duration-200 ${isActive
+                                ? 'bg-orange-100 text-orange-600 border border-orange-200 scale-105 shadow-sm' // Active Pop
+                                : 'hover:bg-slate-100 text-slate-600 border border-transparent hover:scale-110' // Hover Lift
                                 }`}
                             title={tool.label}
                         >

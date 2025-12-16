@@ -123,12 +123,17 @@ export interface BoardNode {
             columns: number;
             rows: number;
             gap: number;
-
-            // Card Specific
-            status?: 'todo' | 'in-progress' | 'done';
-            tags?: string[];
-
         };
+
+        // Card Specific
+        status?: 'todo' | 'in-progress' | 'done';
+        tags?: string[];
+
+        // Line Specific (Explicit Points Override)
+        start?: { x: number, y: number };
+        end?: { x: number, y: number };
+        startBinding?: LineBinding;
+        endBinding?: LineBinding;
 
         // Composite Specific
         composite?: CompositeContent;
@@ -180,7 +185,11 @@ export interface BoardState {
             start: number;
             end: number;
         }>;
+        // Focus Mode
         focusTargetId?: string | null;
+
+        // Choreography
+        targetViewport?: Viewport; // Smooth transition target
     };
     presentationState: {
         isActive: boolean;

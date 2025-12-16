@@ -25,7 +25,15 @@
     --ring: 222.2 47.4% 11.2%;
     --radius: 0.5rem;
     --radius-base: 14px;
+    --radius-base: 14px;
     --transition-fast: 180ms;
+
+    /* Nexus Motion System */
+    --ease-nexus: cubic-bezier(0.2, 0.8, 0.2, 1);
+    --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+    --duration-instant: 80ms;
+    --duration-fast: 160ms;
+    --duration-normal: 240ms;
   }
 
   .dark {
@@ -63,7 +71,16 @@
 
 @layer components {
   .shadow-premium {
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+    box-shadow: 0 20px 60px -15px rgba(0, 0, 0, 0.15);
+  }
+
+  .glass {
+    @apply backdrop-blur-md bg-white/40 dark:bg-black/40 border border-white/20 dark:border-white/10;
+  }
+
+  .floating-ui {
+    @apply rounded-2xl border border-white/20 dark:border-white/10;
+    box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.1);
   }
 }
 

@@ -185,8 +185,14 @@ export class InteractionManager {
             }
 
             if (bounds) {
-                const handleSize = 10 / viewport.zoom;
-                const margin = handleSize; // Hit area
+                // Nexus Interaction: Enhanced Handle Logic
+                // 1. Base size in Screen Pixels (10px) converted to World
+                const baseSize = 10 / viewport.zoom;
+                // 2. Clamp to ensure handles don't overlap (max 33% of min dimension)
+                const limit = Math.min(bounds.w, bounds.h) / 3;
+
+                const handleSize = Math.min(baseSize, limit);
+                const margin = handleSize; // Hit area matches visual/logical size
                 const half = handleSize / 2;
 
                 let localMouse = { ...worldPoint };

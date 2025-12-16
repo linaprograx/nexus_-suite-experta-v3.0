@@ -364,7 +364,7 @@ export const Inspector: React.FC = () => {
 
     return (
         <div
-            className="fixed w-72 pointer-events-auto z-40 transition-all duration-200"
+            className="fixed w-72 pointer-events-auto z-40 transition-all duration-500 ease-out-expo"
             style={{
                 top: 100,
                 left: '50%',
@@ -372,7 +372,7 @@ export const Inspector: React.FC = () => {
             }}
             onPointerDown={(e) => e.stopPropagation()} // Prevent canvas drag
         >
-            <div className="bg-white/95 backdrop-blur shadow-2xl border border-slate-200 rounded-2xl p-4 flex flex-col gap-4 animate-in fade-in zoom-in-95 duration-200">
+            <div className="bg-white/95 backdrop-blur shadow-2xl border border-slate-200 rounded-2xl p-4 flex flex-col gap-4 animate-in fade-in zoom-in-95 duration-500 slide-in-from-bottom-2">
                 <div className="flex justify-between items-center border-b border-slate-100 pb-2">
                     <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">{firstNode?.type.toUpperCase() || 'SELECTION'} STYLE</span>
                     <div className="flex gap-1">

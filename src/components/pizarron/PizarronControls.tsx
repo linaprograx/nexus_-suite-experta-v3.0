@@ -49,16 +49,15 @@ export const PizarronControls: React.FC<PizarronControlsProps> = ({
     });
 
     return (
-        <div className="h-full flex flex-col bg-white/40 dark:bg-slate-900/40 backdrop-blur-xl rounded-2xl border border-white/20 dark:border-white/5 p-2 items-center relative overflow-visible z-40 shadow-sm">
-            {/* Gradient Border Overlay */}
-            <div className="absolute inset-0 rounded-2xl pointer-events-none border-2 border-transparent" style={{ maskImage: 'linear-gradient(to bottom, black 40%, transparent 100%)', WebkitMaskImage: 'linear-gradient(to bottom, black 40%, transparent 100%)' }}></div>
+        <div className="h-full flex flex-col glass floating-ui p-2 items-center relative overflow-visible z-40">
+            {/* Gradient Border Overlay removed */}
 
             {/* Search Top */}
             <div className="mb-6 relative w-full flex justify-center z-50">
                 <Button
                     variant="ghost"
                     size="icon"
-                    className="w-10 h-10 rounded-xl transition-all text-slate-600 dark:text-slate-400 hover:bg-white/50 hover:text-orange-500"
+                    className="w-10 h-10 rounded-xl transition-all text-slate-600 dark:text-slate-300 hover:bg-white/50 dark:hover:bg-slate-800/50 hover:text-nexus-orange"
                     onClick={onGlobalSearch}
                     title="Búsqueda Global"
                 >
@@ -69,7 +68,7 @@ export const PizarronControls: React.FC<PizarronControlsProps> = ({
             {/* Main Tools - Better Distributed */}
             <div className="space-y-4 w-full flex flex-col items-center flex-1 py-4">
 
-                <div className="flex flex-col gap-2 p-2 bg-white/30 dark:bg-slate-800/30 rounded-2xl">
+                <div className="flex flex-col gap-2 p-2 bg-white/30 dark:bg-slate-800/30 rounded-2xl border border-white/10">
                     <TooltipButton
                         active={focusMode}
                         activeColor="bg-indigo-600 text-white shadow-md shadow-indigo-500/20"
@@ -117,7 +116,7 @@ export const PizarronControls: React.FC<PizarronControlsProps> = ({
             <div className="mt-auto pb-4 w-full flex flex-col items-center relative z-40">
                 <Button
                     size="icon"
-                    className="w-12 h-12 rounded-2xl bg-gradient-to-br from-orange-500 to-amber-600 text-white shadow-xl shadow-orange-500/20 hover:scale-105 transition-all"
+                    className="w-12 h-12 rounded-2xl bg-gradient-to-br from-nexus-orange to-amber-600 text-white shadow-xl shadow-nexus-orange/20 hover:scale-105 active:scale-95 transition-all duration-fast ease-nexus"
                     onClick={onShowSmartView}
                     title="Vista Inteligente AI"
                 >
@@ -223,7 +222,7 @@ const TooltipButton = ({ active, activeColor, icon, onClick, label, className = 
             variant={active ? "default" : "ghost"}
             size="icon"
             onClick={onClick}
-            className={`w-10 h-10 rounded-xl transition-all duration-200 ${active ? activeColor : 'text-slate-500 hover:bg-white/80 dark:hover:bg-slate-800/80'} ${className}`}
+            className={`w-10 h-10 rounded-xl transition-all duration-normal ease-nexus active:scale-95 hover:-translate-y-0.5 ${active ? activeColor : 'text-slate-500 dark:text-slate-400 hover:bg-white/80 dark:hover:bg-slate-800/80'} ${className}`}
         >
             <Icon svg={icon} className="h-5 w-5" />
         </Button>

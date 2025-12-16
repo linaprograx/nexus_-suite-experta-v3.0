@@ -98,8 +98,14 @@ export const PizarronRoot: React.FC<PizarronRootProps> = ({ appId, boardId, user
         return () => window.removeEventListener('keydown', handleKeyDown);
     }, []);
 
+    // Cinematic Entry
+    const [mounted, setMounted] = React.useState(false);
+    React.useEffect(() => {
+        setMounted(true);
+    }, []);
+
     return (
-        <div className="w-full h-full relative flex flex-col bg-slate-50 overflow-hidden">
+        <div className={`w-full h-full relative flex flex-col bg-slate-50 dark:bg-slate-950 overflow-hidden transition-all duration-700 ease-out-expo ${mounted ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`}>
             {/* Standard Overlays (Hidden during Presentation) */}
             <div className={`absolute inset-0 z-10 pointer-events-none transition-opacity duration-500 ${isPresenting ? 'opacity-0' : 'opacity-100'}`}>
                 {/* Overlays */}

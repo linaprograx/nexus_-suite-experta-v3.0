@@ -56,7 +56,7 @@ export default function PizarronView(props: PizarronViewProps) {
     // 1. Sidebar (z-40) is fixed at left-0. When collapsed it is w-20.
     // 2. We position Pizarron fixed at left-0 (mobile) or left-20 (desktop).
     // 3. We use z-30 to ensure we are above page backgrounds but BELOW the Sidebar (so it remains visible).
-    <div className="fixed inset-0 md:left-20 z-30 bg-slate-50 overflow-hidden">
+    <div className="fixed inset-0 md:left-20 z-30 bg-slate-50 dark:bg-slate-950 overflow-hidden">
       <PizarronRoot
         appId={appId}
         boardId={activeBoardId}

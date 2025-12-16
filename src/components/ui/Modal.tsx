@@ -18,9 +18,9 @@ export const Modal: React.FC<{ isOpen: boolean, onClose: () => void, title?: Rea
     };
 
     return ReactDOM.createPortal(
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={onClose}>
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 backdrop-blur-md" onClick={onClose}>
             <div className={`relative w-full ${sizes[size]} ${className} animate-in fade-in zoom-in-95 duration-200`} onClick={e => e.stopPropagation()}>
-                <Card className="m-4 border-slate-200 dark:border-slate-800 shadow-2xl bg-white dark:bg-slate-900">
+                <Card className="m-4 border-white/20 dark:border-white/10 shadow-premium bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl">
                     <CardHeader className="flex flex-row items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
                         {title && <CardTitle className="text-lg font-semibold text-slate-800 dark:text-slate-100">{title}</CardTitle>}
                         <Button variant="ghost" size="icon" onClick={onClose} className="ml-auto h-8 w-8 text-slate-400 hover:text-slate-600"><Icon svg={ICONS.x} /></Button>

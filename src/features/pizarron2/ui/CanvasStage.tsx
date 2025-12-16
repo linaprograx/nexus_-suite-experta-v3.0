@@ -35,21 +35,62 @@ export const CanvasStage: React.FC = () => {
         // OR a continuous loop if we want smooth gesture inertia later.
         // Let's do Subscription-based for efficiency now.
 
-        const render = () => {
-            rafId.current = requestAnimationFrame(() => {
-                renderer.render(pizarronStore.getState());
-            });
+        // 3. Render Loop (Continuous for smooth Motion System)
+        const renderLoop = () => {
+            const state = pizarronStore.getState();
+
+            // Choreography: Cinematic Viewport Interpolation
+            if (state.interactionState.targetViewport) {
+                const target = state.interactionState.targetViewport;
+                const current = state.viewport;
+
+                // Lerp factor (Nexus Motion)
+                const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
+                const t = 0.15;
+
+                const newViewport = {
+                    x: lerp(current.x, target.x, t),
+                    y: lerp(current.y, target.y, t),
+                    zoom: lerp(current.zoom, target.zoom, t)
+                };
+
+                // Check if close enough to snap
+                const dx = Math.abs(newViewport.x - target.x);
+                const dy = Math.abs(newViewport.y - target.y);
+                const dz = Math.abs(newViewport.zoom - target.zoom);
+
+                if (dx < 0.5 && dy < 0.5 && dz < 0.001) {
+                    // Snap & Stop (clears targetViewport implicit in updateViewport non-animate)
+                    pizarronStore.updateViewport(target, false);
+                } else {
+                    // Update Frame
+                    pizarronStore.updateViewport(newViewport, false);
+                }
+            }
+
+            renderer.render(pizarronStore.getState());
+            rafId.current = requestAnimationFrame(renderLoop);
         };
 
-        // Initial render
-        render();
+        rafId.current = requestAnimationFrame(renderLoop);
 
-        // Subscribe to Store
-        const unsubscribe = pizarronStore.subscribe(render);
+        // Theme Change Observer
+        const observer = new MutationObserver((mutations) => {
+            mutations.forEach((mutation) => {
+                if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
+                    // No need to trigger render, loop handles it.
+                }
+            });
+        });
+
+        observer.observe(document.documentElement, {
+            attributes: true,
+            attributeFilter: ['class']
+        });
 
         return () => {
             resizeObserver.disconnect();
-            unsubscribe();
+            observer.disconnect();
             cancelAnimationFrame(rafId.current);
         };
     }, []);
@@ -85,7 +126,7 @@ export const CanvasStage: React.FC = () => {
     }, []);
 
     return (
-        <div ref={containerRef} className="w-full h-full bg-slate-50 relative overflow-hidden touch-none">
+        <div ref={containerRef} className="w-full h-full bg-slate-50 dark:bg-slate-950 relative overflow-hidden touch-none">
             <canvas
                 ref={canvasRef}
                 className="block absolute top-0 left-0 outline-none"

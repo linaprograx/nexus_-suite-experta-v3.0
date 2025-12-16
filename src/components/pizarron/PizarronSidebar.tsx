@@ -28,12 +28,11 @@ export const PizarronSidebar: React.FC<PizarronSidebarProps> = ({
     const [hoveredItem, setHoveredItem] = React.useState<{ text: string; top: number; right: number } | null>(null);
 
     return (
-        <div className="h-full flex flex-col bg-white/40 dark:bg-slate-900/40 backdrop-blur-xl rounded-2xl border border-white/20 dark:border-white/5 p-2 items-center shadow-sm relative overflow-visible group/sidebar">
-            {/* Gradient Border Overlay */}
-            <div className="absolute inset-0 rounded-2xl pointer-events-none border-2 border-transparent" style={{ maskImage: 'linear-gradient(to bottom, black 40%, transparent 100%)', WebkitMaskImage: 'linear-gradient(to bottom, black 40%, transparent 100%)' }}></div>
+        <div className="h-full flex flex-col glass floating-ui p-2 items-center relative overflow-visible group/sidebar transition-all duration-300">
+            {/* Gradient Border Overlay removed as glass provides the border */}
 
             <div className="mb-6 pt-2 z-10">
-                <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-orange-400 to-orange-600 text-white flex items-center justify-center shadow-lg shadow-orange-500/30">
+                <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-nexus-orange to-orange-600 text-white flex items-center justify-center shadow-lg shadow-nexus-orange/30">
                     <Icon svg={ICONS.layout} className="w-5 h-5" />
                 </div>
             </div>
@@ -54,7 +53,7 @@ export const PizarronSidebar: React.FC<PizarronSidebarProps> = ({
                         >
                             <Button
                                 variant={isActive ? "secondary" : "ghost"}
-                                className={`w-12 h-12 p-0 rounded-xl transition-all duration-300 relative ${isActive ? 'bg-white dark:bg-slate-800 text-orange-600 shadow-md ring-2 ring-orange-500/20 scale-105 z-20' : 'text-slate-500 hover:bg-white/60 dark:hover:bg-slate-800/60 hover:scale-105 hover:text-orange-500'}`}
+                                className={`w-12 h-12 p-0 rounded-xl transition-all duration-normal ease-nexus relative ${isActive ? 'bg-white dark:bg-slate-800 text-nexus-orange shadow-md ring-2 ring-nexus-orange/20 scale-105 z-20' : 'text-slate-500 hover:bg-white/60 dark:hover:bg-slate-800/60 hover:scale-105 hover:text-nexus-orange'}`}
                                 onClick={() => setActiveBoardId(board.id)}
                             >
                                 {board.icon && (ICONS as any)[board.icon] ? (
@@ -69,7 +68,7 @@ export const PizarronSidebar: React.FC<PizarronSidebarProps> = ({
                                 {onEditBoard && (
                                     <button
                                         onClick={(e) => { e.stopPropagation(); onEditBoard(board); }}
-                                        className="bg-white dark:bg-slate-700 hover:bg-orange-500 hover:text-white text-slate-500 p-1.5 rounded-full shadow-lg border border-slate-200 dark:border-slate-600 hover:scale-110 transition-transform"
+                                        className="bg-white dark:bg-slate-700 hover:bg-nexus-orange hover:text-white text-slate-500 p-1.5 rounded-full shadow-lg border border-slate-200 dark:border-slate-600 hover:scale-110 transition-transform"
                                         title="Editar"
                                     >
                                         <Icon svg={ICONS.edit} className="w-3.5 h-3.5" />
@@ -90,7 +89,7 @@ export const PizarronSidebar: React.FC<PizarronSidebarProps> = ({
                 })}
             </div>
 
-            <div className="absolute bottom-4 left-0 right-0 flex flex-col items-center space-y-3 z-20 bg-gradient-to-t from-white/80 via-white/50 to-transparent dark:from-slate-900/80 dark:via-slate-900/50 pt-6 pb-2 rounded-b-2xl">
+            <div className="absolute bottom-4 left-0 right-0 flex flex-col items-center space-y-3 z-20 bg-gradient-to-t from-white/90 via-white/60 to-transparent dark:from-slate-900/90 dark:via-slate-900/60 pt-6 pb-2 rounded-b-2xl">
                 <div className="group relative"
                     onMouseEnter={(e) => {
                         const rect = e.currentTarget.getBoundingClientRect();
@@ -100,7 +99,7 @@ export const PizarronSidebar: React.FC<PizarronSidebarProps> = ({
                 >
                     <Button
                         size="icon"
-                        className="w-12 h-12 rounded-full bg-gradient-to-r from-orange-400 to-orange-600 text-white shadow-lg shadow-orange-500/40 hover:scale-110 transition-transform duration-300 border-2 border-white dark:border-slate-800"
+                        className="w-12 h-12 rounded-full bg-gradient-to-r from-nexus-orange to-orange-600 text-white shadow-lg shadow-nexus-orange/40 hover:scale-110 transition-transform duration-300 border-2 border-white dark:border-slate-800"
                         onClick={onAddBoard}
                     >
                         <Icon svg={ICONS.plus} className="h-6 w-6" />
@@ -114,7 +113,7 @@ export const PizarronSidebar: React.FC<PizarronSidebarProps> = ({
                     }}
                     onMouseLeave={() => setHoveredItem(null)}
                 >
-                    <Button size="icon" variant="ghost" className="w-8 h-8 rounded-full text-slate-400 hover:text-orange-500 hover:bg-orange-50 dark:hover:bg-orange-900/30" onClick={onSelectTemplate}>
+                    <Button size="icon" variant="ghost" className="w-8 h-8 rounded-full text-slate-400 hover:text-nexus-orange hover:bg-orange-50 dark:hover:bg-orange-900/30" onClick={onSelectTemplate}>
                         <Icon svg={ICONS.grid} className="h-4 w-4" />
                     </Button>
                 </div>
@@ -126,7 +125,7 @@ export const PizarronSidebar: React.FC<PizarronSidebarProps> = ({
                     className="fixed z-[9999] pointer-events-none transform -translate-y-1/2"
                     style={{ top: hoveredItem.top, right: hoveredItem.right }}
                 >
-                    <div className="bg-slate-900 text-white text-xs font-medium px-3 py-1.5 rounded-lg shadow-xl flex items-center gap-2 animate-in fade-in slide-in-from-right-2 duration-200 border border-white/10">
+                    <div className="bg-slate-900/90 backdrop-blur text-white text-xs font-medium px-3 py-1.5 rounded-lg shadow-xl flex items-center gap-2 animate-in fade-in slide-in-from-right-2 duration-200 border border-white/10">
                         {hoveredItem.text}
                     </div>
                 </div>,

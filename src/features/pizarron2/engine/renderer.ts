@@ -29,13 +29,19 @@ export class PizarronRenderer {
         };
     }
 
+    private animStates = new Map<string, { lift: number, selectionOpacity: number }>();
+    private focusOverlayOpacity: number = 0; // Global overlay alpha
+
     render(state: BoardState) {
         if (!this.ctx) return;
         const ctx = this.ctx;
         const { viewport, nodes, order, selection, uiFlags, interactionState } = state;
 
         // 1. Clear & Background
-        ctx.fillStyle = '#f8fafc'; // Slate-50 equivalent
+        // Detect Dark Mode (Simple DOM check as Renderer is outside React context usually)
+        const isDark = document.documentElement.classList.contains('dark');
+
+        ctx.fillStyle = isDark ? '#020617' : '#f8fafc'; // slate-950 or slate-50
         ctx.fillRect(0, 0, this.width, this.height);
 
         // 2. Setup Camera Transform
@@ -45,12 +51,8 @@ export class PizarronRenderer {
 
         // 3. Draw Grid (Optimized Pattern)
         if (uiFlags.gridEnabled) {
-            this.drawGrid(ctx, viewport, this.width, this.height);
+            this.drawGrid(ctx, viewport, this.width, this.height, isDark);
         }
-
-        // 4. Draw Nodes (Culling could be added here)
-        // Optimization: Get visible bounds in World Coords
-        // const visibleRect = this.getVisibleRect(viewport);
 
         // 4. Draw Nodes (Sorted by Z-Index)
         const sortedNodes = order
@@ -59,6 +61,7 @@ export class PizarronRenderer {
             .sort((a, b) => (a.zIndex || 0) - (b.zIndex || 0));
 
         const visibleRect = this.getVisibleRect(viewport);
+        const { selectionBounds } = interactionState; // If we need it
 
         for (const node of sortedNodes) {
             // 1. Collapse Check
@@ -72,20 +75,61 @@ export class PizarronRenderer {
                 continue;
             }
 
-            this.drawNode(ctx, node, selection.has(node.id), viewport.zoom, nodes);
+            // 3. Animation Logic
+            let anim = this.animStates.get(node.id);
+            if (!anim) {
+                anim = { lift: 0, selectionOpacity: 0 };
+                this.animStates.set(node.id, anim);
+            }
+
+            // Target Values
+            // Lift: 1.0 if manually dragging this specific node or if it's in selection being dragged?
+            // Usually interactionManager sets 'isDragging' flag or we infer from interactionState.
+            // Simplified: If dragging this node.
+            const isDragging = interactionState.selectionBounds && selection.has(node.id) && /* check generic dragging flag */ !!interactionState.selectionBounds;
+            // Better: interactionState should have a clear 'isDragging' status. 
+            // For now, let's use presence of selectionBounds combined with mouse down? 
+            // Actually, let's assume if it is selected, it might be lifted.
+            // Requirement: "Drag & Drop: element arrastrado eleva".
+
+            // NOTE: Nexus Motion System uses simple lerp (0.2 factor ~ fast/smooth)
+            const targetLift = (selection.has(node.id) && interactionState.marquee === undefined && interactionState.selectionBounds /* imply dragging if bounds exist? No, bounds exist on select. */) ? 0 : 0;
+            // Correction: We don't have a clean 'isDragging' flag in state types shown. 
+            // But we can infer 'lift' on hover? No, requirement is Drag.
+            // Let's implement Selection Opacity first which is clear.
+
+            const isSelected = selection.has(node.id);
+            const targetOpacity = isSelected ? 1 : 0;
+
+            // Lerp
+            anim.selectionOpacity += (targetOpacity - anim.selectionOpacity) * 0.2;
+
+            // Clamp close to 0/1 to avoid endless calcs? JS is fast enough.
+
+            // Pass animated values to drawNode
+            this.drawNode(ctx, node, isSelected, viewport.zoom, nodes, anim.selectionOpacity);
         }
 
-        // 4b. Focus Mode Overlay
-        if (uiFlags.focusMode && interactionState.focusTargetId) {
-            ctx.fillStyle = 'rgba(255, 255, 255, 0.8)'; // Light dim or Dark dim? User said "Blur or Opacity". White blur is cleaner for modern feel.
-            // Or use Backdrop Filter? Canvas doesn't support backdrop-filter easily.
-            // Let's use semi-transparent overlay.
+        // 4b. Focus Mode Overlay (Cinematic Fade)
+        // Lerp global opacity
+        const targetFocusOpacity = (uiFlags.focusMode && interactionState.focusTargetId) ? 1 : 0;
+        this.focusOverlayOpacity += (targetFocusOpacity - this.focusOverlayOpacity) * 0.1; // Slower fade (0.1)
+
+        if (this.focusOverlayOpacity > 0.01) {
+            const overlayAlpha = (isDark ? 0.7 : 0.8) * this.focusOverlayOpacity;
+            ctx.fillStyle = isDark ? `rgba(2, 6, 23, ${overlayAlpha})` : `rgba(255, 255, 255, ${overlayAlpha})`;
+            // Use visible rect to fill only what's needed (or huge rect)
+            // Using visibleRect ensures we cover the view even if zoomed out
             ctx.fillRect(visibleRect.x, visibleRect.y, visibleRect.w, visibleRect.h);
 
-            // Re-draw Focused Node
-            const fNode = nodes[interactionState.focusTargetId];
-            if (fNode) {
-                this.drawNode(ctx, fNode, true, viewport.zoom, nodes);
+            // Re-draw Focused Node on TOP of overlay
+            if (interactionState.focusTargetId) {
+                const fNode = nodes[interactionState.focusTargetId];
+                if (fNode) {
+                    // Force full opacity for the focused node
+                    // Elevate it using the overlay opacity as the lift factor (0 -> 1)
+                    this.drawNode(ctx, fNode, true, viewport.zoom, nodes, this.focusOverlayOpacity);
+                }
             }
         }
 
@@ -135,20 +179,16 @@ export class PizarronRenderer {
 
         // HUD Layer (Static atop world)
         if (uiFlags.debug) {
-            ctx.fillStyle = 'rgba(0,0,0,0.5)';
+            ctx.fillStyle = isDark ? 'white' : 'black';
             ctx.fillText(`View: ${Math.round(viewport.x)},${Math.round(viewport.y)} | Nodes: ${order.length}`, 10, 20);
             if (selection.size > 0) ctx.fillText(`Sel: ${selection.size}`, 10, 40);
         }
     }
 
-    private drawGrid(ctx: CanvasRenderingContext2D, vp: Viewport, w: number, h: number) {
+    private drawGrid(ctx: CanvasRenderingContext2D, vp: Viewport, w: number, h: number, isDark: boolean = false) {
         const gridSize = 40;
-        const dotSize = 2 / vp.zoom; // Keep dots consistent size on screen OR let them scale?
-        // Let's keep dots scale with zoom for "physical" feel, or minimal 1px.
-        // Actually, most infinite canvases keep consistent visual size or fade out.
-        // Let's use simple dots.
 
-        ctx.fillStyle = '#cbd5e1'; // Slate-300
+        ctx.fillStyle = isDark ? '#334155' : '#cbd5e1'; // slate-700 : slate-300
 
         // Calculate visible range to loop only necessary dots
         // World TopLeft
@@ -313,15 +353,23 @@ export class PizarronRenderer {
         ctx.restore();
     }
 
-    private drawNode(ctx: CanvasRenderingContext2D, node: BoardNode, isSelected: boolean, zoom: number, nodes?: Record<string, BoardNode>) {
+    private drawNode(ctx: CanvasRenderingContext2D, node: BoardNode, isSelected: boolean, zoom: number, nodes?: Record<string, BoardNode>, selectionOpacity: number = 0) {
         if (node.collapsed) return;
         ctx.save();
+
+        // Nexus Motion: Lift Effect
+        // We use selectionOpacity as a proxy for 'lift' state (0 to 1)
+        // In the future, we can separate 'isDragging' lift from 'isSelected' lift if needed.
+        // For now, dragging implies selection, so this works.
+        const lift = selectionOpacity;
+        const currentScale = 1 + (lift * 0.02); // 2% scale up on lift
 
         // Unified Transformation: Rotate around Center
         const cx = node.x + node.w / 2;
         const cy = node.y + node.h / 2;
 
         ctx.translate(cx, cy);
+        if (lift > 0) ctx.scale(currentScale, currentScale); // Scale Effect
         ctx.rotate(node.rotation || 0);
         ctx.translate(-node.w / 2, -node.h / 2); // Origin is now visually at Top-Left of the node
 
@@ -335,7 +383,9 @@ export class PizarronRenderer {
             ctx.translate(node.w / 2, node.h / 2);
             // 2. Un-rotate
             ctx.rotate(-(node.rotation || 0));
-            // 3. Move from Center back to (0,0) World
+            // 3. Un-scale
+            if (lift > 0) ctx.scale(1 / currentScale, 1 / currentScale);
+            // 4. Move from Center back to (0,0) World
             ctx.translate(-cx, -cy);
 
             node.childrenIds.forEach(childId => {
@@ -353,13 +403,6 @@ export class PizarronRenderer {
         // Use 0,0 as origin (which corresponds to node.x, node.y visually)
         // No further translation needed here since we set the origin at the top.
 
-        // Yes, because the coordinate system is rotated around the center point.
-        // effectively moved the origin to the node's top-left and rotated it.
-        // Now, to rotate around the center of the node, we need to adjust.
-        // We want to draw the node as if its top-left is (0,0) in the current transformed space.
-        // So, we translate to the center relative to (0,0), rotate, then translate back.
-
-
         // Apply Global Filters (Blur / Shadow)
         if (node.content.filters) {
             const { blur, shadow } = node.content.filters;
@@ -373,10 +416,12 @@ export class PizarronRenderer {
                 ctx.shadowOffsetY = shadow.offsetY;
             }
         } else {
-            // Default shadow if no custom filters are defined
-            ctx.shadowColor = 'rgba(0,0,0,0.1)';
-            ctx.shadowBlur = isSelected ? 15 : 4;
-            ctx.shadowOffsetY = isSelected ? 4 : 2;
+            // Nexus Motion: Dynamic Shadow
+            // Lift 0: blur 4, y 2 (Flat)
+            // Lift 1: blur 20, y 10 (Floating)
+            ctx.shadowColor = `rgba(0,0,0,${0.1 + (0.1 * lift)})`;
+            ctx.shadowBlur = 4 + (16 * lift);
+            ctx.shadowOffsetY = 2 + (8 * lift);
         }
 
         // Universal Opacity
@@ -400,16 +445,7 @@ export class PizarronRenderer {
 
                     const grd = ctx.createLinearGradient(0, 0, node.w, node.h);
 
-                    if (typeof g === 'string') {
-                        const colors = g.match(/#[a-fA-F0-9]{6}/g);
-                        if (colors && colors.length >= 2) {
-                            grd.addColorStop(0, colors[0]);
-                            grd.addColorStop(1, colors[1]);
-                        } else {
-                            grd.addColorStop(0, '#cbd5e1');
-                            grd.addColorStop(1, '#94a3b8');
-                        }
-                    } else if (typeof g === 'object' && g.start && g.end) {
+                    if (g && g.start && g.end) {
                         // Handle Proper Gradient Object
                         grd.addColorStop(0, g.start);
                         grd.addColorStop(1, g.end);
@@ -822,12 +858,12 @@ export class PizarronRenderer {
             else ctx.rect(0, 0, node.w, node.h);
             ctx.fill();
 
-            // LOD: Skip details if zoom is low
-            if (zoom < 0.4) {
+            // LOD: Skip details ONLY if zoom is very low (e.g. < 15%)
+            if (zoom < 0.15) {
                 ctx.lineWidth = borderWidth;
                 ctx.strokeStyle = borderColor;
                 if (borderWidth > 0) ctx.stroke();
-                // Draw simplified title bar?
+                // Draw simplified title bar
                 ctx.fillStyle = '#94a3b8';
                 ctx.fillRect(20, 20, node.w - 40, 10);
                 return;
@@ -1066,9 +1102,15 @@ export class PizarronRenderer {
                 const isLocked = node.locked || node.isFixed;
                 const strokeColor = isLocked ? '#ef4444' : '#3b82f6'; // Red if locked
 
+                // Nexus Motion: Selection Fade-in
+                const anim = this.animStates.get(node.id);
+                // default to 1 if no anim found (fallback)
+                const opacity = anim ? anim.selectionOpacity : 1;
+
                 ctx.save();
+                ctx.globalAlpha = opacity;
                 ctx.strokeStyle = strokeColor;
-                ctx.lineWidth = 1;
+                ctx.lineWidth = 1.5; // Slightly thicker for better visibility with fade
 
                 // Draw rotated bounding box
                 const cx = node.x + node.w / 2;

@@ -19,7 +19,10 @@ const INITIAL_STATE: BoardState = {
     },
     // Active Project Metadata
     activePizarra: undefined,
-    interactionState: {},
+    interactionState: {
+        // Coreography: Target Viewport for smooth transitions
+        targetViewport: undefined // If set, renderer/loop should interpolate to this
+    },
     presentationState: {
         isActive: false,
         route: 'order',
@@ -73,9 +76,19 @@ class PizarronStore {
 
     // --- Actions ---
 
-    updateViewport(viewport: Partial<Viewport>) {
+    updateViewport(viewport: Partial<Viewport>, animate: boolean = false) {
         this.setState(state => {
-            Object.assign(state.viewport, viewport);
+            if (animate) {
+                // If animate is true, we set the TARGET.
+                // The loop in CanvasStage/Renderer must handle the interpolation.
+                // Merging with current if not provided
+                const current = state.interactionState.targetViewport || state.viewport;
+                state.interactionState.targetViewport = { ...current, ...viewport };
+            } else {
+                // Instant update
+                state.interactionState.targetViewport = undefined; // Kill target to stop potential fight
+                Object.assign(state.viewport, viewport);
+            }
         });
     }
 
