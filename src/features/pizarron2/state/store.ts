@@ -1115,6 +1115,23 @@ class PizarronStore {
             });
         });
     }
+    moveBoardResource(id: string, direction: 'up' | 'down') {
+        this.setState(state => {
+            if (!state.savedTemplates) return;
+            const index = state.savedTemplates.findIndex(r => r.id === id);
+            if (index === -1) return;
+
+            if (direction === 'up' && index > 0) {
+                const temp = state.savedTemplates[index - 1];
+                state.savedTemplates[index - 1] = state.savedTemplates[index];
+                state.savedTemplates[index] = temp;
+            } else if (direction === 'down' && index < state.savedTemplates.length - 1) {
+                const temp = state.savedTemplates[index + 1];
+                state.savedTemplates[index + 1] = state.savedTemplates[index];
+                state.savedTemplates[index] = temp;
+            }
+        });
+    }
 }
 
 

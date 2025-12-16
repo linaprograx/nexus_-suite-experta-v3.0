@@ -129,29 +129,118 @@ export const Inspector: React.FC = () => {
 
                             {/* ... Content ... */}
                             <div>
-                                <label className="text-xs font-medium text-slate-600 block mb-1">Content</label>
+                                <label className="text-xs font-medium text-slate-600 block mb-1">
+                                    {activeZoneSection === 'title' ? 'Title Label' :
+                                        activeZoneSection === 'content' ? 'Content' : 'Section Content'}
+                                </label>
                                 <textarea
                                     className="w-full text-xs border border-slate-300 rounded p-2 min-h-[100px] focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
-                                    placeholder={`Type content for ${activeZone.label}...`}
-                                    value={activeZone.content?.text || ''}
+                                    placeholder={activeZoneSection === 'title' ? "Enter zone title..." : "Type content..."}
+                                    value={(() => {
+                                        if (activeZoneSection === 'title') return activeZone.label || '';
+                                        if (activeZoneSection === 'content') return activeZone.content?.text || '';
+                                        const sec = activeZone.sections?.find((s: any) => s.id === activeZoneSection);
+                                        return sec?.content?.text || '';
+                                    })()}
+                                    disabled={false}
                                     onChange={(e) => {
+                                        const val = e.target.value;
                                         const newStructure = JSON.parse(JSON.stringify(firstNode.structure));
-                                        const zIndex = newStructure.zones.findIndex((z: any) => z.id === activeZoneId);
-                                        if (zIndex >= 0) {
-                                            if (!newStructure.zones[zIndex].content) newStructure.zones[zIndex].content = { style: { fontSize: 16 } };
-                                            newStructure.zones[zIndex].content.text = e.target.value;
-                                            pizarronStore.updateNode(firstNode.id, { structure: newStructure });
+                                        const z = newStructure.zones.find((z: any) => z.id === activeZoneId);
+
+                                        if (activeZoneSection === 'title') {
+                                            z.label = val;
+                                        } else if (activeZoneSection === 'content') {
+                                            if (!z.content) z.content = {};
+                                            z.content.text = val;
+                                        } else {
+                                            const sec = z.sections?.find((s: any) => s.id === activeZoneSection);
+                                            if (sec) {
+                                                if (!sec.content) sec.content = {};
+                                                sec.content.text = val;
+                                            }
                                         }
+                                        pizarronStore.updateNode(firstNode.id, { structure: newStructure });
                                     }}
                                 />
                             </div>
 
+                            {/* Zone Title Visibility (Issue 2) */}
+                            {activeZoneSection === 'title' && (
+                                <div className="flex items-center gap-2 mt-2">
+                                    <label className="text-xs text-slate-600 flex items-center gap-1 cursor-pointer">
+                                        <input
+                                            type="checkbox"
+                                            className="rounded text-indigo-600 focus:ring-indigo-500 h-3 w-3"
+                                            checked={activeZone.style?.showLabel !== false} // Default true
+                                            onChange={(e) => {
+                                                const checked = e.target.checked;
+                                                const newStructure = JSON.parse(JSON.stringify(firstNode.structure));
+                                                const z = newStructure.zones.find((z: any) => z.id === activeZoneId);
+                                                if (!z.style) z.style = {};
+                                                z.style.showLabel = checked;
+                                                pizarronStore.updateNode(firstNode.id, { structure: newStructure });
+                                            }}
+                                        />
+                                        Show Title Label
+                                    </label>
+                                </div>
+                            )}
+
                             {/* Rich Text Styles */}
-                            {/* Dynamic Section Header */}
-                            <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-2 mt-4 pt-4 border-t border-slate-200">
-                                <span className={activeZoneSection === 'title' ? 'text-indigo-600' : ''}>Title Section</span>
-                                <span className="text-slate-300">/</span>
-                                <span className={activeZoneSection === 'content' ? 'text-indigo-600' : ''}>Content Section</span>
+                            {/* Dynamic Section Header & Manager */}
+                            <div className="flex flex-col gap-2 mt-4 pt-4 border-t border-slate-200">
+                                <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center justify-between">
+                                    <div className="flex gap-2">
+                                        <span className={activeZoneSection === 'title' ? 'text-indigo-600' : 'cursor-pointer hover:text-slate-600'} onClick={() => pizarronStore.updateInteractionState({ activeZoneSection: 'title' })}>TITLE</span>
+                                        <span className="text-slate-300">/</span>
+                                        <span className={activeZoneSection === 'content' ? 'text-indigo-600' : 'cursor-pointer hover:text-slate-600'} onClick={() => pizarronStore.updateInteractionState({ activeZoneSection: 'content' })}>CONTENT</span>
+                                        {activeZone.sections?.length > 0 && (
+                                            <>
+                                                <span className="text-slate-300">/</span>
+                                                <span className={(!['title', 'content'].includes(activeZoneSection)) ? 'text-indigo-600' : 'text-slate-400'}>
+                                                    SECTIONS ({activeZone.sections.length})
+                                                </span>
+                                            </>
+                                        )}
+                                    </div>
+                                    <button
+                                        className="text-[10px] bg-indigo-50 text-indigo-600 px-2 py-0.5 rounded hover:bg-indigo-100"
+                                        onClick={() => {
+                                            const newStructure = JSON.parse(JSON.stringify(firstNode.structure));
+                                            const z = newStructure.zones.find((z: any) => z.id === activeZoneId);
+                                            if (!z.sections) z.sections = [];
+                                            const newId = crypto.randomUUID();
+                                            z.sections.push({
+                                                id: newId,
+                                                content: { text: "New Section", style: { fontSize: 14 } },
+                                                style: { backgroundColor: 'transparent' }
+                                            });
+                                            pizarronStore.updateNode(firstNode.id, { structure: newStructure });
+                                            // Auto-select new section
+                                            pizarronStore.updateInteractionState({ activeZoneSection: newId });
+                                        }}
+                                    >
+                                        + Add
+                                    </button>
+                                </div>
+                                {(!['title', 'content'].includes(activeZoneSection)) && (
+                                    <div className="text-[10px] text-slate-500 bg-slate-50 px-2 py-1 rounded flex justify-between items-center">
+                                        <span>Editing Section</span>
+                                        <button
+                                            className="text-red-500 hover:text-red-700"
+                                            onClick={() => {
+                                                const newStructure = JSON.parse(JSON.stringify(firstNode.structure));
+                                                const z = newStructure.zones.find((z: any) => z.id === activeZoneId);
+                                                z.sections = z.sections.filter((s: any) => s.id !== activeZoneSection);
+                                                pizarronStore.updateNode(firstNode.id, { structure: newStructure });
+                                                pizarronStore.updateInteractionState({ activeZoneSection: 'content' });
+                                            }}
+                                        >
+                                            Remove
+                                        </button>
+                                    </div>
+                                )}
                             </div>
 
                             {/* Font Styles (Context Aware) */}
@@ -159,7 +248,12 @@ export const Inspector: React.FC = () => {
                                 <div>
                                     <label className="text-xs font-medium text-slate-600 block mb-1">Font Size</label>
                                     <input type="number" className="w-full text-xs border rounded p-1"
-                                        value={activeZoneSection === 'title' ? (activeZone.style?.titleFontSize || 14) : (activeZone.content?.style?.fontSize || 14)}
+                                        value={(() => {
+                                            if (activeZoneSection === 'title') return activeZone.style?.titleFontSize || 14;
+                                            if (activeZoneSection === 'content') return activeZone.content?.style?.fontSize || 14;
+                                            const sec = activeZone.sections?.find((s: any) => s.id === activeZoneSection);
+                                            return sec?.content?.style?.fontSize || 14;
+                                        })()}
                                         onChange={(e) => {
                                             const val = parseInt(e.target.value);
                                             const newStructure = JSON.parse(JSON.stringify(firstNode.structure));
@@ -168,10 +262,17 @@ export const Inspector: React.FC = () => {
                                             if (activeZoneSection === 'title') {
                                                 if (!z.style) z.style = {};
                                                 z.style.titleFontSize = val;
-                                            } else {
+                                            } else if (activeZoneSection === 'content') {
                                                 if (!z.content) z.content = { style: {} };
                                                 if (!z.content.style) z.content.style = {};
                                                 z.content.style.fontSize = val;
+                                            } else {
+                                                const sec = z.sections?.find((s: any) => s.id === activeZoneSection);
+                                                if (sec) {
+                                                    if (!sec.content) sec.content = { style: {} };
+                                                    if (!sec.content.style) sec.content.style = {};
+                                                    sec.content.style.fontSize = val;
+                                                }
                                             }
                                             pizarronStore.updateNode(firstNode.id, { structure: newStructure });
                                         }}
@@ -180,14 +281,30 @@ export const Inspector: React.FC = () => {
                                 <div>
                                     <label className="text-xs font-medium text-slate-600 block mb-1">Line Height</label>
                                     <input type="number" step="0.1" className="w-full text-xs border rounded p-1"
-                                        value={activeZone.content?.style?.lineHeight || 1.2} // LineHeight mostly for content
+                                        value={(() => {
+                                            if (activeZoneSection === 'title') return 1.2; // Title usually doesn't have line height control
+                                            if (activeZoneSection === 'content') return activeZone.content?.style?.lineHeight || 1.2;
+                                            const sec = activeZone.sections?.find((s: any) => s.id === activeZoneSection);
+                                            return sec?.content?.style?.lineHeight || 1.2;
+                                        })()}
                                         disabled={activeZoneSection === 'title'}
                                         onChange={(e) => {
                                             const val = parseFloat(e.target.value);
                                             const newStructure = JSON.parse(JSON.stringify(firstNode.structure));
                                             const z = newStructure.zones.find((z: any) => z.id === activeZoneId);
-                                            if (!z.content) z.content = { style: {} };
-                                            z.content.style.lineHeight = val;
+                                            // Handle specific section line height logic if needed, currently global default?
+                                            // Or duplicate logic above. For brevity, linking to content or current section.
+                                            if (activeZoneSection === 'content') {
+                                                if (!z.content) z.content = { style: {} };
+                                                z.content.style.lineHeight = val;
+                                            } else {
+                                                const sec = z.sections?.find((s: any) => s.id === activeZoneSection);
+                                                if (sec) {
+                                                    if (!sec.content) sec.content = { style: {} };
+                                                    if (!sec.content.style) sec.content.style = {};
+                                                    sec.content.style.lineHeight = val;
+                                                }
+                                            }
                                             pizarronStore.updateNode(firstNode.id, { structure: newStructure });
                                         }}
                                     />
@@ -197,7 +314,13 @@ export const Inspector: React.FC = () => {
                             {/* Alignment & Lists */}
                             <div className="flex gap-2 bg-slate-100 p-1 rounded justify-center">
                                 {['left', 'center', 'right'].map(align => {
-                                    const currentAlign = activeZoneSection === 'title' ? (activeZone.style?.titleAlign || 'left') : (activeZone.content?.style?.align || 'left');
+                                    const currentAlign = (() => {
+                                        if (activeZoneSection === 'title') return activeZone.style?.titleAlign || 'left';
+                                        if (activeZoneSection === 'content') return activeZone.content?.style?.align || 'left';
+                                        const sec = activeZone.sections?.find((s: any) => s.id === activeZoneSection);
+                                        return sec?.content?.style?.align || 'left';
+                                    })();
+
                                     return (
                                         <button
                                             key={align}
@@ -208,10 +331,17 @@ export const Inspector: React.FC = () => {
                                                 if (activeZoneSection === 'title') {
                                                     if (!z.style) z.style = {};
                                                     z.style.titleAlign = align;
-                                                } else {
+                                                } else if (activeZoneSection === 'content') {
                                                     if (!z.content) z.content = {};
                                                     if (!z.content.style) z.content.style = {};
                                                     z.content.style.align = align;
+                                                } else {
+                                                    const sec = z.sections?.find((s: any) => s.id === activeZoneSection);
+                                                    if (sec) {
+                                                        if (!sec.content) sec.content = {};
+                                                        if (!sec.content.style) sec.content.style = {};
+                                                        sec.content.style.align = align;
+                                                    }
                                                 }
                                                 pizarronStore.updateNode(firstNode.id, { structure: newStructure });
                                             }}
@@ -229,27 +359,69 @@ export const Inspector: React.FC = () => {
                                 {/* Text Color */}
                                 <div>
                                     <label className="text-xs font-medium text-slate-600 block mb-1">Text Color</label>
-                                    <div className="flex gap-1.5 flex-wrap">
-                                        {['#1e293b', '#64748b', '#ef4444', '#f97316', '#f59e0b', '#84cc16', '#10b981', '#06b6d4', '#3b82f6', '#8b5cf6', '#d946ef', '#f43f5e'].map(c => (
-                                            <button
-                                                key={c}
-                                                onClick={() => {
-                                                    const newStructure = JSON.parse(JSON.stringify(firstNode.structure));
-                                                    const z = newStructure.zones.find((z: any) => z.id === activeZoneId);
-                                                    if (activeZoneSection === 'title') {
-                                                        if (!z.style) z.style = {};
-                                                        z.style.titleColor = c;
-                                                    } else {
-                                                        if (!z.content) z.content = {};
-                                                        if (!z.content.style) z.content.style = {};
-                                                        z.content.style.color = c;
+                                    <div className="flex gap-1.5 flex-wrap items-center">
+                                        {['#ffffff', '#f8fafc', '#1e293b', '#64748b', '#ef4444', '#f97316', '#f59e0b', '#84cc16', '#10b981', '#06b6d4', '#3b82f6', '#8b5cf6', '#d946ef', '#f43f5e'].map(c => {
+                                            const currentColor = (() => {
+                                                if (activeZoneSection === 'title') return activeZone.style?.titleColor;
+                                                if (activeZoneSection === 'content') return activeZone.content?.style?.color;
+                                                return activeZone.sections?.find((s: any) => s.id === activeZoneSection)?.content?.style?.color;
+                                            })();
+
+                                            return (
+                                                <button
+                                                    key={c}
+                                                    onClick={() => {
+                                                        const newStructure = JSON.parse(JSON.stringify(firstNode.structure));
+                                                        const z = newStructure.zones.find((z: any) => z.id === activeZoneId);
+
+                                                        if (activeZoneSection === 'title') {
+                                                            if (!z.style) z.style = {};
+                                                            z.style.titleColor = c;
+                                                        } else if (activeZoneSection === 'content') {
+                                                            if (!z.content) z.content = {};
+                                                            if (!z.content.style) z.content.style = {};
+                                                            z.content.style.color = c;
+                                                        } else {
+                                                            const sec = z.sections?.find((s: any) => s.id === activeZoneSection);
+                                                            if (sec) {
+                                                                if (!sec.content) sec.content = {};
+                                                                if (!sec.content.style) sec.content.style = {};
+                                                                sec.content.style.color = c;
+                                                            }
+                                                        }
+                                                        pizarronStore.updateNode(firstNode.id, { structure: newStructure });
+                                                    }}
+                                                    className={`w-5 h-5 rounded-full border border-slate-200 transition-transform hover:scale-110 ${currentColor === c ? 'ring-2 ring-indigo-500 ring-offset-1' : ''}`}
+                                                    style={{ backgroundColor: c }}
+                                                />
+                                            );
+                                        })}
+                                        <input
+                                            type="color"
+                                            className="w-6 h-6 p-0 border-0 rounded overflow-hidden cursor-pointer"
+                                            onChange={(e) => {
+                                                const c = e.target.value;
+                                                const newStructure = JSON.parse(JSON.stringify(firstNode.structure));
+                                                const z = newStructure.zones.find((z: any) => z.id === activeZoneId);
+
+                                                if (activeZoneSection === 'title') {
+                                                    if (!z.style) z.style = {};
+                                                    z.style.titleColor = c;
+                                                } else if (activeZoneSection === 'content') {
+                                                    if (!z.content) z.content = {};
+                                                    if (!z.content.style) z.content.style = {};
+                                                    z.content.style.color = c;
+                                                } else {
+                                                    const sec = z.sections?.find((s: any) => s.id === activeZoneSection);
+                                                    if (sec) {
+                                                        if (!sec.content) sec.content = {};
+                                                        if (!sec.content.style) sec.content.style = {};
+                                                        sec.content.style.color = c;
                                                     }
-                                                    pizarronStore.updateNode(firstNode.id, { structure: newStructure });
-                                                }}
-                                                className={`w-5 h-5 rounded-full border border-slate-200 transition-transform hover:scale-110 ${((activeZoneSection === 'title' ? activeZone.style?.titleColor : activeZone.content?.style?.color) === c) ? 'ring-2 ring-indigo-500 ring-offset-1' : ''}`}
-                                                style={{ backgroundColor: c }}
-                                            />
-                                        ))}
+                                                }
+                                                pizarronStore.updateNode(firstNode.id, { structure: newStructure });
+                                            }}
+                                        />
                                     </div>
                                 </div>
                                 {/* Background Fill (Relleno) */}
@@ -283,13 +455,20 @@ export const Inspector: React.FC = () => {
                                                 onClick={() => {
                                                     const newStructure = JSON.parse(JSON.stringify(firstNode.structure));
                                                     const z = newStructure.zones.find((z: any) => z.id === activeZoneId);
+
                                                     if (activeZoneSection === 'title') {
                                                         if (!z.style) z.style = {};
                                                         z.style.titleBackgroundColor = c;
-                                                    } else {
+                                                    } else if (activeZoneSection === 'content') {
                                                         if (!z.content) z.content = {};
                                                         if (!z.content.style) z.content.style = {};
                                                         z.content.style.backgroundColor = c;
+                                                    } else {
+                                                        const sec = z.sections?.find((s: any) => s.id === activeZoneSection);
+                                                        if (sec) {
+                                                            if (!sec.style) sec.style = {};
+                                                            sec.style.backgroundColor = c;
+                                                        }
                                                     }
                                                     pizarronStore.updateNode(firstNode.id, { structure: newStructure });
                                                 }}
@@ -490,6 +669,33 @@ export const Inspector: React.FC = () => {
                 // --- BOARD INSPECTOR (Multi-Edit Capable) ---
                 return (
                     <div className="space-y-4">
+                        {/* Board Title Editor */}
+                        <div className="bg-slate-50 p-2 rounded border border-slate-200">
+                            <label className="text-xs font-bold text-slate-700 block mb-1">Board Title</label>
+                            <input
+                                type="text"
+                                className="w-full text-xs border border-slate-300 rounded p-1 mb-2 font-bold text-slate-700"
+                                value={primaryTarget.content.title || 'BOARD'}
+                                onChange={(e) => updateNode({ title: e.target.value })}
+                            />
+                            <div className="flex gap-2">
+                                <div className="flex-1">
+                                    <label className="text-[10px] text-slate-500 block mb-1">Color</label>
+                                    <input type="color" className="w-full h-6 rounded cursor-pointer"
+                                        value={primaryTarget.content.titleColor || '#94a3b8'}
+                                        onChange={(e) => updateNode({ titleColor: e.target.value })}
+                                    />
+                                </div>
+                                <div className="flex-1">
+                                    <label className="text-[10px] text-slate-500 block mb-1">Size</label>
+                                    <input type="number" className="w-full h-6 text-xs border rounded px-1"
+                                        value={primaryTarget.content.fontSize || 14}
+                                        onChange={(e) => updateNode({ fontSize: parseInt(e.target.value) })}
+                                    />
+                                </div>
+                            </div>
+                        </div>
+
                         {/* Title & Body - Using 'primaryTarget' instead of 'firstNode' where likely to read */}
                         <div>
                             <input
@@ -660,38 +866,7 @@ export const Inspector: React.FC = () => {
                             )}
                         </div>
 
-                        {/* DEBUG: Add Structure */}
-                        <div>
-                            <label className="text-xs font-medium text-rose-600 block mb-1">Debug: Internal Structure</label>
-                            <button
-                                onClick={() => {
-                                    const struct = {
-                                        template: 'grid' as const,
-                                        rows: [
-                                            { id: 'r1', height: 1 },
-                                            { id: 'r2', height: 2 },
-                                            { id: 'r3', height: 1 }
-                                        ],
-                                        cols: [
-                                            { id: 'c1', width: 1 },
-                                            { id: 'c2', width: 1 }
-                                        ],
-                                        cells: {
-                                            'r1_c1': { content: 'Header 1' },
-                                            'r1_c2': { content: 'Header 2' },
-                                            'r2_c1': { content: 'Body A' },
-                                            'r2_c2': { content: 'Body B' },
-                                            'r3_c1': { content: 'Footer 1' },
-                                            'r3_c2': { content: 'Footer 2' }
-                                        }
-                                    };
-                                    pizarronStore.updateStructure(firstNode.id, struct);
-                                }}
-                                className="w-full py-2 bg-rose-50 text-rose-600 border border-rose-200 rounded text-xs hover:bg-rose-100"
-                            >
-                                Inject Test Grid
-                            </button>
-                        </div>
+
 
                         {/* Existing Color Picker */}
                         <div>
@@ -722,6 +897,10 @@ export const Inspector: React.FC = () => {
                             <div className="space-y-1 mb-2 max-h-32 overflow-y-auto custom-scrollbar">
                                 {boardResources?.map(r => (
                                     <div key={r.id} className="flex items-center justify-between p-1.5 bg-slate-50 hover:bg-slate-100 rounded border border-slate-200 group">
+                                        <div className="flex flex-col gap-0.5 mr-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                            <button onClick={(e) => { e.stopPropagation(); pizarronStore.moveBoardResource(r.id, 'up'); }} className="text-slate-400 hover:text-indigo-600 leading-none text-[8px]">▲</button>
+                                            <button onClick={(e) => { e.stopPropagation(); pizarronStore.moveBoardResource(r.id, 'down'); }} className="text-slate-400 hover:text-indigo-600 leading-none text-[8px]">▼</button>
+                                        </div>
                                         <span className="text-xs text-slate-700 truncate flex-1" title={r.name}>{r.name}</span>
                                         <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                             <button

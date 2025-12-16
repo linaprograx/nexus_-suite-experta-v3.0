@@ -43,35 +43,56 @@ export interface ZoneStyle {
     titleGap?: number;
     titleFontSize?: number;
     titleAlign?: 'left' | 'center' | 'right';
+    showLabel?: boolean; // Toggle visibility of the zone title
     titleColor?: string;
     titleBackgroundColor?: string; // Background for title section
     gradient?: { start: string; end: string; angle?: number };
     shadow?: { color: string; blur: number; offsetX: number; offsetY: number };
 }
 
+export interface ZoneSection {
+    id: string;
+    label?: string; // Optional label for the section (e.g. "Conclusions")
+    content?: {
+        text: string;
+        style?: {
+            fontSize?: number;
+            align?: 'left' | 'center' | 'right';
+            color?: string;
+            backgroundColor?: string;
+            lineHeight?: number;
+        };
+    };
+    height?: number; // Optional fixed height or flex ratio? For now, we'll auto-layout.
+    style?: {
+        backgroundColor?: string;
+    }
+}
+
 export interface BoardZone {
     id: string;
-    label: string;
-    x: number; y: number; w: number; h: number; // Percentages
-    defaultType?: 'text' | 'image' | 'list';
-    placeholderText?: string;
+    x: number; // Percentage 0-1
+    y: number; // Percentage 0-1
+    w: number; // Percentage 0-1
+    h: number; // Percentage 0-1
+    label: string; // The "Title" of the zone
     style?: ZoneStyle;
+    lineHeight?: number;
+    listType?: 'none' | 'bullet' | 'number';
+    padding?: number;
+    verticalAlign?: 'top' | 'middle' | 'bottom';
     content?: {
         text?: string;
         style?: {
             fontSize?: number;
-            fontWeight?: 'normal' | 'bold' | 'light';
-            fontStyle?: 'normal' | 'italic';
-            textDecoration?: 'none' | 'underline' | 'line-through';
+            fontFamily?: string;
             align?: 'left' | 'center' | 'right';
             color?: string;
-            fontFamily?: string;
+            backgroundColor?: string;
             lineHeight?: number;
-            listType?: 'none' | 'bullet' | 'number';
-            padding?: number;
-            verticalAlign?: 'top' | 'middle' | 'bottom';
         };
     };
+    sections?: ZoneSection[];
 }
 
 export interface BoardStructure {
@@ -248,6 +269,8 @@ export interface BoardResource {
 }
 
 
+export type ResizeHandle = 'n' | 's' | 'e' | 'w' | 'ne' | 'nw' | 'se' | 'sw';
+
 export interface InteractionState {
     // Interaction
     selectionBounds?: { x: number, y: number, w: number, h: number };
@@ -261,7 +284,7 @@ export interface InteractionState {
     resizeHandle?: ResizeHandle;
     isDraggingMap?: boolean;
     activeZoneId?: string; // ID of the specific zone selected within a board
-    activeZoneSection?: 'title' | 'content'; // Specific section within the zone
+    activeZoneSection?: string; // Specific section ID ('title', 'content', or UUID)
     targetViewport?: Viewport; // For cinematic transitions
     guides?: GuideLine[];
     snapLines?: Array<{

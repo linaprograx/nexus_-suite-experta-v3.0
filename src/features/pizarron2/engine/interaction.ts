@@ -604,7 +604,26 @@ export class InteractionManager {
                         const localYInZone = localY - zy;
                         const titleBoundary = 24 + (hitZone.style?.titleGap ?? 2);
 
-                        const section = localYInZone < titleBoundary ? 'title' : 'content';
+                        let section = 'content';
+                        if (localYInZone < titleBoundary) {
+                            section = 'title';
+                        } else {
+                            // Section Layout Logic (Match Renderer)
+                            const zh = hitZone.h * hitNode.h;
+                            const availableH = Math.max(0, zh - titleBoundary);
+                            const extraSections = hitZone.sections || [];
+                            const totalSections = 1 + extraSections.length; // 1 for 'content'
+                            const sectionH = availableH / totalSections;
+
+                            const relativeY = localYInZone - titleBoundary;
+                            const sectionIndex = Math.floor(relativeY / sectionH);
+
+                            if (sectionIndex === 0) {
+                                section = 'content';
+                            } else if (sectionIndex > 0 && sectionIndex <= extraSections.length) {
+                                section = extraSections[sectionIndex - 1].id;
+                            }
+                        }
 
                         pizarronStore.updateInteractionState({
                             activeZoneId: hitZone.id,
@@ -669,6 +688,10 @@ export class InteractionManager {
 
                 if (!e.shiftKey) {
                     pizarronStore.setSelection([]);
+                    pizarronStore.updateInteractionState({
+                        activeZoneId: undefined,
+                        activeZoneSection: undefined
+                    });
                 }
                 (e.target as HTMLElement).setPointerCapture(e.pointerId);
             }

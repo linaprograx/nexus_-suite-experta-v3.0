@@ -991,7 +991,7 @@ export class PizarronRenderer {
             if (borderWidth > 0) ctx.stroke();
 
             // Title
-            ctx.fillStyle = '#94a3b8';
+            ctx.fillStyle = node.content.titleColor || '#94a3b8';
             ctx.font = `bold ${node.content.fontSize || 14}px "${node.content.fontFamily || 'Inter'}", sans-serif`;
             ctx.textBaseline = 'top';
             ctx.fillText((node.content.title || 'BOARD').toUpperCase(), 20, 20);
@@ -1189,17 +1189,18 @@ export class PizarronRenderer {
                     }
 
                     // 3. Label (Title Section)
-                    const titleHeightBase = 24;
+                    const showTitle = zone.style?.showLabel !== false;
+                    const titleHeightBase = showTitle ? 24 : 0;
                     const titleGap = zone.style?.titleGap ?? 2;
                     const contentOffsetY = titleHeightBase + titleGap;
 
                     // Draw Title Background
-                    if (zone.style?.titleBackgroundColor && zone.style.titleBackgroundColor !== 'transparent') {
+                    if (showTitle && zone.style?.titleBackgroundColor && zone.style.titleBackgroundColor !== 'transparent') {
                         ctx.fillStyle = zone.style.titleBackgroundColor;
                         ctx.fillRect(zx, zy, zw, titleHeightBase);
                     }
 
-                    if (zoom > 0.4) {
+                    if (showTitle && zoom > 0.4) {
                         ctx.fillStyle = zone.style?.titleColor || '#64748b';
                         const tSize = zone.style?.titleFontSize || 12;
                         ctx.font = `700 ${Math.max(10, tSize / zoom)}px Inter, sans-serif`;
@@ -1217,37 +1218,88 @@ export class PizarronRenderer {
                     }
 
                     // 4. Render Zone Content (Body Text Section)
+                    // 4. Render Zone Sections (Content + Extra)
+                    // Layout Calculation
+                    const availableH = Math.max(0, zh - contentOffsetY);
+                    const sections = zone.sections || []; // Extra sections
+                    const allSectionsCount = 1 + sections.length; // 1 = Main Content
+                    const gap = zone.style?.titleGap ?? 2;
+
+                    // Internal Gaps: Between Content and Sec1, Sec1 and Sec2... (count - 1)
+                    // Wait, layout logic: Title, Gap, [Content, Gap, Section, Gap, Section...]
+                    // We already offset by `contentOffsetY` (Title + Gap).
+                    // So inside this area, we have items separated by gaps.
+                    const totalInternalGapH = Math.max(0, allSectionsCount - 1) * gap;
+                    const itemH = Math.max(0, (availableH - totalInternalGapH) / allSectionsCount);
+
+                    ctx.save();
+                    ctx.translate(zx, zy + contentOffsetY);
+
+                    // Clip to body area
+                    ctx.beginPath();
+                    ctx.rect(0, 0, zw, availableH);
+                    ctx.clip();
+
+                    // --- DRAW CONTENT (Index 0) ---
+                    // Background
+                    if (zone.content?.style?.backgroundColor && zone.content.style.backgroundColor !== 'transparent') {
+                        ctx.fillStyle = zone.content.style.backgroundColor;
+                        ctx.fillRect(0, 0, zw, itemH);
+                    }
+                    // Text
                     if (zone.content && zone.content.text) {
-                        ctx.save();
-                        ctx.translate(zx, zy + contentOffsetY); // Offset Body by Title + Gap
-
-                        // Clip to remaining zone area
-                        const bodyH = Math.max(0, zh - contentOffsetY);
-                        ctx.beginPath();
-                        ctx.rect(0, 0, zw, bodyH);
-                        ctx.clip();
-
-                        // Content Background
-                        if (zone.content.style?.backgroundColor && zone.content.style.backgroundColor !== 'transparent') {
-                            ctx.fillStyle = zone.content.style.backgroundColor;
-                            ctx.fillRect(0, 0, zw, bodyH);
-                        }
-
                         const proxyNode: any = {
                             w: zw,
-                            h: bodyH,
+                            h: itemH,
                             content: {
                                 title: zone.content.text,
                                 fontSize: 14,
-                                color: '#334155', // slate-700
+                                color: '#334155',
                                 ...zone.content.style,
-                                padding: 4 // Internal padding
+                                padding: 4
                             }
                         };
-
                         this.drawText(ctx, proxyNode, zoom);
-                        ctx.restore();
                     }
+
+                    // --- DRAW EXTRA SECTIONS ---
+                    sections.forEach((sec, i) => {
+                        const yPos = (i + 1) * (itemH + gap);
+
+                        // Background
+                        if (sec.style?.backgroundColor && sec.style.backgroundColor !== 'transparent') {
+                            ctx.fillStyle = sec.style.backgroundColor;
+                            ctx.fillRect(0, yPos, zw, itemH);
+                        }
+
+                        // Text (Content)
+                        if (sec.content && sec.content.text) {
+                            const proxySec: any = {
+                                w: zw,
+                                h: itemH,
+                                content: {
+                                    title: sec.content.text,
+                                    fontSize: 14,
+                                    color: '#334155',
+                                    ...sec.content.style,
+                                    padding: 4
+                                }
+                            };
+
+                            // Adjust context translation temporarily?
+                            // drawText assumes (0,0) is top-left of node? No, it uses 0,0 of current transform?
+                            // drawText calls `drawParagraph`.
+                            // Let's look at `drawText`. Usually it draws at 0,0?
+                            // Yes, `drawText` uses `node` dimensions.
+                            // I need to offset context.
+                            ctx.save();
+                            ctx.translate(0, yPos);
+                            this.drawText(ctx, proxySec, zoom);
+                            ctx.restore();
+                        }
+                    });
+
+                    ctx.restore();
                 }
             });
 
