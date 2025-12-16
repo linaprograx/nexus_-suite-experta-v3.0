@@ -19,6 +19,16 @@ export class PizarronRenderer {
         this.ctx.canvas.height = h;
     }
 
+    private getVisibleRect(vp: Viewport) {
+        const margin = 100; // Buffer
+        return {
+            x: -vp.x / vp.zoom - margin,
+            y: -vp.y / vp.zoom - margin,
+            w: this.width / vp.zoom + (margin * 2),
+            h: this.height / vp.zoom + (margin * 2)
+        };
+    }
+
     render(state: BoardState) {
         if (!this.ctx) return;
         const ctx = this.ctx;
@@ -45,13 +55,38 @@ export class PizarronRenderer {
         // 4. Draw Nodes (Sorted by Z-Index)
         const sortedNodes = order
             .map(id => nodes[id])
-            .filter(n => !!n)
+            .filter(n => !!n && !n.collapsed) // Skip collapsed nodes
             .sort((a, b) => (a.zIndex || 0) - (b.zIndex || 0));
 
+        const visibleRect = this.getVisibleRect(viewport);
+
         for (const node of sortedNodes) {
-            // Simple Culling Check (Optional)
-            // if (!intersects(node, visibleRect)) continue;
+            // 1. Collapse Check
+            if (node.collapsed) continue;
+
+            // 2. Culling Check
+            if (node.x > visibleRect.x + visibleRect.w ||
+                node.x + node.w < visibleRect.x ||
+                node.y > visibleRect.y + visibleRect.h ||
+                node.y + node.h < visibleRect.y) {
+                continue;
+            }
+
             this.drawNode(ctx, node, selection.has(node.id), viewport.zoom, nodes);
+        }
+
+        // 4b. Focus Mode Overlay
+        if (uiFlags.focusMode && interactionState.focusTargetId) {
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.8)'; // Light dim or Dark dim? User said "Blur or Opacity". White blur is cleaner for modern feel.
+            // Or use Backdrop Filter? Canvas doesn't support backdrop-filter easily.
+            // Let's use semi-transparent overlay.
+            ctx.fillRect(visibleRect.x, visibleRect.y, visibleRect.w, visibleRect.h);
+
+            // Re-draw Focused Node
+            const fNode = nodes[interactionState.focusTargetId];
+            if (fNode) {
+                this.drawNode(ctx, fNode, true, viewport.zoom, nodes);
+            }
         }
 
         // 5. Draw Marquee
@@ -157,7 +192,17 @@ export class PizarronRenderer {
         ctx.restore();
     }
 
-    private drawText(ctx: CanvasRenderingContext2D, node: BoardNode) {
+    private drawText(ctx: CanvasRenderingContext2D, node: BoardNode, zoom: number = 1) { // Added zoom param to signature if not present, check call site
+        // LOD Check
+        if (zoom < 0.4) {
+            // Draw placeholder blocks? Or just skip?
+            // User requirement: "Simplificación visual". Skipping is fastest.
+            // Maybe draw a grey rect?
+            ctx.fillStyle = '#cbd5e1';
+            ctx.fillRect(0, 0, node.w, Math.min(node.h, 10)); // Title bar mock
+            return;
+        }
+
         const { w, h } = node;
         const { title, fontSize = 20, fontWeight = 'normal', fontStyle = 'normal', fontFamily = 'Inter', color = '#000000', align = 'left' } = node.content;
 
@@ -269,20 +314,29 @@ export class PizarronRenderer {
     }
 
     private drawNode(ctx: CanvasRenderingContext2D, node: BoardNode, isSelected: boolean, zoom: number, nodes?: Record<string, BoardNode>) {
+        if (node.collapsed) return;
         ctx.save();
-        ctx.translate(node.x, node.y);
+
+        // Unified Transformation: Rotate around Center
+        const cx = node.x + node.w / 2;
+        const cy = node.y + node.h / 2;
+
+        ctx.translate(cx, cy);
         ctx.rotate(node.rotation || 0);
+        ctx.translate(-node.w / 2, -node.h / 2); // Origin is now visually at Top-Left of the node
 
         if (node.type === 'composite') {
             this.drawComposite(ctx, node);
         }
         else if (node.type === 'group' && node.childrenIds && nodes) {
-            // Draw Group debug border if needed, or rely on Selection Overlay
-
-            // Draw Children (Absolute Coords -> Reset Transform)
+            // Unwind Transform to World Space for Children
             ctx.save();
+            // 1. Move origin from Top-Left back to Center
+            ctx.translate(node.w / 2, node.h / 2);
+            // 2. Un-rotate
             ctx.rotate(-(node.rotation || 0));
-            ctx.translate(-node.x, -node.y);
+            // 3. Move from Center back to (0,0) World
+            ctx.translate(-cx, -cy);
 
             node.childrenIds.forEach(childId => {
                 const child = nodes[childId];
@@ -296,17 +350,15 @@ export class PizarronRenderer {
             return;
         }
 
-        // For non-group nodes, apply rotation around center
-        // The initial translate(node.x, node.y) and rotate(node.rotation || 0)
+        // Use 0,0 as origin (which corresponds to node.x, node.y visually)
+        // No further translation needed here since we set the origin at the top.
+
+        // Yes, because the coordinate system is rotated around the center point.
         // effectively moved the origin to the node's top-left and rotated it.
         // Now, to rotate around the center of the node, we need to adjust.
         // We want to draw the node as if its top-left is (0,0) in the current transformed space.
         // So, we translate to the center relative to (0,0), rotate, then translate back.
-        const cx = node.w / 2;
-        const cy = node.h / 2;
-        ctx.translate(cx, cy); // Translate to center of node (relative to current origin)
-        // Rotation was already applied at the start, so we don't apply it again here.
-        ctx.translate(-node.w / 2, -node.h / 2); // Translate back to top-left for drawing
+
 
         // Apply Global Filters (Blur / Shadow)
         if (node.content.filters) {
@@ -348,14 +400,21 @@ export class PizarronRenderer {
 
                     const grd = ctx.createLinearGradient(0, 0, node.w, node.h);
 
-                    // Regex to find hex colors
-                    const colors = typeof g === 'string' ? g.match(/#[a-fA-F0-9]{6}/g) : null;
-
-                    if (colors && colors.length >= 2) {
-                        grd.addColorStop(0, colors[0]);
-                        grd.addColorStop(1, colors[1]);
+                    if (typeof g === 'string') {
+                        const colors = g.match(/#[a-fA-F0-9]{6}/g);
+                        if (colors && colors.length >= 2) {
+                            grd.addColorStop(0, colors[0]);
+                            grd.addColorStop(1, colors[1]);
+                        } else {
+                            grd.addColorStop(0, '#cbd5e1');
+                            grd.addColorStop(1, '#94a3b8');
+                        }
+                    } else if (typeof g === 'object' && g.start && g.end) {
+                        // Handle Proper Gradient Object
+                        grd.addColorStop(0, g.start);
+                        grd.addColorStop(1, g.end);
                     } else {
-                        // Fallback if parsing fails
+                        // Fallback
                         grd.addColorStop(0, '#cbd5e1');
                         grd.addColorStop(1, '#94a3b8');
                     }
@@ -582,6 +641,11 @@ export class PizarronRenderer {
 
             ctx.fill();
             if (borderWidth > 0) ctx.stroke();
+
+            // Render Internal Structure if present (e.g. Injected Grid)
+            if (node.structure) {
+                this.drawBoardStructure(ctx, node, zoom);
+            }
         }
         else if (node.type === 'line') {
             ctx.strokeStyle = node.content.color || '#334155';
@@ -737,9 +801,10 @@ export class PizarronRenderer {
             }
         }
         else if (node.type === 'text') {
-            this.drawText(ctx, node);
+            this.drawText(ctx, node, zoom);
         }
         else if (node.type === 'board') {
+            // Background
             if (node.content.gradient) {
                 const g = node.content.gradient;
                 const grd = ctx.createLinearGradient(0, 0, 0, node.h);
@@ -757,25 +822,41 @@ export class PizarronRenderer {
             else ctx.rect(0, 0, node.w, node.h);
             ctx.fill();
 
-            // Internal Grid
-            if (node.content.grid) {
+            // LOD: Skip details if zoom is low
+            if (zoom < 0.4) {
+                ctx.lineWidth = borderWidth;
+                ctx.strokeStyle = borderColor;
+                if (borderWidth > 0) ctx.stroke();
+                // Draw simplified title bar?
+                ctx.fillStyle = '#94a3b8';
+                ctx.fillRect(20, 20, node.w - 40, 10);
+                return;
+            }
+
+            // Internal Grid (Legacy & New)
+            if (node.structure) {
+                // New Phase 6.2.10 Structure
+                this.drawBoardStructure(ctx, node, zoom);
+            }
+            else if (node.content.grid) {
+                // Legacy Grid
                 const { columns, rows, gap } = node.content.grid;
                 if (columns > 1 || rows > 1) {
                     ctx.save();
                     ctx.beginPath();
                     ctx.strokeStyle = borderColor + '60'; // Semi-transparent
                     ctx.lineWidth = 1;
-
-                    // Columns
+                    // ... (keep legacy logic or simplify) ...
+                    // For now, let's keep legacy logic inline or move to helper
+                    // I'll keep logic here for minimal diff, but indented correctly
                     if (columns > 1) {
-                        const colW = (node.w - (gap * 2)) / columns; // Simplified gap logic
+                        const colW = (node.w - (gap * 2)) / columns;
                         for (let i = 1; i < columns; i++) {
-                            const x = i * colW + gap; // Approx
+                            const x = i * colW + gap;
                             ctx.moveTo(x, 0);
                             ctx.lineTo(x, node.h);
                         }
                     }
-                    // Rows
                     if (rows > 1) {
                         const rowH = (node.h - (gap * 2)) / rows;
                         for (let i = 1; i < rows; i++) {
@@ -795,7 +876,7 @@ export class PizarronRenderer {
 
             // Title
             ctx.fillStyle = '#94a3b8';
-            ctx.font = `bold 12px "${node.content.fontFamily || 'Inter'}", sans-serif`;
+            ctx.font = `bold ${node.content.fontSize || 14}px "${node.content.fontFamily || 'Inter'}", sans-serif`;
             ctx.textBaseline = 'top';
             ctx.fillText((node.content.title || 'BOARD').toUpperCase(), 20, 20);
 
@@ -853,7 +934,8 @@ export class PizarronRenderer {
             ctx.strokeStyle = '#e2e8f0';
             ctx.strokeRect(0, 0, node.w, node.h);
             ctx.fillStyle = '#0f172a';
-            ctx.font = `14px "${node.content.fontFamily || 'Inter'}", sans-serif`;
+            const fontSize = node.content.fontSize || 14;
+            ctx.font = `bold ${fontSize}px "${node.content.fontFamily || 'Inter'}", sans-serif`;
             ctx.textBaseline = 'top';
             ctx.fillText(node.content.title || '', 10, 10);
 
@@ -890,6 +972,84 @@ export class PizarronRenderer {
         ctx.restore();
     }
 
+    private drawBoardStructure(ctx: CanvasRenderingContext2D, node: BoardNode, zoom: number) {
+        if (!node.structure) return;
+        const { rows, cols, cells } = node.structure;
+        if (!rows || !cols) return;
+
+        // Calculation
+        const totalRowHeight = rows.reduce((acc, r) => acc + (r.height || 1), 0);
+        const totalColWidth = cols.reduce((acc, c) => acc + (c.width || 1), 0);
+
+        // Draw Grid
+        ctx.save();
+        // Use darker default color for visibility
+        ctx.strokeStyle = node.content.borderColor ? node.content.borderColor + '80' : '#94a3b8'; // Slate-400
+        ctx.lineWidth = 1;
+
+        // Calculate and Draw
+        let currentY = 0;
+        const computedRows = rows.map(r => {
+            const h = (r.height / totalRowHeight) * node.h;
+            const startY = currentY;
+            currentY += h;
+            return { ...r, startY, h };
+        });
+
+        let currentX = 0;
+        const computedCols = cols.map(c => {
+            const w = (c.width / totalColWidth) * node.w;
+            const startX = currentX;
+            currentX += w;
+            return { ...c, startX, w };
+        });
+
+        // Draw Lines
+        ctx.beginPath();
+        // Skip last line (border)
+        for (let i = 0; i < computedRows.length - 1; i++) {
+            const y = computedRows[i].startY + computedRows[i].h;
+            ctx.moveTo(0, y);
+            ctx.lineTo(node.w, y);
+        }
+        for (let i = 0; i < computedCols.length - 1; i++) {
+            const x = computedCols[i].startX + computedCols[i].w;
+            ctx.moveTo(x, 0);
+            ctx.lineTo(x, node.h);
+        }
+        ctx.stroke();
+
+        // Draw Cells Content
+        // LOD check already done in parent, but cells might be small
+        // If zoom is okay, draw text
+        if (zoom > 0.5) {
+            ctx.fillStyle = '#64748b'; // Muted text
+            ctx.font = '12px Inter, sans-serif';
+            ctx.textAlign = 'left';
+            ctx.textBaseline = 'top';
+
+            computedRows.forEach(row => {
+                computedCols.forEach(col => {
+                    const cellId = `${row.id}_${col.id}`;
+                    if (cells && cells[cellId] && cells[cellId].content) {
+                        const content = cells[cellId].content;
+                        // Clip to cell
+                        ctx.save();
+                        ctx.beginPath();
+                        ctx.rect(col.startX, row.startY, col.w, row.h);
+                        ctx.clip();
+
+                        // Draw Text (Simple truncate)
+                        ctx.fillText(content, col.startX + 5, row.startY + 5);
+                        ctx.restore();
+                    }
+                });
+            });
+        }
+
+        ctx.restore();
+    }
+
     private drawSelectionOverlay(ctx: CanvasRenderingContext2D, state: BoardState, zoom: number) {
         const selectedIds = Array.from(state.selection);
         if (selectedIds.length === 0) return;
@@ -898,44 +1058,50 @@ export class PizarronRenderer {
         // Actually, simplify: Just check if single is locked. Multi resize is special.
 
         if (selectedIds.length === 1) {
-            // Single Selection
-            const id = selectedIds[0];
-            const node = state.nodes[id];
-            if (!node) return;
+            const node = state.nodes[selectedIds[0]];
+            // Defensive check: Skip if collpased
+            if (node && !node.collapsed) {
+                // Determine Bounds (Rotated ?)
+                // ...
+                const isLocked = node.locked || node.isFixed;
+                const strokeColor = isLocked ? '#ef4444' : '#3b82f6'; // Red if locked
 
-            const isLocked = node.locked || node.isFixed;
-            const color = isLocked ? '#ef4444' : '#3b82f6'; // Blue
-
-            ctx.save();
-            const cx = node.x + node.w / 2;
-            const cy = node.y + node.h / 2;
-            ctx.translate(cx, cy);
-            if (node.rotation) ctx.rotate(node.rotation);
-            ctx.translate(-node.w / 2, -node.h / 2);
-
-            ctx.strokeStyle = color;
-            ctx.lineWidth = 1.5;
-            ctx.strokeRect(0, 0, node.w, node.h);
-            ctx.restore();
-
-            if (!isLocked) {
                 ctx.save();
+                ctx.strokeStyle = strokeColor;
+                ctx.lineWidth = 1;
+
+                // Draw rotated bounding box
                 const cx = node.x + node.w / 2;
                 const cy = node.y + node.h / 2;
+
                 ctx.translate(cx, cy);
                 if (node.rotation) ctx.rotate(node.rotation);
-                ctx.translate(-node.w / 2, -node.h / 2);
-                this.drawControls(ctx, node, zoom);
+                ctx.translate(-cx, -cy);
+
+                ctx.strokeRect(node.x, node.y, node.w, node.h);
                 ctx.restore();
+
+                if (!isLocked) {
+                    ctx.save();
+                    // const cx = node.x + node.w / 2; // declared above
+                    // const cy = node.y + node.h / 2;
+                    ctx.translate(cx, cy);
+                    if (node.rotation) ctx.rotate(node.rotation);
+                    ctx.translate(-node.w / 2, -node.h / 2);
+                    this.drawControls(ctx, node, zoom);
+                    ctx.restore();
+                }
             }
         } else {
             // Multi Selection - Master Bounding Box
             let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
             let anyLocked = false;
+            let hasVisibleNode = false;
 
             selectedIds.forEach(id => {
                 const node = state.nodes[id];
-                if (node) {
+                if (node && !node.collapsed) {
+                    hasVisibleNode = true;
                     // Logic for rotated bounding box is complex.
                     // For now, we calculate AABB of the rotated nodes?
                     // Or simplified: Just AABB of raw coordinates (UX standard for quick multi-select).
@@ -948,6 +1114,8 @@ export class PizarronRenderer {
                     if (node.locked) anyLocked = true;
                 }
             });
+
+            if (!hasVisibleNode) return;
 
             const w = maxX - minX;
             const h = maxY - minY;

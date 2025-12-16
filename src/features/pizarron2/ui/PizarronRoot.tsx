@@ -11,9 +11,12 @@ import { PresentationMode } from './presentation/PresentationMode';
 import { ImageModal } from './overlays/ImageModal';
 import { ConfigModalRouter } from './overlays/ConfigModalRouter';
 import { MiniToolbar } from './overlays/MiniToolbar';
-import { Firestore } from 'firebase/firestore'; // Assuming Firestore type is available or needs to be imported
+import { GuideOverlay } from './overlays/GuideOverlay';
+import { Firestore } from 'firebase/firestore';
 import { LibrarySidePanel } from './panels/LibrarySidePanel';
 import { PizarraManager } from './overlays/PizarraManager';
+import { MiniMap } from './overlays/MiniMap';
+import { CollapsedDock } from './overlays/CollapsedDock';
 
 interface PizarronRootProps {
     appId: string;
@@ -103,13 +106,17 @@ export const PizarronRoot: React.FC<PizarronRootProps> = ({ appId, boardId, user
                 {!isPresenting && (
                     <>
                         <TopBar />
+                        {/* Overlays (Toolbars, etc) */}
                         <LeftRail />
                         <MiniToolbar />
+                        <Inspector />
+                        <GuideOverlay />
+                        <MiniMap />
+                        <CollapsedDock />
+
                         {showLibrary && <LibrarySidePanel />}
                         {showProjectManager && <PizarraManager onClose={() => pizarronStore.setUIFlag('showProjectManager', false)} />}
-                        <Inspector />
                         <TextEditor />
-                        <MiniToolbar />
                         {editingImageId && <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm pointer-events-auto">
                             <ImageModal
                                 nodeId={editingImageId}

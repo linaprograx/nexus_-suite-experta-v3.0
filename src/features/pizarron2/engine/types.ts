@@ -32,9 +32,22 @@ export interface CompositeContent {
     borderRadius?: number;
 }
 
+export interface BoardStructure {
+    template: 'custom' | 'kanban' | 'grid';
+    rows: Array<{ height: number, id: string }>; // Proportional (flex) weights
+    cols: Array<{ width: number, id: string }>; // Proportional (flex) weights
+    cells: Record<string, { content: string, style?: any }>; // Key: "rowId_colId"
+}
+
 export interface BoardNode {
     id: string;
     type: 'text' | 'shape' | 'sticker' | 'image' | 'line' | 'group' | 'board' | 'card' | 'composite' | 'icon';
+
+    // Structure & Scalability
+    structure?: BoardStructure;
+    collapsed?: boolean;
+    isFocus?: boolean;
+
     x: number;
     y: number;
     w: number;
@@ -60,6 +73,9 @@ export interface BoardNode {
             end: string;
             angle?: number;
         };
+        // Transform
+        rotation?: number;
+
 
         // Effects
         filters?: {
@@ -83,7 +99,7 @@ export interface BoardNode {
         textAlign?: 'left' | 'center' | 'right';
 
         // Shape Specific
-        shapeType?: 'rectangle' | 'circle' | 'triangle' | 'diamond' | 'hexagon' | 'arrow_right' | 'star' | 'speech_bubble' | 'cloud' | 'pill';
+        shapeType?: 'rectangle' | 'circle' | 'triangle' | 'diamond' | 'hexagon' | 'arrow_right' | 'arrow_left' | 'arrow_up' | 'arrow_down' | 'star' | 'speech_bubble' | 'bubble' | 'cloud' | 'pill' | 'pentagon' | 'octagon' | 'trapezoid' | 'parallelogram' | 'triangle_right' | 'cross' | 'chevron_right';
         borderWidth?: number;
         borderColor?: string;
         borderRadius?: number;
@@ -144,7 +160,8 @@ export interface BoardState {
         activeShapeType?: 'rectangle' | 'circle' | 'triangle' | 'star' | 'freeform';
         toolbarPinned?: boolean;
         showLibrary?: boolean;
-        showProjectManager?: boolean; // New flag
+        showProjectManager?: boolean;
+        focusMode?: boolean;
     };
     activePizarra?: PizarraMetadata;
     interactionState: {
@@ -155,6 +172,7 @@ export interface BoardState {
         editingGroupId?: string;
         editingNodeId?: string; // Currently active text editor
         editingSubId?: string; // Currently active cell in composite
+        guides?: GuideLine[];
         snapLines?: Array<{
             type: 'horizontal' | 'vertical';
             x?: number;
@@ -162,6 +180,7 @@ export interface BoardState {
             start: number;
             end: number;
         }>;
+        focusTargetId?: string | null;
     };
     presentationState: {
         isActive: boolean;
@@ -169,6 +188,18 @@ export interface BoardState {
         currentIndex: number;
     };
 }
+
+export interface GuideLine {
+    type: 'center-x' | 'center-y' | 'edge-top' | 'edge-bottom' | 'edge-left' | 'edge-right' | 'spacing-x' | 'spacing-y' | 'vertical' | 'horizontal';
+    x?: number;
+    y?: number;
+    start?: number;
+    end?: number;
+    startX?: number;
+    startY?: number;
+    length?: number; // Visual length of the guide
+}
+
 // --- Pizarra (Project) System ---
 
 export interface PizarraMetadata {

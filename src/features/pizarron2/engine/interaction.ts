@@ -18,21 +18,11 @@ export class InteractionManager {
     private initialRotation = 0;
     private resizeHandle: string | null = null;
     private initialResizeState: { x: number, y: number, w: number, h: number, rotation?: number, fontSize?: number } | null = null;
-    private initialNodesState: Record<string, { x: number, y: number, w: number, h: number, fontSize?: number }> | null = null;
+    private initialNodesState: Record<string, { x: number, y: number, w: number, h: number, fontSize?: number, rotation?: number }> | null = null;
     private canvas: HTMLCanvasElement | null = null;
     private interactionTargetId: string | null = null;
 
-    // Helper: Rotate point around center
-    private rotatePoint(point: Point, center: Point, angle: number): Point {
-        const cos = Math.cos(angle);
-        const sin = Math.sin(angle);
-        const dx = point.x - center.x;
-        const dy = point.y - center.y;
-        return {
-            x: center.x + (dx * cos - dy * sin),
-            y: center.y + (dx * sin + dy * cos)
-        };
-    }
+
 
     // Double Click Helpers
     private lastClickTime: number = 0;
@@ -94,12 +84,33 @@ export class InteractionManager {
         };
     }
 
-    // Helper to check if a point is inside a node
+    // Helper: Rotate a point around a center
+    private rotatePoint(point: Point, center: Point, angle: number): Point {
+        const cos = Math.cos(angle);
+        const sin = Math.sin(angle);
+        const dx = point.x - center.x;
+        const dy = point.y - center.y;
+        return {
+            x: center.x + (dx * cos - dy * sin),
+            y: center.y + (dx * sin + dy * cos)
+        };
+    }
+
+    // Helper to check if a point is inside a node (Rotation Aware)
     private isPointInNode(point: Point, node: BoardNode): boolean {
-        return point.x >= node.x &&
-            point.x <= node.x + node.w &&
-            point.y >= node.y &&
-            point.y <= node.y + node.h;
+        let testPoint = { ...point };
+
+        if (node.rotation) {
+            const cx = node.x + node.w / 2;
+            const cy = node.y + node.h / 2;
+            // Rotate the point opposite to the node's rotation to test against AABB
+            testPoint = this.rotatePoint(point, { x: cx, y: cy }, -node.rotation);
+        }
+
+        return testPoint.x >= node.x &&
+            testPoint.x <= node.x + node.w &&
+            testPoint.y >= node.y &&
+            testPoint.y <= node.y + node.h;
     }
 
     // Helper: Calculate connection point on node
@@ -181,7 +192,7 @@ export class InteractionManager {
                 let localMouse = { ...worldPoint };
 
                 // Rotation Check (Only Single)
-                if (selectedIds.length === 1 && bounds.rotation) {
+                if (selectedIds.length === 1 && bounds.rotation !== undefined) {
                     const cx = bounds.x + bounds.w / 2;
                     const cy = bounds.y + bounds.h / 2;
                     localMouse = this.rotatePoint(worldPoint, { x: cx, y: cy }, -bounds.rotation);
@@ -212,7 +223,8 @@ export class InteractionManager {
                     n: { x: startX + w / 2 - half, y: startY - half },
                     s: { x: startX + w / 2 - half, y: startY + h - half },
                     e: { x: startX + w - half, y: startY + h / 2 - half },
-                    w: { x: startX - half, y: startY + h / 2 - half }
+                    w: { x: startX - half, y: startY + h / 2 - half },
+                    rot: { x: startX + w / 2 - half, y: startY - (25 / viewport.zoom) - half } // Corrected hit center
                 };
 
                 let hitHandle: string | null = null;
@@ -225,15 +237,20 @@ export class InteractionManager {
                 }
 
                 if (hitHandle) {
-                    this.isResizing = true;
-                    this.resizeHandle = hitHandle;
+                    if (hitHandle === 'rot') {
+                        this.isRotating = true;
+                        this.isResizing = false;
+                    } else {
+                        this.isResizing = true;
+                        this.resizeHandle = hitHandle;
+                    }
                     this.initialResizeState = { ...bounds };
 
                     // Capture Initial State of ALL Selected Nodes
                     this.initialNodesState = {};
                     selectedIds.forEach(id => {
                         const n = nodes[id];
-                        if (n) this.initialNodesState![id] = { x: n.x, y: n.y, w: n.w, h: n.h, fontSize: n.content.fontSize };
+                        if (n) this.initialNodesState![id] = { x: n.x, y: n.y, w: n.w, h: n.h, fontSize: n.content.fontSize, rotation: n.content.rotation || 0 };
                     });
 
                     this.dragStart = worldPoint;
@@ -243,12 +260,13 @@ export class InteractionManager {
             }
         }
 
-        // 1. Check for Node Hits (Reverse order for z-index)
+        // 1. Check        // Hit Test (Reverse Order for Top-First)
         let hitId: string | null = null;
         for (let i = order.length - 1; i >= 0; i--) {
             const id = order[i];
             const node = nodes[id];
-            if (this.isPointInNode(worldPoint, node)) {
+            // Ignore collapsed nodes
+            if (node && !node.collapsed && this.isPointInNode(worldPoint, node)) {
                 hitId = id;
                 break;
             }
@@ -256,8 +274,59 @@ export class InteractionManager {
 
         // DOUBLE CLICK (Text Edit)
         const now = Date.now();
-        if (hitId && hitId === this.lastClickId && (now - this.lastClickTime) < 300) {
+        // Allow slightly longer for double click (400ms)
+        if (hitId && hitId === this.lastClickId && (now - this.lastClickTime) < 400) {
             const node = nodes[hitId];
+
+            // Structured Board Logic (Phase 6.2.10)
+            if (node.structure) {
+                const { rows, cols } = node.structure;
+
+                // Calculate Un-Rotated Point relative to TopLeft
+                const cx = node.x + node.w / 2;
+                const cy = node.y + node.h / 2;
+                // Rotate mouse point inversely around center to align with unrotated box
+                const unrotatedPoint = this.rotatePoint(worldPoint, { x: cx, y: cy }, -(node.rotation || 0));
+                const localX = unrotatedPoint.x - node.x;
+                const localY = unrotatedPoint.y - node.y;
+
+                if (localX >= 0 && localX <= node.w && localY >= 0 && localY <= node.h) {
+                    // Calculation
+                    const totalRowHeight = rows.reduce((acc, r) => acc + (r.height || 1), 0);
+                    const totalColWidth = cols.reduce((acc, c) => acc + (c.width || 1), 0);
+
+                    let foundRowId = null;
+                    let currentY = 0;
+                    for (const r of rows) {
+                        const h = (r.height / totalRowHeight) * node.h;
+                        if (localY >= currentY && localY < currentY + h) {
+                            foundRowId = r.id;
+                            break;
+                        }
+                        currentY += h;
+                    }
+
+                    let foundColId = null;
+                    let currentX = 0;
+                    for (const c of cols) {
+                        const w = (c.width / totalColWidth) * node.w;
+                        if (localX >= currentX && localX < currentX + w) {
+                            foundColId = c.id;
+                            break;
+                        }
+                        currentX += w;
+                    }
+
+                    if (foundRowId && foundColId) {
+                        pizarronStore.updateInteractionState({
+                            editingNodeId: hitId,
+                            editingSubId: `${foundRowId}_${foundColId}`
+                        });
+                        this.lastClickId = null;
+                        return;
+                    }
+                }
+            }
 
             // Composite Logic
             if (node.type === 'composite' && node.content.composite) {
@@ -501,31 +570,44 @@ export class InteractionManager {
 
         // ROTATION
         if (this.isRotating && this.initialResizeState) {
-            const { x, y, w, h, rotation } = this.initialResizeState;
-            const cx = x + w / 2;
-            const cy = y + h / 2;
+            const cx = this.initialResizeState.x + this.initialResizeState.w / 2;
+            const cy = this.initialResizeState.y + this.initialResizeState.h / 2;
 
-            // Current angle from center
             const currentAngle = Math.atan2(worldPoint.y - cy, worldPoint.x - cx);
+            let newRotation = currentAngle + (Math.PI / 2); // Adjust for handle position (top)
 
-            // Diff from drag start
-            let deltaAngle = currentAngle - this.initialRotation;
+            // Normalize to 0-2PI or -PI to PI if needed, but simple is fine.
+            // Snap to 45 degrees (PI/4)
+            const SNAP_ANGLE = Math.PI / 4;
+            let guides: any[] = [];
 
-            // New Rotation (Start Rotation + Delta)
-            let newRotation = (rotation || 0) + deltaAngle;
-
-            // Snap (Shift) - 45 deg
-            if (e.shiftKey) {
-                const step = Math.PI / 4; // 45 deg
-                newRotation = Math.round(newRotation / step) * step;
+            if (!e.shiftKey) {
+                const snapped = Math.round(newRotation / SNAP_ANGLE) * SNAP_ANGLE;
+                if (Math.abs(newRotation - snapped) < 0.1) {
+                    newRotation = snapped;
+                    // Visual feedback for snap?
+                }
             }
 
-            const id = Array.from(state.selection)[0];
-            if (id) {
-                pizarronStore.updateNode(id, { rotation: newRotation });
-            }
+            // Update Nodes
+            const selectedIds = Array.from(state.selection);
+            selectedIds.forEach(id => {
+                const initial = this.initialNodesState?.[id];
+                if (initial) {
+                    // For single node, just set rotation.
+                    // For multiple, we'd rotate around group center, but let's stick to single for now as per resizing.
+                    pizarronStore.updateNode(id, {
+                        content: {
+                            ...state.nodes[id].content,
+                            rotation: newRotation
+                        }
+                    });
+                }
+            });
+
             return;
         }
+
 
         // RESIZING
         if (this.isResizing && this.initialResizeState && this.resizeHandle) {
@@ -692,9 +774,10 @@ export class InteractionManager {
                 }
             }
 
-            pizarronStore.updateInteractionState({ snapLines: snapLines.length > 0 ? snapLines : undefined });
+            pizarronStore.updateInteractionState({ guides: snapLines.length > 0 ? snapLines : undefined });
 
             // Update all selected nodes
+
             state.selection.forEach(id => {
                 const initial = this.initialNodePositions[id];
                 if (initial) {
@@ -723,6 +806,7 @@ export class InteractionManager {
                     }
                 }
             });
+
             return;
         }
 
@@ -819,6 +903,7 @@ export class InteractionManager {
             pizarronStore.setSelection(selected);
         }
     }
+
 
     private calculateSnap(
         movingBox: { x: number, y: number, w: number, h: number },
@@ -927,6 +1012,9 @@ export class InteractionManager {
 
         if (state.interactionState.snapLines) {
             pizarronStore.updateInteractionState({ snapLines: undefined });
+        }
+        if (state.interactionState.guides) {
+            pizarronStore.updateInteractionState({ guides: undefined });
         }
 
         const worldPoint = this.screenToWorld({ x: e.clientX, y: e.clientY }, state.viewport);

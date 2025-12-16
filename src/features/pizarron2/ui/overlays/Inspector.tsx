@@ -57,6 +57,90 @@ export const Inspector: React.FC = () => {
         if (!firstNode) return <div className="text-sm text-slate-500 italic text-center py-4">Multiple Selection</div>;
 
         switch (firstNode.type) {
+            case 'board':
+                return (
+                    <div className="space-y-4">
+                        {/* Title & Body */}
+                        <div>
+                            <label className="text-xs font-medium text-slate-600 block mb-1">Title Size</label>
+                            <input
+                                type="range" min="12" max="72"
+                                value={firstNode.content.fontSize || 20}
+                                onChange={(e) => updateNode({ fontSize: Number(e.target.value) })}
+                                className="w-full h-1 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-500"
+                            />
+                        </div>
+
+                        {/* Collapse / Expand */}
+                        <div>
+                            <label className="text-xs font-medium text-slate-600 block mb-1">Visibility</label>
+                            <button
+                                onClick={() => pizarronStore.toggleCollapse(firstNode.id)}
+                                className="w-full py-2 bg-indigo-50 text-indigo-600 border border-indigo-200 rounded text-xs hover:bg-indigo-100 flex items-center justify-center gap-2"
+                            >
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+                                Collapse to Dock
+                            </button>
+                        </div>
+
+
+                        {/* DEBUG: Add Structure */}
+                        <div>
+                            <label className="text-xs font-medium text-rose-600 block mb-1">Debug: Internal Structure</label>
+                            <button
+                                onClick={() => {
+                                    const struct = {
+                                        template: 'grid' as const,
+                                        rows: [
+                                            { id: 'r1', height: 1 },
+                                            { id: 'r2', height: 2 },
+                                            { id: 'r3', height: 1 }
+                                        ],
+                                        cols: [
+                                            { id: 'c1', width: 1 },
+                                            { id: 'c2', width: 1 }
+                                        ],
+                                        cells: {
+                                            'r1_c1': { content: 'Header 1' },
+                                            'r1_c2': { content: 'Header 2' },
+                                            'r2_c1': { content: 'Body A' },
+                                            'r2_c2': { content: 'Body B' },
+                                            'r3_c1': { content: 'Footer 1' },
+                                            'r3_c2': { content: 'Footer 2' }
+                                        }
+                                    };
+                                    pizarronStore.updateStructure(firstNode.id, struct);
+                                }}
+                                className="w-full py-2 bg-rose-50 text-rose-600 border border-rose-200 rounded text-xs hover:bg-rose-100"
+                            >
+                                Inject Test Grid
+                            </button>
+                        </div>
+
+                        {/* Existing Color Picker */}
+                        <div>
+                            <label className="text-xs font-medium text-slate-600 block mb-1">Background</label>
+                            <div className="flex gap-2 flex-wrap">
+                                {['#cbd5e1', '#f87171', '#fbbf24', '#4ade80', '#60a5fa', '#c084fc', 'transparent'].map(c => (
+                                    <button
+                                        key={c}
+                                        onClick={() => updateNode({ color: c, gradient: undefined })}
+                                        className={`w-6 h-6 rounded-full border ${firstNode.content.color === c ? 'border-indigo-500 ring-1 ring-indigo-500' : 'border-slate-300'}`}
+                                        style={{ backgroundColor: c === 'transparent' ? 'white' : c }}
+                                        title={c}
+                                    />
+                                ))}
+                                <input
+                                    type="color"
+                                    value={firstNode.content.color === 'transparent' ? '#ffffff' : firstNode.content.color}
+                                    onChange={(e) => updateNode({ color: e.target.value, gradient: undefined })}
+                                    className="w-6 h-6 p-0 border-0 rounded-full overflow-hidden"
+                                />
+                            </div>
+                        </div>
+                    </div>
+                );
+
             case 'shape':
                 return (
                     <div className="space-y-4">
@@ -67,7 +151,7 @@ export const Inspector: React.FC = () => {
                                 {['#cbd5e1', '#f87171', '#fbbf24', '#4ade80', '#60a5fa', '#c084fc', 'transparent'].map(c => (
                                     <button
                                         key={c}
-                                        onClick={() => updateNode({ color: c })}
+                                        onClick={() => updateNode({ color: c, gradient: undefined })}
                                         className={`w-6 h-6 rounded-full border ${firstNode.content.color === c ? 'border-indigo-500 ring-1 ring-indigo-500' : 'border-slate-300'}`}
                                         style={{ backgroundColor: c === 'transparent' ? 'white' : c }}
                                         title={c}
@@ -76,10 +160,65 @@ export const Inspector: React.FC = () => {
                                 <input
                                     type="color"
                                     value={firstNode.content.color === 'transparent' ? '#ffffff' : firstNode.content.color}
-                                    onChange={(e) => updateNode({ color: e.target.value })}
+                                    onChange={(e) => updateNode({ color: e.target.value, gradient: undefined })}
                                     className="w-6 h-6 p-0 border-0 rounded-full overflow-hidden"
                                 />
                             </div>
+                        </div>
+
+                        {/* Gradients */}
+                        <div>
+                            <label className="text-xs font-medium text-slate-600 block mb-1">Gradients</label>
+                            <div className="flex gap-2 flex-wrap">
+                                <button
+                                    onClick={() => updateNode({ gradient: { type: 'linear', start: '#60a5fa', end: '#a78bfa', angle: 135 } })}
+                                    className="w-6 h-6 rounded-full border border-slate-300"
+                                    style={{ background: 'linear-gradient(135deg, #60a5fa 0%, #a78bfa 100%)' }}
+                                    title="Blue-Purple"
+                                />
+                                <button
+                                    onClick={() => updateNode({ gradient: { type: 'linear', start: '#f472b6', end: '#fbbf24', angle: 135 } })}
+                                    className="w-6 h-6 rounded-full border border-slate-300"
+                                    style={{ background: 'linear-gradient(135deg, #f472b6 0%, #fbbf24 100%)' }}
+                                    title="Pink-Yellow"
+                                />
+                                <button
+                                    onClick={() => updateNode({ gradient: { type: 'linear', start: '#34d399', end: '#60a5fa', angle: 135 } })}
+                                    className="w-6 h-6 rounded-full border border-slate-300"
+                                    style={{ background: 'linear-gradient(135deg, #34d399 0%, #60a5fa 100%)' }}
+                                    title="Green-Blue"
+                                />
+                            </div>
+                        </div>
+
+                        {/* DEBUG: Structure for Shapes */}
+                        <div>
+                            <label className="text-xs font-medium text-rose-600 block mb-1">Internal Structure</label>
+                            <button
+                                onClick={() => {
+                                    const struct = {
+                                        template: 'grid' as const,
+                                        rows: [
+                                            { id: 'r1', height: 1 },
+                                            { id: 'r2', height: 1 }
+                                        ],
+                                        cols: [
+                                            { id: 'c1', width: 1 },
+                                            { id: 'c2', width: 1 }
+                                        ],
+                                        cells: {
+                                            'r1_c1': { content: 'A' },
+                                            'r1_c2': { content: 'B' },
+                                            'r2_c1': { content: 'C' },
+                                            'r2_c2': { content: 'D' }
+                                        }
+                                    };
+                                    pizarronStore.updateStructure(firstNode.id, struct);
+                                }}
+                                className="w-full py-1 bg-rose-50 text-rose-600 border border-rose-200 rounded text-xs hover:bg-rose-100"
+                            >
+                                Inject 2x2 Grid
+                            </button>
                         </div>
 
                         {/* Border */}
@@ -106,28 +245,7 @@ export const Inspector: React.FC = () => {
                             </div>
                         </div>
 
-                        {/* Radius & Opacity */}
-                        <div className="grid grid-cols-2 gap-3">
-                            <div>
-                                <label className="text-xs font-medium text-slate-600 block mb-1">Radius</label>
-                                <input
-                                    type="number" min="0" max="100"
-                                    value={firstNode.content.borderRadius || 0}
-                                    onChange={(e) => updateNode({ borderRadius: Number(e.target.value) })}
-                                    className="w-full border rounded px-1 text-xs py-1"
-                                />
-                            </div>
-                            <div>
-                                <label className="text-xs font-medium text-slate-600 block mb-1">Opacity</label>
-                                <input
-                                    type="number" min="0" max="100" step="10"
-                                    value={Math.round((firstNode.content.opacity ?? 1) * 100)}
-                                    onChange={(e) => updateNode({ opacity: Number(e.target.value) / 100 })}
-                                    className="w-full border rounded px-1 text-xs py-1"
-                                />
-                            </div>
-                        </div>
-                    </div>
+                    </div >
                 );
 
             case 'text':

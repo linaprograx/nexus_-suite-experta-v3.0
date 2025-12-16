@@ -1,5 +1,5 @@
 import { useSyncExternalStore } from 'react';
-import { BoardState, BoardNode, Viewport, PizarraMetadata } from '../engine/types';
+import { BoardState, BoardNode, Viewport, PizarraMetadata, BoardStructure } from '../engine/types';
 
 // Initial State
 const INITIAL_STATE: BoardState = {
@@ -91,13 +91,19 @@ class PizarronStore {
     }
 
     updateNode(id: string, patch: Partial<BoardNode>) {
-        // Direct mutations for speed in heavy drags
-        const node = this.state.nodes[id];
-        if (node) {
-            Object.assign(node, patch);
-            node.updatedAt = Date.now();
-            this.notify();
-        }
+        // We use setState to ensure React components (Inspector) re-render.
+        // Performance impact is negligible for single-node updates.
+        this.setState(state => {
+            const node = state.nodes[id];
+            if (node) {
+                // If patch has content, we should merge or replace? 
+                // Patch usually behaves as Object.assign.
+                // However, for deep merging 'content', the caller typically handles it (Inspector spreads it).
+                // So Object.assign is fine.
+                Object.assign(node, patch);
+                node.updatedAt = Date.now();
+            }
+        });
     }
 
     deleteNode(id: string) {
@@ -542,6 +548,70 @@ class PizarronStore {
         });
     }
 
+    // --- Structure & Scalability Actions ---
+
+    toggleCollapse(id: string) {
+        this.setState(state => {
+            if (state.nodes[id]) {
+                // Clone nodes map and target node to ensure reference change
+                state.nodes = { ...state.nodes };
+                state.nodes[id] = { ...state.nodes[id] };
+
+                const node = state.nodes[id];
+                node.collapsed = !node.collapsed;
+                node.updatedAt = Date.now();
+
+
+                // If collapsing, remove from selection to avoid ghost outline
+                // Force new Set reference for reactivity
+                const newSelection = new Set(state.selection);
+                if (node.collapsed) {
+                    newSelection.delete(id);
+                    // Also clear focus if focused target is collapsing
+                    if (state.interactionState.focusTargetId === id) {
+                        state.interactionState.focusTargetId = null;
+                        state.uiFlags.focusMode = false;
+                    }
+                } else {
+                    // If uncollapsing, select it so user can find it
+                    newSelection.clear();
+                    newSelection.add(id);
+                }
+                state.selection = newSelection;
+            }
+        });
+    }
+
+    setFocus(id: string | null) {
+        this.setState(state => {
+            if (id) {
+                // Determine if we should really focus (ensure exists)
+                if (state.nodes[id]) {
+                    state.interactionState.focusTargetId = id;
+                    state.uiFlags.focusMode = true;
+                    // Mark node as focused? 
+                    // state.nodes[id].isFocus = true; // Optional redundancy
+                }
+            } else {
+                state.interactionState.focusTargetId = null;
+                state.uiFlags.focusMode = false;
+            }
+        });
+    }
+
+    updateStructure(id: string, structure: BoardStructure) {
+        this.setState(state => {
+            if (state.nodes[id]) {
+                state.nodes = { ...state.nodes };
+                state.nodes[id] = { ...state.nodes[id] };
+
+                const node = state.nodes[id];
+                node.structure = structure;
+                node.updatedAt = Date.now();
+            }
+        });
+    }
+
     stackSelected(direction: 'vertical' | 'horizontal', gap: number = 20) {
         this.setState(state => {
             const selected = Array.from(state.selection).map(id => state.nodes[id]).filter(Boolean);
@@ -700,4 +770,13 @@ class PizarronStore {
     }
 }
 
+
 export const pizarronStore = new PizarronStore();
+
+export const usePizarronStore = <T>(selector: (state: BoardState) => T = (s) => s as any): T => {
+    return useSyncExternalStore(
+        (cb) => pizarronStore.subscribe(cb),
+        () => selector(pizarronStore.getState()),
+        () => selector(INITIAL_STATE)
+    );
+};

@@ -67,6 +67,14 @@ export const TextEditor: React.FC = () => {
                         composite: { ...node.content.composite, cells: newCells }
                     }
                 });
+            } else if (node.structure && subId) {
+                // Structured Board Update
+                const newCells = { ...(node.structure.cells || {}) };
+                newCells[subId] = { content: val, style: newCells[subId]?.style };
+
+                const newStruct = { ...node.structure, cells: newCells };
+                pizarronStore.updateStructure(editingId, newStruct);
+                setNode({ ...node, structure: newStruct });
             } else {
                 // Normal
                 pizarronStore.updateNode(editingId, {
@@ -95,8 +103,45 @@ export const TextEditor: React.FC = () => {
     let targetPadding = node.type === 'text' ? '0px' : node.type === 'board' ? '20px' : '10px';
     let textAlign: 'left' | 'center' | 'right' = node.content.align as any || 'left';
 
-    // Composite Cell Logic
-    if (node.type === 'composite' && subId && node.content.composite) {
+    // Structured Board Logic
+    if (node.structure && subId) {
+        const { rows, cols, cells } = node.structure;
+        const [rowId, colId] = subId.split('_');
+
+        const totalRowWeight = rows.reduce((s, r) => s + (r.height || 1), 0);
+        const totalColWeight = cols.reduce((s, c) => s + (c.width || 1), 0);
+
+        let offsetY = 0;
+        let cellH = 0;
+        for (const r of rows) {
+            const h = ((r.height || 1) / totalRowWeight) * node.h;
+            if (r.id === rowId) {
+                cellH = h;
+                break;
+            }
+            offsetY += h;
+        }
+
+        let offsetX = 0;
+        let cellW = 0;
+        for (const c of cols) {
+            const w = ((c.width || 1) / totalColWeight) * node.w;
+            if (c.id === colId) {
+                cellW = w;
+                break;
+            }
+            offsetX += w;
+        }
+
+        areaX = offsetX * viewport.zoom;
+        areaY = offsetY * viewport.zoom;
+        areaW = cellW * viewport.zoom;
+        areaH = cellH * viewport.zoom;
+        displayText = cells?.[subId]?.content || '';
+        targetPadding = '5px';
+    }
+    // Composite Cell Logic (Legacy)
+    else if (node.type === 'composite' && subId && node.content.composite) {
         const { composite } = node.content;
         const { structure, cells } = composite;
         const { rows, cols, gap = 0, padding = 0 } = structure;
