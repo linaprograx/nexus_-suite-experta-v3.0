@@ -3,25 +3,26 @@ import { pizarronStore } from '../../state/store';
 import {
     LuMousePointer2,
     LuHand,
-    LuLayoutDashboard,
-    LuLibrary,
-    LuImage,
-    LuMonitorPlay,
-    LuTrash2,
-    LuShapes
+    LuLayoutGrid, // Pizarras (Grid view)
+    LuShapes, // Library
+    LuImage, // Image
+    LuMonitorPlay, // Presentation
+    LuTrash2
 } from 'react-icons/lu';
-// import { ShapeSelector } from '../shared/ShapeSelector';
-// import { AssetDefinition } from '../panels/AssetLibrary';
 
 const TOOLS = [
     { id: 'pointer', icon: <LuMousePointer2 size={20} />, label: 'Pointer' },
     { id: 'hand', icon: <LuHand size={20} />, label: 'Pan' },
-    { id: 'project', icon: <LuLayoutDashboard size={20} />, label: 'Pizarras', isAction: true },
+    // Separator
+    { id: 'sep1', type: 'separator' },
     { id: 'library', icon: <LuShapes size={20} />, label: 'Library', isAction: true },
     { id: 'image', icon: <LuImage size={20} />, label: 'Image', isAction: true },
-
+    // Separator
+    { id: 'sep2', type: 'separator' },
+    { id: 'project', icon: <LuLayoutGrid size={20} />, label: 'Pizarras', isAction: true },
     { id: 'presentation', icon: <LuMonitorPlay size={20} />, label: 'Present (P)', isAction: true },
-
+    // Bottom
+    { id: 'sep3', type: 'separator' },
     { id: 'delete', icon: <LuTrash2 size={20} />, label: 'Delete', isAction: true },
 ] as const;
 
@@ -100,7 +101,11 @@ export const LeftRail: React.FC = () => {
         <div className={`absolute left-4 top-1/2 -translate-y-1/2 flex gap-2 pointer-events-auto items-start transition-all duration-700 ease-out-expo ${mounted ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-12'}`}>
             {/* Main Strip */}
             <div className="bg-white/90 backdrop-blur shadow-sm border border-slate-200 rounded-2xl p-2 flex flex-col gap-2">
-                {TOOLS.map(tool => {
+                {TOOLS.map((tool: any, i) => {
+                    if (tool.type === 'separator') {
+                        return <div key={`sep-${i}`} className="h-px w-6 bg-slate-200 mx-auto my-1" />;
+                    }
+
                     const isActive = activeTool === tool.id;
 
                     return (
@@ -108,7 +113,7 @@ export const LeftRail: React.FC = () => {
                             key={tool.id}
                             onClick={() => handleTool(tool)}
                             className={`w-10 h-10 flex items-center justify-center rounded-xl transition-all duration-200 ${isActive
-                                ? 'bg-indigo-50 text-indigo-600 border border-indigo-200 scale-105 shadow-sm' // Active Pop (Premium Indigo)
+                                ? 'bg-orange-50 text-orange-600 border border-orange-200 scale-105 shadow-sm' // Active Pop (Orange)
                                 : 'hover:bg-slate-100 text-slate-500 hover:text-slate-700 border border-transparent hover:scale-110' // Hover Lift
                                 }`}
                             title={tool.label}

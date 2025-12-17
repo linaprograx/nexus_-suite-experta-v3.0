@@ -81,7 +81,7 @@ export const FontSelector: React.FC<FontSelectorProps> = ({ currentFont, onChang
                             placeholder="Search fonts..."
                             value={search}
                             onChange={e => setSearch(e.target.value)}
-                            className="w-full px-3 py-2 text-xs bg-slate-100 border-none rounded-md focus:ring-2 focus:ring-blue-500 outline-none"
+                            className="w-full px-3 py-2 text-xs bg-slate-100 border-none rounded-md focus:ring-2 focus:ring-orange-500 outline-none"
                             autoFocus
                         />
                     </div>
@@ -95,11 +95,11 @@ export const FontSelector: React.FC<FontSelectorProps> = ({ currentFont, onChang
                                     <button
                                         key={`rec-${family}`}
                                         onClick={() => handleSelect(family)}
-                                        className={`w-full text-left px-3 py-2 text-sm hover:bg-blue-50/80 rounded-lg flex items-center justify-between group ${currentFont === family ? 'bg-blue-50 text-blue-600' : 'text-slate-700'}`}
+                                        className={`w-full text-left px-3 py-2 text-sm hover:bg-orange-50 rounded-lg flex items-center justify-between group ${currentFont === family ? 'bg-orange-50 text-orange-600' : 'text-slate-700'}`}
                                         title={family}
                                     >
                                         <span style={{ fontFamily: family }}>{family}</span>
-                                        {currentFont === family && <span className="text-blue-500">✓</span>}
+                                        {currentFont === family && <span className="text-orange-500">✓</span>}
                                     </button>
                                 ))}
                                 <div className="my-2 border-t border-slate-100 mx-3"></div>
@@ -112,7 +112,7 @@ export const FontSelector: React.FC<FontSelectorProps> = ({ currentFont, onChang
                             <button
                                 key={font.family}
                                 onClick={() => handleSelect(font.family)}
-                                className={`w-full text-left px-3 py-2 text-lg hover:bg-blue-50/80 rounded-lg flex items-center justify-between group ${currentFont === font.family ? 'bg-blue-50 text-blue-600' : 'text-slate-700'}`}
+                                className={`w-full text-left px-3 py-2 text-lg hover:bg-orange-50 rounded-lg flex items-center justify-between group ${currentFont === font.family ? 'bg-orange-50 text-orange-600' : 'text-slate-700'}`}
                                 title={font.family}
                             >
                                 <span style={{ fontFamily: font.family }}>{font.family}</span>

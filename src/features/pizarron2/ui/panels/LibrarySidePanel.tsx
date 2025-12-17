@@ -138,7 +138,7 @@ export const LibrarySidePanel: React.FC = () => {
         if (newIds.length > 0) {
             // setTimeout to ensure state update has processed
             setTimeout(() => {
-                pizarronStore.setSelectedIds(newIds);
+                pizarronStore.setSelection(newIds);
             }, 50);
         }
     };
@@ -184,9 +184,9 @@ export const LibrarySidePanel: React.FC = () => {
                         <button
                             key={tab.id}
                             onClick={() => setActiveTab(tab.id)}
-                            className={`w-full aspect-square rounded-xl shrink-0 flex flex-col items-center justify-center gap-1 transition-all ${activeTab === tab.id
-                                ? 'bg-blue-600 dark:bg-blue-700 text-white shadow-md scale-105'
-                                : 'text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800'
+                            className={`w-full aspect-square rounded-xl shrink-0 flex flex-col items-center justify-center gap-1 transition-all duration-300 ${activeTab === tab.id
+                                ? 'border-2 border-orange-500 bg-orange-100 text-orange-600 shadow-md scale-105'
+                                : 'text-slate-500 hover:text-orange-500 hover:bg-orange-50 hover:shadow-[0_0_10px_rgba(249,115,22,0.3)] hover:scale-105'
                                 }`}
                         >
                             <span className="text-2xl">{tab.icon}</span>
@@ -232,7 +232,7 @@ export const LibrarySidePanel: React.FC = () => {
                             <input
                                 type="text"
                                 placeholder={`Buscar...`}
-                                className="w-full pl-9 pr-4 py-2 rounded-lg bg-slate-100 dark:bg-slate-800 dark:text-white border-none focus:ring-2 focus:ring-blue-500 text-sm placeholder-slate-400"
+                                className="w-full pl-9 pr-4 py-2 rounded-lg bg-slate-100 dark:bg-slate-800 dark:text-white border-none focus:ring-2 focus:ring-orange-500 text-sm placeholder-slate-400"
                                 value={search}
                                 onChange={(e) => setSearch(e.target.value)}
                             />
@@ -290,7 +290,7 @@ export const LibrarySidePanel: React.FC = () => {
                                             className={`${activeTab === 'text'
                                                 ? 'w-full h-auto p-3 flex flex-col items-start'
                                                 : activeTab === 'boards' ? 'aspect-video flex-col items-center justify-center' : 'aspect-square flex-col items-center justify-center'
-                                                } bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 hover:border-blue-400 dark:hover:border-blue-500 hover:shadow-md transition-all flex group relative overflow-hidden`}
+                                                } bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 hover:border-orange-400 dark:hover:border-orange-500 hover:shadow-md transition-all flex group relative overflow-hidden`}
                                             title={item.label}
                                         >
                                             <div className={`${activeTab === 'text' ? '' : 'text-2xl group-hover:scale-110 mb-1'} transition-transform`}>

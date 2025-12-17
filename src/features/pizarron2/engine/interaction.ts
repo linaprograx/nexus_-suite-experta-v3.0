@@ -792,14 +792,16 @@ export class InteractionManager {
 
             // Normalize to 0-2PI or -PI to PI if needed, but simple is fine.
             // Snap to 45 degrees (PI/4)
-            const SNAP_ANGLE = Math.PI / 4;
-            let guides: any[] = [];
-
-            if (!e.shiftKey) {
-                const snapped = Math.round(newRotation / SNAP_ANGLE) * SNAP_ANGLE;
-                if (Math.abs(newRotation - snapped) < 0.1) {
-                    newRotation = snapped;
-                    // Visual feedback for snap?
+            if (e.shiftKey) {
+                // Shift: Force Snap to 45 deg
+                const SNAP_ANGLE = Math.PI / 4;
+                newRotation = Math.round(newRotation / SNAP_ANGLE) * SNAP_ANGLE;
+            } else {
+                // No Shift: Magnetism to 90 deg (PI/2)
+                const MAGNET_ANGLE = Math.PI / 2;
+                const closest = Math.round(newRotation / MAGNET_ANGLE) * MAGNET_ANGLE;
+                if (Math.abs(newRotation - closest) < 0.1) {
+                    newRotation = closest;
                 }
             }
 
@@ -1062,6 +1064,15 @@ export class InteractionManager {
                     endX = snap.x;
                     endY = snap.y;
                     endBinding = { nodeId: hitId, side: snap.side };
+                } else if (e.shiftKey) {
+                    // Shift: Constrain to H / V
+                    const dx = endX - this.dragStart.x;
+                    const dy = endY - this.dragStart.y;
+                    if (Math.abs(dx) > Math.abs(dy)) {
+                        endY = this.dragStart.y; // Horizontal
+                    } else {
+                        endX = this.dragStart.x; // Vertical
+                    }
                 }
 
                 pizarronStore.updateInteractionState({
@@ -1361,6 +1372,41 @@ export class InteractionManager {
         // (e.target as HTMLElement).style.cursor = 'default';
 
     }
+
+    onDoubleClick(e: React.MouseEvent<HTMLCanvasElement>) {
+        if (!this.canvas) return;
+        const rect = this.canvas.getBoundingClientRect();
+        const state = pizarronStore.getState();
+        const worldPoint = this.screenToWorld({ x: e.clientX - rect.left, y: e.clientY - rect.top }, state.viewport);
+
+        let hitId: string | null = null;
+        for (let i = state.order.length - 1; i >= 0; i--) {
+            const id = state.order[i];
+            const n = state.nodes[id];
+            if (n && !n.collapsed && this.isPointInNode(worldPoint, n)) {
+                hitId = id;
+                break;
+            }
+        }
+
+        if (hitId) {
+            const node = state.nodes[hitId];
+            if (node.type === 'text' || node.type === 'shape' || node.type === 'card' || node.type === 'board') {
+                // Trigger Editing Mode
+                // For now, we set a flag. Ideally, we might open a modal or inline editor.
+                // pizarronStore.updateInteractionState({ editingNodeId: hitId });
+                // Actually, let's just ensure it's selected and maybe trigger a specific UI flag if we had one for "Edit Mode".
+                // But Inspector handles editing based on selection.
+                // For Text, we usually want to focus.
+                // Let's set editingTextId if it's text.
+                if (node.type === 'text') {
+                    pizarronStore.updateInteractionState({ editingTextId: hitId });
+                }
+                // For others, selection is enough for Inspector to show up.
+            }
+        }
+    }
+
 }
 
 export const interactionManager = new InteractionManager();

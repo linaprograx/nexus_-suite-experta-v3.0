@@ -118,6 +118,7 @@ const UNIQUE_GEOMETRIC = dedupeByKey(GEOMETRIC_SHAPES, i => i.id);
 const UNIQUE_ARROWS = dedupeByKey(ARROW_SHAPES, i => i.id);
 
 export const SHAPE_LIBRARIES: AssetCategory[] = [
+
     { id: 'basic', label: 'Básicas', items: UNIQUE_BASIC },
     { id: 'geometric', label: 'Geométricas', items: UNIQUE_GEOMETRIC },
     { id: 'arrows', label: 'Flechas', items: UNIQUE_ARROWS },
@@ -126,12 +127,6 @@ export const SHAPE_LIBRARIES: AssetCategory[] = [
             { id: 'l-solid', label: 'Sólida', icon: '━', type: 'line', data: { type: 'line', w: 200, h: 0, content: { color: '#64748b', strokeWidth: 4, strokeStyle: 'solid' } } },
             { id: 'l-dashed', label: 'Discontinues', icon: '┅', type: 'line', data: { type: 'line', w: 200, h: 0, content: { color: '#64748b', strokeWidth: 4, strokeStyle: 'dashed' } } },
             { id: 'l-dotted', label: 'Punteada', icon: '┄', type: 'line', data: { type: 'line', w: 200, h: 0, content: { color: '#64748b', strokeWidth: 4, strokeStyle: 'dotted' } } },
-        ]
-    },
-    {
-        id: 'workflow', label: 'Flujo de Trabajo', items: [
-            { id: 'p-task', label: 'Nueva Tarea', icon: '✅', type: 'shape', data: { type: 'card', w: 200, h: 100, content: { title: 'Nueva Tarea', body: 'Descripción...', color: '#dcfce7' } } },
-            { id: 'p-idea', label: 'Nueva Idea', icon: '💡', type: 'shape', data: { type: 'card', w: 200, h: 100, content: { title: 'Nueva Idea', body: 'Brainstorm...', color: '#dbeafe' } } },
         ]
     },
     { id: 'flow', label: 'Diagrama de Flujo', items: UNIQUE_FLOW },
@@ -416,7 +411,7 @@ const T_APP_FLOW = {
 export const TEMPLATE_LIBRARIES: AssetCategory[] = [
     {
         id: 'frameworks',
-        label: 'Marcos de Trabajo',
+        label: 'Estructuras', // Renamed from Marcos de Trabajo
         items: [
             {
                 id: 't-empty', label: 'Pizarra Vacía', icon: '⬜', type: 'template', tags: ['empty', 'blank'],

@@ -1,74 +1,58 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { pizarronStore } from '../../state/store';
 import { BoardNode } from '../../engine/types';
-import { FontSelector } from '../shared/FontSelector';
+import { AVAILABLE_FONTS } from '../panels/AssetLibrary';
+import { FontLoader } from '../../engine/FontLoader';
+import {
+    LuType, LuScaling, LuPalette, LuBold, LuItalic, LuUnderline, LuStrikethrough,
+    LuDroplet, LuLayers, LuCopy, LuTrash2,
+    LuLock, LuLockOpen, LuAlignLeft, LuAlignCenter, LuAlignRight,
+    LuArrowUp, LuArrowDown, LuMoveVertical, LuWand, LuGroup, LuUngroup,
+    LuCaseSensitive, LuUndo, LuRedo
+} from 'react-icons/lu';
+
+type PopoverType = 'none' | 'text' | 'size' | 'color' | 'style' | 'spacing' | 'effects' | 'position' | 'casing' | 'more';
 
 export const MiniToolbar: React.FC = () => {
-    const { selection, nodes, viewport, uiFlags } = pizarronStore.useState();
-    const [activeMenu, setActiveMenu] = useState<'none' | 'align' | 'distribute'>('none');
+    const { selection, nodes, viewport } = pizarronStore.useState();
+    const [activePopover, setActivePopover] = useState<PopoverType>('none');
+    const [fontSearch, setFontSearch] = useState('');
+
+    // Global Shortcuts
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if ((e.metaKey || e.ctrlKey) && e.key === 'z') {
+                e.preventDefault();
+                if (e.shiftKey) {
+                    pizarronStore.redo();
+                } else {
+                    pizarronStore.undo();
+                }
+            }
+            // Support Ctrl+Y for Redo on Windows
+            if ((e.metaKey || e.ctrlKey) && e.key === 'y') {
+                e.preventDefault();
+                pizarronStore.redo();
+            }
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, []);
 
     const selectedNodes = useMemo(() => {
         return Array.from(selection).map(id => nodes[id]).filter(Boolean);
     }, [selection, nodes]);
 
-    if (selectedNodes.length === 0) return null;
-
-    // Anchor: Fixed Top Center (Heads-Up Display)
-    // User requested: "fijas las 2, sin moverse" (Fixed screen position)
-
-    // We don't need world calculation anymore for POSITION, only for data.
-
-    // Logic Variables
-    const isMulti = selectedNodes.length > 1;
-    const firstNode = selectedNodes[0];
-
-    // Helpers for Text
-    const updateFontSize = (delta: number) => {
-        const currentSize = firstNode.content.fontSize || 16;
-        const newSize = Math.max(8, Math.min(128, currentSize + delta));
-        pizarronStore.updateNode(firstNode.id, { content: { ...firstNode.content, fontSize: newSize } });
-    };
-
-    const toggleBold = () => {
-        const current = firstNode.content.fontWeight === 'bold';
-        pizarronStore.updateNode(firstNode.id, { content: { ...firstNode.content, fontWeight: current ? 'normal' : 'bold' } });
-    };
-    const toggleItalic = () => {
-        const current = firstNode.content.fontStyle === 'italic';
-        pizarronStore.updateNode(firstNode.id, { content: { ...firstNode.content, fontStyle: current ? 'normal' : 'italic' } });
-    };
-    const toggleUnderline = () => {
-        const current = firstNode.content.textDecoration === 'underline';
-        pizarronStore.updateNode(firstNode.id, { content: { ...firstNode.content, textDecoration: current ? 'none' : 'underline' } });
-    };
-    const changeColor = (color: string) => {
-        selectedNodes.forEach(n => {
-            pizarronStore.updateNode(n.id, { content: { ...n.content, color } });
-        });
-    };
-
-    // Common Colors
-    const colors = ['#1e293b', '#ef4444', '#f59e0b', '#10b981', '#3b82f6', '#8b5cf6'];
-    const fillColors = ['#cbd5e1', '#fecaca', '#fde68a', '#a7f3d0', '#bfdbfe', '#ddd6fe', '#ffffff'];
-
-    // --- Alignment Controls (Single Text) ---
-    const updateTextAlign = (align: 'left' | 'center' | 'right') => {
-        pizarronStore.updateNode(firstNode.id, { content: { ...firstNode.content, textAlign: align } });
-    };
-
-    // Calculate Position (Contextual Top-Center of Selection)
+    // Position Logic
     const toolbarPos = useMemo(() => {
         if (selectedNodes.length === 0) return { top: -100, left: 0 };
-
-        let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+        let minX = Infinity, minY = Infinity, maxX = -Infinity;
         selectedNodes.forEach(n => {
             minX = Math.min(minX, n.x);
             minY = Math.min(minY, n.y);
             maxX = Math.max(maxX, n.x + (n.w || 0));
-            maxY = Math.max(maxY, n.y + (n.h || 0));
         });
 
-        // Convert to Screen
         const zoom = viewport.zoom;
         const panX = viewport.x;
         const panY = viewport.y;
@@ -76,203 +60,328 @@ export const MiniToolbar: React.FC = () => {
         const screenMinX = minX * zoom + panX;
         const screenMinY = minY * zoom + panY;
         const screenMaxX = maxX * zoom + panX;
-        // const screenMaxY = maxY * zoom + panY;
 
         const width = screenMaxX - screenMinX;
         const centerX = screenMinX + width / 2;
-        const topY = screenMinY - 60; // 60px above selection
+        const topY = screenMinY - 60;
 
-        // Clamp to screen
-        const clampedX = Math.max(150, Math.min(window.innerWidth - 150, centerX));
-        const clampedY = Math.max(80, Math.min(window.innerHeight - 80, topY)); // Prevent going under TopBar (approx 60px)
+        // Clamp for Toolbar Width approx 560px => 280px half width
+        // Ensure it never goes off screen
+        const halfWidth = 280;
+        const clampedX = Math.max(halfWidth + 20, Math.min(window.innerWidth - halfWidth - 20, centerX));
+        const clampedY = Math.max(80, Math.min(window.innerHeight - 80, topY));
 
         return { top: clampedY, left: clampedX };
     }, [selectedNodes, viewport]);
 
+    if (selectedNodes.length === 0) return null;
+
+    const firstNode = selectedNodes[0];
+    // Show text tools for almost everything except pure images/lines/groups that definitely don't have text
+    // 'shape', 'card', 'note', 'text', 'sticky' etc all support text
+    const isText = !['line', 'group'].includes(firstNode.type); // Even images might have captions later, but for now exclude. Sticker usually image.
+    // Actually, 'sticker' is often SVG, might not have text. 
+    // Let's stick to exclusion list:
+    // const isText = !['image', 'line', 'group', 'pen'].includes(firstNode.type);
+    const isMulti = selectedNodes.length > 1;
+
+    // Helpers
+    const togglePopover = (type: PopoverType) => setActivePopover(prev => prev === type ? 'none' : type);
+
+    // Pass saveHistory = true for user interactions
+    const updateNode = (patch: Partial<BoardNode['content']>) => {
+        selectedNodes.forEach(n => pizarronStore.updateNode(n.id, { content: { ...n.content, ...patch } }, true));
+    };
+
+    const updateStyle = (key: keyof React.CSSProperties, value: any) => {
+        selectedNodes.forEach(n => pizarronStore.updateNode(n.id, { content: { ...n.content, [key]: value } }, true));
+    };
+
+    const btnClass = (isActive: boolean) => `p-1.5 rounded transition-colors ${isActive
+        ? 'bg-orange-100 text-orange-600 border border-orange-200'
+        : 'text-slate-600 hover:text-orange-500 hover:bg-orange-50'}`;
+
     return (
         <div
-            className="fixed z-50 flex items-center gap-1 p-1 bg-white border border-slate-200 shadow-xl rounded-lg pointer-events-auto transition-all duration-75 ease-out"
-            style={{
-                top: toolbarPos.top,
-                left: toolbarPos.left,
-                transform: 'translateX(-50%)' // Center horizontally based on left
-            }}
+            className="fixed z-[110] flex items-center gap-1 p-1 bg-white border border-slate-200 shadow-xl rounded-lg pointer-events-auto transition-all duration-75 ease-out"
+            style={{ top: toolbarPos.top, left: toolbarPos.left, transform: 'translateX(-50%)' }}
             onPointerDown={e => e.stopPropagation()}
         >
-            {/* --- Drag Handle (Visual Only -> Now acts as anchor indicator) --- */}
+            {/* Drag Handle */}
             <div className="cursor-grab text-slate-300 px-1">
                 <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24"><path d="M8 6h8M8 12h8M8 18h8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" /></svg>
             </div>
 
-            <div className="w-px h-4 bg-slate-200 mx-1"></div>
-
-            {/* --- Multi Selection Tools --- */}
-            {isMulti && (
-                <>
-                    {/* Align Dropdown */}
-                    <div className="relative group">
-                        <button
-                            className={`p-1.5 rounded hover:bg-slate-100 text-slate-600`}
-                            title="Align Objects"
-                        >
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" /></svg>
-                        </button>
-                        <div className="absolute top-full left-0 mt-1 hidden group-hover:flex flex-col bg-white border border-slate-200 shadow-xl rounded-lg p-1 gap-1 min-w-[140px] z-50">
-                            {/* ... (Existing Multi-Align Logic - keeping concise for replacement) ... */}
-                            <div className="text-[10px] text-slate-400 font-bold px-1 uppercase tracking-wider">Align</div>
-                            <div className="flex gap-1">
-                                <button onClick={() => pizarronStore.alignSelected('left')} className="p-1 hover:bg-slate-100 rounded flex-1" title="Left">⇤</button>
-                                <button onClick={() => pizarronStore.alignSelected('center')} className="p-1 hover:bg-slate-100 rounded flex-1" title="Center">⇹</button>
-                                <button onClick={() => pizarronStore.alignSelected('right')} className="p-1 hover:bg-slate-100 rounded flex-1" title="Right">⇥</button>
-                            </div>
-                            <div className="flex gap-1">
-                                <button onClick={() => pizarronStore.alignSelected('top')} className="p-1 hover:bg-slate-100 rounded flex-1" title="Top">⤒</button>
-                                <button onClick={() => pizarronStore.alignSelected('middle')} className="p-1 hover:bg-slate-100 rounded flex-1" title="Middle">⇕</button>
-                                <button onClick={() => pizarronStore.alignSelected('bottom')} className="p-1 hover:bg-slate-100 rounded flex-1" title="Bottom">⤓</button>
+            {/* --- 1. Typography (Leftmost - Selector Style) --- */}
+            {isText ? (
+                <div className="relative mr-1">
+                    <button
+                        onClick={() => togglePopover('text')}
+                        className={`flex items-center gap-2 px-2 py-1.5 rounded transition-colors border ${activePopover === 'text'
+                            ? 'bg-orange-50 border-orange-200 text-orange-700'
+                            : 'bg-slate-50 border-slate-200 text-slate-700 hover:border-orange-300 hover:text-orange-600'}`}
+                        title="Font Family"
+                    >
+                        <LuType size={14} className="opacity-70" />
+                        <span className="text-[11px] font-medium max-w-[80px] truncate">{firstNode.content.fontFamily || 'Inter'}</span>
+                        <LuArrowDown size={10} className="opacity-50 ml-1" />
+                    </button>
+                    {activePopover === 'text' && (
+                        <div className="absolute top-full left-0 mt-2 bg-white border border-slate-200 shadow-xl rounded-lg p-3 min-w-[240px] z-[120] flex flex-col gap-2">
+                            <input
+                                type="text"
+                                placeholder="Search fonts..."
+                                value={fontSearch}
+                                onChange={e => setFontSearch(e.target.value)}
+                                className="w-full px-2 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-md focus:ring-2 focus:ring-orange-500 outline-none"
+                                autoFocus
+                            />
+                            <div className="max-h-[200px] overflow-y-auto custom-scrollbar flex flex-col gap-1">
+                                {AVAILABLE_FONTS.filter(f => f.family.toLowerCase().includes(fontSearch.toLowerCase())).map(font => (
+                                    <button
+                                        key={font.family}
+                                        onClick={() => {
+                                            updateNode({ fontFamily: font.family });
+                                            FontLoader.loadFont(font);
+                                            setActivePopover('none');
+                                        }}
+                                        className={`w-full text-left px-2 py-1.5 text-sm hover:bg-orange-50 rounded flex items-center justify-between group ${firstNode.content.fontFamily === font.family ? 'bg-orange-50 text-orange-600' : 'text-slate-700'}`}
+                                        title={font.family}
+                                        onMouseEnter={() => FontLoader.loadFont(font)}
+                                    >
+                                        <span style={{ fontFamily: font.family }}>{font.family}</span>
+                                        {firstNode.content.fontFamily === font.family && <span className="text-orange-500 text-xs">✓</span>}
+                                    </button>
+                                ))}
                             </div>
                         </div>
+                    )}
+                </div>
+            ) : null}
+
+            <div className="w-px h-4 bg-slate-200 mx-1"></div>
+
+            {/* --- 2. Size --- */}
+            <div className="relative">
+                <button onClick={() => togglePopover('size')} className={btnClass(activePopover === 'size')} title="Size">
+                    <LuScaling size={18} />
+                </button>
+                {activePopover === 'size' && (
+                    <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 bg-white border border-slate-200 shadow-xl rounded-lg p-3 min-w-[150px] z-[120] flex flex-col gap-2">
+                        <div className="flex justify-between text-xs text-slate-500">
+                            <span>Size</span>
+                            <span>{firstNode.content.fontSize || 16}px</span>
+                        </div>
+                        <input
+                            type="range" min="8" max="128"
+                            value={firstNode.content.fontSize || 16}
+                            onChange={(e) => updateNode({ fontSize: parseInt(e.target.value) })}
+                            className="w-full accent-orange-600 h-1 bg-slate-200 rounded-lg cursor-pointer"
+                        />
                     </div>
+                )}
+            </div>
 
-                    {/* Distribute */}
-                    <button
-                        onClick={() => pizarronStore.distributeSelected('horizontal')}
-                        className={`p-1.5 rounded hover:bg-slate-100 text-slate-600`}
-                        title="Distribute Horizontal"
-                    >
-                        <span className="font-mono text-[10px] font-bold tracking-tight">↔</span>
-                    </button>
-                    <button
-                        onClick={() => pizarronStore.distributeSelected('vertical')}
-                        className={`p-1.5 rounded hover:bg-slate-100 text-slate-600`}
-                        title="Distribute Vertical"
-                    >
-                        <span className="font-mono text-[10px] font-bold tracking-tight">↕</span>
-                    </button>
-
-                    <div className="w-px h-4 bg-slate-200 mx-1"></div>
-
-                    {/* Group */}
-                    <button
-                        onClick={() => pizarronStore.groupSelection()}
-                        className="p-1.5 hover:bg-slate-100 rounded text-slate-600"
-                        title="Group"
-                    >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>
-                    </button>
-                </>
-            )}
-
-            {/* Ungroup */}
-            {selectedNodes.some(n => n.type === 'group') && (
-                <>
-                    <div className="w-px h-4 bg-slate-200 mx-1"></div>
-                    <button
-                        onClick={() => pizarronStore.ungroupSelection()}
-                        className="p-1.5 hover:bg-slate-100 rounded text-slate-600"
-                        title="Ungroup"
-                    >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
-                    </button>
-                </>
-            )}
-
-            {/* --- Text Tools --- */}
-            {!isMulti && firstNode.type === 'text' && (
-                <>
-                    {/* Font Size */}
-                    <div className="flex items-center gap-0.5 bg-slate-100 rounded p-0.5">
-                        <button onClick={() => updateFontSize(-2)} className="w-6 h-6 flex items-center justify-center hover:bg-white rounded text-xs font-bold text-slate-600">-</button>
-                        <span className="text-xs font-mono w-6 text-center text-slate-700">{firstNode.content.fontSize || 16}</span>
-                        <button onClick={() => updateFontSize(2)} className="w-6 h-6 flex items-center justify-center hover:bg-white rounded text-xs font-bold text-slate-600">+</button>
+            {/* --- 3. Color --- */}
+            <div className="relative">
+                <button onClick={() => togglePopover('color')} className={btnClass(activePopover === 'color')} title="Color">
+                    <LuPalette size={18} />
+                </button>
+                {activePopover === 'color' && (
+                    <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 bg-white border border-slate-200 shadow-xl rounded-lg p-2 min-w-[220px] z-[120]">
+                        <div className="grid grid-cols-6 gap-1.5">
+                            {/* Transparent Option (First) */}
+                            <button
+                                onClick={() => updateNode({ color: 'transparent' })}
+                                className="w-6 h-6 rounded-full border border-slate-200 hover:scale-110 transition-transform flex items-center justify-center bg-white relative overflow-hidden"
+                                title="Transparent"
+                            >
+                                <div className="absolute inset-0 bg-red-500 w-[1px] h-[30px] rotate-45 top-[-3px] left-[11px]"></div>
+                            </button>
+                            {/* Colors */}
+                            {['#000000', '#ffffff', '#ef4444', '#f97316', '#f59e0b', '#84cc16', '#10b981', '#06b6d4', '#3b82f6', '#8b5cf6', '#d946ef', '#f43f5e', '#64748b', '#94a3b8'].map(c => (
+                                <button
+                                    key={c}
+                                    onClick={() => updateNode({ color: c })}
+                                    className="w-6 h-6 rounded-full border border-slate-200 hover:scale-110 transition-transform"
+                                    style={{ backgroundColor: c }}
+                                />
+                            ))}
+                        </div>
                     </div>
-                    <div className="w-px h-4 bg-slate-200 mx-1"></div>
+                )}
+            </div>
 
-                    <FontSelector
-                        currentFont={firstNode.content.fontFamily || 'Inter'}
-                        onChange={(f) => pizarronStore.updateNode(firstNode.id, { content: { ...firstNode.content, fontFamily: f } })}
-                    />
-                    <div className="w-px h-4 bg-slate-200 mx-0.5"></div>
+            {/* --- 4. Style (Bold, Italic, Underline, Strikethrough) --- */}
+            {isText && (
+                <div className="relative">
+                    <button onClick={() => togglePopover('style')} className={btnClass(activePopover === 'style')} title="Style">
+                        <LuBold size={18} />
+                    </button>
+                    {activePopover === 'style' && (
+                        <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 bg-white border border-slate-200 shadow-xl rounded-lg p-2 z-[120] flex gap-1">
+                            <button onClick={() => updateStyle('fontWeight', firstNode.content.fontWeight === 'bold' ? 'normal' : 'bold')} className={`p-2 rounded hover:bg-orange-50 ${firstNode.content.fontWeight === 'bold' ? 'bg-orange-100 text-orange-600' : 'text-slate-600'}`}><LuBold size={16} /></button>
+                            <button onClick={() => updateStyle('fontStyle', firstNode.content.fontStyle === 'italic' ? 'normal' : 'italic')} className={`p-2 rounded hover:bg-orange-50 ${firstNode.content.fontStyle === 'italic' ? 'bg-orange-100 text-orange-600' : 'text-slate-600'}`}><LuItalic size={16} /></button>
+                            <button onClick={() => updateStyle('textDecoration', firstNode.content.textDecoration === 'underline' ? 'none' : 'underline')} className={`p-2 rounded hover:bg-orange-50 ${firstNode.content.textDecoration === 'underline' ? 'bg-orange-100 text-orange-600' : 'text-slate-600'}`}><LuUnderline size={16} /></button>
+                            <button onClick={() => updateStyle('textDecoration', firstNode.content.textDecoration === 'line-through' ? 'none' : 'line-through')} className={`p-2 rounded hover:bg-orange-50 ${firstNode.content.textDecoration === 'line-through' ? 'bg-orange-100 text-orange-600' : 'text-slate-600'}`}><LuStrikethrough size={16} /></button>
+                        </div>
+                    )}
+                </div>
+            )}
 
-                    {/* Styles */}
-                    <button onClick={toggleBold} className={`p-1.5 rounded ${firstNode.content.fontWeight === 'bold' ? 'bg-indigo-50 text-indigo-600' : 'hover:bg-slate-100 text-slate-600'}`} title="Bold"><span className="font-bold">B</span></button>
-                    <button onClick={toggleItalic} className={`p-1.5 rounded ${firstNode.content.fontStyle === 'italic' ? 'bg-indigo-50 text-indigo-600' : 'hover:bg-slate-100 text-slate-600'}`} title="Italic"><span className="italic font-serif">I</span></button>
-                    <button onClick={toggleUnderline} className={`p-1.5 rounded ${firstNode.content.textDecoration === 'underline' ? 'bg-indigo-50 text-indigo-600' : 'hover:bg-slate-100 text-slate-600'}`} title="Underline"><span className="underline">U</span></button>
+            {/* --- 5. Spacing (Line Height / Interlineado) --- */}
+            {isText && (
+                <div className="relative">
+                    <button onClick={() => togglePopover('spacing')} className={btnClass(activePopover === 'spacing')} title="Spacing">
+                        <LuMoveVertical size={18} />
+                    </button>
+                    {activePopover === 'spacing' && (
+                        <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 bg-white border border-slate-200 shadow-xl rounded-lg p-3 min-w-[200px] z-[120] flex flex-col gap-3">
+                            <div>
+                                <div className="flex justify-between text-[10px] text-slate-500 mb-1">LINE HEIGHT</div>
+                                <input
+                                    type="range" min="0.8" max="2.5" step="0.1"
+                                    value={firstNode.content.lineHeight || 1.2}
+                                    onChange={(e) => updateNode({ lineHeight: parseFloat(e.target.value) })}
+                                    className="w-full accent-orange-600 h-1 bg-slate-200 rounded-lg cursor-pointer"
+                                />
+                            </div>
+                            <div>
+                                <div className="flex justify-between text-[10px] text-slate-500 mb-1">LETTER SPACING</div>
+                                <input
+                                    type="range" min="-2" max="10" step="0.5"
+                                    value={parseInt(firstNode.content.letterSpacing as string || '0')}
+                                    onChange={(e) => updateNode({ letterSpacing: `${e.target.value}px` })}
+                                    className="w-full accent-orange-600 h-1 bg-slate-200 rounded-lg cursor-pointer"
+                                />
+                            </div>
+                        </div>
+                    )}
+                </div>
+            )}
 
-                    <div className="w-px h-4 bg-slate-200 mx-0.5"></div>
+            {/* --- 6. Effects (Blur, Shadow, Drops) --- */}
+            <div className="relative">
+                <button onClick={() => togglePopover('effects')} className={btnClass(activePopover === 'effects')} title="Effects">
+                    <LuWand size={18} />
+                </button>
+                {activePopover === 'effects' && (
+                    <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 bg-white border border-slate-200 shadow-xl rounded-lg p-3 min-w-[200px] z-[120] space-y-3">
+                        {/* Opacity */}
+                        <div>
+                            <div className="flex justify-between text-[10px] text-slate-500 mb-1">OPACITY</div>
+                            <input
+                                type="range" min="0" max="100"
+                                value={(firstNode.content.opacity ?? 1) * 100}
+                                onChange={(e) => updateNode({ opacity: parseInt(e.target.value) / 100 })}
+                                className="w-full accent-orange-600 h-1 bg-slate-200 rounded-lg cursor-pointer"
+                            />
+                        </div>
 
-                    {/* Alignment (Added) */}
-                    <div className="flex items-center bg-slate-100 rounded p-0.5 gap-0.5">
-                        <button onClick={() => updateTextAlign('left')} className={`p-1 rounded ${firstNode.content.textAlign === 'left' ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-500 hover:text-slate-700'}`} title="Left">
-                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h10M4 18h16" /></svg>
-                        </button>
-                        <button onClick={() => updateTextAlign('center')} className={`p-1 rounded ${(firstNode.content.textAlign === 'center' || !firstNode.content.textAlign) ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-500 hover:text-slate-700'}`} title="Center">
-                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M7 12h10M4 18h16" /></svg>
-                        </button>
-                        <button onClick={() => updateTextAlign('right')} className={`p-1 rounded ${firstNode.content.textAlign === 'right' ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-500 hover:text-slate-700'}`} title="Right">
-                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M10 12h10M4 18h16" /></svg>
-                        </button>
+                        <div className="h-px bg-slate-100"></div>
+
+                        {/* Shadows / Blur toggles (Simplified for now) */}
+                        <div className="flex flex-col gap-1">
+                            <label className="flex items-center gap-2 text-xs text-slate-600 cursor-pointer hover:text-orange-600">
+                                <input
+                                    type="checkbox"
+                                    className="rounded text-orange-500 focus:ring-orange-500"
+                                    checked={!!firstNode.content.filters?.shadow}
+                                    onChange={(e) => updateNode({ filters: { ...firstNode.content.filters, shadow: e.target.checked ? { color: 'rgba(0,0,0,0.2)', blur: 10, offsetX: 0, offsetY: 4 } : undefined } })}
+                                />
+                                Drop Shadow
+                            </label>
+                            <label className="flex items-center gap-2 text-xs text-slate-600 cursor-pointer hover:text-orange-600">
+                                <input
+                                    type="checkbox"
+                                    className="rounded text-orange-500 focus:ring-orange-500"
+                                    checked={!!firstNode.content.filters?.blur}
+                                    onChange={(e) => updateNode({ filters: { ...firstNode.content.filters, blur: e.target.checked ? 4 : undefined } })}
+                                />
+                                Blur
+                            </label>
+                        </div>
                     </div>
+                )}
+            </div>
 
-                    <div className="w-px h-4 bg-slate-200 mx-0.5"></div>
+            <div className="w-px h-4 bg-slate-200 mx-1"></div>
 
-                    {/* Colors & Rest... (Keeping existing Color/BG/List logic implies using 'firstNode' props) */}
-                    {/* Re-implementing simplified Color picker for brevity in this replacement block */}
-                    <ColorButton label="T" color={firstNode.content.color || '#000'} onChange={(c) => changeColor(c)} colors={colors} />
+            {/* --- Position --- */}
+            <div className="relative">
+                <button onClick={() => togglePopover('position')} className={btnClass(activePopover === 'position')} title="Position">
+                    <LuLayers size={18} />
+                </button>
+                {activePopover === 'position' && (
+                    <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 bg-white border border-slate-200 shadow-xl rounded-lg p-2 z-[120] flex flex-col gap-1 min-w-[140px]">
+                        <button onClick={() => pizarronStore.bringToFront()} className="text-xs flex items-center justify-between px-2 py-1.5 hover:bg-orange-50 hover:text-orange-600 rounded text-slate-600"><span className="flex items-center gap-2"><LuArrowUp /> Al frente</span></button>
+                        <button onClick={() => pizarronStore.bringForward()} className="text-xs flex items-center justify-between px-2 py-1.5 hover:bg-orange-50 hover:text-orange-600 rounded text-slate-600"><span className="flex items-center gap-2 text-slate-400"><LuArrowUp size={14} /> Delante</span></button>
+                        <button onClick={() => pizarronStore.sendBackward()} className="text-xs flex items-center justify-between px-2 py-1.5 hover:bg-orange-50 hover:text-orange-600 rounded text-slate-600"><span className="flex items-center gap-2 text-slate-400"><LuArrowDown size={14} /> Atras</span></button>
+                        <button onClick={() => pizarronStore.sendToBack()} className="text-xs flex items-center justify-between px-2 py-1.5 hover:bg-orange-50 hover:text-orange-600 rounded text-slate-600"><span className="flex items-center gap-2"><LuArrowDown /> A fondo</span></button>
+                    </div>
+                )}
+            </div>
 
-                    <div className="w-px h-4 bg-slate-200 mx-0.5"></div>
-
-                    <button
-                        onClick={() => pizarronStore.updateNode(firstNode.id, { content: { ...firstNode.content, listType: firstNode.content.listType === 'none' ? 'bullet' : firstNode.content.listType === 'bullet' ? 'number' : 'none' } })}
-                        className={`p-1.5 rounded ${firstNode.content.listType && firstNode.content.listType !== 'none' ? 'bg-indigo-50 text-indigo-600' : 'hover:bg-slate-100 text-slate-600'}`}
-                    >
-                        {firstNode.content.listType === 'number' ? <span className="text-xs font-bold">1.</span> : <span className="text-xs font-bold">•</span>}
+            {/* --- Casing (Moved here or keep inside Style? Request didn't specify, generally useful) --- */}
+            {isText && (
+                <div className="relative">
+                    <button onClick={() => togglePopover('casing')} className={btnClass(activePopover === 'casing')} title="Casing">
+                        <LuCaseSensitive size={18} />
                     </button>
-                </>
+                    {activePopover === 'casing' && (
+                        <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 bg-white border border-slate-200 shadow-xl rounded-lg p-2 z-[120] flex flex-col gap-1 min-w-[120px]">
+                            <button onClick={() => updateStyle('textTransform', 'uppercase')} className="text-xs text-left px-2 py-1.5 hover:bg-orange-50 hover:text-orange-600 rounded">UPPERCASE</button>
+                            <button onClick={() => updateStyle('textTransform', 'lowercase')} className="text-xs text-left px-2 py-1.5 hover:bg-orange-50 hover:text-orange-600 rounded">lowercase</button>
+                            <button onClick={() => updateStyle('textTransform', 'capitalize')} className="text-xs text-left px-2 py-1.5 hover:bg-orange-50 hover:text-orange-600 rounded">Capitalize</button>
+                        </div>
+                    )}
+                </div>
             )}
 
-            {/* --- Shape / Board Tools / Sticker --- */}
-            {!isMulti && (firstNode.type === 'shape' || firstNode.type === 'board' || firstNode.type === 'sticker') && (
-                <>
-                    <FontSelector currentFont={firstNode.content.fontFamily || 'Inter'} onChange={(f) => pizarronStore.updateNode(firstNode.id, { content: { ...firstNode.content, fontFamily: f } })} />
-                    <div className="w-px h-4 bg-slate-200 mx-0.5"></div>
-                    <ColorButton label="Fill" icon={<div className="w-3 h-3 rounded" style={{ backgroundColor: firstNode.content.color || '#cbd5e1' }} />} color={firstNode.content.color || '#cbd5e1'} onChange={(c) => changeColor(c)} colors={fillColors} />
+            <div className="w-px h-4 bg-slate-200 mx-1"></div>
 
-                    {/* Gradient Shortcut */}
-                    <button
-                        onClick={() => pizarronStore.updateNode(firstNode.id, { content: { ...firstNode.content, gradient: { type: 'linear', start: '#a5f3fc', end: '#3b82f6' } } })}
-                        className="p-1.5 hover:bg-slate-100 rounded text-slate-600"
-                        title="Apply Gradient"
-                    >
-                        <div className="w-4 h-4 rounded bg-gradient-to-br from-cyan-200 to-blue-500"></div>
-                    </button>
-                </>
-            )}
-
-            <div className="w-px h-4 bg-slate-200 mx-0.5"></div>
-
-            {/* Common: Lock, Delete */}
-            <button onClick={() => pizarronStore.updateNode(firstNode.id, { locked: !firstNode.locked })} className={`p-1.5 rounded ${firstNode.locked ? 'bg-red-50 text-red-500' : 'hover:bg-slate-100 text-slate-600'}`}>
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={firstNode.locked ? "M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" : "M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z"} /></svg>
+            {/* --- Copy --- */}
+            <button
+                onClick={() => { pizarronStore.copySelection(); pizarronStore.paste(); }}
+                className={btnClass(false)} title="Duplicate"
+            >
+                <LuCopy size={18} />
             </button>
-            <button onClick={() => pizarronStore.deleteNodes(Array.from(selection))} className="p-1.5 hover:bg-red-50 rounded text-red-500">
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+
+            {/* --- Lock / Group / Delete --- */}
+
+            <button onClick={() => pizarronStore.updateNode(firstNode.id, { locked: !firstNode.locked })} className={`p-1.5 rounded transition-colors ${firstNode.locked ? 'bg-red-50 text-red-500' : 'text-slate-600 hover:text-orange-500 hover:bg-orange-50'}`}>
+                {firstNode.locked ? <LuLock size={18} /> : <LuLockOpen size={18} />}
             </button>
+
+            {/* Group Button (Placement: Next to lock) */}
+            {isMulti ? (
+                <button onClick={() => pizarronStore.groupSelection()} className={btnClass(false)} title="Group">
+                    <LuGroup size={18} />
+                </button>
+            ) : (firstNode.type === 'group') ? (
+                <button onClick={() => pizarronStore.ungroupSelection()} className={btnClass(false)} title="Ungroup">
+                    <LuUngroup size={18} />
+                </button>
+            ) : null}
+
+            <button onClick={() => pizarronStore.deleteNodes(selectedNodes.map(n => n.id))} className="p-1.5 hover:bg-red-50 rounded text-red-500 transition-colors" title="Delete">
+                <LuTrash2 size={18} />
+            </button>
+
+            <div className="w-px h-4 bg-slate-200 mx-1"></div>
+
+            {/* Undo/Redo (Moved to end) */}
+            <div className="flex items-center gap-0.5">
+                <button onClick={() => pizarronStore.undo()} className="p-1.5 hover:bg-orange-50 hover:text-orange-600 rounded text-slate-500" title="Undo (Ctrl+Z)">
+                    <LuUndo size={16} />
+                </button>
+                <button onClick={() => pizarronStore.redo()} className="p-1.5 hover:bg-orange-50 hover:text-orange-600 rounded text-slate-500" title="Redo (Ctrl+Shift+Z)">
+                    <LuRedo size={16} />
+                </button>
+            </div>
+
         </div>
     );
 };
-
-// Helper Subcomponent for Color (to reduce code duplication in this massive block)
-const ColorButton: React.FC<{ label: string, color: string, onChange: (c: string) => void, colors: string[], icon?: React.ReactNode }> = ({ label, color, onChange, icon, colors }) => (
-    <div className="relative group">
-        <button className="p-1.5 hover:bg-slate-100 rounded flex items-center gap-1">
-            {icon ? icon : <div className="text-xs font-bold text-slate-500">{label}</div>}
-        </button>
-        <div className="absolute top-full left-0 mt-1 hidden group-hover:flex bg-white border border-slate-200 shadow-xl rounded-lg p-1 gap-1 min-w-max z-50">
-            <div className="absolute -top-3 left-0 w-full h-3 bg-transparent"></div>
-            {colors.map(c => (
-                <button key={c} onClick={() => onChange(c)} className="w-5 h-5 rounded-full border border-slate-200 hover:scale-110 transition-transform" style={{ backgroundColor: c }} />
-            ))}
-        </div>
-    </div>
-);
 

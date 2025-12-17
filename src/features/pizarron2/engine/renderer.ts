@@ -1401,29 +1401,22 @@ export class PizarronRenderer {
         const selectedIds = Array.from(state.selection);
         if (selectedIds.length === 0) return;
 
-        // Is Locked? (If mixed, we treat as normal unless ALL are locked)
-        // Actually, simplify: Just check if single is locked. Multi resize is special.
+        const PREMIUM_COLOR = '#4f46e5'; // Indigo 600
+        const LOCKED_COLOR = '#ef4444';
 
         if (selectedIds.length === 1) {
             const node = state.nodes[selectedIds[0]];
-            // Defensive check: Skip if collpased
             if (node && !node.collapsed) {
-                // Determine Bounds (Rotated ?)
-                // ...
                 const isLocked = node.locked || node.isFixed;
-                const strokeColor = isLocked ? '#ef4444' : '#3b82f6'; // Red if locked
-
-                // Nexus Motion: Selection Fade-in
+                const strokeColor = isLocked ? LOCKED_COLOR : PREMIUM_COLOR;
                 const anim = this.animStates.get(node.id);
-                // default to 1 if no anim found (fallback)
                 const opacity = anim ? anim.selectionOpacity : 1;
 
                 ctx.save();
                 ctx.globalAlpha = opacity;
                 ctx.strokeStyle = strokeColor;
-                ctx.lineWidth = 1.5; // Slightly thicker for better visibility with fade
+                ctx.lineWidth = 1.5 / zoom; // Thinner, crisp world line
 
-                // Draw rotated bounding box
                 const cx = node.x + node.w / 2;
                 const cy = node.y + node.h / 2;
 
@@ -1436,17 +1429,15 @@ export class PizarronRenderer {
 
                 if (!isLocked) {
                     ctx.save();
-                    // const cx = node.x + node.w / 2; // declared above
-                    // const cy = node.y + node.h / 2;
                     ctx.translate(cx, cy);
                     if (node.rotation) ctx.rotate(node.rotation);
                     ctx.translate(-node.w / 2, -node.h / 2);
-                    this.drawControls(ctx, node, zoom);
+                    this.drawControls(ctx, node, zoom, PREMIUM_COLOR);
                     ctx.restore();
                 }
             }
         } else {
-            // Multi Selection - Master Bounding Box
+            // Multi Selection
             let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
             let anyLocked = false;
             let hasVisibleNode = false;
@@ -1455,11 +1446,6 @@ export class PizarronRenderer {
                 const node = state.nodes[id];
                 if (node && !node.collapsed) {
                     hasVisibleNode = true;
-                    // Logic for rotated bounding box is complex.
-                    // For now, we calculate AABB of the rotated nodes?
-                    // Or simplified: Just AABB of raw coordinates (UX standard for quick multi-select).
-                    // Actually, Figma/Miro calculate the AABB of the rotated shapes.
-                    // Doing simple min/max on x/y/w/h works well enough for now unless extreme rotation.
                     minX = Math.min(minX, node.x);
                     minY = Math.min(minY, node.y);
                     maxX = Math.max(maxX, node.x + node.w);
@@ -1474,81 +1460,65 @@ export class PizarronRenderer {
             const h = maxY - minY;
 
             ctx.save();
-            ctx.strokeStyle = anyLocked ? '#ef4444' : '#3b82f6';
-            ctx.lineWidth = 1;
-            ctx.setLineDash([4, 4]);
+            ctx.strokeStyle = anyLocked ? LOCKED_COLOR : PREMIUM_COLOR;
+            ctx.lineWidth = 1 / zoom;
+            ctx.setLineDash([4, 4]); // Dashed for groups
             ctx.strokeRect(minX, minY, w, h);
             ctx.setLineDash([]);
             ctx.restore();
 
             if (!anyLocked) {
-                // Mock Group Node for Handles
-                const groupNode = {
-                    id: 'selection-group',
-                    type: 'group' as any,
-                    x: minX,
-                    y: minY,
-                    w,
-                    h,
-                    rotation: 0
-                };
-
+                const groupNode = { x: minX, y: minY, w, h, rotation: 0 };
                 ctx.save();
                 ctx.translate(minX, minY);
-                this.drawControls(ctx, groupNode, zoom);
+                this.drawControls(ctx, groupNode, zoom, PREMIUM_COLOR);
                 ctx.restore();
             }
         }
     }
 
-    private drawControls(ctx: CanvasRenderingContext2D, node: { x: number, y: number, w: number, h: number }, zoom: number) {
-        // Handles are always drawn relative to current context origin
-        // Single: Origin is Top-Left of Node (Rotated)
-        // Multi: Origin is Top-Left of Bonding Box (Unrotated)
+    private drawControls(ctx: CanvasRenderingContext2D, node: { x: number, y: number, w: number, h: number }, zoom: number, color: string) {
+        // "4 manejadores grandes" - Only Corners
+        const handleVisualSize = 10;
+        const radius = (handleVisualSize / 2) / zoom;
 
-        const handleVisualSize = 8;
-        const handleSize = handleVisualSize / zoom;
-        const half = handleSize / 2;
+        // Offset to center the circle on the corner point
+        // Coordinates are relative to node (0,0 is TopLeft)
 
-        // 8 Visual Handles
-        const handles = [
-            // Corners
-            { x: -half, y: -half },
-            { x: node.w - half, y: -half },
-            { x: node.w - half, y: node.h - half },
-            { x: -half, y: node.h - half },
-            // Sides
-            { x: node.w / 2 - half, y: -half }, // N
-            { x: node.w / 2 - half, y: node.h - half }, // S
-            { x: -half, y: node.h / 2 - half }, // W
-            { x: node.w - half, y: node.h / 2 - half }  // E
+        const corners = [
+            { x: 0, y: 0 },         // NW
+            { x: node.w, y: 0 },    // NE
+            { x: node.w, y: node.h }, // SE
+            { x: 0, y: node.h }     // SW
         ];
 
         ctx.fillStyle = '#ffffff';
-        ctx.strokeStyle = '#3b82f6'; // Blue
-        ctx.lineWidth = 1.5 / zoom;
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 2 / zoom; // Thicker handle border
 
-        handles.forEach(h => {
+        corners.forEach(p => {
             ctx.beginPath();
-            ctx.rect(h.x, h.y, handleSize, handleSize);
+            ctx.arc(p.x, p.y, radius, 0, Math.PI * 2);
             ctx.fill();
             ctx.stroke();
         });
 
-        // Rotation Handle
-        const rotDist = 25 / zoom;
-        const rotSize = 10 / zoom;
+        // Rotation Handle (Top Center specific)
+        const rotDist = 20 / zoom;
+        const rotRad = 4 / zoom;
         const rotX = node.w / 2;
         const rotY = -rotDist;
 
+        // Line to handle
         ctx.beginPath();
         ctx.moveTo(node.w / 2, 0);
         ctx.lineTo(rotX, rotY);
-        ctx.strokeStyle = '#3b82f6';
+        ctx.lineWidth = 1 / zoom;
         ctx.stroke();
 
+        // Handle Circle
         ctx.beginPath();
-        ctx.arc(rotX, rotY, rotSize / 2, 0, Math.PI * 2);
+        ctx.arc(rotX, rotY, rotRad, 0, Math.PI * 2);
         ctx.fillStyle = '#ffffff';
         ctx.fill();
         ctx.stroke();

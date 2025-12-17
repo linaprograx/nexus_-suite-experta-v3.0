@@ -1,6 +1,6 @@
 import React from 'react';
 import { AppContextType, UserProfile } from '../../types';
-import { initializeApp, FirebaseApp } from 'firebase/app';
+import { initializeApp, FirebaseApp, getApps, getApp } from 'firebase/app';
 import { getAuth, onAuthStateChanged, Auth, signInWithCustomToken, User } from 'firebase/auth';
 import { getFirestore, Firestore, doc, onSnapshot } from 'firebase/firestore';
 import { getStorage, FirebaseStorage } from 'firebase/storage';
@@ -24,10 +24,22 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const [userProfile, setUserProfile] = React.useState<Partial<UserProfile>>({});
 
     React.useEffect(() => {
-        const appInstance = initializeApp(firebaseConfig);
-        const authInstance = getAuth(appInstance);
-        const dbInstance = getFirestore(appInstance);
-        const storageInstance = getStorage(appInstance);
+        let appInstance: FirebaseApp;
+        let authInstance: Auth;
+        let dbInstance: Firestore;
+        let storageInstance: FirebaseStorage;
+
+        // Verificar si ya existe una instancia (evita crashes en StrictMode/Dev)
+        if (getApps().length === 0) {
+            appInstance = initializeApp(firebaseConfig);
+        } else {
+            appInstance = getApp();
+        }
+
+        authInstance = getAuth(appInstance);
+        dbInstance = getFirestore(appInstance);
+        storageInstance = getStorage(appInstance);
+
         setApp(appInstance);
         setAuth(authInstance);
         setDb(dbInstance);

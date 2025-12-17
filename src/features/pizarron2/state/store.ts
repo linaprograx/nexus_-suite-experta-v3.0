@@ -57,12 +57,95 @@ class PizarronStore {
         );
     }
 
+    // --- History (Undo/Redo) ---
+    private history: string[] = [];
+    private historyIndex = -1;
+    private isUndoing = false;
+    private maxHistory = 50;
+
+    private pushHistory() {
+        if (this.isUndoing) return;
+
+        // Snapshot only critical data: nodes, order
+        const snapshot = JSON.stringify({
+            nodes: this.state.nodes,
+            order: this.state.order
+        });
+
+        // Check if identical to current top
+        if (this.historyIndex >= 0 && this.history[this.historyIndex] === snapshot) return;
+
+        // Truncate future if we were in middle
+        if (this.historyIndex < this.history.length - 1) {
+            this.history = this.history.slice(0, this.historyIndex + 1);
+        }
+
+        this.history.push(snapshot);
+        if (this.history.length > this.maxHistory) {
+            this.history.shift();
+        } else {
+            this.historyIndex++;
+        }
+    }
+
+    undo() {
+        if (this.historyIndex <= 0) return; // Nothing to undo
+
+        this.isUndoing = true;
+        this.historyIndex--;
+        const snapshot = JSON.parse(this.history[this.historyIndex]);
+
+        this.setState(state => {
+            state.nodes = snapshot.nodes;
+            state.order = snapshot.order;
+            // Deselect to avoid ghost selections
+            state.selection = new Set();
+        });
+        this.isUndoing = false;
+    }
+
+    redo() {
+        if (this.historyIndex >= this.history.length - 1) return;
+
+        this.isUndoing = true;
+        this.historyIndex++;
+        const snapshot = JSON.parse(this.history[this.historyIndex]);
+
+        this.setState(state => {
+            state.nodes = snapshot.nodes;
+            state.order = snapshot.order;
+            state.selection = new Set();
+        });
+        this.isUndoing = false;
+    }
+
     /**
      * Updates state and notifies subscribers efficiently.
-     * We don't use immutability libraries for perf, but we try to replace top-level objects.
      */
-    setState(updater: (draft: BoardState) => void) {
+    setState(updater: (draft: BoardState) => void, saveHistory = false) {
+        // If saveHistory is true, push BEFORE changing? No, usually AFTER changing is "New State".
+        // But for undo, we need the *previous* state? 
+        // Standard pattern: 
+        // 1. If this is a new action, push CURRENT state (before change) if we imply "Unknown Previous"? 
+        //    Actually simpler: The history stack contains ALL states including proper current.
+        //    So index points to "Current Displayed State".
+
+        // Let's refine:
+        // When we start, we push Initial State.
+        // When we change, we push New State.
+
+        // If this is the FIRST time setup, ensure we have initial history
+        if (this.history.length === 0) {
+            this.history.push(JSON.stringify({ nodes: this.state.nodes, order: this.state.order }));
+            this.historyIndex = 0;
+        }
+
         updater(this.state);
+
+        if (saveHistory) {
+            this.pushHistory();
+        }
+
         this.state = { ...this.state }; // Force reference change for useSyncExternalStore
         this.itemCount = Object.keys(this.state.nodes).length; // Cache simple metric
         this.notify();
@@ -108,10 +191,10 @@ class PizarronStore {
 
             state.nodes[node.id] = node;
             state.order.push(node.id);
-        });
+        }, true);
     }
 
-    updateNode(id: string, patch: Partial<BoardNode> | any) {
+    updateNode(id: string, patch: Partial<BoardNode> | any, saveHistory = true) {
         // We use setState to ensure React components (Inspector) re-render.
         this.setState(state => {
             const node = state.nodes[id];
@@ -174,7 +257,7 @@ class PizarronStore {
                 Object.assign(node, patch);
                 node.updatedAt = Date.now();
             }
-        });
+        }, saveHistory);
     }
 
     deleteNode(id: string) {
@@ -189,7 +272,7 @@ class PizarronStore {
                 delete state.nodes[id];
                 state.selection.delete(id);
             });
-        });
+        }, true);
     }
 
     duplicateNode(id: string) {

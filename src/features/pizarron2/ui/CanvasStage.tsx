@@ -146,6 +146,7 @@ export const CanvasStage: React.FC = () => {
                 onPointerMove={(e) => interactionManager.onPointerMove(e)}
                 onPointerUp={(e) => interactionManager.onPointerUp(e)}
                 onPointerLeave={(e) => interactionManager.onPointerUp(e)}
+                onDoubleClick={(e) => interactionManager.onDoubleClick(e)}
             // onWheel removed from JSX to avoid collision
             />
         </div>
