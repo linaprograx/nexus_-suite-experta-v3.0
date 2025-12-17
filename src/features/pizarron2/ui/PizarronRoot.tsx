@@ -8,8 +8,7 @@ import { LeftRail } from './overlays/LeftRail';
 import { Inspector } from './overlays/Inspector';
 import { TextEditor } from './overlays/TextEditor';
 import { PresentationMode } from './presentation/PresentationMode';
-import { ImageModal } from './overlays/ImageModal';
-import { ConfigModalRouter } from './overlays/ConfigModalRouter';
+
 import { MiniToolbar } from './overlays/MiniToolbar';
 import { GuideOverlay } from './overlays/GuideOverlay';
 import { Firestore } from 'firebase/firestore';
@@ -133,12 +132,6 @@ export const PizarronRoot: React.FC<PizarronRootProps> = ({ appId, boardId, user
                         {showLibrary && <LibrarySidePanel />}
                         {showProjectManager && <PizarraManager onClose={() => pizarronStore.setUIFlag('showProjectManager', false)} />}
                         <TextEditor />
-                        {editingImageId && <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm pointer-events-auto">
-                            <ImageModal
-                                nodeId={editingImageId}
-                                onClose={() => pizarronStore.updateInteractionState({ editingImageId: undefined })}
-                            />
-                        </div>}
                     </>
                 )}
                 {/* Bottom Status */}

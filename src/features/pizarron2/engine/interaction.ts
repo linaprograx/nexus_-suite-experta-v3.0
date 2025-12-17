@@ -435,7 +435,22 @@ export class InteractionManager {
             }
 
             if (node.type === 'text' || node.type === 'card' || node.type === 'board') {
-                pizarronStore.updateInteractionState({ editingNodeId: hitId, editingSubId: undefined });
+                // Determine if click was on Title or Body (for Board/Card)
+                let subId: string | undefined = undefined;
+                if (node.type === 'board' || node.type === 'card') {
+                    // Calculate local click position
+                    const cx = node.x + node.w / 2;
+                    const cy = node.y + node.h / 2;
+                    const unrotatedPoint = this.rotatePoint(worldPoint, { x: cx, y: cy }, -(node.rotation || 0));
+                    const localY = unrotatedPoint.y - node.y;
+
+                    // Title Bar threshold (approx 40px)
+                    if (localY > 45) {
+                        subId = 'body';
+                    }
+                }
+
+                pizarronStore.updateInteractionState({ editingNodeId: hitId, editingSubId: subId });
                 this.lastClickId = null;
                 return;
             }
@@ -583,6 +598,10 @@ export class InteractionManager {
                 const isMultiSelect = e.ctrlKey || e.metaKey || e.shiftKey;
 
                 // ZONE SELECTION LOGIC
+                // (Optimized: Check Bounds First)
+                // ... logic ...
+
+                pizarronStore.updateInteractionState({ dragNodeId: hitId }); // Visual Feedback (Lift)
                 const hitNode = nodes[hitId];
                 if (hitNode && hitNode.structure && hitNode.structure.zones) {
                     const cx = hitNode.x + hitNode.w / 2;
@@ -1067,7 +1086,22 @@ export class InteractionManager {
             }
         }
 
-        // Hover effects? (Debounce/Throttle if expensive)
+        // Hover effects (Throttle)
+        // Find top-most node under cursor
+        let hoverId: string | undefined = undefined;
+        for (let i = state.order.length - 1; i >= 0; i--) {
+            const id = state.order[i];
+            const n = state.nodes[id];
+            if (n && !n.collapsed && this.isPointInNode(worldPoint, n)) {
+                hoverId = id;
+                break;
+            }
+        }
+
+        // Only update if changed
+        if (state.interactionState.hoveredNodeId !== hoverId) {
+            pizarronStore.updateInteractionState({ hoveredNodeId: hoverId });
+        }
     }
 
     private updateMarqueeSelection(marquee: any, nodes: Record<string, BoardNode>, order: string[]) {
@@ -1201,7 +1235,10 @@ export class InteractionManager {
         }
 
         this.isPanning = false;
+        this.isPanning = false;
         this.isDragging = false;
+
+        pizarronStore.updateInteractionState({ dragNodeId: undefined }); // Clear Drag Visual
 
         const state = pizarronStore.getState();
 

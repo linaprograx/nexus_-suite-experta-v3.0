@@ -118,24 +118,24 @@ const UNIQUE_GEOMETRIC = dedupeByKey(GEOMETRIC_SHAPES, i => i.id);
 const UNIQUE_ARROWS = dedupeByKey(ARROW_SHAPES, i => i.id);
 
 export const SHAPE_LIBRARIES: AssetCategory[] = [
-    { id: 'basic', label: 'Basic', items: UNIQUE_BASIC },
-    { id: 'geometric', label: 'Geometric', items: UNIQUE_GEOMETRIC },
-    { id: 'arrows', label: 'Arrows', items: UNIQUE_ARROWS },
+    { id: 'basic', label: 'Básicas', items: UNIQUE_BASIC },
+    { id: 'geometric', label: 'Geométricas', items: UNIQUE_GEOMETRIC },
+    { id: 'arrows', label: 'Flechas', items: UNIQUE_ARROWS },
     {
-        id: 'lines', label: 'Lines', items: [
-            { id: 'l-solid', label: 'Solid', icon: '━', type: 'line', data: { type: 'line', w: 200, h: 0, content: { color: '#64748b', strokeWidth: 4, strokeStyle: 'solid' } } },
-            { id: 'l-dashed', label: 'Dashed', icon: '┅', type: 'line', data: { type: 'line', w: 200, h: 0, content: { color: '#64748b', strokeWidth: 4, strokeStyle: 'dashed' } } },
-            { id: 'l-dotted', label: 'Dotted', icon: '┄', type: 'line', data: { type: 'line', w: 200, h: 0, content: { color: '#64748b', strokeWidth: 4, strokeStyle: 'dotted' } } },
+        id: 'lines', label: 'Líneas', items: [
+            { id: 'l-solid', label: 'Sólida', icon: '━', type: 'line', data: { type: 'line', w: 200, h: 0, content: { color: '#64748b', strokeWidth: 4, strokeStyle: 'solid' } } },
+            { id: 'l-dashed', label: 'Discontinues', icon: '┅', type: 'line', data: { type: 'line', w: 200, h: 0, content: { color: '#64748b', strokeWidth: 4, strokeStyle: 'dashed' } } },
+            { id: 'l-dotted', label: 'Punteada', icon: '┄', type: 'line', data: { type: 'line', w: 200, h: 0, content: { color: '#64748b', strokeWidth: 4, strokeStyle: 'dotted' } } },
         ]
     },
     {
-        id: 'workflow', label: 'Workflow', items: [
-            { id: 'p-task', label: 'New Task', icon: '✅', type: 'shape', data: { type: 'card', w: 200, h: 100, content: { title: 'New Task', body: 'Description...', color: '#dcfce7' } } },
-            { id: 'p-idea', label: 'New Idea', icon: '💡', type: 'shape', data: { type: 'card', w: 200, h: 100, content: { title: 'New Idea', body: 'Brainstorm...', color: '#dbeafe' } } },
+        id: 'workflow', label: 'Flujo de Trabajo', items: [
+            { id: 'p-task', label: 'Nueva Tarea', icon: '✅', type: 'shape', data: { type: 'card', w: 200, h: 100, content: { title: 'Nueva Tarea', body: 'Descripción...', color: '#dcfce7' } } },
+            { id: 'p-idea', label: 'Nueva Idea', icon: '💡', type: 'shape', data: { type: 'card', w: 200, h: 100, content: { title: 'Nueva Idea', body: 'Brainstorm...', color: '#dbeafe' } } },
         ]
     },
-    { id: 'flow', label: 'Flowchart', items: UNIQUE_FLOW },
-    { id: 'containers', label: 'Containers', items: UNIQUE_CONTAINERS }
+    { id: 'flow', label: 'Diagrama de Flujo', items: UNIQUE_FLOW },
+    { id: 'containers', label: 'Contenedores', items: UNIQUE_CONTAINERS }
 ];
 
 // --- Icons (SVG Paths) ---
@@ -154,14 +154,10 @@ export const ICON_LIBRARIES: AssetCategory[] = [
     },
     {
         id: 'objects',
-        label: 'Objects',
+        label: 'Objetos',
         items: [
-            { id: 'user', label: 'User', icon: '👤', type: 'icon', tags: ['person', 'profile'], data: { type: 'icon', path: 'M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z', w: 60, h: 60, content: { color: '#64748b' } } },
-            { id: 'group', label: 'People', icon: '👥', type: 'icon', tags: ['team'], data: { type: 'icon', path: 'M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z', w: 60, h: 60, content: { color: '#64748b' } } },
-            { id: 'check', label: 'Check', icon: '✅', type: 'icon', tags: ['ok'], data: { type: 'icon', path: 'M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z', w: 60, h: 60, content: { color: '#64748b' } } },
-            { id: 'star_icon', label: 'Star', icon: '⭐', type: 'icon', tags: ['fav'], data: { type: 'icon', path: 'M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z', w: 60, h: 60, content: { color: '#64748b' } } },
-            { id: 'heart', label: 'Heart', icon: '❤️', type: 'icon', tags: ['love'], data: { type: 'icon', path: 'M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z', w: 60, h: 60, content: { color: '#64748b' } } },
-            { id: 'image', label: 'Image', icon: '🖼️', type: 'icon', tags: ['photo'], data: { type: 'icon', path: 'M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z', w: 60, h: 60, content: { color: '#64748b' } } },
+            { id: 'group', label: 'Gente', icon: '👥', type: 'icon', tags: ['team'], data: { type: 'icon', path: 'M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z', w: 60, h: 60, content: { color: '#64748b' } } },
+            { id: 'image', label: 'Imagen', icon: '🖼️', type: 'icon', tags: ['photo'], data: { type: 'icon', path: 'M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z', w: 60, h: 60, content: { color: '#64748b' } } },
         ]
     },
     {
@@ -420,16 +416,16 @@ const T_APP_FLOW = {
 export const TEMPLATE_LIBRARIES: AssetCategory[] = [
     {
         id: 'frameworks',
-        label: 'Frameworks',
+        label: 'Marcos de Trabajo',
         items: [
             {
                 id: 't-empty', label: 'Pizarra Vacía', icon: '⬜', type: 'template', tags: ['empty', 'blank'],
                 data: { nodes: [{ id: 'board-empty', type: 'board', x: 0, y: 0, w: 800, h: 600, content: { title: 'Nueva Pizarra', color: '#ffffff' } }] }
             },
-            { id: 't-dafo', label: 'DAFO Analysis', icon: '⊞', type: 'template', data: T_DAFO, tags: ['swot', 'strategy'] },
-            { id: 't-matrix', label: '2x2 Matrix', icon: '田', type: 'template', data: T_MATRIX_2X2, tags: ['priority', 'grid'] },
+            { id: 't-dafo', label: 'Análisis DAFO', icon: '⊞', type: 'template', data: T_DAFO, tags: ['swot', 'strategy'] },
+            { id: 't-matrix', label: 'Matriz 2x2', icon: '田', type: 'template', data: T_MATRIX_2X2, tags: ['priority', 'grid'] },
             { id: 't-bmc', label: 'Business Canvas', icon: '📰', type: 'template', data: T_BMC, tags: ['business', 'model'] },
-            { id: 't-kanban', label: 'Kanban Board', icon: '📋', type: 'template', data: T_KANBAN_SIMPLE, tags: ['agile', 'task'] },
+            { id: 't-kanban', label: 'Tablero Kanban', icon: '📋', type: 'template', data: T_KANBAN_SIMPLE, tags: ['agile', 'task'] },
             // COMPOSITES MERGED HERE
             {
                 id: 'comp-swot', label: 'Smart SWOT', icon: '⊞', type: 'template',
@@ -472,41 +468,41 @@ export const TEMPLATE_LIBRARIES: AssetCategory[] = [
     },
     {
         id: 'layouts',
-        label: 'Grids & Layouts',
+        label: 'Grillas y Diseños',
         items: [
-            { id: 't-3col', label: '3 Columns', icon: '|||', type: 'template', data: T_GRID_3COL, tags: ['structure', 'layout'] },
-            { id: 't-menu', label: 'Menu Layout', icon: '📜', type: 'template', data: T_MENU_LAYOUT, tags: ['food', 'list'] },
-            { id: 't-brainstorm', label: 'Brainstorm', icon: '🧠', type: 'template', data: T_BRAINSTORM, tags: ['ideas', 'sticky'] },
+            { id: 't-3col', label: '3 Columnas', icon: '|||', type: 'template', data: T_GRID_3COL, tags: ['structure', 'layout'] },
+            { id: 't-menu', label: 'Diseño Menú', icon: '📜', type: 'template', data: T_MENU_LAYOUT, tags: ['food', 'list'] },
+            { id: 't-brainstorm', label: 'Lluvia de Ideas', icon: '🧠', type: 'template', data: T_BRAINSTORM, tags: ['ideas', 'sticky'] },
         ]
     },
     {
         id: 'cards',
-        label: 'Cards & Blocks',
+        label: 'Tarjetas y Bloques',
         items: [
-            { id: 't-kpi', label: 'KPI Card', icon: '📊', type: 'template', data: T_KPI_CARD, tags: ['metric', 'data'] },
-            { id: 't-cocktail', label: 'Cocktail Card', icon: '🍸', type: 'template', data: T_COCKTAIL_CARD, tags: ['drink', 'recipe'] },
+            { id: 't-kpi', label: 'Tarjeta KPI', icon: '📊', type: 'template', data: T_KPI_CARD, tags: ['metric', 'data'] },
+            { id: 't-cocktail', label: 'Tarjeta Cóctel', icon: '🍸', type: 'template', data: T_COCKTAIL_CARD, tags: ['drink', 'recipe'] },
         ]
     },
     {
         id: 'diagrams',
-        label: 'Diagrams',
+        label: 'Diagramas',
         items: [
-            { id: 't-flow', label: 'Flow Process', icon: '↔', type: 'template', data: T_FLOW_3STEP, tags: ['flow', 'steps'] },
-            { id: 't-timeline', label: 'Timeline', icon: '⟷', type: 'template', data: T_TIMELINE_H, tags: ['time', 'roadmap'] },
+            { id: 't-flow', label: 'Proceso de Flujo', icon: '↔', type: 'template', data: T_FLOW_3STEP, tags: ['flow', 'steps'] },
+            { id: 't-timeline', label: 'Línea de Tiempo', icon: '⟷', type: 'template', data: T_TIMELINE_H, tags: ['time', 'roadmap'] },
         ]
     },
     {
         id: 'tables',
-        label: 'Tables',
+        label: 'Tablas',
         items: [
-            { id: 't-table', label: 'Simple Table', icon: '▦', type: 'template', data: T_TABLE_SIMPLE, tags: ['data', 'rows'] },
+            { id: 't-table', label: 'Tabla Simple', icon: '▦', type: 'template', data: T_TABLE_SIMPLE, tags: ['data', 'rows'] },
         ]
     },
     {
         id: 'systems',
-        label: 'Mobile / App',
+        label: 'Móvil / App',
         items: [
-            { id: 't-app', label: 'Mobile View', icon: '📱', type: 'template', data: T_APP_FLOW, tags: ['wireframe', 'mobile'] },
+            { id: 't-app', label: 'Vista Móvil', icon: '📱', type: 'template', data: T_APP_FLOW, tags: ['wireframe', 'mobile'] },
         ]
     }
 ];
@@ -516,7 +512,7 @@ export const TEMPLATE_LIBRARIES: AssetCategory[] = [
 export const GRAPHIC_LIBRARIES: AssetCategory[] = [
     {
         id: 'stickers',
-        label: 'Stickers & Emojis',
+        label: 'Stickers y Emojis',
         items: [
             { id: 'e-smile', label: 'Smile', icon: '😀', type: 'icon', tags: ['smile', 'happy'], data: { type: 'text', w: 60, h: 60, content: { title: '😀', fontSize: 48, backgroundColor: 'transparent' } } },
             { id: 'e-cool', label: 'Cool', icon: '😎', type: 'icon', tags: ['cool'], data: { type: 'text', w: 60, h: 60, content: { title: '😎', fontSize: 48, backgroundColor: 'transparent' } } },
@@ -535,7 +531,7 @@ export const GRAPHIC_LIBRARIES: AssetCategory[] = [
 export const TEXT_PRESETS: AssetCategory[] = [
     {
         id: 'headings',
-        label: 'Headings',
+        label: 'Encabezados',
         items: [
             { id: 'text-basic', label: 'Texto Simple', icon: 'T', type: 'template', data: { nodes: [{ id: 'n-txt', type: 'text', x: 0, y: 0, w: 200, h: 40, content: { title: 'Tu texto aquí', fontSize: 16, fontFamily: 'Inter' } }] } },
             { id: 'h1', label: 'H1 Title', icon: 'H1', type: 'template', data: { nodes: [{ id: 'n1', type: 'text', x: 0, y: 0, w: 400, h: 60, content: { title: 'Big Heading', fontSize: 48, fontWeight: 'bold', fontFamily: 'Inter' } }] } },

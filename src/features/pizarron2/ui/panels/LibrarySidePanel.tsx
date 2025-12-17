@@ -62,6 +62,8 @@ export const LibrarySidePanel: React.FC = () => {
         const cx = (window.innerWidth / 2 - vp.x) / vp.zoom;
         const cy = (window.innerHeight / 2 - vp.y) / vp.zoom;
 
+        const newIds: string[] = [];
+
         if (item.type === 'template') {
             addToRecents(item.id);
 
@@ -78,9 +80,11 @@ export const LibrarySidePanel: React.FC = () => {
             const h = maxY - minY;
 
             templateNodes.forEach((n: any) => {
+                const id = crypto.randomUUID();
+                newIds.push(id);
                 pizarronStore.addNode({
                     ...n,
-                    id: crypto.randomUUID(),
+                    id,
                     x: cx + (n.x - minX) - w / 2, // Center precisely
                     y: cy + (n.y - minY) - h / 2,
                     zIndex: Object.keys(state.nodes).length + 10,
@@ -88,46 +92,55 @@ export const LibrarySidePanel: React.FC = () => {
                     updatedAt: Date.now()
                 });
             });
-            // Auto close on add?
-            // pizarronStore.setUIFlag('showLibrary', false); 
-            // Keep open for multiple adds usually, but for templates maybe close?
-            // Let's keep open for better UX unless requested otherwise.
-            return;
-        }
+        } else {
+            // Destructure to avoid nesting 'content' inside 'content'
+            const { content: extraContent, ...restData } = item.data || {};
+            const id = crypto.randomUUID();
+            newIds.push(id);
 
-        // Destructure to avoid nesting 'content' inside 'content'
-        const { content: extraContent, ...restData } = item.data || {};
+            // Base Node props
+            const newNode: BoardNode = {
+                id,
+                type: (item.data?.type as any) || (item.type === 'sticker' ? 'image' : item.type),
+                x: cx - (item.data?.w || 100) / 2,
+                y: cy - (item.data?.h || 100) / 2,
+                w: item.data?.w || 100,
+                h: item.data?.h || 100,
+                zIndex: Object.keys(state.nodes).length + 10,
+                content: {
+                    title: '',
+                    body: '',
+                    color: extraContent?.color || '#ffffff',
+                    ...restData,      // shapeType, path
+                    ...(extraContent || {}) // strokeStyle, borderWidth, etc.
+                }
+            };
 
-        // Base Node props
-        const newNode: BoardNode = {
-            id: crypto.randomUUID(),
-            type: (item.data?.type as any) || (item.type === 'sticker' ? 'image' : item.type),
-            x: cx - (item.data?.w || 100) / 2,
-            y: cy - (item.data?.h || 100) / 2,
-            w: item.data?.w || 100,
-            h: item.data?.h || 100,
-            zIndex: Object.keys(state.nodes).length + 10,
-            content: {
-                title: '',
-                body: '',
-                color: extraContent?.color || '#ffffff',
-                ...restData,      // shapeType, path
-                ...(extraContent || {}) // strokeStyle, borderWidth, etc.
+            if (newNode.type === 'icon') {
+                newNode.w = 60;
+                newNode.h = 60;
+                newNode.x = cx - 30;
+                newNode.y = cy - 30;
+            } else if (newNode.type === 'text') {
+                newNode.w = item.data?.w || 300;
+                newNode.h = item.data?.h || 60;
+                newNode.content.title = item.data?.content?.title || item.label || '';
+                // Ensure font family is passed if present in data
+                if (item.data?.content?.fontFamily) {
+                    newNode.content.fontFamily = item.data.content.fontFamily;
+                }
             }
-        };
 
-        if (newNode.type === 'icon') {
-            newNode.w = 60;
-            newNode.h = 60;
-            newNode.x = cx - 30;
-            newNode.y = cy - 30;
-        } else if (newNode.type === 'text') {
-            newNode.w = item.data?.w || 300;
-            newNode.h = item.data?.h || 60;
-            newNode.content.title = item.data?.content?.title || item.label || '';
+            pizarronStore.addNode(newNode);
         }
 
-        pizarronStore.addNode(newNode);
+        // FEEDBACK: Select the new nodes
+        if (newIds.length > 0) {
+            // setTimeout to ensure state update has processed
+            setTimeout(() => {
+                pizarronStore.setSelectedIds(newIds);
+            }, 50);
+        }
     };
 
     const handleDragStart = (e: React.DragEvent, item: any) => {
@@ -145,7 +158,6 @@ export const LibrarySidePanel: React.FC = () => {
             case 'boards': return TEMPLATE_LIBRARIES;
             case 'elements': return SHAPE_LIBRARIES;
             case 'text': return TEXT_PRESETS;
-            // case 'structures': return COMPOSITE_SHAPES;
             case 'assets': return [...ICON_LIBRARIES, ...GRAPHIC_LIBRARIES];
             default: return [];
         }

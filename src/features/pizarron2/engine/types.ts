@@ -275,6 +275,8 @@ export interface InteractionState {
     // Interaction
     selectionBounds?: { x: number, y: number, w: number, h: number };
     marquee?: { x: number, y: number, w: number, h: number };
+    hoveredNodeId?: string; // For hover effects
+    dragNodeId?: string; // For drag lift effects
     creationDraft?: any; // To visualize what's being drawn
     editingTextId?: string; // ID of text node currently being edited
     editingImageId?: string; // ID of image node currently being cropped/adjusted

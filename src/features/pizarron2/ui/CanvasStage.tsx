@@ -36,7 +36,11 @@ export const CanvasStage: React.FC = () => {
         // Let's do Subscription-based for efficiency now.
 
         // 3. Render Loop (Continuous for smooth Motion System)
-        const renderLoop = () => {
+        let lastTime = 0;
+        const renderLoop = (time: number) => {
+            const dt = Math.min((time - lastTime) / 1000, 0.1); // Cap dt to 100ms
+            lastTime = time;
+
             const state = pizarronStore.getState();
 
             // Choreography: Cinematic Viewport Interpolation
@@ -44,14 +48,15 @@ export const CanvasStage: React.FC = () => {
                 const target = state.interactionState.targetViewport;
                 const current = state.viewport;
 
-                // Lerp factor (Nexus Motion)
-                const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
-                const t = 0.15;
+                // Frame-independent smoothing (approx t=0.15 at 60fps => ~9hz decay)
+                // Decay formula: value += (target - value) * (1 - exp(-decay * dt))
+                const decay = 10; // Adjustable stiffness
+                const alpha = 1 - Math.exp(-decay * dt);
 
                 const newViewport = {
-                    x: lerp(current.x, target.x, t),
-                    y: lerp(current.y, target.y, t),
-                    zoom: lerp(current.zoom, target.zoom, t)
+                    x: current.x + (target.x - current.x) * alpha,
+                    y: current.y + (target.y - current.y) * alpha,
+                    zoom: current.zoom + (target.zoom - current.zoom) * alpha
                 };
 
                 // Check if close enough to snap
@@ -59,8 +64,9 @@ export const CanvasStage: React.FC = () => {
                 const dy = Math.abs(newViewport.y - target.y);
                 const dz = Math.abs(newViewport.zoom - target.zoom);
 
+                // Zoom-dependent snap threshold (pixels)
                 if (dx < 0.5 && dy < 0.5 && dz < 0.001) {
-                    // Snap & Stop (clears targetViewport implicit in updateViewport non-animate)
+                    // Snap & Stop
                     pizarronStore.updateViewport(target, false);
                 } else {
                     // Update Frame
@@ -68,7 +74,7 @@ export const CanvasStage: React.FC = () => {
                 }
             }
 
-            renderer.render(pizarronStore.getState());
+            renderer.render(state);
             rafId.current = requestAnimationFrame(renderLoop);
         };
 

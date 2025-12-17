@@ -79,36 +79,26 @@ export class PizarronRenderer {
             // 3. Animation Logic
             let anim = this.animStates.get(node.id);
             if (!anim) {
-                anim = { lift: 0, selectionOpacity: 0 };
+                anim = { lift: 0, selectionOpacity: 0, hoverOpacity: 0 };
                 this.animStates.set(node.id, anim);
             }
 
-            // Target Values
-            // Lift: 1.0 if manually dragging this specific node or if it's in selection being dragged?
-            // Usually interactionManager sets 'isDragging' flag or we infer from interactionState.
-            // Simplified: If dragging this node.
-            const isDragging = interactionState.selectionBounds && selection.has(node.id) && /* check generic dragging flag */ !!interactionState.selectionBounds;
-            // Better: interactionState should have a clear 'isDragging' status. 
-            // For now, let's use presence of selectionBounds combined with mouse down? 
-            // Actually, let's assume if it is selected, it might be lifted.
-            // Requirement: "Drag & Drop: element arrastrado eleva".
-
-            // NOTE: Nexus Motion System uses simple lerp (0.2 factor ~ fast/smooth)
-            const targetLift = (selection.has(node.id) && interactionState.marquee === undefined && interactionState.selectionBounds /* imply dragging if bounds exist? No, bounds exist on select. */) ? 0 : 0;
-            // Correction: We don't have a clean 'isDragging' flag in state types shown. 
-            // But we can infer 'lift' on hover? No, requirement is Drag.
-            // Let's implement Selection Opacity first which is clear.
-
             const isSelected = selection.has(node.id);
-            const targetOpacity = isSelected ? 1 : 0;
+            const isHovered = interactionState.hoveredNodeId === node.id;
+            const isDragging = interactionState.dragNodeId !== undefined && isSelected; // Lift all selected if dragging
 
-            // Lerp
-            anim.selectionOpacity += (targetOpacity - anim.selectionOpacity) * 0.2;
+            // Target Values
+            const targetLift = isDragging ? 1 : 0;
+            const targetSelOpacity = isSelected ? 1 : 0;
+            const targetHoverOpacity = isHovered && !isSelected ? 1 : 0; // Only hover if not selected
 
-            // Clamp close to 0/1 to avoid endless calcs? JS is fast enough.
+            // Lerp (Smooth transitions)
+            anim.lift += (targetLift - anim.lift) * 0.2;
+            anim.selectionOpacity += (targetSelOpacity - anim.selectionOpacity) * 0.2;
+            anim.hoverOpacity += (targetHoverOpacity - anim.hoverOpacity) * 0.2;
 
             // Pass animated values to drawNode
-            this.drawNode(ctx, node, isSelected, viewport.zoom, nodes, anim.selectionOpacity);
+            this.drawNode(ctx, node, isSelected, viewport.zoom, nodes, anim);
         }
 
         // 4b. Focus Mode Overlay (Cinematic Fade)
@@ -129,7 +119,7 @@ export class PizarronRenderer {
                 if (fNode) {
                     // 1. Draw the Parent (Board)
                     // Elevate it using the overlay opacity as the lift factor (0 -> 1)
-                    this.drawNode(ctx, fNode, true, viewport.zoom, nodes, this.focusOverlayOpacity);
+                    this.drawNode(ctx, fNode, true, viewport.zoom, nodes, { lift: this.focusOverlayOpacity, selectionOpacity: 0, hoverOpacity: 0 });
 
                     // 2. Draw Children (Content on the board)
 
@@ -157,7 +147,9 @@ export class PizarronRenderer {
                         .sort((a, b) => (a.zIndex || 0) - (b.zIndex || 0));
 
                     for (const child of children) {
-                        this.drawNode(ctx, child, selection.has(child.id), viewport.zoom, nodes, this.focusOverlayOpacity);
+                        for (const child of children) {
+                            this.drawNode(ctx, child, selection.has(child.id), viewport.zoom, nodes, { lift: 0, selectionOpacity: 0, hoverOpacity: 0 });
+                        }
                     }
                 }
             }
@@ -432,15 +424,12 @@ export class PizarronRenderer {
         ctx.restore();
     }
 
-    private drawNode(ctx: CanvasRenderingContext2D, node: BoardNode, isSelected: boolean, zoom: number, nodes?: Record<string, BoardNode>, selectionOpacity: number = 0) {
+    private drawNode(ctx: CanvasRenderingContext2D, node: BoardNode, isSelected: boolean, zoom: number, nodes?: Record<string, BoardNode>, anim: { lift: number, selectionOpacity: number, hoverOpacity: number } = { lift: 0, selectionOpacity: 0, hoverOpacity: 0 }) {
         if (node.collapsed) return;
         ctx.save();
 
         // Nexus Motion: Lift Effect
-        // We use selectionOpacity as a proxy for 'lift' state (0 to 1)
-        // In the future, we can separate 'isDragging' lift from 'isSelected' lift if needed.
-        // For now, dragging implies selection, so this works.
-        const lift = selectionOpacity;
+        const lift = anim.lift;
         const currentScale = 1 + (lift * 0.02); // 2% scale up on lift
 
         // Unified Transformation: Rotate around Center
@@ -1082,6 +1071,28 @@ export class PizarronRenderer {
                 ctx.fillText(s.toUpperCase(), px + pillW / 2, py + 5);
                 ctx.textAlign = 'left';
             }
+        }
+
+        // Hover Indicator
+        if (anim.hoverOpacity > 0.01) {
+            ctx.save();
+            ctx.globalAlpha = anim.hoverOpacity;
+            ctx.strokeStyle = '#94a3b8'; // Slate-400
+            ctx.lineWidth = 2; // Fixed 2px border? Or 2/zoom? Let's use 2px visual.
+            // But we are in node space (w, h).
+            // Context scale is applied? 
+            // ctx.lineWidth is affected by scale.
+            // If I want 2px SCREEN width, I need 2 / zoom / currentScale.
+            const screenPixel = 1 / (zoom * currentScale);
+            ctx.lineWidth = 2 * screenPixel;
+
+            // Draw Border
+            const radius = node.content.borderRadius || (node.type === 'board' ? 16 : 0);
+            ctx.beginPath();
+            if (ctx.roundRect) ctx.roundRect(0, 0, node.w, node.h, radius);
+            else ctx.rect(0, 0, node.w, node.h);
+            ctx.stroke();
+            ctx.restore();
         }
 
         // Reset Filters for Selection Ring

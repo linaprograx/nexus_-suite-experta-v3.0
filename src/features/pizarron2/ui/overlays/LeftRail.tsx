@@ -1,18 +1,28 @@
 import React, { useEffect, useState } from 'react';
 import { pizarronStore } from '../../state/store';
+import {
+    LuMousePointer2,
+    LuHand,
+    LuLayoutDashboard,
+    LuLibrary,
+    LuImage,
+    LuMonitorPlay,
+    LuTrash2,
+    LuShapes
+} from 'react-icons/lu';
 // import { ShapeSelector } from '../shared/ShapeSelector';
 // import { AssetDefinition } from '../panels/AssetLibrary';
 
 const TOOLS = [
-    { id: 'pointer', icon: '👆', label: 'Pointer' },
-    { id: 'hand', icon: '✋', label: 'Pan' },
-    { id: 'project', icon: '📂', label: 'Pizarras', isAction: true },
-    { id: 'library', icon: '📚', label: 'Library', isAction: true },
-    { id: 'image', icon: '🖼️', label: 'Image', isAction: true },
+    { id: 'pointer', icon: <LuMousePointer2 size={20} />, label: 'Pointer' },
+    { id: 'hand', icon: <LuHand size={20} />, label: 'Pan' },
+    { id: 'project', icon: <LuLayoutDashboard size={20} />, label: 'Pizarras', isAction: true },
+    { id: 'library', icon: <LuShapes size={20} />, label: 'Library', isAction: true },
+    { id: 'image', icon: <LuImage size={20} />, label: 'Image', isAction: true },
 
-    { id: 'presentation', icon: '📽️', label: 'Present (P)', isAction: true },
+    { id: 'presentation', icon: <LuMonitorPlay size={20} />, label: 'Present (P)', isAction: true },
 
-    { id: 'delete', icon: '🗑️', label: 'Delete', isAction: true },
+    { id: 'delete', icon: <LuTrash2 size={20} />, label: 'Delete', isAction: true },
 ] as const;
 
 export const LeftRail: React.FC = () => {
@@ -80,23 +90,6 @@ export const LeftRail: React.FC = () => {
         }
     };
 
-    const handleShapeSelect = (asset: AssetDefinition) => {
-        // This relies on the engine support activeShapeType/data
-        // We set activeTool to 'shape' first
-        pizarronStore.setActiveTool('shape');
-
-        // Pass the shape type (e.g., 'rectangle', 'cloud')
-        // And potentially extra data if the store supports it (not fully visible here, but assuming basic shapeType works)
-        if (asset.data && asset.data.shapeType) {
-            pizarronStore.setActiveShapeType(asset.data.shapeType);
-        }
-
-        // If it's an icon or complex shape, we might need a Store update for "Next Node Defaults"
-        // Since we can't see pizarronStore implementation, we assume basic shapeType is enough for now
-        // or we rely on the creation logic reading from a "clipboard" or "defaults".
-        // For now, this meets the requirement of using the new Selector.
-    };
-
     const [mounted, setMounted] = useState(false);
 
     useEffect(() => {
@@ -115,8 +108,8 @@ export const LeftRail: React.FC = () => {
                             key={tool.id}
                             onClick={() => handleTool(tool)}
                             className={`w-10 h-10 flex items-center justify-center rounded-xl transition-all duration-200 ${isActive
-                                ? 'bg-orange-100 text-orange-600 border border-orange-200 scale-105 shadow-sm' // Active Pop
-                                : 'hover:bg-slate-100 text-slate-600 border border-transparent hover:scale-110' // Hover Lift
+                                ? 'bg-indigo-50 text-indigo-600 border border-indigo-200 scale-105 shadow-sm' // Active Pop (Premium Indigo)
+                                : 'hover:bg-slate-100 text-slate-500 hover:text-slate-700 border border-transparent hover:scale-110' // Hover Lift
                                 }`}
                             title={tool.label}
                         >

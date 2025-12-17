@@ -89,6 +89,12 @@ export const TextEditor: React.FC = () => {
                 const newStruct = { ...node.structure, cells: newCells };
                 pizarronStore.updateStructure(editingId, newStruct);
                 setNode({ ...node, structure: newStruct });
+            } else if (subId === 'body' && (node.type === 'board' || node.type === 'card')) {
+                // Body Update
+                pizarronStore.updateNode(editingId, {
+                    content: { ...node.content, body: val }
+                });
+                setNode({ ...node, content: { ...node.content, body: val } });
             } else {
                 // Normal
                 pizarronStore.updateNode(editingId, {
@@ -117,13 +123,14 @@ export const TextEditor: React.FC = () => {
     let targetPadding = node.type === 'text' ? '0px' : node.type === 'board' ? '20px' : '10px';
     let textAlign: 'left' | 'center' | 'right' = node.content.align as any || 'left';
 
-    // Structured Board Logic
-    if (node.structure && subId) {
-        const { rows, cols, cells } = node.structure;
+    // Structured Board Logic (Legacy Grid)
+    if (node.structure && subId && (node.structure as any).rows) {
+        // ... (Existing Grid Logic) ...
+        const { rows, cols, cells } = node.structure as any;
         const [rowId, colId] = subId.split('_');
 
-        const totalRowWeight = rows.reduce((s, r) => s + (r.height || 1), 0);
-        const totalColWeight = cols.reduce((s, c) => s + (c.width || 1), 0);
+        const totalRowWeight = rows.reduce((s: number, r: any) => s + (r.height || 1), 0);
+        const totalColWeight = cols.reduce((s: number, c: any) => s + (c.width || 1), 0);
 
         let offsetY = 0;
         let cellH = 0;
@@ -151,15 +158,14 @@ export const TextEditor: React.FC = () => {
         areaY = offsetY * viewport.zoom;
         areaW = cellW * viewport.zoom;
         areaH = cellH * viewport.zoom;
-        displayText = cells?.[subId]?.content || '';
-        targetPadding = '5px';
+        displayText = (cells && cells[subId]?.content) || '';
     }
     // Zone Logic (New: For Pizarra Structure)
     else if (node.type === 'board' && node.structure?.zones && subId) {
-        const zone = node.structure.zones.find(z => z.id === subId);
+        const zone = node.structure.zones.find((z: any) => z.id === subId);
         if (zone) {
             const gap = node.structure.gap || 0;
-            // Zone coords are %)
+            // Zone coords are 0-1 percentage of node
             const zx = (zone.x * node.w) + (gap / 2);
             const zy = (zone.y * node.h) + (gap / 2);
             const zw = (zone.w * node.w) - gap;
@@ -177,11 +183,7 @@ export const TextEditor: React.FC = () => {
 
             displayText = zone.content?.text || '';
             targetPadding = '4px 6px'; // Match renderer padding
-
-            // Override update logic for Zones
-            // This requires a custom commit strategy or just handled in handleChange/handleCommit if generic
-            // Note: handleChange below handles generic 'structure' updates via cells, but zones are different array.
-            // We need to update handleChange to handle 'zones'.
+            textAlign = zone.content?.style?.align || 'left';
         }
     }
     // Composite Cell Logic (Legacy)
@@ -211,6 +213,13 @@ export const TextEditor: React.FC = () => {
             textAlign = 'center';
             targetPadding = '5px';
         }
+    }
+    // Board/Card Body Logic
+    else if ((node.type === 'board' || node.type === 'card') && subId === 'body') {
+        areaY = (50 * viewport.zoom); // Offset for title bar
+        areaH = (node.h - 50) * viewport.zoom;
+        displayText = node.content.body || '';
+        targetPadding = '10px 20px';
     }
 
     // Font Sizing

@@ -609,7 +609,7 @@ class PizarronStore {
                         const scaleX = (containerW - padding * 2) / node.w;
                         const scaleY = (containerH - padding * 2) / node.h;
                         let zoom = Math.min(scaleX, scaleY);
-                        zoom = Math.min(Math.max(zoom, 0.2), 2);
+                        zoom = Math.min(Math.max(zoom, 0.05), 3); // Allow zoom out for large boards
                         const centerX = node.x + node.w / 2;
                         const centerY = node.y + node.h / 2;
 
@@ -656,7 +656,7 @@ class PizarronStore {
         const scaleX = (containerW - padding * 2) / node.w;
         const scaleY = (containerH - padding * 2) / node.h;
         let zoom = Math.min(scaleX, scaleY);
-        zoom = Math.min(Math.max(zoom, 0.2), 2); // Clamp
+        zoom = Math.min(Math.max(zoom, 0.05), 3); // Allow zoom out for large boards
 
         const centerX = node.x + node.w / 2;
         const centerY = node.y + node.h / 2;
