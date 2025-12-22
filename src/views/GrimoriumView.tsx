@@ -44,7 +44,7 @@ import { buildStockFromPurchases } from '../utils/stockUtils';
 // Escandallator Imports
 import EscandallatorPanel from '../components/escandallator/EscandallatorPanel';
 import EscandallatorSidebar from '../components/escandallator/EscandallatorSidebar';
-import EscandalloSummaryCard from '../components/escandallator/EscandalloSummaryCard'; // Still needed for right sidebar
+import EscandalloSummaryCard from '../components/escandallator/EscandalloSummaryCard';
 import { StockInventoryPanel } from '../components/escandallator/StockInventoryPanel';
 import { StockOrdersPanel } from '../components/escandallator/StockOrdersPanel';
 import { StockRulesPanel } from '../components/escandallator/StockRulesPanel';
@@ -57,23 +57,36 @@ import ZeroWasteHistorySidebar from '../components/zero-waste/ZeroWasteHistorySi
 import { useRecipes } from '../hooks/useRecipes';
 import { useIngredients } from '../hooks/useIngredients';
 
+// --- NEW ARCHITECTURE IMPORTS ---
+import { GrimoriumShell } from './grimorium/shell/GrimoriumShell';
+import { useItemContext } from '../context/Grimorium/ItemContext';
+import { GrimoriumToolbar } from './grimorium/shell/GrimoriumToolbar';
+import { LayerPanel } from './grimorium/shell/LayerPanel';
+
 interface GrimoriumViewProps {
     onOpenRecipeModal: (recipe: Partial<Recipe> | null) => void;
     onDragRecipeStart: (recipe: Recipe) => void;
     setCurrentView: (view: ViewName) => void;
 }
 
-const GrimoriumView: React.FC<GrimoriumViewProps> = ({ onOpenRecipeModal, onDragRecipeStart, setCurrentView }) => {
+const GrimoriumInner: React.FC<GrimoriumViewProps> = ({ onOpenRecipeModal, onDragRecipeStart, setCurrentView }) => {
     const { db, userId, appId } = useApp();
     const { recipes: allRecipes } = useRecipes();
     const { ingredients: allIngredients } = useIngredients();
 
+    // --- Context Consumption ---
+    const {
+        viewMode, // 'recipes' | 'stock' | 'market'
+        activeLayer, // 'composition' | 'cost' | 'optimization'
+        toggleLayer,
+        selectItem,
+        activeItem,
+        setLayer
+    } = useItemContext();
+
     const { storage } = useApp();
     const [loading, setLoading] = React.useState(false);
 
-    // --- State ---
-    // Updated ActiveTab type to include 'escandallator' and remove legacy tabs
-    const [activeTab, setActiveTab] = React.useState<'recipes' | 'ingredients' | 'stock' | 'escandallator' | 'zerowaste'>('recipes');
     const [escandallatorSubTab, setEscandallatorSubTab] = React.useState<'calculator' | 'production'>('calculator');
 
     const {
@@ -93,6 +106,21 @@ const GrimoriumView: React.FC<GrimoriumViewProps> = ({ onOpenRecipeModal, onDrag
     const [selectedIngredients, setSelectedIngredients] = React.useState<string[]>([]);
     const [selectedIngredientId, setSelectedIngredientId] = React.useState<string | null>(null);
 
+    // --- Sync Selection with Context ---
+    React.useEffect(() => {
+        if (selectedRecipeId) {
+            const r = allRecipes.find(r => r.id === selectedRecipeId);
+            if (r) selectItem(r);
+        } else if (selectedIngredientId) {
+            const i = allIngredients.find(ing => ing.id === selectedIngredientId);
+            if (i) selectItem(i);
+        } else {
+            if (activeLayer === 'composition') {
+                selectItem(null);
+            }
+        }
+    }, [selectedRecipeId, selectedIngredientId, allRecipes, allIngredients]);
+
     // Modals
     const [showIngredientModal, setShowIngredientModal] = React.useState(false);
     const [editingIngredient, setEditingIngredient] = React.useState<Ingredient | null>(null);
@@ -106,20 +134,15 @@ const GrimoriumView: React.FC<GrimoriumViewProps> = ({ onOpenRecipeModal, onDrag
     // --- Escandallator & Batcher State ---
     const [selectedEscandalloRecipe, setSelectedEscandalloRecipe] = React.useState<Recipe | null>(null);
     const [precioVenta, setPrecioVenta] = React.useState<number>(0);
-
-    // Batcher Lifted State
     const [batchSelectedRecipeId, setBatchSelectedRecipeId] = React.useState('');
     const [batchTargetQty, setBatchTargetQty] = React.useState('1');
     const [batchTargetUnit, setBatchTargetUnit] = React.useState<'Litros' | 'Botellas'>('Litros');
     const [batchIncludeDilution, setBatchIncludeDilution] = React.useState(false);
-
     const escandallosColPath = `users/${userId}/escandallo-history`;
     const [batchResult, setBatchResult] = React.useState<any>(null);
 
-    // --- Debounce ---
     const debouncedRecipeSearch = useDebounce(searchQuery, 300);
     const debouncedIngredientSearch = useDebounce(ingredientSearch, 300);
-
     const ingredientsColPath = `artifacts/${appId}/users/${userId}/grimorio-ingredients`;
 
     // Purchase Logic
@@ -127,12 +150,10 @@ const GrimoriumView: React.FC<GrimoriumViewProps> = ({ onOpenRecipeModal, onDrag
         purchaseTarget,
         isPurchaseModalOpen,
         startPurchase,
-        closePurchaseModal,
         confirmPurchase,
         purchaseHistory,
         addPurchase
     } = usePurchaseIngredient();
-
     const { orders, createOrder, deleteOrder, updateOrderStatus } = useOrders();
 
     // --- Stock Logic Hoisted ---
@@ -147,7 +168,6 @@ const GrimoriumView: React.FC<GrimoriumViewProps> = ({ onOpenRecipeModal, onDrag
 
     // Stock V2 State
     const [isReplenishModalOpen, setIsReplenishModalOpen] = React.useState(false);
-    // Stock V2 State
     const [editingOrder, setEditingOrder] = React.useState<Order | null>(null);
     const [toast, setToast] = React.useState({ message: '', type: 'success' as 'success' | 'error' | 'info', isVisible: false });
 
@@ -162,10 +182,8 @@ const GrimoriumView: React.FC<GrimoriumViewProps> = ({ onOpenRecipeModal, onDrag
         setIsBulkPurchaseModalOpen(true);
     };
 
-    // --- Stock Rules State ---
     const [stockRules, setStockRules] = React.useState<any[]>([]);
 
-    // Helper to check and create rule
     const checkAndCreateRule = (ingredientId: string, ingredientName: string) => {
         setStockRules(prev => {
             if (!prev.find(r => r.ingredientId === ingredientId)) {
@@ -190,10 +208,7 @@ const GrimoriumView: React.FC<GrimoriumViewProps> = ({ onOpenRecipeModal, onDrag
             const promises = orders.map(async (order) => {
                 const ingredient = allIngredients.find(i => i.id === order.ingredientId);
                 if (!ingredient) throw new Error(`Ingrediente ${order.ingredientId} no encontrado`);
-
-                // Auto-Rule Check
                 checkAndCreateRule(ingredient.id, ingredient.nombre);
-
                 const providerId = ingredient.proveedor || (ingredient.proveedores && ingredient.proveedores[0]) || 'generic_provider';
                 const supplierObj = suppliers.find(s => s.id === providerId);
                 const providerName = supplierObj ? supplierObj.name : (providerId !== 'generic_provider' ? providerId : 'Proveedor Desconocido');
@@ -211,7 +226,6 @@ const GrimoriumView: React.FC<GrimoriumViewProps> = ({ onOpenRecipeModal, onDrag
                     status: 'completed'
                 });
             });
-
             await Promise.all(promises);
             showToast('Compra múltiple realizada con éxito', 'success');
         } catch (error) {
@@ -237,9 +251,7 @@ const GrimoriumView: React.FC<GrimoriumViewProps> = ({ onOpenRecipeModal, onDrag
                 const orderName = `Pedido - ${group.providerName}`;
                 await createOrder(orderItems, orderName);
             });
-
             await Promise.all(promises);
-
             setIsReplenishModalOpen(false);
             showToast(`${orderGroups.length} Hojas de Pedido creadas en Borradores`, 'success');
         } catch (e) {
@@ -250,6 +262,7 @@ const GrimoriumView: React.FC<GrimoriumViewProps> = ({ onOpenRecipeModal, onDrag
 
     const handleLaunchOrder = async (order: Order) => {
         try {
+            // ... [Logic omitted for brevity]
             const promises = order.items.map(async (item) => {
                 const ingredient = allIngredients.find(i => i.id === item.ingredientId);
                 if (ingredient) checkAndCreateRule(ingredient.id, ingredient.nombre);
@@ -287,7 +300,6 @@ const GrimoriumView: React.FC<GrimoriumViewProps> = ({ onOpenRecipeModal, onDrag
         }
     };
 
-    // --- Grimorium Helpers ---
     const handleDeleteRecipe = async (recipeId: string) => {
         await hookDeleteRecipe(recipeId);
         setSelectedRecipeId(null);
@@ -303,8 +315,7 @@ const GrimoriumView: React.FC<GrimoriumViewProps> = ({ onOpenRecipeModal, onDrag
         if (window.confirm(`¿Seguro que quieres eliminar ${ing.nombre}?`)) {
             try {
                 await deleteDoc(doc(db, ingredientsColPath, ing.id));
-                await queryClient.invalidateQueries({ queryKey: ['ingredients'] });
-                await queryClient.invalidateQueries({ queryKey: ['ingredients', appId, userId] });
+                queryClient.invalidateQueries({ queryKey: ['ingredients'] });
                 if (selectedIngredients.includes(ing.id)) handleSelectIngredient(ing.id);
                 if (selectedIngredientId === ing.id) setSelectedIngredientId(null);
                 showToast("Ingrediente eliminado con éxito.", 'success');
@@ -321,8 +332,7 @@ const GrimoriumView: React.FC<GrimoriumViewProps> = ({ onOpenRecipeModal, onDrag
                 const batch = writeBatch(db);
                 selectedIngredients.forEach(id => batch.delete(doc(db, ingredientsColPath, id)));
                 await batch.commit();
-                await queryClient.invalidateQueries({ queryKey: ['ingredients'] });
-                await queryClient.invalidateQueries({ queryKey: ['ingredients', appId, userId] });
+                queryClient.invalidateQueries({ queryKey: ['ingredients'] });
                 setSelectedIngredients([]);
                 setSelectedIngredientId(null);
                 showToast(`${selectedIngredients.length} ingredientes eliminados.`, 'success');
@@ -333,7 +343,6 @@ const GrimoriumView: React.FC<GrimoriumViewProps> = ({ onOpenRecipeModal, onDrag
         }
     };
 
-    // --- Recipe Bulk Delete ---
     const [selectedRecipes, setSelectedRecipes] = React.useState<string[]>([]);
     const handleDeleteSelectedRecipes = async () => {
         if (window.confirm(`¿Seguro que quieres eliminar ${selectedRecipes.length} recetas?`)) {
@@ -341,8 +350,7 @@ const GrimoriumView: React.FC<GrimoriumViewProps> = ({ onOpenRecipeModal, onDrag
                 const batch = writeBatch(db);
                 selectedRecipes.forEach(id => batch.delete(doc(db, `users/${userId}/grimorio`, id)));
                 await batch.commit();
-                await queryClient.invalidateQueries({ queryKey: ['recipes'] });
-                await queryClient.invalidateQueries({ queryKey: ['recipes', appId, userId] });
+                queryClient.invalidateQueries({ queryKey: ['recipes'] });
                 setSelectedRecipes([]);
                 setSelectedRecipeId(null);
                 showToast(`${selectedRecipes.length} recetas eliminadas.`, 'success');
@@ -369,8 +377,7 @@ const GrimoriumView: React.FC<GrimoriumViewProps> = ({ onOpenRecipeModal, onDrag
             const recipesCollection = collection(db, `users/${userId}/grimorio`);
             newRecipes.forEach(recipe => batch.set(doc(recipesCollection), recipe));
             await batch.commit();
-            await queryClient.invalidateQueries({ queryKey: ['recipes'] });
-            await queryClient.invalidateQueries({ queryKey: ['recipes', appId, userId] });
+            queryClient.invalidateQueries({ queryKey: ['recipes'] });
             showToast(`${newRecipes.length} recetas importadas.`, 'success');
         } catch (error) {
             console.error(error);
@@ -395,8 +402,7 @@ const GrimoriumView: React.FC<GrimoriumViewProps> = ({ onOpenRecipeModal, onDrag
             const recipesCollection = collection(db, `users/${userId}/grimorio`);
             newRecipes.forEach(recipe => batch.set(doc(recipesCollection), recipe));
             await batch.commit();
-            await queryClient.invalidateQueries({ queryKey: ['recipes'] });
-            await queryClient.invalidateQueries({ queryKey: ['recipes', appId, userId] });
+            queryClient.invalidateQueries({ queryKey: ['recipes'] });
             showToast(`${newRecipes.length} recetas importadas.`, 'success');
         } catch (error) {
             console.error(error);
@@ -463,8 +469,7 @@ const GrimoriumView: React.FC<GrimoriumViewProps> = ({ onOpenRecipeModal, onDrag
                 }
             }
             await batch.commit();
-            await queryClient.invalidateQueries({ queryKey: ['ingredients'] });
-            await queryClient.invalidateQueries({ queryKey: ['ingredients', appId, userId] });
+            queryClient.invalidateQueries({ queryKey: ['ingredients'] });
             showToast(`Importación completada: ${count} nuevos, ${updatedCount} actualizados.`, 'success');
             setLoading(false);
             setShowCsvImportModal(false);
@@ -473,7 +478,7 @@ const GrimoriumView: React.FC<GrimoriumViewProps> = ({ onOpenRecipeModal, onDrag
         reader.readAsText(file);
     };
 
-    // --- Memos (Grimorium) ---
+    // --- Memos ---
     const filteredIngredients = React.useMemo(() => {
         return allIngredients.filter(ing => {
             const matchesSearch = ing.nombre.toLowerCase().includes(debouncedIngredientSearch.toLowerCase());
@@ -517,7 +522,11 @@ const GrimoriumView: React.FC<GrimoriumViewProps> = ({ onOpenRecipeModal, onDrag
 
     const handleLoadHistory = (item: any) => {
         const recipe = allRecipes.find(r => r.id === item.recipeId) || null;
-        if (recipe) { setSelectedEscandalloRecipe(recipe); setPrecioVenta(item.precioVenta); }
+        if (recipe) {
+            setSelectedEscandalloRecipe(recipe);
+            setPrecioVenta(item.precioVenta);
+            // setLayer('cost'); // Optional: could auto-switch
+        }
     };
 
     const handleSaveBatchToPizarron = async () => {
@@ -544,8 +553,7 @@ const GrimoriumView: React.FC<GrimoriumViewProps> = ({ onOpenRecipeModal, onDrag
 
     const handleSendToZeroWaste = (ing: Ingredient) => {
         setZwSelectedIngredients(prev => prev.includes(ing.nombre) ? prev : [...prev, ing.nombre]);
-        setActiveTab('zerowaste');
-        setSelectedIngredientId(null);
+        setLayer('optimization');
     };
 
     const handleGenerateZeroWasteRecipes = async () => {
@@ -585,15 +593,14 @@ const GrimoriumView: React.FC<GrimoriumViewProps> = ({ onOpenRecipeModal, onDrag
 
     const handleZwHistorySelect = (result: ZeroWasteResult) => {
         setZwRecipeResults([result]);
-        setActiveTab('zerowaste');
+        setLayer('optimization');
     };
 
-    // Calculate colors and gradient
-    const currentGradient = activeTab === 'recipes' ? 'indigo' :
-        activeTab === 'ingredients' ? 'emerald' :
-            activeTab === 'stock' ? 'ice' :
-                activeTab === 'escandallator' ? 'red' :
-                    activeTab === 'zerowaste' ? 'lime' : 'slate';
+    // Calculate colors
+    const currentGradient = activeLayer === 'optimization' ? 'lime' :
+        activeLayer === 'cost' ? 'red' :
+            viewMode === 'stock' ? 'ice' :
+                viewMode === 'recipes' ? 'indigo' : 'emerald'; // Market
 
     const handleConfigureBatch = (amount: number, unit: 'Litros' | 'Botellas') => {
         setBatchTargetQty(amount.toString());
@@ -607,68 +614,68 @@ const GrimoriumView: React.FC<GrimoriumViewProps> = ({ onOpenRecipeModal, onDrag
             gradientTheme={currentGradient}
             transparentColumns={true}
             className="lg:!grid-cols-[minmax(150px,300px),minmax(600px,1fr),400px] gap-px"
-            header={
-                <div className="flex items-center gap-2 w-fit max-w-full overflow-x-auto no-scrollbar">
-                    <button onClick={() => setActiveTab('recipes')} className={`flex-shrink-0 py-2 px-5 text-sm font-semibold rounded-full transition-all duration-300 ${activeTab === 'recipes' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-800'}`}>Recetas</button>
-                    <button onClick={() => setActiveTab('ingredients')} className={`flex-shrink-0 py-2 px-5 text-sm font-semibold rounded-full transition-all duration-300 ${activeTab === 'ingredients' ? 'bg-emerald-600 text-white shadow-md' : 'text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-800'}`}>Ingredientes</button>
-                    <button onClick={() => setActiveTab('stock')} className={`flex-shrink-0 py-2 px-5 text-sm font-semibold rounded-full transition-all duration-300 ${activeTab === 'stock' ? 'bg-sky-500 text-white shadow-md' : 'text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-800'}`}>Stock</button>
-                    <button onClick={() => setActiveTab('escandallator')} className={`flex-shrink-0 py-2 px-5 text-sm font-semibold rounded-full transition-all duration-300 ${activeTab === 'escandallator' ? 'bg-rose-500 text-white shadow-md' : 'text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-800'}`}>Escandallator</button>
-                    <button onClick={() => setActiveTab('zerowaste')} className={`flex-shrink-0 py-2 px-5 text-sm font-semibold rounded-full transition-all duration-300 ${activeTab === 'zerowaste' ? 'bg-lime-500 text-white shadow-md' : 'text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-800'}`}>Zero Waste</button>
-                </div>
-            }
+            header={<GrimoriumToolbar />}
             leftSidebar={
                 <>
-                    {(activeTab === 'recipes' || activeTab === 'ingredients') && (
-                        <FiltersSidebar
-                            activeTab={activeTab === 'recipes' ? 'recipes' : 'ingredients'}
-                            allRecipes={allRecipes}
-                            selectedRecipe={selectedRecipe}
-                            allIngredients={allIngredients}
-                            selectedIngredient={selectedIngredient}
-                            onImportRecipes={() => setShowTxtImportModal(true)}
-                            onImportPdf={() => setShowPdfImportModal(true)}
-                            onOpenIngredients={() => setActiveTab('ingredients')}
-                            onImportIngredients={() => setShowCsvImportModal(true)}
-                            stats={stats}
-                            ingredientSearchTerm=""
-                            onIngredientSearchChange={() => { }}
-                            ingredientFilters={{}}
-                            onIngredientFilterChange={() => { }}
-                            onOpenSuppliers={() => setShowSuppliersModal(true)}
-                        />
+                    <FiltersSidebar
+                        activeTab={viewMode === 'market' ? 'ingredients' : viewMode === 'recipes' ? 'recipes' : 'ingredients'}
+                        allRecipes={allRecipes}
+                        selectedRecipe={selectedRecipe}
+                        allIngredients={allIngredients}
+                        selectedIngredient={selectedIngredient}
+                        onImportRecipes={() => setShowTxtImportModal(true)}
+                        onImportPdf={() => setShowPdfImportModal(true)}
+                        onOpenIngredients={() => {/* Handled by sidebar logic */ }}
+                        onImportIngredients={() => setShowCsvImportModal(true)}
+                        stats={stats}
+                        ingredientSearchTerm=""
+                        onIngredientSearchChange={() => { }}
+                        ingredientFilters={{}}
+                        onIngredientFilterChange={() => { }}
+                        onOpenSuppliers={() => setShowSuppliersModal(true)}
+                    />
+
+                    {activeLayer === 'cost' && (
+                        <div className="mt-4 pt-4 border-t border-slate-200 dark:border-slate-800">
+                            <EscandallatorSidebar
+                                db={db}
+                                escandallosColPath={escandallosColPath}
+                                onLoadHistory={handleLoadHistory}
+                                onNewEscandallo={() => { setSelectedEscandalloRecipe(null); setPrecioVenta(0); }}
+                                onConfigureBatch={handleConfigureBatch}
+                                activeSubTab={escandallatorSubTab}
+                            />
+                        </div>
                     )}
-                    {activeTab === 'escandallator' && (
-                        <EscandallatorSidebar
-                            db={db}
-                            escandallosColPath={escandallosColPath}
-                            onLoadHistory={handleLoadHistory}
-                            onNewEscandallo={() => { setSelectedEscandalloRecipe(null); setPrecioVenta(0); }}
-                            onConfigureBatch={handleConfigureBatch}
-                            activeSubTab={escandallatorSubTab}
-                        />
+                    {viewMode === 'stock' && activeLayer === 'composition' && (
+                        <div className="mt-4 pt-4 border-t border-slate-200 dark:border-slate-800">
+                            <StockRulesPanel
+                                allIngredients={allIngredients}
+                                stockItems={calculatedStockItems}
+                                rules={stockRules}
+                                onSaveRule={(rule) => setStockRules(prev => [...prev, rule])}
+                                onDeleteRule={(id) => setStockRules(prev => prev.filter(r => r.id !== id))}
+                                onUpdateRules={setStockRules}
+                                onQuickBuy={startPurchase}
+                                onBulkOrder={(ingredients) => {
+                                    setBulkPurchaseTargets(ingredients);
+                                    setIsBulkPurchaseModalOpen(true);
+                                }}
+                            />
+                        </div>
                     )}
-                    {activeTab === 'stock' && (
-                        <StockRulesPanel
-                            allIngredients={allIngredients}
-                            stockItems={calculatedStockItems}
-                            rules={stockRules}
-                            onSaveRule={(rule) => setStockRules(prev => [...prev, rule])}
-                            onDeleteRule={(id) => setStockRules(prev => prev.filter(r => r.id !== id))}
-                            onUpdateRules={setStockRules}
-                            onQuickBuy={startPurchase}
-                            onBulkOrder={(ingredients) => {
-                                setBulkPurchaseTargets(ingredients);
-                                setIsBulkPurchaseModalOpen(true);
-                            }}
-                        />
+                    {activeLayer === 'optimization' && (
+                        <div className="mt-4 pt-4 border-t border-slate-200 dark:border-slate-800">
+                            <ZeroWasteHistorySidebar history={zwHistory} onSelect={handleZwHistorySelect} />
+                        </div>
                     )}
-                    {activeTab === 'zerowaste' && <ZeroWasteHistorySidebar history={zwHistory} onSelect={handleZwHistorySelect} />}
                 </>
             }
             mainContent={
                 <div className="h-full flex flex-col bg-transparent p-0">
                     <div className="flex-1 overflow-y-auto custom-scrollbar">
-                        {activeTab === 'recipes' && (
+                        {/* RECIPES VIEW */}
+                        {viewMode === 'recipes' && (
                             <RecipeList
                                 recipes={filteredRecipes}
                                 selectedRecipeId={selectedRecipeId}
@@ -690,7 +697,9 @@ const GrimoriumView: React.FC<GrimoriumViewProps> = ({ onOpenRecipeModal, onDrag
                                 onImport={() => setShowPdfImportModal(true)}
                             />
                         )}
-                        {activeTab === 'ingredients' && (
+
+                        {/* MARKET VIEW (formerly Ingredients) */}
+                        {viewMode === 'market' && (
                             <IngredientListPanel
                                 ingredients={filteredIngredients}
                                 selectedIngredientIds={selectedIngredients}
@@ -710,29 +719,9 @@ const GrimoriumView: React.FC<GrimoriumViewProps> = ({ onOpenRecipeModal, onDrag
                                 onBulkBuy={startBulkPurchase}
                             />
                         )}
-                        {activeTab === 'escandallator' && (
-                            <EscandallatorPanel
-                                db={db}
-                                appId={appId}
-                                allRecipes={allRecipes}
-                                activeSubTab={escandallatorSubTab}
-                                onSubTabChange={setEscandallatorSubTab}
-                                selectedRecipe={selectedEscandalloRecipe}
-                                precioVenta={precioVenta}
-                                onSelectRecipe={setSelectedEscandalloRecipe}
-                                onPriceChange={setPrecioVenta}
-                                setBatchResult={setBatchResult}
-                                batchSelectedRecipeId={batchSelectedRecipeId}
-                                batchTargetQty={batchTargetQty}
-                                batchTargetUnit={batchTargetUnit}
-                                batchIncludeDilution={batchIncludeDilution}
-                                onBatchRecipeChange={setBatchSelectedRecipeId}
-                                onBatchQuantityChange={setBatchTargetQty}
-                                onBatchUnitChange={setBatchTargetUnit}
-                                onBatchDilutionChange={setBatchIncludeDilution}
-                            />
-                        )}
-                        {activeTab === 'stock' && (
+
+                        {/* STOCK VIEW (Promoted to Main View) */}
+                        {viewMode === 'stock' && (
                             <StockInventoryPanel
                                 stockItems={calculatedStockItems}
                                 purchases={purchaseHistory}
@@ -747,140 +736,116 @@ const GrimoriumView: React.FC<GrimoriumViewProps> = ({ onOpenRecipeModal, onDrag
                                 }}
                             />
                         )}
-                        {activeTab === 'zerowaste' && (
-                            <div className="h-full overflow-y-auto custom-scrollbar p-0 w-full max-w-full">
-                                {zwLoading && (
-                                    <div className="flex flex-col items-center justify-center h-64 animate-pulse">
-                                        <Spinner className="w-12 h-12 text-lime-500 mb-4" />
-                                        <p className="text-lime-700 font-medium">Analizando desperdicios...</p>
-                                    </div>
-                                )}
-                                {zwError && <Alert variant="destructive" title="Error de Generación" description={zwError} className="mb-4" />}
-                                {!zwLoading && zwRecipeResults.length === 0 && (
-                                    <div className="flex flex-col items-center justify-center h-64 text-slate-400 border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-2xl bg-white/20 dark:bg-slate-900/10 w-full">
-                                        <Icon svg={ICONS.flask} className="w-12 h-12 mb-3 opacity-40" />
-                                        <p className="text-lg font-light">Selecciona ingredientes y genera ideas Zero Waste</p>
-                                    </div>
-                                )}
-                                {zwRecipeResults.length > 0 && (
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-2 2xl:grid-cols-3 gap-6 pb-20">
-                                        {zwRecipeResults.map((recipe, index) => (
-                                            <div key={index} className="w-full">
-                                                <ZeroWasteResultCard recipe={recipe} db={db} userId={userId} appId={appId} />
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
+
+                        {/* COST OVERLAY */}
+                        {activeLayer === 'cost' && (
+                            <div className="absolute inset-0 bg-white dark:bg-slate-950 z-10 overflow-y-auto">
+                                <Button variant="ghost" className="absolute top-2 right-2 z-20" onClick={() => toggleLayer('cost')}><Icon svg={ICONS.x} /></Button>
+                                <EscandallatorPanel
+                                    db={db}
+                                    appId={appId}
+                                    allRecipes={allRecipes}
+                                    activeSubTab={escandallatorSubTab}
+                                    onSubTabChange={setEscandallatorSubTab}
+                                    selectedRecipe={selectedEscandalloRecipe || selectedRecipe}
+                                    precioVenta={precioVenta}
+                                    onSelectRecipe={setSelectedEscandalloRecipe}
+                                    onPriceChange={setPrecioVenta}
+                                    setBatchResult={setBatchResult}
+                                    batchSelectedRecipeId={batchSelectedRecipeId}
+                                    batchTargetQty={batchTargetQty}
+                                    batchTargetUnit={batchTargetUnit}
+                                    batchIncludeDilution={batchIncludeDilution}
+                                    onBatchRecipeChange={setBatchSelectedRecipeId}
+                                    onBatchQuantityChange={setBatchTargetQty}
+                                    onBatchUnitChange={setBatchTargetUnit}
+                                    onBatchDilutionChange={setBatchIncludeDilution}
+                                />
                             </div>
                         )}
                     </div>
                 </div>
             }
             rightSidebar={
-                <div className={`h-full`}>
-                    {/* RECIPES DETAIL */}
-                    {activeTab === 'recipes' && selectedRecipe && (
-                        <RecipeDetailPanel
-                            recipe={selectedRecipe}
-                            allIngredients={allIngredients}
-                            onEdit={(r) => onOpenRecipeModal(r)}
-                            onDelete={(r) => handleDeleteRecipe(r.id)}
-                            onDuplicate={handleDuplicateRecipe}
-                            onToolToggle={setIsToolOpen}
-                            onNavigate={(view, data) => setCurrentView(view)}
-                            onClose={() => setSelectedRecipeId(null)}
-                            onEscandallo={() => { setSelectedEscandalloRecipe(selectedRecipe); setActiveTab('escandallator'); setEscandallatorSubTab('calculator'); }}
-                            onBatcher={() => {
-                                setBatchSelectedRecipeId(selectedRecipe.id);
-                                setActiveTab('escandallator');
-                                setEscandallatorSubTab('production');
-                            }}
-                        />
-                    )}
-
-                    {/* INGREDIENTS DETAIL */}
-                    {activeTab === 'ingredients' && selectedIngredient && (
-                        <IngredientDetailPanel
-                            ingredient={selectedIngredient}
-                            onEdit={(ing) => { setEditingIngredient(ing); setShowIngredientModal(true); }}
-                            onDelete={(ing) => handleDeleteIngredient(ing)}
-                            onClose={() => setSelectedIngredientId(null)}
-                            onSendToZeroWaste={handleSendToZeroWaste}
-                            onBuy={() => startPurchase(selectedIngredient)}
-                        />
-                    )}
-
-                    {/* ESCANDALLATOR RESULTS - CALCULATOR */}
-                    {activeTab === 'escandallator' && escandallatorSubTab === 'calculator' && (
-                        <div className="h-full overflow-y-auto custom-scrollbar p-4 w-[98%] mx-auto">
-                            {escandalloData ? (
-                                <EscandalloSummaryCard
-                                    recipeName={selectedEscandalloRecipe?.nombre || 'Receta'}
-                                    reportData={escandalloData.report}
-                                    pieData={escandalloData.pie}
-                                    onSaveHistory={handleSaveToHistory}
-                                    onExport={() => window.print()}
-                                    recipe={selectedEscandalloRecipe}
+                <LayerPanel
+                    renderCompositionLayer={() => (
+                        <>
+                            {/* RECIPES DETAIL */}
+                            {viewMode === 'recipes' && selectedRecipe && (
+                                <RecipeDetailPanel
+                                    recipe={selectedRecipe}
+                                    allIngredients={allIngredients}
+                                    onEdit={(r) => onOpenRecipeModal(r)}
+                                    // ...
+                                    onDelete={(r) => handleDeleteRecipe(r.id)}
+                                    onDuplicate={handleDuplicateRecipe}
+                                    onToolToggle={setIsToolOpen}
+                                    onNavigate={(view, data) => setCurrentView(view)}
+                                    onClose={() => setSelectedRecipeId(null)}
+                                    onEscandallo={() => { setSelectedEscandalloRecipe(selectedRecipe); setLayer('cost'); setEscandallatorSubTab('calculator'); }}
+                                    onBatcher={() => {
+                                        setBatchSelectedRecipeId(selectedRecipe.id);
+                                        setLayer('cost');
+                                        setEscandallatorSubTab('production');
+                                    }}
                                 />
-                            ) : (
-                                <EmptyState icon={ICONS.chart} text="Resultados" subtext="Selecciona una receta para ver el análisis." />
                             )}
-                        </div>
-                    )}
 
-                    {/* ESCANDALLATOR RESULTS - PRODUCTION */}
-                    {activeTab === 'escandallator' && escandallatorSubTab === 'production' && (
-                        <div className="h-full overflow-y-auto custom-scrollbar p-4 w-[98%] mx-auto">
-                            {batchResult ? (
-                                <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                                    <div className="bg-white/60 dark:bg-slate-900/40 backdrop-blur-md rounded-2xl border border-white/20 dark:border-white/5 p-4 flex justify-between items-center shadow-sm">
-                                        <div>
-                                            <h3 className="font-semibold text-slate-800 dark:text-slate-200">Total Batch</h3>
-                                            <p className="text-xs text-slate-500 dark:text-slate-400">{batchResult.meta.targetQuantity} {batchResult.meta.targetUnit}</p>
-                                        </div>
-                                        <Button size="sm" onClick={handleSaveBatchToPizarron} className="bg-emerald-600 hover:bg-emerald-700 text-white"><Icon svg={ICONS.check} className="w-4 h-4" /></Button>
-                                    </div>
-                                    <div className="flex flex-col gap-3">
-                                        {batchResult.data.map((row: any, i: number) => (
-                                            <div key={i} className="flex items-center justify-between p-4 rounded-xl bg-white/80 dark:bg-slate-900/70 backdrop-blur-md border border-white/20 dark:border-white/5 shadow-sm">
-                                                <span className="font-medium text-sm text-slate-800 dark:text-slate-200">{row.ingredient}</span>
-                                                <span className="block text-lg font-bold text-emerald-600 dark:text-emerald-400 tabular-nums">{row.batchQty}</span>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-                            ) : (
-                                <Card className="h-full flex items-center justify-center p-6 bg-white/40 dark:bg-slate-900/20 border-white/20 dark:border-white/5">
-                                    <CardContent className="text-center text-muted-foreground flex flex-col items-center">
-                                        <Icon svg={ICONS.layers} className="w-12 h-12 mb-4 opacity-20" />
-                                        <p>Configura el batch para ver resultados.</p>
-                                    </CardContent>
-                                </Card>
+                            {/* MARKET DETAIL */}
+                            {viewMode === 'market' && selectedIngredient && (
+                                <IngredientDetailPanel
+                                    ingredient={selectedIngredient}
+                                    onEdit={(ing) => { setEditingIngredient(ing); setShowIngredientModal(true); }}
+                                    onDelete={(ing) => handleDeleteIngredient(ing)}
+                                    onClose={() => setSelectedIngredientId(null)}
+                                    onSendToZeroWaste={handleSendToZeroWaste}
+                                    onBuy={() => startPurchase(selectedIngredient)}
+                                />
                             )}
-                        </div>
-                    )}
 
-                    {/* STOCK ORDERS (RIGHT COLUMN) */}
-                    {activeTab === 'stock' && (
-                        <StockOrdersPanel
-                            purchases={purchaseHistory}
-                            orders={orders}
-                            onCreateOrder={() => {
-                                setEditingOrder(null);
-                                setIsReplenishModalOpen(true);
-                            }}
-                            onLaunchOrder={handleLaunchOrder}
-                            onDeleteOrder={deleteOrder}
-                            onDeleteHistoryItem={handleDeletePurchase}
-                            onEditOrder={(order) => {
-                                setEditingOrder(order);
-                                setIsReplenishModalOpen(true);
-                            }}
-                        />
-                    )}
+                            {/* STOCK DETAIL */}
+                            {viewMode === 'stock' && (
+                                <StockOrdersPanel
+                                    purchases={purchaseHistory}
+                                    orders={orders}
+                                    onCreateOrder={() => {
+                                        setEditingOrder(null);
+                                        setIsReplenishModalOpen(true);
+                                    }}
+                                    onLaunchOrder={handleLaunchOrder}
+                                    onDeleteOrder={deleteOrder}
+                                    onDeleteHistoryItem={handleDeletePurchase}
+                                    onEditOrder={(order) => {
+                                        setEditingOrder(order);
+                                        setIsReplenishModalOpen(true);
+                                    }}
+                                />
+                            )}
 
-                    {/* ZERO WASTE CONTROLS */}
-                    {activeTab === 'zerowaste' && (
+                            {/* Empty States */}
+                            {(!selectedRecipe && viewMode === 'recipes') && (
+                                <EmptyState icon={ICONS.book} text="Detalle de Receta" subtext="Selecciona una receta del listado." />
+                            )}
+                            {(!selectedIngredient && viewMode === 'market') && (
+                                <EmptyState icon={ICONS.flask} text="Detalle de Ingrediente" subtext="Selecciona un ingrediente del listado." />
+                            )}
+                        </>
+                    )}
+                    renderCostLayer={() => (
+                        escandalloData ? (
+                            <EscandalloSummaryCard
+                                recipeName={selectedEscandalloRecipe?.nombre || 'Receta'}
+                                reportData={escandalloData.report}
+                                pieData={escandalloData.pie}
+                                onSaveHistory={handleSaveToHistory}
+                                onExport={() => window.print()}
+                                recipe={selectedEscandalloRecipe}
+                            />
+                        ) : (
+                            <EmptyState icon={ICONS.chart} text="Resultados" subtext="Selecciona una receta para ver el análisis." />
+                        )
+                    )}
+                    renderOptimizationLayer={() => (
                         <ZeroWasteControls
                             allIngredients={allIngredients}
                             selectedIngredients={zwSelectedIngredients}
@@ -891,39 +856,10 @@ const GrimoriumView: React.FC<GrimoriumViewProps> = ({ onOpenRecipeModal, onDrag
                             onGenerate={handleGenerateZeroWasteRecipes}
                         />
                     )}
-
-                    {(!selectedRecipe && activeTab === 'recipes') && (
-                        <div className="h-full flex items-center justify-center text-white/40 text-center p-8">
-                            <div className="animate-pulse">
-                                <p className="font-medium text-lg tracking-wide">Selecciona una receta</p>
-                            </div>
-                        </div>
-                    )}
-                    {(!selectedIngredient && activeTab === 'ingredients') && (
-                        <div className="h-full flex items-center justify-center text-white/40 text-center p-8">
-                            <div className="animate-pulse">
-                                <p className="font-medium text-lg tracking-wide">Selecciona un ingrediente</p>
-                            </div>
-                        </div>
-                    )}
-                </div>
+                />
             }
         >
-            {/* Mobile Overlays */}
-            {selectedRecipe && activeTab === 'recipes' && (
-                <div className="lg:hidden fixed inset-0 z-50 bg-white dark:bg-slate-950 p-4 overflow-y-auto">
-                    <Button size="icon" variant="ghost" onClick={() => setSelectedRecipeId(null)} className="absolute top-4 right-4"><Icon svg={ICONS.x} /></Button>
-                    <RecipeDetailPanel recipe={selectedRecipe} allIngredients={allIngredients} onEdit={(r) => onOpenRecipeModal(r)} onDelete={(r) => handleDeleteRecipe(r.id)} onDuplicate={handleDuplicateRecipe} onToolToggle={setIsToolOpen} onNavigate={(view, data) => setCurrentView(view)} onClose={() => setSelectedRecipeId(null)} />
-                </div>
-            )}
-            {selectedIngredient && activeTab === 'ingredients' && (
-                <div className="lg:hidden fixed inset-0 z-50 bg-white dark:bg-slate-950 p-4 overflow-y-auto">
-                    <Button size="icon" variant="ghost" onClick={() => setSelectedIngredientId(null)} className="absolute top-4 right-4"><Icon svg={ICONS.x} /></Button>
-                    <IngredientDetailPanel ingredient={selectedIngredient} onEdit={(ing) => { setEditingIngredient(ing); setShowIngredientModal(true); }} onDelete={(ing) => handleDeleteIngredient(ing)} onClose={() => setSelectedIngredientId(null)} onBuy={startPurchase} />
-                </div>
-            )}
-
-            {/* --- MODALS --- */}
+            {/* ... MODALS ... (Same) */}
             <StockReplenishmentModal
                 isOpen={isReplenishModalOpen}
                 onClose={() => setIsReplenishModalOpen(false)}
@@ -944,8 +880,9 @@ const GrimoriumView: React.FC<GrimoriumViewProps> = ({ onOpenRecipeModal, onDrag
                 suppliers={suppliers}
             />
 
+            {/* Bulk Purchase Modals - Updated condition logic implicitly by ViewMode */}
             <BulkPurchaseModal
-                isOpen={isBulkPurchaseModalOpen && activeTab !== 'stock'}
+                isOpen={isBulkPurchaseModalOpen && viewMode !== 'stock'}
                 onClose={() => setIsBulkPurchaseModalOpen(false)}
                 selectedIngredients={bulkPurchaseTargets}
                 onConfirm={confirmBulkPurchase}
@@ -954,7 +891,7 @@ const GrimoriumView: React.FC<GrimoriumViewProps> = ({ onOpenRecipeModal, onDrag
             />
 
             <BulkPurchaseModal
-                isOpen={isBulkPurchaseModalOpen && activeTab === 'stock'}
+                isOpen={isBulkPurchaseModalOpen && viewMode === 'stock'}
                 onClose={() => setIsBulkPurchaseModalOpen(false)}
                 selectedIngredients={bulkPurchaseTargets}
                 onConfirm={confirmBulkPurchase}
@@ -972,7 +909,7 @@ const GrimoriumView: React.FC<GrimoriumViewProps> = ({ onOpenRecipeModal, onDrag
                     userId={userId}
                     appId={appId}
                     editingIngredient={editingIngredient}
-                    theme={activeTab === 'stock' ? 'blue' : 'emerald'}
+                    theme={viewMode === 'stock' ? 'blue' : 'emerald'}
                 />
             )}
 
@@ -1009,7 +946,6 @@ const GrimoriumView: React.FC<GrimoriumViewProps> = ({ onOpenRecipeModal, onDrag
             />
             <Modal isOpen={showTxtImportModal} onClose={() => setShowTxtImportModal(false)} title="Importar Recetas TXT"><div className="space-y-4 p-4"><p className="text-sm text-slate-500">Formato Nexus TXT.</p><Input type="file" accept=".txt" onChange={handleTxtImport} /></div></Modal>
             <Modal isOpen={showPdfImportModal} onClose={() => setShowPdfImportModal(false)} title="Importar Recetas PDF PRO"><div className="space-y-4 p-4"><div className="flex items-center gap-2 mb-2"><input type="checkbox" checked={useOcr} onChange={() => setUseOcr(!useOcr)} id="ocr" /><label htmlFor="ocr">Usar OCR</label></div><Input type="file" accept=".pdf" onChange={handlePdfImport} /></div></Modal>
-
         </PremiumLayout>
     );
 };
@@ -1022,6 +958,12 @@ const EmptyState = ({ icon, text, subtext }: { icon: string, text: string, subte
         <p className="text-lg font-medium text-slate-500 dark:text-slate-400">{text}</p>
         <p className="text-sm mt-1 max-w-[200px]">{subtext}</p>
     </div>
+);
+
+const GrimoriumView: React.FC<GrimoriumViewProps> = (props) => (
+    <GrimoriumShell>
+        <GrimoriumInner {...props} />
+    </GrimoriumShell>
 );
 
 export default GrimoriumView;

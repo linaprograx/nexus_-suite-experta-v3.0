@@ -1,16 +1,4 @@
-import { PurchaseEvent } from '../hooks/usePurchaseIngredient';
-
-export interface StockItem {
-    ingredientId: string;
-    ingredientName: string;
-    unit: string;
-    quantityAvailable: number;
-    totalValue: number;
-    averageUnitCost: number;
-    lastPurchaseDate: Date;
-    providerName: string; // Most recent provider
-    lastPurchaseQuantity: number;
-}
+import { PurchaseEvent, StockItem } from '../types';
 
 export const buildStockFromPurchases = (purchases: PurchaseEvent[]): StockItem[] => {
     const stockMap: Record<string, StockItem> = {};

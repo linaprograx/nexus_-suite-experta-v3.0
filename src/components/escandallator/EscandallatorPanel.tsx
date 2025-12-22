@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Firestore } from 'firebase/firestore';
 import { Recipe } from '../../types';
@@ -36,9 +35,9 @@ interface EscandallatorPanelProps {
 
 const EscandallatorPanel: React.FC<EscandallatorPanelProps> = (props) => {
     return (
-        <div className="h-full flex flex-col w-full max-w-full overflow-hidden">
+        <div className="h-full flex flex-col w-full max-w-full overflow-hidden bg-white dark:bg-slate-950">
             {/* Sub-navigation for Escandallator */}
-            <div className="flex items-center justify-center pt-4 pb-2 gap-4 flex-shrink-0">
+            <div className="flex items-center justify-center pt-6 pb-4 gap-4 flex-shrink-0 bg-white dark:bg-slate-950 sticky top-0 z-20 shadow-sm border-b border-slate-100 dark:border-slate-900/50">
                 <button
                     onClick={() => props.onSubTabChange('calculator')}
                     className={`px-6 py-2 rounded-full text-sm font-bold transition-all ${props.activeSubTab === 'calculator' ? 'bg-rose-500 text-white shadow-md' : 'text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800'}`}
@@ -59,32 +58,35 @@ const EscandallatorPanel: React.FC<EscandallatorPanelProps> = (props) => {
                 </button>
             </div>
 
-            <div className="flex-1 overflow-y-auto custom-scrollbar p-1">
-                {props.activeSubTab === 'calculator' && (
-                    <EscandalloTab
-                        allRecipes={props.allRecipes}
-                        selectedRecipe={props.selectedRecipe}
-                        precioVenta={props.precioVenta}
-                        onSelectRecipe={props.onSelectRecipe}
-                        onPriceChange={props.onPriceChange}
-                    />
-                )}
-                {props.activeSubTab === 'production' && (
-                    <BatcherTab
-                        db={props.db}
-                        appId={props.appId}
-                        allRecipes={props.allRecipes}
-                        setBatchResult={props.setBatchResult}
-                        selectedRecipeId={props.batchSelectedRecipeId}
-                        targetQuantity={props.batchTargetQty}
-                        targetUnit={props.batchTargetUnit}
-                        includeDilution={props.batchIncludeDilution}
-                        onRecipeChange={props.onBatchRecipeChange}
-                        onQuantityChange={props.onBatchQuantityChange}
-                        onUnitChange={props.onBatchUnitChange}
-                        onDilutionChange={props.onBatchDilutionChange}
-                    />
-                )}
+            {/* Central Scrolling Container */}
+            <div className="flex-1 overflow-y-auto custom-scrollbar p-4 md:p-6 lg:p-8">
+                <div className="mx-auto w-full max-w-7xl">
+                    {props.activeSubTab === 'calculator' && (
+                        <EscandalloTab
+                            allRecipes={props.allRecipes}
+                            selectedRecipe={props.selectedRecipe}
+                            precioVenta={props.precioVenta}
+                            onSelectRecipe={props.onSelectRecipe}
+                            onPriceChange={props.onPriceChange}
+                        />
+                    )}
+                    {props.activeSubTab === 'production' && (
+                        <BatcherTab
+                            db={props.db}
+                            appId={props.appId}
+                            allRecipes={props.allRecipes}
+                            setBatchResult={props.setBatchResult}
+                            selectedRecipeId={props.batchSelectedRecipeId}
+                            targetQuantity={props.batchTargetQty}
+                            targetUnit={props.batchTargetUnit}
+                            includeDilution={props.batchIncludeDilution}
+                            onRecipeChange={props.onBatchRecipeChange}
+                            onQuantityChange={props.onBatchQuantityChange}
+                            onUnitChange={props.onBatchUnitChange}
+                            onDilutionChange={props.onBatchDilutionChange}
+                        />
+                    )}
+                </div>
             </div>
         </div>
     );

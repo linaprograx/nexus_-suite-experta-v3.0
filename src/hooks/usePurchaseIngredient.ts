@@ -1,21 +1,7 @@
 import { useState, useCallback, useEffect } from 'react';
-import { Ingredient } from '../types';
+import { Ingredient, PurchaseEvent } from '../types';
 import { useApp } from '../context/AppContext';
 import { collection, addDoc, query, orderBy, onSnapshot, serverTimestamp } from 'firebase/firestore';
-
-export interface PurchaseEvent {
-    id: string;
-    ingredientId: string;
-    ingredientName: string;
-    providerId: string;
-    providerName: string;
-    unit: string;
-    quantity: number;
-    unitPrice: number;
-    totalCost: number;
-    createdAt: Date; // Converted from Firestore timestamp
-    status: 'pending' | 'completed';
-}
 
 export const usePurchaseIngredient = () => {
     const { db, userId } = useApp();

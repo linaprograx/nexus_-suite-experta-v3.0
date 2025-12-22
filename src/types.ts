@@ -3,17 +3,51 @@ import { Auth, User } from 'firebase/auth';
 import { FirebaseStorage } from 'firebase/storage';
 import { FirebaseApp } from 'firebase/app';
 
+// --- STOCK & PURCHASE TYPES (Centralized) ---
+
+export interface StockItem {
+    ingredientId: string;
+    ingredientName: string;
+    unit: string;
+    quantityAvailable: number;
+    totalValue: number;
+    averageUnitCost: number; // Weighted Average Cost
+    lastPurchaseDate: Date;
+    providerName: string; // Most recent provider
+    lastPurchaseQuantity: number;
+}
+
+export interface PurchaseEvent {
+    id: string;
+    ingredientId: string;
+    ingredientName: string;
+    providerId: string;
+    providerName: string;
+    unit: string;
+    quantity: number;
+    unitPrice: number;
+    totalCost: number;
+    createdAt: Date;
+    status: 'pending' | 'completed';
+}
+
+// ------------------------------------------
+
 export interface Ingredient {
     id: string;
     nombre: string;
     familia?: string;
-    categoria?: string; // Added
+    categoria?: string;
     costo: number;
     unidad: string;
-    unidadCompra?: string; // Added
-    precioCompra?: number; // Added
-    standardUnit?: string; // Added
-    standardQuantity?: number; // Added
+
+    /** @deprecated Use 'supplierData' for multi-provider support */
+    unidadCompra?: string;
+    /** @deprecated Use 'supplierData' or StockItem.averageUnitCost */
+    precioCompra?: number;
+
+    standardUnit?: string;
+    standardQuantity?: number;
     stock?: number;
     emoji?: string;
     recipe?: {
@@ -29,14 +63,18 @@ export interface Ingredient {
         }[];
     };
     minStock?: number;
+
+    /** @deprecated Use 'proveedores' array */
     proveedor?: string;
+
     createdAt?: any;
     ingredientId?: string; // For compatibility
     cantidad?: number; // For compatibility
     marca?: string;
     merma?: number;
     wastePercentage?: number;
-    proveedores?: string[]; // Added: List of Provider IDs
+
+    proveedores?: string[]; // List of Provider IDs
     supplierData?: Record<string, {
         price: number;
         unit: string;
@@ -323,4 +361,3 @@ export interface AppNotification {
     link?: string;
     createdAt?: any;
 }
-
