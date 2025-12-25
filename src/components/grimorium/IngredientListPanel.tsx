@@ -124,7 +124,7 @@ export const IngredientListPanel: React.FC<IngredientListPanelProps> = ({
     // Helper: Tokenize a name
     // Helper: Tokenize a name
     const STOP_WORDS = new Set(['el', 'la', 'los', 'las', 'de', 'del', 'en', 'y', 'o', 'con', 'sin', 'por', 'para', 'un', 'una']);
-    const WEAK_TOKENS = new Set(['vodka', 'ron', 'gin', 'ginebra', 'tequila', 'whisky', 'whiskey', 'brandy', 'licor', 'cerveza', 'vino', 'sirope', 'pure', 'zumo', 'jugo', 'refresco', 'agua']);
+    const WEAK_TOKENS = new Set(['vodka', 'ron', 'gin', 'ginebra', 'tequila', 'whisky', 'whiskey', 'brandy', 'licor', 'cerveza', 'vino', 'sirope', 'pure', 'zumo', 'jugo', 'refresco', 'agua', 'hoja', 'hojas']);
 
     const getTokens = (str: string) => str.toLowerCase()
       .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
@@ -452,9 +452,9 @@ export const IngredientListPanel: React.FC<IngredientListPanelProps> = ({
 
                         return (
                           <div className="flex flex-wrap gap-1 mt-1">
-                            {visibleSignals.map(sig => (
+                            {visibleSignals.map((sig, sIdx) => (
                               <div
-                                key={sig.id}
+                                key={`${sig.id}-${sIdx}`}
                                 className={`flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[9px] font-bold tracking-tight border cursor-help max-w-full truncate ${sig.severity === 'warning'
                                   ? 'bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 border-amber-100 dark:border-amber-800/30'
                                   : 'bg-slate-50 dark:bg-slate-800/50 text-slate-500 dark:text-slate-400 border-slate-100 dark:border-slate-700'

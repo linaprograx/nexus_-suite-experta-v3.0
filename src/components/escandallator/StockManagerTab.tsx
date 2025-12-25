@@ -2,24 +2,93 @@ import React, { useMemo } from 'react';
 import { Recipe, Ingredient } from '../../types';
 import { ICONS } from '../ui/icons';
 import { Icon } from '../ui/Icon';
-import { buildStockFromPurchases, calculateInventoryMetrics, StockItem } from '../../utils/stockUtils';
+import { calculateInventoryMetrics, StockItem } from '../../utils/stockUtils';
 import { PurchaseEvent } from '../../hooks/usePurchaseIngredient';
+import { useCapabilities } from '../../context/AppContext';
+import { evaluateMarketSignals } from '../../core/signals/signal.engine';
+import { generateAssistedInsights } from '../../core/assisted/assisted.engine';
+import { AssistedInsightsInline } from '../common/AssistedInsightsInline';
 
 interface StockManagerTabProps {
+    allRecipes: Recipe[];
+    allIngredients: Ingredient[];
+    setShoppingList: (list: any[]) => void;
+    stockItems: StockItem[];
     purchases: PurchaseEvent[];
 }
 
-const StockManagerTab: React.FC<StockManagerTabProps> = ({ purchases }) => {
+const StockManagerTab: React.FC<StockManagerTabProps> = ({
+    allRecipes,
+    allIngredients,
+    setShoppingList,
+    stockItems,
+    purchases
+}) => {
+    const { hasLayer } = useCapabilities();
 
-    // Derive Stock and Metrics
-    const { stockItems, metrics } = useMemo(() => {
-        const stock = buildStockFromPurchases(purchases);
-        const meta = calculateInventoryMetrics(stock);
-        return { stockItems: stock, metrics: meta };
-    }, [purchases]);
+    // Derive Metrics (local to tab, or could be lifted too, but fast enough here)
+    const metrics = useMemo(() => {
+        return calculateInventoryMetrics(stockItems);
+    }, [stockItems]);
+
+    // --- PHASE 5.2: STOCK INTELLIGENCE ---
+    const stockSignals = useMemo(() => {
+        if (!hasLayer('assisted_intelligence')) return [];
+
+        // 1. Map Stock Items to Market Data
+        // We evaluate market signals BUT filtered for items we actually have in stock
+        // This gives us "Operational Reality" - only telling us about things we own.
+
+        let signals: any[] = [];
+
+        stockItems.forEach(item => {
+            const marketItem = allIngredients.find(i => i.id === item.ingredientId);
+            if (!marketItem) return;
+
+            // Reuse Market Engine for Price Analysis
+            // Note: In a real implementation, we'd have a specific evaluateStockSignals
+            // For now, we reuse market signals to detect price changes on owned items
+            const marketSignals = evaluateMarketSignals({
+                product: {
+                    id: marketItem.id,
+                    name: marketItem.nombre,
+                    category: marketItem.categoria,
+                    supplierData: {}, // We don't have deep supplier data here yet, so passive checks only
+                    referencePrice: item.averageUnitCost, // Compare OUR cost vs Market
+                    referenceSupplierId: null,
+                    unitBase: item.unit
+                }
+            });
+
+            signals = [...signals, ...marketSignals];
+        });
+
+        return signals;
+    }, [stockItems, allIngredients, hasLayer]);
+
+    const assistedInsights = useMemo(() => {
+        if (!hasLayer('assisted_intelligence')) return [];
+
+        return generateAssistedInsights({
+            signals: stockSignals,
+            contextHints: [],
+            domain: {
+                market: { ingredients: allIngredients, selectedIngredient: null },
+                recipes: []
+            }
+        });
+    }, [stockSignals, allIngredients, hasLayer]);
 
     return (
         <div className="h-full flex flex-col w-full max-w-full p-4 overflow-hidden">
+
+            {/* Phase 5.2: Operational Insights */}
+            {assistedInsights.length > 0 && (
+                <div className="mb-6">
+                    <AssistedInsightsInline insights={assistedInsights} />
+                </div>
+            )}
+
             {/* Header: Inventory Metrics */}
             <div className="mb-6 grid grid-cols-2 gap-4">
                 <div className="bg-white/40 dark:bg-slate-900/40 backdrop-blur-xl rounded-2xl p-4 border border-white/10 dark:border-white/5 shadow-premium flex items-center gap-4">

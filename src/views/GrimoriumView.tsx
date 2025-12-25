@@ -1007,6 +1007,7 @@ const GrimoriumInner: React.FC<GrimoriumViewProps> = ({ onOpenRecipeModal, onDra
                                 <IngredientDetailPanel
                                     ingredient={selectedIngredient}
                                     allIngredients={allIngredients}
+                                    recipes={allRecipes}
                                     onEdit={(ing) => { setEditingIngredient(ing); setShowIngredientModal(true); }}
                                     onDelete={(ing) => handleDeleteIngredient(ing)}
                                     onClose={() => setSelectedIngredientId(null)}

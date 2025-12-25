@@ -1,26 +1,26 @@
-import React from 'react';
+import React, { useMemo } from 'react'; // Added useMemo
 import { pizarronStore } from '../../state/store';
 import { FontLoader } from '../../engine/FontLoader';
 import { BoardNode } from '../../engine/types';
 import { ColorPicker, FontSelector } from '../shared/UnifiedSelectors';
 import { TextStyleController } from '../components/TextStyleController';
 import { VisualEffectsController } from '../components/VisualEffectsController';
+// Phase 5.2: Passive Signals
+import { evaluateMarketSignals } from '../../../../core/signals/signal.engine';
+import { useApp } from '../../../../context/AppContext';
+import { Icon } from '../../../../components/ui/Icon';
+import { ICONS } from '../../../../components/ui/icons';
 
 export const Inspector: React.FC = () => {
     const { selection, nodes, viewport, boardResources, interactionState } = pizarronStore.useState();
     const selectionIds = Array.from(selection);
+    // Global Context for Signals
+    const { allIngredients } = useApp();
 
-    if (selectionIds.length === 0) return null;
-
-    const firstNode = nodes[selectionIds[0]];
-    if (!firstNode) return null; // Safety check
+    const firstNode = selectionIds.length > 0 ? nodes[selectionIds[0]] : null;
 
     // Position Logic: Fixed Screen Position next to Toolbar
-    // Toolbar is at Top: 100, Left: 50% (Center)
-    // We want this "al lado" (next to it).
-    // Let's place it slightly to the right of the center.
-    // Assuming Toolbar is ~400px wide, "Center" is at 200px of it.
-    // So Left: 50% + 220px.
+    // We calculate this early, but only use it if we render.
 
     const stopProp = (e: React.PointerEvent | React.MouseEvent) => e.stopPropagation();
 
@@ -39,7 +39,6 @@ export const Inspector: React.FC = () => {
         if (!firstNode) return [];
         if (firstNode.type === 'group' && firstNode.childrenIds) {
             const children = firstNode.childrenIds.map(id => nodes[id]).filter(Boolean) as BoardNode[];
-            // Recursive? For now, flat.
             return children;
         }
         return [firstNode];
@@ -59,6 +58,34 @@ export const Inspector: React.FC = () => {
 
     const effectiveType = getEffectiveType();
     const primaryTarget = getTargets()[0] || firstNode;
+
+    // Phase 5.2: Compute Passive Signals (Read-Only)
+    // CRITICAL FIX: Always call Hook, do not return early before this!
+    const passiveSignals = useMemo(() => {
+        if (!firstNode || !allIngredients) return [];
+        // Check if node represents an ingredient (e.g. via 'ingredientId' in content)
+        const ingredientId = (firstNode.content as any).ingredientId;
+        if (!ingredientId) return [];
+
+        const marketItem = allIngredients.find(i => i.id === ingredientId);
+        if (!marketItem) return [];
+
+        // Evaluate signals strictly in READ-ONLY mode
+        return evaluateMarketSignals({
+            product: {
+                id: marketItem.id,
+                name: marketItem.nombre,
+                category: marketItem.categoria,
+                supplierData: {},
+                referencePrice: (firstNode.content as any).cost || 0,
+                referenceSupplierId: null,
+                unitBase: (firstNode.content as any).unit || 'ud'
+            }
+        });
+    }, [firstNode, allIngredients]);
+
+    // NOW we can return if no selection
+    if (!firstNode) return null;
 
     // Render Content based on Type
     const renderContent = () => {
@@ -1091,6 +1118,26 @@ export const Inspector: React.FC = () => {
                         </button>
                     </div>
                 </div>
+
+                {/* Phase 5.2: Passive Intelligence Banner (Read-Only) */}
+                {passiveSignals.length > 0 && (
+                    <div className="bg-slate-50 border border-slate-100 rounded-lg p-3 space-y-2 flex-shrink-0">
+                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1">
+                            <Icon svg={ICONS.brain} className="w-3 h-3" /> INTELIGENCIA PASIVA
+                        </p>
+                        <div className="flex flex-wrap gap-2">
+                            {passiveSignals.map(sig => (
+                                <div key={sig.id} className={`text-[10px] px-2 py-1 rounded-md border flex items-center gap-1.5 cursor-help ${sig.severity === 'critical' ? 'bg-rose-50 text-rose-700 border-rose-100' :
+                                    sig.severity === 'warning' ? 'bg-amber-50 text-amber-700 border-amber-100' :
+                                        'bg-blue-50 text-blue-700 border-blue-100'
+                                    }`} title={sig.explanation}>
+                                    <Icon svg={sig.severity === 'info' ? ICONS.info : ICONS.alertCircle} className="w-3 h-3" />
+                                    {sig.message}
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
 
                 <div className="overflow-y-auto max-h-[calc(80vh-100px)] pr-1 custom-scrollbar">
                     {renderContent()}

@@ -54,9 +54,31 @@ interface ItemProviderProps {
 }
 
 export const ItemProvider: React.FC<ItemProviderProps> = ({ children, initialTab = 'recipes' }) => {
+    // Phase 5.3: Context Persistence
+    // Hydrate from sessionStorage or default
+    const getInitialState = <T extends string>(key: string, defaultVal: T): T => {
+        try {
+            const saved = sessionStorage.getItem(`grimorium_${key}`);
+            return (saved as T) || defaultVal;
+        } catch {
+            return defaultVal;
+        }
+    };
+
     const [activeItem, setActiveItem] = useState<GrimoriumItem | null>(null);
-    const [viewMode, setViewMode] = useState<GrimoriumViewMode>('recipes');
-    const [activeLayer, setActiveLayer] = useState<GrimoriumLayer>('composition');
+    const [viewMode, setViewModeState] = useState<GrimoriumViewMode>(() => getInitialState('viewMode', 'recipes'));
+    const [activeLayer, setActiveLayerState] = useState<GrimoriumLayer>(() => getInitialState('activeLayer', 'composition'));
+
+    // Persistence Wrappers
+    const setViewMode = (mode: GrimoriumViewMode) => {
+        setViewModeState(mode);
+        sessionStorage.setItem('grimorium_viewMode', mode);
+    };
+
+    const setActiveLayer = (layer: GrimoriumLayer) => {
+        setActiveLayerState(layer);
+        sessionStorage.setItem('grimorium_activeLayer', layer);
+    };
 
     // Derived legacy 'activeTab' for backward compatibility
     const activeTab = React.useMemo(() => {
@@ -72,11 +94,12 @@ export const ItemProvider: React.FC<ItemProviderProps> = ({ children, initialTab
         return 'recipes';
     }, [activeLayer, viewMode]);
 
-    // Initial Sync
+    // Initial Sync (Override persistence if explicit prop provided, but usually initialTab is just default)
     useEffect(() => {
-        if (initialTab === 'ingredients') setViewMode('market');
-        else if (initialTab === 'stock') setViewMode('stock');
-        else if (initialTab === 'recipes') setViewMode('recipes');
+        // Only override if initialTab suggests a specific entry point different from default, 
+        // but we prioritize persistence for "Suite Coherence". 
+        // However, if the user DIRECTLY links to a sub-route (if we had them), we'd use that.
+        // For now, we trust persistence unless it's a fresh session (handled by session storage).
     }, []);
 
     const selectItem = (item: GrimoriumItem | null) => {

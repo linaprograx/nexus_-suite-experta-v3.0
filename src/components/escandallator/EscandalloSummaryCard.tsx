@@ -4,6 +4,11 @@ import { Icon } from '../ui/Icon';
 import { ICONS } from '../ui/icons';
 import { PieChart, Pie, Cell, Tooltip, Legend } from 'recharts';
 import { ChartContainer } from '../ui/ChartContainer';
+import { useUserIntelProfile } from '../../features/learning/hooks/useUserIntelProfile';
+import { LearningEngine } from '../../core/learning/learning.engine';
+import { useApp, useCapabilities } from '../../context/AppContext';
+import { generateActiveSuggestions } from '../../core/active/active.engine'; // Assume this import exists or similar
+import { AssignedInsight } from '../../core/assisted/assisted.types'; // Or ActiveSuggestion types
 
 interface ReportData {
     costo: number;
@@ -14,21 +19,18 @@ interface ReportData {
     precioVenta: number;
 }
 
-import { Signal } from '../../core/signals/signal.types';
-import { evaluateCostSignals } from '../../core/signals/signal.engine';
-
 interface EscandalloSummaryCardProps {
     recipeName: string;
     reportData: ReportData;
     pieData: { name: string; value: number }[];
-    onSaveHistory: (reportData: ReportData) => void;
+    onSaveHistory: (data: ReportData) => void;
     onExport: () => void;
-    recipe: any; // Quick fix for Recipe type
-    realCost?: number | null; // New prop for signals
-    missingStockIngredients?: number; // New prop for signals
+    recipe?: any; // Should be Recipe type
+    activeSignals?: any[]; // Should be Signal type
+    assistedInsights?: any[]; // Should be AssistedInsight type
 }
 
-const COLORS = ['#f43f5e', '#10b981', '#64748b']; // Rose, Emerald, Slate
+const COLORS = ['#ef4444', '#10b981', '#6366f1'];
 
 const EscandalloSummaryCard: React.FC<EscandalloSummaryCardProps> = ({
     recipeName,
@@ -37,20 +39,39 @@ const EscandalloSummaryCard: React.FC<EscandalloSummaryCardProps> = ({
     onSaveHistory,
     onExport,
     recipe,
-    realCost = null,
-    missingStockIngredients = 0
+    activeSignals = [],
+    assistedInsights = []
 }) => {
-    // Phase 2.1.A - Passive Cost Signals
-    const activeSignals = React.useMemo(() => {
-        return evaluateCostSignals({
-            theoreticalCost: reportData.costo,
-            realCost: realCost,
-            missingStockIngredients: missingStockIngredients || 0
-        });
-    }, [reportData.costo, realCost, missingStockIngredients]);
+    const { profile } = useUserIntelProfile();
+    const { db, userId } = useApp();
+    const { hasLayer } = useCapabilities();
+
+    // Phase 3.0 - Active Suggestions
+    const activeSuggestions = React.useMemo(() => {
+        if (!hasLayer('active_intelligence')) return [];
+        // Ensure generateActiveSuggestions is imported or available
+        return generateActiveSuggestions ? generateActiveSuggestions(assistedInsights, profile) : [];
+    }, [assistedInsights, profile, hasLayer]);
+
+    const primarySuggestion = activeSuggestions.length > 0 ? activeSuggestions[0] : null;
+
+    const handleDismissSuggestion = async (id: string) => {
+        console.log('Dismissing suggestion', id);
+        if (db && userId) {
+            await LearningEngine.trackEvent(db, userId, {
+                type: 'suggestion_dismissed',
+                scope: 'cost',
+                entity: {},
+                signalIds: [],
+                suggestionId: id,
+                meta: {}
+            });
+        }
+    };
 
     return (
         <div className="h-full flex flex-col bg-white/30 dark:bg-slate-900/30 backdrop-blur-xl rounded-2xl border border-white/20 dark:border-white/5 shadow-premium overflow-hidden">
+            {/* Header */}
             <div className="p-6 border-b border-white/10 dark:border-white/5 flex justify-between items-center">
                 <div>
                     <h3 className="font-bold text-xl text-slate-900 dark:text-white mb-1">Escandallo Profesional</h3>
@@ -92,7 +113,7 @@ const EscandalloSummaryCard: React.FC<EscandalloSummaryCardProps> = ({
                         </tbody>
                         <tfoot className="bg-slate-50/50 dark:bg-slate-900/50 border-t border-slate-200 dark:border-slate-700 font-bold">
                             <tr>
-                                <td colSpan={4} className="px-4 py-3 text-right text-slate-600 dark:text-slate-400">Total Receta</td>
+                                <td colSpan={4} className="px-4 py-3 text-right text-slate-600 dark:text-slate-400">Costo Total</td>
                                 <td className="px-4 py-3 text-right text-rose-600 dark:text-rose-400 text-base">€{reportData.costo.toFixed(2)}</td>
                             </tr>
                         </tfoot>

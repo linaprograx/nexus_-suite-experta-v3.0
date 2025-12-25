@@ -224,7 +224,7 @@ export const RecipeList: React.FC<RecipeListProps> = ({
             onChange={(e) => onCategoryChange(e.target.value)}
           >
             <option value="all">Todas las Categorías</option>
-            {availableCategories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
+            {Array.from(new Set(availableCategories)).map(cat => <option key={cat} value={cat}>{cat}</option>)}
           </select>
 
           <select

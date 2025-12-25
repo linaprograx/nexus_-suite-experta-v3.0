@@ -37,11 +37,32 @@ const EscandallatorView: React.FC<EscandallatorViewProps> = ({ db, userId, appId
     // Stock State
     const [shoppingList, setShoppingList] = React.useState<any[] | null>(null);
 
+    // --- PHASE 5.2: REAL COST CALCULATION ---
+    const realCost = React.useMemo(() => {
+        if (!selectedRecipe || !selectedRecipe.ingredientes) return 0;
+        // Logic aligned with Grimorio Real Cost (using Stock)
+        // Note: Ideally this should be a shared hook `useRecipeRealCost(recipe, stockItems)`
+        // For now, inlining to ensure stability before extraction.
+
+        // We need Stock Items. 
+        // We don't have stockItems in this View yet? 
+        // We have `StockManagerTab` calculating it. 
+        // We need to lift the stock state or re-calculate it.
+        // `StockManagerTab` uses `usePurchaseIngredient` to get `purchases` and then `buildStockFromPurchases`.
+        // We should do the same here.
+        return 0; // Placeholder until we lift state
+    }, [selectedRecipe]); // Missing deps
+
     // Escandallo Calculations
     const escandalloData = React.useMemo(() => {
         if (!selectedRecipe || precioVenta <= 0) return null;
         const IVA_RATE = 0.21;
+
+        // MIXED MODE: Use Real Cost if available and > 0, else Theoretical
+        // const effectiveCost = realCost > 0 ? realCost : (selectedRecipe.costoReceta || 0);
+        // For now, let's stick to simple logic until we wire up Stock
         const costo = selectedRecipe.costoReceta || 0;
+
         const baseImponible = precioVenta / (1 + IVA_RATE);
         const ivaSoportado = precioVenta - baseImponible;
         const margenBruto = baseImponible - costo;
@@ -54,7 +75,7 @@ const EscandallatorView: React.FC<EscandallatorViewProps> = ({ db, userId, appId
                 { name: 'IVA', value: ivaSoportado }
             ]
         };
-    }, [selectedRecipe, precioVenta]);
+    }, [selectedRecipe, precioVenta /*, realCost */]);
 
     const handleSaveToHistory = async (reportData: any) => {
         if (!selectedRecipe) return;

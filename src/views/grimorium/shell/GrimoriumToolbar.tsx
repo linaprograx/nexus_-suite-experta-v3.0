@@ -1,10 +1,13 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useItemContext, GrimoriumLayer, GrimoriumViewMode } from '../../../context/Grimorium/ItemContext';
 import { Icon } from '../../../components/ui/Icon';
 import { ICONS } from '../../../components/ui/icons';
+import { IntelPreferencesPanel } from '../../../features/learning/components/IntelPreferencesPanel';
 
+// Toolbar for Grimorium View (Recipes, Stock, Market)
 export const GrimoriumToolbar: React.FC = () => {
     const { viewMode, setViewMode, activeLayer, toggleLayer } = useItemContext();
+    const [showIntelPanel, setShowIntelPanel] = useState(false);
 
     // Helper for View Mode Buttons (The "Tabs")
     const ViewButton = ({ mode, label, colorClass }: { mode: GrimoriumViewMode, label: string, colorClass: string }) => {
@@ -58,6 +61,15 @@ export const GrimoriumToolbar: React.FC = () => {
 
             {/* RIGHT: Functional Layers (The "What tool am I using?") */}
             <div className="flex items-center gap-2">
+                {/* Intel / Brain Preferences */}
+                <button
+                    onClick={() => setShowIntelPanel(true)}
+                    className="p-1.5 rounded-full text-slate-400 hover:text-indigo-500 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors mr-1"
+                    title="Inteligencia Activa"
+                >
+                    <Icon svg={ICONS.sparkles} className="w-5 h-5 text-amber-400 dark:text-amber-300" />
+                </button>
+
                 {/* Cost Layer (Escandallo) */}
                 <LayerToggle
                     layer="cost"
@@ -74,6 +86,8 @@ export const GrimoriumToolbar: React.FC = () => {
                     colorClass="bg-lime-500"
                 />
             </div>
+
+            {showIntelPanel && <IntelPreferencesPanel onClose={() => setShowIntelPanel(false)} />}
         </div>
     );
 };

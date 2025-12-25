@@ -102,56 +102,40 @@ export const evaluateMarketRules = (input: MarketSignalInput): Signal[] => {
                     visible: true
                 });
             }
+        }
+        // 2. Savings Opportunity (Value for Money)
+        // If current reference price (or highest price if no ref) is significantly higher than min price
+        // We reuse calculateUnitPrice to be safe, assuming referencePrice is for 1 unit of unitBase.
+        const currentRef = p.referencePrice ?
+            calculateUnitPrice(p.referencePrice, 1, p.unitBase || 'units', p.unitBase || 'units') || maxPrice :
+            maxPrice;
 
-            // Rule 2: Savings Opportunity
-            // If current reference price (or highest price if no ref) is significantly higher than min price
-            const currentRef = input.product.referencePrice ?
-                calculateUnitPrice(input.product.referencePrice, 1, input.product.unitBase || 'units', 'target') || maxPrice :
-                maxPrice;
+        if (currentRef && currentRef > minPrice) {
+            const savingsDelta = currentRef - minPrice;
+            const savingsPct = (savingsDelta / currentRef) * 100;
 
-            if (currentRef && currentRef > minPrice) {
-                const savingsDelta = currentRef - minPrice;
-                const savingsPct = (savingsDelta / currentRef) * 100;
-
-                if (savingsPct > 10) {
-                    signals.push({
-                        id: MARKET_SAVINGS_OPPORTUNITY,
-                        type: 'market',
-                        severity: 'info',
-                        scope: 'product',
-                        message: `Oportunidad de ahorro: ${savingsPct.toFixed(0)}%`,
-                        explanation: `Estás pagando un ${savingsPct.toFixed(0)}% más que el proveedor más barato disponible.`,
-                        context: {
-                            deltaPct: savingsPct,
-                            comparedSuppliers: supplierCount
-                        },
-                        meta: {
-                            bestUnitPrice: minPrice,
-                            savingsPotentialPercent: savingsPct
-                        },
-                        visible: true
-                    });
-                }
+            if (savingsPct > 5) {
+                signals.push({
+                    id: MARKET_SAVINGS_OPPORTUNITY,
+                    type: 'market',
+                    severity: 'info',
+                    scope: 'product',
+                    message: `Oportunidad de ahorro: ${savingsPct.toFixed(0)}%`,
+                    explanation: `Estás pagando un ${savingsPct.toFixed(0)}% más que el proveedor más barato disponible.`,
+                    context: {
+                        deltaPct: savingsPct,
+                        comparedSuppliers: supplierCount
+                    },
+                    meta: {
+                        bestUnitPrice: minPrice,
+                        savingsPotentialPercent: savingsPct
+                    },
+                    visible: true
+                });
             }
         }
     }
 
-    // Rule 3: Single Supplier Risk
-    if (supplierCount === 1) {
-        signals.push({
-            id: MARKET_SINGLE_SUPPLIER_RISK,
-            type: 'market',
-            severity: 'warning',
-            scope: 'product',
-            message: 'Riesgo: Único proveedor',
-            explanation: 'Este producto depende de un único proveedor registrado.',
-            context: {
-                comparedSuppliers: 1
-            },
-            meta: { supplierCount: 1 },
-            visible: true
-        });
-    }
 
     // Rule 4: Stale Price (Old update)
     // Check the oldest update
