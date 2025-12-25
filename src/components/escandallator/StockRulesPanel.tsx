@@ -5,7 +5,7 @@ import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { Ingredient, StockRule } from '../../types';
 import { Modal } from '../ui/Modal';
-import { StockItem } from '../../utils/stockUtils';
+import { StockItem } from '../../types';
 
 interface StockRulesPanelProps {
     allIngredients: Ingredient[];
@@ -142,22 +142,16 @@ export const StockRulesPanel: React.FC<StockRulesPanelProps> = ({
     };
 
     return (
-        <div className="h-full flex flex-col bg-white/30 dark:bg-slate-900/40 backdrop-blur-xl border-r border-white/20 dark:border-white/5">
-            <div className="p-4 border-b border-white/20 dark:border-white/5 space-y-3">
-                {/* ... (Header unchanged) ... */}
-                <h3 className="text-sm font-bold text-slate-800 dark:text-slate-100 uppercase tracking-wider flex items-center gap-2">
-                    <Icon svg={ICONS.sliders} className="w-4 h-4 text-indigo-500" />
-                    Gestión de Stock
-                </h3>
-                {/* NEW RULE BUTTON */}
-                <Button
-                    variant="outline"
+        <div className="h-full flex flex-col bg-transparent">
+            <div className="pb-4 pt-1 px-1">
+                {/* NEW RULE BUTTON - Styled to match 'Nuevo Proveedor' but with Indigo theme for Rules */}
+                <button
                     onClick={() => setIsRuleModalOpen(true)}
-                    className="w-full border-dashed border-slate-400 text-slate-600 hover:text-indigo-600 hover:border-indigo-500 bg-white/40 hover:bg-white/60 transition-all font-medium text-xs scale-90"
+                    className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-white/40 dark:bg-slate-800/40 hover:bg-indigo-500 hover:text-white dark:hover:bg-indigo-500 text-slate-600 dark:text-slate-300 rounded-xl backdrop-blur-sm transition-all text-xs font-bold border-2 border-dashed border-indigo-200 dark:border-indigo-800/50 hover:border-indigo-500 shadow-sm group"
                 >
-                    <Icon svg={ICONS.plus} className="w-3.5 h-3.5 mr-2" />
-                    Nueva Regla
-                </Button>
+                    <Icon svg={ICONS.plus} className="w-4 h-4 group-hover:scale-110 transition-transform" />
+                    <span>Nueva Regla</span>
+                </button>
             </div>
 
             <div className="flex-1 overflow-y-auto custom-scrollbar p-4 space-y-6">

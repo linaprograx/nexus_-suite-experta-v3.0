@@ -11,6 +11,7 @@ interface EscandalloTabProps {
     precioVenta: number;
     onSelectRecipe: (recipe: Recipe | null) => void;
     onPriceChange: (price: number) => void;
+    realCost?: number; // -1 if not available
 }
 
 const EscandalloTab: React.FC<EscandalloTabProps> = ({
@@ -18,7 +19,8 @@ const EscandalloTab: React.FC<EscandalloTabProps> = ({
     selectedRecipe,
     precioVenta,
     onSelectRecipe,
-    onPriceChange
+    onPriceChange,
+    realCost = 0
 }) => {
 
     return (
@@ -66,14 +68,68 @@ const EscandalloTab: React.FC<EscandalloTabProps> = ({
             </Card>
 
             {selectedRecipe && (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-2 2xl:grid-cols-3 gap-6 w-full">
-                    <Card className="bg-emerald-50/50 dark:bg-emerald-900/10 border-emerald-100 dark:border-emerald-800/30 p-6 text-center w-full shadow-sm hover:shadow-md transition-shadow">
-                        <p className="text-sm font-medium text-emerald-600/80 dark:text-emerald-400/80 mb-2 uppercase tracking-wide">Costo Receta</p>
-                        <p className="text-3xl font-bold text-slate-800 dark:text-emerald-100">€{selectedRecipe.costoReceta?.toFixed(2) || '0.00'}</p>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 w-full">
+                    {/* COST COMPARISON CARD */}
+                    <Card className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 p-0 text-center w-full shadow-sm overflow-hidden flex flex-col">
+                        <div className="grid grid-cols-2 h-full divide-x divide-slate-100 dark:divide-slate-800">
+                            {/* THEORETICAL COST */}
+                            <div className="p-6 flex flex-col justify-center items-center bg-slate-50/50 dark:bg-slate-800/20">
+                                <p className="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-2">Coste Teórico</p>
+                                <p className="text-3xl font-bold text-slate-700 dark:text-slate-200">
+                                    €{selectedRecipe.costoReceta?.toFixed(2) || '0.00'}
+                                </p>
+                                <p className="text-[10px] text-slate-400 mt-1">Mercado</p>
+                            </div>
+
+                            {/* REAL COST */}
+                            <div className={`p-6 flex flex-col justify-center items-center relative overflow-hidden ${realCost === -1 ? 'bg-slate-100/50 dark:bg-slate-900/50' : 'bg-emerald-50/30 dark:bg-emerald-900/10'}`}>
+                                <p className="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-2">Coste Real</p>
+                                {realCost !== -1 ? (
+                                    <>
+                                        <p className="text-3xl font-bold text-emerald-600 dark:text-emerald-400">
+                                            €{realCost.toFixed(2)}
+                                        </p>
+                                        <p className="text-[10px] text-emerald-500/70 mt-1">Basado en Stock</p>
+                                    </>
+                                ) : (
+                                    <>
+                                        <p className="text-xl font-medium text-slate-400 italic">No disponible</p>
+                                        <p className="text-[10px] text-slate-400 mt-1">Falta Stock</p>
+                                    </>
+                                )}
+                            </div>
+                        </div>
                     </Card>
-                    <Card className="bg-slate-50/50 dark:bg-slate-800/30 border-slate-100 dark:border-slate-700/30 p-6 text-center w-full shadow-sm hover:shadow-md transition-shadow">
-                        <p className="text-sm font-medium text-slate-500 dark:text-slate-400 mb-2 uppercase tracking-wide">Ingredientes</p>
-                        <p className="text-3xl font-bold text-slate-700 dark:text-slate-200">{selectedRecipe.ingredientes?.length || 0}</p>
+
+                    {/* PERFORMANCE CARD (Beneficio & Margen) */}
+                    <Card className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 p-0 text-center w-full shadow-sm overflow-hidden flex flex-col">
+                        <div className="grid grid-cols-2 h-full divide-x divide-slate-100 dark:divide-slate-800">
+                            {/* BENEFIT (Profit) */}
+                            <div className="p-6 flex flex-col justify-center items-center relative">
+                                <p className="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-2">Beneficio</p>
+                                {realCost !== -1 ? (
+                                    <p className={`text-3xl font-bold ${(precioVenta - realCost) >= 0 ? 'text-indigo-600 dark:text-indigo-400' : 'text-rose-500'}`}>
+                                        €{(precioVenta - realCost).toFixed(2)}
+                                    </p>
+                                ) : (
+                                    <p className="text-xl font-medium text-slate-400 italic">--</p>
+                                )}
+                                <p className="text-[10px] text-slate-400 mt-1">Por Unidad</p>
+                            </div>
+
+                            {/* MARGIN (%) */}
+                            <div className="p-6 flex flex-col justify-center items-center relative">
+                                <p className="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-2">Margen Real</p>
+                                {realCost !== -1 && precioVenta > 0 ? (
+                                    <p className={`text-3xl font-bold ${(precioVenta - realCost) / precioVenta >= 0.7 ? 'text-emerald-500' : (precioVenta - realCost) / precioVenta >= 0.2 ? 'text-amber-500' : 'text-rose-500'}`}>
+                                        {(((precioVenta - realCost) / precioVenta) * 100).toFixed(0)}%
+                                    </p>
+                                ) : (
+                                    <p className="text-xl font-medium text-slate-400 italic">--</p>
+                                )}
+                                <p className="text-[10px] text-slate-400 mt-1">Rentabilidad</p>
+                            </div>
+                        </div>
                     </Card>
                 </div>
             )}

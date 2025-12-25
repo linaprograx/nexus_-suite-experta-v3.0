@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Firestore } from 'firebase/firestore';
-import { Recipe } from '../../types';
+import { Recipe, StockItem } from '../../types';
 import { Icon } from '../ui/Icon';
 import { ICONS } from '../ui/icons';
 import EscandalloTab from './EscandalloTab';
@@ -31,9 +31,73 @@ interface EscandallatorPanelProps {
     onBatchQuantityChange: (qty: string) => void;
     onBatchUnitChange: (unit: 'Litros' | 'Botellas') => void;
     onBatchDilutionChange: (checked: boolean) => void;
+
+    // Stock Data for Real Cost
+    stockItems: StockItem[];
 }
 
 const EscandallatorPanel: React.FC<EscandallatorPanelProps> = (props) => {
+
+    // --- REAL COST CALCULATION ---
+    const realCost = useMemo(() => {
+        if (!props.selectedRecipe || !props.selectedRecipe.ingredientes) return 0;
+
+        let totalRealCost = 0;
+        let isComplete = true;
+
+        props.selectedRecipe.ingredientes.forEach(ing => {
+            const stockItem = props.stockItems.find(s => s.ingredientId === ing.id);
+
+            if (stockItem && stockItem.averageUnitCost > 0) {
+                // NORMALIZE TO COMMON BASE (ml/g)
+                // helper to get multiplier to ml
+                const getMultiplier = (unit: string) => {
+                    const u = unit.toLowerCase();
+                    if (u === 'l' || u === 'litros' || u === 'litro') return 1000;
+                    if (u === 'cl') return 10;
+                    if (u === 'oz') return 29.57; // Precise oz
+                    if (u === 'ml' || u === 'g' || u === 'gr') return 1;
+                    if (u === 'kg' || u === 'kilo') return 1000;
+                    return 1;
+                };
+
+                const recipeQty = typeof ing.cantidad === 'string' ? parseFloat(ing.cantidad) : ing.cantidad;
+                const recipeQtyBase = recipeQty * getMultiplier(ing.unidad);
+
+                let stockCostPerBase = 0;
+
+                const sUnit = stockItem.unit.toLowerCase();
+
+                // Debug Log
+                // console.log(`[CostCalc] Item: ${ing.nombre} | StockUnit: ${sUnit} | StockAvgCost: ${stockItem.averageUnitCost}`);
+
+                // Case A: Stock is Volume/Weight (L, ml, kg, g, oz, cl)
+                if (['l', 'liter', 'litros', 'litro', 'ml', 'cl', 'oz', 'g', 'gr', 'kg', 'kilo'].includes(sUnit)) {
+                    const stockMultiplier = getMultiplier(stockItem.unit);
+                    // Cost per unit * (1 / multiplier) -> Cost per base
+                    // Example: Cost €25 for 1 L (1000ml). Cost per ml = 25 / 1000 = 0.025
+                    stockCostPerBase = stockItem.averageUnitCost / stockMultiplier;
+                }
+                // Case B: Stock is Unit/Bottle (Botella, Unidad, Bote)
+                else {
+                    // We need to infer the volume of the bottle/unit.
+                    // 1. Try ing.standardQuantity (from Market definition)
+                    // 2. Default to 700ml (Standard Spirit Bottle)
+                    const volume = ing.standardQuantity || 700;
+                    stockCostPerBase = stockItem.averageUnitCost / volume;
+                }
+
+                totalRealCost += recipeQtyBase * stockCostPerBase;
+            } else {
+                console.warn(`[CostCalc] Missing Stock for: ${ing.nombre} (ID: ${ing.id})`);
+                isComplete = false;
+            }
+        });
+
+        return isComplete ? totalRealCost : -1;
+    }, [props.selectedRecipe, props.stockItems]);
+
+
     return (
         <div className="h-full flex flex-col w-full max-w-full overflow-hidden bg-white dark:bg-slate-950">
             {/* Sub-navigation for Escandallator */}
@@ -68,6 +132,7 @@ const EscandallatorPanel: React.FC<EscandallatorPanelProps> = (props) => {
                             precioVenta={props.precioVenta}
                             onSelectRecipe={props.onSelectRecipe}
                             onPriceChange={props.onPriceChange}
+                            realCost={realCost}
                         />
                     )}
                     {props.activeSubTab === 'production' && (

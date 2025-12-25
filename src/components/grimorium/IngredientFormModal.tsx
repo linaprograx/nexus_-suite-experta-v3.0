@@ -1,6 +1,7 @@
 import React from 'react';
 import { Firestore, doc, setDoc, addDoc, collection } from 'firebase/firestore';
 import { Ingredient } from '../../types';
+import { useQueryClient } from '@tanstack/react-query';
 import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
@@ -40,6 +41,7 @@ export const IngredientFormModal: React.FC<{
   };
 
   const currentTheme = themeStyles[theme] || themeStyles.emerald;
+  const queryClient = useQueryClient();
 
   // Providers Hook
   const { suppliers: proveedores } = useSuppliers({ db, userId }); // Mapped to match existing variable name 'proveedores'
@@ -127,6 +129,10 @@ export const IngredientFormModal: React.FC<{
     } else {
       await addDoc(collection(db, ingredientsColPath), dataToSave);
     }
+
+    // Invalidate Cache to update lists immediately
+    queryClient.invalidateQueries({ queryKey: ['ingredients'] });
+
     onClose();
   };
 

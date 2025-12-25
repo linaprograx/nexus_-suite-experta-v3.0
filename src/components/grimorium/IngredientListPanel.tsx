@@ -31,6 +31,7 @@ interface IngredientListPanelProps {
   availableCategories: string[]; // Added
   onBuy?: (ingredient: Ingredient) => void;
   onBulkBuy?: () => void; // Added onBulkBuy
+  disableStockAlerts?: boolean;
 }
 
 export const IngredientListPanel: React.FC<IngredientListPanelProps> = ({
@@ -50,7 +51,8 @@ export const IngredientListPanel: React.FC<IngredientListPanelProps> = ({
   onIngredientFilterChange,
   availableCategories, // Added
   onBuy,
-  onBulkBuy // Destructured
+  onBulkBuy, // Destructured
+  disableStockAlerts = false
 }) => {
   const searchInputRef = useRef<HTMLInputElement>(null);
   const [showCategoryDropdown, setShowCategoryDropdown] = React.useState(false);
@@ -281,7 +283,7 @@ export const IngredientListPanel: React.FC<IngredientListPanelProps> = ({
                       </div>
 
                       {/* Stock Status Badge (Optional, kept small) */}
-                      {((ing as any).stockActual !== undefined && (ing as any).stockActual <= 0) && (
+                      {!disableStockAlerts && ((ing as any).stockActual !== undefined && (ing as any).stockActual <= 0) && (
                         <div className="flex mt-1">
                           <span className="px-1.5 py-0.5 rounded-[4px] bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 text-[10px] font-bold tracking-tight flex items-center gap-1 uppercase">
                             <Icon svg={ICONS.alertCircle} className="w-3 h-3" /> Agotados
@@ -299,6 +301,38 @@ export const IngredientListPanel: React.FC<IngredientListPanelProps> = ({
                         <div className={`text-[10px] uppercase tracking-wider ${isViewing ? 'text-emerald-200' : 'text-slate-400'}`}>
                           {ing.unidadCompra || 'Und'}
                         </div>
+
+                        {/* COST SIGNALS (Passive) */}
+                        {(() => {
+                          // Inline Logic for Signal Detection
+                          const suppliers = ing.supplierData ? Object.values(ing.supplierData) : [];
+                          if (suppliers.length > 1) {
+                            const prices = suppliers.map(s => s.price).filter(p => p > 0);
+                            const minPrice = Math.min(...prices);
+                            const maxPrice = Math.max(...prices);
+                            const currentPrice = ing.precioCompra || 0;
+
+                            const hasVariance = (maxPrice - minPrice) > 0.05; // Material variance > 5 cents
+                            const hasCheaperOption = (currentPrice > minPrice) && ((currentPrice - minPrice) > 0.05);
+
+                            return (
+                              <div className="flex items-center gap-2 mt-1">
+                                {hasVariance && (
+                                  <div className="flex items-center gap-1 text-[9px] text-slate-400 dark:text-slate-500" title="Variación de precios en el mercado">
+                                    <Icon svg={ICONS.refresh} className="w-3 h-3" />
+                                  </div>
+                                )}
+                                {hasCheaperOption && (
+                                  <div className="flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 text-[9px] font-bold tracking-tight border border-blue-100 dark:border-blue-800/30" title={`Opción más barata disponible: €${minPrice.toFixed(2)}`}>
+                                    <Icon svg={ICONS.trendingUp} className="w-2.5 h-2.5 rotate-180" />
+                                    <span>Ahorro</span>
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          }
+                          return null;
+                        })()}
                       </div>
 
                       {/* BUY BUTTON */}

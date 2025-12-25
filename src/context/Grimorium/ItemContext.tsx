@@ -100,7 +100,7 @@ export const ItemProvider: React.FC<ItemProviderProps> = ({ children, initialTab
         return (item as Ingredient).precioCompra !== undefined;
     };
 
-    const value = {
+    const value = React.useMemo(() => ({
         activeItem,
         viewMode,
         activeLayer,
@@ -111,7 +111,7 @@ export const ItemProvider: React.FC<ItemProviderProps> = ({ children, initialTab
         toggleLayer,
         isRecipe,
         isIngredient
-    };
+    }), [activeItem, viewMode, activeLayer, activeTab]);
 
     return (
         <ItemContext.Provider value={value}>

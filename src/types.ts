@@ -143,6 +143,16 @@ export interface SupplierOrder {
 
 // ---------------------------
 
+export interface StockRule {
+    id: string;
+    ingredientId: string;
+    ingredientName: string;
+    minStock: number;
+    reorderQuantity: number;
+    active: boolean;
+    providerId?: string;
+}
+
 export interface CatalogoItem {
     ingredienteId: string;
     precioUnidad: number;

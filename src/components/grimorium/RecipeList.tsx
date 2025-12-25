@@ -34,7 +34,136 @@ interface RecipeListProps {
   onSelectAll: (select: boolean) => void;
   onDeleteSelected: () => void;
   onImport: () => void;
+  isLoading?: boolean;
 }
+
+// Skeleton Component
+const RecipeCardSkeleton = () => (
+  <div className="w-full relative h-[140px] rounded-2xl p-4 bg-white/20 dark:bg-slate-900/20 border border-white/10 overflow-hidden animate-pulse">
+    <div className="flex items-start gap-3">
+      <div className="h-16 w-16 rounded-xl bg-slate-300 dark:bg-slate-700/50" />
+      <div className="flex-1 space-y-2 py-1">
+        <div className="h-4 bg-slate-300 dark:bg-slate-700/50 rounded w-3/4" />
+        <div className="flex gap-1">
+          <div className="h-3 w-12 bg-slate-300 dark:bg-slate-700/50 rounded-full" />
+          <div className="h-3 w-10 bg-slate-300 dark:bg-slate-700/50 rounded-full" />
+        </div>
+      </div>
+    </div>
+    <div className="flex items-center justify-between pt-3 border-t border-slate-200 dark:border-slate-800 mt-3">
+      <div className="h-8 w-12 bg-slate-300 dark:bg-slate-700/50 rounded" />
+      <div className="h-8 w-12 bg-slate-300 dark:bg-slate-700/50 rounded" />
+    </div>
+  </div>
+);
+
+// Memoized Recipe Card
+const RecipeCard = React.memo(({
+  recipe,
+  isViewing,
+  isSelected,
+  onSelect,
+  onToggleSelection,
+  onDragStart
+}: {
+  recipe: Recipe,
+  isViewing: boolean,
+  isSelected: boolean,
+  onSelect: (r: Recipe) => void,
+  onToggleSelection: (id: string) => void,
+  onDragStart?: (e: React.DragEvent, recipe: Recipe) => void
+}) => {
+  const mainCategory = recipe.categorias?.[0] || 'General';
+  const isDone = recipe.categorias?.includes('Carta') || recipe.categorias?.includes('Terminado');
+
+  return (
+    <div className="w-full relative group">
+      <div
+        onClick={() => onSelect(recipe)}
+        draggable={!!onDragStart}
+        onDragStart={(e) => onDragStart && onDragStart(e, recipe)}
+        className={cn(
+          "relative flex flex-col gap-3 rounded-2xl p-4 cursor-pointer transition-all duration-300 overflow-hidden h-full",
+          isViewing
+            ? "bg-indigo-600 shadow-xl shadow-indigo-900/20 scale-[1.02] ring-0 z-10"
+            : "bg-white/30 dark:bg-slate-900/30 border border-white/10 hover:bg-white/50 dark:hover:bg-slate-800/50 hover:shadow-lg hover:-translate-y-1 backdrop-blur-md"
+        )}
+      >
+        {/* Checkbox Overlay */}
+        <div
+          className="absolute top-3 right-3 z-20"
+          onClick={(e) => { e.stopPropagation(); onToggleSelection(recipe.id); }}
+        >
+          <input
+            type="checkbox"
+            checked={isSelected}
+            readOnly
+            className={cn(
+              "w-5 h-5 rounded border-2 transition-all cursor-pointer",
+              isViewing ? "border-white/50 text-indigo-600" : "border-slate-300 text-indigo-600",
+              isSelected ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+            )}
+          />
+        </div>
+
+        {/* Header: Thumb + Title */}
+        <div className="flex items-start gap-3">
+          <div className="relative shrink-0">
+            {recipe.imageUrl ? (
+              <img
+                src={recipe.imageUrl}
+                alt={recipe.nombre}
+                className="h-16 w-16 rounded-xl object-cover shadow-sm bg-slate-100 dark:bg-slate-800"
+              />
+            ) : (
+              <div className="h-16 w-16 rounded-xl bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 flex items-center justify-center shadow-sm text-white font-bold text-xl">
+                {recipe.nombre.substring(0, 2).toUpperCase()}
+              </div>
+            )}
+          </div>
+
+          <div className="min-w-0 flex-1 pr-6"> {/* pr-6 for checkbox space */}
+            <p className={cn("font-bold text-lg truncate leading-tight mb-1",
+              isViewing ? "text-white" : "text-slate-900 dark:text-white"
+            )}>
+              {recipe.nombre}
+            </p>
+            <div className="flex flex-wrap gap-1">
+              <span className={cn("text-[10px] px-2 py-0.5 rounded-full uppercase font-bold tracking-wide",
+                isViewing ? "bg-white/20 text-indigo-100" : "bg-slate-100 dark:bg-slate-800 text-slate-500"
+              )}>
+                {mainCategory}
+              </span>
+              {isDone && (
+                <span className={cn("text-[10px] px-2 py-0.5 rounded-full uppercase font-bold tracking-wide",
+                  isViewing ? "bg-emerald-500/30 text-emerald-100" : "bg-emerald-100 text-emerald-700"
+                )}>Carta</span>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Footer: Financials (Compact) */}
+        <div className={cn("flex items-center justify-between pt-3 border-t mt-1",
+          isViewing ? "border-white/20" : "border-slate-100 dark:border-slate-800"
+        )}>
+          <div className="flex flex-col">
+            <span className={cn("text-[10px] uppercase tracking-wider", isViewing ? "text-indigo-200" : "text-slate-400")}>Costo</span>
+            <span className={cn("font-bold font-mono", isViewing ? "text-white" : "text-slate-700 dark:text-slate-300")}>
+              €{(recipe.costoTotal || recipe.costoReceta || 0).toFixed(2)}
+            </span>
+          </div>
+          <div className="flex flex-col text-right">
+            <span className={cn("text-[10px] uppercase tracking-wider", isViewing ? "text-indigo-200" : "text-slate-400")}>Venta</span>
+            <span className={cn("font-bold font-mono", isViewing ? "text-white" : "text-slate-900 dark:text-white")}>
+              {recipe.precioVenta ? `€${recipe.precioVenta.toFixed(2)}` : '-'}
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+});
 
 export const RecipeList: React.FC<RecipeListProps> = ({
   recipes,
@@ -55,7 +184,8 @@ export const RecipeList: React.FC<RecipeListProps> = ({
   onToggleSelection,
   onSelectAll,
   onDeleteSelected,
-  onImport
+  onImport,
+  isLoading = false
 }) => {
   const { compactMode } = useUI();
 
@@ -70,11 +200,9 @@ export const RecipeList: React.FC<RecipeListProps> = ({
     });
   }, [recipes]);
 
-  // Handle multi-select with shift key could be cool, but simple toggle for now.
-
   return (
     <div className="h-full flex flex-col w-full max-w-full">
-      {/* Toolbar Header (Integrated) */}
+      {/* Toolbar Header */}
       <div className="py-4 flex flex-col gap-4 w-full">
         {/* Search Bar - Full Width */}
         <div className="relative w-full group">
@@ -88,7 +216,7 @@ export const RecipeList: React.FC<RecipeListProps> = ({
           />
         </div>
 
-        {/* Filters Row - FULL WIDTH FLEX */}
+        {/* Filters Row */}
         <div className="flex flex-wrap items-center gap-2 w-full">
           <select
             className="h-10 pl-3 pr-8 bg-white/50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:ring-emerald-500/50 flex-1 min-w-[120px]"
@@ -157,11 +285,17 @@ export const RecipeList: React.FC<RecipeListProps> = ({
           />
           <span>Seleccionar todo</span>
         </div>
-        <span className="italic">{uniqueRecipes.length} recetas</span>
+        <span className="italic">{isLoading ? 'Cargando...' : `${uniqueRecipes.length} recetas`}</span>
       </div>
 
       <div className="flex-1 overflow-y-auto custom-scrollbar p-0 w-full">
-        {uniqueRecipes.length === 0 ? (
+        {isLoading ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-2 2xl:grid-cols-3 gap-6 pb-20">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <RecipeCardSkeleton key={i} />
+            ))}
+          </div>
+        ) : uniqueRecipes.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-center p-8 opacity-60">
             <div className="p-4 rounded-full bg-slate-100 dark:bg-slate-800 mb-4">
               <Icon svg={ICONS.book} className="w-8 h-8 text-slate-400" />
@@ -171,100 +305,17 @@ export const RecipeList: React.FC<RecipeListProps> = ({
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-2 2xl:grid-cols-3 gap-6 pb-20">
-            {uniqueRecipes.map((recipe) => {
-              const mainCategory = recipe.categorias?.[0] || 'General';
-              const isDone = recipe.categorias?.includes('Carta') || recipe.categorias?.includes('Terminado');
-              const isViewing = selectedRecipeId === recipe.id;
-              const isSelected = selectedRecipeIds.includes(recipe.id);
-
-              return (
-                <div key={recipe.id} className="w-full relative group">
-                  <div
-                    onClick={() => onSelectRecipe(recipe)} // View on click
-                    draggable={!!onDragStart}
-                    onDragStart={(e) => onDragStart && onDragStart(e, recipe)}
-                    className={cn(
-                      "relative flex flex-col gap-3 rounded-2xl p-4 cursor-pointer transition-all duration-300 overflow-hidden h-full",
-                      isViewing
-                        ? "bg-indigo-600 shadow-xl shadow-indigo-900/20 scale-[1.02] ring-0 z-10"
-                        : "bg-white/30 dark:bg-slate-900/30 border border-white/10 hover:bg-white/50 dark:hover:bg-slate-800/50 hover:shadow-lg hover:-translate-y-1 backdrop-blur-md"
-                    )}
-                  >
-                    {/* Checkbox Overlay */}
-                    <div
-                      className="absolute top-3 right-3 z-20"
-                      onClick={(e) => { e.stopPropagation(); onToggleSelection(recipe.id); }}
-                    >
-                      <input
-                        type="checkbox"
-                        checked={isSelected}
-                        readOnly
-                        className={cn(
-                          "w-5 h-5 rounded border-2 transition-all cursor-pointer",
-                          isViewing ? "border-white/50 text-indigo-600" : "border-slate-300 text-indigo-600",
-                          isSelected ? "opacity-100" : "opacity-0 group-hover:opacity-100"
-                        )}
-                      />
-                    </div>
-
-                    {/* Header: Thumb + Title */}
-                    <div className="flex items-start gap-3">
-                      <div className="relative shrink-0">
-                        {recipe.imageUrl ? (
-                          <img
-                            src={recipe.imageUrl}
-                            alt={recipe.nombre}
-                            className="h-16 w-16 rounded-xl object-cover shadow-sm bg-slate-100 dark:bg-slate-800"
-                          />
-                        ) : (
-                          <div className="h-16 w-16 rounded-xl bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 flex items-center justify-center shadow-sm text-white font-bold text-xl">
-                            {recipe.nombre.substring(0, 2).toUpperCase()}
-                          </div>
-                        )}
-                      </div>
-
-                      <div className="min-w-0 flex-1 pr-6"> {/* pr-6 for checkbox space */}
-                        <p className={cn("font-bold text-lg truncate leading-tight mb-1",
-                          isViewing ? "text-white" : "text-slate-900 dark:text-white"
-                        )}>
-                          {recipe.nombre}
-                        </p>
-                        <div className="flex flex-wrap gap-1">
-                          <span className={cn("text-[10px] px-2 py-0.5 rounded-full uppercase font-bold tracking-wide",
-                            isViewing ? "bg-white/20 text-indigo-100" : "bg-slate-100 dark:bg-slate-800 text-slate-500"
-                          )}>
-                            {mainCategory}
-                          </span>
-                          {isDone && (
-                            <span className={cn("text-[10px] px-2 py-0.5 rounded-full uppercase font-bold tracking-wide",
-                              isViewing ? "bg-emerald-500/30 text-emerald-100" : "bg-emerald-100 text-emerald-700"
-                            )}>Carta</span>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Footer: Financials (Compact) */}
-                    <div className={cn("flex items-center justify-between pt-3 border-t mt-1",
-                      isViewing ? "border-white/20" : "border-slate-100 dark:border-slate-800"
-                    )}>
-                      <div className="flex flex-col">
-                        <span className={cn("text-[10px] uppercase tracking-wider", isViewing ? "text-indigo-200" : "text-slate-400")}>Costo</span>
-                        <span className={cn("font-bold font-mono", isViewing ? "text-white" : "text-slate-700 dark:text-slate-300")}>
-                          €{(recipe.costoTotal || 0).toFixed(2)}
-                        </span>
-                      </div>
-                      <div className="flex flex-col text-right">
-                        <span className={cn("text-[10px] uppercase tracking-wider", isViewing ? "text-indigo-200" : "text-slate-400")}>Venta</span>
-                        <span className={cn("font-bold font-mono", isViewing ? "text-white" : "text-slate-900 dark:text-white")}>
-                          {recipe.precioVenta ? `€${recipe.precioVenta.toFixed(2)}` : '-'}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
+            {uniqueRecipes.map((recipe) => (
+              <RecipeCard
+                key={recipe.id}
+                recipe={recipe}
+                isViewing={selectedRecipeId === recipe.id}
+                isSelected={selectedRecipeIds.includes(recipe.id)}
+                onSelect={onSelectRecipe}
+                onToggleSelection={onToggleSelection}
+                onDragStart={onDragStart}
+              />
+            ))}
           </div>
         )}
       </div>

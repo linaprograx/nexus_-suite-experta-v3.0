@@ -1,9 +1,12 @@
 import * as React from 'react';
 import { collection, doc, addDoc, deleteDoc, writeBatch, Firestore, serverTimestamp } from 'firebase/firestore';
+import { ImportRecipeModal } from '../components/grimorium/ImportRecipeModal';
+import { parseCsvRecipes } from '../utils/csvRecipeImporter';
+
 import { useQueryClient } from '@tanstack/react-query';
 import { useSuppliers } from '../features/suppliers/hooks/useSuppliers';
 import { useOrders, Order } from '../hooks/useOrders';
-import { Ingredient, Recipe, ViewName, ZeroWasteResult, StockRule } from '../types';
+import { Ingredient, Recipe, ViewName, ZeroWasteResult } from '../types';
 import { parseMultipleRecipes } from '../utils/recipeImporter';
 import { importPdfRecipes } from '../modules/pdf/importPdfRecipes';
 import { useApp } from '../context/AppContext';
@@ -56,12 +59,16 @@ import ZeroWasteHistorySidebar from '../components/zero-waste/ZeroWasteHistorySi
 
 import { useRecipes } from '../hooks/useRecipes';
 import { useIngredients } from '../hooks/useIngredients';
+import { SuppliersList } from '../components/grimorium/SuppliersList';
+import { MarketSidebar } from '../components/grimorium/MarketSidebar';
+
 
 // --- NEW ARCHITECTURE IMPORTS ---
 import { GrimoriumShell } from './grimorium/shell/GrimoriumShell';
 import { useItemContext } from '../context/Grimorium/ItemContext';
 import { GrimoriumToolbar } from './grimorium/shell/GrimoriumToolbar';
 import { LayerPanel } from './grimorium/shell/LayerPanel';
+
 
 interface GrimoriumViewProps {
     onOpenRecipeModal: (recipe: Partial<Recipe> | null) => void;
@@ -71,7 +78,7 @@ interface GrimoriumViewProps {
 
 const GrimoriumInner: React.FC<GrimoriumViewProps> = ({ onOpenRecipeModal, onDragRecipeStart, setCurrentView }) => {
     const { db, userId, appId } = useApp();
-    const { recipes: allRecipes } = useRecipes();
+    const { recipes: allRecipes, isLoading: recipesLoading } = useRecipes();
     const { ingredients: allIngredients } = useIngredients();
 
     // --- Context Consumption ---
@@ -83,6 +90,24 @@ const GrimoriumInner: React.FC<GrimoriumViewProps> = ({ onOpenRecipeModal, onDra
         activeItem,
         setLayer
     } = useItemContext();
+
+    // [PERF_BASELINE] Logging
+    React.useEffect(() => {
+        console.log('[PERF_BASELINE] GrimoriumView MOUNTED');
+    }, []);
+
+    React.useEffect(() => {
+        console.time(`[PERF_BASELINE] Tab Switch to ${viewMode}`);
+        // We can't easily console.timeEnd here because this effect runs AFTER the painting.
+        // But logging the event helps correlate with Profiler.
+        console.log(`[PERF_BASELINE] ViewMode changed to: ${viewMode}`);
+        return () => console.timeEnd(`[PERF_BASELINE] Tab Switch to ${viewMode}`);
+    }, [viewMode]);
+
+    // Track renders
+    if (process.env.NODE_ENV === 'development') {
+        console.log('[PERF_BASELINE] GrimoriumView RENDER');
+    }
 
     const { storage } = useApp();
     const [loading, setLoading] = React.useState(false);
@@ -127,6 +152,7 @@ const GrimoriumInner: React.FC<GrimoriumViewProps> = ({ onOpenRecipeModal, onDra
     const [showCsvImportModal, setShowCsvImportModal] = React.useState(false);
     const [showTxtImportModal, setShowTxtImportModal] = React.useState(false);
     const [showPdfImportModal, setShowPdfImportModal] = React.useState(false);
+    const [showImportChoiceModal, setShowImportChoiceModal] = React.useState(false); // NEW
     const [useOcr, setUseOcr] = React.useState(false);
     const [showSuppliersModal, setShowSuppliersModal] = React.useState(false);
     const [isToolOpen, setIsToolOpen] = React.useState(false);
@@ -152,7 +178,8 @@ const GrimoriumInner: React.FC<GrimoriumViewProps> = ({ onOpenRecipeModal, onDra
         startPurchase,
         confirmPurchase,
         purchaseHistory,
-        addPurchase
+        addPurchase,
+        closePurchaseModal
     } = usePurchaseIngredient();
     const { orders, createOrder, deleteOrder, updateOrderStatus } = useOrders();
 
@@ -478,6 +505,8 @@ const GrimoriumInner: React.FC<GrimoriumViewProps> = ({ onOpenRecipeModal, onDra
         reader.readAsText(file);
     };
 
+
+
     // --- Memos ---
     const filteredIngredients = React.useMemo(() => {
         return allIngredients.filter(ing => {
@@ -602,11 +631,136 @@ const GrimoriumInner: React.FC<GrimoriumViewProps> = ({ onOpenRecipeModal, onDra
             viewMode === 'stock' ? 'ice' :
                 viewMode === 'recipes' ? 'indigo' : 'emerald'; // Market
 
+    // --- RECIPE IMPORT HANDLERS ---
+    const handleRecipeCsvImport = async (file: File) => {
+        if (!db || !userId) return;
+        setLoading(true);
+        try {
+            const text = await file.text();
+
+            // 1. Parse
+            const { recipes, newIngredients } = parseCsvRecipes(text, allIngredients);
+
+            if (recipes.length === 0) {
+                showToast("No se encontraron recetas válidas en el CSV.", 'error');
+                return;
+            }
+
+            const batch = writeBatch(db);
+
+            // 2. Create Missing Ingredients
+            const createdIngredientIds = new Map<string, string>(); // name -> id
+
+            if (newIngredients.length > 0) {
+                for (const name of newIngredients) {
+                    const newDocRef = doc(collection(db, ingredientsColPath));
+                    batch.set(newDocRef, {
+                        nombre: name,
+                        categoria: 'Importado',
+                        precioCompra: 0,
+                        unidadCompra: 'und',
+                        stockActual: 0,
+                        proveedores: []
+                    });
+                    createdIngredientIds.set(name.toLowerCase(), newDocRef.id);
+                }
+            }
+
+            // 3. Create Recipes (linking to existing or new ingredients)
+            const recipesCollection = collection(db, `users/${userId}/grimorio`);
+
+            recipes.forEach(recipe => {
+                const newRecipeRef = doc(recipesCollection);
+
+                // Fix ingredient IDs for newly created ones
+                const fixedIngredients = recipe.ingredientes?.map(line => {
+                    if (!line.ingredientId && line.nombre) {
+                        const newId = createdIngredientIds.get(line.nombre.toLowerCase());
+                        if (newId) return { ...line, ingredientId: newId };
+                    }
+                    return line;
+                });
+
+                batch.set(newRecipeRef, {
+                    ...recipe,
+                    ingredientes: fixedIngredients,
+                    createdAt: serverTimestamp(),
+                    updatedAt: serverTimestamp()
+                });
+            });
+
+            await batch.commit();
+            queryClient.invalidateQueries({ queryKey: ['recipes'] });
+            queryClient.invalidateQueries({ queryKey: ['ingredients'] });
+
+            showToast(`Importación exitosa: ${recipes.length} recetas, ${newIngredients.length} ingredientes nuevos.`, 'success');
+
+        } catch (error) {
+            console.error("Error CSV Import:", error);
+            showToast("Error al importar el archivo CSV.", 'error');
+        } finally {
+            setLoading(false);
+            setShowImportChoiceModal(false);
+        }
+    };
+
+    const handleRecipePdfImportDirect = (file: File) => {
+        if (!db || !userId || !storage) return;
+        setLoading(true);
+        importPdfRecipes(file, db, storage, userId, allIngredients, useOcr)
+            .then(async (newRecipes) => {
+                if (newRecipes.length === 0) {
+                    showToast("No se encontraron recetas.", 'error');
+                    return;
+                }
+                const batch = writeBatch(db);
+                const recipesCollection = collection(db, `users/${userId}/grimorio`);
+                newRecipes.forEach(recipe => batch.set(doc(recipesCollection), recipe));
+                await batch.commit();
+                queryClient.invalidateQueries({ queryKey: ['recipes'] });
+                showToast(`${newRecipes.length} recetas importadas.`, 'success');
+            })
+            .catch(err => {
+                console.error(err);
+                showToast("Error importando PDF.", 'error');
+            })
+            .finally(() => {
+                setLoading(false);
+                setShowImportChoiceModal(false);
+            });
+    };
+
     const handleConfigureBatch = (amount: number, unit: 'Litros' | 'Botellas') => {
         setBatchTargetQty(amount.toString());
         setBatchTargetUnit(unit);
         setEscandallatorSubTab('production');
     };
+
+    // --- Stable Callbacks for RecipeList Optimization ---
+    const handleSelectRecipeCard = React.useCallback((r: Recipe) => {
+        setSelectedRecipeId(r.id);
+    }, []);
+
+    const handleAddRecipeClick = React.useCallback(() => {
+        onOpenRecipeModal(null);
+    }, [onOpenRecipeModal]);
+
+    const handleDragStartWrapper = React.useCallback((e: React.DragEvent, r: Recipe) => {
+        if (onDragRecipeStart) onDragRecipeStart(r);
+    }, [onDragRecipeStart]);
+
+    const handleToggleRecipeSelection = React.useCallback((id: string) => {
+        setSelectedRecipes(prev => prev.includes(id) ? prev.filter(r => r !== id) : [...prev, id]);
+    }, []);
+
+    const handleSelectAllRecipes = React.useCallback((select: boolean) => {
+        // Note: filteredRecipes is a dependency, so this will change if list changes. 
+        // But for simply toggling one card, this callback changing doesn't affect individual card re-render 
+        // if we didn't pass it to the card. (We don't, we pass onSelectAll to List, not Card).
+        // However, onToggleSelection IS passed to Card.
+        setSelectedRecipes(select ? filteredRecipes.map(r => r.id) : []);
+    }, [filteredRecipes]);
+
 
     return (
         <PremiumLayout
@@ -617,25 +771,37 @@ const GrimoriumInner: React.FC<GrimoriumViewProps> = ({ onOpenRecipeModal, onDra
             header={<GrimoriumToolbar />}
             leftSidebar={
                 <>
-                    <FiltersSidebar
-                        activeTab={viewMode === 'market' ? 'ingredients' : viewMode === 'recipes' ? 'recipes' : 'ingredients'}
-                        allRecipes={allRecipes}
-                        selectedRecipe={selectedRecipe}
-                        allIngredients={allIngredients}
-                        selectedIngredient={selectedIngredient}
-                        onImportRecipes={() => setShowTxtImportModal(true)}
-                        onImportPdf={() => setShowPdfImportModal(true)}
-                        onOpenIngredients={() => {/* Handled by sidebar logic */ }}
-                        onImportIngredients={() => setShowCsvImportModal(true)}
-                        stats={stats}
-                        ingredientSearchTerm=""
-                        onIngredientSearchChange={() => { }}
-                        ingredientFilters={{}}
-                        onIngredientFilterChange={() => { }}
-                        onOpenSuppliers={() => setShowSuppliersModal(true)}
-                    />
+                    {/* STANDARD SIDEBAR for Recipes */}
+                    {viewMode === 'recipes' && (
+                        <FiltersSidebar
+                            activeTab="recipes"
+                            allRecipes={allRecipes}
+                            selectedRecipe={selectedRecipe}
+                            allIngredients={allIngredients}
+                            selectedIngredient={selectedIngredient}
+                            onImportRecipes={() => setShowTxtImportModal(true)}
+                            onImportPdf={() => setShowPdfImportModal(true)}
+                            onOpenIngredients={() => { /* Handled by sidebar logic */ }}
+                            onImportIngredients={() => setShowCsvImportModal(true)}
+                            stats={stats}
+                            ingredientSearchTerm=""
+                            onIngredientSearchChange={() => { }}
+                            ingredientFilters={{}}
+                            onIngredientFilterChange={() => { }}
+                            onOpenSuppliers={() => setShowSuppliersModal(true)}
+                        />
+                    )}
 
-                    {activeLayer === 'cost' && (
+                    {/* MARKET SIDEBAR */}
+                    {viewMode === 'market' && (
+                        <MarketSidebar
+                            allIngredients={allIngredients}
+                            selectedIngredient={selectedIngredient}
+                        />
+                    )}
+
+                    {/* ESCANDALLATOR SIDEBAR (Overlay or appended if strictly needed, but usually replaces filtered one when Cost is active) */}
+                    {viewMode !== 'stock' && activeLayer === 'cost' && (
                         <div className="mt-4 pt-4 border-t border-slate-200 dark:border-slate-800">
                             <EscandallatorSidebar
                                 db={db}
@@ -647,23 +813,64 @@ const GrimoriumInner: React.FC<GrimoriumViewProps> = ({ onOpenRecipeModal, onDra
                             />
                         </div>
                     )}
-                    {viewMode === 'stock' && activeLayer === 'composition' && (
-                        <div className="mt-4 pt-4 border-t border-slate-200 dark:border-slate-800">
-                            <StockRulesPanel
-                                allIngredients={allIngredients}
-                                stockItems={calculatedStockItems}
-                                rules={stockRules}
-                                onSaveRule={(rule) => setStockRules(prev => [...prev, rule])}
-                                onDeleteRule={(id) => setStockRules(prev => prev.filter(r => r.id !== id))}
-                                onUpdateRules={setStockRules}
-                                onQuickBuy={startPurchase}
-                                onBulkOrder={(ingredients) => {
-                                    setBulkPurchaseTargets(ingredients);
-                                    setIsBulkPurchaseModalOpen(true);
-                                }}
-                            />
+
+                    {/* STOCK MODE SPLIT SIDEBAR (50/50) */}
+                    {viewMode === 'stock' && (
+                        <div className="h-full flex flex-col gap-4 p-4">
+                            {/* TOP HALF: PROVEEDORES (Floating, Invisible Container) */}
+                            <div className="flex-1 flex flex-col min-h-0 relative">
+                                <div className="mb-2 pl-2">
+                                    <h3 className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest flex items-center gap-2 mb-2">
+                                        <Icon svg={ICONS.user} className="w-3 h-3 text-emerald-500" />
+                                        Proveedores
+                                    </h3>
+                                    {/* Action Button moved here, horizontal style */}
+                                    <button
+                                        onClick={() => setShowSuppliersModal(true)}
+                                        className="w-full flex items-center justify-center gap-2 py-2 px-3 bg-white/40 dark:bg-slate-800/40 hover:bg-emerald-500 hover:text-white dark:hover:bg-emerald-600 text-slate-600 dark:text-slate-300 rounded-xl backdrop-blur-sm transition-all text-xs font-bold border border-white/20 dark:border-white/5 shadow-sm group"
+                                    >
+                                        <Icon svg={ICONS.plus} className="w-3.5 h-3.5 group-hover:scale-110 transition-transform" />
+                                        <span>Nuevo Proveedor</span>
+                                    </button>
+                                </div>
+
+                                <div className="flex-1 overflow-y-auto custom-scrollbar py-2 pr-1">
+                                    <SuppliersList db={db} userId={userId} onSelect={() => setShowSuppliersModal(true)} />
+                                </div>
+                            </div>
+
+                            {/* DIVIDER with gradient fading */}
+                            <div className="h-px bg-gradient-to-r from-transparent via-slate-300/30 dark:via-slate-600/30 to-transparent shrink-0" />
+
+                            {/* BOTTOM HALF: REGLAS DE STOCK (Floating, Full Scroll) */}
+                            <div className="flex-1 flex flex-col min-h-0 relative">
+                                <div className="mb-2 pl-2 shrink-0">
+                                    <h3 className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                                        <Icon svg={ICONS.alertCircle} className="w-3 h-3 text-amber-500" />
+                                        Alertas & Reglas
+                                    </h3>
+                                </div>
+                                <div className="flex-1 overflow-y-auto custom-scrollbar pr-1 pb-2">
+                                    {activeLayer === 'composition' && (
+                                        <StockRulesPanel
+                                            allIngredients={allIngredients}
+                                            stockItems={calculatedStockItems}
+                                            rules={stockRules}
+                                            onSaveRule={(rule) => setStockRules(prev => [...prev, rule])}
+                                            onDeleteRule={(id) => setStockRules(prev => prev.filter(r => r.id !== id))}
+                                            onUpdateRules={setStockRules}
+                                            onQuickBuy={startPurchase}
+                                            onBulkOrder={(ingredients) => {
+                                                setBulkPurchaseTargets(ingredients);
+                                                setIsBulkPurchaseModalOpen(true);
+                                            }}
+                                        />
+                                    )}
+                                </div>
+                            </div>
                         </div>
                     )}
+
                     {activeLayer === 'optimization' && (
                         <div className="mt-4 pt-4 border-t border-slate-200 dark:border-slate-800">
                             <ZeroWasteHistorySidebar history={zwHistory} onSelect={handleZwHistorySelect} />
@@ -678,10 +885,11 @@ const GrimoriumInner: React.FC<GrimoriumViewProps> = ({ onOpenRecipeModal, onDra
                         {viewMode === 'recipes' && (
                             <RecipeList
                                 recipes={filteredRecipes}
+                                isLoading={recipesLoading}
                                 selectedRecipeId={selectedRecipeId}
-                                onSelectRecipe={(r) => setSelectedRecipeId(r.id)}
-                                onAddRecipe={() => onOpenRecipeModal(null)}
-                                onDragStart={onDragRecipeStart ? (e, r) => onDragRecipeStart(r) : undefined}
+                                onSelectRecipe={handleSelectRecipeCard}
+                                onAddRecipe={handleAddRecipeClick}
+                                onDragStart={onDragRecipeStart ? handleDragStartWrapper : undefined}
                                 searchTerm={searchQuery}
                                 onSearchChange={setSearchQuery}
                                 selectedCategory={selectedCategory}
@@ -691,10 +899,10 @@ const GrimoriumInner: React.FC<GrimoriumViewProps> = ({ onOpenRecipeModal, onDra
                                 onStatusChange={(stat) => setSelectedStatus(stat)}
                                 onDelete={() => selectedRecipeId && handleDeleteRecipe(selectedRecipeId)}
                                 selectedRecipeIds={selectedRecipes}
-                                onToggleSelection={(id) => setSelectedRecipes(prev => prev.includes(id) ? prev.filter(r => r !== id) : [...prev, id])}
-                                onSelectAll={(select) => setSelectedRecipes(select ? filteredRecipes.map(r => r.id) : [])}
+                                onToggleSelection={handleToggleRecipeSelection}
+                                onSelectAll={handleSelectAllRecipes}
                                 onDeleteSelected={handleDeleteSelectedRecipes}
-                                onImport={() => setShowPdfImportModal(true)}
+                                onImport={() => setShowImportChoiceModal(true)}
                             />
                         )}
 
@@ -717,6 +925,7 @@ const GrimoriumInner: React.FC<GrimoriumViewProps> = ({ onOpenRecipeModal, onDra
                                 availableCategories={['General', ...new Set(allIngredients.map(i => i.categoria))]}
                                 onBuy={startPurchase}
                                 onBulkBuy={startBulkPurchase}
+                                disableStockAlerts={true}
                             />
                         )}
 
@@ -725,6 +934,7 @@ const GrimoriumInner: React.FC<GrimoriumViewProps> = ({ onOpenRecipeModal, onDra
                             <StockInventoryPanel
                                 stockItems={calculatedStockItems}
                                 purchases={purchaseHistory}
+                                allIngredients={allIngredients}
                                 onSelectIngredient={(ingredientId) => {
                                     const stockItem = calculatedStockItems.find(i => i.ingredientId === ingredientId);
                                     const ingredient = allIngredients.find(i => i.id === ingredientId);
@@ -760,6 +970,7 @@ const GrimoriumInner: React.FC<GrimoriumViewProps> = ({ onOpenRecipeModal, onDra
                                     onBatchQuantityChange={setBatchTargetQty}
                                     onBatchUnitChange={setBatchTargetUnit}
                                     onBatchDilutionChange={setBatchIncludeDilution}
+                                    stockItems={calculatedStockItems}
                                 />
                             </div>
                         )}
@@ -798,7 +1009,6 @@ const GrimoriumInner: React.FC<GrimoriumViewProps> = ({ onOpenRecipeModal, onDra
                                     onEdit={(ing) => { setEditingIngredient(ing); setShowIngredientModal(true); }}
                                     onDelete={(ing) => handleDeleteIngredient(ing)}
                                     onClose={() => setSelectedIngredientId(null)}
-                                    onSendToZeroWaste={handleSendToZeroWaste}
                                     onBuy={() => startPurchase(selectedIngredient)}
                                 />
                             )}
@@ -871,7 +1081,7 @@ const GrimoriumInner: React.FC<GrimoriumViewProps> = ({ onOpenRecipeModal, onDra
 
             <PurchaseModal
                 isOpen={isPurchaseModalOpen}
-                onClose={() => setIsPurchaseModalOpen(false)}
+                onClose={closePurchaseModal}
                 ingredient={purchaseTarget}
                 onConfirm={(data) => {
                     if (purchaseTarget) checkAndCreateRule(purchaseTarget.id, purchaseTarget.nombre);
@@ -934,7 +1144,7 @@ const GrimoriumInner: React.FC<GrimoriumViewProps> = ({ onOpenRecipeModal, onDra
                 </div>
                 <div className="p-4 border-t border-slate-100 flex justify-end gap-2">
                     <Button variant="ghost" onClick={() => setShowCsvImportModal(false)}>Cancelar</Button>
-                    <Button onClick={handleCsvImport}>Importar</Button>
+                    <Button onClick={() => setShowCsvImportModal(false)}>Cerrar</Button>
                 </div>
             </Modal>
 
@@ -946,6 +1156,13 @@ const GrimoriumInner: React.FC<GrimoriumViewProps> = ({ onOpenRecipeModal, onDra
             />
             <Modal isOpen={showTxtImportModal} onClose={() => setShowTxtImportModal(false)} title="Importar Recetas TXT"><div className="space-y-4 p-4"><p className="text-sm text-slate-500">Formato Nexus TXT.</p><Input type="file" accept=".txt" onChange={handleTxtImport} /></div></Modal>
             <Modal isOpen={showPdfImportModal} onClose={() => setShowPdfImportModal(false)} title="Importar Recetas PDF PRO"><div className="space-y-4 p-4"><div className="flex items-center gap-2 mb-2"><input type="checkbox" checked={useOcr} onChange={() => setUseOcr(!useOcr)} id="ocr" /><label htmlFor="ocr">Usar OCR</label></div><Input type="file" accept=".pdf" onChange={handlePdfImport} /></div></Modal>
+
+            <ImportRecipeModal
+                isOpen={showImportChoiceModal}
+                onClose={() => setShowImportChoiceModal(false)}
+                onSelectCsv={handleRecipeCsvImport}
+                onSelectPdf={handleRecipePdfImportDirect}
+            />
         </PremiumLayout>
     );
 };
