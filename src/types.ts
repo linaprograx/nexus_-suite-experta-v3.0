@@ -78,6 +78,8 @@ export interface Ingredient {
     supplierData?: Record<string, {
         price: number;
         unit: string;
+        formatQty?: number;
+        formatUnit?: string;
         lastUpdated?: any;
     }>;
 }

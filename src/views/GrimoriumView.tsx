@@ -534,11 +534,36 @@ const GrimoriumInner: React.FC<GrimoriumViewProps> = ({ onOpenRecipeModal, onDra
         const ivaSoportado = precioVenta - baseImponible;
         const margenBruto = baseImponible - costo;
         const rentabilidad = baseImponible > 0 ? (margenBruto / baseImponible) * 100 : 0;
+
+        // Phase 2.1.A - Real Cost Calculation
+        let realCostTotal = 0;
+        let missingIngredientsCount = 0;
+
+        if (selectedEscandalloRecipe.ingredientes) {
+            selectedEscandalloRecipe.ingredientes.forEach((recipeIng: any) => {
+                // Find stock ingredient
+                // Find stock ingredient
+                const stockIng = allIngredients.find(i => i.id === recipeIng.id || i.nombre === recipeIng.nombre) as any;
+                // Use averagePrice or lastPrice. If 0 or undefined, it's missing data.
+                const price = stockIng?.averagePrice || stockIng?.lastPrice || 0;
+
+                if (price > 0) {
+                    realCostTotal += (recipeIng.cantidad || 0) * price;
+                } else {
+                    missingIngredientsCount++;
+                }
+            });
+        }
+        // If we have no stock data for ANY ingredient, realCost might be 0, but technically it's "unknown" if ingredients exist.
+        // Let's set realCost to null if we have missing ingredients and total is 0 to distinguish "free" from "unknown".
+        const realCostFinal = (realCostTotal === 0 && missingIngredientsCount > 0) ? null : realCostTotal;
+
         return {
             report: { costo, precioVenta, baseImponible, ivaSoportado, margenBruto, rentabilidad },
-            pie: [{ name: 'Costo', value: costo }, { name: 'Margen', value: margenBruto }, { name: 'IVA', value: ivaSoportado }]
+            pie: [{ name: 'Costo', value: costo }, { name: 'Margen', value: margenBruto }, { name: 'IVA', value: ivaSoportado }],
+            signals: { realCost: realCostFinal, missingCount: missingIngredientsCount }
         };
-    }, [selectedEscandalloRecipe, precioVenta]);
+    }, [selectedEscandalloRecipe, precioVenta, allIngredients]);
 
     const handleSaveToHistory = async (reportData: any) => {
         if (!selectedEscandalloRecipe) return;
@@ -881,6 +906,8 @@ const GrimoriumInner: React.FC<GrimoriumViewProps> = ({ onOpenRecipeModal, onDra
             mainContent={
                 <div className="h-full flex flex-col bg-transparent p-0">
                     <div className="flex-1 overflow-y-auto custom-scrollbar">
+                        {/* COST LAYER (Takes precedence if active) - REVERTED: Now in Right Sidebar */}
+
                         {/* RECIPES VIEW */}
                         {viewMode === 'recipes' && (
                             <RecipeList
@@ -947,33 +974,6 @@ const GrimoriumInner: React.FC<GrimoriumViewProps> = ({ onOpenRecipeModal, onDra
                             />
                         )}
 
-                        {/* COST OVERLAY */}
-                        {activeLayer === 'cost' && (
-                            <div className="absolute inset-0 bg-white dark:bg-slate-950 z-10 overflow-y-auto">
-                                <Button variant="ghost" className="absolute top-2 right-2 z-20" onClick={() => toggleLayer('cost')}><Icon svg={ICONS.x} /></Button>
-                                <EscandallatorPanel
-                                    db={db}
-                                    appId={appId}
-                                    allRecipes={allRecipes}
-                                    activeSubTab={escandallatorSubTab}
-                                    onSubTabChange={setEscandallatorSubTab}
-                                    selectedRecipe={selectedEscandalloRecipe || selectedRecipe}
-                                    precioVenta={precioVenta}
-                                    onSelectRecipe={setSelectedEscandalloRecipe}
-                                    onPriceChange={setPrecioVenta}
-                                    setBatchResult={setBatchResult}
-                                    batchSelectedRecipeId={batchSelectedRecipeId}
-                                    batchTargetQty={batchTargetQty}
-                                    batchTargetUnit={batchTargetUnit}
-                                    batchIncludeDilution={batchIncludeDilution}
-                                    onBatchRecipeChange={setBatchSelectedRecipeId}
-                                    onBatchQuantityChange={setBatchTargetQty}
-                                    onBatchUnitChange={setBatchTargetUnit}
-                                    onBatchDilutionChange={setBatchIncludeDilution}
-                                    stockItems={calculatedStockItems}
-                                />
-                            </div>
-                        )}
                     </div>
                 </div>
             }
@@ -1006,6 +1006,7 @@ const GrimoriumInner: React.FC<GrimoriumViewProps> = ({ onOpenRecipeModal, onDra
                             {viewMode === 'market' && selectedIngredient && (
                                 <IngredientDetailPanel
                                     ingredient={selectedIngredient}
+                                    allIngredients={allIngredients}
                                     onEdit={(ing) => { setEditingIngredient(ing); setShowIngredientModal(true); }}
                                     onDelete={(ing) => handleDeleteIngredient(ing)}
                                     onClose={() => setSelectedIngredientId(null)}
@@ -1042,18 +1043,40 @@ const GrimoriumInner: React.FC<GrimoriumViewProps> = ({ onOpenRecipeModal, onDra
                         </>
                     )}
                     renderCostLayer={() => (
-                        escandalloData ? (
-                            <EscandalloSummaryCard
-                                recipeName={selectedEscandalloRecipe?.nombre || 'Receta'}
-                                reportData={escandalloData.report}
-                                pieData={escandalloData.pie}
-                                onSaveHistory={handleSaveToHistory}
-                                onExport={() => window.print()}
-                                recipe={selectedEscandalloRecipe}
+                        <div className="h-full bg-white/30 dark:bg-slate-900/30 backdrop-blur-xl rounded-2xl border border-rose-500/20 dark:border-rose-500/20 shadow-premium overflow-hidden flex flex-col relative group">
+                            <div className="flex-none p-2 flex justify-end absolute top-2 right-2 z-50">
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => toggleLayer('composition')} // Switch back to composition
+                                    className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+                                >
+                                    <Icon svg={ICONS.x} className="w-4 h-4" />
+                                </Button>
+                            </div>
+
+                            <EscandallatorPanel
+                                db={db}
+                                appId={appId}
+                                allRecipes={allRecipes}
+                                activeSubTab={escandallatorSubTab}
+                                onSubTabChange={setEscandallatorSubTab}
+                                selectedRecipe={selectedEscandalloRecipe || selectedRecipe}
+                                precioVenta={precioVenta}
+                                onSelectRecipe={setSelectedEscandalloRecipe}
+                                onPriceChange={setPrecioVenta}
+                                setBatchResult={setBatchResult}
+                                batchSelectedRecipeId={batchSelectedRecipeId}
+                                batchTargetQty={batchTargetQty}
+                                batchTargetUnit={batchTargetUnit}
+                                batchIncludeDilution={batchIncludeDilution}
+                                onBatchRecipeChange={setBatchSelectedRecipeId}
+                                onBatchQuantityChange={setBatchTargetQty}
+                                onBatchUnitChange={setBatchTargetUnit}
+                                onBatchDilutionChange={setBatchIncludeDilution}
+                                stockItems={calculatedStockItems}
                             />
-                        ) : (
-                            <EmptyState icon={ICONS.chart} text="Resultados" subtext="Selecciona una receta para ver el análisis." />
-                        )
+                        </div>
                     )}
                     renderOptimizationLayer={() => (
                         <ZeroWasteControls

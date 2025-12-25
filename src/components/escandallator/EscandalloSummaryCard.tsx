@@ -14,13 +14,18 @@ interface ReportData {
     precioVenta: number;
 }
 
+import { Signal } from '../../core/signals/signal.types';
+import { evaluateCostSignals } from '../../core/signals/signal.engine';
+
 interface EscandalloSummaryCardProps {
     recipeName: string;
     reportData: ReportData;
     pieData: { name: string; value: number }[];
     onSaveHistory: (reportData: ReportData) => void;
     onExport: () => void;
-    recipe: React.ComponentProps<any>['recipe']; // Quick fix for type, or import Recipe
+    recipe: any; // Quick fix for Recipe type
+    realCost?: number | null; // New prop for signals
+    missingStockIngredients?: number; // New prop for signals
 }
 
 const COLORS = ['#f43f5e', '#10b981', '#64748b']; // Rose, Emerald, Slate
@@ -31,8 +36,19 @@ const EscandalloSummaryCard: React.FC<EscandalloSummaryCardProps> = ({
     pieData,
     onSaveHistory,
     onExport,
-    recipe
+    recipe,
+    realCost = null,
+    missingStockIngredients = 0
 }) => {
+    // Phase 2.1.A - Passive Cost Signals
+    const activeSignals = React.useMemo(() => {
+        return evaluateCostSignals({
+            theoreticalCost: reportData.costo,
+            realCost: realCost,
+            missingStockIngredients: missingStockIngredients || 0
+        });
+    }, [reportData.costo, realCost, missingStockIngredients]);
+
     return (
         <div className="h-full flex flex-col bg-white/30 dark:bg-slate-900/30 backdrop-blur-xl rounded-2xl border border-white/20 dark:border-white/5 shadow-premium overflow-hidden">
             <div className="p-6 border-b border-white/10 dark:border-white/5 flex justify-between items-center">
@@ -61,9 +77,7 @@ const EscandalloSummaryCard: React.FC<EscandalloSummaryCardProps> = ({
                         </thead>
                         <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                             {recipe && recipe.ingredientes && recipe.ingredientes.map((ing: any, i: number) => {
-                                // Calculate proportional cost if not present
-                                const propCost = (ing.costo || 0); // Assuming cost is already calculated per line or we calc it: (price / unit_qty) * qty used. But Recipe usually has it.
-                                // If Recipe item has `costo`, use it.
+                                const propCost = (ing.costo || 0);
                                 return (
                                     <tr key={i} className="hover:bg-white/30 dark:hover:bg-slate-800/30 transition-colors">
                                         <td className="px-4 py-3 font-medium text-slate-800 dark:text-slate-200">{ing.nombre}</td>
@@ -86,7 +100,7 @@ const EscandalloSummaryCard: React.FC<EscandalloSummaryCardProps> = ({
                 </div>
 
                 {/* 2. Visual & Financial Summary */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 gap-6">
                     {/* Financial Breakdown */}
                     <div className="space-y-4">
                         <h4 className="font-bold text-slate-800 dark:text-slate-200 mb-2 border-b border-slate-200 pb-2">Desglose PVP</h4>
@@ -106,6 +120,29 @@ const EscandalloSummaryCard: React.FC<EscandalloSummaryCardProps> = ({
                             <span className="text-rose-800 font-bold text-lg">Precio de Venta</span>
                             <span className="font-black text-rose-600 text-2xl">€{reportData.precioVenta.toFixed(2)}</span>
                         </div>
+                        {/* SIGNALS SECTION */}
+                        {activeSignals.length > 0 && (
+                            <div className="space-y-2 mt-4 pt-2 border-t border-dashed border-slate-200">
+                                {activeSignals.map(sig => (
+                                    <div
+                                        key={sig.id}
+                                        title={sig.explanation || sig.message}
+                                        className={`px-3 py-2 rounded-lg text-xs font-medium flex items-center gap-2 cursor-help ${sig.severity === 'warning'
+                                            ? 'bg-amber-50 text-amber-700 border border-amber-100'
+                                            : sig.severity === 'critical'
+                                                ? 'bg-red-50 text-red-700 border border-red-100'
+                                                : 'bg-indigo-50 text-indigo-700 border border-indigo-100'
+                                            }`}
+                                    >
+                                        <Icon
+                                            svg={sig.severity === 'info' ? ICONS.info : ICONS.alertCircle}
+                                            className="w-4 h-4 shrink-0"
+                                        />
+                                        <span>{sig.message}</span>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
                     </div>
 
                     {/* Doughnut Chart */}
@@ -149,8 +186,8 @@ const EscandalloSummaryCard: React.FC<EscandalloSummaryCardProps> = ({
 
             {/* Actions */}
             <div className="p-4 border-t border-white/10 dark:border-white/5 flex gap-3 bg-white/20 dark:bg-slate-900/20 backdrop-blur-md">
-                <Button onClick={() => onSaveHistory(reportData)} className="flex-1 bg-rose-700 hover:bg-rose-800 text-white shadow-lg shadow-rose-900/20 h-12 text-base font-bold rounded-xl transition-all hover:-translate-y-0.5">
-                    <Icon svg={(ICONS as any).save || (ICONS as any).book} className="mr-2 h-5 w-5 opacity-80" /> Guardar en Historial
+                <Button onClick={() => onSaveHistory(reportData)} className="flex-1 bg-rose-700 hover:bg-rose-800 text-white shadow-lg shadow-rose-900/20 h-10 text-sm font-bold rounded-xl transition-all hover:-translate-y-0.5">
+                    <Icon svg={(ICONS as any).save || (ICONS as any).book} className="mr-2 h-4 w-4 opacity-80" /> Guardar en Historial
                 </Button>
                 <Button variant="ghost" size="sm" onClick={() => onSaveHistory(reportData)} title="Guardar en historial"><Icon svg={(ICONS as any).book} className="w-4 h-4" /></Button>
                 <div className="w-px h-4 bg-slate-200 dark:bg-slate-700 mx-2" />

@@ -10,6 +10,8 @@ import { useSupplierProducts } from '../../features/suppliers/hooks/useSupplierP
 import { useApp } from '../../context/AppContext';
 import { CatalogoItem } from '../../types';
 import { getCategoryColor } from '../../utils/categoryColors';
+import { evaluateMarketSignals } from '../../core/signals/signal.engine';
+import { Signal } from '../../core/signals/signal.types';
 
 
 interface IngredientListPanelProps {
@@ -107,6 +109,118 @@ export const IngredientListPanel: React.FC<IngredientListPanelProps> = ({
 
     return result;
   }, [ingredients, selectedProveedorId, ingredientFilters.category, ingredientSearchTerm]);
+
+  // Phase 2.1.B+ - Aggregation Logic
+  const aggregatedProducts = React.useMemo(() => {
+    const map = new Map<string, {
+      id: string;
+      name: string;
+      category: string;
+      entries: Ingredient[];
+      minPrice: number;
+      maxPrice: number;
+    }>();
+
+    // Helper: Tokenize a name
+    // Helper: Tokenize a name
+    const STOP_WORDS = new Set(['el', 'la', 'los', 'las', 'de', 'del', 'en', 'y', 'o', 'con', 'sin', 'por', 'para', 'un', 'una']);
+    const WEAK_TOKENS = new Set(['vodka', 'ron', 'gin', 'ginebra', 'tequila', 'whisky', 'whiskey', 'brandy', 'licor', 'cerveza', 'vino', 'sirope', 'pure', 'zumo', 'jugo', 'refresco', 'agua']);
+
+    const getTokens = (str: string) => str.toLowerCase()
+      .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^a-z0-9\s]/g, "") // remove special chars
+      .split(/\s+/)
+      .filter(t => t.length >= 2 && !STOP_WORDS.has(t)); // Allow 2 chars but filter
+
+    // Helper: Check if two sets of tokens match
+    const doTokensMatch = (tokensA: string[], tokensB: string[]) => {
+      // If either has no tokens, no match
+      if (tokensA.length === 0 || tokensB.length === 0) return false;
+
+      let hasStrongMatch = false;
+      let weakMatchCount = 0;
+
+      tokensA.forEach(tA => {
+        const isWeak = WEAK_TOKENS.has(tA);
+        // Check if tA matches any in tokensB
+        const matched = tokensB.some(tB => {
+          // Exact match
+          if (tA === tB) return true;
+          // Prefix match
+          if (tA.length >= 3 && (tA.startsWith(tB) || tB.startsWith(tA))) return true;
+          // Containment: ONLY if token > 3 chars
+          if (tA.length > 3 && tB.length > 3) {
+            return tA.includes(tB) || tB.includes(tA);
+          }
+          return false;
+        });
+
+        if (matched) {
+          if (isWeak) weakMatchCount++;
+          else hasStrongMatch = true;
+        }
+      });
+
+      const targetHasStrongTokens = tokensA.some(t => !WEAK_TOKENS.has(t));
+
+      if (!targetHasStrongTokens) {
+        return weakMatchCount > 0;
+      }
+
+      // Must have at least one strong match
+      return hasStrongMatch;
+    };
+
+    filteredIngredients.forEach(ing => {
+      // We need to find if this ingredient belongs to an EXISTING group
+      // This is O(N^2) effectively, but N is small (filtered ingredients)
+
+      const currentTokens = getTokens(ing.nombre);
+      let foundKey: string | undefined;
+
+      // Try to match against existing groups
+      for (const [key, group] of map.entries()) {
+        // Check against group name (primary)
+        const groupTokens = getTokens(group.name);
+        if (doTokensMatch(currentTokens, groupTokens)) {
+          foundKey = key;
+          break;
+        }
+        // Or check against any entry in the group (transitive)
+        // (Skipped for performance, usually group name is representative)
+      }
+
+      if (foundKey) {
+        const group = map.get(foundKey)!;
+        group.entries.push(ing);
+        // Update stats
+        if (ing.precioCompra && ing.precioCompra > 0) {
+          group.minPrice = Math.min(group.minPrice, ing.precioCompra);
+          group.maxPrice = Math.max(group.maxPrice, ing.precioCompra);
+        }
+        // Update group name if current is longer/better? No, keep first found.
+      } else {
+        // Create new group
+        const key = ing.id; // Use ID as key since we don't have a canonical name
+        map.set(key, {
+          id: ing.id,
+          name: ing.nombre,
+          category: ing.categoria || 'General',
+          entries: [ing],
+          minPrice: ing.precioCompra || Infinity,
+          maxPrice: ing.precioCompra || -Infinity
+        });
+        // Fix infinity if no price
+        if (!ing.precioCompra) {
+          const g = map.get(key)!;
+          g.minPrice = Infinity;
+          g.maxPrice = -Infinity;
+        }
+      }
+    });
+
+    return Array.from(map.values());
+  }, [filteredIngredients]);
 
 
   return (
@@ -241,21 +355,31 @@ export const IngredientListPanel: React.FC<IngredientListPanelProps> = ({
 
       {/* List Body */}
       <div className="flex-1 overflow-y-auto custom-scrollbar p-0 w-full z-0">
-        {filteredIngredients.length === 0 ? (
+        {aggregatedProducts.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-40 text-center opacity-60">
             <Icon svg={ICONS.flask} className="w-8 h-8 text-slate-400 mb-2" />
             <p className="text-sm text-slate-500">No hay ingredientes</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-2 2xl:grid-cols-3 gap-6 pb-20">
-            {filteredIngredients.map((ing) => {
+            {aggregatedProducts.map((group) => {
+              // Find "best" or primary entry to display
+              // Prioritize entries WITH price, then by price ascending
+              const sortedEntries = [...group.entries].sort((a, b) => {
+                const pA = a.precioCompra && a.precioCompra > 0 ? a.precioCompra : 999999;
+                const pB = b.precioCompra && b.precioCompra > 0 ? b.precioCompra : 999999;
+                return pA - pB;
+              });
+              const primaryEntry = sortedEntries[0];
+              const ing = primaryEntry;
+
               const isSelected = selectedIngredientIds.includes(ing.id);
               const isViewing = viewingIngredientId === ing.id;
               const categoryColor = getCategoryColor(ing.categoria);
 
               return (
                 <div
-                  key={ing.id}
+                  key={group.id}
                   onClick={() => onEditIngredient(ing)}
                   className={`group relative flex flex-col p-0 rounded-2xl border transition-all duration-200 cursor-pointer w-full overflow-hidden
                             ${isViewing
@@ -264,82 +388,115 @@ export const IngredientListPanel: React.FC<IngredientListPanelProps> = ({
                     }
                   `}
                 >
-                  <div className="flex items-center p-3 relative z-10">
-                    {/* Selection Checkbox */}
-                    <div className="w-8 shrink-0 flex justify-center z-10" onClick={(e) => e.stopPropagation()}>
+                  <div className="flex items-start p-4 relative z-10 gap-3 h-full">
+                    {/* Selection Checkbox - Centered Vertically */}
+                    <div className="w-6 shrink-0 flex items-center justify-center pt-1" onClick={(e) => e.stopPropagation()}>
                       <input
                         type="checkbox"
                         checked={isSelected}
                         onChange={() => onToggleSelection(ing.id)}
-                        className={`rounded border-slate-300 dark:border-slate-600 text-emerald-600 focus:ring-emerald-500 transition-colors cursor-pointer ${isSelected ? 'bg-emerald-500 border-emerald-500' : 'bg-white/50'}`}
+                        className={`rounded border-slate-300 dark:border-slate-600 text-emerald-600 focus:ring-emerald-500 transition-colors cursor-pointer w-4 h-4 ${isSelected ? 'bg-emerald-500 border-emerald-500' : 'bg-white/50'}`}
                       />
                     </div>
 
                     {/* Content */}
-                    <div className="flex-1 px-4 min-w-0">
-                      {/* Title - Optimized for space */}
-                      <div className={`font-bold text-sm tracking-tight leading-snug line-clamp-2 ${isViewing ? 'text-white' : 'text-slate-800 dark:text-slate-200'}`}>
-                        {ing.nombre}
+                    <div className="flex-1 min-w-0 flex flex-col justify-between h-full gap-2">
+                      {/* Top: Title & Badges */}
+                      <div>
+                        <div className={`font-bold text-sm tracking-tight leading-snug line-clamp-2 mb-1.5 ${isViewing ? 'text-white' : 'text-slate-800 dark:text-slate-200'}`}>
+                          {ing.nombre}
+                        </div>
+                        <div className="flex flex-wrap gap-1.5 min-h-[16px]">
+                          {!disableStockAlerts && ((ing as any).stockActual !== undefined && (ing as any).stockActual <= 0) && (
+                            <span className="px-1.5 py-0.5 rounded-[4px] bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 text-[9px] font-bold tracking-tight uppercase inline-flex items-center gap-1">
+                              <Icon svg={ICONS.alertCircle} className="w-2.5 h-2.5" /> AGOTADO
+                            </span>
+                          )}
+                          {group.entries.length > 1 && (
+                            <span className="px-1.5 py-0.5 rounded-[4px] bg-slate-100 dark:bg-slate-800 text-slate-500 text-[9px] font-medium inline-flex items-center gap-1 border border-slate-200 dark:border-slate-700">
+                              <Icon svg={ICONS.users} className="w-2.5 h-2.5" /> {group.entries.length} opc.
+                            </span>
+                          )}
+                        </div>
                       </div>
 
-                      {/* Stock Status Badge (Optional, kept small) */}
-                      {!disableStockAlerts && ((ing as any).stockActual !== undefined && (ing as any).stockActual <= 0) && (
-                        <div className="flex mt-1">
-                          <span className="px-1.5 py-0.5 rounded-[4px] bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 text-[10px] font-bold tracking-tight flex items-center gap-1 uppercase">
-                            <Icon svg={ICONS.alertCircle} className="w-3 h-3" /> Agotados
-                          </span>
-                        </div>
-                      )}
+                      {/* Bottom: Signal Engine Output (Moved here for space) */}
+                      {(() => {
+                        const supplierMap: Record<string, any> = {};
+                        group.entries.forEach((entry, idx) => {
+                          supplierMap[entry.id || `iso_${idx}`] = {
+                            price: entry.precioCompra || 0,
+                            formatQty: (entry as any).cantidad || 1,
+                            formatUnit: entry.unidadCompra || entry.unidad || 'units',
+                            updatedAt: (entry.supplierData as any)?.lastUpdated || Date.now()
+                          };
+                        });
+
+                        const signals = evaluateMarketSignals({
+                          product: {
+                            id: group.id,
+                            name: group.name,
+                            category: group.category,
+                            supplierData: supplierMap,
+                            referencePrice: ing.costo || null,
+                            referenceSupplierId: null,
+                            unitBase: (ing.unidad as any) || 'units'
+                          }
+                        });
+
+                        if (signals.length === 0) return null;
+
+                        const visibleSignals = signals
+                          .sort((a, b) => (a.severity === 'warning' ? -1 : 1))
+                          .slice(0, 2);
+
+                        return (
+                          <div className="flex flex-wrap gap-1 mt-1">
+                            {visibleSignals.map(sig => (
+                              <div
+                                key={sig.id}
+                                className={`flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[9px] font-bold tracking-tight border cursor-help max-w-full truncate ${sig.severity === 'warning'
+                                  ? 'bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 border-amber-100 dark:border-amber-800/30'
+                                  : 'bg-slate-50 dark:bg-slate-800/50 text-slate-500 dark:text-slate-400 border-slate-100 dark:border-slate-700'
+                                  }`}
+                                title={sig.explanation || sig.message}
+                              >
+                                <Icon
+                                  svg={
+                                    sig.id === 'MARKET_SAVINGS_OPPORTUNITY' ? ICONS.trendingUp :
+                                      sig.id === 'MARKET_SINGLE_SUPPLIER_RISK' ? ICONS.alertCircle :
+                                        ICONS.info
+                                  }
+                                  className={`w-2.5 h-2.5 shrink-0 ${sig.id === 'MARKET_SAVINGS_OPPORTUNITY' ? 'rotate-180' : ''}`}
+                                />
+                                <span className="truncate">{sig.message.split(':')[0]}</span>
+                              </div>
+                            ))}
+                          </div>
+                        );
+                      })()}
+
                     </div>
 
                     {/* Price Column + Buy Action */}
-                    <div className="w-auto flex flex-col items-end gap-2 shrink-0">
+                    <div className="w-auto flex flex-col items-end justify-between h-full gap-2 shrink-0 pl-2 border-l border-slate-100 dark:border-slate-800/50 min-h-[60px]">
                       <div className="text-right">
-                        <div className={`font-bold font-mono text-sm ${isViewing ? 'text-white' : 'text-slate-700 dark:text-slate-300'}`}>
-                          €{ing.precioCompra?.toFixed(2)}{ing.unidadCompra === 'kg' || ing.unidadCompra === 'Lt' ? `/${ing.unidadCompra}` : ''}
+                        <div className={`font-bold font-mono text-lg leading-none mb-1 ${isViewing ? 'text-white' : 'text-slate-700 dark:text-slate-300'}`}>
+                          {ing.precioCompra && ing.precioCompra > 0 ? (
+                            <>€{ing.precioCompra.toFixed(2)}</>
+                          ) : (
+                            <span className="text-slate-300 dark:text-slate-600">--</span>
+                          )}
                         </div>
-                        <div className={`text-[10px] uppercase tracking-wider ${isViewing ? 'text-emerald-200' : 'text-slate-400'}`}>
-                          {ing.unidadCompra || 'Und'}
+                        <div className={`text-[9px] uppercase tracking-wider font-medium text-right w-full ${isViewing ? 'text-emerald-200' : 'text-slate-400'}`}>
+                          {ing.unidadCompra || ing.unidad || 'Und'}
                         </div>
-
-                        {/* COST SIGNALS (Passive) */}
-                        {(() => {
-                          // Inline Logic for Signal Detection
-                          const suppliers = ing.supplierData ? Object.values(ing.supplierData) : [];
-                          if (suppliers.length > 1) {
-                            const prices = suppliers.map(s => s.price).filter(p => p > 0);
-                            const minPrice = Math.min(...prices);
-                            const maxPrice = Math.max(...prices);
-                            const currentPrice = ing.precioCompra || 0;
-
-                            const hasVariance = (maxPrice - minPrice) > 0.05; // Material variance > 5 cents
-                            const hasCheaperOption = (currentPrice > minPrice) && ((currentPrice - minPrice) > 0.05);
-
-                            return (
-                              <div className="flex items-center gap-2 mt-1">
-                                {hasVariance && (
-                                  <div className="flex items-center gap-1 text-[9px] text-slate-400 dark:text-slate-500" title="Variación de precios en el mercado">
-                                    <Icon svg={ICONS.refresh} className="w-3 h-3" />
-                                  </div>
-                                )}
-                                {hasCheaperOption && (
-                                  <div className="flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 text-[9px] font-bold tracking-tight border border-blue-100 dark:border-blue-800/30" title={`Opción más barata disponible: €${minPrice.toFixed(2)}`}>
-                                    <Icon svg={ICONS.trendingUp} className="w-2.5 h-2.5 rotate-180" />
-                                    <span>Ahorro</span>
-                                  </div>
-                                )}
-                              </div>
-                            );
-                          }
-                          return null;
-                        })()}
                       </div>
 
-                      {/* BUY BUTTON */}
                       <Button
                         size="sm"
                         variant="ghost"
-                        className={`h-7 px-3 text-[10px] font-bold uppercase tracking-wide !bg-emerald-50 !text-emerald-700 border border-emerald-200 hover:!bg-emerald-600 hover:!text-white hover:border-emerald-600 hover:shadow-md hover:shadow-emerald-500/20 rounded-lg transition-all duration-300 ${isViewing ? 'hidden' : ''}`}
+                        className={`h-7 px-2 text-[10px] font-bold uppercase tracking-wide !bg-emerald-50 !text-emerald-700 border border-emerald-200 hover:!bg-emerald-600 hover:!text-white hover:border-emerald-600 hover:shadow-md hover:shadow-emerald-500/20 rounded-lg transition-all duration-300 ${isViewing ? 'hidden' : ''}`}
                         onClick={(e) => {
                           e.stopPropagation();
                           onBuy?.(ing);
@@ -350,10 +507,10 @@ export const IngredientListPanel: React.FC<IngredientListPanelProps> = ({
                     </div>
                   </div>
 
-                  {/* Category Color Bar at Bottom */}
+                  {/* Category Color Bar */}
                   <div className={`h-1.5 w-full ${categoryColor} opacity-80`} title={ing.categoria} />
 
-                  {/* Viewing Indicator Bar */}
+                  {/* Viewing Indicator */}
                   {isViewing && (
                     <div className="absolute right-2 top-1/2 -translate-y-1/2 text-white/20 pointer-events-none">
                       <Icon svg={ICONS.check} className="w-8 h-8 -rotate-12" />

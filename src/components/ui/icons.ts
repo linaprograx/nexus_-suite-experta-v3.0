@@ -25,6 +25,7 @@ export const ICONS = {
     // I'm not editing icons.ts blindly. I'll stick to known icons or common ones.
     settings: '<path fill="currentColor" d="M12 9.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5zM19.4 12a7.4 7.4 0 1 1-10.23 6.57l.02.04 2.14 3.66a1 1 0 0 0 1.74 0l2.14-3.66.02-.04a7.4 7.4 0 0 1 4.17-6.57zm-13.62.8a5.4 5.4 0 1 0 8.44 0 5.4 5.4 0 0 0-8.44 0z"/>',
     user: '<path fill="currentColor" d="M12 12a5 5 0 1 0-5-5 5 5 0 0 0 5 5zm0-8a3 3 0 1 1-3 3 3 3 0 0 1 3-3zm0 10a7 7 0 0 0-7 7 1 1 0 0 0 2 0 5 5 0 0 1 10 0 1 1 0 0 0 2 0 7 7 0 0 0-7-7z"/>',
+    users: '<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
     logOut: '<path fill="currentColor" d="M13 11V3a1 1 0 0 0-2 0v8H9.41l2.3-2.29a1 1 0 1 0-1.42-1.42l-4 4a1 1 0 0 0 0 1.42l4 4a1 1 0 0 0 1.42-1.42L11.41 13H19a1 1 0 0 0 1-1 1 1 0 0 0-1-1h-6z"/>',
     flask: '<path d="M10 2v7.31L6 14v6c0 1.1.9 2 2 2h8a2 2 0 0 0 2-2v-6l-4-4.69V2" /><path d="M8.5 2h7" /><path d="M14 2v4" />',
     layers: '<polygon points="12 2 2 7 12 12 22 7 12 2" /><polyline points="2 17 12 22 22 17" /><polyline points="2 12 12 17 22 12" />',

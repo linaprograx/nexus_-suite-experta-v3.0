@@ -113,15 +113,15 @@ const BatcherTab: React.FC<BatcherTabProps> = ({
                             id="batch-recipe"
                             value={selectedRecipeId}
                             onChange={e => onRecipeChange(e.target.value)}
-                            className="h-14 text-lg bg-white/50 dark:bg-slate-800/50 rounded-xl border-slate-200 dark:border-slate-700 w-full"
+                            className="h-12 text-base bg-white/50 dark:bg-slate-800/50 rounded-xl border-slate-200 dark:border-slate-700 w-full"
                         >
                             <option value="">-- Elige un cóctel --</option>
                             {allRecipes.map(r => <option key={r.id} value={r.id}>{r.nombre}</option>)}
                         </Select>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
-                        <div className="space-y-3 w-full">
+                    <div className="grid grid-cols-1 gap-6 w-full">
+                        <div className="space-y-2 w-full">
                             <Label htmlFor="batch-qty" className="text-sm font-medium text-slate-700 dark:text-slate-300">Cantidad Objetivo</Label>
                             <Input
                                 id="batch-qty"
@@ -130,16 +130,16 @@ const BatcherTab: React.FC<BatcherTabProps> = ({
                                 onChange={e => onQuantityChange(e.target.value)}
                                 min="0.1"
                                 step="0.1"
-                                className="h-14 text-lg bg-white/50 dark:bg-slate-800/50 rounded-xl border-slate-200 dark:border-slate-700 w-full"
+                                className="h-12 text-base bg-white/50 dark:bg-slate-800/50 rounded-xl border-slate-200 dark:border-slate-700 w-full tabular-nums"
                             />
                         </div>
-                        <div className="space-y-3 w-full">
+                        <div className="space-y-2 w-full">
                             <Label htmlFor="batch-unit" className="text-sm font-medium text-slate-700 dark:text-slate-300">Unidad</Label>
                             <Select
                                 id="batch-unit"
                                 value={targetUnit}
                                 onChange={e => onUnitChange(e.target.value as any)}
-                                className="h-14 text-lg bg-white/50 dark:bg-slate-800/50 rounded-xl border-slate-200 dark:border-slate-700 w-full"
+                                className="h-12 text-base bg-white/50 dark:bg-slate-800/50 rounded-xl border-slate-200 dark:border-slate-700 w-full"
                             >
                                 <option value="Litros">Litros (L)</option>
                                 <option value="Botellas">Botellas (700ml)</option>

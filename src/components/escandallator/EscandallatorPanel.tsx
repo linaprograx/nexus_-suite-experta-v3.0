@@ -99,32 +99,32 @@ const EscandallatorPanel: React.FC<EscandallatorPanelProps> = (props) => {
 
 
     return (
-        <div className="h-full flex flex-col w-full max-w-full overflow-hidden bg-white dark:bg-slate-950">
+        <div className="h-full flex flex-col w-full max-w-full overflow-hidden bg-transparent">
             {/* Sub-navigation for Escandallator */}
-            <div className="flex items-center justify-center pt-6 pb-4 gap-4 flex-shrink-0 bg-white dark:bg-slate-950 sticky top-0 z-20 shadow-sm border-b border-slate-100 dark:border-slate-900/50">
+            <div className="flex items-center justify-center pt-6 pb-4 gap-4 flex-shrink-0 bg-white/80 dark:bg-slate-950/80 backdrop-blur-md sticky top-0 z-20 shadow-sm border-b border-rose-100 dark:border-rose-900/20">
                 <button
                     onClick={() => props.onSubTabChange('calculator')}
-                    className={`px-6 py-2 rounded-full text-sm font-bold transition-all ${props.activeSubTab === 'calculator' ? 'bg-rose-500 text-white shadow-md' : 'text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800'}`}
+                    className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all ${props.activeSubTab === 'calculator' ? 'bg-rose-500 text-white shadow-md ring-2 ring-rose-500/20' : 'text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800'}`}
                 >
-                    <div className="flex items-center gap-2">
-                        <Icon svg={ICONS.chart} className="w-4 h-4" />
+                    <div className="flex items-center gap-1.5">
+                        <Icon svg={ICONS.chart} className="w-3.5 h-3.5" />
                         <span>Rentabilidad</span>
                     </div>
                 </button>
                 <button
                     onClick={() => props.onSubTabChange('production')}
-                    className={`px-6 py-2 rounded-full text-sm font-bold transition-all ${props.activeSubTab === 'production' ? 'bg-amber-500 text-white shadow-md' : 'text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800'}`}
+                    className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all ${props.activeSubTab === 'production' ? 'bg-amber-500 text-white shadow-md ring-2 ring-amber-500/20' : 'text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800'}`}
                 >
-                    <div className="flex items-center gap-2">
-                        <Icon svg={ICONS.layers} className="w-4 h-4" />
-                        <span>Producción (Batcher)</span>
+                    <div className="flex items-center gap-1.5">
+                        <Icon svg={ICONS.layers} className="w-3.5 h-3.5" />
+                        <span>Producción</span>
                     </div>
                 </button>
             </div>
 
             {/* Central Scrolling Container */}
-            <div className="flex-1 overflow-y-auto custom-scrollbar p-4 md:p-6 lg:p-8">
-                <div className="mx-auto w-full max-w-7xl">
+            <div className="flex-1 overflow-y-auto custom-scrollbar p-4">
+                <div className="w-full space-y-6">
                     {props.activeSubTab === 'calculator' && (
                         <EscandalloTab
                             allRecipes={props.allRecipes}
