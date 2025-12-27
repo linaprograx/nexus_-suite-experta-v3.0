@@ -1,6 +1,6 @@
-export type SignalType = 'cost' | 'market';
+export type SignalType = 'cost' | 'market' | 'stock';
 export type SignalSeverity = 'info' | 'warning' | 'critical';
-export type SignalContext = 'recipe' | 'product';
+export type SignalContext = 'recipe' | 'product' | 'stock';
 
 export interface SignalMeta {
     theoreticalCost?: number | null;
@@ -14,6 +14,15 @@ export interface SignalMeta {
     supplierCount?: number;
     daysSinceLastUpdate?: number;
     [key: string]: any;
+}
+
+export interface StockSignalInput {
+    stockItem: {
+        ingredientId?: string;
+        averageUnitCost: number;
+        quantityAvailable: number;
+        lastPurchaseDate?: Date | string | number;
+    }
 }
 
 export interface Signal {

@@ -3,6 +3,7 @@ import { Ingredient, PurchaseEvent } from '../types';
 import { useApp } from '../context/AppContext';
 import { collection, addDoc, query, orderBy, onSnapshot, serverTimestamp } from 'firebase/firestore';
 
+
 export const usePurchaseIngredient = () => {
     const { db, userId } = useApp();
     const [isPurchaseModalOpen, setIsPurchaseModalOpen] = useState(false);

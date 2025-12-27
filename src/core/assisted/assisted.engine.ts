@@ -2,10 +2,12 @@
 import { AssistedEngineInput, AssistedInsight } from './assisted.types';
 import { evaluateMarketRules } from './assisted.rules.market';
 import { evaluateCostRules } from './assisted.rules.cost';
+import { evaluateStockAssistedRules } from './assisted.rules.stock';
 
 const RULES = [
     evaluateMarketRules,
-    evaluateCostRules
+    evaluateCostRules,
+    evaluateStockAssistedRules
 ];
 
 export const generateAssistedInsights = (input: AssistedEngineInput): AssistedInsight[] => {

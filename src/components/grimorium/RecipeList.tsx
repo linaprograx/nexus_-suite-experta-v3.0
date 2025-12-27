@@ -1,5 +1,6 @@
 import React from 'react';
-import { Recipe } from '../../types';
+import { Recipe, Ingredient } from '../../types';
+import { calculateRecipeCost } from '../../modules/costing/costCalculator';
 import { Card } from '../ui/Card';
 import { Button } from '../ui/Button';
 import { Icon } from '../ui/Icon';
@@ -35,6 +36,7 @@ interface RecipeListProps {
   onDeleteSelected: () => void;
   onImport: () => void;
   isLoading?: boolean;
+  allIngredients: Ingredient[]; // Add this
 }
 
 // Skeleton Component
@@ -64,17 +66,26 @@ const RecipeCard = React.memo(({
   isSelected,
   onSelect,
   onToggleSelection,
-  onDragStart
+  onDragStart,
+  allIngredients
 }: {
   recipe: Recipe,
   isViewing: boolean,
   isSelected: boolean,
   onSelect: (r: Recipe) => void,
   onToggleSelection: (id: string) => void,
-  onDragStart?: (e: React.DragEvent, recipe: Recipe) => void
+  onDragStart?: (e: React.DragEvent, recipe: Recipe) => void,
+  allIngredients: Ingredient[]
 }) => {
   const mainCategory = recipe.categorias?.[0] || 'General';
   const isDone = recipe.categorias?.includes('Carta') || recipe.categorias?.includes('Terminado');
+
+  // Calculate cost dynamically to ensure consistency with Detail Panel
+  const costData = React.useMemo(() => {
+    return calculateRecipeCost(recipe, allIngredients);
+  }, [recipe, allIngredients]);
+
+  const displayCost = costData?.costoTotal || recipe.costoTotal || recipe.costoReceta || 0;
 
   return (
     <div className="w-full relative group">
@@ -150,7 +161,7 @@ const RecipeCard = React.memo(({
           <div className="flex flex-col">
             <span className={cn("text-[10px] uppercase tracking-wider", isViewing ? "text-indigo-200" : "text-slate-400")}>Costo</span>
             <span className={cn("font-bold font-mono", isViewing ? "text-white" : "text-slate-700 dark:text-slate-300")}>
-              €{(recipe.costoTotal || recipe.costoReceta || 0).toFixed(2)}
+              €{displayCost.toFixed(2)}
             </span>
           </div>
           <div className="flex flex-col text-right">
@@ -185,7 +196,8 @@ export const RecipeList: React.FC<RecipeListProps> = ({
   onSelectAll,
   onDeleteSelected,
   onImport,
-  isLoading = false
+  isLoading = false,
+  allIngredients // Destructure
 }) => {
   const { compactMode } = useUI();
 
@@ -314,6 +326,7 @@ export const RecipeList: React.FC<RecipeListProps> = ({
                 onSelect={onSelectRecipe}
                 onToggleSelection={onToggleSelection}
                 onDragStart={onDragStart}
+                allIngredients={allIngredients} // Pass it down
               />
             ))}
           </div>

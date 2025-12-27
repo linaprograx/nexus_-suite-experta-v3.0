@@ -6,8 +6,8 @@ export const evaluateStockActiveRules = (insights: AssistedInsight[]): ActiveSug
     const suggestions: ActiveSuggestion[] = [];
 
     // Rule 1: Resolve Stock Links
-    // Trigger: INSIGHT_DATA_QUALITY
-    const qualityInsight = insights.find(i => i.id === 'INSIGHT_DATA_QUALITY');
+    // Trigger: STOCK_UNLINKED_ITEMS
+    const qualityInsight = insights.find(i => i.id === 'STOCK_UNLINKED_ITEMS');
 
     if (qualityInsight) {
         suggestions.push({

@@ -1,13 +1,15 @@
 import React from 'react';
 import { ICONS } from '../ui/icons';
 import { Icon } from '../ui/Icon';
+import { ActiveSuggestion } from '../../core/active/active.types';
 import { useApp, useCapabilities } from '../../context/AppContext';
 
 interface StockSidebarProps {
     onAction?: (action: 'new_product' | 'providers' | 'movements') => void;
+    activeSuggestions?: ActiveSuggestion[];
 }
 
-const StockSidebar: React.FC<StockSidebarProps> = ({ onAction }) => {
+const StockSidebar: React.FC<StockSidebarProps> = ({ onAction, activeSuggestions = [] }) => {
     const { hasLayer } = useCapabilities();
     const canAssist = hasLayer('assisted_intelligence');
 
@@ -16,12 +18,28 @@ const StockSidebar: React.FC<StockSidebarProps> = ({ onAction }) => {
             <div className="p-6 space-y-8 overflow-y-auto custom-scrollbar w-full max-w-[95%] mx-auto">
                 <div>
                     <h4 className="text-xs font-bold text-slate-500/80 uppercase tracking-wider mb-3 drop-shadow-sm">Acciones Rápidas</h4>
-                    <div className="space-y-4">
-                        <div className="p-4 bg-slate-100 dark:bg-slate-800/50 rounded-xl text-center border-2 border-dashed border-slate-200 dark:border-slate-700">
-                            <p className="text-sm text-slate-400">Stock activo</p>
-                            <p className="text-[10px] text-slate-400 mt-1">Gestión Operativa</p>
+
+                    {activeSuggestions && activeSuggestions.length > 0 ? (
+                        <div className="space-y-4">
+                            {activeSuggestions.map(suggestion => (
+                                <div key={suggestion.id} className="p-4 bg-indigo-50 dark:bg-indigo-900/20 rounded-xl border border-indigo-100 dark:border-indigo-800 shadow-sm relative overflow-hidden group hover:border-indigo-300 transition-colors cursor-pointer">
+                                    <div className="absolute top-0 right-0 p-2 opacity-50"><Icon svg={ICONS.sparkles} className="w-4 h-4 text-indigo-400" /></div>
+                                    <h5 className="text-sm font-bold text-indigo-700 dark:text-indigo-300 mb-1">{suggestion.title}</h5>
+                                    <p className="text-xs text-indigo-600/80 dark:text-indigo-400/80 leading-relaxed mb-3">{suggestion.proposal}</p>
+                                    <button className="w-full py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-medium rounded-lg transition-colors shadow-sm">
+                                        {suggestion.actions.primary}
+                                    </button>
+                                </div>
+                            ))}
                         </div>
-                    </div>
+                    ) : (
+                        <div className="space-y-4">
+                            <div className="p-4 bg-slate-100 dark:bg-slate-800/50 rounded-xl text-center border-2 border-dashed border-slate-200 dark:border-slate-700">
+                                <p className="text-sm text-slate-400">Stock activo</p>
+                                <p className="text-[10px] text-slate-400 mt-1">Gestión Operativa</p>
+                            </div>
+                        </div>
+                    )}
                 </div>
 
                 {canAssist && (

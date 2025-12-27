@@ -1,13 +1,12 @@
 import React, { useMemo } from 'react';
-import { Recipe, Ingredient } from '../../types';
+import { Recipe, Ingredient, PurchaseEvent } from '../../types';
 import { ICONS } from '../ui/icons';
 import { Icon } from '../ui/Icon';
 import { calculateInventoryMetrics, StockItem } from '../../utils/stockUtils';
-import { PurchaseEvent } from '../../hooks/usePurchaseIngredient';
-import { useCapabilities } from '../../context/AppContext';
-import { evaluateMarketSignals } from '../../core/signals/signal.engine';
-import { generateAssistedInsights } from '../../core/assisted/assisted.engine';
+// removed old import lines
 import { AssistedInsightsInline } from '../common/AssistedInsightsInline';
+
+import { AssistedInsight } from '../../core/assisted/assisted.types';
 
 interface StockManagerTabProps {
     allRecipes: Recipe[];
@@ -15,6 +14,9 @@ interface StockManagerTabProps {
     setShoppingList: (list: any[]) => void;
     stockItems: StockItem[];
     purchases: PurchaseEvent[];
+    assistedInsights: AssistedInsight[];
+    onStockItemSelect?: (item: StockItem) => void;
+    selectedItemId?: string; // New prop for highlighting
 }
 
 const StockManagerTab: React.FC<StockManagerTabProps> = ({
@@ -22,62 +24,15 @@ const StockManagerTab: React.FC<StockManagerTabProps> = ({
     allIngredients,
     setShoppingList,
     stockItems,
-    purchases
+    purchases,
+    assistedInsights,
+    onStockItemSelect,
+    selectedItemId
 }) => {
-    const { hasLayer } = useCapabilities();
-
-    // Derive Metrics (local to tab, or could be lifted too, but fast enough here)
+    // Derive Metrics (local to tab, fast enough)
     const metrics = useMemo(() => {
         return calculateInventoryMetrics(stockItems);
     }, [stockItems]);
-
-    // --- PHASE 5.2: STOCK INTELLIGENCE ---
-    const stockSignals = useMemo(() => {
-        if (!hasLayer('assisted_intelligence')) return [];
-
-        // 1. Map Stock Items to Market Data
-        // We evaluate market signals BUT filtered for items we actually have in stock
-        // This gives us "Operational Reality" - only telling us about things we own.
-
-        let signals: any[] = [];
-
-        stockItems.forEach(item => {
-            const marketItem = allIngredients.find(i => i.id === item.ingredientId);
-            if (!marketItem) return;
-
-            // Reuse Market Engine for Price Analysis
-            // Note: In a real implementation, we'd have a specific evaluateStockSignals
-            // For now, we reuse market signals to detect price changes on owned items
-            const marketSignals = evaluateMarketSignals({
-                product: {
-                    id: marketItem.id,
-                    name: marketItem.nombre,
-                    category: marketItem.categoria,
-                    supplierData: {}, // We don't have deep supplier data here yet, so passive checks only
-                    referencePrice: item.averageUnitCost, // Compare OUR cost vs Market
-                    referenceSupplierId: null,
-                    unitBase: item.unit
-                }
-            });
-
-            signals = [...signals, ...marketSignals];
-        });
-
-        return signals;
-    }, [stockItems, allIngredients, hasLayer]);
-
-    const assistedInsights = useMemo(() => {
-        if (!hasLayer('assisted_intelligence')) return [];
-
-        return generateAssistedInsights({
-            signals: stockSignals,
-            contextHints: [],
-            domain: {
-                market: { ingredients: allIngredients, selectedIngredient: null },
-                recipes: []
-            }
-        });
-    }, [stockSignals, allIngredients, hasLayer]);
 
     return (
         <div className="h-full flex flex-col w-full max-w-full p-4 overflow-hidden">
@@ -93,7 +48,7 @@ const StockManagerTab: React.FC<StockManagerTabProps> = ({
             <div className="mb-6 grid grid-cols-2 gap-4">
                 <div className="bg-white/40 dark:bg-slate-900/40 backdrop-blur-xl rounded-2xl p-4 border border-white/10 dark:border-white/5 shadow-premium flex items-center gap-4">
                     <div className="p-3 bg-emerald-100 dark:bg-emerald-900/30 rounded-xl text-emerald-600">
-                        <Icon svg={ICONS.dollar} className="w-6 h-6" />
+                        <Icon svg={ICONS.dollarSign} className="w-6 h-6" />
                     </div>
                     <div>
                         <p className="text-xs text-slate-500 uppercase tracking-wider font-bold">Valor Inventario</p>
@@ -117,7 +72,7 @@ const StockManagerTab: React.FC<StockManagerTabProps> = ({
                 {stockItems.length === 0 ? (
                     <div className="flex flex-col items-center justify-center h-64 text-center opacity-60">
                         <div className="p-4 bg-slate-100 dark:bg-slate-800 rounded-full mb-4">
-                            <Icon svg={ICONS.archive} className="w-8 h-8 text-slate-400" />
+                            <Icon svg={ICONS.box} className="w-8 h-8 text-slate-400" />
                         </div>
                         <h3 className="text-lg font-medium text-slate-700 dark:text-slate-300">Inventario Vacío</h3>
                         <p className="text-sm text-slate-500">Registra compras en la sección de Ingredientes para llenar tu stock.</p>
@@ -125,7 +80,20 @@ const StockManagerTab: React.FC<StockManagerTabProps> = ({
                 ) : (
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-4">
                         {stockItems.map((item) => (
-                            <div key={item.ingredientId} className="group bg-white/60 dark:bg-slate-900/60 backdrop-blur-md rounded-2xl border border-white/20 dark:border-white/5 hover:border-emerald-500/30 transition-all p-4 shadow-sm hover:shadow-md flex flex-col justify-between">
+                            <div
+                                key={item.ingredientId}
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    if (onStockItemSelect) {
+                                        onStockItemSelect(item);
+                                    }
+                                }}
+                                className={`group relative z-10 pointer-events-auto backdrop-blur-md rounded-2xl border transition-all p-4 shadow-sm hover:shadow-md flex flex-col justify-between cursor-pointer hover:scale-[1.02] active:scale-[0.98]
+                                    ${selectedItemId === item.ingredientId
+                                        ? 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-500 ring-2 ring-emerald-500/20'
+                                        : 'bg-white/60 dark:bg-slate-900/60 border-white/20 dark:border-white/5 hover:border-emerald-500/30'}
+                                `}
+                            >
                                 <div>
                                     <div className="flex justify-between items-start mb-2">
                                         <h4 className="font-bold text-slate-800 dark:text-slate-100 line-clamp-2 leading-tight">{item.ingredientName}</h4>

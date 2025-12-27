@@ -12,7 +12,7 @@ export interface StockItem {
     quantityAvailable: number;
     totalValue: number;
     averageUnitCost: number; // Weighted Average Cost
-    lastPurchaseDate: Date;
+    lastPurchaseDate: Date | string | number;
     providerName: string; // Most recent provider
     lastPurchaseQuantity: number;
 }
@@ -28,7 +28,7 @@ export interface PurchaseEvent {
     unitPrice: number;
     totalCost: number;
     createdAt: Date;
-    status: 'pending' | 'completed';
+    status: 'pending' | 'completed' | 'cancelled';
 }
 
 // ------------------------------------------

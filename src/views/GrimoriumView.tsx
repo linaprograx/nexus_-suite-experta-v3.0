@@ -42,6 +42,8 @@ import { Spinner } from '../components/ui/Spinner';
 import { usePurchaseIngredient } from '../hooks/usePurchaseIngredient';
 
 import { buildStockFromPurchases } from '../utils/stockUtils';
+import { calculateEscandallo } from '../core/finance/cost.engine';
+
 
 
 // Escandallator Imports
@@ -51,6 +53,7 @@ import EscandalloSummaryCard from '../components/escandallator/EscandalloSummary
 import { StockInventoryPanel } from '../components/escandallator/StockInventoryPanel';
 import { StockOrdersPanel } from '../components/escandallator/StockOrdersPanel';
 import { StockRulesPanel } from '../components/escandallator/StockRulesPanel';
+import { StockItemDetailPanel } from '../components/escandallator/StockItemDetailPanel';
 
 // Zero Waste Imports
 import ZeroWasteResultCard from '../components/zero-waste/ZeroWasteResultCard';
@@ -130,6 +133,7 @@ const GrimoriumInner: React.FC<GrimoriumViewProps> = ({ onOpenRecipeModal, onDra
     const [ingredientFilters, setIngredientFilters] = React.useState({ category: 'all', status: 'all' });
     const [selectedIngredients, setSelectedIngredients] = React.useState<string[]>([]);
     const [selectedIngredientId, setSelectedIngredientId] = React.useState<string | null>(null);
+    const [selectedStockItemId, setSelectedStockItemId] = React.useState<string | null>(null); // New state for Stock Selection
 
     // --- Sync Selection with Context ---
     React.useEffect(() => {
@@ -526,43 +530,9 @@ const GrimoriumInner: React.FC<GrimoriumViewProps> = ({ onOpenRecipeModal, onDra
     const handleDuplicateRecipe = hookDuplicateRecipe;
 
     // --- Escandallator Logic ---
+    // --- Escandallator Logic ---
     const escandalloData = React.useMemo(() => {
-        if (!selectedEscandalloRecipe || precioVenta <= 0) return null;
-        const IVA_RATE = 0.21;
-        const costo = selectedEscandalloRecipe.costoReceta || 0;
-        const baseImponible = precioVenta / (1 + IVA_RATE);
-        const ivaSoportado = precioVenta - baseImponible;
-        const margenBruto = baseImponible - costo;
-        const rentabilidad = baseImponible > 0 ? (margenBruto / baseImponible) * 100 : 0;
-
-        // Phase 2.1.A - Real Cost Calculation
-        let realCostTotal = 0;
-        let missingIngredientsCount = 0;
-
-        if (selectedEscandalloRecipe.ingredientes) {
-            selectedEscandalloRecipe.ingredientes.forEach((recipeIng: any) => {
-                // Find stock ingredient
-                // Find stock ingredient
-                const stockIng = allIngredients.find(i => i.id === recipeIng.id || i.nombre === recipeIng.nombre) as any;
-                // Use averagePrice or lastPrice. If 0 or undefined, it's missing data.
-                const price = stockIng?.averagePrice || stockIng?.lastPrice || 0;
-
-                if (price > 0) {
-                    realCostTotal += (recipeIng.cantidad || 0) * price;
-                } else {
-                    missingIngredientsCount++;
-                }
-            });
-        }
-        // If we have no stock data for ANY ingredient, realCost might be 0, but technically it's "unknown" if ingredients exist.
-        // Let's set realCost to null if we have missing ingredients and total is 0 to distinguish "free" from "unknown".
-        const realCostFinal = (realCostTotal === 0 && missingIngredientsCount > 0) ? null : realCostTotal;
-
-        return {
-            report: { costo, precioVenta, baseImponible, ivaSoportado, margenBruto, rentabilidad },
-            pie: [{ name: 'Costo', value: costo }, { name: 'Margen', value: margenBruto }, { name: 'IVA', value: ivaSoportado }],
-            signals: { realCost: realCostFinal, missingCount: missingIngredientsCount }
-        };
+        return calculateEscandallo(selectedEscandalloRecipe, precioVenta, allIngredients);
     }, [selectedEscandalloRecipe, precioVenta, allIngredients]);
 
     const handleSaveToHistory = async (reportData: any) => {
@@ -930,6 +900,7 @@ const GrimoriumInner: React.FC<GrimoriumViewProps> = ({ onOpenRecipeModal, onDra
                                 onSelectAll={handleSelectAllRecipes}
                                 onDeleteSelected={handleDeleteSelectedRecipes}
                                 onImport={() => setShowImportChoiceModal(true)}
+                                allIngredients={allIngredients}
                             />
                         )}
 
@@ -963,13 +934,7 @@ const GrimoriumInner: React.FC<GrimoriumViewProps> = ({ onOpenRecipeModal, onDra
                                 purchases={purchaseHistory}
                                 allIngredients={allIngredients}
                                 onSelectIngredient={(ingredientId) => {
-                                    const stockItem = calculatedStockItems.find(i => i.ingredientId === ingredientId);
-                                    const ingredient = allIngredients.find(i => i.id === ingredientId);
-                                    if (ingredient) {
-                                        const enrichedIngredient = { ...ingredient, stockActual: stockItem ? stockItem.quantityAvailable : 0, cantidadComprada: stockItem ? stockItem.lastPurchaseQuantity || 0 : 0 };
-                                        setEditingIngredient(enrichedIngredient);
-                                        setShowIngredientModal(true);
-                                    }
+                                    setSelectedStockItemId(ingredientId);
                                 }}
                             />
                         )}
@@ -1017,21 +982,45 @@ const GrimoriumInner: React.FC<GrimoriumViewProps> = ({ onOpenRecipeModal, onDra
 
                             {/* STOCK DETAIL */}
                             {viewMode === 'stock' && (
-                                <StockOrdersPanel
-                                    purchases={purchaseHistory}
-                                    orders={orders}
-                                    onCreateOrder={() => {
-                                        setEditingOrder(null);
-                                        setIsReplenishModalOpen(true);
-                                    }}
-                                    onLaunchOrder={handleLaunchOrder}
-                                    onDeleteOrder={deleteOrder}
-                                    onDeleteHistoryItem={handleDeletePurchase}
-                                    onEditOrder={(order) => {
-                                        setEditingOrder(order);
-                                        setIsReplenishModalOpen(true);
-                                    }}
-                                />
+                                selectedStockItemId ? (
+                                    (() => {
+                                        const selectedStockItem = calculatedStockItems.find(i => i.ingredientId === selectedStockItemId);
+                                        if (!selectedStockItem) return null;
+                                        return (
+                                            <div className="h-full bg-white/30 dark:bg-slate-900/30 backdrop-blur-xl rounded-2xl border border-emerald-500/20 shadow-premium overflow-hidden">
+                                                <StockItemDetailPanel
+                                                    stockItem={selectedStockItem}
+                                                    onEdit={() => {
+                                                        const ingredient = allIngredients.find(i => i.id === selectedStockItem.ingredientId);
+                                                        if (ingredient) {
+                                                            const enriched = { ...ingredient, stockActual: selectedStockItem.quantityAvailable, cantidadComprada: selectedStockItem.lastPurchaseQuantity };
+                                                            setEditingIngredient(enriched);
+                                                            setShowIngredientModal(true);
+                                                        }
+                                                    }}
+                                                    onDelete={() => { /* Logic to delete/zero stock? */ }}
+                                                    onClose={() => setSelectedStockItemId(null)}
+                                                />
+                                            </div>
+                                        );
+                                    })()
+                                ) : (
+                                    <StockOrdersPanel
+                                        purchases={purchaseHistory}
+                                        orders={orders}
+                                        onCreateOrder={() => {
+                                            setEditingOrder(null);
+                                            setIsReplenishModalOpen(true);
+                                        }}
+                                        onLaunchOrder={handleLaunchOrder}
+                                        onDeleteOrder={deleteOrder}
+                                        onDeleteHistoryItem={handleDeletePurchase}
+                                        onEditOrder={(order) => {
+                                            setEditingOrder(order);
+                                            setIsReplenishModalOpen(true);
+                                        }}
+                                    />
+                                )
                             )}
 
                             {/* Empty States */}
