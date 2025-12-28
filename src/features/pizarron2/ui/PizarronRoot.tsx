@@ -8,6 +8,7 @@ import { LeftRail } from './overlays/LeftRail';
 import { Inspector } from './overlays/Inspector';
 import { TextEditor } from './overlays/TextEditor';
 import { PresentationMode } from './presentation/PresentationMode';
+import { usePizarronIntelligence } from '../hooks/usePizarronIntelligence'; // Added import
 
 import { MiniToolbar } from './overlays/MiniToolbar';
 import { GuideOverlay } from './overlays/GuideOverlay';
@@ -25,10 +26,24 @@ interface PizarronRootProps {
 }
 
 export const PizarronRoot: React.FC<PizarronRootProps> = ({ appId, boardId, userId, db }) => {
-    const [isPresenting, setIsPresenting] = React.useState(false);
-    const [editingImageId, setEditingImageId] = React.useState<string | undefined>(undefined);
-    const [showLibrary, setShowLibrary] = React.useState(false);
-    const [showProjectManager, setShowProjectManager] = React.useState(false);
+    // Phase 6.3: Reactivity for Intelligence
+    // Fix: Use granular selector to avoid re-rendering on viewport changes
+    const nodes = pizarronStore.useSelector(s => s.nodes);
+
+    // Calculate Intelligence Hints (Read-Only)
+    const planningHints = usePizarronIntelligence(nodes);
+
+    // Sync Hints to Store (for Renderer)
+    React.useEffect(() => {
+        // Robustness: Use Deep Equality Check (JSON Stringify) to avoid infinite loops
+        // if refs are unstable (e.g. from context hooks).
+        const currentHints = pizarronStore.getState().interactionState.planningHints;
+
+        // Only update if CONTENT has changed
+        if (JSON.stringify(currentHints) !== JSON.stringify(planningHints)) {
+            pizarronStore.updateInteractionState({ planningHints });
+        }
+    }, [planningHints]);
 
     // Initialize Sync Adapter
     React.useEffect(() => {
@@ -41,16 +56,16 @@ export const PizarronRoot: React.FC<PizarronRootProps> = ({ appId, boardId, user
         }
     }, [appId, boardId]);
 
-    // Subscribe to Store
-    React.useEffect(() => {
-        return pizarronStore.subscribe(() => {
-            const state = pizarronStore.getState();
-            setIsPresenting(state.presentationState.isActive);
-            setEditingImageId(state.interactionState.editingImageId);
-            setShowLibrary(!!state.uiFlags.showLibrary);
-            setShowProjectManager(!!state.uiFlags.showProjectManager);
-        });
-    }, []);
+    // Optimize: Subscribe ONLY to UI flags relevant for overlays
+    const uiFlags = pizarronStore.useSelector(s => s.uiFlags);
+    const interaction = pizarronStore.useSelector(s => s.interactionState);
+    const presentation = pizarronStore.useSelector(s => s.presentationState);
+
+    const isPresenting = presentation.isActive;
+    const showLibrary = !!uiFlags.showLibrary;
+    const showProjectManager = !!uiFlags.showProjectManager;
+    // editingImageId is tracked in store, but seemingly not used forconditional rendering here.
+
 
     // Global Keybinds
     React.useEffect(() => {

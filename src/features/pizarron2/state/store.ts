@@ -57,6 +57,14 @@ class PizarronStore {
         );
     }
 
+    // Optimization: Granular Selector Hook
+    useSelector<T>(selector: (state: BoardState) => T): T {
+        return useSyncExternalStore(
+            this.subscribe.bind(this),
+            () => selector(this.state)
+        );
+    }
+
     // --- History (Undo/Redo) ---
     private history: string[] = [];
     private historyIndex = -1;
@@ -121,19 +129,9 @@ class PizarronStore {
 
     /**
      * Updates state and notifies subscribers efficiently.
+     * @param silent If true, does NOT notify subscribers (React won't re-render). Use for high-frequency RAF updates.
      */
-    setState(updater: (draft: BoardState) => void, saveHistory = false) {
-        // If saveHistory is true, push BEFORE changing? No, usually AFTER changing is "New State".
-        // But for undo, we need the *previous* state? 
-        // Standard pattern: 
-        // 1. If this is a new action, push CURRENT state (before change) if we imply "Unknown Previous"? 
-        //    Actually simpler: The history stack contains ALL states including proper current.
-        //    So index points to "Current Displayed State".
-
-        // Let's refine:
-        // When we start, we push Initial State.
-        // When we change, we push New State.
-
+    setState(updater: (draft: BoardState) => void, saveHistory = false, silent = false) {
         // If this is the FIRST time setup, ensure we have initial history
         if (this.history.length === 0) {
             this.history.push(JSON.stringify({ nodes: this.state.nodes, order: this.state.order }));
@@ -146,9 +144,14 @@ class PizarronStore {
             this.pushHistory();
         }
 
-        this.state = { ...this.state }; // Force reference change for useSyncExternalStore
-        this.itemCount = Object.keys(this.state.nodes).length; // Cache simple metric
-        this.notify();
+        // We still create a new reference for the state object to ensure selectors that *do* run later pick it up
+        // But if silent is true, we don't notify.
+        this.state = { ...this.state };
+        this.itemCount = Object.keys(this.state.nodes).length;
+
+        if (!silent) {
+            this.notify();
+        }
     }
 
     subscribe(listener: Listener): () => void {
@@ -162,7 +165,7 @@ class PizarronStore {
 
     // --- Actions ---
 
-    updateViewport(viewport: Partial<Viewport>, animate: boolean = false) {
+    updateViewport(viewport: Partial<Viewport>, animate: boolean = false, silent: boolean = false) {
         this.setState(state => {
             if (animate) {
                 // If animate is true, we set the TARGET.
@@ -175,7 +178,7 @@ class PizarronStore {
                 state.interactionState.targetViewport = undefined; // Kill target to stop potential fight
                 Object.assign(state.viewport, viewport);
             }
-        });
+        }, false, silent);
     }
 
     // Helper for explicit animation calls
@@ -375,19 +378,19 @@ class PizarronStore {
 
     setActiveTool(tool: BoardState['uiFlags']['activeTool']) {
         this.setState(state => {
-            state.uiFlags.activeTool = tool;
+            state.uiFlags = { ...state.uiFlags, activeTool: tool };
         });
     }
 
     setActiveShapeType(type: any) {
         this.setState(state => {
-            state.uiFlags.activeShapeType = type;
+            state.uiFlags = { ...state.uiFlags, activeShapeType: type };
         });
     }
 
     setUIFlag(key: keyof BoardState['uiFlags'], value: any) {
         this.setState(state => {
-            (state.uiFlags as any)[key] = value;
+            state.uiFlags = { ...state.uiFlags, [key]: value };
         });
     }
 

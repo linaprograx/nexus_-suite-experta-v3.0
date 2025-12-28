@@ -27,15 +27,9 @@ const TOOLS = [
 ] as const;
 
 export const LeftRail: React.FC = () => {
-    const [activeTool, setActiveTool] = useState('pointer');
-
-    useEffect(() => {
-        const unsub = pizarronStore.subscribe(() => {
-            const state = pizarronStore.getState();
-            setActiveTool(state.uiFlags.activeTool);
-        });
-        return unsub;
-    }, []);
+    const activeTool = pizarronStore.useSelector(s => s.uiFlags.activeTool);
+    const showLibrary = pizarronStore.useSelector(s => s.uiFlags.showLibrary);
+    const showProjectManager = pizarronStore.useSelector(s => s.uiFlags.showProjectManager);
 
     const handleTool = (tool: any) => {
         // Presentation Action
@@ -106,7 +100,9 @@ export const LeftRail: React.FC = () => {
                         return <div key={`sep-${i}`} className="h-px w-6 bg-slate-200 mx-auto my-1" />;
                     }
 
-                    const isActive = activeTool === tool.id;
+                    let isActive = activeTool === tool.id;
+                    if (tool.id === 'library') isActive = !!showLibrary;
+                    if (tool.id === 'project') isActive = !!showProjectManager;
 
                     return (
                         <button

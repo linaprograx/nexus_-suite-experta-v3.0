@@ -67,10 +67,10 @@ export const CanvasStage: React.FC = () => {
                 // Zoom-dependent snap threshold (pixels)
                 if (dx < 0.5 && dy < 0.5 && dz < 0.001) {
                     // Snap & Stop
-                    pizarronStore.updateViewport(target, false);
+                    pizarronStore.updateViewport(target, false, true);
                 } else {
                     // Update Frame
-                    pizarronStore.updateViewport(newViewport, false);
+                    pizarronStore.updateViewport(newViewport, false, true);
                 }
             }
 

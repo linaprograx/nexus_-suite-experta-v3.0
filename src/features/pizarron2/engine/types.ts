@@ -301,7 +301,8 @@ export interface InteractionState {
     focusTargetId?: string | null;
 
     // Choreography
-    // targetViewport?: Viewport; // Removed duplicate
+    // Phase 6.3: Planning Intelligence (Read-Only)
+    planningHints?: Record<string, { type: 'cost' | 'market' | 'stock'; severity: 'critical' | 'warning' | 'info'; message: string; icon: string; }[]>;
 }
 
 export interface GuideLine {

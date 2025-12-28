@@ -68,6 +68,28 @@ export class PizarronRenderer {
             // 1. Collapse Check
             if (node.collapsed) continue;
 
+            // 1b. Focus Mode Exclusion (Fix Flicker)
+            // If we are in Focus Mode, the Focused Element and its content are drawn in the Overlay pass.
+            // We must SKIP them here to avoid double-draw (Z-Fighting / Alpha Flicker).
+            if (interactionState.focusTargetId) {
+                // 1. Skip the Focus Target itself
+                if (node.id === interactionState.focusTargetId) continue;
+
+                const fNode = nodes[interactionState.focusTargetId];
+                if (fNode) {
+                    // 2. Skip Strict Children
+                    if (node.parentId === fNode.id) continue;
+
+                    // 3. Skip Spatially Contained (Visual Children) - Must match overlay logic
+                    if (node.x >= fNode.x &&
+                        node.y >= fNode.y &&
+                        node.x + node.w <= fNode.x + fNode.w &&
+                        node.y + node.h <= fNode.y + fNode.h) {
+                        continue;
+                    }
+                }
+            }
+
             // 2. Culling Check
             if (node.x > visibleRect.x + visibleRect.w ||
                 node.x + node.w < visibleRect.x ||
