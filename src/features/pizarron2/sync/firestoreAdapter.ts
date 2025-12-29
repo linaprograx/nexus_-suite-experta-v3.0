@@ -6,7 +6,10 @@ import { BoardNode, PizarraMetadata } from '../engine/types';
 class FirestoreAdapter {
     private unsubscribeSnapshot: (() => void) | null = null;
     private unsubscribeStore: (() => void) | null = null;
-    private lastKnownState: Record<string, number> = {}; // id -> updatedAt
+    // Enhanced State Tracking: ID -> { updatedAt, boardId }
+    // This prevents "Ghost Deletions" where the adapter deletes nodes from Board A 
+    // while managing Board B because of residual state or async race conditions.
+    private lastKnownState: Record<string, { updatedAt: number; boardId: string }> = {};
     private pendingWrites: Map<string, BoardNode> = new Map();
     private pendingDeletes: Set<string> = new Set();
     private writeTimeout: NodeJS.Timeout | null = null;
@@ -16,6 +19,20 @@ class FirestoreAdapter {
 
     init(appId: string, boardId: string = 'general') {
         this.stop(); // Cleanup previous if any
+
+        // CRITICAL DEFENSE: Force clean slate. 
+        // Even if stop() does it, we double-tap here to prevent ANY memory leak of previous board nodes.
+        this.lastKnownState = {};
+        this.pendingWrites.clear();
+        this.pendingDeletes.clear();
+        this.currentAppId = null;
+        this.currentBoardId = null;
+
+        if (!appId || !boardId) {
+            console.warn("Cannot init Sync without AppID and BoardID");
+            return;
+        }
+
         this.currentAppId = appId;
         this.currentBoardId = boardId;
 
@@ -25,10 +42,11 @@ class FirestoreAdapter {
 
 
         const colRef = collection(db, `artifacts/${appId}/public/data/pizarron-tasks`);
+        // STRICT FILTERING: Only listen to the current board!
+        const q = query(colRef, where('boardId', '==', boardId));
 
         // 1. Inbound (Remote -> Local)
-        // ... (existing code) ...
-        this.unsubscribeSnapshot = onSnapshot(colRef, (snapshot) => {
+        this.unsubscribeSnapshot = onSnapshot(q, (snapshot) => {
             // ...
             this.isApplyingRemote = true;
             snapshot.docChanges().forEach((change) => {
@@ -38,9 +56,11 @@ class FirestoreAdapter {
 
                 if (change.type === 'removed') {
                     pizarronStore.deleteNode(id);
+                    delete this.lastKnownState[id]; // Cleanup local state
                     return;
                 }
-                // ... rest of node sync ...
+
+                // Extra Safety: Ignore if not this board (logic redundancy, but safe)
                 if (data.boardId && data.boardId !== boardId) return;
 
                 const remoteNode: BoardNode = {
@@ -64,11 +84,16 @@ class FirestoreAdapter {
                     structure: data.structure,
                     childrenIds: data.childrenIds // Sync Children
                 };
-                // ...
+
+                // Track state with BoardID
+                this.lastKnownState[id] = {
+                    updatedAt: remoteNode.updatedAt,
+                    boardId: boardId // Tag it!
+                };
+
                 const localNode = pizarronStore.getState().nodes[id];
                 if (!localNode || remoteNode.updatedAt > localNode.updatedAt) {
                     pizarronStore.addNode(remoteNode);
-                    this.lastKnownState[id] = remoteNode.updatedAt;
                 }
             });
             this.isApplyingRemote = false;
@@ -84,13 +109,38 @@ class FirestoreAdapter {
             // Sync Nodes
             Object.values(nodes).forEach(node => {
                 const lastKnown = this.lastKnownState[node.id];
-                if (!lastKnown || node.updatedAt > lastKnown) {
+                // Check timestamp AND ensure we are not overwriting a ghost
+                if (!lastKnown || node.updatedAt > lastKnown.updatedAt) {
                     this.pendingWrites.set(node.id, node);
-                    this.lastKnownState[node.id] = node.updatedAt;
+                    // Update state immediately to avoid loop
+                    this.lastKnownState[node.id] = {
+                        updatedAt: node.updatedAt,
+                        boardId: boardId
+                    };
                 }
             });
-            // ... deletes ...
+
+            // SAFETY BREAKER: Mass Deletion Protection
+            // If the store is empty (user wiped it locally) but we 'remember' significantly more nodes, 
+            // it implies a race condition where we haven't disconnected from the old board yet.
+            // In this case, we ABORT the sync to save data.
+            const localNodeCount = Object.keys(nodes).length;
+            const memoryNodeCount = Object.keys(this.lastKnownState).length;
+
+            if (localNodeCount === 0 && memoryNodeCount > 5) {
+                console.warn(`[FirestoreAdapter] SAFETY BREAKER ACTIVATED: Attempted to wipe ${memoryNodeCount} nodes. Aborting sync to protect data.`);
+                return;
+            }
+
+            // Detect Deletions
             Object.keys(this.lastKnownState).forEach(id => {
+                // SAFETY CHECK: Only delete if the node belongs to THIS board
+                // If lastKnownState has a node from Board A, and we are in Board B,
+                // and it's missing from store (obviously), DO NOT DELETE IT.
+                if (this.lastKnownState[id].boardId !== this.currentBoardId) {
+                    return;
+                }
+
                 if (!nodes[id]) {
                     this.pendingDeletes.add(id);
                     delete this.lastKnownState[id];
@@ -99,12 +149,8 @@ class FirestoreAdapter {
 
             this.scheduleFlush(appId, boardId);
 
-            // Sync Templates (Simple One-way/Upsert for now)
-            // Ideally we'd map "pendingTemplateWrites" but direct is safer for now
+            // Sync Templates
             state.savedTemplates?.forEach(t => {
-                // If it's a new template (we could track lastSavedTemplates to compare)
-                // For now, we trust the UI calls persistTemplate? 
-                // NO, we want automatic sync.
                 // But blindly writing every subscription is bad.
                 // Let's assume for this sprint: The UI calls `adapter.persistTemplate` manually?
                 // Or we check a `dirty` flag?
@@ -139,6 +185,14 @@ class FirestoreAdapter {
 
         this.currentAppId = null;
         this.currentBoardId = null;
+
+        // CRITICAL FIX: Reset state tracking to prevent "ghost deletions"
+        // When switching boards, we must forget the previous board's nodes
+        // so we don't think they were deleted just because they aren't in the new board.
+        this.lastKnownState = {};
+        this.pendingWrites.clear();
+        this.pendingDeletes.clear();
+        this.isApplyingRemote = false;
     }
 
     private scheduleFlush(appId: string, boardId: string) {
@@ -203,8 +257,8 @@ class FirestoreAdapter {
             console.error("[Sync] Write Failed", err);
         }
     }
-    async createPizarraFromTemplate(metadata: PizarraMetadata, nodes: BoardNode[]) {
-        if (!this.currentAppId) {
+    async createPizarraFromTemplate(appId: string, metadata: PizarraMetadata, nodes: BoardNode[]) {
+        if (!appId) {
             console.warn("No AppID for creating Pizarra");
             return;
         }
@@ -212,11 +266,11 @@ class FirestoreAdapter {
         const batch = writeBatch(db);
 
         // 1. Save Metadata
-        const metaRef = doc(db, `artifacts/${this.currentAppId}/public/data/pizarras/${metadata.id}`);
+        const metaRef = doc(db, `artifacts/${appId}/public/data/pizarras/${metadata.id}`);
         batch.set(metaRef, metadata);
 
         // 2. Save Nodes (Assigned to the first board of the pizarra)
-        const nodesCol = collection(db, `artifacts/${this.currentAppId}/public/data/pizarron-tasks`);
+        const nodesCol = collection(db, `artifacts/${appId}/public/data/pizarron-tasks`);
         const firstBoardId = metadata.boards[0].id;
 
         nodes.forEach(node => {
@@ -241,20 +295,74 @@ class FirestoreAdapter {
         await batch.commit();
     }
 
+    /**
+     * Phase 5.1: Canonical Notebook Support
+     * Adds a "Page" (Board) to an existing Notebook (Pizarra).
+     * Atomic transaction: Updates metadata AND inserts initial nodes.
+     */
+    async addBoardToNotebook(appId: string, notebookId: string, board: { id: string; title: string, type: any, order: number }, nodes: BoardNode[]) {
+        if (!appId || !notebookId) return;
+
+        const batch = writeBatch(db);
+
+        // 1. Update Metadata (Add Board to Array)
+        // Note: Firestore arrayUnion is risky if we need order. ideally we read-modify-write or just trust the clean array passed from state?
+        // Let's rely on the Store to provide the authoritative 'boards' array, OR just push this one.
+        // For safety, we'll read the metadata first? Too slow. 
+        // We will assume the UI passes the *UPDATED* metadata list or we use arrayUnion.
+        // Actually, PizarronManager constructs the new board object.
+        // Let's use arrayUnion for safety.
+
+        const metaRef = doc(db, `artifacts/${appId}/public/data/pizarras/${notebookId}`);
+        // We can't easily append to specific index with arrayUnion, but for 'add', it's fine.
+        // But wait, we need to ensure unique ID.
+        // Let's just update the whole board list if possible? 
+        // No, let's use arrayUnion for atomic addition.
+        batch.set(metaRef, {
+            updatedAt: Date.now(),
+            boards: (await import('firebase/firestore')).arrayUnion(board)
+        }, { merge: true });
+
+        // 2. Save Nodes (Assigned to the NEW boardId)
+        const nodesCol = collection(db, `artifacts/${appId}/public/data/pizarron-tasks`);
+
+        nodes.forEach(node => {
+            // Ensure node has correct boardId
+            const nodeRef = doc(nodesCol, node.id);
+            const data = {
+                type: node.type,
+                x: node.x, y: node.y,
+                width: node.w, height: node.h,
+                zIndex: node.zIndex,
+                title: node.content.title || '',
+                texto: node.content.title || '',
+                body: node.content.body || '',
+                style: { backgroundColor: node.content.color || '#ffffff' },
+                shapeType: node.content.shapeType || 'rectangle',
+                boardId: board.id, // CRITICAL: Link to the specific board
+                updatedAt: node.updatedAt,
+                createdAt: node.createdAt
+            };
+            batch.set(nodeRef, data);
+        });
+
+        await batch.commit();
+    }
+
     // --- Pizarra Management ---
 
-    async savePizarraMetadata(metadata: PizarraMetadata) {
-        if (!this.currentAppId) {
+    async savePizarraMetadata(appId: string, metadata: PizarraMetadata) {
+        if (!appId) {
             console.warn("No AppID for saving Pizarra");
             return;
         }
-        const ref = doc(db, `artifacts/${this.currentAppId}/public/data/pizarras/${metadata.id}`);
+        const ref = doc(db, `artifacts/${appId}/public/data/pizarras/${metadata.id}`);
         await setDoc(ref, metadata, { merge: true });
     }
 
-    async listPizarras(): Promise<PizarraMetadata[]> {
-        if (!this.currentAppId) return [];
-        const colRef = collection(db, `artifacts/${this.currentAppId}/public/data/pizarras`);
+    async listPizarras(appId: string): Promise<PizarraMetadata[]> {
+        if (!appId) return [];
+        const colRef = collection(db, `artifacts/${appId}/public/data/pizarras`);
         const q = query(colRef, orderBy('lastOpenedAt', 'desc'));
 
         try {

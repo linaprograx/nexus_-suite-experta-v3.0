@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+
+import { ErrorBoundary } from './ErrorBoundary';
 import { pizarronStore } from '../../state/store';
 import { BOARD_TEMPLATES } from '../../data/BoardTemplates';
 import { PizarraMetadata } from '../../engine/types';
@@ -31,12 +33,14 @@ const createPizarraInBackend = async (templateId: string, title: string): Promis
         title: item.title,
         type: item.type,
         order: i
-    }));
+    })) as any;
 
     return {
         id: crypto.randomUUID(),
         title: title || template.name,
         ownerId: 'current-user-id',
+        capabilities: (template as any).capabilities || [], // Phase 5
+        defaultMode: (template as any).defaultMode || 'creative', // Phase 5.FIX
         createdAt: Date.now(),
         updatedAt: Date.now(),
         lastOpenedAt: Date.now(),
@@ -48,7 +52,9 @@ const createPizarraInBackend = async (templateId: string, title: string): Promis
     };
 };
 
-export const PizarraManager: React.FC<{ onClose: () => void }> = ({ onClose }) => {
+// ... other imports
+
+export const PizarraManager: React.FC<{ onClose: () => void; appId: string }> = ({ onClose, appId }) => {
     // Navigation
     const [activeTab, setActiveTab] = useState<'history' | 'my-projects' | 'new-project' | 'my-templates' | 'imports'>('history');
 
@@ -72,11 +78,12 @@ export const PizarraManager: React.FC<{ onClose: () => void }> = ({ onClose }) =
     const [pizarras, setPizarras] = useState<PizarraMetadata[]>([]);
     const [loading, setLoading] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
+    const [selectedHistoryId, setSelectedHistoryId] = useState<string | null>(null);
 
     // Handle Escape Key
     useEffect(() => {
         const handleEsc = (e: KeyboardEvent) => {
-            if (e.key === 'Escape') onClose();
+            if (e.key === 'Escape') { console.warn("Closing via ESC"); onClose(); }
         };
         window.addEventListener('keydown', handleEsc);
         return () => window.removeEventListener('keydown', handleEsc);
@@ -93,7 +100,7 @@ export const PizarraManager: React.FC<{ onClose: () => void }> = ({ onClose }) =
     const loadProjects = async () => {
         setLoading(true);
         try {
-            const list = await firestoreAdapter.listPizarras();
+            const list = await firestoreAdapter.listPizarras(appId);
             setPizarras(list);
         } catch (e) {
             console.error("Failed to load projects", e);
@@ -106,32 +113,91 @@ export const PizarraManager: React.FC<{ onClose: () => void }> = ({ onClose }) =
         const tid = (typeof templateIdOverride === 'string' ? templateIdOverride : selectedTemplate);
         if (!tid) return;
         setIsCreating(true);
+
         try {
-            // 1. Create Metadata
-            const metadata = await createPizarraInBackend(tid, pizarraTitle);
+            const activePizarra = pizarronStore.getState().activePizarra;
 
-            // 2. Generate Template Content (Nodes)
-            const nodes = TemplateEngine.generateLayout(tid, metadata);
+            // CANONICAL FLOW A: ADD PAGE (BOARD) TO EXISTING NOTEBOOK
+            if (activePizarra) {
+                console.log("[PizarraManager] Adding Board to existing Notebook:", activePizarra.id);
 
-            // 3. Persist (Metadata + Nodes)
-            await firestoreAdapter.createPizarraFromTemplate(metadata, nodes);
+                // 1. Generate Metadata for the new BOARD (Page)
+                // We fake a mini-metadata just to get the board structure from the engine
+                // Ideally TemplateEngine should separate Board vs Notebook generation.
+                // For now, we generate a full one and extract the board.
+                const tempMeta = await createPizarraInBackend(tid, pizarraTitle);
+                const newBoardDef = tempMeta.boards[0]; // Take the first board from the template
+                // Ensure unique ID just in case
+                newBoardDef.id = crypto.randomUUID();
+                newBoardDef.title = pizarraTitle || newBoardDef.title; // User title applies to the board
 
-            // 4. Set Active Pizarra in Store
-            pizarronStore.setActivePizarra(metadata);
+                // 2. Generate Content
+                // We need to regenerate nodes with the new board ID?
+                // TemplateEngine generates nodes. We need to assign them to newBoardDef.id
+                // The `createPizarraFromTemplate` usually handles this for the first board.
+                // We will manually fix the boardId.
+                const nodes = TemplateEngine.generateLayout(tid, tempMeta);
+                // Nodes currently have IDs but `boardId` property in node needs to be set interaction-time in adapter?
+                // Adapter.addBoardToNotebook sets the boardId.
 
-            // 5. VISUAL FEEDBACK: Reset Board & Load Content
-            pizarronStore.resetBoard();
+                // 3. Persist (Add to Notebook)
+                await firestoreAdapter.addBoardToNotebook(appId, activePizarra.id, newBoardDef, nodes);
 
-            // Immediate local injection (faster than waiting for sync)
-            nodes.forEach(n => pizarronStore.addNode(n));
+                // 4. Update Store (State)
+                pizarronStore.addBoard(newBoardDef);
 
-            // 6. Auto-Fit View
+                // 5. Switch to New Board (Pointer)
+                // SAFETY: Stop adapter explicitly before touching store to prevent "Ghost Deletions" on old board
+                // Even though we switch board, the adapter on 'old' board might still be checking diffs.
+                firestoreAdapter.stop();
+
+                pizarronStore.switchBoard(newBoardDef.id);
+
+                // 6. Visual Reset (Clear Canvas for new content)
+                pizarronStore.resetBoard();
+
+                // 7. Inject Initial Nodes
+                nodes.forEach(n => pizarronStore.addNode(n));
+
+                // 8. Close Manager
+                // Note: PizarronRoot will detect the change in effectiveBoardId (boards[0]) and re-init the adapter automatically.
+                onClose();
+            }
+            // CANONICAL FLOW B: CREATE NEW NOTEBOOK (Project)
+            else {
+                console.log("[PizarraManager] Creating NEW Notebook");
+                // Safe Stop: Prevent wiping previous board (if any context existed)
+                firestoreAdapter.stop();
+
+                // 1. Create Metadata
+                const metadata = await createPizarraInBackend(tid, pizarraTitle);
+
+                // 2. Generate Template Content (Nodes)
+                const nodes = TemplateEngine.generateLayout(tid, metadata);
+
+                // 3. Persist (Metadata + Nodes)
+                await firestoreAdapter.createPizarraFromTemplate(appId, metadata, nodes);
+
+                // 4. Set Active Pizarra in Store
+                // SAFETY: Stop adapter explicitly before touching store to prevent "Ghost Deletions" on old board
+                firestoreAdapter.stop();
+                pizarronStore.setActivePizarra(metadata);
+
+                // 5. VISUAL FEEDBACK: Reset Board & Load Content
+                pizarronStore.resetBoard();
+
+                // Immediate local injection (faster than waiting for sync)
+                nodes.forEach(n => pizarronStore.addNode(n));
+            }
+
+            // 6. Auto-Fit View (Common)
             setTimeout(() => {
                 pizarronStore.fitContent();
             }, 100);
 
-            // Close
+            // Close (Common)
             onClose();
+
         } catch (e) {
             console.error(e);
         } finally {
@@ -140,11 +206,22 @@ export const PizarraManager: React.FC<{ onClose: () => void }> = ({ onClose }) =
     };
 
     const handleOpen = (metadata: PizarraMetadata) => {
+        // Safe Stop: Prevent wiping previous board
+        firestoreAdapter.stop();
+
         // Update Last Opened
         // firestoreAdapter.updatePizarra(metadata.id, { lastOpenedAt: Date.now() }); // Optimistic
 
+        // SAFETY: Stop adapter explicitly before touching store to prevent "Ghost Deletions" on old board
+        firestoreAdapter.stop();
         pizarronStore.setActivePizarra(metadata);
         pizarronStore.resetBoard(); // Clear previous
+
+        // Force Sync Adapter Switch
+        // Removed: PizarronRoot handles this reactively now.
+        // const firstBoardId = metadata.boards[0]?.id || 'general';
+        // firestoreAdapter.init(appId, firstBoardId);
+
         onClose();
     };
 
@@ -153,364 +230,395 @@ export const PizarraManager: React.FC<{ onClose: () => void }> = ({ onClose }) =
     // Sort for History
     const recentPizarras = [...pizarras].sort((a, b) => (b.lastOpenedAt || 0) - (a.lastOpenedAt || 0)).slice(0, 4);
 
+    // ... (existing code)
+
+
     return (
         <div
             className="fixed inset-0 z-[200] flex items-center justify-center bg-black/60 backdrop-blur-sm pointer-events-auto"
-            onClick={onClose}
         >
-            <div
-                className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-[900px] h-[600px] flex overflow-hidden pointer-events-auto animate-in fade-in zoom-in duration-200 border border-slate-200 dark:border-slate-800"
-                onClick={e => e.stopPropagation()}
-            >
-                {/* Sidebar */}
-                <div className="w-64 bg-slate-50 dark:bg-slate-950 border-r border-slate-200 dark:border-slate-800 p-4 flex flex-col">
-                    <h2 className="text-xl font-bold text-slate-800 dark:text-white mb-6 px-2 flex items-center gap-2">
-                        <LuLayoutDashboard className="text-blue-600" />
-                        Pizarras
-                    </h2>
-                    <div className="space-y-1">
-                        <button
-                            className={`w-full text-left px-3 py-2.5 rounded-lg text-sm font-medium transition-colors flex items-center gap-3 ${activeTab === 'history' ? 'bg-white dark:bg-slate-800 shadow-sm text-blue-700 dark:text-blue-400' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'}`}
-                            onClick={() => setActiveTab('history')}
-                        >
-                            <LuClock size={18} />
-                            Historial
-                        </button>
-                        {/* 'Mis Pizarras' hidden from direct nav, accessible via Historial 'View All' */}
-                        <button
-                            className={`w-full text-left px-3 py-2.5 rounded-lg text-sm font-medium transition-colors flex items-center gap-3 ${activeTab === 'new-project' ? 'bg-white dark:bg-slate-800 shadow-sm text-blue-700 dark:text-blue-400' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'}`}
-                            onClick={() => { setActiveTab('new-project'); setStep('select'); }}
-                        >
-                            <LuPlus size={18} />
-                            Nueva Pizarra
-                        </button>
-                        <button
-                            className={`w-full text-left px-3 py-2.5 rounded-lg text-sm font-medium transition-colors flex items-center gap-3 ${activeTab === 'my-templates' ? 'bg-white dark:bg-slate-800 shadow-sm text-blue-700 dark:text-blue-400' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'}`}
-                            onClick={() => setActiveTab('my-templates')}
-                        >
-                            <LuLayoutTemplate size={18} />
-                            Mis Plantillas
-                        </button>
-                        <button
-                            className={`w-full text-left px-3 py-2.5 rounded-lg text-sm font-medium transition-colors flex items-center gap-3 ${activeTab === 'imports' ? 'bg-white dark:bg-slate-800 shadow-sm text-blue-700 dark:text-blue-400' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'}`}
-                            onClick={() => setActiveTab('imports')}
-                        >
-                            <LuDownload size={18} />
-                            Importaciones
+            <ErrorBoundary>
+                <div
+                    className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-[900px] h-[600px] flex overflow-hidden pointer-events-auto animate-in fade-in zoom-in duration-200 border border-slate-200 dark:border-slate-800"
+                >
+                    {/* Sidebar */}
+                    <div className="w-64 bg-slate-50 dark:bg-slate-950 border-r border-slate-200 dark:border-slate-800 p-4 flex flex-col">
+                        <h2 className="text-xl font-bold text-slate-800 dark:text-white mb-6 px-2 flex items-center gap-2">
+                            <LuLayoutDashboard className="text-blue-600" />
+                            Pizarras
+                        </h2>
+                        <div className="space-y-1">
+                            <button
+                                className={`w-full text-left px-3 py-2.5 rounded-lg text-sm font-medium transition-colors flex items-center gap-3 ${activeTab === 'history' ? 'bg-white dark:bg-slate-800 shadow-sm text-blue-700 dark:text-blue-400' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'}`}
+                                onClick={() => setActiveTab('history')}
+                            >
+                                <LuClock size={18} />
+                                Historial
+                            </button>
+                            {/* 'Mis Pizarras' hidden from direct nav, accessible via Historial 'View All' */}
+                            <button
+                                className={`w-full text-left px-3 py-2.5 rounded-lg text-sm font-medium transition-colors flex items-center gap-3 ${activeTab === 'new-project' ? 'bg-white dark:bg-slate-800 shadow-sm text-blue-700 dark:text-blue-400' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'}`}
+                                onClick={() => { setActiveTab('new-project'); setStep('select'); }}
+                            >
+                                <LuPlus size={18} />
+                                Nueva Pizarra
+                            </button>
+                            <button
+                                className={`w-full text-left px-3 py-2.5 rounded-lg text-sm font-medium transition-colors flex items-center gap-3 ${activeTab === 'my-templates' ? 'bg-white dark:bg-slate-800 shadow-sm text-blue-700 dark:text-blue-400' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'}`}
+                                onClick={() => setActiveTab('my-templates')}
+                            >
+                                <LuLayoutTemplate size={18} />
+                                Mis Plantillas
+                            </button>
+                            <button
+                                className={`w-full text-left px-3 py-2.5 rounded-lg text-sm font-medium transition-colors flex items-center gap-3 ${activeTab === 'imports' ? 'bg-white dark:bg-slate-800 shadow-sm text-blue-700 dark:text-blue-400' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'}`}
+                                onClick={() => setActiveTab('imports')}
+                            >
+                                <LuDownload size={18} />
+                                Importaciones
+                            </button>
+                        </div>
+                        <div className="flex-1" />
+                        <button onClick={onClose} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-sm flex items-center gap-2 px-3 py-2">
+                            <LuX size={16} /> Cerrar
                         </button>
                     </div>
-                    <div className="flex-1" />
-                    <button onClick={onClose} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-sm flex items-center gap-2 px-3 py-2">
-                        <LuX size={16} /> Cerrar
-                    </button>
-                </div>
 
-                {/* Content */}
-                <div className="flex-1 p-8 overflow-y-auto bg-white dark:bg-slate-900 custom-scrollbar relative">
-                    {/* Header Effect */}
-                    <div className="absolute top-0 left-0 w-full h-24 bg-gradient-to-b from-white dark:from-slate-900 to-transparent pointer-events-none z-10" />
+                    {/* Content */}
+                    <div className="flex-1 p-8 overflow-y-auto bg-white dark:bg-slate-900 custom-scrollbar relative">
+                        {/* Header Effect */}
+                        <div className="absolute top-0 left-0 w-full h-24 bg-gradient-to-b from-white dark:from-slate-900 to-transparent pointer-events-none z-10" />
 
-                    {/* HISTORY TAB */}
-                    {activeTab === 'history' && (
-                        <div className="relative z-0">
-                            <div className="mb-6">
-                                <h3 className="text-2xl font-bold text-slate-800 dark:text-white">Historial Reciente</h3>
-                                <p className="text-slate-500 dark:text-slate-400 text-sm">Continúa donde lo dejaste.</p>
-                            </div>
-
-                            {loading ? (
-                                <div className="flex items-center justify-center h-64 text-slate-400">Cargando...</div>
-                            ) : recentPizarras.length === 0 ? (
-                                <div className="flex flex-col items-center justify-center py-20 border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-2xl bg-slate-50/50 dark:bg-slate-800/30">
-                                    <div className="w-16 h-16 bg-slate-100 dark:bg-slate-700 rounded-full flex items-center justify-center mb-4 text-slate-400">
-                                        <LuClock size={32} />
-                                    </div>
-                                    <p className="text-slate-500 dark:text-slate-400 font-medium mb-2">No tienes actividad reciente</p>
-                                    <button
-                                        onClick={() => setActiveTab('new-project')}
-                                        className="text-blue-600 hover:text-blue-700 dark:text-blue-400 font-medium text-sm flex items-center gap-1"
-                                    >
-                                        Crear nueva pizarra <LuPlus size={14} />
-                                    </button>
+                        {/* HISTORY TAB */}
+                        {activeTab === 'history' && (
+                            <div className="relative z-0">
+                                <div className="mb-6">
+                                    <h3 className="text-2xl font-bold text-slate-800 dark:text-white">Historial Reciente</h3>
+                                    <p className="text-slate-500 dark:text-slate-400 text-sm">Continúa donde lo dejaste.</p>
                                 </div>
-                            ) : (
-                                <div className="grid grid-cols-2 gap-6">
-                                    {recentPizarras.map(p => (
-                                        <div
-                                            key={p.id}
-                                            onClick={() => handleOpen(p)}
-                                            className="group relative flex rounded-xl border border-slate-200 dark:border-slate-700 hover:border-blue-400 dark:hover:border-blue-500 hover:shadow-lg cursor-pointer transition-all overflow-hidden bg-white dark:bg-slate-800 h-40"
-                                        >
-                                            {/* Thumbnail (Left) */}
-                                            <div className="w-40 bg-slate-100 dark:bg-slate-700 relative overflow-hidden flex-shrink-0">
-                                                <div
-                                                    className="w-full h-full opacity-40 transition-transform group-hover:scale-105 duration-500"
-                                                    style={{ backgroundImage: `linear-gradient(135deg, ${stringToColor(p.id)} 0%, #1e293b 100%)` }}
-                                                />
-                                                <div className="absolute inset-0 flex items-center justify-center">
-                                                    <div className="w-12 h-16 bg-white dark:bg-slate-600 rounded shadow-sm border border-slate-200 dark:border-slate-500 transform rotate-3" />
-                                                </div>
-                                            </div>
 
-                                            <div className="p-4 flex flex-col flex-1">
-                                                <h4 className="font-bold text-slate-800 dark:text-white truncate text-lg mb-1">{p.title}</h4>
-                                                <p className="text-xs text-slate-500 dark:text-slate-400 line-clamp-2 mb-auto">
-                                                    Abierto hace {Math.floor((Date.now() - (p.lastOpenedAt || 0)) / (1000 * 60 * 60 * 24))} días
-                                                </p>
-                                                <div className="mt-auto flex items-center justify-between">
-                                                    <span className="text-[10px] bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 px-2 py-0.5 rounded font-medium">
-                                                        Continuar editando
-                                                    </span>
-                                                    <span className="text-slate-300 dark:text-slate-600">
-                                                        <LuClock size={14} />
-                                                    </span>
-                                                </div>
-                                            </div>
+                                {loading ? (
+                                    <div className="flex items-center justify-center h-64 text-slate-400">Cargando...</div>
+                                ) : recentPizarras.length === 0 ? (
+                                    <div className="flex flex-col items-center justify-center py-20 border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-2xl bg-slate-50/50 dark:bg-slate-800/30">
+                                        <div className="w-16 h-16 bg-slate-100 dark:bg-slate-700 rounded-full flex items-center justify-center mb-4 text-slate-400">
+                                            <LuClock size={32} />
                                         </div>
-                                    ))}
-                                </div>
-                            )}
-
-                            <div className="mt-8 pt-8 border-t border-slate-100 dark:border-slate-800">
-                                <button onClick={() => setActiveTab('my-projects')} className="text-sm text-slate-500 hover:text-blue-600 font-medium flex items-center gap-1">
-                                    Ver todas mis pizarras &rarr;
-                                </button>
-                            </div>
-                        </div>
-                    )}
-
-                    {activeTab === 'my-projects' && (
-                        <div className="relative z-0">
-                            <div className="flex justify-between items-end mb-6">
-                                <div>
-                                    <h3 className="text-2xl font-bold text-slate-800 dark:text-white">Mis Pizarras</h3>
-                                    <p className="text-slate-500 dark:text-slate-400 text-sm">Gestiona tus espacios de trabajo y proyectos.</p>
-                                </div>
-                                <div className="relative">
-                                    <LuSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
-                                    <input
-                                        type="text"
-                                        placeholder="Buscar..."
-                                        value={searchQuery}
-                                        onChange={(e) => setSearchQuery(e.target.value)}
-                                        className="pl-9 pr-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none dark:text-white"
-                                    />
-                                </div>
-                            </div>
-
-                            {loading ? (
-                                <div className="flex items-center justify-center h-64 text-slate-400">Cargando pizarras...</div>
-                            ) : filteredPizarras.length === 0 ? (
-                                <div className="flex flex-col items-center justify-center py-20 border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-2xl bg-slate-50/50 dark:bg-slate-800/30">
-                                    <div className="w-16 h-16 bg-slate-100 dark:bg-slate-700 rounded-full flex items-center justify-center mb-4 text-slate-400">
-                                        <LuFolder size={32} />
-                                    </div>
-                                    <p className="text-slate-500 dark:text-slate-400 font-medium mb-2">{searchQuery ? 'No se encontraron resultados' : 'Tu espacio está vacío'}</p>
-                                    {!searchQuery && (
+                                        <p className="text-slate-500 dark:text-slate-400 font-medium mb-2">No tienes actividad reciente</p>
                                         <button
                                             onClick={() => setActiveTab('new-project')}
                                             className="text-blue-600 hover:text-blue-700 dark:text-blue-400 font-medium text-sm flex items-center gap-1"
                                         >
                                             Crear nueva pizarra <LuPlus size={14} />
                                         </button>
-                                    )}
-                                </div>
-                            ) : (
-                                <div className="grid grid-cols-3 gap-6">
-                                    {/* Add New Card */}
-                                    <div
-                                        onClick={() => { setActiveTab('new-project'); setStep('select'); }}
-                                        className="group h-48 border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-xl flex flex-col items-center justify-center bg-transparent hover:border-blue-400 hover:bg-blue-50/50 dark:hover:bg-blue-900/10 cursor-pointer transition-all"
-                                    >
-                                        <div className="w-12 h-12 rounded-full bg-slate-100 dark:bg-slate-800 group-hover:bg-blue-100 dark:group-hover:bg-blue-900/50 flex items-center justify-center text-slate-400 group-hover:text-blue-600 transition-colors">
-                                            <LuPlus size={24} />
-                                        </div>
-                                        <span className="mt-3 text-sm font-medium text-slate-500 group-hover:text-blue-600 dark:text-slate-400 dark:group-hover:text-blue-400">Nueva Pizarra</span>
                                     </div>
-
-                                    {filteredPizarras.map(p => (
-                                        <div
-                                            key={p.id}
-                                            onClick={() => handleOpen(p)}
-                                            className="group relative flex flex-col rounded-xl border border-slate-200 dark:border-slate-700 hover:border-blue-400 dark:hover:border-blue-500 hover:shadow-lg cursor-pointer transition-all overflow-hidden bg-white dark:bg-slate-800 h-64"
-                                        >
-                                            {/* Minimalist Thumbnail */}
-                                            <div className="h-40 bg-slate-100 dark:bg-slate-700 relative overflow-hidden">
-                                                <div
-                                                    className="w-full h-full opacity-40 transition-transform group-hover:scale-105 duration-500"
-                                                    style={{
-                                                        backgroundImage: `linear-gradient(135deg, ${stringToColor(p.id)} 0%, #1e293b 100%)`
-                                                    }}
-                                                />
-                                                {/* Mini Boards representation */}
-                                                <div className="absolute inset-0 p-6 flex gap-3 items-center justify-center opacity-80">
-                                                    {p.boards?.slice(0, 2).map((b, i) => (
-                                                        <div key={i} className="w-16 h-20 bg-white dark:bg-slate-600 rounded-lg shadow-sm border border-slate-200 dark:border-slate-500 transform rotate-3" />
-                                                    ))}
+                                ) : (
+                                    <div className="grid grid-cols-2 gap-6">
+                                        {recentPizarras.map(p => (
+                                            <div
+                                                key={p.id}
+                                                onClick={() => setSelectedHistoryId(p.id)}
+                                                onDoubleClick={() => handleOpen(p)}
+                                                className={`group relative flex rounded-xl border hover:shadow-lg cursor-pointer transition-all overflow-hidden bg-white dark:bg-slate-800 h-40 ${selectedHistoryId === p.id ? 'border-blue-500 ring-1 ring-blue-500' : 'border-slate-200 dark:border-slate-700 hover:border-blue-400 dark:hover:border-blue-500'}`}
+                                            >
+                                                {/* Thumbnail (Left) */}
+                                                <div className="w-40 bg-slate-100 dark:bg-slate-700 relative overflow-hidden flex-shrink-0">
+                                                    <div
+                                                        className="w-full h-full opacity-40 transition-transform group-hover:scale-105 duration-500"
+                                                        style={{ backgroundImage: `linear-gradient(135deg, ${stringToColor(p.id)} 0%, #1e293b 100%)` }}
+                                                    />
+                                                    <div className="absolute inset-0 flex items-center justify-center">
+                                                        <div className="w-12 h-16 bg-white dark:bg-slate-600 rounded shadow-sm border border-slate-200 dark:border-slate-500 transform rotate-3" />
+                                                    </div>
                                                 </div>
-                                                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
-                                            </div>
 
-                                            <div className="p-4 flex flex-col flex-1">
-                                                <div className="flex justify-between items-start mb-1">
-                                                    <h4 className="font-bold text-slate-800 dark:text-white truncate flex-1 pr-2 text-sm">{p.title}</h4>
-                                                    <span className="text-[10px] bg-slate-50 dark:bg-slate-700 px-2 py-0.5 rounded-full text-slate-400 dark:text-slate-300 whitespace-nowrap">
-                                                        {new Date(p.updatedAt).toLocaleDateString()}
-                                                    </span>
-                                                </div>
-                                                <div className="mt-auto flex items-center gap-2">
-                                                    <span className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 bg-slate-100 dark:bg-slate-700/50 text-slate-500 dark:text-slate-400 rounded">
-                                                        <LuLayoutDashboard size={10} /> {p.boards?.length || 0} Tableros
-                                                    </span>
+                                                <div className="p-4 flex flex-col flex-1">
+                                                    <h4 className="font-bold text-slate-800 dark:text-white truncate text-lg mb-1">{p.title}</h4>
+                                                    <p className="text-xs text-slate-500 dark:text-slate-400 line-clamp-2 mb-auto">
+                                                        Abierto hace {Math.floor((Date.now() - (p.lastOpenedAt || 0)) / (1000 * 60 * 60 * 24))} días
+                                                    </p>
+                                                    <div className="mt-auto flex items-center justify-between">
+                                                        <span className={`text-[10px] px-2 py-0.5 rounded font-medium ${selectedHistoryId === p.id ? 'bg-blue-600 text-white' : 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'}`}>
+                                                            {selectedHistoryId === p.id ? 'Doble Clic' : 'Continuar editando'}
+                                                        </span>
+                                                        <span className="text-slate-300 dark:text-slate-600">
+                                                            <LuClock size={14} />
+                                                        </span>
+                                                    </div>
                                                 </div>
                                             </div>
+                                        ))}
+                                    </div>
+                                )}
+
+                                <div className="mt-8 pt-8 border-t border-slate-100 dark:border-slate-800">
+                                    <button onClick={() => setActiveTab('my-projects')} className="text-sm text-slate-500 hover:text-blue-600 font-medium flex items-center gap-1">
+                                        Ver todas mis pizarras &rarr;
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+
+                        {activeTab === 'my-projects' && (
+                            <div className="relative z-0">
+                                <div className="flex justify-between items-end mb-6">
+                                    <div>
+                                        <h3 className="text-2xl font-bold text-slate-800 dark:text-white">Mis Pizarras</h3>
+                                        <p className="text-slate-500 dark:text-slate-400 text-sm">Gestiona tus espacios de trabajo y proyectos.</p>
+                                    </div>
+                                    <div className="relative">
+                                        <LuSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                                        <input
+                                            type="text"
+                                            placeholder="Buscar..."
+                                            value={searchQuery}
+                                            onChange={(e) => setSearchQuery(e.target.value)}
+                                            className="pl-9 pr-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none dark:text-white"
+                                        />
+                                    </div>
+                                </div>
+
+                                {loading ? (
+                                    <div className="flex items-center justify-center h-64 text-slate-400">Cargando pizarras...</div>
+                                ) : filteredPizarras.length === 0 ? (
+                                    <div className="flex flex-col items-center justify-center py-20 border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-2xl bg-slate-50/50 dark:bg-slate-800/30">
+                                        <div className="w-16 h-16 bg-slate-100 dark:bg-slate-700 rounded-full flex items-center justify-center mb-4 text-slate-400">
+                                            <LuFolder size={32} />
                                         </div>
+                                        <p className="text-slate-500 dark:text-slate-400 font-medium mb-2">{searchQuery ? 'No se encontraron resultados' : 'Tu espacio está vacío'}</p>
+                                        {!searchQuery && (
+                                            <button
+                                                onClick={() => setActiveTab('new-project')}
+                                                className="text-blue-600 hover:text-blue-700 dark:text-blue-400 font-medium text-sm flex items-center gap-1"
+                                            >
+                                                Crear nueva pizarra <LuPlus size={14} />
+                                            </button>
+                                        )}
+                                    </div>
+                                ) : (
+                                    <div className="grid grid-cols-3 gap-6">
+                                        {/* Add New Card */}
+                                        <div
+                                            onClick={() => { setActiveTab('new-project'); setStep('select'); }}
+                                            className="group h-48 border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-xl flex flex-col items-center justify-center bg-transparent hover:border-blue-400 hover:bg-blue-50/50 dark:hover:bg-blue-900/10 cursor-pointer transition-all"
+                                        >
+                                            <div className="w-12 h-12 rounded-full bg-slate-100 dark:bg-slate-800 group-hover:bg-blue-100 dark:group-hover:bg-blue-900/50 flex items-center justify-center text-slate-400 group-hover:text-blue-600 transition-colors">
+                                                <LuPlus size={24} />
+                                            </div>
+                                            <span className="mt-3 text-sm font-medium text-slate-500 group-hover:text-blue-600 dark:text-slate-400 dark:group-hover:text-blue-400">Nueva Pizarra</span>
+                                        </div>
+
+                                        {filteredPizarras.map(p => (
+                                            <div
+                                                key={p.id}
+                                                onClick={() => handleOpen(p)}
+                                                className="group relative flex flex-col rounded-xl border border-slate-200 dark:border-slate-700 hover:border-blue-400 dark:hover:border-blue-500 hover:shadow-lg cursor-pointer transition-all overflow-hidden bg-white dark:bg-slate-800 h-64"
+                                            >
+                                                {/* Minimalist Thumbnail */}
+                                                <div className="h-40 bg-slate-100 dark:bg-slate-700 relative overflow-hidden">
+                                                    <div
+                                                        className="w-full h-full opacity-40 transition-transform group-hover:scale-105 duration-500"
+                                                        style={{
+                                                            backgroundImage: `linear-gradient(135deg, ${stringToColor(p.id)} 0%, #1e293b 100%)`
+                                                        }}
+                                                    />
+                                                    {/* Mini Boards representation */}
+                                                    <div className="absolute inset-0 p-6 flex gap-3 items-center justify-center opacity-80">
+                                                        {p.boards?.slice(0, 2).map((b, i) => (
+                                                            <div key={i} className="w-16 h-20 bg-white dark:bg-slate-600 rounded-lg shadow-sm border border-slate-200 dark:border-slate-500 transform rotate-3" />
+                                                        ))}
+                                                    </div>
+                                                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
+                                                </div>
+
+                                                <div className="p-4 flex flex-col flex-1">
+                                                    <div className="flex justify-between items-start mb-1">
+                                                        <h4 className="font-bold text-slate-800 dark:text-white truncate flex-1 pr-2 text-sm">{p.title}</h4>
+                                                        <span className="text-[10px] bg-slate-50 dark:bg-slate-700 px-2 py-0.5 rounded-full text-slate-400 dark:text-slate-300 whitespace-nowrap">
+                                                            {new Date(p.updatedAt).toLocaleDateString()}
+                                                        </span>
+                                                    </div>
+                                                    <div className="mt-auto flex items-center gap-2">
+                                                        <span className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 bg-slate-100 dark:bg-slate-700/50 text-slate-500 dark:text-slate-400 rounded">
+                                                            <LuLayoutDashboard size={10} /> {p.boards?.length || 0} Tableros
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        {/* NEW PROJECT TAB */}
+                        {activeTab === 'new-project' && step === 'select' && (
+                            <div className="relative z-0 animate-in fade-in slide-in-from-right-4 duration-300">
+                                <div className="mb-6">
+                                    <h3 className="text-2xl font-bold text-slate-800 dark:text-white">Nueva Pizarra</h3>
+                                    <p className="text-slate-500 dark:text-slate-400 text-sm">Selecciona una estructura base o comienza desde cero.</p>
+                                </div>
+
+                                <div className="grid grid-cols-3 gap-5">
+                                    {/* BLANK BOARD OPTION (Manual) */}
+                                    <button
+                                        type="button"
+                                        onClick={(e) => {
+                                            e.preventDefault();
+                                            e.stopPropagation();
+                                            e.nativeEvent.stopImmediatePropagation();
+                                            setSelectedTemplate('t-empty');
+                                        }}
+                                        onDoubleClick={(e) => {
+                                            e.preventDefault();
+                                            e.stopPropagation();
+                                            e.nativeEvent.stopImmediatePropagation();
+                                            handleCreate('t-empty');
+                                        }}
+                                        className={`w-full p-6 round-xl border-2 cursor-pointer transition-all hover:shadow-lg active:scale-95 flex flex-col items-center text-center group appearance-none text-left ${selectedTemplate === 't-empty' ? 'border-blue-500 bg-blue-50/30 dark:bg-blue-900/10 ring-1 ring-blue-500' : 'border-slate-200 dark:border-slate-700 hover:border-blue-400 dark:hover:border-blue-500 bg-white dark:bg-slate-800'}`}
+                                    >
+                                        <div className="w-16 h-16 bg-slate-50 dark:bg-slate-700 rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition-transform mx-auto">
+                                            <div className="w-10 h-10 border-2 border-dashed border-slate-300 dark:border-slate-500 rounded-lg"></div>
+                                        </div>
+                                        <h4 className="font-bold text-slate-800 dark:text-white mb-1 w-full text-center">Pizarra Vacía</h4>
+                                        <p className="text-xs text-slate-500 dark:text-slate-400 mb-4 px-2 w-full text-center">Lienzo infinito en blanco para libertad total.</p>
+                                        <span className="text-[10px] uppercase font-bold text-slate-400 bg-slate-100 dark:bg-slate-700 px-2 py-1 rounded inline-block">Básico</span>
+                                    </button>
+
+                                    {BOARD_TEMPLATES.map(t => (
+                                        <button
+                                            key={t.id}
+                                            type="button"
+                                            onClick={(e) => {
+                                                e.preventDefault();
+                                                e.stopPropagation();
+                                                e.nativeEvent.stopImmediatePropagation();
+                                                setSelectedTemplate(t.id);
+                                            }}
+                                            onDoubleClick={(e) => {
+                                                e.preventDefault();
+                                                e.stopPropagation();
+                                                e.nativeEvent.stopImmediatePropagation();
+                                                handleCreate(t.id);
+                                            }}
+                                            className={`w-full p-6 rounded-xl border-2 cursor-pointer transition-all hover:shadow-lg active:scale-95 flex flex-col items-center text-center group appearance-none text-left ${selectedTemplate === t.id ? 'border-blue-500 bg-blue-50/30 dark:bg-blue-900/10 ring-1 ring-blue-500' : 'border-slate-200 dark:border-slate-700 hover:border-blue-400 dark:hover:border-blue-500 bg-white dark:bg-slate-800'}`}
+                                        >
+                                            <div className="text-5xl mb-4 group-hover:scale-110 transition-transform drop-shadow-sm w-full text-center">{t.icon}</div>
+                                            <h4 className="font-bold text-slate-800 dark:text-white mb-1 w-full text-center">{t.name}</h4>
+                                            <p className="text-xs text-slate-500 dark:text-slate-400 mb-4 px-2 line-clamp-2 w-full text-center">{t.description}</p>
+                                            <div className="flex flex-wrap justify-center gap-1 mt-auto w-full">
+                                                {t.structure.slice(0, 2).map((s, i) => (
+                                                    <span key={i} className="px-2 py-0.5 bg-slate-50 dark:bg-slate-700 border border-slate-100 dark:border-slate-600 rounded text-[9px] text-slate-500 dark:text-slate-300 uppercase font-semibold tracking-wide">{s.title.slice(0, 10)}</span>
+                                                ))}
+                                            </div>
+                                        </button>
                                     ))}
                                 </div>
-                            )}
-                        </div>
-                    )}
 
-                    {/* NEW PROJECT TAB */}
-                    {activeTab === 'new-project' && step === 'select' && (
-                        <div className="relative z-0 animate-in fade-in slide-in-from-right-4 duration-300">
-                            <div className="mb-6">
-                                <h3 className="text-2xl font-bold text-slate-800 dark:text-white">Nueva Pizarra</h3>
-                                <p className="text-slate-500 dark:text-slate-400 text-sm">Selecciona una estructura base o comienza desde cero.</p>
-                            </div>
-
-                            <div className="grid grid-cols-3 gap-5">
-                                {/* BLANK BOARD OPTION (Manual) */}
-                                <div
-                                    onClick={() => handleCreate('t-empty')}
-                                    className={`p-6 rounded-xl border-2 cursor-pointer transition-all hover:shadow-lg active:scale-95 border-slate-200 dark:border-slate-700 hover:border-blue-400 dark:hover:border-blue-500 bg-white dark:bg-slate-800 flex flex-col items-center text-center group`}
-                                >
-                                    <div className="w-16 h-16 bg-slate-50 dark:bg-slate-700 rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                                        <div className="w-10 h-10 border-2 border-dashed border-slate-300 dark:border-slate-500 rounded-lg"></div>
-                                    </div>
-                                    <h4 className="font-bold text-slate-800 dark:text-white mb-1">Pizarra Vacía</h4>
-                                    <p className="text-xs text-slate-500 dark:text-slate-400 mb-4 px-2">Lienzo infinito en blanco para libertad total.</p>
-                                    <span className="text-[10px] uppercase font-bold text-slate-400 bg-slate-100 dark:bg-slate-700 px-2 py-1 rounded">Básico</span>
-                                </div>
-
-                                {BOARD_TEMPLATES.map(t => (
-                                    <div
-                                        key={t.id}
-                                        onClick={() => setSelectedTemplate(t.id)}
-                                        onDoubleClick={() => handleCreate(t.id)}
-                                        className={`p-6 rounded-xl border-2 cursor-pointer transition-all hover:shadow-lg active:scale-95 flex flex-col items-center text-center group ${selectedTemplate === t.id ? 'border-blue-500 bg-blue-50/30 dark:bg-blue-900/10 ring-1 ring-blue-500' : 'border-slate-200 dark:border-slate-700 hover:border-blue-400 dark:hover:border-blue-500 bg-white dark:bg-slate-800'}`}
+                                <div className="mt-8 flex justify-end pt-4 border-t border-slate-100 dark:border-slate-800">
+                                    <button
+                                        className="px-6 py-2.5 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-blue-500/20 active:scale-95 transition-all flex items-center gap-2"
+                                        disabled={!selectedTemplate}
+                                        onClick={() => setStep('details')}
                                     >
-                                        <div className="text-5xl mb-4 group-hover:scale-110 transition-transform drop-shadow-sm">{t.icon}</div>
-                                        <h4 className="font-bold text-slate-800 dark:text-white mb-1">{t.name}</h4>
-                                        <p className="text-xs text-slate-500 dark:text-slate-400 mb-4 px-2 line-clamp-2">{t.description}</p>
-                                        <div className="flex flex-wrap justify-center gap-1 mt-auto">
-                                            {t.structure.slice(0, 2).map((s, i) => (
-                                                <span key={i} className="px-2 py-0.5 bg-slate-50 dark:bg-slate-700 border border-slate-100 dark:border-slate-600 rounded text-[9px] text-slate-500 dark:text-slate-300 uppercase font-semibold tracking-wide">{s.title.slice(0, 10)}</span>
-                                            ))}
-                                        </div>
+                                        Configurar <LuPlus size={16} />
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* MIS PLANTILLAS TAB */}
+                        {activeTab === 'my-templates' && (
+                            <div>
+                                <div className="mb-6">
+                                    <h3 className="text-2xl font-bold text-slate-800 dark:text-white">Mis Plantillas</h3>
+                                    <p className="text-slate-500 dark:text-slate-400 text-sm">Biblioteca de estructuras personalizadas.</p>
+                                </div>
+                                <div className="flex flex-col items-center justify-center py-24 border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-2xl bg-slate-50/50 dark:bg-slate-800/30">
+                                    <div className="w-16 h-16 bg-slate-100 dark:bg-slate-700 rounded-full flex items-center justify-center mb-4 text-slate-400">
+                                        <LuLayoutTemplate size={32} />
                                     </div>
-                                ))}
-                            </div>
-
-                            <div className="mt-8 flex justify-end pt-4 border-t border-slate-100 dark:border-slate-800">
-                                <button
-                                    className="px-6 py-2.5 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-blue-500/20 active:scale-95 transition-all flex items-center gap-2"
-                                    disabled={!selectedTemplate}
-                                    onClick={() => setStep('details')}
-                                >
-                                    Configurar <LuPlus size={16} />
-                                </button>
-                            </div>
-                        </div>
-                    )}
-
-                    {/* MIS PLANTILLAS TAB */}
-                    {activeTab === 'my-templates' && (
-                        <div>
-                            <div className="mb-6">
-                                <h3 className="text-2xl font-bold text-slate-800 dark:text-white">Mis Plantillas</h3>
-                                <p className="text-slate-500 dark:text-slate-400 text-sm">Biblioteca de estructuras personalizadas.</p>
-                            </div>
-                            <div className="flex flex-col items-center justify-center py-24 border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-2xl bg-slate-50/50 dark:bg-slate-800/30">
-                                <div className="w-16 h-16 bg-slate-100 dark:bg-slate-700 rounded-full flex items-center justify-center mb-4 text-slate-400">
-                                    <LuLayoutTemplate size={32} />
-                                </div>
-                                <h4 className="text-slate-800 dark:text-white font-medium mb-1">Tu colección está vacía</h4>
-                                <p className="text-xs text-slate-400 max-w-sm text-center mx-auto px-6">
-                                    Puedes guardar cualquier estructura como plantilla desde el panel de Inspector en una Pizarra activa.
-                                </p>
-                            </div>
-                        </div>
-                    )}
-
-                    {/* IMPORTACIONES TAB */}
-                    {activeTab === 'imports' && (
-                        <div>
-                            <div className="mb-6">
-                                <h3 className="text-2xl font-bold text-slate-800 dark:text-white">Importaciones</h3>
-                                <p className="text-slate-500 dark:text-slate-400 text-sm">Trae tus diseños de otras plataformas.</p>
-                            </div>
-
-                            <div className="grid grid-cols-2 gap-6 mb-8">
-                                <button className="p-8 border border-slate-200 dark:border-slate-700 rounded-2xl hover:border-purple-300 hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-all flex flex-col items-center gap-4 group bg-white dark:bg-slate-800">
-                                    <div className="w-14 h-14 rounded-full bg-purple-100 dark:bg-purple-900/50 text-purple-600 dark:text-purple-300 flex items-center justify-center text-2xl font-bold">C</div>
-                                    <span className="font-semibold text-slate-700 dark:text-slate-200 group-hover:text-purple-700 dark:group-hover:text-purple-300">Importar de Canva</span>
-                                </button>
-                                <button className="p-8 border border-slate-200 dark:border-slate-700 rounded-2xl hover:border-yellow-300 hover:bg-yellow-50 dark:hover:bg-yellow-900/20 transition-all flex flex-col items-center gap-4 group bg-white dark:bg-slate-800">
-                                    <div className="w-14 h-14 rounded-full bg-yellow-100 dark:bg-yellow-900/50 text-yellow-600 dark:text-yellow-300 flex items-center justify-center text-2xl font-bold">M</div>
-                                    <span className="font-semibold text-slate-700 dark:text-slate-200 group-hover:text-yellow-700 dark:group-hover:text-yellow-300">Importar de Miro</span>
-                                </button>
-                            </div>
-
-                            <div className="bg-blue-50 dark:bg-blue-900/20 p-5 rounded-xl border border-blue-100 dark:border-blue-800 text-sm text-blue-800 dark:text-blue-300 flex gap-3">
-                                <div className="mt-1"><LuDownload size={16} /></div>
-                                <div>
-                                    <strong>Importación Inteligente:</strong> Al importar, Pizarrón creará una pizarra gemela e identificará automáticamente formas, gráficos y estructuras para guardarlas en tu biblioteca.
+                                    <h4 className="text-slate-800 dark:text-white font-medium mb-1">Tu colección está vacía</h4>
+                                    <p className="text-xs text-slate-400 max-w-sm text-center mx-auto px-6">
+                                        Puedes guardar cualquier estructura como plantilla desde el panel de Inspector en una Pizarra activa.
+                                    </p>
                                 </div>
                             </div>
-                        </div>
-                    )}
+                        )}
 
-                    {activeTab === 'new-project' && step === 'details' && selectedTemplate && (
-                        <div className="max-w-md mx-auto mt-12 animate-in fade-in slide-in-from-right-8 duration-300">
-                            <div className="text-center mb-8">
-                                <div className="text-6xl mb-4 inline-block drop-shadow-md">{BOARD_TEMPLATES.find(t => t.id === selectedTemplate)?.icon}</div>
-                                <h3 className="text-2xl font-bold text-slate-800 dark:text-white">Nombre de la Pizarra</h3>
-                                <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">Dale una identidad a tu nuevo espacio de trabajo.</p>
-                            </div>
-
-                            <div className="space-y-6">
-                                <div>
-                                    <label className="block text-xs font-bold uppercase text-slate-500 dark:text-slate-400 mb-2 tracking-wide">Título</label>
-                                    <input
-                                        type="text"
-                                        value={pizarraTitle}
-                                        onChange={e => setPizarraTitle(e.target.value)}
-                                        placeholder="Ej: Estrategia Q3 2025"
-                                        className="w-full px-4 py-3 border border-slate-300 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white dark:bg-slate-800 text-slate-800 dark:text-white shadow-sm"
-                                        autoFocus
-                                    />
+                        {/* IMPORTACIONES TAB */}
+                        {activeTab === 'imports' && (
+                            <div>
+                                <div className="mb-6">
+                                    <h3 className="text-2xl font-bold text-slate-800 dark:text-white">Importaciones</h3>
+                                    <p className="text-slate-500 dark:text-slate-400 text-sm">Trae tus diseños de otras plataformas.</p>
                                 </div>
 
-                                <button
-                                    className="w-full py-3.5 bg-blue-600 text-white rounded-lg font-bold shadow-lg shadow-blue-500/30 hover:bg-blue-700 transition-all active:scale-95 flex items-center justify-center gap-2"
-                                    onClick={() => handleCreate()}
-                                    disabled={isCreating}
-                                >
-                                    {isCreating ? <span className="animate-pulse">Creando...</span> : <span>Lanzar Pizarra 🚀</span>}
-                                </button>
+                                <div className="grid grid-cols-2 gap-6 mb-8">
+                                    <button className="p-8 border border-slate-200 dark:border-slate-700 rounded-2xl hover:border-purple-300 hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-all flex flex-col items-center gap-4 group bg-white dark:bg-slate-800">
+                                        <div className="w-14 h-14 rounded-full bg-purple-100 dark:bg-purple-900/50 text-purple-600 dark:text-purple-300 flex items-center justify-center text-2xl font-bold">C</div>
+                                        <span className="font-semibold text-slate-700 dark:text-slate-200 group-hover:text-purple-700 dark:group-hover:text-purple-300">Importar de Canva</span>
+                                    </button>
+                                    <button className="p-8 border border-slate-200 dark:border-slate-700 rounded-2xl hover:border-yellow-300 hover:bg-yellow-50 dark:hover:bg-yellow-900/20 transition-all flex flex-col items-center gap-4 group bg-white dark:bg-slate-800">
+                                        <div className="w-14 h-14 rounded-full bg-yellow-100 dark:bg-yellow-900/50 text-yellow-600 dark:text-yellow-300 flex items-center justify-center text-2xl font-bold">M</div>
+                                        <span className="font-semibold text-slate-700 dark:text-slate-200 group-hover:text-yellow-700 dark:group-hover:text-yellow-300">Importar de Miro</span>
+                                    </button>
+                                </div>
 
-                                <button
-                                    className="w-full py-2 text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 text-sm"
-                                    onClick={() => setStep('select')}
-                                >
-                                    &larr; Volver a Plantillas
-                                </button>
+                                <div className="bg-blue-50 dark:bg-blue-900/20 p-5 rounded-xl border border-blue-100 dark:border-blue-800 text-sm text-blue-800 dark:text-blue-300 flex gap-3">
+                                    <div className="mt-1"><LuDownload size={16} /></div>
+                                    <div>
+                                        <strong>Importación Inteligente:</strong> Al importar, Pizarrón creará una pizarra gemela e identificará automáticamente formas, gráficos y estructuras para guardarlas en tu biblioteca.
+                                    </div>
+                                </div>
                             </div>
-                        </div>
-                    )}
+                        )}
+
+                        {activeTab === 'new-project' && step === 'details' && selectedTemplate && (
+                            <div className="max-w-md mx-auto mt-12 animate-in fade-in slide-in-from-right-8 duration-300">
+                                <div className="text-center mb-8">
+                                    <div className="text-6xl mb-4 inline-block drop-shadow-md">
+                                        {selectedTemplate === 't-empty' ? '⬜' : BOARD_TEMPLATES.find(t => t.id === selectedTemplate)?.icon}
+                                    </div>
+                                    <h3 className="text-2xl font-bold text-slate-800 dark:text-white">
+                                        {selectedTemplate === 't-empty' ? 'Pizarra Vacía' : 'Nombre de la Pizarra'}
+                                    </h3>
+                                    <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">Dale una identidad a tu nuevo espacio de trabajo.</p>
+                                </div>
+
+                                <div className="space-y-6">
+                                    <div>
+                                        <label className="block text-xs font-bold uppercase text-slate-500 dark:text-slate-400 mb-2 tracking-wide">Título</label>
+                                        <input
+                                            type="text"
+                                            value={pizarraTitle}
+                                            onChange={e => setPizarraTitle(e.target.value)}
+                                            placeholder="Ej: Estrategia Q3 2025"
+                                            className="w-full px-4 py-3 border border-slate-300 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white dark:bg-slate-800 text-slate-800 dark:text-white shadow-sm"
+                                            autoFocus
+                                        />
+                                    </div>
+
+                                    <button
+                                        className="w-full py-3.5 bg-blue-600 text-white rounded-lg font-bold shadow-lg shadow-blue-500/30 hover:bg-blue-700 transition-all active:scale-95 flex items-center justify-center gap-2"
+                                        onClick={() => handleCreate()}
+                                        disabled={isCreating}
+                                    >
+                                        {isCreating ? <span className="animate-pulse">Creando...</span> : <span>Lanzar Pizarra 🚀</span>}
+                                    </button>
+
+                                    <button
+                                        className="w-full py-2 text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 text-sm"
+                                        onClick={() => setStep('select')}
+                                    >
+                                        &larr; Volver a Plantillas
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+                    </div>
                 </div>
-            </div>
+            </ErrorBoundary>
         </div>
     );
 };

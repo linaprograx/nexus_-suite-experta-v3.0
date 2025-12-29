@@ -7,7 +7,9 @@ import {
     LuShapes, // Library
     LuImage, // Image
     LuMonitorPlay, // Presentation
-    LuTrash2
+    LuTrash2,
+    LuApple,
+    LuScrollText
 } from 'react-icons/lu';
 
 const TOOLS = [
@@ -21,6 +23,10 @@ const TOOLS = [
     { id: 'sep2', type: 'separator' },
     { id: 'project', icon: <LuLayoutGrid size={20} />, label: 'Pizarras', isAction: true },
     { id: 'presentation', icon: <LuMonitorPlay size={20} />, label: 'Present (P)', isAction: true },
+    // Separator
+    { id: 'sep_grimorio', type: 'separator' },
+    { id: 'ingredient', icon: <LuApple size={20} />, label: 'Ingredient', isAction: true },
+    { id: 'recipe', icon: <LuScrollText size={20} />, label: 'Recipe', isAction: true },
     // Bottom
     { id: 'sep3', type: 'separator' },
     { id: 'delete', icon: <LuTrash2 size={20} />, label: 'Delete', isAction: true },
@@ -30,6 +36,7 @@ export const LeftRail: React.FC = () => {
     const activeTool = pizarronStore.useSelector(s => s.uiFlags.activeTool);
     const showLibrary = pizarronStore.useSelector(s => s.uiFlags.showLibrary);
     const showProjectManager = pizarronStore.useSelector(s => s.uiFlags.showProjectManager);
+    const mode = pizarronStore.useSelector(s => s.interactionState.mode);
 
     const handleTool = (tool: any) => {
         // Presentation Action
@@ -72,6 +79,19 @@ export const LeftRail: React.FC = () => {
             return;
         }
 
+        if (tool.id === 'ingredient' || tool.id === 'recipe') {
+            // Toggle Picker with specific Type
+            // If already open with same type, close it.
+            const current = pizarronStore.getState().uiFlags.grimorioPickerOpen;
+            const target = tool.id === 'ingredient' ? 'ingredients' : 'recipes';
+
+            if (current === target) {
+                pizarronStore.setUIFlag('grimorioPickerOpen', null);
+            } else {
+                pizarronStore.setUIFlag('grimorioPickerOpen', target as any);
+            }
+            return;
+        }
         if (tool.isAction) {
             const state = pizarronStore.getState();
             const selection = Array.from(state.selection);
@@ -96,6 +116,12 @@ export const LeftRail: React.FC = () => {
             {/* Main Strip */}
             <div className="bg-white/90 backdrop-blur shadow-sm border border-slate-200 rounded-2xl p-2 flex flex-col gap-2">
                 {TOOLS.map((tool: any, i) => {
+                    // Phase 5: Interaction Mode Filtering
+                    if (mode !== 'creative' && mode !== undefined) {
+                        const allowed = ['pointer', 'hand', 'project', 'presentation', 'ingredient', 'recipe'];
+                        if (!allowed.includes(tool.id)) return null;
+                    }
+
                     if (tool.type === 'separator') {
                         return <div key={`sep-${i}`} className="h-px w-6 bg-slate-200 mx-auto my-1" />;
                     }

@@ -1,4 +1,8 @@
-export type NodeType = 'card' | 'group' | 'image' | 'text' | 'shape' | 'line' | 'board' | 'icon';
+export type NodeType = 'card' | 'group' | 'image' | 'text' | 'shape' | 'line' | 'board' | 'icon' | 'ingredient' | 'recipe';
+
+export type InteractionMode = 'creative' | 'operational' | 'executive' | 'training';
+
+export type BoardCapability = 'costing' | 'checklist' | 'variants' | 'staff_read' | 'time_tracking' | 'layout' | 'status_tracking';
 
 export interface LineBinding {
     nodeId: string;
@@ -110,7 +114,7 @@ export interface BoardStructure {
 
 export interface BoardNode {
     id: string;
-    type: 'text' | 'shape' | 'sticker' | 'image' | 'line' | 'group' | 'board' | 'card' | 'composite' | 'icon';
+    type: 'text' | 'shape' | 'sticker' | 'image' | 'line' | 'group' | 'board' | 'card' | 'composite' | 'icon' | 'ingredient' | 'recipe';
 
     // Structure & Scalability
     // structure property moved to specific extended interface below or consolidated
@@ -132,6 +136,11 @@ export interface BoardNode {
     structureId?: string;
     structure?: BoardStructure;
     childrenIds?: string[]; // For groups
+
+    // Phase 6: Grimorio References (node-level, not content)
+    ingredientId?: string; // Reference to Grimorio Ingredient ID
+    recipeId?: string;     // Reference to Grimorio Recipe ID
+
     content: {
         title?: string;
         body?: string; // For notes/cards
@@ -204,6 +213,7 @@ export interface BoardNode {
             rows: number;
             gap: number;
         };
+        thumbnail?: string; // DataURL or Image URL for preview
 
         // Card Specific
         status?: 'todo' | 'in-progress' | 'done';
@@ -222,6 +232,17 @@ export interface BoardNode {
         locked?: boolean;
         isFixed?: boolean; // Background mode
         parentId?: string; // For grouping (future)
+
+        // Phase 6: Grimorio Integration
+        ingredientId?: string; // Reference to Grimorio Ingredient
+        recipeId?: string;     // Reference to Grimorio Recipe
+        format?: string;       // Optional format override for Ingredients
+
+        // Phase 6.6: Snapshot Fields (for immediate rendering without externalData)
+        cost?: number;         // Snapshot cost at creation time
+        unit?: string;         // Snapshot unit (e.g., 'kg', 'L')
+        margin?: number;       // Snapshot margin (for recipes)
+        snapshotData?: any;    // Complete Grimorio item data
     }
 }
 
@@ -246,7 +267,9 @@ export interface BoardState {
         toolbarPinned?: boolean;
         showLibrary?: boolean;
         showProjectManager?: boolean;
+        showOverview?: boolean; // New: Grid view of all boards
         focusMode?: boolean;
+        grimorioPickerOpen?: 'ingredients' | 'recipes' | null; // Phase 6: Picker Modal State
     };
     activePizarra?: PizarraMetadata;
 
@@ -257,6 +280,8 @@ export interface BoardState {
         currentIndex: number;
         storyPath: string[]; // Node IDs
     };
+    // Transient Signals
+
     savedTemplates?: BoardStructure[]; // User saved templates (Structure Only)
     boardResources?: BoardResource[]; // User saved boards (Full Content Prefabs)
 }
@@ -285,6 +310,8 @@ export interface InteractionState {
     editingNodeId?: string; // Generic editing (popover)
     editingSubId?: string; // Sub-element ID (e.g. cell in a grid)
     resizeHandle?: ResizeHandle;
+    isDragging?: boolean;
+    dragStart?: { x: number, y: number } | null;
     isDraggingMap?: boolean;
     activeZoneId?: string; // ID of the specific zone selected within a board
     activeZoneSection?: string; // Specific section ID ('title', 'content', or UUID)
@@ -300,9 +327,18 @@ export interface InteractionState {
     // Focus Mode
     focusTargetId?: string | null;
 
+    // Phase 5: Interaction Modes
+    mode: InteractionMode;
+
+    // Default Mode for this Board
+    defaultMode?: InteractionMode;
+
     // Choreography
     // Phase 6.3: Planning Intelligence (Read-Only)
     planningHints?: Record<string, { type: 'cost' | 'market' | 'stock'; severity: 'critical' | 'warning' | 'info'; message: string; icon: string; }[]>;
+
+    // Transient Signals
+    requestThumbnailCapture?: boolean;
 }
 
 export interface GuideLine {
@@ -323,6 +359,8 @@ export interface PizarraMetadata {
     title: string;
     description?: string; // Optional description
     ownerId: string;      // User ID of owner
+    capabilities?: BoardCapability[]; // Phase 5: Intent Capabilities
+    defaultMode?: InteractionMode; // Phase 5.FIX
     createdAt: number;
     updatedAt: number;
     lastOpenedAt: number; // For "Recent" sorting
@@ -337,8 +375,9 @@ export interface PizarraMetadata {
     boards: {
         id: string;
         title: string;
-        type: string;
+        type: 'board' | 'group' | 'zone'; // Phase 5: Zone Support
         order: number;
+        thumbnail?: string;
     }[];
 }
 

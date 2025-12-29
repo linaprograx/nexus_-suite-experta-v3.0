@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { pizarronStore } from '../../state/store';
+import { LuLayoutGrid } from 'react-icons/lu';
 
 export const TopBar: React.FC = () => {
     const [zoom, setZoom] = useState(1);
@@ -10,9 +11,20 @@ export const TopBar: React.FC = () => {
             const state = pizarronStore.getState();
             setZoom(state.viewport.zoom);
             setHasSelection(state.selection.size > 0);
+            setZoom(state.viewport.zoom);
+            setHasSelection(state.selection.size > 0);
         });
         return unsub;
     }, []);
+
+    const activePizarra = pizarronStore.useSelector(s => s.activePizarra);
+    const boards = activePizarra?.boards || [];
+    const activeBoard = boards[0]; // The first one is active by definition of our rotation logic
+
+    const handleSwitchBoard = (boardId: string) => {
+        pizarronStore.switchBoard(boardId);
+        // PizarronRoot will detect change and re-init adapter
+    };
 
     const handleZoomIn = () => {
         pizarronStore.updateViewport({ zoom: Math.min(zoom + 0.1, 5) });
@@ -29,6 +41,45 @@ export const TopBar: React.FC = () => {
                 <span className="text-xs font-mono w-12 text-center text-slate-900 dark:text-slate-200">{Math.round(zoom * 100)}%</span>
                 <button onClick={handleZoomIn} className="w-8 h-8 flex items-center justify-center hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full text-slate-600 dark:text-slate-300 font-bold">+</button>
             </div>
+
+            {/* Separator */}
+            <div className="w-px h-4 bg-slate-300 mx-2"></div>
+
+            {/* Board Switcher (Notebook Mode) */}
+            {activePizarra && boards.length > 0 && (
+                <div className="flex items-center gap-2">
+                    {/* Overview Toggle */}
+                    <button
+                        onClick={() => {
+                            // Capture current board thumbnail before showing overlay
+                            pizarronStore.setThumbnailRequest(true);
+                            // Brief delay to allow capture to happen before overlay DOM insertion (optional but safer)
+                            const frameId = requestAnimationFrame(() => {
+                                pizarronStore.setState(s => { s.uiFlags.showOverview = !s.uiFlags.showOverview });
+                            });
+                        }}
+                        className="w-8 h-8 flex items-center justify-center bg-slate-100 dark:bg-slate-800 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 text-slate-600 dark:text-slate-300 hover:text-indigo-600 rounded-full transition-colors"
+                        title="Ver todos los tableros"
+                    >
+                        <LuLayoutGrid className="w-4 h-4" />
+                    </button>
+
+                    <div className="flex bg-slate-100 dark:bg-slate-800 rounded-lg p-1 gap-1">
+                        {boards.map((b, i) => (
+                            <button
+                                key={b.id}
+                                onClick={() => handleSwitchBoard(b.id)}
+                                className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${i === 0
+                                    ? 'bg-white dark:bg-slate-600 shadow-sm text-slate-900 dark:text-white'
+                                    : 'text-slate-500 hover:text-slate-700 hover:bg-slate-200 dark:hover:bg-slate-700'
+                                    }`}
+                            >
+                                {b.title || `Board ${i + 1}`}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+            )}
 
             {hasSelection && (
                 <>

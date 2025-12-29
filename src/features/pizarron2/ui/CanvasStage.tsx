@@ -1,12 +1,19 @@
 import React, { useEffect, useRef } from 'react';
 import { renderer } from '../engine/renderer';
-import { pizarronStore } from '../state/store';
+import { pizarronStore, usePizarronStore } from '../state/store';
 import { interactionManager } from '../engine/interaction';
+import { useIngredients } from '../../../hooks/useIngredients';
+import { useRecipes } from '../../../hooks/useRecipes';
 
 export const CanvasStage: React.FC = () => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const containerRef = useRef<HTMLDivElement>(null);
     const rafId = useRef<number>(0);
+    const externalDataRef = useRef(new Map<string, any>());
+
+    // Phase 6: Grimorio Hooks
+    const { ingredients } = useIngredients();
+    const { recipes } = useRecipes();
 
     // Initial Setup & Resize Observer
     useEffect(() => {
@@ -25,7 +32,7 @@ export const CanvasStage: React.FC = () => {
             const { width, height } = entries[0].contentRect;
             renderer.resize(width, height);
             // Trigger a render immediately
-            renderer.render(pizarronStore.getState());
+            renderer.render(pizarronStore.getState(), externalDataRef.current);
         });
 
         resizeObserver.observe(container);
@@ -34,6 +41,8 @@ export const CanvasStage: React.FC = () => {
         // For now, let's allow Store subscriptions to drive render, 
         // OR a continuous loop if we want smooth gesture inertia later.
         // Let's do Subscription-based for efficiency now.
+
+
 
         // 3. Render Loop (Continuous for smooth Motion System)
         let lastTime = 0;
@@ -74,7 +83,7 @@ export const CanvasStage: React.FC = () => {
                 }
             }
 
-            renderer.render(state);
+            renderer.render(state, externalDataRef.current);
             rafId.current = requestAnimationFrame(renderLoop);
         };
 
@@ -100,6 +109,50 @@ export const CanvasStage: React.FC = () => {
             cancelAnimationFrame(rafId.current);
         };
     }, []);
+
+    // Phase 6: Sync External Data (Correctly placed top-level hook)
+    useEffect(() => {
+        const map = externalDataRef.current;
+        map.clear();
+        ingredients.forEach(i => map.set(i.id, { name: i.nombre, cost: i.costo || i.precioCompra || 0, format: i.unidad }));
+        recipes.forEach(r => map.set(r.id, {
+            name: r.nombre,
+            cost: r.costoTotal,
+            margin: r.margen,
+            ingredients: r.ingredientes // Pass full ingredients list for "Ficha" view
+        }));
+        // Trigger a re-render to update UI with new data
+        renderer.render(pizarronStore.getState(), map);
+    }, [ingredients, recipes]);
+
+    // 4. Thumbnail Capture Listener
+    const requestCapture = usePizarronStore(s => s.interactionState.requestThumbnailCapture);
+
+    useEffect(() => {
+        if (requestCapture && canvasRef.current) {
+            console.log("[CanvasStage] Capturing Thumbnail...");
+            // Use requestAnimationFrame to ensure we capture a fully rendered frame?
+            // Or just next tick.
+            requestAnimationFrame(() => {
+                const dataUrl = canvasRef.current?.toDataURL('image/jpeg', 0.4); // Lightweight
+                if (dataUrl) {
+                    const activeBoardId = pizarronStore.getState().activePizarra?.boards[0]?.id; // Get current board
+                    // Wait, activePizarra.boards[0] is always the active one in our rotation logic?
+                    // Let's rely on finding it via ID if we need to, but store.activeBoardId is implicit.
+                    // Actually, pizarronStore.updateBoardThumbnail requires ID.
+                    // Let's get it from store state directly.
+                    const state = pizarronStore.getState();
+                    const currentBoardId = state.activePizarra?.boards[0]?.id;
+
+                    if (currentBoardId) {
+                        pizarronStore.updateBoardThumbnail(currentBoardId, dataUrl);
+                    }
+                }
+                // Reset flag
+                pizarronStore.setThumbnailRequest(false);
+            });
+        }
+    }, [requestCapture]);
 
     // Pointer Events delegation
     const handlePointerDown = (e: React.PointerEvent<HTMLCanvasElement>) => {
@@ -140,10 +193,28 @@ export const CanvasStage: React.FC = () => {
                 // React events are fine for Pointer, but Wheel needs non-passive.
                 // Pointer inputs:
                 onPointerDown={(e) => {
+                    const state = pizarronStore.getState();
+                    // Phase 5: Interaction Mode Constraints
+                    // In Operational/Executive, we usually want to allow Selection (for checkboxes) but NOT Drag.
+                    // However, Drag is initiated on Down.
+                    // We can rely on Move filtering or Manager logic.
+                    // For now, let's enforce 'pointer' tool if not creative.
+                    if (state.interactionState.mode !== 'creative' && state.uiFlags.activeTool !== 'pointer' && state.uiFlags.activeTool !== 'hand') {
+                        pizarronStore.setActiveTool('pointer');
+                    }
+
                     pizarronStore.setUIFlag('showLibrary', false);
                     interactionManager.onPointerDown(e);
                 }}
-                onPointerMove={(e) => interactionManager.onPointerMove(e)}
+                onPointerMove={(e) => {
+                    // Phase 5: Block Node Dragging in Non-Creative Modes
+                    const state = pizarronStore.getState();
+                    if (state.interactionState.mode !== 'creative' && state.interactionState.isDragging && !state.interactionState.isDraggingMap) {
+                        // Allow Pan (isDraggingMap), Block Node Drag
+                        return;
+                    }
+                    interactionManager.onPointerMove(e);
+                }}
                 onPointerUp={(e) => interactionManager.onPointerUp(e)}
                 onPointerLeave={(e) => interactionManager.onPointerUp(e)}
                 onDoubleClick={(e) => interactionManager.onDoubleClick(e)}

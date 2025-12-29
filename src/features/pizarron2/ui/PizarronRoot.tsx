@@ -17,6 +17,8 @@ import { LibrarySidePanel } from './panels/LibrarySidePanel';
 import { PizarraManager } from './overlays/PizarraManager';
 import { MiniMap } from './overlays/MiniMap';
 import { CollapsedDock } from './overlays/CollapsedDock';
+import { OverviewOverlay } from './overlays/OverviewOverlay';
+import { GrimorioPicker } from './overlays/GrimorioPicker';
 
 interface PizarronRootProps {
     appId: string;
@@ -45,16 +47,42 @@ export const PizarronRoot: React.FC<PizarronRootProps> = ({ appId, boardId, user
         }
     }, [planningHints]);
 
-    // Initialize Sync Adapter
+    // Initialize Sync Adapter (Reactive to Store)
+    const activePizarra = pizarronStore.useSelector(s => s.activePizarra);
+
+    // Phase 6: Session Restoration (Fix Refresh Data Loss)
     React.useEffect(() => {
-        if (appId && boardId) {
-            console.log("[PizarronRoot] Initializing Sync", { appId, boardId });
-            firestoreAdapter.init(appId, boardId);
+        // If we have no active pizarra in store, try to restore from session
+        if (!pizarronStore.getState().activePizarra) {
+            const restored = pizarronStore.restoreLastSession();
+            if (restored) {
+                console.log("[PizarronRoot] Restored Session:", restored.id);
+            }
+        }
+    }, [appId]);
+
+    // Determine Effective Board ID:
+    // Priority 1: Store's Active Pizarra (User switched context)
+    // Priority 2: URL/Prop Board ID (Initial load)
+    const effectiveBoardId = activePizarra?.boards?.[0]?.id || boardId;
+
+    // Debug Board Switching
+    React.useEffect(() => {
+        console.log(`[PizarronRoot] Effective Board ID Changed: ${effectiveBoardId} (AppID: ${appId})`);
+    }, [effectiveBoardId, appId]);
+
+    React.useEffect(() => {
+        if (appId && effectiveBoardId) {
+            console.log("[PizarronRoot] Initializing Sync", { appId, boardId: effectiveBoardId });
+            firestoreAdapter.init(appId, effectiveBoardId);
             return () => {
+                console.log("[PizarronRoot] Stopping Sync for", effectiveBoardId);
                 firestoreAdapter.stop();
+                // Critical Fix: Clear board context to prevent overlap when switching
+                pizarronStore.resetBoard();
             };
         }
-    }, [appId, boardId]);
+    }, [appId, effectiveBoardId]);
 
     // Optimize: Subscribe ONLY to UI flags relevant for overlays
     const uiFlags = pizarronStore.useSelector(s => s.uiFlags);
@@ -73,49 +101,16 @@ export const PizarronRoot: React.FC<PizarronRootProps> = ({ appId, boardId, user
             // Ignore if input is focused
             if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement || (e.target as HTMLElement).isContentEditable) return;
 
-            const isCmd = e.metaKey || e.ctrlKey;
-
-            if (isCmd && e.key === 'c') {
-                e.preventDefault();
-                pizarronStore.copySelection();
-            }
-            if (isCmd && e.key === 'v') {
-                e.preventDefault();
-                pizarronStore.paste();
-            }
+            // Delete
             if (e.key === 'Delete' || e.key === 'Backspace') {
                 const sel = pizarronStore.getState().selection;
-                if (sel.size > 0) pizarronStore.deleteNodes(Array.from(sel));
+                if (sel.size > 0) {
+                    sel.forEach(id => pizarronStore.deleteNode(id));
+                    pizarronStore.setSelection([]);
+                }
             }
-            if (isCmd && e.key === 'd') {
-                e.preventDefault();
-                pizarronStore.copySelection();
-                pizarronStore.paste();
-            }
-
-            // Presentation Mode Toggle (Global)
-            // Presentation Mode Toggle (Global)
-            if (e.code === 'KeyP') {
-                // Ensure we aren't editing text
-                console.log("[PizarronRoot] 'P' Key detected. Toggling presentation...");
-                e.preventDefault();
-                e.stopImmediatePropagation(); // Strongest stop
-                pizarronStore.setPresentationMode(!pizarronStore.getState().presentationState.isActive);
-            }
-
-            // Layer Shortcuts
-            if (isCmd && e.key === 'ArrowUp') {
-                e.preventDefault();
-                if (e.shiftKey) pizarronStore.bringToFront();
-                else pizarronStore.bringForward();
-            }
-            if (isCmd && e.key === 'ArrowDown') {
-                e.preventDefault();
-                if (e.shiftKey) pizarronStore.sendToBack();
-                else pizarronStore.sendBackward();
-            }
-
-            // Undo/Redo Could go here too
+            // Arrow Keys for Nudging (if we have selection)
+            // ...
         };
 
         window.addEventListener('keydown', handleKeyDown);
@@ -136,7 +131,7 @@ export const PizarronRoot: React.FC<PizarronRootProps> = ({ appId, boardId, user
                 {!isPresenting && (
                     <>
                         <TopBar />
-                        {/* Overlays (Toolbars, etc) */}
+                        {/* Overlays */}
                         <LeftRail />
                         <MiniToolbar />
                         <Inspector />
@@ -145,16 +140,22 @@ export const PizarronRoot: React.FC<PizarronRootProps> = ({ appId, boardId, user
                         <CollapsedDock />
 
                         {showLibrary && <LibrarySidePanel />}
-                        {showProjectManager && <PizarraManager onClose={() => pizarronStore.setUIFlag('showProjectManager', false)} />}
+                        {showProjectManager && (
+                            <PizarraManager
+                                appId={appId}
+                                onClose={() => pizarronStore.setUIFlag('showProjectManager', false)}
+                            />
+                        )}
                         <TextEditor />
+
+                        {/* Bottom Status */}
+                        <div className="absolute bottom-6 right-6 pointer-events-none">
+                            <div className="bg-white/90 backdrop-blur shadow-sm border border-slate-200 rounded-full px-3 py-1.5 pointer-events-auto text-xs font-mono text-slate-600">
+                                Pizarrón 2.0 Beta
+                            </div>
+                        </div>
                     </>
                 )}
-                {/* Bottom Status */}
-                <div className="absolute bottom-6 right-6 pointer-events-none">
-                    <div className="bg-white/90 backdrop-blur shadow-sm border border-slate-200 rounded-full px-3 py-1.5 pointer-events-auto text-xs font-mono text-slate-600">
-                        Pizarrón 2.0 Beta
-                    </div>
-                </div>
             </div>
 
             {/* Presentation Overlay */}
@@ -164,6 +165,10 @@ export const PizarronRoot: React.FC<PizarronRootProps> = ({ appId, boardId, user
             <div className="flex-1 relative z-0">
                 <CanvasStage />
             </div>
+
+            {/* Global Modals (High Z-Index, Pointer Events Auto) - MOVED OUTSIDE HUD */}
+            <OverviewOverlay />
+            <GrimorioPicker />
         </div>
     );
 };

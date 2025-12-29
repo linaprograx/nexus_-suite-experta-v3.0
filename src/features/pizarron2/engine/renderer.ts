@@ -30,10 +30,10 @@ export class PizarronRenderer {
         };
     }
 
-    private animStates = new Map<string, { lift: number, selectionOpacity: number }>();
+    private animStates = new Map<string, { lift: number, selectionOpacity: number, hoverOpacity: number }>();
     private focusOverlayOpacity: number = 0; // Global overlay alpha
 
-    render(state: BoardState) {
+    render(state: BoardState, externalData?: Map<string, any>) {
         if (!this.ctx) return;
         const ctx = this.ctx;
         const { viewport, nodes, order, selection, uiFlags, interactionState } = state;
@@ -446,7 +446,7 @@ export class PizarronRenderer {
         ctx.restore();
     }
 
-    private drawNode(ctx: CanvasRenderingContext2D, node: BoardNode, isSelected: boolean, zoom: number, nodes?: Record<string, BoardNode>, anim: { lift: number, selectionOpacity: number, hoverOpacity: number } = { lift: 0, selectionOpacity: 0, hoverOpacity: 0 }) {
+    private drawNode(ctx: CanvasRenderingContext2D, node: BoardNode, isSelected: boolean, zoom: number, nodes?: Record<string, BoardNode>, anim: { lift: number, selectionOpacity: number, hoverOpacity: number } = { lift: 0, selectionOpacity: 0, hoverOpacity: 0 }, externalData?: Map<string, any>) {
         if (node.collapsed) return;
         ctx.save();
 
@@ -486,6 +486,18 @@ export class PizarronRenderer {
             });
             ctx.restore();
 
+            ctx.restore();
+            return;
+        }
+        else if (node.type === 'ingredient') {
+            const data = externalData?.get(node.ingredientId || '');
+            this.drawIngredientNode(ctx, node, zoom, data);
+            ctx.restore();
+            return;
+        }
+        else if (node.type === 'recipe') {
+            const data = externalData?.get(node.recipeId || '');
+            this.drawRecipeNode(ctx, node, zoom, data);
             ctx.restore();
             return;
         }
@@ -1578,6 +1590,176 @@ export class PizarronRenderer {
 
         ctx.stroke();
         ctx.restore();
+    }
+
+    // --- Phase 6: Grimorio Integration Drawing ---
+
+    private drawIngredientNode(ctx: CanvasRenderingContext2D, node: BoardNode, zoom: number, data?: any) {
+        const r = node.content.borderRadius || 8;
+        const color = '#ffffff';
+        const borderColor = '#e2e8f0';
+        const accentColor = '#22c55e';
+
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        if (ctx.roundRect) ctx.roundRect(0, 0, node.w, node.h, r);
+        else ctx.rect(0, 0, node.w, node.h);
+        ctx.fill();
+
+        ctx.strokeStyle = borderColor;
+        ctx.lineWidth = 1 / zoom;
+        ctx.stroke();
+
+        ctx.fillStyle = accentColor;
+        ctx.beginPath();
+        if (ctx.roundRect) ctx.roundRect(0, 0, 4, node.h, [r, 0, 0, r]);
+        else ctx.fillRect(0, 0, 4, node.h);
+        ctx.fill();
+
+        if (zoom < 0.2) return;
+
+        // Use snapshot or external data
+        const itemData = data || node.content.snapshotData;
+        const name = itemData?.name || itemData?.nombre || node.content.title || 'Unknown Ingredient';
+
+        ctx.fillStyle = '#0f172a';
+        ctx.font = '600 16px Inter, sans-serif';
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'top';
+        ctx.fillText(name, 16, 16);
+
+        if (zoom < 0.4) return;
+
+        // Price & Unit
+        const costVal = itemData?.cost || itemData?.costo || itemData?.precioCompra || node.content.cost || 0;
+        const price = `$${costVal.toFixed(2)}`;
+        const unit = itemData?.format || itemData?.unidad || node.content.unit || 'unit';
+
+        ctx.fillStyle = '#64748b';
+        ctx.font = '500 13px Inter, sans-serif';
+        ctx.fillText(`${price} / ${unit}`, 16, 45);
+
+        // Suppliers
+        const suppliers = itemData?.proveedores || [];
+        if (suppliers.length > 0) {
+            ctx.fillStyle = '#94a3b8';
+            ctx.font = '400 11px Inter, sans-serif';
+            ctx.fillText(`${suppliers.length} proveedor${suppliers.length > 1 ? 'es' : ''}`, 16, 68);
+        }
+
+        // Stock level  
+        if (itemData?.stock !== undefined) {
+            ctx.fillStyle = itemData.stock < 10 ? '#ef4444' : '#22c55e';
+            ctx.font = '500 11px Inter, sans-serif';
+            ctx.fillText(`Stock: ${itemData.stock} ${unit}`, 16, 88);
+        }
+
+        // ING Pill
+        const px = node.w - 35;
+        const py = node.h - 22;
+        ctx.fillStyle = '#f0fdf4';
+        ctx.beginPath();
+        if (ctx.roundRect) ctx.roundRect(px, py, 28, 16, 4);
+        else ctx.fillRect(px, py, 28, 16);
+        ctx.fill();
+        ctx.fillStyle = '#166534';
+        ctx.font = 'bold 10px Inter, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText("ING", px + 14, py + 3);
+    }
+
+    private drawRecipeNode(ctx: CanvasRenderingContext2D, node: BoardNode, zoom: number, data?: any) {
+        const r = node.content.borderRadius || 8;
+        const color = '#ffffff';
+        const borderColor = '#e2e8f0';
+        const accentColor = '#3b82f6';
+
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        if (ctx.roundRect) ctx.roundRect(0, 0, node.w, node.h, r);
+        else ctx.rect(0, 0, node.w, node.h);
+        ctx.fill();
+
+        ctx.strokeStyle = borderColor;
+        ctx.lineWidth = 1 / zoom;
+        ctx.stroke();
+
+        ctx.fillStyle = accentColor;
+        ctx.beginPath();
+        if (ctx.roundRect) ctx.roundRect(0, 0, 4, node.h, [r, 0, 0, r]);
+        else ctx.fillRect(0, 0, 4, node.h);
+        ctx.fill();
+
+        if (zoom < 0.2) return;
+
+        // Use snapshot or external data
+        const itemData = data || node.content.snapshotData;
+        const name = itemData?.name || itemData?.nombre || node.content.title || 'Unknown Recipe';
+
+        ctx.fillStyle = '#0f172a';
+        ctx.font = '600 16px Inter, sans-serif';
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'top';
+        ctx.fillText(name, 16, 16);
+
+        if (zoom < 0.4) return;
+
+        // Cost & Margin
+        const costVal = itemData?.cost || itemData?.costoTotal || node.content.cost || 0;
+        const cost = `$${costVal.toFixed(2)}`;
+        ctx.fillStyle = '#64748b';
+        ctx.font = '500 13px Inter, sans-serif';
+        ctx.fillText(`Costo Total: ${cost}`, 16, 45);
+
+        const marginVal = itemData?.margin || itemData?.margen || node.content.margin;
+        if (marginVal !== undefined && marginVal !== null) {
+            const margin = `${(marginVal * 100).toFixed(0)}%`;
+            ctx.fillStyle = marginVal < 0.3 ? '#ef4444' : '#22c55e';
+            ctx.font = '500 13px Inter, sans-serif';
+            ctx.fillText(`Margen: ${margin}`, 16, 68);
+        }
+
+        // Ingredients List
+        const ingredients = itemData?.ingredientes || [];
+        if (ingredients.length > 0) {
+            ctx.fillStyle = '#e2e8f0';
+            ctx.fillRect(16, 95, node.w - 32, 1);
+
+            ctx.fillStyle = '#94a3b8';
+            ctx.font = '600 11px Inter, sans-serif';
+            ctx.fillText('INGREDIENTES:', 16, 105);
+
+            ctx.fillStyle = '#475569';
+            ctx.font = '500 11px Inter, sans-serif';
+            let y = 120;
+            ingredients.slice(0, 10).forEach((ing: any) => {
+                if (y > node.h - 30) return;
+                const qty = ing.quantity || ing.cantidad || '-';
+                const unit = ing.unit || ing.unidad || '';
+                const ingName = ing.name || ing.nombre || '?';
+                const text = `• ${qty} ${unit} ${ingName}`;
+                ctx.fillText(text, 20, y);
+                y += 16;
+            });
+            if (ingredients.length > 10) {
+                ctx.fillStyle = '#94a3b8';
+                ctx.font = '400 10px Inter, sans-serif';
+                ctx.fillText(`+ ${ingredients.length - 10} más...`, 20, y);
+            }
+        }
+
+        // REC Pill
+        const px = node.w - 35;
+        const py = node.h - 22;
+        ctx.fillStyle = '#eff6ff';
+        ctx.beginPath();
+        if (ctx.roundRect) ctx.roundRect(px, py, 28, 16, 4);
+        else ctx.fillRect(px, py, 28, 16);
+        ctx.fill();
+        ctx.fillStyle = '#1e40af';
+        ctx.font = 'bold 10px Inter, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText("REC", px + 14, py + 3);
     }
 }
 

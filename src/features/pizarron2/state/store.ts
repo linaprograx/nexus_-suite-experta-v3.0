@@ -1,6 +1,6 @@
 
 import { useSyncExternalStore } from 'react';
-import { BoardState, BoardNode, Viewport, PizarraMetadata, BoardStructure, BoardResource } from '../engine/types';
+import { BoardState, BoardNode, Viewport, PizarraMetadata, BoardStructure, BoardResource, InteractionMode } from '../engine/types';
 
 // Initial State
 const INITIAL_STATE: BoardState = {
@@ -16,11 +16,14 @@ const INITIAL_STATE: BoardState = {
         activeTool: 'pointer',
         activeShapeType: 'rectangle' as 'rectangle' | 'circle' | 'triangle' | 'star',
         toolbarPinned: false,
-        showLibrary: false
+        showLibrary: false,
+        showOverview: false,
+        grimorioPickerOpen: null
     },
     // Active Project Metadata
     activePizarra: undefined,
     interactionState: {
+        mode: 'creative', // Fixed: Initialize mode
         // Coreography: Target Viewport for smooth transitions
         targetViewport: undefined // If set, renderer/loop should interpolate to this
     },
@@ -39,6 +42,7 @@ type Selector<T> = (state: BoardState) => T;
 class PizarronStore {
     private state: BoardState;
     private listeners: Set<Listener>;
+    public itemCount: number = 0;
 
     constructor() {
         this.state = JSON.parse(JSON.stringify(INITIAL_STATE)); // Deep copy initial
@@ -326,7 +330,11 @@ class PizarronStore {
             state.order = [];
             state.selection = new Set();
             state.viewport = { x: 0, y: 0, zoom: 1 };
-        });
+        }, false, true); // Silent update
+
+        // Critical: Clear History on Board Reset to avoid cross-contamination
+        this.history = [];
+        this.historyIndex = -1;
     }
 
     fitContent(padding = 100) {
@@ -389,15 +397,134 @@ class PizarronStore {
     }
 
     setUIFlag(key: keyof BoardState['uiFlags'], value: any) {
+        console.groupCollapsed(`[Store] setUIFlag: ${key} ->`, value);
+        console.trace();
+        console.groupEnd();
         this.setState(state => {
             state.uiFlags = { ...state.uiFlags, [key]: value };
+        });
+    }
+
+    setInteractionMode(mode: InteractionMode) {
+        this.setState(state => {
+            state.interactionState.mode = mode;
+            // Side Effects: Clear selection on mode switch to prevent ghost edits
+            if (mode !== 'creative') {
+                state.selection.clear();
+                state.uiFlags.activeTool = 'pointer';
+            }
         });
     }
 
     setActivePizarra(metadata: PizarraMetadata | undefined) {
         this.setState(state => {
             state.activePizarra = metadata;
+
+            // Phase 5.FIX: Apply Default Mode
+            if (metadata?.defaultMode) {
+                state.interactionState.mode = metadata.defaultMode;
+                if (metadata.defaultMode !== 'creative') {
+                    state.selection.clear();
+                    state.uiFlags.activeTool = 'pointer';
+                }
+            } else {
+                state.interactionState.mode = 'creative';
+            }
         });
+    }
+
+    /**
+     * Phase 5.1: Canonical Notebook Support
+     * Adds a "Page" (Board) to the current Notebook (Pizarra).
+     */
+    addBoard(board: { id: string; title: string; type: any; order: number; thumbnail?: string }) {
+        this.setState(state => {
+            if (!state.activePizarra) return;
+
+            state.activePizarra = {
+                ...state.activePizarra,
+                boards: [...state.activePizarra.boards, board]
+            };
+        });
+        this.saveSession();
+    }
+
+
+    /**
+     * Phase 5.1: Canonical Notebook Support
+     * Switches the "Active Page" within the Notebook.
+     * Note: This primarily updates UI state. The REACT COMPONENT (PizarronRoot) 
+     * detects this change via selector and triggers the Firestore Adapter init() logic.
+     */
+    switchBoard(boardId: string) {
+        this.setState(state => {
+            if (!state.activePizarra) return;
+            // Move the target board to index 0?
+            // "Active" in PizarronRoot is board[0].
+            // To avoid complex rewriting, we can just re-order the array so [0] is the active one?
+            // OR we fix PizarronRoot to look at a new 'activeBoardId' field.
+            // For now, re-ordering is the safest way to maintain compatibility with PizarronRoot's existing logic
+            // which likely just grabs boards[0].
+
+            // Wait, PizarronRoot does: `const effectiveBoardId = activePizarra?.boards?.[0]?.id || boardId;`
+            // So yes, we MUST rotate the array to make the selected board the first one.
+
+            const boardIndex = state.activePizarra.boards.findIndex(b => b.id === boardId);
+            if (boardIndex > -1) {
+                // Immutable update to ensure React selectors trigger (PizarronRoot depends on reference)
+                const newBoards = [...state.activePizarra.boards];
+                const [board] = newBoards.splice(boardIndex, 1);
+                newBoards.unshift(board);
+
+                state.activePizarra = {
+                    ...state.activePizarra,
+                    boards: newBoards
+                };
+            }
+        });
+        this.saveSession(); // Persist session
+    }
+
+    // --- Session Persistence ---
+    private saveSession() {
+        if (!this.state.activePizarra) return;
+        try {
+            const session = {
+                metadata: this.state.activePizarra,
+                activeBoardId: this.state.activePizarra.boards[0]?.id
+            };
+            localStorage.setItem('pizarron_session_v3', JSON.stringify(session));
+        } catch (e) {
+            console.warn("Failed to save session", e);
+        }
+    }
+
+    restoreLastSession(): PizarraMetadata | null {
+        try {
+            const raw = localStorage.getItem('pizarron_session_v3');
+            if (!raw) return null;
+            const session = JSON.parse(raw);
+            if (session.metadata) {
+                // Restore Metadata
+                this.setState(state => {
+                    state.activePizarra = session.metadata;
+                    // Rotate boards if needed to match saved activeBoardId
+                    // Although switchBoard logic rotates [0], if we just load metadata as-is, [0] is the first one based on saved state?
+                    // Let's ensure consistency.
+                    if (session.activeBoardId) {
+                        const idx = state.activePizarra?.boards.findIndex(b => b.id === session.activeBoardId);
+                        if (idx && idx > 0 && state.activePizarra) {
+                            const b = state.activePizarra.boards.splice(idx, 1)[0];
+                            state.activePizarra.boards.unshift(b);
+                        }
+                    }
+                });
+                return session.metadata;
+            }
+        } catch (e) {
+            console.warn("Failed to restore session", e);
+        }
+        return null;
     }
 
     // --- Templates ---
@@ -781,7 +908,7 @@ class PizarronStore {
     // --- Selectors ---
 
     // Helper to cache metric
-    private itemCount = 0;
+
 
     // Ephemeral Clipboard (run-time only)
     private clipboard: BoardNode[] = [];
@@ -1218,6 +1345,22 @@ class PizarronStore {
             }
         });
     }
+    updateBoardThumbnail(boardId: string, thumbnail: string) {
+        this.setState(state => {
+            if (!state.activePizarra) return;
+            const board = state.activePizarra.boards.find(b => b.id === boardId);
+            if (board) {
+                board.thumbnail = thumbnail;
+            }
+        });
+    }
+
+    setThumbnailRequest(enabled: boolean) {
+        this.setState(state => {
+            state.interactionState.requestThumbnailCapture = enabled;
+        });
+    }
+
 }
 
 
