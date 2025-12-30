@@ -18,7 +18,8 @@ const INITIAL_STATE: BoardState = {
         toolbarPinned: false,
         showLibrary: false,
         showOverview: false,
-        grimorioPickerOpen: null
+        grimorioPickerOpen: null,
+        showMenuGenerator: false
     },
     // Active Project Metadata
     activePizarra: undefined,
@@ -204,6 +205,9 @@ class PizarronStore {
     updateNode(id: string, patch: Partial<BoardNode> | any, saveHistory = true) {
         // We use setState to ensure React components (Inspector) re-render.
         this.setState(state => {
+            // CRITICAL FIX: Force new reference for nodes map so selectors triggering re-renders
+            state.nodes = { ...state.nodes };
+
             const node = state.nodes[id];
             if (node) {
                 // Resize/Move Propagation for Groups & Boards
@@ -273,11 +277,15 @@ class PizarronStore {
 
     deleteNodes(ids: string[]) {
         this.setState(state => {
-            const set = new Set(ids);
-            state.order = state.order.filter(oid => !set.has(oid));
+            const idsToDeleteSet = new Set(ids);
+
+            // Remove from order
+            state.order = state.order.filter(oid => !idsToDeleteSet.has(oid));
+
+            // Delete nodes and clear selection if they were selected
             ids.forEach(id => {
                 delete state.nodes[id];
-                state.selection.delete(id);
+                state.selection.delete(id); // This clears selection if the deleted node was selected
             });
         }, true);
     }
@@ -1358,6 +1366,215 @@ class PizarronStore {
     setThumbnailRequest(enabled: boolean) {
         this.setState(state => {
             state.interactionState.requestThumbnailCapture = enabled;
+        });
+    }
+
+    // --- Phase 6.2: Make Menu Integration ---
+
+    async exportMenuToMakeMenu() {
+        console.log("[PizarronStore] exportMenuToMakeMenu starting...");
+        const state = this.getState();
+        const nodes = Object.values(state.nodes);
+        console.log("[PizarronStore] Total nodes in state:", nodes.length);
+
+        // 1. Gather Sections
+        const sectionNodes = nodes.filter(n => n.type === 'menu-section')
+            .sort((a, b) => (a.content.order || 0) - (b.content.order || 0));
+
+        console.log("[PizarronStore] Sections found:", sectionNodes.length);
+
+        // 2. Gather All Menu Items (for fallback)
+        const allMenuItems = nodes.filter(n => n.type === 'menu-item');
+        console.log("[PizarronStore] Menu Items found:", allMenuItems.length);
+
+        // 3. Gather Items and Group by Section
+        const nodeData: Record<string, any> = {};
+        const assignedItemIds = new Set<string>();
+
+        const menuSections = sectionNodes.map(sNode => {
+            // Priority 1: Direct Children
+            let items = (sNode.childrenIds || []).map(cid => {
+                const node = state.nodes[cid];
+                if (node && node.type === 'menu-item') {
+                    assignedItemIds.add(cid);
+                    nodeData[cid] = {
+                        recipeId: node.content.recipeId,
+                        name: node.content.title,
+                        price: node.content.price,
+                        cost: node.content.cost,
+                        margin: node.content.margin
+                    };
+                    return cid;
+                }
+                return null;
+            }).filter(Boolean);
+
+            // Priority 2: Spatial Fallback (Items below or near section header)
+            // If section has no children, look for floating items below it
+            if (items.length === 0) {
+                const nearItems = allMenuItems.filter(item => {
+                    if (assignedItemIds.has(item.id)) return false;
+                    // Simple heuristic: Item is below section (y > s.y) and within a reasonable horizontal distance
+                    const isBelow = item.y > sNode.y && item.y < sNode.y + 1000;
+                    const isXAligned = Math.abs(item.x - sNode.x) < 500;
+                    return isBelow && isXAligned;
+                });
+
+                nearItems.forEach(node => {
+                    assignedItemIds.add(node.id);
+                    nodeData[node.id] = {
+                        recipeId: node.content.recipeId,
+                        name: node.content.title,
+                        price: node.content.price,
+                        cost: node.content.cost,
+                        margin: node.content.margin
+                    };
+                });
+                items = nearItems.map(n => n.id);
+            }
+
+            return {
+                id: sNode.id,
+                title: sNode.content.title || 'Untitled Section',
+                order: sNode.content.order || 0,
+                items
+            };
+        });
+
+        // Add "Uncategorized" section for remaining items
+        const remainingItems = allMenuItems.filter(item => !assignedItemIds.has(item.id));
+        if (remainingItems.length > 0) {
+            remainingItems.forEach(node => {
+                nodeData[node.id] = {
+                    recipeId: node.content.recipeId,
+                    name: node.content.title,
+                    price: node.content.price,
+                    cost: node.content.cost,
+                    margin: node.content.margin
+                };
+            });
+            menuSections.push({
+                id: 'uncategorized',
+                title: 'Otras Propuestas',
+                order: 99,
+                items: remainingItems.map(n => n.id)
+            });
+        }
+
+        // 4. Create Draft
+        const draft = {
+            id: `draft_${Date.now()}`,
+            timestamp: Date.now(),
+            boardId: state.activePizarra?.boards[0]?.id,
+            sections: menuSections,
+            _nodeData: nodeData,
+            source: 'Pizarrón Architecture'
+        };
+
+        // 5. Persistence for Make Menu
+        localStorage.setItem('pizarron_menu_draft', JSON.stringify(draft));
+
+        console.log("[PizarronStore] Exported Menu Draft successfully:", draft);
+        return draft;
+    }
+
+    reorderMenuItem(sectionId: string, itemId: string, direction: 'up' | 'down') {
+        this.setState(state => {
+            const section = state.nodes[sectionId];
+            if (!section || !section.childrenIds) return;
+
+            const idx = section.childrenIds.indexOf(itemId);
+            if (idx === -1) return;
+
+            if (direction === 'up' && idx > 0) {
+                const temp = section.childrenIds[idx - 1];
+                section.childrenIds[idx - 1] = section.childrenIds[idx];
+                section.childrenIds[idx] = temp;
+            } else if (direction === 'down' && idx < section.childrenIds.length - 1) {
+                const temp = section.childrenIds[idx + 1];
+                section.childrenIds[idx + 1] = section.childrenIds[idx];
+                section.childrenIds[idx] = temp;
+            }
+        });
+    }
+
+    injectMenuProposals(proposals: any[], sourceRecipes: any[] = []) {
+        this.setState(state => {
+            // Calculate center of current viewport for placement
+            const centerX = -state.viewport.x / state.viewport.zoom + (window.innerWidth / 2) / state.viewport.zoom;
+            const centerY = -state.viewport.y / state.viewport.zoom + (window.innerHeight / 2) / state.viewport.zoom;
+
+            const spacing = 550;
+            const startX = centerX - (proposals.length * spacing) / 2;
+
+            // CLEANUP: Remove old menu proposals to prevent clutter
+            // We find all nodes of type 'menu-design' and remove them.
+            const nodeIdsToRemove = state.order.filter(id => state.nodes[id] && state.nodes[id].type === 'menu-design');
+            nodeIdsToRemove.forEach(id => {
+                delete state.nodes[id];
+            });
+            state.order = state.order.filter(id => !nodeIdsToRemove.includes(id));
+
+            // Re-calculate max Z (safe now)
+            const maxZ = state.order.reduce((max, id) => Math.max(max, state.nodes[id]?.zIndex || 0), 0);
+
+            proposals.forEach((p, i) => {
+                // ADAPTER: Helper to resolve a single ID to Snapshot
+                const resolveItem = (id: string) => {
+                    const recipe = sourceRecipes.find(r => r.id === id);
+                    return recipe ? {
+                        id: recipe.id,
+                        name: recipe.nombre,
+                        price: recipe.precioVenta || 0,
+                        description: recipe.descripcion || ''
+                    } : { id, name: 'Unknown Item', price: 0 };
+                };
+
+                // ADAPTER: Resolve Sections with specific items
+                const resolvedSections = (p.sections || []).map((s: any) => ({
+                    ...s,
+                    items: (s.itemIndices !== undefined
+                        ? (s.itemIndices.map((idx: number) => sourceRecipes[idx]?.id).filter(Boolean).map((id: string) => resolveItem(id)))
+                        : (s.items || []).map((id: string) => resolveItem(id)))
+                }));
+
+                // ADAPTER: Resolve Flat Items (Fallback)
+                const resolvedFlatItems = (p.items || []).map((id: string) => resolveItem(id));
+
+                const newNode: BoardNode = {
+                    id: crypto.randomUUID(),
+                    type: 'menu-design',
+                    x: startX + (i * spacing),
+                    y: centerY - 350,
+                    w: 500, // Phase 6.11: Wider default for better layout
+                    h: 700,
+                    zIndex: maxZ + 1 + i, // Ensure they are on top
+                    createdAt: Date.now(),
+                    content: {
+                        title: p.themeName || `Propuesta ${String.fromCharCode(65 + i)}`,
+                        sections: resolvedSections,
+                        items: resolvedFlatItems.length > 0 ? resolvedFlatItems : undefined, // Keep flat items if sections are empty or as backup
+                        styleHints: p.description,
+                        htmlContent: p.htmlContent, // Phase 6.7
+                        suggestedTypography: p.suggestedTypography, // Phase 6.7
+                        proposalId: String.fromCharCode(65 + i), // A, B, C
+                        borderRadius: 16,
+                    }
+                };
+                state.nodes[newNode.id] = newNode;
+                state.order.push(newNode.id);
+            });
+
+            // Auto Select the new nodes?
+            // state.selection = new Set(proposals.map(p => ...NodeID...)); // Complexity: we generated IDs inside. 
+            // Leave selection empty to avoid confusion or select all 3? Select none is safer.
+        }, true);
+    }
+
+    setGlobalContext(appId: string, db: any) {
+        this.setState(state => {
+            state.appId = appId;
+            state.db = db;
         });
     }
 

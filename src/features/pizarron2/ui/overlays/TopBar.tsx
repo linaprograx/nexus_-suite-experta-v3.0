@@ -1,8 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { pizarronStore } from '../../state/store';
-import { LuLayoutGrid } from 'react-icons/lu';
+import { useNavigate } from 'react-router-dom';
+import { LuLayoutGrid, LuSend, LuMenu } from 'react-icons/lu';
 
 export const TopBar: React.FC = () => {
+    const navigate = useNavigate();
     const [zoom, setZoom] = useState(1);
     const [hasSelection, setHasSelection] = useState(false);
 
@@ -34,6 +36,31 @@ export const TopBar: React.FC = () => {
         pizarronStore.updateViewport({ zoom: Math.max(zoom - 0.1, 0.1) });
     };
 
+    const [isExporting, setIsExporting] = useState(false);
+    const [exportSuccess, setExportSuccess] = useState(false);
+
+    const handleExportDraft = async () => {
+        console.log("[TopBar] Starting Export...");
+        setIsExporting(true);
+        try {
+            const draft = await pizarronStore.exportMenuToMakeMenu();
+            console.log("[TopBar] Export Success:", draft);
+            setExportSuccess(true);
+
+            // Phase 6.2.B: Active Trigger
+            // Brief delay to show success state before navigation
+            setTimeout(() => {
+                navigate('/make-menu?trigger=pizarron');
+            }, 800);
+
+            setTimeout(() => setExportSuccess(false), 3000);
+        } catch (e) {
+            console.error("[TopBar] Export failed", e);
+        } finally {
+            setIsExporting(false);
+        }
+    };
+
     return (
         <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-white/90 dark:bg-slate-900/90 backdrop-blur shadow-sm border border-slate-200 dark:border-slate-700 rounded-full px-4 py-2 flex items-center gap-4 pointer-events-auto">
             <div className="flex items-center gap-2">
@@ -51,26 +78,25 @@ export const TopBar: React.FC = () => {
                     {/* Overview Toggle */}
                     <button
                         onClick={() => {
-                            // Capture current board thumbnail before showing overlay
                             pizarronStore.setThumbnailRequest(true);
-                            // Brief delay to allow capture to happen before overlay DOM insertion (optional but safer)
-                            const frameId = requestAnimationFrame(() => {
+                            requestAnimationFrame(() => {
                                 pizarronStore.setState(s => { s.uiFlags.showOverview = !s.uiFlags.showOverview });
                             });
                         }}
-                        className="w-8 h-8 flex items-center justify-center bg-slate-100 dark:bg-slate-800 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 text-slate-600 dark:text-slate-300 hover:text-indigo-600 rounded-full transition-colors"
+                        className="w-8 h-8 shrink-0 flex items-center justify-center bg-slate-100 dark:bg-slate-800 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 text-slate-600 dark:text-slate-300 hover:text-indigo-600 rounded-full transition-colors"
                         title="Ver todos los tableros"
                     >
                         <LuLayoutGrid className="w-4 h-4" />
                     </button>
 
-                    <div className="flex bg-slate-100 dark:bg-slate-800 rounded-lg p-1 gap-1">
-                        {boards.map((b, i) => (
+                    {/* Scrollable Board List - Max Width ~4 items */}
+                    <div className="flex bg-slate-100 dark:bg-slate-800 rounded-lg p-1 gap-1 overflow-x-auto max-w-[320px] scrollbar-hide">
+                        {[...boards].sort((a, b) => (a.id === activeBoard?.id ? -1 : 1)).map((b, i) => (
                             <button
                                 key={b.id}
                                 onClick={() => handleSwitchBoard(b.id)}
-                                className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${i === 0
-                                    ? 'bg-white dark:bg-slate-600 shadow-sm text-slate-900 dark:text-white'
+                                className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all whitespace-nowrap ${b.id === activeBoard?.id
+                                    ? 'bg-white dark:bg-slate-600 shadow-sm text-slate-900 dark:text-white sticky left-0 z-10'
                                     : 'text-slate-500 hover:text-slate-700 hover:bg-slate-200 dark:hover:bg-slate-700'
                                     }`}
                             >
@@ -125,6 +151,21 @@ export const TopBar: React.FC = () => {
                             </button>
                         </div>
                     </div>
+
+                </>
+            )}
+
+            {activePizarra && (
+                <>
+                    <div className="h-8 w-px bg-slate-200 dark:bg-slate-700 mx-2" />
+
+                    <button
+                        onClick={() => pizarronStore.setUIFlag('showMenuGenerator', true)}
+                        className="flex items-center gap-2 px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl font-bold shadow-lg shadow-rose-500/20 transition-all active:scale-95 group"
+                    >
+                        <LuMenu className="w-4 h-4 group-hover:rotate-12 transition-transform" />
+                        <span>Diseñar con IA</span>
+                    </button>
                 </>
             )}
         </div>

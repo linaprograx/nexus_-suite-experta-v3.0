@@ -490,14 +490,42 @@ export class PizarronRenderer {
             return;
         }
         else if (node.type === 'ingredient') {
-            const data = externalData?.get(node.ingredientId || '');
+            const data = externalData?.get(node.content.ingredientId || '');
             this.drawIngredientNode(ctx, node, zoom, data);
             ctx.restore();
             return;
         }
         else if (node.type === 'recipe') {
-            const data = externalData?.get(node.recipeId || '');
+            const data = externalData?.get(node.content.recipeId || '');
             this.drawRecipeNode(ctx, node, zoom, data);
+            ctx.restore();
+            return;
+        }
+        else if (node.type === 'costing') {
+            const data = externalData?.get(node.id);
+            this.drawCostingNode(ctx, node, zoom, data);
+            ctx.restore();
+            return;
+        }
+        else if (node.type === 'costing-scenario') {
+            const data = externalData?.get(node.id);
+            this.drawCostingScenarioNode(ctx, node, zoom, data);
+            ctx.restore();
+            return;
+        }
+        else if (node.type === 'menu-item') {
+            const data = externalData?.get(node.id);
+            this.drawMenuItemNode(ctx, node, zoom, data);
+            ctx.restore();
+            return;
+        }
+        else if (node.type === 'menu-section') {
+            this.drawMenuSectionNode(ctx, node, zoom);
+            ctx.restore();
+            return;
+        }
+        else if (node.type === 'menu-design') {
+            this.drawMenuDesignNode(ctx, node, zoom);
             ctx.restore();
             return;
         }
@@ -1760,6 +1788,269 @@ export class PizarronRenderer {
         ctx.font = 'bold 10px Inter, sans-serif';
         ctx.textAlign = 'center';
         ctx.fillText("REC", px + 14, py + 3);
+    }
+
+    // --- Phase 6.1: Escandallator Integration - Costing Node Rendering ---
+
+    private drawCostingNode(ctx: CanvasRenderingContext2D, node: BoardNode, zoom: number, data?: any) {
+        const r = node.content.borderRadius || 12;
+        const color = '#fefce8';
+        const borderColor = '#fbbf24';
+        const accentColor = '#f59e0b';
+
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        if (ctx.roundRect) ctx.roundRect(0, 0, node.w, node.h, r);
+        else ctx.rect(0, 0, node.w, node.h);
+        ctx.fill();
+
+        ctx.strokeStyle = borderColor;
+        ctx.lineWidth = 2 / zoom;
+        ctx.stroke();
+
+        ctx.fillStyle = accentColor;
+        ctx.beginPath();
+        if (ctx.roundRect) ctx.roundRect(0, 0, 4, node.h, [r, 0, 0, r]);
+        else ctx.fillRect(0, 0, 4, node.h);
+        ctx.fill();
+
+        ctx.fillStyle = '#92400e';
+        ctx.font = '16px Inter, sans-serif';
+        ctx.textAlign = 'right';
+        ctx.fillText('🔒', node.w - 12, 20);
+
+        if (zoom < 0.2) return;
+
+        const title = data?.recipeName || node.content.title || 'Select Recipe';
+        ctx.fillStyle = '#78350f';
+        ctx.font = '600 15px Inter, sans-serif';
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'top';
+        ctx.fillText(title, 16, 16);
+
+        if (zoom < 0.4) return;
+
+        if (data) {
+            ctx.fillStyle = '#92400e';
+            ctx.font = '500 13px Inter, sans-serif';
+            ctx.fillText(`Cost: $${data.totalCost.toFixed(2)}`, 16, 45);
+            ctx.fillText(`Price: $${data.recommendedPrice.toFixed(2)}`, 16, 65);
+
+            const profitColor = data.profitability < 20 ? '#dc2626' :
+                data.profitability < 40 ? '#f59e0b' : '#16a34a';
+
+            ctx.fillStyle = profitColor;
+            ctx.font = '600 14px Inter, sans-serif';
+            ctx.fillText(`Margin: ${data.profitability.toFixed(1)}%`, 16, 90);
+
+            if (data.alerts && data.alerts.length > 0) {
+                let alertY = 115;
+                ctx.font = '400 10px Inter, sans-serif';
+                data.alerts.forEach((alert: string) => {
+                    if (alertY > node.h - 30) return;
+                    ctx.fillStyle = '#92400e';
+                    ctx.fillText(alert, 16, alertY);
+                    alertY += 14;
+                });
+            }
+        } else {
+            ctx.fillStyle = '#92400e';
+            ctx.font = '400 12px Inter, sans-serif';
+            ctx.fillText('Select recipe to view costing', 16, 50);
+        }
+
+        const px = node.w - 42;
+        const py = node.h - 22;
+        ctx.fillStyle = '#fef3c7';
+        ctx.beginPath();
+        if (ctx.roundRect) ctx.roundRect(px, py, 36, 16, 4);
+        else ctx.fillRect(px, py, 36, 16);
+        ctx.fill();
+        ctx.fillStyle = '#92400e';
+        ctx.font = 'bold 9px Inter, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText("COST", px + 18, py + 3);
+    }
+
+    private drawCostingScenarioNode(ctx: CanvasRenderingContext2D, node: BoardNode, zoom: number, data?: any) {
+        const r = node.content.borderRadius || 12;
+        const color = '#f0fdf4';
+        const borderColor = '#10b981';
+        const accentColor = '#059669';
+
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        if (ctx.roundRect) ctx.roundRect(0, 0, node.w, node.h, r);
+        else ctx.rect(0, 0, node.w, node.h);
+        ctx.fill();
+
+        ctx.strokeStyle = borderColor;
+        ctx.lineWidth = 2 / zoom;
+        ctx.stroke();
+
+        ctx.fillStyle = accentColor;
+        ctx.beginPath();
+        if (ctx.roundRect) ctx.roundRect(0, 0, 4, node.h, [r, 0, 0, r]);
+        else ctx.fillRect(0, 0, 4, node.h);
+        ctx.fill();
+
+        ctx.fillStyle = '#064e3b';
+        ctx.font = '16px Inter, sans-serif';
+        ctx.textAlign = 'right';
+        ctx.fillText('🔒', node.w - 12, 20);
+
+        if (zoom < 0.2) return;
+
+        const title = data?.scenarioName || node.content.title || 'Costing Scenario';
+        ctx.fillStyle = '#064e3b';
+        ctx.font = '600 15px Inter, sans-serif';
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'top';
+        ctx.fillText(title, 16, 16);
+
+        if (zoom < 0.4) return;
+
+        if (data) {
+            ctx.fillStyle = '#065f46';
+            ctx.font = '500 12px Inter, sans-serif';
+            ctx.fillText(`${data.recipeCount} recipes`, 16, 45);
+            ctx.fillText(`Total Cost: $${data.totalCost.toFixed(2)}`, 16, 65);
+
+            const marginColor = data.averageMargin < 20 ? '#dc2626' :
+                data.averageMargin < 40 ? '#f59e0b' : '#16a34a';
+            ctx.fillStyle = marginColor;
+            ctx.font = '600 13px Inter, sans-serif';
+            ctx.fillText(`Avg Margin: ${data.averageMargin.toFixed(1)}%`, 16, 85);
+
+            ctx.fillStyle = '#065f46';
+            ctx.font = '500 12px Inter, sans-serif';
+            ctx.fillText(`Revenue: $${data.totalRevenue.toFixed(2)}`, 16, 105);
+
+            if (data.warnings && data.warnings.length > 0) {
+                let warnY = 125;
+                ctx.font = '400 10px Inter, sans-serif';
+                data.warnings.forEach((warn: string) => {
+                    if (warnY > node.h - 30) return;
+                    ctx.fillStyle = '#065f46';
+                    ctx.fillText(`⚠️ ${warn}`, 16, warnY);
+                    warnY += 14;
+                });
+            }
+        } else {
+            ctx.fillStyle = '#065f46';
+            ctx.font = '400 12px Inter, sans-serif';
+            ctx.fillText('Add recipes to analyze', 16, 50);
+        }
+
+        const px = node.w - 64;
+        const py = node.h - 22;
+        ctx.fillStyle = '#d1fae5';
+        ctx.beginPath();
+        if (ctx.roundRect) ctx.roundRect(px, py, 58, 16, 4);
+        else ctx.fillRect(px, py, 58, 16);
+        ctx.fill();
+        ctx.fillStyle = '#064e3b';
+        ctx.font = 'bold 8px Inter, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText("SCENARIO", px + 29, py + 3);
+    }
+
+    private drawMenuSectionNode(ctx: CanvasRenderingContext2D, node: BoardNode, zoom: number) {
+        const r = node.content.borderRadius || 8;
+        const color = '#f8fafc';
+        const borderColor = '#e2e8f0';
+
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        if (ctx.roundRect) ctx.roundRect(0, 0, node.w, node.h, r);
+        else ctx.rect(0, 0, node.w, node.h);
+        ctx.fill();
+
+        ctx.strokeStyle = borderColor;
+        ctx.lineWidth = 1 / zoom;
+        ctx.stroke();
+
+        ctx.fillStyle = '#1e293b';
+        ctx.font = 'bold 18px Inter, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(node.content.title || 'SECTION TITLE', node.w / 2, node.h / 2);
+    }
+
+    private drawMenuItemNode(ctx: CanvasRenderingContext2D, node: BoardNode, zoom: number, data?: any) {
+        const r = node.content.borderRadius || 12;
+        const color = '#ffffff';
+        const borderColor = '#cbd5e1';
+        const accentColor = '#3b82f6'; // Blue accent for menu items
+
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        if (ctx.roundRect) ctx.roundRect(0, 0, node.w, node.h, r);
+        else ctx.rect(0, 0, node.w, node.h);
+        ctx.fill();
+
+        // Use a heuristic for isSelected if not passed
+        const isSelected = !!data?._isSelected; // Or similar
+
+        ctx.strokeStyle = isSelected ? '#3b82f6' : borderColor;
+        ctx.lineWidth = 2 / zoom;
+        ctx.stroke();
+
+        // Accent bar
+        ctx.fillStyle = accentColor;
+        ctx.beginPath();
+        if (ctx.roundRect) ctx.roundRect(0, 0, 4, node.h, [r, 0, 0, r]);
+        else ctx.fillRect(0, 0, 4, node.h);
+        ctx.fill();
+
+        if (zoom < 0.2) return;
+
+        const title = data?.name || node.content.title || 'Menu Item';
+        ctx.fillStyle = '#1e293b';
+        ctx.font = '600 15px Inter, sans-serif';
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'top';
+        ctx.fillText(title, 16, 16);
+
+        if (zoom < 0.4) return;
+
+        const costVal = data?.cost || node.content.cost || 0;
+        const priceVal = data?.price || node.content.price || 0;
+        const marginVal = data?.margin || node.content.margin || 0;
+
+        ctx.fillStyle = '#64748b';
+        ctx.font = '500 13px Inter, sans-serif';
+        ctx.fillText(`Costo: $${costVal.toFixed(2)}`, 16, 45);
+        ctx.fillText(`Precio: $${priceVal.toFixed(2)}`, 16, 65);
+
+        const marginColor = marginVal < 0.3 ? '#dc2626' : '#16a34a';
+        ctx.fillStyle = marginColor;
+        ctx.font = '600 13px Inter, sans-serif';
+        ctx.fillText(`Margen: ${(marginVal * 100).toFixed(1)}%`, 16, 90);
+
+        // Badge
+        const px = node.w - 50;
+        const py = node.h - 22;
+        ctx.fillStyle = '#eff6ff';
+        ctx.beginPath();
+        if (ctx.roundRect) ctx.roundRect(px, py, 42, 16, 4);
+        else ctx.fillRect(px, py, 42, 16);
+        ctx.fill();
+        ctx.fillStyle = '#1e40af';
+        ctx.font = 'bold 9px Inter, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText("ITEM", px + 21, py + 3);
+    }
+
+    private drawMenuDesignNode(ctx: CanvasRenderingContext2D, node: BoardNode, zoom: number) {
+        const r = node.content.borderRadius || 16;
+        const color = '#ffffff';
+        const borderColor = '#e2e8f0';
+        const premiumGold = '#d4af37';
+        // PHASE 6.7: Native Rendering Disabled.
+        // Handled by MenuNodesOverlay (DOM Layer) for pixel-perfect Make Menu parity.
+        // We only verify dimensions here or draw selection if needed (handled externally).
+        return;
     }
 }
 

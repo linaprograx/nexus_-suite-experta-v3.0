@@ -21,7 +21,7 @@ export class InteractionManager {
     private initialNodesState: Record<string, { x: number, y: number, w: number, h: number, fontSize?: number, rotation?: number }> | null = null;
     private canvas: HTMLCanvasElement | null = null;
     private interactionTargetId: string | null = null;
-
+    private keys: Record<string, boolean> = {};
 
 
     // Double Click Helpers
@@ -70,7 +70,18 @@ export class InteractionManager {
         }
     }
 
-    constructor() { }
+    constructor() {
+        if (typeof window !== 'undefined') {
+            window.addEventListener('keydown', (e) => {
+                this.keys[e.key] = true;
+                if (e.key === ' ') this.keys['Space'] = true;
+            });
+            window.addEventListener('keyup', (e) => {
+                this.keys[e.key] = false;
+                if (e.key === ' ') this.keys['Space'] = false;
+            });
+        }
+    }
 
     setCanvas(canvas: HTMLCanvasElement) {
         this.canvas = canvas;
@@ -137,7 +148,62 @@ export class InteractionManager {
         return { ...centers[bestSide], side: bestSide };
     }
 
-    // Main Entry Points from React
+    // Phase 6.8: External DOM Node Interaction Support
+    startExternalDrag(nodeId: string, e: React.PointerEvent<any> | PointerEvent) {
+        if (!this.canvas) return;
+
+        const state = pizarronStore.getState();
+        const { viewport, nodes, selection } = state;
+
+        // 1. Calculate World Point
+        const rect = this.canvas.getBoundingClientRect();
+        const screenPoint = {
+            x: e.clientX - rect.left,
+            y: e.clientY - rect.top
+        };
+        const worldPoint = this.screenToWorld(screenPoint, viewport);
+
+        // 2. Selection Logic
+        const isSelected = selection.has(nodeId);
+        if (e.shiftKey) {
+            // Toggle
+            if (isSelected) {
+                const newSel = new Set(selection);
+                newSel.delete(nodeId);
+                pizarronStore.setSelection(Array.from(newSel));
+                return;
+            } else {
+                pizarronStore.setSelection([...Array.from(selection), nodeId]);
+            }
+        } else {
+            // Replace if not already selected (Standard behavior)
+            // If already selected, keep selection (to allow group drag)
+            if (!isSelected) {
+                pizarronStore.setSelection([nodeId]);
+            }
+        }
+
+        // 3. Initialize Drag State
+        this.interactionTargetId = nodeId;
+        this.isDragging = true;
+        this.isPanning = false; // DOM nodes override pan usually
+        this.dragStart = worldPoint;
+
+        // Capture initial state for ALL selected nodes (Group Move)
+        // Refresh selection from store potentially, or assume sync.
+        const effectiveSelection = pizarronStore.getState().selection; // Get fresh
+
+        this.initialNodePositions = {};
+        effectiveSelection.forEach(id => {
+            const n = nodes[id];
+            if (n) {
+                this.initialNodePositions[id] = { x: n.x, y: n.y };
+            }
+        });
+
+        // Set dragging flag in store for UI feedback
+        // pizarronStore.setInteractionState({ isDragging: true }); // optimize: dont trigger rerender yet?
+    }
     onPointerDown(e: React.PointerEvent<HTMLCanvasElement>) {
         if (!this.canvas) return; // Guard
 
@@ -1391,18 +1457,33 @@ export class InteractionManager {
 
         if (hitId) {
             const node = state.nodes[hitId];
-            if (node.type === 'text' || node.type === 'shape' || node.type === 'card' || node.type === 'board') {
+            if (node.type === 'text' || node.type === 'shape' || node.type === 'card' || node.type === 'board' || node.type === 'menu-design') {
                 // Trigger Editing Mode
                 // For now, we set a flag. Ideally, we might open a modal or inline editor.
                 // pizarronStore.updateInteractionState({ editingNodeId: hitId });
                 // Actually, let's just ensure it's selected and maybe trigger a specific UI flag if we had one for "Edit Mode".
                 // But Inspector handles editing based on selection.
-                // For Text, we usually want to focus.
-                // Let's set editingTextId if it's text.
+
+                // For Text/Menu/Card, determine sub-target
+                let subId: string | undefined = undefined;
+                if (node.type === 'board' || node.type === 'card' || node.type === 'menu-design') {
+                    const cx = node.x + node.w / 2;
+                    const cy = node.y + node.h / 2;
+                    const unrotatedPoint = this.rotatePoint(worldPoint, { x: cx, y: cy }, -(node.rotation || 0));
+                    const localY = unrotatedPoint.y - node.y;
+
+                    if (localY > 45) {
+                        subId = 'body';
+                    } else {
+                        subId = 'title';
+                    }
+                }
+
                 if (node.type === 'text') {
                     pizarronStore.updateInteractionState({ editingTextId: hitId });
+                } else {
+                    pizarronStore.updateInteractionState({ editingNodeId: hitId, editingSubId: subId });
                 }
-                // For others, selection is enough for Inspector to show up.
             }
         }
     }

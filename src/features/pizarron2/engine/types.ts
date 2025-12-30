@@ -1,4 +1,4 @@
-export type NodeType = 'card' | 'group' | 'image' | 'text' | 'shape' | 'line' | 'board' | 'icon' | 'ingredient' | 'recipe';
+export type NodeType = 'card' | 'group' | 'image' | 'text' | 'shape' | 'line' | 'board' | 'icon' | 'ingredient' | 'recipe' | 'menu-item' | 'menu-section' | 'menu-design';
 
 export type InteractionMode = 'creative' | 'operational' | 'executive' | 'training';
 
@@ -80,6 +80,7 @@ export interface BoardZone {
     w: number; // Percentage 0-1
     h: number; // Percentage 0-1
     label: string; // The "Title" of the zone
+    placeholderText?: string; // Phase 7: Default text when empty
     style?: ZoneStyle;
     lineHeight?: number;
     listType?: 'none' | 'bullet' | 'number';
@@ -97,6 +98,7 @@ export interface BoardZone {
         };
     };
     sections?: ZoneSection[];
+    defaultType?: NodeType | 'grid' | 'list'; // Phase 6.2: Suggest default node type for zone
 }
 
 export interface BoardStructure {
@@ -114,7 +116,7 @@ export interface BoardStructure {
 
 export interface BoardNode {
     id: string;
-    type: 'text' | 'shape' | 'sticker' | 'image' | 'line' | 'group' | 'board' | 'card' | 'composite' | 'icon' | 'ingredient' | 'recipe';
+    type: 'text' | 'shape' | 'sticker' | 'image' | 'line' | 'group' | 'board' | 'card' | 'composite' | 'icon' | 'ingredient' | 'recipe' | 'costing' | 'costing-scenario' | 'menu-item' | 'menu-section' | 'menu-design';
 
     // Structure & Scalability
     // structure property moved to specific extended interface below or consolidated
@@ -137,13 +139,10 @@ export interface BoardNode {
     structure?: BoardStructure;
     childrenIds?: string[]; // For groups
 
-    // Phase 6: Grimorio References (node-level, not content)
-    ingredientId?: string; // Reference to Grimorio Ingredient ID
-    recipeId?: string;     // Reference to Grimorio Recipe ID
-
     content: {
         title?: string;
         body?: string; // For notes/cards
+        titleColor?: string; // Phase 6.2: Header color for boards/cards
         color?: string; // Fill color or Text color
         opacity?: number;
 
@@ -243,6 +242,27 @@ export interface BoardNode {
         unit?: string;         // Snapshot unit (e.g., 'kg', 'L')
         margin?: number;       // Snapshot margin (for recipes)
         snapshotData?: any;    // Complete Grimorio item data
+
+        // Phase 6.1: Escandallator Integration (READ-ONLY REFERENCES)
+        recipeIdForCosting?: string;      // For costing nodes - ONLY stores reference
+        scenarioId?: string;               // For costing-scenario nodes
+        recipeIdsInScenario?: string[];   // For costing-scenario nodes
+        salePriceOverride?: number;       // Optional price override for what-if analysis
+
+        // Phase 6.2: Menu Design Integration
+        menuItemId?: string;
+        menuSectionId?: string;
+        order?: number;
+        price?: number;
+
+        // Phase 6.4: Make Menu In-Pizarrón
+        designId?: string;
+        sections?: any[];
+        items?: any[]; // Resolved items (Snapshot: { id, name, price, ... })
+        styleHints?: string;
+        proposalId?: string; // A, B, C
+        htmlContent?: string;
+        suggestedTypography?: string;
     }
 }
 
@@ -257,6 +277,8 @@ export interface BoardState {
     order: string[]; // Ordered list of IDs for painting order (z-index abstraction)
     selection: Set<string>;
     viewport: Viewport;
+    appId?: string; // Phase 6.4: Cross-module persistence
+    db?: any;       // Phase 6.4: Firestore instance access
     uiFlags: {
         gridEnabled: boolean;
         presentationMode: boolean;
@@ -270,6 +292,7 @@ export interface BoardState {
         showOverview?: boolean; // New: Grid view of all boards
         focusMode?: boolean;
         grimorioPickerOpen?: 'ingredients' | 'recipes' | null; // Phase 6: Picker Modal State
+        showMenuGenerator?: boolean; // Phase 6.4: In-Pizarrón Menu Generation
     };
     activePizarra?: PizarraMetadata;
 

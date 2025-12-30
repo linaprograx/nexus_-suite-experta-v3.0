@@ -217,6 +217,30 @@ export interface MenuLayout {
     htmlContent: string;
 }
 
+export interface MenuItem {
+    id: string;
+    recipeId: string;
+    name: string;
+    cost: number;
+    price: number;
+    margin: number;
+    status: 'active' | 'draft' | 'archived';
+}
+
+export interface MenuSection {
+    id: string;
+    title: string;
+    order: number;
+    items: string[]; // List of MenuItem IDs
+}
+
+export interface MenuDraft {
+    id: string;
+    sections: MenuSection[];
+    averageMargin: number;
+    warnings: string[];
+}
+
 export interface PizarronBoard {
     id: string;
     name: string;

@@ -1,19 +1,39 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useMemo } from 'react';
 import { renderer } from '../engine/renderer';
 import { pizarronStore, usePizarronStore } from '../state/store';
 import { interactionManager } from '../engine/interaction';
 import { useIngredients } from '../../../hooks/useIngredients';
 import { useRecipes } from '../../../hooks/useRecipes';
+import { resolveCostingData, resolveScenarioData } from '../services/costingResolver';
 
-export const CanvasStage: React.FC = () => {
+// EXPORT: Global map for Inspector to update costing data directly
+export const externalDataMap = new Map<string, any>();
+
+// EXPORT: Global render trigger for immediate canvas update
+let renderTrigger: (() => void) | null = null;
+export const setRenderTrigger = (fn: () => void) => { renderTrigger = fn; };
+export const forceCanvasRender = () => { if (renderTrigger) renderTrigger(); };
+
+export const CanvasStage: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const containerRef = useRef<HTMLDivElement>(null);
     const rafId = useRef<number>(0);
-    const externalDataRef = useRef(new Map<string, any>());
+    // Use global map instead of local ref so Inspector can access it
+    const externalDataRef = { current: externalDataMap };
 
-    // Phase 6: Grimorio Hooks
+    // Phase 6: Grimorio Hooks with refs for renderLoop
     const { ingredients } = useIngredients();
     const { recipes } = useRecipes();
+
+    // Store in refs so renderLoop always has fresh data
+    const ingredientsRef = useRef(ingredients);
+    const recipesRef = useRef(recipes);
+
+    // Update refs when data changes
+    useEffect(() => {
+        ingredientsRef.current = ingredients;
+        recipesRef.current = recipes;
+    }, [ingredients, recipes]);
 
     // Initial Setup & Resize Observer
     useEffect(() => {
@@ -83,9 +103,18 @@ export const CanvasStage: React.FC = () => {
                 }
             }
 
+            // Render without calculating every frame (causes infinite loop)
             renderer.render(state, externalDataRef.current);
             rafId.current = requestAnimationFrame(renderLoop);
         };
+
+        // Register render trigger for external use
+        setRenderTrigger(() => {
+            if (canvasRef.current) {
+                const state = pizarronStore.getState();
+                renderer.render(state, externalDataRef.current);
+            }
+        });
 
         rafId.current = requestAnimationFrame(renderLoop);
 
@@ -110,20 +139,69 @@ export const CanvasStage: React.FC = () => {
         };
     }, []);
 
-    // Phase 6: Sync External Data (Correctly placed top-level hook)
+    // Phase 6 & 6.1: Update costing data ONLY when ingredients or recipes change
     useEffect(() => {
         const map = externalDataRef.current;
-        map.clear();
-        ingredients.forEach(i => map.set(i.id, { name: i.nombre, cost: i.costo || i.precioCompra || 0, format: i.unidad }));
+        const state = pizarronStore.getState();
+
+        console.log('[CanvasStage] Updating costing data...');
+
+        // Grimorio data
+        ingredients.forEach(i => map.set(i.id, {
+            name: i.nombre,
+            cost: i.costo || i.precioCompra || 0,
+            format: i.unidad
+        }));
         recipes.forEach(r => map.set(r.id, {
             name: r.nombre,
             cost: r.costoTotal,
             margin: r.margen,
-            ingredients: r.ingredientes // Pass full ingredients list for "Ficha" view
+            ingredients: r.ingredientes
         }));
-        // Trigger a re-render to update UI with new data
-        renderer.render(pizarronStore.getState(), map);
-    }, [ingredients, recipes]);
+
+        // Costing & Menu nodes - get fresh state each time
+        const externalNodes = Object.values(state.nodes).filter(n =>
+            n.type === 'costing' || n.type === 'costing-scenario' || n.type === 'menu-item'
+        );
+
+        externalNodes.forEach(node => {
+            if (node.type === 'costing' && node.content.recipeIdForCosting) {
+                const costingData = resolveCostingData(
+                    node.content.recipeIdForCosting,
+                    node.content.salePriceOverride || 0,
+                    recipes,
+                    ingredients
+                );
+                if (costingData) {
+                    map.set(node.id, costingData);
+                }
+            }
+
+            if (node.type === 'menu-item' && node.content.recipeId) {
+                const itemData = resolveCostingData(
+                    node.content.recipeId,
+                    node.content.price || 0,
+                    recipes,
+                    ingredients
+                );
+                if (itemData) {
+                    map.set(node.id, itemData);
+                }
+            }
+
+            if (node.type === 'costing-scenario' && node.content.recipeIdsInScenario) {
+                const scenarioData = resolveScenarioData(
+                    node.content.recipeIdsInScenario,
+                    recipes,
+                    ingredients,
+                    node.content.scenarioId || node.content.title || 'Scenario'
+                );
+                if (scenarioData) {
+                    map.set(node.id, scenarioData);
+                }
+            }
+        });
+    }, [ingredients, recipes]); // ONLY these two dependencies - no loops!
 
     // 4. Thumbnail Capture Listener
     const requestCapture = usePizarronStore(s => s.interactionState.requestThumbnailCapture);
@@ -179,9 +257,29 @@ export const CanvasStage: React.FC = () => {
             // Delegate to InteractionManager? 
             interactionManager.onWheel(e);
         };
-
         canvas.addEventListener('wheel', onWheel, { passive: false });
         return () => canvas.removeEventListener('wheel', onWheel);
+    }, []);
+
+    // Phase 6.8: Reactive Viewport for DOM Layer (IMPERATIVE OPTIMIZATION)
+    // const viewport = pizarronStore.useSelector(s => s.viewport); // Removed to avoid re-renders
+    const worldLayerRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        // Subscribe to viewport changes directly to update DOM transform without Re-render
+        // checking equality to minimalize layout thrashing if needed, but transform is cheap.
+        const updateTransform = () => {
+            const vp = pizarronStore.getState().viewport;
+            if (worldLayerRef.current) {
+                worldLayerRef.current.style.transform = `translate(${vp.x}px, ${vp.y}px) scale(${vp.zoom})`;
+            }
+        };
+
+        const unsub = pizarronStore.subscribe(updateTransform);
+        // Initial set
+        updateTransform();
+
+        return unsub;
     }, []);
 
     return (
@@ -220,6 +318,28 @@ export const CanvasStage: React.FC = () => {
                 onDoubleClick={(e) => interactionManager.onDoubleClick(e)}
             // onWheel removed from JSX to avoid collision
             />
+
+            {/* Phase 6.8: HTML World Layer (For Menu Designs & Rich Content) */}
+            {/* MOVED AFTER CANVAS for correct Z-Order (Input Traversal) */}
+            <div
+                className="absolute inset-0 pointer-events-none overflow-hidden"
+                style={{
+                    transformOrigin: '0 0',
+                    zIndex: 10 // Explicitly on top of canvas (which usually has 0 or 1)
+                }}
+            >
+                <div
+                    ref={worldLayerRef}
+                    className="w-full h-full"
+                    style={{
+                        transformOrigin: '0 0', // CRITICAL: Match Canvas scale origin
+                        // Transform set imperatively via ref
+                    }}
+                >
+                    {/* Inject overlays that need world coordinates */}
+                    {children}
+                </div>
+            </div>
         </div>
     );
 };

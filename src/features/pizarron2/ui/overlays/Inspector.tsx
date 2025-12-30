@@ -10,6 +10,10 @@ import { evaluateMarketSignals } from '../../../../core/signals/signal.engine';
 import { useApp } from '../../../../context/AppContext';
 import { Icon } from '../../../../components/ui/Icon';
 import { ICONS } from '../../../../components/ui/icons';
+import { externalDataMap, forceCanvasRender } from '../CanvasStage';
+import { resolveCostingData, resolveScenarioData } from '../../services/costingResolver';
+import { useIngredients } from '../../../../hooks/useIngredients';
+import { useRecipes } from '../../../../hooks/useRecipes';
 
 export const Inspector: React.FC = () => {
     const { selection, nodes, viewport, boardResources, interactionState } = pizarronStore.useState();
@@ -83,6 +87,34 @@ export const Inspector: React.FC = () => {
             }
         });
     }, [firstNode, allIngredients]);
+
+    // Phase 6.1: Costing Data Resolution
+    const { ingredients } = useIngredients();
+    const { recipes } = useRecipes();
+
+    const externalData = useMemo(() => {
+        if (!firstNode) return null;
+
+        if (firstNode.type === 'costing' && firstNode.content.recipeIdForCosting) {
+            return resolveCostingData(
+                firstNode.content.recipeIdForCosting,
+                firstNode.content.salePriceOverride || 0,
+                recipes,
+                ingredients
+            );
+        }
+
+        if (firstNode.type === 'costing-scenario' && firstNode.content.recipeIdsInScenario) {
+            return resolveScenarioData(
+                firstNode.content.recipeIdsInScenario,
+                recipes,
+                ingredients,
+                firstNode.content.scenarioId || firstNode.content.title || 'Scenario'
+            );
+        }
+
+        return null;
+    }, [firstNode, recipes, ingredients]);
 
     // NOW we can return if no selection
     if (!firstNode) return null;
@@ -1080,6 +1112,217 @@ export const Inspector: React.FC = () => {
                     </div>
                 );
 
+            case 'costing':
+                // Escandallator Costing Node - READ-ONLY Inspector
+                return (
+                    <div className="space-y-4">
+                        {/* READ-ONLY Warning */}
+                        <div className="bg-amber-50 border-2 border-amber-300 rounded-lg p-3 flex items-start gap-2">
+                            <div className="text-amber-600 text-xl">🔒</div>
+                            <div className="flex-1">
+                                <div className="text-xs font-bold text-amber-800 mb-1">READ-ONLY</div>
+                                <div className="text-xs text-amber-700">
+                                    Cost data calculated by Escandallator engine. Cannot be edited here.
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Recipe Selection */}
+                        <div>
+                            <label className="text-xs font-medium text-slate-600 block mb-1">Recipe</label>
+                            <select
+                                className="w-full border rounded text-sm px-2 py-1.5 bg-white"
+                                value={firstNode.content.recipeIdForCosting || ''}
+                                onChange={(e) => {
+                                    const recipeId = e.target.value;
+                                    updateNode({ recipeIdForCosting: recipeId });
+
+                                    // CRITICAL: Update externalDataMap immediately
+                                    if (recipeId && recipes && ingredients) {
+                                        const costingData = resolveCostingData(
+                                            recipeId,
+                                            firstNode.content.salePriceOverride || 0,
+                                            recipes,
+                                            ingredients
+                                        );
+                                        if (costingData) {
+                                            externalDataMap.set(firstNode.id, costingData);
+                                            console.log('[Inspector] ✅ Updated externalDataMap:', firstNode.id, costingData.recipeName);
+
+                                            // FORCE immediate canvas redraw
+                                            forceCanvasRender();
+                                            console.log('[Inspector] 🎨 Forced canvas render');
+
+                                            // FORCE canvas re-render by nudging viewport
+                                            const currentVP = pizarronStore.getState().viewport;
+                                            pizarronStore.setState(state => ({
+                                                viewport: { ...currentVP, x: currentVP.x + 0.001 }
+                                            }));
+                                        }
+                                    } else {
+                                        externalDataMap.delete(firstNode.id);
+                                    }
+                                }}
+                            >
+                                <option value="">Select a recipe...</option>
+                                {recipes?.map(r => (
+                                    <option key={r.id} value={r.id}>{r.nombre}</option>
+                                ))}
+                            </select>
+                        </div>
+
+                        {/* Price Override (Optional) */}
+                        <div>
+                            <label className="text-xs font-medium text-slate-600 block mb-1">
+                                Sale Price Override (Optional)
+                            </label>
+                            <input
+                                type="number"
+                                step="0.01"
+                                placeholder="Use recipe's default price"
+                                className="w-full border rounded text-sm px-2 py-1.5"
+                                value={firstNode.content.salePriceOverride || ''}
+                                onChange={(e) => updateNode({ salePriceOverride: e.target.value ? Number(e.target.value) : undefined })}
+                            />
+                            <p className="text-xs text-slate-500 mt-1">Leave empty to use recipe's sale price</p>
+                        </div>
+
+                        {/* Title Override */}
+                        <div>
+                            <label className="text-xs font-medium text-slate-600 block mb-1">Card Title</label>
+                            <input
+                                className="w-full border rounded text-sm px-2 py-1"
+                                placeholder="Auto: Recipe name"
+                                value={firstNode.content.title || ''}
+                                onChange={(e) => updateNode({ title: e.target.value })}
+                            />
+                        </div>
+
+                        {/* Calculated Data Display (READ-ONLY) */}
+                        {externalData && 'profitability' in externalData && (
+                            <div className="bg-slate-50 border border-slate-200 rounded p-3 space-y-2">
+                                <div className="text-xs font-bold text-slate-700 uppercase tracking-wide mb-2">
+                                    Calculated Costing
+                                </div>
+                                <div className="grid grid-cols-2 gap-2 text-sm">
+                                    <div>
+                                        <div className="text-xs text-slate-500">Total Cost</div>
+                                        <div className="font-semibold text-slate-800">${externalData.totalCost?.toFixed(2)}</div>
+                                    </div>
+                                    <div>
+                                        <div className="text-xs text-slate-500">Price</div>
+                                        <div className="font-semibold text-slate-800">${externalData.recommendedPrice?.toFixed(2)}</div>
+                                    </div>
+                                    <div>
+                                        <div className="text-xs text-slate-500">Margin</div>
+                                        <div className="font-semibold text-slate-800">${externalData.margin?.toFixed(2)}</div>
+                                    </div>
+                                    <div>
+                                        <div className="text-xs text-slate-500">Profitability</div>
+                                        <div className={`font-bold ${externalData.profitability < 20 ? 'text-red-600' : externalData.profitability < 40 ? 'text-amber-600' : 'text-green-600'}`}>
+                                            {externalData.profitability?.toFixed(1)}%
+                                        </div>
+                                    </div>
+                                </div>
+                                {externalData.alerts && externalData.alerts.length > 0 && (
+                                    <div className="mt-3 pt-3 border-t border-slate-200">
+                                        <div className="text-xs text-slate-600 mb-1">Alerts:</div>
+                                        {externalData.alerts.map((alert: string, i: number) => (
+                                            <div key={i} className="text-xs text-amber-600">• {alert}</div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        )}
+                    </div>
+                );
+
+            case 'costing-scenario':
+                // Scenario Comparison Node - READ-ONLY Inspector
+                return (
+                    <div className="space-y-4">
+                        {/* READ-ONLY Warning */}
+                        <div className="bg-emerald-50 border-2 border-emerald-300 rounded-lg p-3 flex items-start gap-2">
+                            <div className="text-emerald-600 text-xl">🔒</div>
+                            <div className="flex-1">
+                                <div className="text-xs font-bold text-emerald-800 mb-1">READ-ONLY</div>
+                                <div className="text-xs text-emerald-700">
+                                    Scenario data aggregated from Escandallator. Cannot be edited here.
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Scenario Name */}
+                        <div>
+                            <label className="text-xs font-medium text-slate-600 block mb-1">Scenario Name</label>
+                            <input
+                                className="w-full border rounded text-sm px-2 py-1.5"
+                                placeholder="Scenario title"
+                                value={firstNode.content.title || ''}
+                                onChange={(e) => updateNode({ title: e.target.value })}
+                            />
+                        </div>
+
+                        {/* Recipe Selection (Multi-select simulation) */}
+                        <div>
+                            <label className="text-xs font-medium text-slate-600 block mb-1">
+                                Recipes in Scenario ({(firstNode.content.recipeIdsInScenario || []).length})
+                            </label>
+                            <select
+                                multiple
+                                className="w-full border rounded text-sm px-2 py-2 bg-white h-32"
+                                value={firstNode.content.recipeIdsInScenario || []}
+                                onChange={(e) => {
+                                    const selected = Array.from(e.target.selectedOptions, option => option.value);
+                                    updateNode({ recipeIdsInScenario: selected });
+                                }}
+                            >
+                                {recipes?.map(r => (
+                                    <option key={r.id} value={r.id}>{r.nombre}</option>
+                                ))}
+                            </select>
+                            <p className="text-xs text-slate-500 mt-1">Hold Ctrl/Cmd to select multiple recipes</p>
+                        </div>
+
+                        {/* Aggregated Data Display (READ-ONLY) */}
+                        {externalData && 'recipeCount' in externalData && (
+                            <div className="bg-emerald-50 border border-emerald-200 rounded p-3 space-y-2">
+                                <div className="text-xs font-bold text-emerald-800 uppercase tracking-wide mb-2">
+                                    Scenario Metrics
+                                </div>
+                                <div className="space-y-2 text-sm">
+                                    <div className="flex justify-between">
+                                        <span className="text-slate-600">Recipe Count:</span>
+                                        <span className="font-semibold">{externalData.recipeCount}</span>
+                                    </div>
+                                    <div className="flex justify-between">
+                                        <span className="text-slate-600">Total Cost:</span>
+                                        <span className="font-semibold">${externalData.totalCost?.toFixed(2)}</span>
+                                    </div>
+                                    <div className="flex justify-between">
+                                        <span className="text-slate-600">Total Revenue:</span>
+                                        <span className="font-semibold text-green-600">${externalData.totalRevenue?.toFixed(2)}</span>
+                                    </div>
+                                    <div className="flex justify-between pt-2 border-t border-emerald-200">
+                                        <span className="text-slate-600">Avg Margin:</span>
+                                        <span className={`font-bold ${externalData.averageMargin < 20 ? 'text-red-600' : externalData.averageMargin < 40 ? 'text-amber-600' : 'text-green-600'}`}>
+                                            {externalData.averageMargin?.toFixed(1)}%
+                                        </span>
+                                    </div>
+                                </div>
+                                {externalData.warnings && externalData.warnings.length > 0 && (
+                                    <div className="mt-3 pt-3 border-t border-emerald-200">
+                                        <div className="text-xs text-emerald-700 mb-1">Warnings:</div>
+                                        {externalData.warnings.map((warn: string, i: number) => (
+                                            <div key={i} className="text-xs text-amber-600">⚠️ {warn}</div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        )}
+                    </div>
+                );
+
             case 'ingredient':
             case 'recipe':
                 // Grimorio Nodes - Full modern inspector with all styling options
@@ -1159,7 +1402,99 @@ export const Inspector: React.FC = () => {
                     </div>
                 );
 
-            default:
+            case 'menu-design':
+                // Phase 6.5: Menu Design Inspector (Modern)
+                return (
+                    <div className="space-y-4">
+                        <div className="bg-rose-50 border border-rose-100 rounded p-2 mb-2">
+                            <div className="text-[10px] font-bold text-rose-500 uppercase flex items-center gap-1">
+                                <Icon svg={ICONS.menu} className="w-3 h-3" />
+                                Menu Proposal
+                            </div>
+                            <div className="text-xs text-rose-700 mt-1">
+                                AI Generated Layout. Content is managed via the adapter.
+                            </div>
+                        </div>
+
+                        {/* Title */}
+                        <div>
+                            <label className="text-xs font-medium text-slate-600 block mb-1">Proposal Title</label>
+                            <input
+                                className="w-full border rounded text-sm px-2 py-1 font-bold"
+                                value={firstNode.content.title || ''}
+                                onChange={(e) => updateNode({ title: e.target.value })}
+                            />
+                        </div>
+
+                        {/* Style Hints (Read Only) */}
+                        <div>
+                            <label className="text-xs font-medium text-slate-600 block mb-1">Theme / Style</label>
+                            <div className="text-xs text-slate-500 italic bg-slate-50 p-2 rounded border">
+                                {firstNode.content.styleHints || 'No style hints'}
+                            </div>
+                        </div>
+
+                        {/* Background Color & Gradient */}
+                        <ColorPicker
+                            label="Background"
+                            allowGradient={true}
+                            showTransparent={true}
+                            color={firstNode.content.gradient || firstNode.content.backgroundColor || '#ffffff'}
+                            onChange={(c) => {
+                                if (typeof c === 'string') {
+                                    updateNode({ backgroundColor: c, gradient: undefined });
+                                } else {
+                                    updateNode({ gradient: c });
+                                }
+                            }}
+                        />
+
+                        {/* Visual Effects */}
+                        <VisualEffectsController
+                            borderRadius={firstNode.content.borderRadius || 16}
+                            borderWidth={firstNode.content.borderWidth || 1}
+                            opacity={firstNode.content.opacity ?? 1}
+                            shadow={firstNode.content.filters?.shadow}
+                            onChange={(eff) => {
+                                const patch: any = {};
+                                if (eff.borderRadius !== undefined) patch.borderRadius = eff.borderRadius;
+                                if (eff.borderWidth !== undefined) patch.borderWidth = eff.borderWidth;
+                                if (eff.opacity !== undefined) patch.opacity = eff.opacity;
+                                if (eff.shadow !== undefined) {
+                                    patch.filters = {
+                                        ...firstNode.content.filters,
+                                        shadow: eff.shadow || undefined
+                                    };
+                                }
+                                updateNode(patch);
+                            }}
+                        />
+
+                        {/* Action: Save to Make Menu */}
+                        <div className="pt-3 border-t border-slate-200 mt-2">
+                            <button
+                                className="w-full py-2 bg-slate-900 text-white rounded shadow text-xs font-bold hover:bg-slate-800 transition-colors flex items-center justify-center gap-2"
+                                onClick={() => {
+                                    // This logic duplicates the MiniToolbar action but is good for accessibility
+                                    import('../../../../services/makeMenuService').then(({ makeMenuService }) => {
+                                        const db = pizarronStore.getState().db;
+                                        const appId = pizarronStore.getState().appId;
+                                        if (db && appId) {
+                                            makeMenuService.saveProposal(db, appId, {
+                                                themeName: firstNode.content.title,
+                                                description: firstNode.content.styleHints,
+                                                items: firstNode.content.items?.map((i: any) => i.id) || []
+                                            }).then(() => alert("Saved to Make Menu History!"));
+                                        }
+                                    });
+                                }}
+                            >
+                                <Icon svg={ICONS.save} className="w-4 h-4" />
+                                Save to Make Menu
+                            </button>
+                        </div>
+                    </div>
+                );
                 // Generic/Shared fallback
                 return (
                     <div className="space-y-4">
@@ -1186,7 +1521,7 @@ export const Inspector: React.FC = () => {
             }}
             onPointerDown={(e) => e.stopPropagation()} // Prevent canvas drag
         >
-            <div className="bg-white/95 backdrop-blur shadow-2xl border border-slate-200 rounded-2xl p-4 flex flex-col gap-4 animate-in fade-in zoom-in-95 duration-500 slide-in-from-bottom-2">
+            <div className="bg-white/95 dark:bg-slate-900/95 backdrop-blur shadow-2xl border border-slate-200 dark:border-slate-700 rounded-2xl p-4 flex flex-col gap-4 animate-in fade-in zoom-in-95 duration-500 slide-in-from-bottom-2">
                 <div className="flex justify-between items-center border-b border-slate-100 pb-2 flex-shrink-0">
                     <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">{firstNode?.type.toUpperCase() || 'SELECTION'} STYLE</span>
                     <div className="flex gap-1">

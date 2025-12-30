@@ -114,7 +114,7 @@ export const LeftRail: React.FC = () => {
     return (
         <div className={`absolute left-4 top-1/2 -translate-y-1/2 flex gap-2 pointer-events-auto items-start transition-all duration-700 ease-out-expo ${mounted ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-12'}`}>
             {/* Main Strip */}
-            <div className="bg-white/90 backdrop-blur shadow-sm border border-slate-200 rounded-2xl p-2 flex flex-col gap-2">
+            <div className="bg-white/90 dark:bg-slate-900/90 backdrop-blur shadow-sm border border-slate-200 dark:border-slate-700 rounded-2xl p-2 flex flex-col gap-2">
                 {TOOLS.map((tool: any, i) => {
                     // Phase 5: Interaction Mode Filtering
                     if (mode !== 'creative' && mode !== undefined) {
@@ -123,7 +123,7 @@ export const LeftRail: React.FC = () => {
                     }
 
                     if (tool.type === 'separator') {
-                        return <div key={`sep-${i}`} className="h-px w-6 bg-slate-200 mx-auto my-1" />;
+                        return <div key={`sep-${i}`} className="h-px w-6 bg-slate-200 dark:bg-slate-700 mx-auto my-1" />;
                     }
 
                     let isActive = activeTool === tool.id;
@@ -135,8 +135,8 @@ export const LeftRail: React.FC = () => {
                             key={tool.id}
                             onClick={() => handleTool(tool)}
                             className={`w-10 h-10 flex items-center justify-center rounded-xl transition-all duration-200 ${isActive
-                                ? 'bg-orange-50 text-orange-600 border border-orange-200 scale-105 shadow-sm' // Active Pop (Orange)
-                                : 'hover:bg-slate-100 text-slate-500 hover:text-slate-700 border border-transparent hover:scale-110' // Hover Lift
+                                ? 'bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400 border border-orange-200 dark:border-orange-700 scale-105 shadow-sm' // Active Pop (Orange)
+                                : 'hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 border border-transparent hover:scale-110' // Hover Lift
                                 }`}
                             title={tool.label}
                         >

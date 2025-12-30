@@ -19,6 +19,8 @@ import { MiniMap } from './overlays/MiniMap';
 import { CollapsedDock } from './overlays/CollapsedDock';
 import { OverviewOverlay } from './overlays/OverviewOverlay';
 import { GrimorioPicker } from './overlays/GrimorioPicker';
+import { MenuGeneratorModal } from './overlays/MenuGeneratorModal';
+import { MenuNodesOverlay } from './overlays/MenuNodesOverlay';
 
 interface PizarronRootProps {
     appId: string;
@@ -70,6 +72,12 @@ export const PizarronRoot: React.FC<PizarronRootProps> = ({ appId, boardId, user
     React.useEffect(() => {
         console.log(`[PizarronRoot] Effective Board ID Changed: ${effectiveBoardId} (AppID: ${appId})`);
     }, [effectiveBoardId, appId]);
+
+    React.useEffect(() => {
+        if (appId && db) {
+            pizarronStore.setGlobalContext(appId, db);
+        }
+    }, [appId, db]);
 
     React.useEffect(() => {
         if (appId && effectiveBoardId) {
@@ -163,12 +171,16 @@ export const PizarronRoot: React.FC<PizarronRootProps> = ({ appId, boardId, user
 
             {/* Main Stage */}
             <div className="flex-1 relative z-0">
-                <CanvasStage />
+                <CanvasStage>
+                    {/* Phase 6.7/6.8: DOM Overlay for Menu Designs (Inside World Layer) */}
+                    <MenuNodesOverlay />
+                </CanvasStage>
             </div>
 
             {/* Global Modals (High Z-Index, Pointer Events Auto) - MOVED OUTSIDE HUD */}
             <OverviewOverlay />
             <GrimorioPicker />
+            <MenuGeneratorModal />
         </div>
     );
 };

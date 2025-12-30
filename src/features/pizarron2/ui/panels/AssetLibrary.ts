@@ -499,6 +499,59 @@ export const TEMPLATE_LIBRARIES: AssetCategory[] = [
         items: [
             { id: 't-app', label: 'Vista Móvil', icon: '📱', type: 'template', data: T_APP_FLOW, tags: ['wireframe', 'mobile'] },
         ]
+    },
+    {
+        id: 'escandallator',
+        label: '💰 Escandallator',
+        items: [
+            {
+                id: 'costing-node',
+                label: 'Recipe Costing',
+                icon: '💵',
+                type: 'template',
+                tags: ['cost', 'finance', 'analysis'],
+                data: {
+                    nodes: [{
+                        id: 'n-cost',
+                        type: 'costing',
+                        x: 0,
+                        y: 0,
+                        w: 300,
+                        h: 200,
+                        content: {
+                            title: 'Recipe Costing',
+                            borderRadius: 12,
+                            backgroundColor: '#fefce8',
+                            borderColor: '#fbbf24'
+                        }
+                    }]
+                }
+            },
+            {
+                id: 'scenario-node',
+                label: 'Scenario Comparison',
+                icon: '📊',
+                type: 'template',
+                tags: ['scenario', 'comparison', 'analysis'],
+                data: {
+                    nodes: [{
+                        id: 'n-scenario',
+                        type: 'costing-scenario',
+                        x: 0,
+                        y: 0,
+                        w: 400,
+                        h: 250,
+                        content: {
+                            title: 'Scenario Analysis',
+                            borderRadius: 12,
+                            backgroundColor: '#f0fdf4',
+                            borderColor: '#10b981',
+                            recipeIdsInScenario: []
+                        }
+                    }]
+                }
+            },
+        ]
     }
 ];
 

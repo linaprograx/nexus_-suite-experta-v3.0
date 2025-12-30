@@ -8,8 +8,9 @@ import {
     LuDroplet, LuLayers, LuCopy, LuTrash2,
     LuLock, LuLockOpen, LuAlignLeft, LuAlignCenter, LuAlignRight,
     LuArrowUp, LuArrowDown, LuMoveVertical, LuWand, LuGroup, LuUngroup,
-    LuCaseSensitive, LuUndo, LuRedo
+    LuCaseSensitive, LuUndo, LuRedo, LuCloudUpload, LuCheck, LuLoader
 } from 'react-icons/lu';
+import { makeMenuService } from '../../../../services/makeMenuService';
 
 type PopoverType = 'none' | 'text' | 'size' | 'color' | 'style' | 'spacing' | 'effects' | 'position' | 'casing' | 'more';
 
@@ -17,6 +18,8 @@ export const MiniToolbar: React.FC = () => {
     const { selection, nodes, viewport } = pizarronStore.useState();
     const [activePopover, setActivePopover] = useState<PopoverType>('none');
     const [fontSearch, setFontSearch] = useState('');
+    const [isSaving, setIsSaving] = useState(false);
+    const [saveDone, setSaveDone] = useState(false);
 
     // Global Shortcuts
     useEffect(() => {
@@ -42,6 +45,13 @@ export const MiniToolbar: React.FC = () => {
     const selectedNodes = useMemo(() => {
         return Array.from(selection).map(id => nodes[id]).filter(Boolean);
     }, [selection, nodes]);
+
+    // Close popovers when selection is cleared (e.g., after deletion)
+    useEffect(() => {
+        if (selectedNodes.length === 0) {
+            setActivePopover('none');
+        }
+    }, [selectedNodes.length]);
 
     // Position Logic
     const toolbarPos = useMemo(() => {
@@ -74,7 +84,10 @@ export const MiniToolbar: React.FC = () => {
         return { top: clampedY, left: clampedX };
     }, [selectedNodes, viewport]);
 
-    if (selectedNodes.length === 0) return null;
+    // SIMPLE FIX: Don't render at all when nothing is selected
+    if (selectedNodes.length === 0) {
+        return null;
+    }
 
     const firstNode = selectedNodes[0];
     // Show text tools for almost everything except pure images/lines/groups that definitely don't have text
@@ -84,9 +97,34 @@ export const MiniToolbar: React.FC = () => {
     // Let's stick to exclusion list:
     // const isText = !['image', 'line', 'group', 'pen'].includes(firstNode.type);
     const isMulti = selectedNodes.length > 1;
+    const isMenuDesign = firstNode.type === 'menu-design';
 
     // Helpers
     const togglePopover = (type: PopoverType) => setActivePopover(prev => prev === type ? 'none' : type);
+
+    const handleSaveToMakeMenu = async () => {
+        const { appId, db } = pizarronStore.getState();
+        if (!appId || !db || isSaving) return;
+
+        setIsSaving(true);
+        try {
+            await makeMenuService.saveProposal(db, appId, {
+                themeName: firstNode.content.title,
+                description: firstNode.content.styleHints || '',
+                sections: firstNode.content.sections || [],
+                items: firstNode.content.items || [],
+                htmlContent: firstNode.content.htmlContent || '', // Original HTML if kept
+                suggestedTypography: firstNode.content.suggestedTypography || '',
+                pizarronNodeId: firstNode.id
+            });
+            setSaveDone(true);
+            setTimeout(() => setSaveDone(false), 2000);
+        } catch (e) {
+            console.error("Error saving to Make Menu:", e);
+        } finally {
+            setIsSaving(false);
+        }
+    };
 
     // Pass saveHistory = true for user interactions
     const updateNode = (patch: Partial<BoardNode['content']>) => {
@@ -98,12 +136,12 @@ export const MiniToolbar: React.FC = () => {
     };
 
     const btnClass = (isActive: boolean) => `p-1.5 rounded transition-colors ${isActive
-        ? 'bg-orange-100 text-orange-600 border border-orange-200'
-        : 'text-slate-600 hover:text-orange-500 hover:bg-orange-50'}`;
+        ? 'bg-orange-100 dark:bg-orange-900/40 text-orange-600 dark:text-orange-300 border border-orange-200 dark:border-orange-500/30'
+        : 'text-slate-600 dark:text-slate-300 hover:text-orange-500 dark:hover:text-orange-400 hover:bg-orange-50 dark:hover:bg-orange-900/20'}`;
 
     return (
         <div
-            className="fixed z-[110] flex items-center gap-1 p-1 bg-white border border-slate-200 shadow-xl rounded-lg pointer-events-auto transition-all duration-75 ease-out"
+            className="fixed z-[110] flex items-center gap-1 p-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 shadow-xl rounded-lg pointer-events-auto transition-all duration-75 ease-out"
             style={{ top: toolbarPos.top, left: toolbarPos.left, transform: 'translateX(-50%)' }}
             onPointerDown={e => e.stopPropagation()}
         >
@@ -368,6 +406,24 @@ export const MiniToolbar: React.FC = () => {
             <button onClick={() => pizarronStore.deleteNodes(selectedNodes.map(n => n.id))} className="p-1.5 hover:bg-red-50 rounded text-red-500 transition-colors" title="Delete">
                 <LuTrash2 size={18} />
             </button>
+
+            {isMenuDesign && (
+                <>
+                    <div className="w-px h-4 bg-slate-200 mx-1"></div>
+                    <button
+                        onClick={handleSaveToMakeMenu}
+                        disabled={isSaving}
+                        className={`p-1.5 rounded transition-all flex items-center gap-1.5 px-2.5 ${saveDone
+                            ? 'bg-green-100 text-green-600'
+                            : 'bg-rose-50 text-rose-600 hover:bg-rose-100'
+                            }`}
+                        title="Guardar en Make Menu"
+                    >
+                        {isSaving ? <LuLoader size={16} className="animate-spin" /> : saveDone ? <LuCheck size={16} /> : <LuCloudUpload size={16} />}
+                        <span className="text-[10px] font-bold">HISTORIAL</span>
+                    </button>
+                </>
+            )}
 
             <div className="w-px h-4 bg-slate-200 mx-1"></div>
 

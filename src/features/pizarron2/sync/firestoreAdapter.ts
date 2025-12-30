@@ -75,7 +75,11 @@ class FirestoreAdapter {
                         title: data.title || data.texto,
                         body: data.body || data.descripcion,
                         color: data.style?.backgroundColor || data.color,
-                        shapeType: data.shapeType
+                        shapeType: data.shapeType,
+                        // Menu Design Sync
+                        htmlContent: data.htmlContent,
+                        suggestedTypography: data.suggestedTypography,
+                        styleHints: data.styleHints
                     },
                     createdAt: data.createdAt?.seconds ? data.createdAt.seconds * 1000 : Date.now(),
                     updatedAt: data.updatedAt || Date.now(),
@@ -233,6 +237,10 @@ class FirestoreAdapter {
                 body: node.content.body || '',
                 style: { backgroundColor: node.content.color },
                 shapeType: node.content.shapeType,
+                // Menu Design Content
+                htmlContent: node.content.htmlContent,
+                suggestedTypography: node.content.suggestedTypography,
+                styleHints: node.content.styleHints,
                 // Meta
                 boardId: boardId,
                 updatedAt: node.updatedAt,

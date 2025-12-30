@@ -92,5 +92,14 @@ export const STRUCTURE_TEMPLATES: Record<string, BoardStructure> = {
             { id: 'z4', label: 'Img', x: 0, y: 0.5, w: 0.5, h: 0.5, defaultType: 'image', content: { text: '' } },
             { id: 'z5', label: 'Img', x: 0.5, y: 0.5, w: 0.5, h: 0.5, defaultType: 'image', content: { text: '' } }
         ]
+    },
+    'menu-design-structure': {
+        id: 'menu-design-structure',
+        name: 'Menu Design Intelligence',
+        description: 'Conceptual space for menu design and engineering.',
+        zones: [
+            { id: 'section-header', label: 'Section Header', x: 0.05, y: 0.05, w: 0.9, h: 0.1, defaultType: 'menu-section' },
+            { id: 'items-grid', label: 'Menu Items', x: 0.05, y: 0.2, w: 0.9, h: 0.7, defaultType: 'grid' }
+        ]
     }
 };

@@ -1,8 +1,9 @@
 import React from 'react';
 import { Firestore, addDoc, collection, serverTimestamp } from 'firebase/firestore';
-import { MenuLayout } from '../../../types';
+import { MenuLayout } from '../../types';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '../ui/Card';
 import { Button } from '../ui/Button';
+import { MenuDesignRendererCore } from '../shared/MenuDesignRendererCore';
 
 interface MenuResultCardProps {
     item: MenuLayout;
@@ -31,10 +32,11 @@ export const MenuResultCard: React.FC<MenuResultCardProps> = ({ item, db, userId
                 <CardDescription>{item.description}</CardDescription>
             </CardHeader>
             <CardContent className="flex-1 overflow-y-auto border-t border-b p-4 bg-secondary/30">
-                <style>{item.suggestedTypography}</style>
-                <div 
-                    className="prose dark:prose-invert max-w-none" 
-                    dangerouslySetInnerHTML={{ __html: item.htmlContent }} 
+                <MenuDesignRendererCore
+                    themeName={item.themeName}
+                    description={item.description}
+                    suggestedTypography={item.suggestedTypography}
+                    htmlContent={item.htmlContent}
                 />
             </CardContent>
             <CardFooter>
