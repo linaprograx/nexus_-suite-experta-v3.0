@@ -640,7 +640,7 @@ const CerebrityView: React.FC<CerebrityViewProps> = ({ db, userId, storage, appI
         </div>
       </div>
       <div className={`flex-1 grid grid-cols-1 lg:grid-cols-[310px,minmax(0,1fr),320px] gap-6 overflow-hidden rounded-3xl bg-gradient-to-b ${backgroundClass} p-6`}>
-        <div className="nexus-col-premium">
+        <div className="h-full min-h-0 flex flex-col relative">
           {activeTab === 'creativity' ? (
             <CerebrityHistorySidebar db={db} userId={userId} onLoadHistory={(item) => setResult(item)} />
           ) : activeTab === 'lab' ? (
@@ -649,7 +649,7 @@ const CerebrityView: React.FC<CerebrityViewProps> = ({ db, userId, storage, appI
             <TrendHistorySidebar db={db} trendHistoryPath={`users/${userId}/trend-history`} onLoadHistory={(item) => setTrendResults((item as any).results || [])} />
           )}
         </div>
-        <div className="nexus-col-premium">
+        <div className="h-full min-h-0 flex flex-col relative">
           {activeTab === 'creativity' ? (
             <CreativityTab db={db} userId={userId} appId={appId} allRecipes={allRecipes} selectedRecipe={selectedRecipe} setSelectedRecipe={setSelectedRecipe} rawInput={rawInput} setRawInput={setRawInput} handleGenerate={handleGenerate} loading={loading} imageLoading={imageLoading} error={error} result={result} setResult={setResult} onOpenRecipeModal={onOpenRecipeModal} />
           ) : activeTab === 'lab' ? (
@@ -658,7 +658,7 @@ const CerebrityView: React.FC<CerebrityViewProps> = ({ db, userId, storage, appI
             <TrendLocatorTab loading={trendLoading} error={trendError} trendResults={trendResults} trendSources={[]} db={db} userId={userId} appId={appId} trendHistoryPath={`users/${userId}/trend-history`} />
           )}
         </div>
-        <div className="nexus-col-premium">
+        <div className="h-full min-h-0 flex flex-col relative">
           {activeTab === 'trendLocator' ? (
             <TrendLocatorControls sourceFilter={sourceFilter} setSourceFilter={setSourceFilter} topicFilter={topicFilter} setTopicFilter={setTopicFilter} keyword={keyword} setKeyword={setKeyword} loading={trendLoading} onSearch={handleTrendSearch} />
           ) : (

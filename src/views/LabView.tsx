@@ -87,7 +87,7 @@ const LabView: React.FC<LabViewProps> = ({ db, userId, appId, allIngredients, al
     };
 
     return (
-        <div className="h-full flex flex-col gap-6">
+        <div className="h-full flex flex-col gap-6 overflow-y-auto custom-scrollbar p-1">
             <Card className="flex-shrink-0 backdrop-blur-xl bg-white/40 dark:bg-slate-900/40 border border-white/20 shadow-lg rounded-xl">
                 <CardHeader>
                     <CardTitle className="text-cyan-800 dark:text-cyan-200">The Lab: Análisis Molecular</CardTitle>
