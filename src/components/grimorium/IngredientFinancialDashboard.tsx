@@ -3,14 +3,17 @@ import { Ingredient } from '../../../types';
 import { Card } from '../ui/Card';
 import { Icon } from '../ui/Icon';
 import { ICONS } from '../ui/icons';
-import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, BarChart, Bar, Cell } from 'recharts';
+import { AreaChart, Area, XAxis, YAxis, Tooltip, BarChart, Bar, Cell } from 'recharts';
+import { ChartContainer } from '../ui/ChartContainer';
 
 interface IngredientFinancialDashboardProps {
     selectedIngredient: Ingredient | null;
+    selectedIngredient: Ingredient | null;
     allIngredients: Ingredient[];
+    onFilterByStatus?: (status: string) => void;
 }
 
-export const IngredientFinancialDashboard: React.FC<IngredientFinancialDashboardProps> = ({ selectedIngredient, allIngredients }) => {
+export const IngredientFinancialDashboard: React.FC<IngredientFinancialDashboardProps> = ({ selectedIngredient, allIngredients, onFilterByStatus }) => {
 
     // --- Mock Data Generators ---
     const generateTrendData = (baseValue: number, volatility: number) => {
@@ -33,16 +36,19 @@ export const IngredientFinancialDashboard: React.FC<IngredientFinancialDashboard
                     <div className="p-2 rounded-xl bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400">
                         <Icon svg={ICONS.trendingUp} className="w-5 h-5" />
                     </div>
-                    <div className="min-w-0">
-                        <h3 className="font-bold text-slate-800 dark:text-slate-100 text-sm truncate">{selectedIngredient.nombre}</h3>
-                        <p className="text-xs text-slate-500">Análisis de Costos</p>
+                    <div className="min-w-0 flex-1">
+                        <h3 className="font-bold text-slate-800 dark:text-slate-100 text-xs truncate" title={selectedIngredient.nombre}>{selectedIngredient.nombre}</h3>
+                        <p className="text-[10px] text-slate-500 truncate">Análisis de Costos</p>
                     </div>
                 </div>
 
                 {/* KPI Grid */}
                 <div className="grid grid-cols-2 gap-2">
-                    <Card className="p-3 border bg-white/50 dark:bg-slate-800/50 border-slate-100 dark:border-slate-800">
-                        <div className="text-[10px] text-slate-500 uppercase font-bold mb-1">Precio Actual</div>
+                    {/* Price KPI */}
+                    <Card className="p-3 border bg-emerald-50/50 border-emerald-100 dark:bg-slate-800/50 dark:border-slate-700">
+                        <div className="flex justify-between items-center mb-1 flex-wrap gap-1">
+                            <span className="text-[10px] font-semibold uppercase tracking-wider opacity-70">Precio Actual</span>
+                        </div>
                         <div className="text-lg font-bold text-slate-800 dark:text-slate-100">€{selectedIngredient.precioCompra.toFixed(2)}</div>
                         <div className={`text-[10px] font-bold ${trend >= 0 ? 'text-red-500' : 'text-emerald-500'}`}>
                             {trend >= 0 ? '+' : ''}{trend.toFixed(1)}% vs 6m
@@ -63,7 +69,7 @@ export const IngredientFinancialDashboard: React.FC<IngredientFinancialDashboard
                         <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Evolución Precio</span>
                     </div>
                     <div className="flex-1 w-full min-h-0">
-                        <ResponsiveContainer width="100%" height="100%">
+                        <ChartContainer>
                             <AreaChart data={priceHistory}>
                                 <defs>
                                     <linearGradient id="colorPrice" x1="0" y1="0" x2="0" y2="1">
@@ -80,10 +86,10 @@ export const IngredientFinancialDashboard: React.FC<IngredientFinancialDashboard
                                 />
                                 <Area type="monotone" dataKey="value" stroke="#10b981" strokeWidth={3} fillOpacity={1} fill="url(#colorPrice)" />
                             </AreaChart>
-                        </ResponsiveContainer>
+                        </ChartContainer>
                     </div>
-                </Card>
-            </div>
+                </Card >
+            </div >
         );
     }
 
@@ -132,7 +138,7 @@ export const IngredientFinancialDashboard: React.FC<IngredientFinancialDashboard
             <Card className="p-4 bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm border-slate-100 dark:border-slate-800 shadow-sm min-h-[140px]">
                 <div className="text-[10px] text-emerald-600 uppercase font-bold mb-2">Valor Histórico Inventario</div>
                 <div className="h-[100px] w-full">
-                    <ResponsiveContainer width="100%" height="100%">
+                    <ChartContainer height="100%">
                         <AreaChart data={inventoryHistory}>
                             <defs>
                                 <linearGradient id="colorInv" x1="0" y1="0" x2="0" y2="1">
@@ -146,12 +152,12 @@ export const IngredientFinancialDashboard: React.FC<IngredientFinancialDashboard
                             />
                             <Area type="monotone" dataKey="value" stroke="#059669" strokeWidth={2} fill="url(#colorInv)" />
                         </AreaChart>
-                    </ResponsiveContainer>
+                    </ChartContainer>
                 </div>
-            </Card>
+            </Card >
 
             {/* Top Cost Products */}
-            <Card className="p-4 bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm border-slate-100 dark:border-slate-800 shadow-sm">
+            < Card className="p-4 bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm border-slate-100 dark:border-slate-800 shadow-sm" >
                 <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-4">Top Costo Unitario</h4>
                 <div className="space-y-3">
                     {topCostItems.map((item, idx) => (
@@ -164,24 +170,24 @@ export const IngredientFinancialDashboard: React.FC<IngredientFinancialDashboard
                         </div>
                     ))}
                 </div>
-            </Card>
+            </Card >
 
             {/* Stock Status Logic */}
-            <Card className="p-4 bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm border-slate-100 dark:border-slate-800 shadow-sm flex-1">
+            < Card className="p-4 bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm border-slate-100 dark:border-slate-800 shadow-sm flex-1" >
                 <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-4">Estado del Stock</h4>
                 <div className="space-y-4">
-                    <div>
+                    <div className="cursor-pointer group hover:bg-emerald-50 dark:hover:bg-emerald-900/10 p-1 rounded-lg transition-colors" onClick={() => onFilterByStatus && onFilterByStatus('healthy')}>
                         <div className="flex justify-between text-xs mb-1">
-                            <span className="text-slate-600 dark:text-slate-400">Stock Saludable</span>
+                            <span className="text-slate-600 dark:text-slate-400 group-hover:text-slate-900 dark:group-hover:text-slate-200 transition-colors">Stock Saludable</span>
                             <span className="font-bold text-emerald-600">{allIngredients.length - lowStockCount}</span>
                         </div>
                         <div className="h-2 w-full bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
                             <div className="h-full bg-emerald-500" style={{ width: `${((allIngredients.length - lowStockCount) / allIngredients.length) * 100}%` }} />
                         </div>
                     </div>
-                    <div>
+                    <div className="cursor-pointer group hover:bg-amber-50 dark:hover:bg-amber-900/10 p-1 rounded-lg transition-colors" onClick={() => onFilterByStatus && onFilterByStatus('low')}>
                         <div className="flex justify-between text-xs mb-1">
-                            <span className="text-slate-600 dark:text-slate-400">Stock Bajo / Crítico</span>
+                            <span className="text-slate-600 dark:text-slate-400 group-hover:text-slate-900 dark:group-hover:text-slate-200 transition-colors">Stock Bajo / Crítico</span>
                             <span className="font-bold text-amber-500">{lowStockCount}</span>
                         </div>
                         <div className="h-2 w-full bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
@@ -189,7 +195,7 @@ export const IngredientFinancialDashboard: React.FC<IngredientFinancialDashboard
                         </div>
                     </div>
                 </div>
-            </Card>
-        </div>
+            </Card >
+        </div >
     );
 };

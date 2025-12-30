@@ -1,4 +1,5 @@
 import React from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { ViewName } from '../../../types';
 import { useApp } from '../../context/AppContext';
 import { useUI } from '../../context/UIContext';
@@ -17,16 +18,17 @@ const APP_ROUTES: { view: ViewName; label: string; icon: string }[] = [
 ];
 
 interface NavLinkProps {
-  view: ViewName;
+  view: string; // Changed from ViewName to string for router paths
   label: string;
   icon: string;
-  currentView: ViewName;
-  setCurrentView: (view: ViewName) => void;
+  currentPath: string; // Changed from currentView
+  onNavigate: (path: string) => void; // Changed from setCurrentView
   isCollapsed: boolean;
 }
 
-const NavLink: React.FC<NavLinkProps> = ({ view, label, icon, currentView, setCurrentView, isCollapsed }) => {
-  const isActive = currentView === view;
+const NavLink: React.FC<NavLinkProps> = ({ view, label, icon, currentPath, onNavigate, isCollapsed }) => {
+  const path = view === 'dashboard' ? '/' : `/${view}`;
+  const isActive = currentPath === path || (path !== '/' && currentPath.startsWith(path));
 
   // Tech Futurista Styles
   const baseClasses = "group flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium transition-all duration-300 relative overflow-hidden";
@@ -41,7 +43,7 @@ const NavLink: React.FC<NavLinkProps> = ({ view, label, icon, currentView, setCu
 
   return (
     <button
-      onClick={() => setCurrentView(view)}
+      onClick={() => onNavigate(path)}
       className={`${baseClasses} ${isActive ? activeClasses : inactiveClasses} ${isCollapsed ? 'justify-center' : ''}`}
     >
       <Icon svg={icon} className={`h-5 w-5 flex-shrink-0 ${isActive ? 'text-slate-900 dark:text-white' : 'text-slate-500 dark:text-slate-500 group-hover:text-slate-900 dark:group-hover:text-slate-200'}`} />
@@ -52,18 +54,16 @@ const NavLink: React.FC<NavLinkProps> = ({ view, label, icon, currentView, setCu
 };
 
 interface SidebarProps {
-  currentView: ViewName;
-  setCurrentView: (view: ViewName) => void;
+  // Legacy props removed or made optional/ignored
+  currentView?: any;
+  setCurrentView?: any;
   onShowNotifications: () => void;
   unreadNotifications: boolean;
-  // Mobile props
   isMobileOpen: boolean;
   onCloseMobile: () => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
-  currentView,
-  setCurrentView,
   onShowNotifications,
   unreadNotifications,
   isMobileOpen,
@@ -71,6 +71,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
 }) => {
   const { auth, userProfile } = useApp();
   const { theme, setTheme, isSidebarCollapsed, toggleSidebar } = useUI();
+
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  const handleNavigate = (path: string) => {
+    navigate(path);
+    onCloseMobile();
+  };
 
   if (!auth) return null;
 
@@ -81,7 +89,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       <div className={`h-20 flex items-center px-4 ${isSidebarCollapsed ? 'justify-center' : 'justify-between'}`}>
         <div className={`flex items-center gap-3 ${isSidebarCollapsed ? 'justify-center w-full' : ''}`}>
           {/* Logo Circular */}
-          <div className="w-9 h-9 rounded-2xl bg-gradient-to-br from-indigo-500 via-fuchsia-500 to-emerald-400 shadow-lg flex-shrink-0 animate-pulse" />
+          <div className="w-9 h-9 rounded-2xl bg-[linear-gradient(135deg,#ef4444,#f97316,#eab308,#22c55e,#06b6d4,#3b82f6,#8b5cf6,#ec4899)] shadow-lg flex-shrink-0 animate-pulse" />
 
           {!isSidebarCollapsed && (
             <div className="flex flex-col overflow-hidden">
@@ -116,11 +124,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <NavLink
             key={route.view}
             {...route}
-            currentView={currentView}
-            setCurrentView={(v) => {
-              setCurrentView(v);
-              onCloseMobile(); // Close mobile drawer on selection
-            }}
+            currentPath={location.pathname}
+            onNavigate={handleNavigate}
             isCollapsed={isSidebarCollapsed}
           />
         ))}
@@ -132,11 +137,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
           view="personal"
           label={userProfile?.displayName || "Mi Perfil"}
           icon={ICONS.user}
-          currentView={currentView}
-          setCurrentView={(v) => {
-            setCurrentView(v);
-            onCloseMobile();
-          }}
+          currentPath={location.pathname}
+          onNavigate={handleNavigate}
           isCollapsed={isSidebarCollapsed}
         />
 

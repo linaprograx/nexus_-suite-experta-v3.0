@@ -98,14 +98,14 @@ export const CreateBoardModal: React.FC<CreateBoardModalProps> = ({ isOpen, onCl
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} size="4xl" title={
-      <span className="font-extrabold text-2xl bg-gradient-to-r from-orange-500 to-amber-600 bg-clip-text text-transparent">
+      <span className="font-extrabold text-2xl bg-gradient-to-r from-nexus-orange to-amber-600 bg-clip-text text-transparent">
         {boardToEdit ? "Editar Tablero" : "Diseñar Nuevo Tablero"}
       </span>
     }>
-      <div className="flex flex-col md:flex-row h-[70vh] overflow-hidden rounded-xl border border-slate-100 dark:border-slate-800">
+      <div className="flex flex-col md:flex-row h-[70vh] overflow-hidden rounded-xl border border-slate-100/50 dark:border-slate-800/50">
 
         {/* LEFT COLUMN: BASIC SETTINGS (Narrower) */}
-        <div className="w-full md:w-[320px] bg-slate-50 dark:bg-slate-900/50 p-6 overflow-y-auto custom-scrollbar border-r border-slate-100 dark:border-slate-800 flex flex-col gap-6">
+        <div className="w-full md:w-[320px] bg-slate-50/50 dark:bg-slate-900/50 p-6 overflow-y-auto custom-scrollbar border-r border-slate-100/50 dark:border-slate-800/50 flex flex-col gap-6 backdrop-blur-sm">
 
           <div>
             <Label className="text-slate-700 dark:text-slate-300 font-bold mb-2 block">Identidad</Label>
@@ -113,13 +113,13 @@ export const CreateBoardModal: React.FC<CreateBoardModalProps> = ({ isOpen, onCl
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Nombre del tablero"
-              className="mb-4 bg-white dark:bg-slate-800"
+              className="mb-4 bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm"
               autoFocus
             />
             <Select
               value={category}
               onChange={(e) => setCategory(e.target.value)}
-              className="bg-white dark:bg-slate-800"
+              className="bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm"
             >
               <option value="general">General</option>
               <option value="creativo">Creativo</option>
@@ -134,12 +134,12 @@ export const CreateBoardModal: React.FC<CreateBoardModalProps> = ({ isOpen, onCl
 
           <div>
             <Label className="text-slate-700 dark:text-slate-300 font-bold mb-2 block">Icono</Label>
-            <div className="grid grid-cols-5 gap-2 bg-white dark:bg-slate-800 p-3 rounded-lg border border-slate-200 dark:border-slate-700 h-32 overflow-y-auto custom-scrollbar">
+            <div className="grid grid-cols-5 gap-2 bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm p-3 rounded-lg border border-slate-200/50 dark:border-slate-700/50 h-32 overflow-y-auto custom-scrollbar">
               {availableIcons.map(ic => (
                 <button
                   key={ic}
                   onClick={() => setIcon(ic)}
-                  className={`aspect-square rounded flex justify-center items-center transition-all hover:bg-slate-100 dark:hover:bg-slate-700 ${icon === ic ? 'bg-orange-100 text-orange-600 ring-2 ring-orange-500' : 'text-slate-400'}`}
+                  className={`aspect-square rounded flex justify-center items-center transition-all hover:bg-slate-100/50 dark:hover:bg-slate-700/50 ${icon === ic ? 'bg-orange-100/50 text-nexus-orange ring-2 ring-nexus-orange' : 'text-slate-400'}`}
                 >
                   <Icon svg={(ICONS as any)[ic] || ICONS.layout} className="w-5 h-5" />
                 </button>
@@ -154,7 +154,7 @@ export const CreateBoardModal: React.FC<CreateBoardModalProps> = ({ isOpen, onCl
                 <button
                   key={c}
                   onClick={() => setThemeColor(c)}
-                  className={`w-6 h-6 rounded-full ${themeColor === c ? 'ring-2 ring-offset-1 ring-slate-400' : ''}`}
+                  className={`w-6 h-6 rounded-full transition-transform hover:scale-110 ${themeColor === c ? 'ring-2 ring-offset-1 ring-slate-400' : ''}`}
                   style={{ backgroundColor: c }}
                 />
               ))}
@@ -163,11 +163,11 @@ export const CreateBoardModal: React.FC<CreateBoardModalProps> = ({ isOpen, onCl
 
           <div className="flex-1"></div>
 
-          <div className="pt-4 border-t border-slate-200 dark:border-slate-700">
+          <div className="pt-4 border-t border-slate-200/50 dark:border-slate-700/50">
             <Button
               onClick={handleSubmit}
               disabled={!name.trim() || isSaving}
-              className="w-full bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white shadow-lg shadow-orange-500/30"
+              className="w-full bg-gradient-to-r from-nexus-orange to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white shadow-lg shadow-nexus-orange/30 rounded-xl"
             >
               {isSaving ? <Spinner className="w-5 h-5 border-white" /> : (boardToEdit ? "Guardar" : "Crear Ahora")}
             </Button>
@@ -176,10 +176,10 @@ export const CreateBoardModal: React.FC<CreateBoardModalProps> = ({ isOpen, onCl
         </div>
 
         {/* RIGHT COLUMN: PREVIEW & TOOLS (Wider) */}
-        <div className="flex-1 bg-white dark:bg-slate-900 p-8 overflow-y-auto custom-scrollbar flex flex-col">
+        <div className="flex-1 bg-white/80 dark:bg-slate-900/80 p-8 overflow-y-auto custom-scrollbar flex flex-col backdrop-blur-sm">
 
-          <div className="mb-8 p-6 rounded-2xl bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-800 dark:to-slate-900 border border-slate-100 dark:border-slate-700 flex items-center gap-6 shadow-sm">
-            <div className="w-20 h-20 rounded-2xl flex items-center justify-center text-white shadow-xl" style={{ backgroundColor: themeColor }}>
+          <div className="mb-8 p-6 rounded-2xl bg-gradient-to-br from-slate-50/50 to-slate-100/50 dark:from-slate-800/50 dark:to-slate-900/50 border border-slate-100/50 dark:border-slate-700/50 flex items-center gap-6 shadow-sm">
+            <div className="w-20 h-20 rounded-2xl flex items-center justify-center text-white shadow-xl shadow-slate-200/50 dark:shadow-none" style={{ backgroundColor: themeColor }}>
               <Icon svg={(ICONS as any)[icon] || ICONS.layout} className="w-10 h-10" />
             </div>
             <div>
@@ -194,7 +194,7 @@ export const CreateBoardModal: React.FC<CreateBoardModalProps> = ({ isOpen, onCl
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Describe el propósito de este tablero..."
-              className="resize-none bg-slate-50 dark:bg-slate-800/50 border-0 rounded-xl"
+              className="resize-none bg-slate-50/50 dark:bg-slate-800/50 border-0 rounded-xl focus:ring-nexus-orange/50"
             />
           </div>
 
@@ -208,16 +208,16 @@ export const CreateBoardModal: React.FC<CreateBoardModalProps> = ({ isOpen, onCl
                   key={tool.id}
                   onClick={() => handleToggleTool(tool.id)}
                   className={`relative p-4 rounded-xl border-2 cursor-pointer transition-all duration-200 group ${selectedTools.includes(tool.id)
-                      ? 'border-orange-500 bg-orange-50/50 dark:bg-orange-900/10'
-                      : 'border-slate-100 dark:border-slate-800 hover:border-orange-200 dark:hover:border-slate-600 bg-white dark:bg-slate-800'
+                    ? 'border-nexus-orange bg-orange-50/50 dark:bg-orange-900/10'
+                    : 'border-slate-100 dark:border-slate-800 hover:border-orange-200 dark:hover:border-slate-600 bg-white/40 dark:bg-slate-800/40'
                     }`}
                 >
-                  <div className={`p-3 rounded-lg inline-flex mb-3 ${selectedTools.includes(tool.id) ? 'bg-orange-100 text-orange-600' : 'bg-slate-100 dark:bg-slate-700 text-slate-500'}`}>
+                  <div className={`p-3 rounded-lg inline-flex mb-3 ${selectedTools.includes(tool.id) ? 'bg-orange-100 text-nexus-orange' : 'bg-slate-100 dark:bg-slate-700 text-slate-500'}`}>
                     <Icon svg={(ICONS as any)[tool.icon] || ICONS.sparkles} className="w-6 h-6" />
                   </div>
                   <h4 className={`font-bold ${selectedTools.includes(tool.id) ? 'text-slate-900 dark:text-slate-100' : 'text-slate-600 dark:text-slate-400'}`}>{tool.name}</h4>
                   {selectedTools.includes(tool.id) && (
-                    <div className="absolute top-3 right-3 w-6 h-6 bg-orange-500 rounded-full flex items-center justify-center text-white shadow-md">
+                    <div className="absolute top-3 right-3 w-6 h-6 bg-nexus-orange rounded-full flex items-center justify-center text-white shadow-md">
                       <Icon svg={ICONS.check} className="w-3 h-3" />
                     </div>
                   )}

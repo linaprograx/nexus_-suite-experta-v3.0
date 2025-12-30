@@ -8,7 +8,7 @@ export interface ParsedIngredient {
   original: string;
 }
 
-const UNITS_REGEX = 'ml|g|kg|und|dash|dashes|slice|rodaja|pieza|hoja|tsp|tbsp|cl';
+const UNITS_REGEX = 'ml|g|gr|kg|l|lt|litro|oz|lb|und|unid|unidad|botella|dash|dashes|slice|rodaja|pieza|hoja|tsp|tbsp|cl';
 
 /**
  * Parses a single raw ingredient line into a structured object.
@@ -23,7 +23,7 @@ export const parseIngredient = (line: string): ParsedIngredient => {
   // Regex to capture (number) (unit) (name) or (name) (number) (unit)
   const regex = new RegExp(`^([\\d./]+)?\\s*(${UNITS_REGEX})?\\s*(.*?)\\s*([\\d./]+)?\\s*(${UNITS_REGEX})?$`);
   const match = normalizedLine.match(regex);
-  
+
   if (!match) {
     const { name, note } = cleanIngredientName(line);
     return { cantidad: 1, unidad: 'und', nombreBase: name, nota: note, original: line };
@@ -35,21 +35,21 @@ export const parseIngredient = (line: string): ParsedIngredient => {
 
   let cantidad = parseFloat(cantidadStr);
   if (isNaN(cantidad)) { // Handle cases like "1/2" that aren't auto-parsed
-      try {
-          // eslint-disable-next-line no-eval
-          cantidad = eval(cantidadStr);
-      } catch(e) {
-          cantidad = 1;
-      }
+    try {
+      // eslint-disable-next-line no-eval
+      cantidad = eval(cantidadStr);
+    } catch (e) {
+      cantidad = 1;
+    }
   }
 
   // If the name part is empty, it means the unit was probably part of the name
   if (!nombreRaw && unidadRaw !== 'und') {
     nombreRaw = unidadRaw;
   }
-  
+
   const { name: nombreBase, note } = cleanIngredientName(nombreRaw || line);
-  
+
   return {
     cantidad,
     unidad: unidadRaw,

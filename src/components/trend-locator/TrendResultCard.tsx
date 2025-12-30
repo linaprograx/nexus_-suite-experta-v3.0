@@ -31,14 +31,18 @@ export const TrendResultCard: React.FC<TrendResultCardProps> = ({ item, db, user
     return (
         <div className="bg-white/60 dark:bg-slate-900/40 backdrop-blur-sm rounded-xl border border-white/20 dark:border-white/5 p-5 shadow-sm hover:shadow-md transition-all flex flex-col h-full">
             <div className="mb-4">
-                <h3 className="font-bold text-lg text-slate-900 dark:text-white mb-1 leading-tight">{item.titulo}</h3>
-                <span className="inline-block px-2 py-0.5 rounded text-[10px] uppercase font-bold tracking-wider bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400">
-                    {item.fuente}
-                </span>
+                <h3 className="font-bold text-lg text-slate-900 dark:text-white mb-1 leading-tight">
+                    {(item as any).conceptName || item.titulo || "Sin título"}
+                </h3>
+                {((item as any).visualStyle || item.fuente) && (
+                    <span className="inline-block px-2 py-0.5 rounded text-[10px] uppercase font-bold tracking-wider bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400">
+                        {(item as any).visualStyle || item.fuente}
+                    </span>
+                )}
             </div>
 
             <p className="text-sm text-slate-600 dark:text-slate-300 mb-6 flex-grow leading-relaxed">
-                {item.resumen}
+                {(item as any).description || item.resumen || "Sin descripción disponible."}
             </p>
 
             <div className="flex gap-2 pt-4 border-t border-slate-200/50 dark:border-slate-700/50 mt-auto">

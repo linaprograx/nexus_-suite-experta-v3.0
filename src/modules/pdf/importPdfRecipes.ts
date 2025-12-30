@@ -41,12 +41,11 @@ export const importPdfRecipes = async (
 
     const finalRecipes: Partial<Recipe>[] = [];
     let currentIngredients = [...allIngredients];
-    
+
     for (const block of parsedBlocks) {
         const ingredientLines = block.ingredientesTexto.split('\n').filter(line => line.trim());
         const lineItems: IngredientLineItem[] = [];
-        const ingredientsToCreate: Omit<Ingredient, 'id'>[] = [];
-        const newIngredientsCache = new Map<string, Omit<Ingredient, 'id'>>();
+        // Auto-creation removed per user request.
 
         for (const line of ingredientLines) {
             const parsedIngredient = parseIngredient(line);
@@ -60,47 +59,19 @@ export const importPdfRecipes = async (
                     unidad: parsedIngredient.unidad,
                 });
             } else {
-                 lineItems.push({
-                    ingredientId: null, // Placeholder
-                    nombre: parsedIngredient.nombreBase,
-                    cantidad: parsedIngredient.cantidad,
-                    unidad: parsedIngredient.unidad,
-                });
-                
-                if (!newIngredientsCache.has(parsedIngredient.nombreBase.toLowerCase())) {
-                    const newIngredient: Omit<Ingredient, 'id'> = {
-                        nombre: parsedIngredient.nombreBase,
-                        categoria: 'Importado',
-                        precioCompra: 0,
-                        unidadCompra: parsedIngredient.unidad,
-                        standardUnit: parsedIngredient.unidad as any,
-                        standardQuantity: 1,
-                        standardPrice: 0,
-                    };
-                    ingredientsToCreate.push(newIngredient);
-                    newIngredientsCache.set(parsedIngredient.nombreBase.toLowerCase(), newIngredient);
-                }
-            }
-        }
+                // User requested: Do NOT create new ingredients for unmatched items.
+                // Append note to preparation.
+                const missingNote = `[Falta Ingrediente: ${parsedIngredient.nombreBase} (${parsedIngredient.cantidad} ${parsedIngredient.unidad})]`;
 
-        if (ingredientsToCreate.length > 0) {
-            const ingredientsCol = collection(db, `users/${userId}/grimorio-ingredients`);
-            for (const newIng of ingredientsToCreate) {
-                const docRef = await addDoc(ingredientsCol, newIng);
-                const createdIngredient = { ...newIng, id: docRef.id };
-                currentIngredients.push(createdIngredient);
-                
-                lineItems.forEach(item => {
-                    if (item.nombre.toLowerCase() === createdIngredient.nombre.toLowerCase() && item.ingredientId === null) {
-                        item.ingredientId = createdIngredient.id;
-                    }
-                });
+                if (!block.preparacion.includes(missingNote)) {
+                    block.preparacion = `${missingNote}\n${block.preparacion}`;
+                }
             }
         }
 
         let imageUrl: string | null = null;
         let imageBase64: string | null = null;
-        
+
         // Page-based image matching (default)
         const pageImage = pagesImages.find(pi => pi.pageNumber === block.pageNumber);
         if (pageImage && pageImage.imageBase64) {
@@ -108,13 +79,13 @@ export const importPdfRecipes = async (
         }
 
         if (imageBase64) {
-             try {
+            try {
                 imageUrl = await uploadImage(storage, userId, imageBase64);
             } catch (error) {
                 console.error(`Failed to upload image for recipe "${block.nombre}":`, error);
             }
         }
-        
+
         const finalRecipe: Partial<Recipe> = {
             nombre: block.nombre,
             categorias: block.categorias,

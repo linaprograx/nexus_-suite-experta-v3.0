@@ -1,143 +1,156 @@
-import React, { useState } from 'react';
+import React from 'react';
+
+// ⚠️ VERIFICA QUE ESTOS ARCHIVOS EXISTAN — SI ALGUNO NO EXISTE → ERROR 500
+import { CompetitionBriefPanel } from '../../features/champion-mode/components/CompetitionBriefPanel';
+import { ChampionCreativePanel } from '../../features/champion-mode/components/ChampionCreativePanel';
+import { ChampionFineTuningPanel } from '../../features/champion-mode/components/ChampionFineTuningPanel';
+import { ChampionPresentationView } from '../../features/champion-mode/components/ChampionPresentationView';
+
+import { useChampionCreativeEngine } from '../../features/champion-mode/hooks/useChampionCreativeEngine';
+import { ChampionProvider } from '../../features/champion-mode/context/ChampionContext';
+
+// UI
 import { Icon } from '../../components/ui/Icon';
 import { ICONS } from '../../components/ui/icons';
 
-// --- Components ---
 
-const AvatarColumn = ({ title, children, accentColor = "bg-lime-500" }: { title: string, children?: React.ReactNode, accentColor?: string }) => (
-    <div className="h-full min-h-0 flex flex-col overflow-hidden">
-        {/* Transparent Header */}
-        <div className="pb-4 flex justify-between items-center px-2">
-            <h3 className="font-bold text-lime-900 tracking-wide text-xs uppercase flex items-center gap-2">
-                <span className={`w-2 h-2 rounded-full ${accentColor} shadow-[0_0_10px_rgba(132,204,22,0.5)]`}></span>
+const ChampionColumn = ({
+    title,
+    children,
+    accentColor = "bg-cyan-500",
+    scrollable = false,
+    onDoubleClick,
+    isFocused = false,
+    className = ""
+}: {
+    title: string;
+    children?: React.ReactNode;
+    accentColor?: string;
+    scrollable?: boolean;
+    onDoubleClick?: () => void;
+    isFocused?: boolean;
+    className?: string;
+}) => (
+    <div
+        onDoubleClick={onDoubleClick}
+        className={`h-full flex flex-col overflow-hidden rounded-[30px] bg-[#e0e5ec] shadow-[9px_9px_16px_rgb(163,177,198,0.6),-9px_-9px_16px_rgba(255,255,255,0.5)] border border-white/40 transition-all duration-500 ease-[cubic-bezier(0.18,0.89,0.32,1.28)] ${isFocused ? 'scale-[1.01] ring-2 ring-violet-400/30' : 'hover:scale-[1.005]'} ${className}`}
+    >
+        {/* Header */}
+        <div className="px-6 py-5 flex justify-between items-center border-b border-slate-200/40 select-none cursor-pointer">
+            <h3 className="font-bold text-slate-600 tracking-wider text-[0.95rem] flex items-center gap-3 uppercase">
+                <span className={`w-2.5 h-2.5 rounded-full ${accentColor}`} />
                 {title}
             </h3>
+            <span className="text-[9px] font-bold text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity">Double-click to Focus</span>
         </div>
-        <div className="flex-1 overflow-y-auto custom-scrollbar space-y-4 relative px-2 pb-2">
+
+        {/* Content */}
+        <div className={`flex-1 relative ${scrollable ? "overflow-y-auto custom-scrollbar" : "overflow-hidden"}`}>
             {children}
         </div>
     </div>
 );
 
-// High-Tech "Champion" Card Style (Olive/Lime Theme)
-const ChampionCard = ({ children, className = "", active = false }: { children: React.ReactNode, className?: string, active?: boolean }) => (
-    <div className={`
-        rounded-xl backdrop-blur-md transition-all duration-300
-        ${active
-            ? 'bg-lime-500/20 border border-lime-400 shadow-[0_0_20px_rgba(132,204,22,0.2)]'
-            : 'bg-white/50 border border-lime-900/10 hover:bg-lime-50 hover:border-lime-500/30'}
-        ${className}
-    `}>
-        {children}
-    </div>
-);
 
 const ChampionModeView: React.FC = () => {
-    const handleStartChallenge = () => {
-        console.log('[Champion Mode] Starting design challenge...');
-        // Placeholder for contest start logic
+    const engine = useChampionCreativeEngine();
+    const { viewMode } = engine.state;
+    const [focusCol, setFocusCol] = React.useState<number | null>(null);
+
+    const handleFocus = (colIndex: number) => {
+        soundEngine.playSlide();
+        setFocusCol(prev => prev === colIndex ? null : colIndex);
     };
 
     return (
-        <div className="h-full grid grid-cols-1 lg:grid-cols-3 gap-6 text-lime-900">
+        <ChampionProvider engine={engine}>
+            <div className="h-[calc(100vh-6rem)] w-full p-6 overflow-hidden relative font-sans">
 
-            {/* Column 1: Competition Brief */}
-            <AvatarColumn title="Brief de Competición">
-                <div className="space-y-4">
-                    <ChampionCard className="p-6 text-center space-y-4">
-                        <div className="w-16 h-16 rounded-full bg-gradient-to-br from-lime-400 to-emerald-600 mx-auto flex items-center justify-center shadow-lg shadow-lime-500/30">
-                            <Icon svg={ICONS.award} className="w-8 h-8 text-white" />
-                        </div>
-                        <div>
-                            <h2 className="text-xl font-black text-lime-800 uppercase tracking-tight">World Class 2024</h2>
-                            <p className="text-xs font-bold text-lime-600 uppercase tracking-widest mt-1">Fase Regional: "Botanical Future"</p>
-                        </div>
-                        <div className="p-3 bg-lime-100 rounded-lg border border-lime-200">
-                            <div className="flex justify-between items-center mb-2">
-                                <span className="text-[10px] font-bold text-lime-700 uppercase">Tiempo Restante</span>
-                                <Icon svg={ICONS.clock} className="w-4 h-4 text-lime-600" />
-                            </div>
-                            <span className="text-2xl font-mono font-bold text-lime-800">14:02:59</span>
-                        </div>
-                    </ChampionCard>
+                {/* PRESENTATION VIEW */}
+                {viewMode === 'PRESENTATION' ? (
+                    <ChampionPresentationView />
+                ) : (
+                    <div className="h-full w-full flex flex-col gap-6 relative z-10">
 
-                    <ChampionCard className="p-4">
-                        <h4 className="text-xs font-bold text-lime-800 uppercase mb-3 flex items-center gap-2">
-                            <Icon svg={ICONS.list} className="w-4 h-4" /> Requisitos Obligatorios
-                        </h4>
-                        <ul className="space-y-2">
-                            {['Min. 2 Ingredientes Caseros', 'Uso de Técnica "Fat Wash"', 'Sin Azúcar Añadido', 'Vaso Highball'].map((item, i) => (
-                                <li key={i} className="flex items-center gap-2 text-xs font-medium text-slate-700">
-                                    <div className="w-4 h-4 rounded-full border border-lime-500 flex items-center justify-center">
-                                        <div className="w-2 h-2 rounded-full bg-lime-500"></div>
+                        {/* STEP INDICATOR - Hide when focused to save space */}
+                        <div className={`w-full flex justify-center items-center gap-4 transition-all duration-500 ${focusCol !== null ? 'opacity-0 -mt-10 pointer-events-none' : 'opacity-100'}`}>
+                            {['Briefing', 'Motor Creativo', 'Validación', 'Plan'].map((step, i) => (
+                                <div key={step} className="flex items-center gap-2">
+
+                                    <div className={`
+                                        w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold border 
+                                        ${i === 1
+                                            ? 'bg-violet-600 border-violet-600 text-white shadow-lg shadow-violet-500/30'
+                                            : 'bg-white border-slate-200 text-slate-400'}
+                                    `}>
+                                        {i + 1}
                                     </div>
-                                    {item}
-                                </li>
-                            ))}
-                        </ul>
-                    </ChampionCard>
-                </div>
-            </AvatarColumn>
 
-            {/* Column 2: Design Canvas */}
-            <AvatarColumn title="Lienzo de Diseño">
-                <ChampionCard className="h-full flex flex-col justify-center items-center p-8 border-dashed border-2 border-lime-300 bg-white/30 hover:bg-white/50 group cursor-pointer transition-all">
-                    <div className="w-20 h-20 rounded-full bg-lime-100 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
-                        <Icon svg={ICONS.flask} className="w-10 h-10 text-lime-600" />
-                    </div>
-                    <h3 className="text-lg font-bold text-lime-800 mb-2">Diseñar Nuevo Cocktail</h3>
-                    <p className="text-xs text-center text-slate-500 max-w-[200px]">
-                        Inicia el asistente de creación molecular para generar tu propuesta basada en los requisitos.
-                    </p>
-                    <button
-                        onClick={handleStartChallenge}
-                        className="mt-6 px-6 py-2 bg-lime-500 hover:bg-lime-400 text-white font-bold rounded-lg shadow-lg shadow-lime-500/20 transition-all text-xs uppercase tracking-wider"
-                    >
-                        Comenzar Diseño
-                    </button>
-                </ChampionCard>
-            </AvatarColumn>
+                                    <span className={`text-[10px] uppercase font-bold tracking-wider ${i === 1 ? "text-violet-600" : "text-slate-300"}`}>
+                                        {step}
+                                    </span>
 
-            {/* Column 3: Performance Analysis */}
-            <AvatarColumn title="Simulación de Jurado">
-                <div className="space-y-4">
-                    <ChampionCard className="p-4">
-                        <h4 className="text-xs font-bold text-lime-800 uppercase mb-4 flex items-center gap-2">
-                            <Icon svg={ICONS.star} className="w-4 h-4" /> Criterios de Evaluación
-                        </h4>
-                        <div className="space-y-4">
-                            {[
-                                { label: 'Balance de Sabor', score: 8.5 },
-                                { label: 'Presentación Visual', score: 9.2 },
-                                { label: 'Storytelling', score: 7.8 },
-                                { label: 'Técnica', score: 8.9 }
-                            ].map((crit, i) => (
-                                <div key={i}>
-                                    <div className="flex justify-between text-xs font-bold text-slate-600 mb-1">
-                                        <span>{crit.label}</span>
-                                        <span className="text-lime-600">{crit.score}/10</span>
-                                    </div>
-                                    <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
-                                        <div
-                                            className="h-full bg-lime-500 rounded-full"
-                                            style={{ width: `${crit.score * 10}%` }}
-                                        ></div>
-                                    </div>
+                                    {i < 3 && <div className="w-8 h-[1px] bg-slate-100" />}
                                 </div>
                             ))}
                         </div>
-                    </ChampionCard>
 
-                    <ChampionCard className="p-4 bg-lime-500/10 border-lime-400/50">
-                        <h4 className="text-xs font-bold text-lime-800 uppercase mb-2">Comentario de IA</h4>
-                        <p className="text-[11px] font-medium text-slate-600 italic">
-                            "Tu propuesta 'Nebula Fizz' tiene una puntuación proyectada de 92/100. El uso de té macha eleva la complejidad, pero cuidado con la dilución si usas hielo estándar."
-                        </p>
-                    </ChampionCard>
-                </div>
-            </AvatarColumn>
+                        {/* 3-COLUMN LAYOUT */}
+                        <div className={`flex-1 w-full grid gap-8 min-h-0 transition-all duration-500 ease-[cubic-bezier(0.18,0.89,0.32,1.28)] ${focusCol === 1 ? 'grid-cols-[1fr_0fr_0fr]' :
+                                focusCol === 2 ? 'grid-cols-[0fr_1fr_0fr]' :
+                                    focusCol === 3 ? 'grid-cols-[0fr_0fr_1fr]' :
+                                        'grid-cols-1 xl:grid-cols-[28fr_44fr_28fr]'
+                            }`}>
 
-        </div>
+                            {/* COLUMN 1 */}
+                            <div className={`h-full min-h-0 transition-all duration-500 ${focusCol && focusCol !== 1 ? 'opacity-0 scale-95 pointer-events-none' : 'opacity-100'}`}>
+                                <ChampionColumn
+                                    title="Brief de Competición"
+                                    accentColor="bg-cyan-500"
+                                    onDoubleClick={() => handleFocus(1)}
+                                    isFocused={focusCol === 1}
+                                >
+                                    <div className="p-5">
+                                        <CompetitionBriefPanel />
+                                    </div>
+                                </ChampionColumn>
+                            </div>
+
+                            {/* COLUMN 2 */}
+                            <div className={`h-full min-h-0 transition-all duration-500 ${focusCol && focusCol !== 2 ? 'opacity-0 scale-95 pointer-events-none' : 'opacity-100'}`}>
+                                <ChampionColumn
+                                    title="Lienzo Creativo"
+                                    accentColor="bg-violet-500"
+                                    scrollable
+                                    onDoubleClick={() => handleFocus(2)}
+                                    isFocused={focusCol === 2}
+                                >
+                                    <div className="p-5">
+                                        <ChampionCreativePanel />
+                                    </div>
+                                </ChampionColumn>
+                            </div>
+
+                            {/* COLUMN 3 */}
+                            <div className={`h-full min-h-0 transition-all duration-500 ${focusCol && focusCol !== 3 ? 'opacity-0 scale-95 pointer-events-none' : 'opacity-100'}`}>
+                                <ChampionColumn
+                                    title="Plan de Entrenamiento"
+                                    accentColor="bg-emerald-500"
+                                    onDoubleClick={() => handleFocus(3)}
+                                    isFocused={focusCol === 3}
+                                >
+                                    <div className="p-5">
+                                        <ChampionFineTuningPanel />
+                                    </div>
+                                </ChampionColumn>
+                            </div>
+
+                        </div>
+                    </div>
+                )}
+
+            </div>
+        </ChampionProvider>
     );
 };
 

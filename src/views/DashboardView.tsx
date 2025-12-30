@@ -1,9 +1,11 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Auth } from 'firebase/auth';
-import { Recipe, PizarronTask, Ingredient, ViewName } from '../../types';
+import { Recipe, PizarronTask, Ingredient } from '../types';
 import { useApp } from '../context/AppContext';
 import { useUI } from '../context/UIContext';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '../components/ui/Card';
+import { ChartContainer } from '../components/ui/ChartContainer';
 import {
     FaBook,
     FaBolt,
@@ -17,7 +19,6 @@ import {
     FaArrowRight
 } from 'react-icons/fa';
 import {
-    ResponsiveContainer,
     AreaChart,
     CartesianGrid,
     XAxis,
@@ -31,7 +32,7 @@ import {
     Radar
 } from 'recharts';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
-import { useToday, TodayPanel } from '../features/today';
+import { TodayPanel } from '../features/today';
 import {
     useCreativeWeekPro,
     SummaryCards,
@@ -40,7 +41,8 @@ import {
     KeyInsights,
 } from '../features/creative-week-pro';
 import { RecommendedAction } from '../features/creative-week-pro/ui/RecommendedAction';
-import { useNextBestAction, HybridNBACard } from '../features/next-best-action';
+import { HybridNBACard } from '../features/next-best-action';
+import { useDashboardMetrics } from '../features/dashboard/useDashboardMetrics';
 
 // Helper components for the new layout
 const ProgressBar: React.FC<{ value: number; color?: string }> = ({ value, color = "bg-primary" }) => (
@@ -60,76 +62,77 @@ const AvatarPlaceholder: React.FC<{ name?: string; url?: string }> = ({ name, ur
     );
 };
 
-const DashboardView: React.FC<{
-    allRecipes: Recipe[];
-    allPizarronTasks: PizarronTask[];
-    allIngredients: Ingredient[];
-    auth: Auth;
-    setCurrentView: (view: ViewName) => void;
-}> = ({ allRecipes, allPizarronTasks, allIngredients, auth, setCurrentView }) => {
-    const { userProfile } = useApp();
+
+const KpiCard = ({ title, value, icon, trend, colorClass }: any) => {
     const { compactMode } = useUI();
+    return (
+        <div className={`bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-shadow duration-200 ${compactMode ? 'p-3' : 'p-6'}`}>
+            <div className={`flex items-center justify-between ${compactMode ? 'mb-2' : 'mb-4'}`}>
+                <div className={`rounded-lg ${colorClass} bg-opacity-10 text-current ${compactMode ? 'p-2' : 'p-3'}`}>
+                    {icon}
+                </div>
+                {trend && (
+                    <span className="text-xs font-medium text-green-500 bg-green-50 dark:bg-green-900/20 px-2 py-1 rounded-full">
+                        {trend}
+                    </span>
+                )}
+            </div>
+            <h3 className={`font-medium text-gray-500 dark:text-gray-400 ${compactMode ? 'text-xs' : 'text-sm'}`}>{title}</h3>
+            <p className={`font-bold text-gray-900 dark:text-white mt-1 ${compactMode ? 'text-xl' : 'text-3xl'}`}>{value}</p>
+        </div>
+    );
+};
+
+const TaskListItem = ({ task, color }: { task: PizarronTask, color: string }) => (
+    <div className="mb-3 p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-100 dark:border-gray-700 hover:bg-white dark:hover:bg-gray-800 transition-colors group">
+        <div className="flex justify-between items-start mb-2">
+            <h4 className="text-sm font-semibold text-gray-800 dark:text-gray-200 line-clamp-2">{task.texto}</h4>
+            <span className={`text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded ${color} bg-opacity-10 text-current`}>
+                {task.category}
+            </span>
+        </div>
+        <div className="flex items-center justify-between mt-2">
+            <ProgressBar value={Math.random() * 100} color={color.replace('text-', 'bg-')} />
+            <div className="ml-3">
+                <AvatarPlaceholder name={task.authorName} url={task.authorPhotoURL} />
+            </div>
+        </div>
+    </div>
+);
+
+import { useRecipes } from '../hooks/useRecipes';
+import { useIngredients } from '../hooks/useIngredients';
+import { usePizarronData } from '../hooks/usePizarronData';
+
+const DashboardView: React.FC = () => {
+    const { userProfile, auth } = useApp();
+    const { compactMode } = useUI();
+    const navigate = useNavigate();
+
+    // Data Hooks
+    const { recipes: allRecipes } = useRecipes();
+    const { ingredients: allIngredients } = useIngredients();
+    const { tasks: allPizarronTasks } = usePizarronData();
+
+    // Safe user access
+    const safeUser = auth?.currentUser;
 
     // --- 1. Metrics & Data Processing ---
 
-    const kpis = React.useMemo(() => {
-        const totalRecipes = allRecipes.length;
-        const totalTasks = allPizarronTasks.length;
-        // Simple calculation for "Tiempo Ahorrado" based on logic from previous file
-        const tiempoAhorrado = (totalRecipes * 0.5) + (totalTasks * 0.25);
-        const creativeRate = 85; // Placeholder percentage
-        return { totalRecipes, totalTasks, tiempoAhorrado, creativeRate };
-    }, [allRecipes, allPizarronTasks]);
-
-    const creativeTrendData = React.useMemo(() => {
-        const activityByDate: { [key: string]: { recipes: number, tasks: number } } = {};
-
-        allPizarronTasks.forEach(item => {
-            if (item.createdAt?.toDate) {
-                const date = item.createdAt.toDate().toISOString().split('T')[0];
-                if (!activityByDate[date]) {
-                    activityByDate[date] = { recipes: 0, tasks: 0 };
-                }
-                activityByDate[date].tasks++;
-            }
-        });
-
-        // Also consider recipes if they had dates (assuming basic structure doesn't ensure it, but just in case)
-        // For now, using tasks as the main driver for the chart as per original code
-
-        // Fill recent dates if empty to ensure chart looks okay
-        const today = new Date();
-        for (let i = 6; i >= 0; i--) {
-            const d = new Date(today);
-            d.setDate(d.getDate() - i);
-            const dateStr = d.toISOString().split('T')[0];
-            if (!activityByDate[dateStr]) {
-                activityByDate[dateStr] = { recipes: 0, tasks: 0 };
-            }
-        }
-
-        return Object.entries(activityByDate)
-            .map(([date, counts]) => ({ date, ...counts }))
-            .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
-            .slice(-7); // Last 7 days
-    }, [allPizarronTasks]);
-
-    const balanceData = [
-        { subject: 'Dulce', A: 8, fullMark: 10 },
-        { subject: 'Cítrico', A: 9, fullMark: 10 },
-        { subject: 'Amargo', A: 6, fullMark: 10 },
-        { subject: 'Alcohol', A: 7, fullMark: 10 },
-        { subject: 'Herbal', A: 5, fullMark: 10 },
-        { subject: 'Especiado', A: 4, fullMark: 10 },
-    ];
-
-    const { ideas, inProgress, urgent } = useToday(allPizarronTasks, userProfile);
-    const { data: nbaData, isLoading: isNBALoading, refresh: refreshNBA } = useNextBestAction(
+    // --- Metrics Hook ---
+    const {
+        kpis,
+        creativeTrendData,
+        balanceData,
+        todayMetrics: { ideas, inProgress, urgent },
+        nba: { data: nbaData, isLoading: isNBALoading, refresh: refreshNBA },
+        creativeWeek: { summary, insights, recommendation, stats }
+    } = useDashboardMetrics({
         allRecipes,
         allPizarronTasks,
-        userProfile?.displayName || 'Usuario'
-    );
-    const { summary, insights, recommendation, stats } = useCreativeWeekPro(allPizarronTasks, userProfile?.displayName || 'Usuario');
+        allIngredients,
+        userProfile
+    });
 
     const [widgetOrder, setWidgetOrder] = React.useState<string[]>(() => {
         if (typeof window !== 'undefined') {
@@ -149,43 +152,11 @@ const DashboardView: React.FC<{
     };
 
     // DEBUG: NBA
-    console.log("NBA DEBUG:", nbaData);
+
 
     // --- Components ---
 
-    const KpiCard = ({ title, value, icon, trend, colorClass }: any) => (
-        <div className={`bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-shadow duration-200 ${compactMode ? 'p-3' : 'p-6'}`}>
-            <div className={`flex items-center justify-between ${compactMode ? 'mb-2' : 'mb-4'}`}>
-                <div className={`rounded-lg ${colorClass} bg-opacity-10 text-current ${compactMode ? 'p-2' : 'p-3'}`}>
-                    {icon}
-                </div>
-                {trend && (
-                    <span className="text-xs font-medium text-green-500 bg-green-50 dark:bg-green-900/20 px-2 py-1 rounded-full">
-                        {trend}
-                    </span>
-                )}
-            </div>
-            <h3 className={`font-medium text-gray-500 dark:text-gray-400 ${compactMode ? 'text-xs' : 'text-sm'}`}>{title}</h3>
-            <p className={`font-bold text-gray-900 dark:text-white mt-1 ${compactMode ? 'text-xl' : 'text-3xl'}`}>{value}</p>
-        </div>
-    );
 
-    const TaskListItem = ({ task, color }: { task: PizarronTask, color: string }) => (
-        <div className="mb-3 p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-100 dark:border-gray-700 hover:bg-white dark:hover:bg-gray-800 transition-colors group">
-            <div className="flex justify-between items-start mb-2">
-                <h4 className="text-sm font-semibold text-gray-800 dark:text-gray-200 line-clamp-2">{task.texto}</h4>
-                <span className={`text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded ${color} bg-opacity-10 text-current`}>
-                    {task.category}
-                </span>
-            </div>
-            <div className="flex items-center justify-between mt-2">
-                <ProgressBar value={Math.random() * 100} color={color.replace('text-', 'bg-')} />
-                <div className="ml-3">
-                    <AvatarPlaceholder name={task.authorName} url={task.authorPhotoURL} />
-                </div>
-            </div>
-        </div>
-    );
 
     return (
         <div className={`h-full overflow-y-auto bg-gray-50 dark:bg-gray-900 pb-32 ${compactMode ? 'p-3 space-y-4' : 'p-6 lg:p-10 space-y-8'}`}>
@@ -198,14 +169,14 @@ const DashboardView: React.FC<{
                             <img src={userProfile.photoURL} alt="Profile" className={`${compactMode ? 'w-10 h-10' : 'w-16 h-16'} rounded-full object-cover border-4 border-indigo-50 dark:border-indigo-900`} />
                         ) : (
                             <div className={`${compactMode ? 'w-10 h-10 text-lg' : 'w-16 h-16 text-2xl'} rounded-full bg-gradient-to-r from-indigo-500 to-purple-500 flex items-center justify-center text-white font-bold border-4 border-indigo-50 dark:border-indigo-900`}>
-                                {userProfile?.displayName?.[0] || auth.currentUser?.email?.[0] || 'U'}
+                                {userProfile?.displayName?.[0] || safeUser?.email?.[0]?.toUpperCase() || 'U'}
                             </div>
                         )}
                         <div className="absolute bottom-0 right-0 w-4 h-4 bg-green-500 border-2 border-white dark:border-gray-800 rounded-full"></div>
                     </div>
                     <div>
                         <h1 className={`font-bold text-gray-900 dark:text-white ${compactMode ? 'text-lg' : 'text-2xl'}`}>
-                            Bienvenido, {userProfile?.displayName || auth.currentUser?.email?.split('@')[0]}
+                            Bienvenido, {userProfile?.displayName || safeUser?.email?.split('@')[0] || 'Chef'}
                         </h1>
                         <p className="text-gray-500 dark:text-gray-400 text-sm">Tu centro de control diario</p>
                     </div>
@@ -222,7 +193,7 @@ const DashboardView: React.FC<{
 
             {/* 2. KPI Grid */}
             <section className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 ${compactMode ? 'gap-3' : 'gap-6'}`}>
-                <div onClick={() => setCurrentView('grimorium')} className="cursor-pointer">
+                <div onClick={() => navigate('/grimorium')} className="cursor-pointer">
                     <KpiCard
                         title="Total Recetas"
                         value={kpis.totalRecipes}
@@ -231,7 +202,7 @@ const DashboardView: React.FC<{
                         trend="+12% vs mes pasado"
                     />
                 </div>
-                <div onClick={() => setCurrentView('pizarron')} className="cursor-pointer">
+                <div onClick={() => navigate('/pizarron')} className="cursor-pointer">
                     <KpiCard
                         title="Total Tareas"
                         value={kpis.totalTasks}
@@ -266,7 +237,7 @@ const DashboardView: React.FC<{
                     </CardHeader>
                     <CardContent>
                         {creativeTrendData.length > 0 ? (
-                            <ResponsiveContainer width="100%" height={300}>
+                            <ChartContainer height={300}>
                                 <AreaChart data={creativeTrendData}>
                                     <defs>
                                         <linearGradient id="colorTasks" x1="0" y1="0" x2="0" y2="1">
@@ -299,12 +270,13 @@ const DashboardView: React.FC<{
                                         fill="url(#colorTasks)"
                                     />
                                 </AreaChart>
-                            </ResponsiveContainer>
+                            </ChartContainer>
                         ) : (
                             <div className="h-[300px] flex items-center justify-center text-gray-400 text-sm">
                                 No hay datos suficientes para mostrar la gráfica
                             </div>
-                        )}
+                        )
+                        }
                     </CardContent>
                 </Card>
 
@@ -318,7 +290,7 @@ const DashboardView: React.FC<{
                     <CardContent>
                         <div className="h-[300px] w-full flex items-center justify-center">
                             {balanceData.length > 0 ? (
-                                <ResponsiveContainer width="100%" height="100%">
+                                <ChartContainer>
                                     <RadarChart cx="50%" cy="50%" outerRadius="70%" data={balanceData}>
                                         <PolarGrid stroke="rgba(156, 163, 175, 0.2)" />
                                         <PolarAngleAxis dataKey="subject" tick={{ fill: '#9CA3AF', fontSize: 10 }} />
@@ -326,7 +298,7 @@ const DashboardView: React.FC<{
                                         <Radar name="Sabor" dataKey="A" stroke="#ec4899" fill="#ec4899" fillOpacity={0.5} />
                                         <Tooltip />
                                     </RadarChart>
-                                </ResponsiveContainer>
+                                </ChartContainer>
                             ) : (
                                 <div className="text-gray-400 text-sm">Sin datos de equilibrio</div>
                             )}
@@ -390,7 +362,7 @@ const DashboardView: React.FC<{
                                                             { text: "Menú de temporada aprobado", time: "Ayer", icon: <FaCalendarAlt size={12} />, color: "bg-purple-500" },
                                                             { text: "Inventario revisado", time: "Ayer", icon: <FaBolt size={12} />, color: "bg-amber-500" }
                                                         ].map((item, idx) => (
-                                                            <div key={idx} className="relative">
+                                                            <div key={`${item.text}-${idx}`} className="relative">
                                                                 <div className={`absolute -left-[21px] top-0 w-8 h-8 rounded-full border-4 border-white dark:border-gray-900 ${item.color} flex items-center justify-center text-white`}>
                                                                     {item.icon}
                                                                 </div>

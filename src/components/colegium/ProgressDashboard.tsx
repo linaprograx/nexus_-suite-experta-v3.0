@@ -1,5 +1,6 @@
 import React from 'react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts';
+import { ChartContainer } from '../ui/ChartContainer';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '../ui/Card';
 import { Button } from '../ui/Button';
 
@@ -31,7 +32,7 @@ export const ProgressDashboard: React.FC<ProgressDashboardProps> = ({ onStart })
                 <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <div className="md:col-span-2">
                         <h3 className="font-semibold mb-4">Últimos 5 Puntajes</h3>
-                        <ResponsiveContainer width="100%" height={300}>
+                        <ChartContainer height={300}>
                             <BarChart data={lastScores}>
                                 <CartesianGrid strokeDasharray="3 3" />
                                 <XAxis dataKey="name" />
@@ -39,7 +40,7 @@ export const ProgressDashboard: React.FC<ProgressDashboardProps> = ({ onStart })
                                 <Tooltip />
                                 <Bar dataKey="score" fill="#8884d8" name="Puntaje" />
                             </BarChart>
-                        </ResponsiveContainer>
+                        </ChartContainer>
                     </div>
                     <div>
                         <h3 className="font-semibold mb-4">Áreas de Mejora</h3>

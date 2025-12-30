@@ -58,36 +58,38 @@ export const PizarronCard: React.FC<PizarronCardProps> = ({ task, onDragStart, o
   return (
     <motion.div
       layout
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
+      initial={{ opacity: 0, scale: 0.98 }}
+      animate={{ opacity: 1, scale: 1 }}
       exit={{ opacity: 0, scale: 0.95 }}
       whileHover={{ y: -4, transition: { duration: 0.2 } }}
       className={`
         relative group cursor-pointer
-        bg-white/60 dark:bg-slate-800/60 backdrop-blur-md
-        border border-white/20 dark:border-slate-700/30
-        rounded-xl shadow-lg hover:shadow-2xl transition-shadow duration-200
-        ${isUrgent ? 'ring-2 ring-red-500/50 dark:ring-red-500/30 shadow-[0_0_15px_rgba(239,68,68,0.2)]' : ''}
-        ${compactMode ? 'p-2' : 'p-4'}
+        glass
+        hover:shadow-premium hover:border-nexus-orange/50 transition-all duration-300
+        ${isUrgent ? 'ring-2 ring-rose-500/30' : ''}
+        ${compactMode ? 'p-3' : 'p-5 min-h-[140px] flex flex-col'}
       `}
       draggable="true"
       onDragStart={onDragStart as any}
       onClick={onOpenDetail}
-      style={{ borderColor: borderColor ? `${borderColor}40` : undefined }}
     >
-      <div className={`absolute inset-0 bg-gradient-to-br ${getCategoryColor(task.category)} opacity-5 rounded-xl pointer-events-none`} />
+      {/* Subtle Bottom Border based on category or prop */}
+      <div
+        className="absolute bottom-0 left-0 right-0 h-1 rounded-b-xl opacity-80"
+        style={{ backgroundColor: borderColor || '#94a3b8' }}
+      />
 
       <button
-        onClick={handleDelete}
-        className="absolute top-2 right-2 z-20 p-1.5 rounded-md bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-100 dark:hover:bg-red-500/20"
+        className="absolute top-2 right-2 z-20 p-1.5 rounded-lg text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-500/20 opacity-0 group-hover:opacity-100 transition-all font-medium"
         title="Eliminar"
+        onClick={handleDelete}
       >
-        <Icon svg={ICONS.trash} className="w-[14px] h-[14px]" />
+        <Icon svg={ICONS.trash} className="w-3.5 h-3.5" />
       </button>
 
       {/* Smart Thumbnail */}
       {thumbnailAttachment && !compactMode && (
-        <div className="mb-3 w-16 h-16 rounded-xl overflow-hidden bg-slate-100 dark:bg-slate-700 flex items-center justify-center border border-slate-200 dark:border-slate-600 shrink-0">
+        <div className="mb-3 w-16 h-16 rounded-xl overflow-hidden bg-slate-100 dark:bg-slate-700 flex items-center justify-center border border-slate-200 dark:border-slate-600 shrink-0 shadow-inner">
           {thumbnailAttachment.renderType === 'image' && (
             <img
               src={optimizedThumbnail(thumbnailAttachment.url)}
@@ -106,16 +108,16 @@ export const PizarronCard: React.FC<PizarronCardProps> = ({ task, onDragStart, o
       )}
 
       {/* Task Text */}
-      <p className={`font-medium text-slate-800 dark:text-slate-100 mb-2 line-clamp-3 ${compactMode ? 'text-xs' : 'text-sm'}`}>
+      <p className={`font-semibold text-slate-700 dark:text-slate-200 mb-3 leading-relaxed tracking-tight ${compactMode ? 'text-xs' : 'text-sm'}`}>
         {task.texto}
       </p>
 
       {/* Labels & Tags */}
       {!compactMode && (
-        <div className="flex flex-wrap gap-1 mb-3">
+        <div className="flex flex-wrap gap-1.5 mb-3">
           {/* Smart Labels */}
           {task.labels?.slice(0, 2).map(label => (
-            <span key={label} className="text-[10px] font-medium bg-slate-100/50 dark:bg-slate-700/50 text-slate-600 dark:text-slate-300 px-2 py-0.5 rounded-full border border-slate-200/50 dark:border-slate-600/50">
+            <span key={label} className="text-[10px] font-semibold bg-slate-50 dark:bg-slate-700/50 text-slate-500 dark:text-slate-400 px-2 py-1 rounded-md border border-slate-200 dark:border-slate-600/50 uppercase tracking-wider">
               {label}
             </span>
           ))}
@@ -126,7 +128,7 @@ export const PizarronCard: React.FC<PizarronCardProps> = ({ task, onDragStart, o
             return (
               <span
                 key={tag.id}
-                className="text-[10px] font-medium px-2 py-0.5 rounded-full text-white shadow-sm hover:scale-105 transition-transform"
+                className="text-[10px] font-bold px-2 py-0.5 rounded-md text-white shadow-sm"
                 style={{ backgroundColor: tag.color }}
               >
                 {tag.name}
@@ -137,14 +139,14 @@ export const PizarronCard: React.FC<PizarronCardProps> = ({ task, onDragStart, o
       )}
 
       {/* Footer Icons and Info */}
-      <div className={`flex justify-between items-center ${compactMode ? 'mt-1' : 'mt-2'} text-slate-500 dark:text-slate-400`}>
-        <div className="flex items-center gap-2">
-          <span className={`${priorityColor} flex items-center justify-center bg-current/10 p-1 rounded-md`}>
-            <Icon svg={priorityIcon} className={compactMode ? "h-3 w-3" : "h-4 w-4"} />
+      <div className={`flex justify-between items-center ${compactMode ? 'mt-1' : 'mt-2'} pt-2 ${compactMode ? '' : 'border-t border-slate-100 dark:border-slate-700/50'} text-slate-500 dark:text-slate-400`}>
+        <div className="flex items-center gap-3">
+          <span className={`${priorityColor} flex items-center gap-1`}>
+            <Icon svg={priorityIcon} className={compactMode ? "h-3 w-3" : "h-3.5 w-3.5"} />
           </span>
           {task.attachments?.length > 0 && (
-            <span className="flex items-center gap-1 text-xs">
-              <Icon svg={ICONS.paperclip} className={compactMode ? "h-3 w-3" : "h-4 w-4"} />
+            <span className="flex items-center gap-1 text-xs font-medium">
+              <Icon svg={ICONS.paperclip} className={compactMode ? "h-3 w-3" : "h-3.5 w-3.5"} />
               {!compactMode && task.attachments.length}
             </span>
           )}
@@ -152,24 +154,28 @@ export const PizarronCard: React.FC<PizarronCardProps> = ({ task, onDragStart, o
 
         <div className="flex items-center gap-2">
           {task.upvotes?.length > 0 && (
-            <span className="flex items-center gap-1 text-xs text-blue-500 bg-blue-500/10 px-1.5 py-0.5 rounded-full">
+            <span className="flex items-center gap-1 text-[10px] font-bold text-sky-600 bg-sky-50 dark:bg-sky-500/10 px-1.5 py-0.5 rounded-full">
               <Icon svg={ICONS.arrowUp} className={compactMode ? "h-3 w-3" : "h-3 w-3"} />
-              <span className="font-semibold">{task.upvotes.length}</span>
+              <span>{task.upvotes.length}</span>
             </span>
           )}
           {averageRating > 0 && (
-            <span className="flex items-center gap-1 text-xs text-amber-500 bg-amber-500/10 px-1.5 py-0.5 rounded-full">
+            <span className="flex items-center gap-1 text-[10px] font-bold text-amber-500 bg-amber-50 dark:bg-amber-500/10 px-1.5 py-0.5 rounded-full">
               <Icon svg={ICONS.star} className={compactMode ? "h-3 w-3" : "h-3 w-3"} />
-              <span className="font-semibold">{averageRating.toFixed(1)}</span>
+              <span>{averageRating.toFixed(1)}</span>
             </span>
           )}
         </div>
       </div>
 
       {!compactMode && task.authorName && (
-        <div className="flex items-center gap-2 pt-2 border-t border-slate-200/50 dark:border-slate-700/50 mt-2">
-          <img src={task.authorPhotoURL || `https://ui-avatars.com/api/?name=${task.authorName}&background=random`} alt={task.authorName} className="w-5 h-5 rounded-full ring-2 ring-white dark:ring-slate-800" />
-          <span className="text-xs text-slate-500 dark:text-slate-400 truncate max-w-[100px]">{task.authorName}</span>
+        <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity">
+          {/* Maybe show avatar on hover or keeps clean? Let's hide author usually unless pivotal.
+               Or keep it at bottom? Code had it at bottom before.
+               Let's leave it out or minimal to match 'Zen'.
+               Wait, collaboration implies knowing who wrote it.
+               Let's put small avatar at bottom right if space.
+           */}
         </div>
       )}
     </motion.div>

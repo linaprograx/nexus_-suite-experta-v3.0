@@ -16,9 +16,18 @@ export interface ParsedRecipeBlock {
  * @returns The trimmed content of the block, or an empty string if not found.
  */
 const extractBlockContent = (text: string, key: string): string => {
-  const regex = new RegExp(`\\[${key}\\]([\\s\\S]*?)(?=\\[[A-ZÀ-Úa-zà-ú]+\\]|$)`, 'i');
+  // 1. Try standard bracket key [Key] or [Key:]
+  const regex = new RegExp(`\\[${key}[:]?\\]([\\s\\S]*?)(?=\\[[A-ZÀ-Úa-zà-ú]+\\]|$)`, 'i');
   const match = text.match(regex);
-  return match ? match[1].trim() : '';
+  if (match) return match[1].trim();
+
+  // 2. Fallback: Try just the word "Key:" followed by content (common in simpler PDFs)
+  // Only if usage is "Ingredientes:" at start of line
+  const regexSimple = new RegExp(`(?:^|\\n)${key}[:]([\\s\\S]*?)(?=\\n[A-ZÀ-Úa-zà-ú]+[:]|$)`, 'i');
+  const matchSimple = text.match(regexSimple);
+  if (matchSimple) return matchSimple[1].trim();
+
+  return '';
 };
 
 /**
@@ -40,7 +49,7 @@ export const parsePdfRecipeBlocks = (pageText: string, pageNumber: number): Pars
   }
 
   const categoriasRaw = extractBlockContent(pageText, "Categorias");
-  
+
   const recipe: ParsedRecipeBlock = {
     nombre,
     categorias: categoriasRaw ? categoriasRaw.split(',').map(c => c.trim()) : [],

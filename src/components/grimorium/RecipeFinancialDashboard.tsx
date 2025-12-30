@@ -1,5 +1,6 @@
 import React from 'react';
-import { BarChart, Bar, AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
+import { BarChart, Bar, AreaChart, Area, XAxis, YAxis, Tooltip, Cell } from 'recharts';
+import { ChartContainer } from '../ui/ChartContainer';
 import { Recipe } from '../../../types';
 import { Card } from '../ui/Card';
 import { Icon } from '../ui/Icon';
@@ -49,17 +50,17 @@ export const RecipeFinancialDashboard: React.FC<RecipeFinancialDashboardProps> =
                     <div className="p-2 rounded-xl bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400">
                         <Icon svg={ICONS.trendingUp} className="w-5 h-5" />
                     </div>
-                    <div className="min-w-0">
-                        <h3 className="font-bold text-slate-800 dark:text-slate-100 text-sm truncate">{selectedRecipe.nombre}</h3>
-                        <p className="text-xs text-slate-500">Rendimiento Financiero</p>
+                    <div className="min-w-0 flex-1">
+                        <h3 className="font-bold text-slate-800 dark:text-slate-100 text-xs truncate" title={selectedRecipe.nombre}>{selectedRecipe.nombre}</h3>
+                        <p className="text-[10px] text-slate-500 truncate">Rendimiento Financiero</p>
                     </div>
                 </div>
 
                 {/* Margin KPI */}
-                <Card className={`p-4 border ${margen < 25 ? 'bg-red-50 border-red-100' : 'bg-indigo-50/50 border-indigo-100'} dark:bg-slate-800/50 dark:border-slate-700`}>
-                    <div className="flex justify-between items-center mb-2">
-                        <span className="text-xs font-semibold uppercase tracking-wider opacity-70">Margen Bruto</span>
-                        <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${margen < 25 ? 'bg-red-200 text-red-800' : 'bg-emerald-100 text-emerald-700'}`}>
+                <Card className={`p-3 border ${margen < 25 ? 'bg-red-50 border-red-100' : 'bg-indigo-50/50 border-indigo-100'} dark:bg-slate-800/50 dark:border-slate-700`}>
+                    <div className="flex justify-between items-center mb-1 flex-wrap gap-1">
+                        <span className="text-[10px] font-semibold uppercase tracking-wider opacity-70">Margen Bruto</span>
+                        <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${margen < 25 ? 'bg-red-200 text-red-800' : 'bg-emerald-100 text-emerald-700'}`}>
                             {margen > 70 ? 'EXCELENTE' : margen < 25 ? 'CRÍTICO' : 'BUENO'}
                         </span>
                     </div>
@@ -91,8 +92,8 @@ export const RecipeFinancialDashboard: React.FC<RecipeFinancialDashboardProps> =
                         <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Ventas (7 días)</span>
                         <span className="font-bold text-indigo-600 dark:text-indigo-400 text-lg">€{revenue.toFixed(0)}</span>
                     </div>
-                    <div className="h-40 w-full">
-                        <ResponsiveContainer width="100%" height="100%">
+                    <div className="flex-1 w-full min-h-0">
+                        <ChartContainer>
                             <BarChart data={salesData}>
                                 <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} />
                                 <Tooltip
@@ -106,7 +107,7 @@ export const RecipeFinancialDashboard: React.FC<RecipeFinancialDashboardProps> =
                                     ))}
                                 </Bar>
                             </BarChart>
-                        </ResponsiveContainer>
+                        </ChartContainer>
                     </div>
                     <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-700 flex justify-between text-sm">
                         <span className="text-slate-500">Beneficio Neto Est.</span>
@@ -155,7 +156,7 @@ export const RecipeFinancialDashboard: React.FC<RecipeFinancialDashboardProps> =
                     <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Consumo Mensual</span>
                 </div>
                 <div className="h-48 w-full">
-                    <ResponsiveContainer width="100%" height="100%">
+                    <ChartContainer>
                         <AreaChart data={generateTrendData(100, 30)}>
                             <defs>
                                 <linearGradient id="colorGlobal" x1="0" y1="0" x2="0" y2="1">
@@ -166,7 +167,7 @@ export const RecipeFinancialDashboard: React.FC<RecipeFinancialDashboardProps> =
                             <Tooltip />
                             <Area type="monotone" dataKey="value" stroke="#8b5cf6" strokeWidth={2} fill="url(#colorGlobal)" />
                         </AreaChart>
-                    </ResponsiveContainer>
+                    </ChartContainer>
                 </div>
                 <p className="text-xs text-center text-slate-400 mt-2">Tendencia de creación y ventas de recetas.</p>
             </Card>

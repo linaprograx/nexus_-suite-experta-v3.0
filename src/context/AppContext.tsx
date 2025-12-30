@@ -1,10 +1,13 @@
 import React from 'react';
-import { AppContextType, UserProfile } from '../../types';
-import { initializeApp, FirebaseApp } from 'firebase/app';
+import { AppContextType, UserProfile } from '../types';
+import { initializeApp, FirebaseApp, getApps, getApp } from 'firebase/app';
 import { getAuth, onAuthStateChanged, Auth, signInWithCustomToken, User } from 'firebase/auth';
 import { getFirestore, Firestore, doc, onSnapshot } from 'firebase/firestore';
 import { getStorage, FirebaseStorage } from 'firebase/storage';
 import { firebaseConfig } from '../config/firebaseConfig';
+import { PlanTier } from '../core/product/plans.types';
+import { DEFAULT_PLAN_TIER } from '../core/product/plans.config';
+import { CapabilitiesEngine } from '../core/product/capabilities.engine';
 
 const AppContext = React.createContext<AppContextType | undefined>(undefined);
 
@@ -12,6 +15,19 @@ export const useApp = (): AppContextType => {
     const context = React.useContext(AppContext);
     if (!context) throw new Error('useApp must be used within an AppProvider');
     return context;
+};
+
+// Phase 5.0: Hooks for Capabilities
+export const useCapabilities = () => {
+    const { userPlan } = useApp();
+    return {
+        hasLayer: (layer: any) => CapabilitiesEngine.hasLayer(userPlan, layer),
+        canExecuteActions: CapabilitiesEngine.canExecuteActions(userPlan),
+        canCustomizeThresholds: CapabilitiesEngine.canCustomizeThresholds(userPlan),
+        maxAssistedInsights: CapabilitiesEngine.getMaxAssistedInsights(userPlan),
+        auditRetentionDays: CapabilitiesEngine.getAuditRetentionDays(userPlan),
+        currentPlan: CapabilitiesEngine.getPlan(userPlan),
+    };
 };
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -24,10 +40,22 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const [userProfile, setUserProfile] = React.useState<Partial<UserProfile>>({});
 
     React.useEffect(() => {
-        const appInstance = initializeApp(firebaseConfig);
-        const authInstance = getAuth(appInstance);
-        const dbInstance = getFirestore(appInstance);
-        const storageInstance = getStorage(appInstance);
+        let appInstance: FirebaseApp;
+        let authInstance: Auth;
+        let dbInstance: Firestore;
+        let storageInstance: FirebaseStorage;
+
+        // Verificar si ya existe una instancia (evita crashes en StrictMode/Dev)
+        if (getApps().length === 0) {
+            appInstance = initializeApp(firebaseConfig);
+        } else {
+            appInstance = getApp();
+        }
+
+        authInstance = getAuth(appInstance);
+        dbInstance = getFirestore(appInstance);
+        storageInstance = getStorage(appInstance);
+
         setApp(appInstance);
         setAuth(authInstance);
         setDb(dbInstance);
@@ -71,8 +99,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         }
     }, [db, userId]);
 
+    const [userPlan, setUserPlan] = React.useState<PlanTier>(DEFAULT_PLAN_TIER);
+
+    // In a real app, we would fetch the plan from Stripe/User Doc here.
+    // React.useEffect(() => { if (userProfile.plan) setUserPlan(userProfile.plan); }, [userProfile]);
+
     return (
-        <AppContext.Provider value={{ app, db, auth, storage, user, userId, isAuthReady, appId, userProfile }}>
+        <AppContext.Provider value={{ app, db, auth, storage, user, userId, isAuthReady, appId, userProfile, userPlan }}>
             {children}
         </AppContext.Provider>
     );

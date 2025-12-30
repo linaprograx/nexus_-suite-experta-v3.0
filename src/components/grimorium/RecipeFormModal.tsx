@@ -1,6 +1,7 @@
 import React, { useRef, useEffect } from 'react';
 import { Firestore, updateDoc, addDoc, collection, doc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { useQueryClient } from '@tanstack/react-query';
 import { Modal } from '../ui/Modal';
 import { Input } from '../ui/Input';
 import { Textarea } from '../ui/Textarea';
@@ -24,13 +25,15 @@ interface RecipeFormModalProps {
 
 export const RecipeFormModal: React.FC<RecipeFormModalProps> = ({ isOpen, onClose, db, userId, initialData, allIngredients }) => {
     const { storage } = useApp();
+    const queryClient = useQueryClient();
     const [recipe, setRecipe] = React.useState<Partial<Recipe>>({});
     const [lineItems, setLineItems] = React.useState<IngredientLineItem[]>([]);
     const [isUploading, setIsUploading] = React.useState(false);
 
     // Dynamic Cost Calculation using shared logic
     const currentCost = React.useMemo(() => {
-        return calculateRecipeCost({ ...recipe, ingredientes: lineItems }, allIngredients).costoTotal;
+        const cost = calculateRecipeCost({ ...recipe, ingredientes: lineItems }, allIngredients).costoTotal;
+        return isNaN(cost) ? 0 : cost;
     }, [recipe, lineItems, allIngredients]);
 
     React.useEffect(() => {
@@ -77,13 +80,28 @@ export const RecipeFormModal: React.FC<RecipeFormModalProps> = ({ isOpen, onClos
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        const dataToSave = { ...recipe, ingredientes: lineItems, costoReceta: currentCost }; // Use calculated cost
-        if (dataToSave.id) {
-            await updateDoc(doc(db, `users/${userId}/grimorio`, dataToSave.id), dataToSave);
-        } else {
-            await addDoc(collection(db, `users/${userId}/grimorio`), dataToSave);
+        const safeCost = currentCost || 0;
+        const dataToSave = {
+            ...recipe,
+            ingredientes: lineItems,
+            costoReceta: safeCost, // Legacy support
+            costoTotal: safeCost,  // Standard field
+            precioVenta: recipe.precioVenta || 0 // Ensure no NaN
+        };
+
+        try {
+            if (dataToSave.id) {
+                await updateDoc(doc(db, `users/${userId}/grimorio`, dataToSave.id), dataToSave);
+            } else {
+                await addDoc(collection(db, `users/${userId}/grimorio`), dataToSave);
+            }
+            // Invalidate Cache to force UI update
+            queryClient.invalidateQueries({ queryKey: ['recipes'] });
+            onClose();
+        } catch (error) {
+            console.error("Error saving recipe:", error);
+            alert("Error al guardar la receta.");
         }
-        onClose();
     };
 
     if (!isOpen) return null;
@@ -246,18 +264,32 @@ export const RecipeFormModal: React.FC<RecipeFormModalProps> = ({ isOpen, onClos
                                             </div>
                                         </div>
                                         <div className="col-span-2">
-                                            <Input type="number" step="0.01" value={item.cantidad || ''} onChange={e => updateLineItem(index, 'cantidad', parseFloat(e.target.value))} placeholder="0" className="bg-white dark:bg-slate-800" />
+                                            <Input
+                                                type="number"
+                                                step="any"
+                                                value={item.cantidad || ''}
+                                                onChange={e => {
+                                                    const val = parseFloat(e.target.value);
+                                                    updateLineItem(index, 'cantidad', isNaN(val) ? 0 : val);
+                                                }}
+                                                placeholder="0"
+                                                className="bg-white dark:bg-slate-800"
+                                            />
                                         </div>
                                         <div className="col-span-3">
                                             <Select value={item.unidad} onChange={e => updateLineItem(index, 'unidad', e.target.value)} className="bg-white dark:bg-slate-800">
                                                 <option value="ml">ml</option>
                                                 <option value="cl">cl</option>
+                                                <option value="oz">oz</option>
                                                 <option value="l">L</option>
                                                 <option value="g">g</option>
                                                 <option value="kg">kg</option>
+                                                <option value="lb">lb</option>
                                                 <option value="und">und</option>
                                                 <option value="dash">dash</option>
+                                                <option value="barspoon">barspoon</option>
                                                 <option value="tsp">tsp</option>
+                                                <option value="gal">gal</option>
                                             </Select>
                                         </div>
                                         <div className="col-span-1 flex justify-center">
@@ -295,11 +327,14 @@ export const RecipeFormModal: React.FC<RecipeFormModalProps> = ({ isOpen, onClos
                                             <span className="text-lg font-medium text-slate-400 mr-1">€</span>
                                             <input
                                                 type="number"
-                                                step="0.10"
+                                                step="0.01"
                                                 className="w-full bg-transparent text-2xl font-bold text-slate-800 dark:text-slate-100 outline-none placeholder-slate-300"
                                                 placeholder="0.00"
                                                 value={recipe.precioVenta || ''}
-                                                onChange={e => setRecipe(prev => ({ ...prev, precioVenta: parseFloat(e.target.value) }))}
+                                                onChange={e => {
+                                                    const val = parseFloat(e.target.value);
+                                                    setRecipe(prev => ({ ...prev, precioVenta: isNaN(val) ? 0 : val }));
+                                                }}
                                             />
                                         </div>
                                     </div>

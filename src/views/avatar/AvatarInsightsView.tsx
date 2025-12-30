@@ -1,7 +1,8 @@
 import React from 'react';
-import { Area, AreaChart, CartesianGrid, PolarAngleAxis, PolarGrid, PolarRadiusAxis, Radar, RadarChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import { Area, AreaChart, CartesianGrid, PolarAngleAxis, PolarGrid, PolarRadiusAxis, Radar, RadarChart, Tooltip, XAxis, YAxis } from 'recharts';
 import { Icon } from '../../components/ui/Icon';
 import { ICONS } from '../../components/ui/icons';
+import { ChartContainer } from '../../components/ui/ChartContainer';
 
 // --- Types ---
 interface KpiData {
@@ -31,10 +32,11 @@ const AvatarColumn = ({ title, children, accentColor = "bg-orange-500" }: { titl
 // High-Tech "Insight" Card Style (Orange Theme)
 const InsightCard = ({ children, className = "", active = false }: { children: React.ReactNode, className?: string, active?: boolean }) => (
     <div className={`
-        rounded-xl backdrop-blur-md transition-all duration-300
+        rounded-3xl backdrop-blur-md transition-all duration-300
+        shadow-[0_4px_12px_rgba(0,0,0,0.06)]
         ${active
-            ? 'bg-orange-500/20 border border-orange-400 shadow-[0_0_20px_rgba(251,146,60,0.2)]'
-            : 'bg-white/50 border border-orange-900/10 hover:bg-orange-50 hover:border-orange-500/30'}
+            ? 'bg-orange-500/10 border border-orange-400/50'
+            : 'bg-white/60 border border-orange-900/5 hover:bg-orange-50/50 hover:border-orange-500/20'}
         ${className}
     `}>
         {children}
@@ -148,7 +150,7 @@ const AvatarInsightsView: React.FC = () => {
                     <InsightCard className="p-4 bg-white/50">
                         <div className="h-[200px] w-full">
                             {areaData && areaData.length > 0 ? (
-                                <ResponsiveContainer width="100%" height="100%">
+                                <ChartContainer>
                                     <AreaChart data={areaData}>
                                         <defs>
                                             <linearGradient id="colorUv" x1="0" y1="0" x2="0" y2="1">
@@ -165,9 +167,9 @@ const AvatarInsightsView: React.FC = () => {
                                         />
                                         <Area type="monotone" dataKey="uv" stroke="#3b82f6" strokeWidth={3} fillOpacity={1} fill="url(#colorUv)" />
                                     </AreaChart>
-                                </ResponsiveContainer>
+                                </ChartContainer>
                             ) : (
-                                <div className="flex h-full items-center justify-center text-xs text-slate-400">Cargando datos financieros...</div>
+                                <div className="flex h-full items-center justify-center text-xs text-slate-400">Sin datos financieros para mostrar</div>
                             )}
                         </div>
                         <div className="mt-4 grid grid-cols-2 gap-4">
@@ -186,24 +188,24 @@ const AvatarInsightsView: React.FC = () => {
                         <h4 className="absolute top-4 left-4 text-[10px] font-bold text-slate-400 uppercase">Salud Operativa (Radar)</h4>
                         <div className="w-full h-full">
                             {radarData && radarData.length > 0 ? (
-                                <ResponsiveContainer width="100%" height="100%">
+                                <ChartContainer>
                                     <RadarChart cx="50%" cy="50%" outerRadius="80%" data={radarData}>
                                         <PolarGrid stroke="#e2e8f0" />
                                         <PolarAngleAxis dataKey="subject" tick={{ fontSize: 10, fill: '#64748b' }} />
                                         <PolarRadiusAxis angle={30} domain={[0, 150]} tick={false} axisLine={false} />
                                         <Radar name="Actual" dataKey="A" stroke="#fb923c" strokeWidth={3} fill="#fb923c" fillOpacity={0.3} />
                                     </RadarChart>
-                                </ResponsiveContainer>
+                                </ChartContainer>
                             ) : (
-                                <div className="flex h-full items-center justify-center text-xs text-slate-400">Analizando...</div>
+                                <div className="flex h-full items-center justify-center text-xs text-slate-400">Sin datos de radar</div>
                             )}
                         </div>
                     </InsightCard>
                 </div>
-            </AvatarColumn>
+            </AvatarColumn >
 
             {/* Column 3: Command Center */}
-            <AvatarColumn title="Centro de Comando" accentColor="bg-slate-800">
+            < AvatarColumn title="Centro de Comando" accentColor="bg-slate-800" >
                 <div className="space-y-3">
                     {[
                         { label: 'Exportar Reporte PDF', icon: ICONS.fileText || ICONS.book, color: 'bg-orange-500 text-white hover:bg-orange-600' },
@@ -237,8 +239,8 @@ const AvatarInsightsView: React.FC = () => {
                         </button>
                     </InsightCard>
                 </div>
-            </AvatarColumn>
-        </div>
+            </AvatarColumn >
+        </div >
     );
 };
 

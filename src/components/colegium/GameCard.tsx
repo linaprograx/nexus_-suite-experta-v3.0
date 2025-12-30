@@ -27,7 +27,7 @@ export const GameCard: React.FC<GameCardProps> = ({
     return (
         <div
             className={`group relative overflow-hidden rounded-3xl p-6 transition-all duration-500 hover:scale-[1.02] hover:shadow-2xl cursor-pointer
-                bg-white/10 dark:bg-slate-900/40 backdrop-blur-md border border-white/20 dark:border-white/5
+                bg-white/40 dark:bg-slate-900/60 backdrop-blur-xl border-0 shadow-premium
                 animate-in fade-in slide-in-from-bottom-4 fill-mode-backwards
             `}
             style={{ animationDelay: `${delay}ms` }}
@@ -54,7 +54,7 @@ export const GameCard: React.FC<GameCardProps> = ({
                     <h3 className="text-xl font-bold text-slate-800 dark:text-white mb-2 group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-r group-hover:from-indigo-400 group-hover:to-purple-400 transition-all">
                         {title}
                     </h3>
-                    <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed">
+                    <p className="text-sm font-medium text-slate-600 dark:text-slate-300 leading-relaxed">
                         {description}
                     </p>
                 </div>

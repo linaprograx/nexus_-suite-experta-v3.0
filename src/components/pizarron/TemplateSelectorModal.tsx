@@ -40,8 +40,8 @@ export const TemplateSelectorModal: React.FC<TemplateSelectorModalProps> = ({ is
     }>
       <div className="flex flex-col h-[70vh]">
         <div className="mb-4">
-          <p className="text-slate-600 dark:text-slate-400 mb-4 bg-orange-50 dark:bg-orange-900/10 p-3 rounded-lg border border-orange-100 dark:border-orange-900/30 text-sm flex gap-2 items-center">
-            <Icon svg={ICONS.sparkles} className="text-orange-500 w-4 h-4" />
+          <p className="text-slate-600 dark:text-slate-400 mb-4 bg-orange-50/50 dark:bg-orange-900/10 p-3 rounded-lg border border-nexus-orange/20 text-sm flex gap-2 items-center backdrop-blur-sm">
+            <Icon svg={ICONS.sparkles} className="text-nexus-orange w-4 h-4" />
             Elige una plantilla para comenzar rápidamente o crea un tablero en blanco.
           </p>
         </div>
@@ -54,20 +54,20 @@ export const TemplateSelectorModal: React.FC<TemplateSelectorModalProps> = ({ is
               className={`
                 relative p-5 rounded-2xl cursor-pointer border transition-all duration-300 group
                 ${selectedTemplate === template.id
-                  ? 'border-orange-500 bg-orange-50 dark:bg-orange-900/20 shadow-lg shadow-orange-500/10 ring-1 ring-orange-500'
-                  : 'border-slate-200 dark:border-slate-700 hover:border-orange-300 dark:hover:border-orange-700 hover:shadow-md bg-white dark:bg-slate-800'
+                  ? 'border-nexus-orange bg-orange-50/50 dark:bg-orange-900/20 shadow-lg shadow-nexus-orange/10 ring-1 ring-nexus-orange'
+                  : 'border-slate-200/50 dark:border-slate-700/50 hover:border-nexus-orange/50 hover:shadow-md bg-white/40 dark:bg-slate-800/40 backdrop-blur-sm'
                 }
               `}
             >
               <div className="flex items-start gap-4">
                 <div
-                  className={`p-3.5 rounded-2xl shrink-0 shadow-sm transition-transform group-hover:scale-110 duration-300 ${selectedTemplate === template.id ? 'bg-white dark:bg-slate-800' : ''}`}
+                  className={`p-3.5 rounded-2xl shrink-0 shadow-sm transition-transform group-hover:scale-110 duration-300 ${selectedTemplate === template.id ? 'bg-white dark:bg-slate-800' : 'bg-white/50 dark:bg-slate-800/50'}`}
                   style={{ backgroundColor: selectedTemplate === template.id ? undefined : `${template.color}20`, color: template.color }}
                 >
                   <Icon svg={getIcon(template.icon)} className="w-8 h-8" />
                 </div>
                 <div className="flex-1 min-w-0 pt-1">
-                  <h3 className="font-bold text-lg text-slate-900 dark:text-white mb-1 group-hover:text-orange-600 dark:group-hover:text-orange-400 transition-colors break-words">
+                  <h3 className="font-bold text-lg text-slate-900 dark:text-white mb-1 group-hover:text-nexus-orange transition-colors break-words">
                     {template.name}
                   </h3>
                   <p className="text-sm text-slate-500 dark:text-slate-400 line-clamp-2 leading-relaxed break-words">
@@ -77,7 +77,7 @@ export const TemplateSelectorModal: React.FC<TemplateSelectorModalProps> = ({ is
                   {template.linkedViews.length > 0 && (
                     <div className="flex gap-2 mt-3">
                       {template.linkedViews.map(view => (
-                        <span key={view} className="text-[10px] uppercase font-bold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-300 border border-slate-200 dark:border-slate-600">
+                        <span key={view} className="text-[10px] uppercase font-bold px-2 py-0.5 rounded-full bg-slate-100/50 dark:bg-slate-700/50 text-slate-500 dark:text-slate-300 border border-slate-200/50 dark:border-slate-600/50">
                           {view}
                         </span>
                       ))}
@@ -86,17 +86,17 @@ export const TemplateSelectorModal: React.FC<TemplateSelectorModalProps> = ({ is
 
                   <div className="flex gap-1 mt-4 overflow-hidden opacity-60 group-hover:opacity-100 transition-opacity">
                     {template.columns.slice(0, 3).map((col, i) => (
-                      <div key={i} className="h-1.5 flex-1 rounded-full bg-slate-200 dark:bg-slate-600 group-hover:bg-current" style={{ color: template.color }} />
+                      <div key={i} className="h-1.5 flex-1 rounded-full bg-slate-200/50 dark:bg-slate-600/50 group-hover:bg-current" style={{ color: template.color }} />
                     ))}
                     {template.columns.length > 3 && (
-                      <div className="h-1.5 w-1.5 rounded-full bg-slate-200 dark:bg-slate-600" />
+                      <div className="h-1.5 w-1.5 rounded-full bg-slate-200/50 dark:bg-slate-600/50" />
                     )}
                   </div>
                 </div>
               </div>
 
               {selectedTemplate === template.id && (
-                <div className="absolute top-4 right-4 text-orange-500 animate-in zoom-in duration-200 drop-shadow-sm">
+                <div className="absolute top-4 right-4 text-nexus-orange animate-in zoom-in duration-200 drop-shadow-sm">
                   <Icon svg={ICONS.check} className="w-6 h-6" />
                 </div>
               )}
@@ -104,14 +104,14 @@ export const TemplateSelectorModal: React.FC<TemplateSelectorModalProps> = ({ is
           ))}
         </div>
 
-        <div className="pt-6 mt-4 border-t border-slate-200 dark:border-slate-700 flex justify-end gap-3">
+        <div className="pt-6 mt-4 border-t border-slate-200/50 dark:border-slate-700/50 flex justify-end gap-3">
           <Button variant="ghost" onClick={onClose} className="rounded-xl">
             Cancelar
           </Button>
           <Button
             disabled={!selectedTemplate}
             onClick={handleSelect}
-            className="bg-gradient-to-r from-orange-500 to-amber-600 text-white hover:opacity-90 transition-all shadow-lg shadow-orange-500/30 rounded-xl px-8 hover:scale-[1.02]"
+            className="bg-gradient-to-r from-nexus-orange to-amber-600 text-white hover:opacity-90 transition-all shadow-lg shadow-nexus-orange/30 rounded-xl px-8 hover:scale-[1.02]"
           >
             Crear Tablero
           </Button>
