@@ -12,8 +12,9 @@ import { Spinner } from './components/ui/Spinner';
 import { Sidebar } from './components/layout/Sidebar';
 import { Topbar } from './components/layout/Topbar';
 // import { ContentView } from './src/views/ContentView'; // DEPRECATED
-import { AppRouter } from './router/AppRouter';
+import { AppRoutes } from './routes';
 import { RecipeFormModal } from './components/grimorium/RecipeFormModal';
+
 import { NotificationsDrawer } from './components/dashboard/NotificationsDrawer';
 import { ChatbotWidget } from './components/ui/ChatbotWidget';
 import { AuthComponent } from './components/auth/AuthComponent';
@@ -137,7 +138,7 @@ const AppLayout: React.FC<any> = ({
                 <Topbar onToggleMobileSidebar={() => setIsMobileSidebarOpen(true)} onShowNotifications={() => setShowNotificationsDrawer(true)} unreadNotifications={notifications.some((n: any) => !n.read)} title='Nexus Suite' />
 
                 <main className='flex-1 overflow-y-auto p-4'>
-                    <AppRouter
+                    <AppRoutes
                         db={db} userId={userId} appId={appId} auth={auth} storage={storage}
                         // allRecipes, allPizarronTasks, userProfile removed as they are fetched internally by views
                         onOpenRecipeModal={(r: any) => { setRecipeToEdit(r); setShowRecipeModal(true); }}
