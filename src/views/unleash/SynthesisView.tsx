@@ -6,19 +6,19 @@ interface SynthesisViewProps {
 }
 
 const UnleashColumn = ({ title, children }: { title: string, children?: React.ReactNode }) => (
-    <div className="h-full min-h-0 flex flex-col rounded-2xl border border-violet-200/50 overflow-hidden bg-white/40 backdrop-blur-md shadow-sm">
-        <div className="p-4 border-b border-violet-100 bg-white/50">
-            <h3 className="font-bold text-violet-900 tracking-wide text-sm uppercase">{title}</h3>
+    <div className="h-full min-h-0 flex flex-col rounded-2xl bg-white/5 border border-white/10">
+        <div className="p-4 border-b border-white/5">
+            <h3 className="font-bold text-slate-400 tracking-wide text-xs uppercase opacity-80">{title}</h3>
         </div>
-        <div className="flex-1 overflow-y-auto p-4 custom-scrollbar space-y-4">
+        <div className="flex-1 overflow-y-auto p-6 custom-scrollbar space-y-8">
             {children}
         </div>
     </div>
 );
 
 const SectionBlock = ({ title, children }: { title: string, children?: React.ReactNode }) => (
-    <div className="bg-white/60 p-4 rounded-xl border border-violet-100 shadow-sm">
-        <h4 className="text-violet-700 font-bold mb-3 text-xs uppercase tracking-wider">{title}</h4>
+    <div className="space-y-3">
+        <h4 className="text-violet-400 font-medium text-[10px] uppercase tracking-wider opacity-80 pl-1">{title}</h4>
         {children}
     </div>
 );
@@ -170,8 +170,8 @@ const SynthesisView: React.FC<SynthesisViewProps> = ({ allRecipes }) => {
                                 key={tag}
                                 onClick={() => setNarrativeTone(tag)}
                                 className={`px-3 py-1 rounded-full text-xs font-medium cursor-pointer transition-colors border ${narrativeTone === tag
-                                        ? 'bg-violet-600 text-white border-violet-600'
-                                        : 'bg-violet-50 text-violet-700 border-violet-200 hover:bg-violet-100'
+                                    ? 'bg-violet-600 text-white border-violet-600'
+                                    : 'bg-violet-50 text-violet-700 border-violet-200 hover:bg-violet-100'
                                     }`}
                             >
                                 {tag}

@@ -44,7 +44,7 @@ const AvatarView: React.FC<AvatarViewProps> = () => {
                             : 'text-slate-400 hover:text-white hover:bg-white/5'
                             }`}
                     >
-                        Avatar Insights
+                        Performance Insights
                     </button>
                     <button
                         onClick={() => setActiveTab('digital-bar')}
@@ -62,7 +62,7 @@ const AvatarView: React.FC<AvatarViewProps> = () => {
                             : 'text-slate-400 hover:text-white hover:bg-white/5'
                             }`}
                     >
-                        Champion Mode
+                        Trayectoria Profesional
                     </button>
                 </div>
             </div>

@@ -35,13 +35,11 @@ const ChampionColumn = ({
         onDoubleClick={onDoubleClick}
         className={`h-full flex flex-col overflow-hidden rounded-[30px] bg-[#e0e5ec] shadow-[9px_9px_16px_rgb(163,177,198,0.6),-9px_-9px_16px_rgba(255,255,255,0.5)] border border-white/40 transition-all duration-500 ease-[cubic-bezier(0.18,0.89,0.32,1.28)] ${isFocused ? 'scale-[1.01] ring-2 ring-violet-400/30' : 'hover:scale-[1.005]'} ${className}`}
     >
-        {/* Header */}
         <div className="px-6 py-5 flex justify-between items-center border-b border-slate-200/40 select-none cursor-pointer">
             <h3 className="font-bold text-slate-600 tracking-wider text-[0.95rem] flex items-center gap-3 uppercase">
                 <span className={`w-2.5 h-2.5 rounded-full ${accentColor}`} />
                 {title}
             </h3>
-            <span className="text-[9px] font-bold text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity">Double-click to Focus</span>
         </div>
 
         {/* Content */}
@@ -58,7 +56,7 @@ const ChampionModeView: React.FC = () => {
     const [focusCol, setFocusCol] = React.useState<number | null>(null);
 
     const handleFocus = (colIndex: number) => {
-        soundEngine.playSlide();
+        // soundEngine.playSlide();
         setFocusCol(prev => prev === colIndex ? null : colIndex);
     };
 
@@ -97,15 +95,15 @@ const ChampionModeView: React.FC = () => {
 
                         {/* 3-COLUMN LAYOUT */}
                         <div className={`flex-1 w-full grid gap-8 min-h-0 transition-all duration-500 ease-[cubic-bezier(0.18,0.89,0.32,1.28)] ${focusCol === 1 ? 'grid-cols-[1fr_0fr_0fr]' :
-                                focusCol === 2 ? 'grid-cols-[0fr_1fr_0fr]' :
-                                    focusCol === 3 ? 'grid-cols-[0fr_0fr_1fr]' :
-                                        'grid-cols-1 xl:grid-cols-[28fr_44fr_28fr]'
+                            focusCol === 2 ? 'grid-cols-[0fr_1fr_0fr]' :
+                                focusCol === 3 ? 'grid-cols-[0fr_0fr_1fr]' :
+                                    'grid-cols-1 xl:grid-cols-[28fr_44fr_28fr]'
                             }`}>
 
                             {/* COLUMN 1 */}
                             <div className={`h-full min-h-0 transition-all duration-500 ${focusCol && focusCol !== 1 ? 'opacity-0 scale-95 pointer-events-none' : 'opacity-100'}`}>
                                 <ChampionColumn
-                                    title="Brief de Competición"
+                                    title="Current Objective"
                                     accentColor="bg-cyan-500"
                                     onDoubleClick={() => handleFocus(1)}
                                     isFocused={focusCol === 1}
@@ -119,7 +117,7 @@ const ChampionModeView: React.FC = () => {
                             {/* COLUMN 2 */}
                             <div className={`h-full min-h-0 transition-all duration-500 ${focusCol && focusCol !== 2 ? 'opacity-0 scale-95 pointer-events-none' : 'opacity-100'}`}>
                                 <ChampionColumn
-                                    title="Lienzo Creativo"
+                                    title="Innovation Workspace"
                                     accentColor="bg-violet-500"
                                     scrollable
                                     onDoubleClick={() => handleFocus(2)}
@@ -134,7 +132,7 @@ const ChampionModeView: React.FC = () => {
                             {/* COLUMN 3 */}
                             <div className={`h-full min-h-0 transition-all duration-500 ${focusCol && focusCol !== 3 ? 'opacity-0 scale-95 pointer-events-none' : 'opacity-100'}`}>
                                 <ChampionColumn
-                                    title="Plan de Entrenamiento"
+                                    title="Skill Development"
                                     accentColor="bg-emerald-500"
                                     onDoubleClick={() => handleFocus(3)}
                                     isFocused={focusCol === 3}

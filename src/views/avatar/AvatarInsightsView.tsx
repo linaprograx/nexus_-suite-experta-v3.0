@@ -93,23 +93,23 @@ const AvatarInsightsView: React.FC = () => {
         <div className="h-full grid grid-cols-1 lg:grid-cols-3 gap-6 text-slate-800">
 
             {/* Column 1: Context & Health */}
-            <AvatarColumn title="Contexto & Salud">
+            <AvatarColumn title="Operational Health">
                 <div className="space-y-4">
                     {/* Context Selectors in a Card */}
                     <InsightCard className="p-4 space-y-3">
                         <div>
-                            <label className="text-[10px] font-bold text-orange-600/70 uppercase mb-1 block">Periodo de Análisis</label>
+                            <label className="text-[10px] font-bold text-orange-600/70 uppercase mb-1 block">Analysis Period</label>
                             <select className="w-full bg-white border border-orange-200 rounded p-1.5 text-xs font-bold text-slate-700 outline-none focus:border-orange-400">
-                                <option>Turno Actual (Live)</option>
-                                <option>Últimas 24 Horas</option>
-                                <option>Esta Semana</option>
+                                <option>Current Shift (Live)</option>
+                                <option>Last 24 Hours</option>
+                                <option>This Week</option>
                             </select>
                         </div>
                         <div>
-                            <label className="text-[10px] font-bold text-orange-600/70 uppercase mb-1 block">Área Operativa</label>
+                            <label className="text-[10px] font-bold text-orange-600/70 uppercase mb-1 block">Operational Area</label>
                             <select className="w-full bg-white border border-orange-200 rounded p-1.5 text-xs font-bold text-slate-700 outline-none focus:border-orange-400">
-                                <option>Global (Todas)</option>
-                                <option>Barra Principal</option>
+                                <option>Global (All)</option>
+                                <option>Main Bar</option>
                                 <option>Cocktail Lounge</option>
                             </select>
                         </div>
@@ -122,22 +122,22 @@ const AvatarInsightsView: React.FC = () => {
                         ))}
                     </div>
 
-                    {/* AI Alert Card */}
+                    {/* System Status Card */}
                     <InsightCard className="p-4 bg-gradient-to-br from-rose-50 to-orange-50 border-orange-200">
                         <div className="flex items-center gap-2 mb-2">
                             <div className="p-1.5 bg-rose-100 rounded text-rose-600">
                                 <Icon svg={ICONS.alert} className="w-4 h-4" />
                             </div>
-                            <h4 className="text-xs font-bold text-rose-700 uppercase">Alertas Críticas</h4>
+                            <h4 className="text-xs font-bold text-rose-700 uppercase">System Alerts</h4>
                         </div>
                         <ul className="space-y-2">
                             <li className="text-xs text-slate-600 flex justify-between items-center bg-white/50 p-2 rounded border border-orange-100">
-                                <span>Stock bajo: Tequila Blanco</span>
-                                <span className="text-[10px] text-rose-500 font-bold uppercase bg-rose-50 px-1.5 py-0.5 rounded border border-rose-100">Urgente</span>
+                                <span>Low Stock: Tequila Blanco</span>
+                                <span className="text-[10px] text-rose-500 font-bold uppercase bg-rose-50 px-1.5 py-0.5 rounded border border-rose-100">Urgent</span>
                             </li>
                             <li className="text-xs text-slate-600 flex justify-between items-center bg-white/50 p-2 rounded border border-orange-100">
-                                <span>Mantenimiento: Ice Machine</span>
-                                <span className="text-[10px] text-amber-500 font-bold uppercase bg-amber-50 px-1.5 py-0.5 rounded border border-amber-100">Hoy</span>
+                                <span>Maintenance: Ice Machine</span>
+                                <span className="text-[10px] text-amber-500 font-bold uppercase bg-amber-50 px-1.5 py-0.5 rounded border border-amber-100">Today</span>
                             </li>
                         </ul>
                     </InsightCard>
@@ -145,7 +145,7 @@ const AvatarInsightsView: React.FC = () => {
             </AvatarColumn>
 
             {/* Column 2: Performance */}
-            <AvatarColumn title="Rendimiento Financiero" accentColor="bg-blue-500">
+            <AvatarColumn title="Financial Performance" accentColor="bg-blue-500">
                 <div className="space-y-4">
                     <InsightCard className="p-4 bg-white/50">
                         <div className="h-[200px] w-full">
@@ -169,23 +169,23 @@ const AvatarInsightsView: React.FC = () => {
                                     </AreaChart>
                                 </ChartContainer>
                             ) : (
-                                <div className="flex h-full items-center justify-center text-xs text-slate-400">Sin datos financieros para mostrar</div>
+                                <div className="flex h-full items-center justify-center text-xs text-slate-400">No financial data</div>
                             )}
                         </div>
                         <div className="mt-4 grid grid-cols-2 gap-4">
                             <div className="bg-slate-50 p-3 rounded-lg border border-slate-100">
-                                <span className="text-[10px] font-bold text-slate-400 uppercase">Margen Cocktail</span>
+                                <span className="text-[10px] font-bold text-slate-400 uppercase">Cocktail Margin</span>
                                 <p className="text-xl font-black text-slate-700">82%</p>
                             </div>
                             <div className="bg-slate-50 p-3 rounded-lg border border-slate-100">
-                                <span className="text-[10px] font-bold text-slate-400 uppercase">Desperdicio</span>
+                                <span className="text-[10px] font-bold text-slate-400 uppercase">Waste Ratio</span>
                                 <p className="text-xl font-black text-emerald-600">1.2%</p>
                             </div>
                         </div>
                     </InsightCard>
 
                     <InsightCard className="aspect-square relative p-4 bg-white/50 flex flex-col items-center justify-center">
-                        <h4 className="absolute top-4 left-4 text-[10px] font-bold text-slate-400 uppercase">Salud Operativa (Radar)</h4>
+                        <h4 className="absolute top-4 left-4 text-[10px] font-bold text-slate-400 uppercase">Operational Radar</h4>
                         <div className="w-full h-full">
                             {radarData && radarData.length > 0 ? (
                                 <ChartContainer>
@@ -197,7 +197,7 @@ const AvatarInsightsView: React.FC = () => {
                                     </RadarChart>
                                 </ChartContainer>
                             ) : (
-                                <div className="flex h-full items-center justify-center text-xs text-slate-400">Sin datos de radar</div>
+                                <div className="flex h-full items-center justify-center text-xs text-slate-400">No radar data</div>
                             )}
                         </div>
                     </InsightCard>
@@ -205,12 +205,12 @@ const AvatarInsightsView: React.FC = () => {
             </AvatarColumn >
 
             {/* Column 3: Command Center */}
-            < AvatarColumn title="Centro de Comando" accentColor="bg-slate-800" >
+            < AvatarColumn title="Action Center" accentColor="bg-slate-800" >
                 <div className="space-y-3">
                     {[
-                        { label: 'Exportar Reporte PDF', icon: ICONS.fileText || ICONS.book, color: 'bg-orange-500 text-white hover:bg-orange-600' },
-                        { label: 'Guardar Snapshot', icon: ICONS.camera, color: 'bg-orange-500 text-white hover:bg-orange-600' },
-                        { label: 'Configurar Alertas', icon: ICONS.bell || ICONS.alert, color: 'bg-orange-500 text-white hover:bg-orange-600' },
+                        { label: 'Export Report (PDF)', icon: ICONS.fileText || ICONS.book, color: 'bg-orange-500 text-white hover:bg-orange-600' },
+                        { label: 'Save Snapshot', icon: ICONS.camera, color: 'bg-orange-500 text-white hover:bg-orange-600' },
+                        { label: 'Configure Alerts', icon: ICONS.bell || ICONS.alert, color: 'bg-orange-500 text-white hover:bg-orange-600' },
                     ].map((btn, i) => (
                         <button key={i} className={`w-full py-4 rounded-xl ${btn.color} shadow-lg shadow-slate-200 flex items-center justify-between px-6 transition-transform hover:scale-[1.02]`}>
                             <div className="flex items-center gap-3">
@@ -223,19 +223,19 @@ const AvatarInsightsView: React.FC = () => {
                         </button>
                     ))}
 
-                    <InsightCard className="p-6 mt-6 bg-gradient-to-br from-indigo-500 to-purple-600 text-white border-none shadow-xl shadow-indigo-200">
+                    <InsightCard className="p-6 mt-6 bg-white border border-slate-200/60 shadow-lg shadow-slate-200/40">
                         <div className="flex justify-between items-start mb-4">
-                            <h4 className="text-sm font-bold opacity-90">AI Insights Assistant</h4>
-                            <span className="px-2 py-0.5 bg-white/20 rounded text-[10px] font-bold">BETA</span>
+                            <h4 className="text-sm font-bold text-slate-700 uppercase tracking-wider">Operational Intelligence</h4>
+                            <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.5)]"></div>
                         </div>
-                        <p className="text-xs opacity-80 mb-6 leading-relaxed">
-                            "Se detecta un patrón de consumo inusual en 'Signature Cocktails' entre 21:00-23:00. Sugiero aumentar stock de guarniciones cítricas."
+                        <p className="text-xs font-medium text-slate-600 mb-6 leading-relaxed font-mono">
+                            "Significant variance (+12%) detected in <span className="text-slate-900 font-bold">Signature Cocktails</span> cost during peak hours. Optimizing citrus garnish prep could recover this margin immediately."
                         </p>
                         <button
                             onClick={handleOpenInsights}
-                            className="w-full py-3 bg-white text-orange-600 font-bold rounded-lg text-xs hover:bg-orange-50 transition-colors shadow-sm"
+                            className="w-full py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-lg text-xs transition-colors border border-slate-200"
                         >
-                            VER ANÁLISIS COMPLETO
+                            VIEW FULL ANALYSIS
                         </button>
                     </InsightCard>
                 </div>

@@ -50,6 +50,7 @@ const UnleashView: React.FC<UnleashViewProps> = () => {
 
   return (
     <div className="h-[calc(100vh-80px)] w-full flex flex-col px-4 lg:px-8 py-6">
+
       <div className="flex-shrink-0 mb-4 z-10">
         <div className="flex items-center gap-1 bg-white/5 p-1 rounded-2xl border border-white/10 w-fit backdrop-blur-md">
           <button

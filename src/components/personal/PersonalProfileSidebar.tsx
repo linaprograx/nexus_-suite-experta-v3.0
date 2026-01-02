@@ -24,8 +24,8 @@ export const PersonalProfileSidebar: React.FC<PersonalProfileSidebarProps> = ({
     const [showLevelDetails, setShowLevelDetails] = React.useState(false);
 
     return (
-        <div className="h-full flex flex-col gap-6">
-            <Card className="flex flex-col items-center p-8 bg-white/50 dark:bg-slate-900/50 backdrop-blur-md border-slate-200 dark:border-slate-800">
+        <div className="h-full flex flex-col gap-6 overflow-y-auto custom-scrollbar p-1">
+            <Card className="flex flex-col items-center p-8 bg-white/50 dark:bg-slate-900/50 backdrop-blur-md border-slate-200 dark:border-slate-800 flex-shrink-0">
                 <div className="relative group">
                     <div className="absolute -inset-0.5 bg-gradient-to-r from-pink-500 to-violet-500 rounded-full blur opacity-75 group-hover:opacity-100 transition duration-1000 group-hover:duration-200 animate-tilt"></div>
                     <img
@@ -67,11 +67,52 @@ export const PersonalProfileSidebar: React.FC<PersonalProfileSidebarProps> = ({
                 </div>
             </Card>
 
-            <NexusMemberPassCard
-                level={12}
-                xpCurrent={3450}
-                xpMax={5000}
-            />
+            {/* MEMBERSHIP TIERS STACK */}
+            <div className="space-y-4 pb-4">
+                {/* JUPITER STATUS (INTERNAL) */}
+                <NexusMemberPassCard
+                    variant="jupiter"
+                    level={99}
+                    xpCurrent={99999}
+                    xpMax={99999}
+                    title="Internal SuperAdmin"
+                    active={true}
+                />
+
+                <div className="py-2 flex items-center gap-2">
+                    <div className="h-px flex-1 bg-slate-200 dark:bg-slate-800"></div>
+                    <span className="text-[10px] uppercase font-bold text-slate-400">Planes Comerciales</span>
+                    <div className="h-px flex-1 bg-slate-200 dark:bg-slate-800"></div>
+                </div>
+
+                {/* COMMERCIAL TIERS */}
+                <NexusMemberPassCard
+                    variant="essential"
+                    level={1}
+                    xpCurrent={0}
+                    xpMax={100}
+                    title="Acceso Básico"
+                    active={false}
+                />
+
+                <NexusMemberPassCard
+                    variant="pro"
+                    level={12}
+                    xpCurrent={3450}
+                    xpMax={5000}
+                    title="Profesional"
+                    active={false}
+                />
+
+                <NexusMemberPassCard
+                    variant="elite"
+                    level={0}
+                    xpCurrent={0}
+                    xpMax={10000}
+                    title="Maestría Nexus"
+                    active={false}
+                />
+            </div>
         </div>
     );
 };
