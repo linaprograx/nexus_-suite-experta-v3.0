@@ -194,7 +194,7 @@ const EscandallatorView: React.FC<EscandallatorViewProps> = ({ db, userId, appId
                     )
                 }
                 mainContent={
-                    <div className="h-full flex flex-col bg-slate-50/50 dark:bg-slate-900/50 backdrop-blur-sm rounded-2xl border border-white/20 dark:border-white/5 p-4 lg:p-6 overflow-hidden">
+                    <div className="premium-panel p-4 lg:p-6">
                         <div className="flex bg-slate-200/50 dark:bg-slate-800/50 p-1 rounded-full w-max mx-auto mb-6 flex-shrink-0">
                             <button onClick={() => setActiveTab('escandallo')} className={`px-6 py-2 text-sm font-medium rounded-full transition-all ${activeTab === 'escandallo' ? 'bg-white text-emerald-600 shadow-sm dark:bg-slate-700 dark:text-emerald-400' : 'text-slate-500 dark:text-slate-400 hover:text-emerald-500'}`}>Escandallo</button>
                             <button onClick={() => setActiveTab('batcher')} className={`px-6 py-2 text-sm font-medium rounded-full transition-all ${activeTab === 'batcher' ? 'bg-white text-emerald-600 shadow-sm dark:bg-slate-700 dark:text-emerald-400' : 'text-slate-500 dark:text-slate-400 hover:text-emerald-500'}`}>Batcher</button>

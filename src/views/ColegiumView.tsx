@@ -313,7 +313,7 @@ const ColegiumView: React.FC<ColegiumViewProps> = () => {
                 />
             }
             mainContent={
-                <div className="h-full w-full relative">
+                <div className="premium-panel relative">
                     {loading && (
                         <div className="absolute inset-0 z-50 flex items-center justify-center bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm">
                             <Spinner className="w-12 h-12 text-indigo-500" />

@@ -762,7 +762,7 @@ const GrimoriumInner: React.FC<GrimoriumViewProps> = ({ onOpenRecipeModal, onDra
             id="grimorium-section"
             gradientTheme={currentGradient}
             transparentColumns={true}
-            className="lg:!grid-cols-[minmax(150px,300px),minmax(600px,1fr),400px] gap-px"
+            className=""
             header={<GrimoriumToolbar />}
             leftSidebar={
                 <>
@@ -874,7 +874,7 @@ const GrimoriumInner: React.FC<GrimoriumViewProps> = ({ onOpenRecipeModal, onDra
                 </>
             }
             mainContent={
-                <div className="h-full flex flex-col bg-transparent p-0">
+                <div className="premium-panel p-0 relative">
                     <div className="flex-1 overflow-y-auto custom-scrollbar">
                         {/* COST LAYER (Takes precedence if active) - REVERTED: Now in Right Sidebar */}
 

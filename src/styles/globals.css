@@ -82,6 +82,18 @@
     @apply rounded-2xl border border-white/20 dark:border-white/10;
     box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.1);
   }
+
+  .premium-card {
+    @apply bg-white/60 dark:bg-slate-900/40 backdrop-blur-md border border-white/20 dark:border-white/5 rounded-2xl shadow-sm transition-all duration-300;
+  }
+
+  .premium-panel {
+    @apply h-full flex flex-col bg-slate-50/50 dark:bg-slate-900/50 backdrop-blur-sm rounded-2xl border border-white/20 dark:border-white/5 overflow-hidden relative;
+  }
+
+  .premium-heading {
+    @apply text-xl font-light text-slate-800 dark:text-slate-100 tracking-tight;
+  }
 }
 
 @layer utilities {

@@ -4,3 +4,10 @@ export interface ChampionProposal {
     recipe: { ingredient: string; amount: string }[];
     score: number;
 }
+
+export interface CompetitionBrief {
+    brand: string;
+    competitionType: string;
+    constraints: string[];
+    targetAudience: string;
+}

@@ -51,12 +51,16 @@ export const PremiumLayout: React.FC<PremiumLayoutProps> = ({
 
     const activeGradient = gradients[gradientTheme];
 
-    // Grid Column Logic
-    let gridCols = 'grid-cols-1 lg:grid-cols-[310px,minmax(0,1fr),320px]';
+    // Grid Column Logic - Proportional System (No fixed pixels)
+    // Standard: Left (Sidebar) ~20%, Middle (Main) ~55%, Right (Detail) ~25%
+    let gridCols = 'grid-cols-1 md:grid-cols-[2fr_5.5fr_2.5fr]';
+
     if (layoutMode === 'compact') {
-        gridCols = 'grid-cols-1 lg:grid-cols-[100px,minmax(0,1fr),100px]';
+        // Compact: Smaller sidebars ~10% each
+        gridCols = 'grid-cols-1 md:grid-cols-[1fr_8fr_1fr]';
     } else if (layoutMode === 'colegium') {
-        gridCols = 'grid-cols-1 lg:grid-cols-[150px,minmax(0,1fr),150px]';
+        // Colegium: Balanced sidebars ~15% each
+        gridCols = 'grid-cols-1 md:grid-cols-[1.5fr_7fr_1.5fr]';
     } else if (layoutMode === 'zen') {
         gridCols = 'grid-cols-1';
     }

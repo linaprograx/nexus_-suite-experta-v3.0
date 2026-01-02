@@ -82,7 +82,7 @@ const TrendLocatorView: React.FC<TrendLocatorViewProps> = ({ db, userId, appId }
                 <TrendHistorySidebar db={db} trendHistoryPath={trendHistoryPath} />
             }
             mainContent={
-                <div className="h-full flex flex-col bg-slate-50/50 dark:bg-slate-900/50 backdrop-blur-sm rounded-2xl border border-white/20 dark:border-white/5 p-4 lg:p-6 overflow-hidden relative">
+                <div className="premium-panel p-4 lg:p-6">
                     {/* Results Area */}
                     <div className="flex-1 overflow-y-auto custom-scrollbar">
                         {loading && (

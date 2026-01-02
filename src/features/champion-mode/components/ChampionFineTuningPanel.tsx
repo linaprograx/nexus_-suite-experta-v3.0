@@ -16,7 +16,7 @@ export const ChampionFineTuningPanel: React.FC = () => {
     };
 
     return (
-        <div className="h-full flex flex-col gap-4 font-sans text-slate-800 relative">
+        <div className="h-full flex flex-col gap-4 font-sans text-slate-800 relative max-w-2xl mx-auto w-full">
             {/* Status Toast */}
             {state.statusMessage && (
                 <div className="absolute top-0 right-0 left-0 -mt-8 z-50 flex justify-center animate-in slide-in-from-top-4 fade-in duration-300">

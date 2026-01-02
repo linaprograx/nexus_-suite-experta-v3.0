@@ -13,15 +13,23 @@ export const ChampionPresentationView: React.FC = () => {
 
     if (!proposal) {
         return (
-            <div className="flex h-full items-center justify-center text-slate-400">
-                <div className="text-center">
-                    <Icon svg={ICONS.flask} className="w-12 h-12 mx-auto mb-4 text-slate-600" />
-                    <h2 className="text-xl font-bold uppercase tracking-widest">Sin Propuesta para Presentar</h2>
+            <div className="flex h-full items-center justify-center text-slate-400 bg-slate-900 rounded-[24px] relative overflow-hidden group">
+                {/* Stage Spotlight Effect */}
+                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-1/3 h-full bg-gradient-to-b from-indigo-500/10 via-transparent to-transparent blur-3xl pointer-events-none" />
+
+                <div className="text-center relative z-10 transition-transform duration-500 group-hover:scale-105">
+                    <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-slate-800/50 flex items-center justify-center border border-white/5 shadow-[0_0_30px_rgba(99,102,241,0.1)]">
+                        <Icon svg={ICONS.flask} className="w-8 h-8 text-indigo-500 opacity-80" />
+                    </div>
+                    <h2 className="text-2xl font-black uppercase tracking-[0.2em] text-white mb-2">El Escenario Espera</h2>
+                    <p className="text-xs font-medium text-slate-500 max-w-xs mx-auto mb-8 leading-relaxed">
+                        Completa tu diseño en el Motor Creativo para desbloquear el modo presentación.
+                    </p>
                     <button
                         onClick={() => actions.setViewMode('DESIGN')}
-                        className="mt-4 px-6 py-2 bg-indigo-600 text-white rounded-full font-bold text-sm hover:bg-indigo-500 transition-colors"
+                        className="px-8 py-3 bg-white text-slate-900 rounded-full font-bold text-[10px] tracking-widest hover:bg-indigo-50 transition-all hover:scale-105 shadow-[0_0_20px_rgba(255,255,255,0.2)]"
                     >
-                        Volver al Diseño
+                        VOLVER AL DISEÑO
                     </button>
                 </div>
             </div>

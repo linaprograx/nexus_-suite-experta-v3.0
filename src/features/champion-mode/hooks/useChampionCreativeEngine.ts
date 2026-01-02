@@ -1,10 +1,16 @@
 import { useState, useCallback } from 'react';
 import { useApp } from '../../../context/AppContext';
-import { evaluateProposal, AiEvaluationResult } from '../logic/championAiEvaluator';
+import { ChampionAiService, AiEvaluationResult } from '../logic/championAiService';
 import { exportProposalToPdf } from '../logic/championPdfExporter';
 
 export interface ChampionCreativeState {
     viewMode: 'DESIGN' | 'PRESENTATION';
+    brief: {
+        brand: string;
+        competitionType: string;
+        constraints: string[];
+        targetAudience: string;
+    };
     concept: string;
     tags: string[];
     isGenerating: boolean;
@@ -17,73 +23,18 @@ export interface ChampionCreativeState {
     aiEvaluation: AiEvaluationResult | null;
 }
 
-const MOCK_PROPOSALS = {
-    'Floral': {
-        title: 'Nebula Fizz',
-        description: 'Una explosión etérea de jazmín y burbujas finas.',
-        recipe: [
-            { ingredient: 'Gin Floral', amount: '50ml' },
-            { ingredient: 'Jarabe de Jazmín', amount: '20ml' },
-            { ingredient: 'Soda de Lavanda', amount: 'Top' }
-        ],
-        score: 92
-    },
-    'Ahumado': {
-        title: 'Obsidian Smoke',
-        description: 'Profundidad volcánica con notas de mezcal y chiles secos.',
-        recipe: [
-            { ingredient: 'Mezcal Joven', amount: '45ml' },
-            { ingredient: 'Licor de Ancho Reyes', amount: '15ml' },
-            { ingredient: 'Bitter de Cacao', amount: '2 dashes' }
-        ],
-        score: 88
-    },
-    'Minimalista': {
-        title: 'Zenith Clear',
-        description: 'Claridad absoluta. Sabor complejo en apariencia simple.',
-        recipe: [
-            { ingredient: 'Vodka Cristalino', amount: '60ml' },
-            { ingredient: 'Cordial de Lima', amount: '30ml' }
-        ],
-        score: 95
-    },
-    'Teatral': {
-        title: 'Crimson Velour',
-        description: 'Un cóctel que cambia de color y textura al servirse.',
-        recipe: [
-            { ingredient: 'Infusión de Hibisco', amount: '40ml' },
-            { ingredient: 'Espuma de Jengibre', amount: 'Top' }
-        ],
-        score: 90
-    },
-    'Cítrico': {
-        title: 'Luminous drops',
-        description: 'Frescura eléctrica con notas de yuzu y bergamota.',
-        recipe: [
-            { ingredient: 'Vodka Cítrico', amount: '50ml' },
-            { ingredient: 'Jugo de Yuzu', amount: '20ml' },
-            { ingredient: 'Jarabe de Lemongrass', amount: '15ml' }
-        ],
-        score: 91
-    },
-    'Especiado': {
-        title: 'Silk Road',
-        description: 'Un viaje sensorial por la ruta de la seda.',
-        recipe: [
-            { ingredient: 'Rum Añejo', amount: '60ml' },
-            { ingredient: 'Chai Tea Cordial', amount: '30ml' },
-            { ingredient: 'Cardamom Bitters', amount: '2 dashes' }
-        ],
-        score: 89
-    }
-};
-
 export const useChampionCreativeEngine = () => {
-    const { db, userId, appId, user } = useApp();
+    const { db, userId, appId, user, userPlan } = useApp();
     const [statusMessage, setStatusMessage] = useState<string | null>(null);
 
     const [state, setState] = useState<ChampionCreativeState>({
         viewMode: 'DESIGN',
+        brief: {
+            brand: 'Nexus Spirits',
+            competitionType: 'Signature Serve',
+            constraints: ['Max 5 Ingredientes'],
+            targetAudience: 'Cocktail Enthusiasts'
+        },
         concept: '',
         tags: [],
         isGenerating: false,
@@ -92,6 +43,8 @@ export const useChampionCreativeEngine = () => {
     });
 
     // Actions
+    const setBrief = (brief: Partial<ChampionCreativeState['brief']>) => setState(prev => ({ ...prev, brief: { ...prev.brief, ...brief } }));
+
     const setConcept = (concept: string) => setState(prev => ({ ...prev, concept }));
 
     const setViewMode = (mode: 'DESIGN' | 'PRESENTATION') => setState(prev => ({ ...prev, viewMode: mode }));
@@ -106,34 +59,47 @@ export const useChampionCreativeEngine = () => {
     };
 
     const generateProposal = useCallback(() => {
+        // In a real scenario, this would use an LLM API.
+        // For this architecture, we initialize a "Draft" based on the user's concept/inputs
+        // so the user can then refine it for the AI Evaluator.
         setState(prev => ({ ...prev, isGenerating: true }));
 
-        // Simulate AI delay
         setTimeout(() => {
-            // Pick proposal based on first tag or random
-            const tag = state.tags[0] || 'Floral';
-            const mock = MOCK_PROPOSALS[tag as keyof typeof MOCK_PROPOSALS] || MOCK_PROPOSALS['Floral'];
-
             setState(prev => ({
                 ...prev,
                 isGenerating: false,
-                proposal: mock,
-                aiEvaluation: null // Reset evaluation on new generation
+                proposal: {
+                    title: prev.concept || 'Nueva Creación',
+                    description: prev.concept ? `Propuesta basada en: ${prev.concept}` : 'Describe tu historia aquí...',
+                    recipe: [
+                        { ingredient: 'Ingrediente Base', amount: '60ml' },
+                        { ingredient: 'Modificador', amount: '30ml' }
+                    ],
+                    score: 0
+                },
+                aiEvaluation: null
             }));
-        }, 1500);
-    }, [state.tags]);
+        }, 1000);
+    }, []);
 
     const runAiEvaluation = useCallback(() => {
         if (!state.proposal) return;
 
-        setStatusMessage('Juez IA analizando...');
+        setStatusMessage('Convocando al Jurado Nexus...');
+
         setTimeout(() => {
-            const result = evaluateProposal(state.proposal as any); // Type cast for simpler mock compatibility
+            // REAL AI SERVICE CALL
+            const result = ChampionAiService.evaluate(
+                state.proposal as any,
+                state.brief,
+                userPlan || 'FREE' // Fallback
+            );
+
             setState(prev => ({ ...prev, aiEvaluation: result }));
-            setStatusMessage('Evaluación completada');
+            setStatusMessage('Veredicto del Jurado completado');
             setTimeout(() => setStatusMessage(null), 2000);
-        }, 1200);
-    }, [state.proposal]);
+        }, 1500); // Slight delay for dramatic effect
+    }, [state.proposal, state.brief, userPlan]);
 
     const triggerPdfExport = useCallback(async () => {
         if (!state.proposal) return;
@@ -154,15 +120,9 @@ export const useChampionCreativeEngine = () => {
 
         try {
             setStatusMessage('Guardando en Grimorium...');
-            // Need to dynamically import to avoid circular dependencies if any, or just import at top if clean
             const { mapChampionProposalToRecipe } = await import('../services/championMapperService');
-            const recipe = mapChampionProposalToRecipe(state.proposal, null); // userProfile if needed
-
-            // In a real app we'd use recipeService.addRecipe(db, userId, recipe)
-            // For now, let's just log and simulate success
+            const recipe = mapChampionProposalToRecipe(state.proposal, null);
             console.log("Saving Recipe:", recipe);
-
-            // Simulating API call
             await new Promise(r => setTimeout(r, 800));
             setStatusMessage('¡Receta guardada en Grimorium!');
             setTimeout(() => setStatusMessage(null), 3000);
@@ -178,12 +138,8 @@ export const useChampionCreativeEngine = () => {
         try {
             setStatusMessage('Generando plan en Pizarrón...');
             const { mapChampionProposalToTasks } = await import('../services/championMapperService');
-            // Assuming mapChampionProposalToTasks returns Partial<PizarronTask>[]
             const tasks = mapChampionProposalToTasks(state.proposal, appId, userId, user?.displayName || 'Chef');
-
             console.log("Creating Tasks:", tasks);
-
-            // Simulating API call
             await new Promise(r => setTimeout(r, 800));
             setStatusMessage(`¡${tasks.length} tareas creadas en Pizarrón!`);
             setTimeout(() => setStatusMessage(null), 3000);
@@ -197,6 +153,7 @@ export const useChampionCreativeEngine = () => {
         state: { ...state, statusMessage },
         actions: {
             setViewMode,
+            setBrief,
             setConcept,
             toggleTag,
             generateProposal,

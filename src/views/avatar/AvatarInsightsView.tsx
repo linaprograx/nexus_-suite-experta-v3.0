@@ -90,7 +90,7 @@ const AvatarInsightsView: React.FC = () => {
     };
 
     return (
-        <div className="h-full grid grid-cols-1 lg:grid-cols-3 gap-6 text-slate-800">
+        <div className="h-full grid grid-cols-1 md:grid-cols-[1fr_1fr_1fr] gap-6 text-slate-800">
 
             {/* Column 1: Context & Health */}
             <AvatarColumn title="Operational Health">

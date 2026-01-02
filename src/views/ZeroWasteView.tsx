@@ -105,10 +105,10 @@ const ZeroWasteView: React.FC<ZeroWasteViewProps> = ({ db, userId, appId, allIng
                 />
             }
             mainContent={
-                <div className="h-full flex flex-col gap-6">
+                <div className="premium-panel p-4 md:p-6 gap-6">
                     {/* Header */}
-                    <div className="flex flex-col gap-2">
-                        <h1 className="text-3xl font-light text-slate-800 dark:text-slate-100 flex items-center gap-3">
+                    <div className="flex flex-col gap-2 px-1">
+                        <h1 className="premium-heading text-3xl">
                             <span className="p-2 bg-white/50 rounded-xl shadow-sm border border-white/20"><Icon svg={ICONS.recycle} className="w-6 h-6 text-cyan-600" /></span>
                             The Lab: Zero Waste
                         </h1>

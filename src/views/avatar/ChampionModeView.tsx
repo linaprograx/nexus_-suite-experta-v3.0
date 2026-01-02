@@ -1,151 +1,80 @@
 import React from 'react';
-
-// ⚠️ VERIFICA QUE ESTOS ARCHIVOS EXISTAN — SI ALGUNO NO EXISTE → ERROR 500
-import { CompetitionBriefPanel } from '../../features/champion-mode/components/CompetitionBriefPanel';
-import { ChampionCreativePanel } from '../../features/champion-mode/components/ChampionCreativePanel';
-import { ChampionFineTuningPanel } from '../../features/champion-mode/components/ChampionFineTuningPanel';
-import { ChampionPresentationView } from '../../features/champion-mode/components/ChampionPresentationView';
-
 import { useChampionCreativeEngine } from '../../features/champion-mode/hooks/useChampionCreativeEngine';
 import { ChampionProvider } from '../../features/champion-mode/context/ChampionContext';
+import { ChampionIntroBanner } from '../../features/champion-mode/components/ChampionIntroBanner';
 
-// UI
-import { Icon } from '../../components/ui/Icon';
-import { ICONS } from '../../components/ui/icons';
+// Views
+import { ChampionBriefingView } from '../../features/champion-mode/components/views/ChampionBriefingView';
+import { ChampionCreativeView } from '../../features/champion-mode/components/views/ChampionCreativeView';
+import { ChampionValidationView } from '../../features/champion-mode/components/views/ChampionValidationView';
+import { ChampionPlanView } from '../../features/champion-mode/components/views/ChampionPlanView';
+import { ChampionPresentationView } from '../../features/champion-mode/components/ChampionPresentationView';
 
-
-const ChampionColumn = ({
-    title,
-    children,
-    accentColor = "bg-cyan-500",
-    scrollable = false,
-    onDoubleClick,
-    isFocused = false,
-    className = ""
-}: {
-    title: string;
-    children?: React.ReactNode;
-    accentColor?: string;
-    scrollable?: boolean;
-    onDoubleClick?: () => void;
-    isFocused?: boolean;
-    className?: string;
-}) => (
-    <div
-        onDoubleClick={onDoubleClick}
-        className={`h-full flex flex-col overflow-hidden rounded-[30px] bg-[#e0e5ec] shadow-[9px_9px_16px_rgb(163,177,198,0.6),-9px_-9px_16px_rgba(255,255,255,0.5)] border border-white/40 transition-all duration-500 ease-[cubic-bezier(0.18,0.89,0.32,1.28)] ${isFocused ? 'scale-[1.01] ring-2 ring-violet-400/30' : 'hover:scale-[1.005]'} ${className}`}
-    >
-        <div className="px-6 py-5 flex justify-between items-center border-b border-slate-200/40 select-none cursor-pointer">
-            <h3 className="font-bold text-slate-600 tracking-wider text-[0.95rem] flex items-center gap-3 uppercase">
-                <span className={`w-2.5 h-2.5 rounded-full ${accentColor}`} />
-                {title}
-            </h3>
-        </div>
-
-        {/* Content */}
-        <div className={`flex-1 relative ${scrollable ? "overflow-y-auto custom-scrollbar" : "overflow-hidden"}`}>
-            {children}
-        </div>
-    </div>
-);
-
-
-const ChampionModeView: React.FC = () => {
+export const ChampionModeView: React.FC = () => {
     const engine = useChampionCreativeEngine();
     const { viewMode } = engine.state;
-    const [focusCol, setFocusCol] = React.useState<number | null>(null);
+    const [activeStepIndex, setActiveStepIndex] = React.useState(0);
 
-    const handleFocus = (colIndex: number) => {
-        // soundEngine.playSlide();
-        setFocusCol(prev => prev === colIndex ? null : colIndex);
+    const renderActiveView = () => {
+        if (viewMode === 'PRESENTATION') return <ChampionPresentationView />;
+
+        switch (activeStepIndex) {
+            case 0: return <ChampionBriefingView />;
+            case 1: return <ChampionCreativeView />;
+            case 2: return <ChampionValidationView />;
+            case 3: return <ChampionPlanView />;
+            default: return <ChampionBriefingView />;
+        }
     };
 
     return (
         <ChampionProvider engine={engine}>
-            <div className="h-[calc(100vh-6rem)] w-full p-6 overflow-hidden relative font-sans">
+            <div className="w-full h-[calc(100vh-7rem)] p-6 relative flex flex-col font-sans overflow-hidden overscroll-none">
 
-                {/* PRESENTATION VIEW */}
-                {viewMode === 'PRESENTATION' ? (
-                    <ChampionPresentationView />
-                ) : (
-                    <div className="h-full w-full flex flex-col gap-6 relative z-10">
+                {/* INTRO BANNER (Only in Design Mode) */}
+                {viewMode !== 'PRESENTATION' && <ChampionIntroBanner />}
 
-                        {/* STEP INDICATOR - Hide when focused to save space */}
-                        <div className={`w-full flex justify-center items-center gap-4 transition-all duration-500 ${focusCol !== null ? 'opacity-0 -mt-10 pointer-events-none' : 'opacity-100'}`}>
-                            {['Briefing', 'Motor Creativo', 'Validación', 'Plan'].map((step, i) => (
-                                <div key={step} className="flex items-center gap-2">
-
-                                    <div className={`
-                                        w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold border 
-                                        ${i === 1
-                                            ? 'bg-violet-600 border-violet-600 text-white shadow-lg shadow-violet-500/30'
-                                            : 'bg-white border-slate-200 text-slate-400'}
-                                    `}>
-                                        {i + 1}
-                                    </div>
-
-                                    <span className={`text-[10px] uppercase font-bold tracking-wider ${i === 1 ? "text-violet-600" : "text-slate-300"}`}>
-                                        {step}
-                                    </span>
-
-                                    {i < 3 && <div className="w-8 h-[1px] bg-slate-100" />}
+                {/* NAVIGATION BAR - FIXED & INTERACTIVE */}
+                <div className={`w-full flex justify-center items-center gap-4 transition-all duration-500 mb-8 z-50 ${viewMode === 'PRESENTATION' ? 'opacity-0 pointer-events-none absolute -top-20' : 'opacity-100 relative'}`}>
+                    {['Briefing', 'Motor Creativo', 'Validación', 'Plan'].map((step, i) => {
+                        const isActive = activeStepIndex === i;
+                        return (
+                            <div
+                                key={step}
+                                className="flex items-center gap-2 cursor-pointer group"
+                                onClick={() => {
+                                    if (i === 3) {
+                                        setActiveStepIndex(3);
+                                        engine.actions.setViewMode('DESIGN');
+                                    } else {
+                                        setActiveStepIndex(i);
+                                        engine.actions.setViewMode('DESIGN');
+                                    }
+                                }}
+                            >
+                                <div className={`
+                                    w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-bold border transition-all duration-300
+                                    ${isActive
+                                        ? 'bg-violet-600 border-violet-600 text-white shadow-lg shadow-violet-500/30 scale-110'
+                                        : 'bg-white border-slate-200 text-slate-400 group-hover:border-violet-300 group-hover:text-violet-500'}
+                                `}>
+                                    {i + 1}
                                 </div>
-                            ))}
-                        </div>
 
-                        {/* 3-COLUMN LAYOUT */}
-                        <div className={`flex-1 w-full grid gap-8 min-h-0 transition-all duration-500 ease-[cubic-bezier(0.18,0.89,0.32,1.28)] ${focusCol === 1 ? 'grid-cols-[1fr_0fr_0fr]' :
-                            focusCol === 2 ? 'grid-cols-[0fr_1fr_0fr]' :
-                                focusCol === 3 ? 'grid-cols-[0fr_0fr_1fr]' :
-                                    'grid-cols-1 xl:grid-cols-[28fr_44fr_28fr]'
-                            }`}>
+                                <span className={`text-[10px] uppercase font-bold tracking-wider transition-colors duration-300 ${isActive ? "text-violet-600" : "text-slate-300 group-hover:text-violet-400"}`}>
+                                    {step}
+                                </span>
 
-                            {/* COLUMN 1 */}
-                            <div className={`h-full min-h-0 transition-all duration-500 ${focusCol && focusCol !== 1 ? 'opacity-0 scale-95 pointer-events-none' : 'opacity-100'}`}>
-                                <ChampionColumn
-                                    title="Current Objective"
-                                    accentColor="bg-cyan-500"
-                                    onDoubleClick={() => handleFocus(1)}
-                                    isFocused={focusCol === 1}
-                                >
-                                    <div className="p-5">
-                                        <CompetitionBriefPanel />
-                                    </div>
-                                </ChampionColumn>
+                                {i < 3 && <div className={`w-8 h-[1px] transition-colors duration-300 ${isActive ? 'bg-violet-200' : 'bg-slate-100'}`} />}
                             </div>
+                        );
+                    })}
+                </div>
 
-                            {/* COLUMN 2 */}
-                            <div className={`h-full min-h-0 transition-all duration-500 ${focusCol && focusCol !== 2 ? 'opacity-0 scale-95 pointer-events-none' : 'opacity-100'}`}>
-                                <ChampionColumn
-                                    title="Innovation Workspace"
-                                    accentColor="bg-violet-500"
-                                    scrollable
-                                    onDoubleClick={() => handleFocus(2)}
-                                    isFocused={focusCol === 2}
-                                >
-                                    <div className="p-5">
-                                        <ChampionCreativePanel />
-                                    </div>
-                                </ChampionColumn>
-                            </div>
-
-                            {/* COLUMN 3 */}
-                            <div className={`h-full min-h-0 transition-all duration-500 ${focusCol && focusCol !== 3 ? 'opacity-0 scale-95 pointer-events-none' : 'opacity-100'}`}>
-                                <ChampionColumn
-                                    title="Skill Development"
-                                    accentColor="bg-emerald-500"
-                                    onDoubleClick={() => handleFocus(3)}
-                                    isFocused={focusCol === 3}
-                                >
-                                    <div className="p-5">
-                                        <ChampionFineTuningPanel />
-                                    </div>
-                                </ChampionColumn>
-                            </div>
-
-                        </div>
-                    </div>
-                )}
+                {/* ACTIVE VIEW CONTAINER */}
+                <div className="flex-1 min-h-0 relative animate-in fade-in slide-in-from-bottom-4 duration-500">
+                    {renderActiveView()}
+                </div>
 
             </div>
         </ChampionProvider>

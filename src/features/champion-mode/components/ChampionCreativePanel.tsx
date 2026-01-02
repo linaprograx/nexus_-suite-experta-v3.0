@@ -74,11 +74,16 @@ export const ChampionCreativePanel: React.FC = () => {
                                 <Icon svg={ICONS.sparkles} className="w-3 h-3 text-fuchsia-500" />
                             </div>
                             <p className="text-[10px] font-medium text-violet-800 leading-relaxed opacity-80">
-                                {state.tags.includes('Minimalista')
-                                    ? "El minimalismo requiere ingredientes de altísima calidad. Considera cristaleria Nude."
-                                    : state.tags.includes('Teatral')
-                                        ? "Para un efecto teatral, enfócate en el garnish o en el ritual de servicio."
-                                        : "Combina descriptores emocionales con ingredientes técnicos para mejores resultados."}
+                                {state.brief.brand === 'Nexus Spirits'
+                                    ? `Nexus Spirits busca innovación tecnológica en cada sorbo. ¿Cómo integra ${state.brief.competitionType} la ciencia?`
+                                    : state.brief.brand === 'Aether Gin'
+                                        ? "Aether Gin prioriza los botánicos etéreos. Mantén el perfil floral y ligero."
+                                        : state.brief.brand === 'Solaris Rum'
+                                            ? "Solaris es pura energía solar. Busca notas cálidas, especiadas y vibrantes."
+                                            : state.brief.brand === 'Vortex Vodka'
+                                                ? "Vortex exige pureza absoluta y frialdad extrema. El minimalismo es clave."
+                                                : "Combina la narrativa de la marca con tu estilo personal."
+                                }
                             </p>
                         </div>
                     </div>
