@@ -2,6 +2,7 @@ import { Timestamp, Firestore } from 'firebase/firestore';
 import { Auth, User } from 'firebase/auth';
 import { FirebaseStorage } from 'firebase/storage';
 import { FirebaseApp } from 'firebase/app';
+import { PlanTier } from './core/product/plans.types';
 
 // --- STOCK & PURCHASE TYPES (Centralized) ---
 
@@ -386,6 +387,7 @@ export interface AppContextType {
     isAuthReady: boolean;
     appId: string;
     userProfile?: Partial<UserProfile>;
+    userPlan: PlanTier;
 }
 
 export interface AppNotification {

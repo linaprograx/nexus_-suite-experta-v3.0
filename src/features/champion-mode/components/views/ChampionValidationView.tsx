@@ -30,11 +30,11 @@ export const ChampionValidationView: React.FC = () => {
                             </div>
 
                             <div className="space-y-4">
-                                {Object.entries(aiEvaluation.categoryScores).map(([key, score]) => (
+                                {aiEvaluation.categoryScores && Object.entries(aiEvaluation.categoryScores).map(([key, score]) => (
                                     <div key={key}>
                                         <div className="flex justify-between mb-2">
                                             <span className="text-[10px] font-bold text-slate-500 uppercase">{key}</span>
-                                            <span className="text-[10px] font-mono font-bold text-slate-700">{score}/100</span>
+                                            <span className="text-[10px] font-mono font-bold text-slate-700">{score as number}/100</span>
                                         </div>
                                         <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
                                             <div
@@ -111,15 +111,15 @@ export const ChampionValidationView: React.FC = () => {
                                             </h4>
                                         </div>
                                         <p className="text-xs text-slate-600 leading-relaxed italic border-l-2 pl-3 border-black/10">
-                                            "{aiEvaluation.feedback[0] || "El jurado está deliberando..."}"
+                                            "{aiEvaluation.feedback?.[0] || aiEvaluation.feedback || "El jurado está deliberando..."}"
                                         </p>
                                     </div>
 
                                     <div className="space-y-3">
                                         <h5 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-4">Comentarios Desglosados</h5>
-                                        {aiEvaluation.feedback.slice(1).map((fb, i) => (
+                                        {Array.isArray(aiEvaluation.feedback) && aiEvaluation.feedback.slice(1).map((fb: string, i: number) => (
                                             <div key={i} className="flex gap-3 text-xs text-slate-600 bg-white p-3 rounded-lg border border-slate-100 shadow-sm transition-transform hover:translate-x-1">
-                                                <Icon svg={ICONS.messageSquare} className="w-4 h-4 text-slate-400 shrink-0 mt-0.5" />
+                                                <Icon svg={ICONS.messageCircle} className="w-4 h-4 text-slate-400 shrink-0 mt-0.5" />
                                                 {fb}
                                             </div>
                                         ))}
@@ -136,10 +136,17 @@ export const ChampionValidationView: React.FC = () => {
                             </p>
                             <button
                                 onClick={() => actions.runAiEvaluation()}
-                                disabled={!proposal}
-                                className="px-6 py-2 bg-slate-800 text-white rounded-full text-xs font-bold uppercase tracking-wider hover:bg-slate-700 transition-colors disabled:opacity-50 shadow-lg"
+                                disabled={!proposal || (state.statusMessage && state.statusMessage.includes('Convocando'))}
+                                className="px-6 py-2 bg-slate-800 text-white rounded-full text-xs font-bold uppercase tracking-wider hover:bg-slate-700 transition-colors disabled:opacity-50 shadow-lg flex items-center gap-2"
                             >
-                                Convocar Jurado
+                                {state.statusMessage && state.statusMessage.includes('Convocando') ? (
+                                    <>
+                                        <Icon svg={ICONS.refresh} className="w-3 h-3 animate-spin" />
+                                        Convocando...
+                                    </>
+                                ) : (
+                                    "Convocar Jurado"
+                                )}
                             </button>
                         </div>
                     )}
@@ -153,21 +160,34 @@ export const ChampionValidationView: React.FC = () => {
                 scrollable
             >
                 <div className="p-6 h-full relative flex flex-col items-center justify-center">
-                    <div className="w-full aspect-square border-2 border-dashed border-slate-200 rounded-2xl flex items-center justify-center relative bg-slate-50/50">
-                        <div className="text-center z-10">
-                            <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">Radar de Marca</h4>
-                            {/* Visual Placeholder for Radar Chart */}
-                            <div className="w-40 h-40 mx-auto bg-white rounded-full border border-slate-100 relative flex items-center justify-center shadow-lg">
-                                <div className="w-24 h-24 bg-fuchsia-500/10 rounded-full absolute animate-pulse" />
-                                <div className="w-24 h-24 bg-cyan-500/10 rounded-full absolute border border-cyan-200" style={{ transform: 'scale(1.2) rotate(45deg)' }} />
-                                <span className="text-[10px] font-bold text-slate-400 tracking-widest">BRANDFIT ™</span>
+                    <div className="w-full aspect-square border-2 border-dashed border-slate-200 rounded-2xl flex items-center justify-center relative bg-slate-50/50 overflow-hidden group">
+                        {state.brandEvaluation && state.brandEvaluation.imageUrl ? (
+                            <img
+                                src={state.brandEvaluation.imageUrl}
+                                alt="Brand Radar"
+                                className="w-full h-full object-cover rounded-xl animate-in fade-in duration-700 transition-transform group-hover:scale-110"
+                            />
+                        ) : (
+                            <div className="text-center z-10">
+                                <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">Radar de Marca</h4>
+                                {/* Visual Placeholder for Radar Chart */}
+                                <div className="w-40 h-40 mx-auto bg-white rounded-full border border-slate-100 relative flex items-center justify-center shadow-lg">
+                                    <div className="w-24 h-24 bg-fuchsia-500/10 rounded-full absolute animate-pulse" />
+                                    <div className="w-24 h-24 bg-cyan-500/10 rounded-full absolute border border-cyan-200" style={{ transform: 'scale(1.2) rotate(45deg)' }} />
+                                    <span className="text-[10px] font-bold text-slate-400 tracking-widest">BRANDFIT ™</span>
+                                </div>
                             </div>
-                        </div>
-                        {/* Decorative Background Elements */}
-                        <div className="absolute top-4 left-4 text-[10px] font-bold text-slate-300">INNOVACIÓN</div>
-                        <div className="absolute top-4 right-4 text-[10px] font-bold text-slate-300">TÉCNICA</div>
-                        <div className="absolute bottom-4 left-4 text-[10px] font-bold text-slate-300">IMPACTO</div>
-                        <div className="absolute bottom-4 right-4 text-[10px] font-bold text-slate-300">STORY</div>
+                        )}
+
+                        {/* Decorative Background Elements (Only show if no image) */}
+                        {!state.brandEvaluation?.imageUrl && (
+                            <>
+                                <div className="absolute top-4 left-4 text-[10px] font-bold text-slate-300">INNOVACIÓN</div>
+                                <div className="absolute top-4 right-4 text-[10px] font-bold text-slate-300">TÉCNICA</div>
+                                <div className="absolute bottom-4 left-4 text-[10px] font-bold text-slate-300">IMPACTO</div>
+                                <div className="absolute bottom-4 right-4 text-[10px] font-bold text-slate-300">STORY</div>
+                            </>
+                        )}
                     </div>
 
                     <div className="mt-6 p-4 bg-white rounded-xl border border-slate-100 shadow-sm w-full">

@@ -35,7 +35,7 @@ export const ChampionModeView: React.FC = () => {
                 {viewMode !== 'PRESENTATION' && <ChampionIntroBanner />}
 
                 {/* NAVIGATION BAR - FIXED & INTERACTIVE */}
-                <div className={`w-full flex justify-center items-center gap-4 transition-all duration-500 mb-8 z-50 ${viewMode === 'PRESENTATION' ? 'opacity-0 pointer-events-none absolute -top-20' : 'opacity-100 relative'}`}>
+                <div className={`w-full flex justify-center items-center gap-4 transition-all duration-500 mb-8 z-50 ${viewMode === 'PRESENTATION' ? 'opacity-30 hover:opacity-100' : 'opacity-100 relative'}`}>
                     {['Briefing', 'Motor Creativo', 'Validación', 'Plan'].map((step, i) => {
                         const isActive = activeStepIndex === i;
                         return (
@@ -45,10 +45,10 @@ export const ChampionModeView: React.FC = () => {
                                 onClick={() => {
                                     if (i === 3) {
                                         setActiveStepIndex(3);
-                                        engine.actions.setViewMode('DESIGN');
+                                        // engine.actions.setViewMode('DESIGN'); // Optional: force exit
                                     } else {
                                         setActiveStepIndex(i);
-                                        engine.actions.setViewMode('DESIGN');
+                                        engine.actions.setViewMode('DESIGN'); // Exit presentation on nav click
                                     }
                                 }}
                             >

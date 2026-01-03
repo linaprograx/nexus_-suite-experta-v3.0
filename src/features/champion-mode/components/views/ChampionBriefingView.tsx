@@ -7,16 +7,14 @@ import { ICONS } from '../../../../components/ui/icons';
 
 export const ChampionBriefingView: React.FC = () => {
     const { state, actions } = useChampionContext();
-    const [prompt, setPrompt] = React.useState(''); // For Strategy AI
-    const [strategyText, setStrategyText] = React.useState<string | null>(null);
-    const [isThinking, setIsThinking] = React.useState(false);
+    const [isModalOpen, setIsModalOpen] = React.useState(false);
+    const [newRuleText, setNewRuleText] = React.useState('');
 
-    const generateHint = () => {
-        setIsThinking(true);
-        setTimeout(() => {
-            setStrategyText("Enfócate en la textura. El jurado de este año valora la sensación en boca por encima de la complejidad aromática. Usa agentes espumantes naturales.");
-            setIsThinking(false);
-        }, 1500);
+    const handleAddRule = () => {
+        if (!newRuleText.trim()) return;
+        actions.addRule(newRuleText);
+        setNewRuleText('');
+        setIsModalOpen(false);
     };
 
     return (
@@ -60,13 +58,10 @@ export const ChampionBriefingView: React.FC = () => {
                                     <span className="text-sm font-medium text-slate-600 group-hover:text-slate-900 transition-colors">
                                         {rule}
                                     </span>
-                                    {/* Edit/Delete placeholder for "User Editable Rules" requirement */}
+                                    {/* User Editable Rules */}
                                     <button
                                         className="ml-auto opacity-0 group-hover:opacity-100 p-1 hover:bg-slate-100 rounded text-slate-400 hover:text-rose-500 transition-all"
-                                        onClick={() => {
-                                            const newConstraints = state.brief.constraints.filter((_, idx) => idx !== i);
-                                            actions.setBrief({ constraints: newConstraints });
-                                        }}
+                                        onClick={() => actions.removeRule(i)}
                                     >
                                         <Icon svg={ICONS.trash} className="w-3 h-3" />
                                     </button>
@@ -82,19 +77,63 @@ export const ChampionBriefingView: React.FC = () => {
                         {/* Add Rule Button */}
                         <button
                             className="w-full py-3 border border-dashed border-slate-300 rounded-xl text-slate-400 text-xs font-bold uppercase hover:border-rose-300 hover:text-rose-500 transition-colors flex items-center justify-center gap-2"
-                            onClick={() => {
-                                const rule = prompt("Escribe la nueva regla:");
-                                if (rule) {
-                                    actions.setBrief({ constraints: [...state.brief.constraints, rule] });
-                                }
-                            }}
+                            onClick={() => setIsModalOpen(true)}
                         >
                             <Icon svg={ICONS.plus} className="w-3 h-3" />
                             Agregar Regla Manual
                         </button>
                     </div>
                 </div>
-            </ChampionColumn>
+            </ChampionColumn >
+
+            {/* CUSTOM MODAL FOR ADDING RULES */}
+            {
+                isModalOpen && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
+                        <div className="w-full max-w-md bg-white/10 backdrop-blur-xl border border-white/20 rounded-[30px] shadow-2xl p-8 transform animate-in zoom-in-95 duration-200">
+                            <div className="flex items-center gap-3 mb-6">
+                                <div className="w-10 h-10 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-400">
+                                    <Icon svg={ICONS.plus} className="w-5 h-5" />
+                                </div>
+                                <h3 className="text-lg font-black text-white uppercase tracking-wider">Nueva Regla Manual</h3>
+                            </div>
+
+                            <div className="space-y-4">
+                                <div>
+                                    <label className="text-[10px] font-bold text-slate-300 uppercase tracking-widest mb-2 block">Descripción de la Regla</label>
+                                    <input
+                                        autoFocus
+                                        type="text"
+                                        value={newRuleText}
+                                        onChange={(e) => setNewRuleText(e.target.value)}
+                                        placeholder="Ej: Prohibido usar hielo seco..."
+                                        className="w-full bg-slate-900/50 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-slate-500 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
+                                        onKeyDown={(e) => {
+                                            if (e.key === 'Enter') handleAddRule();
+                                            if (e.key === 'Escape') setIsModalOpen(false);
+                                        }}
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="flex gap-3 mt-8">
+                                <button
+                                    onClick={() => setIsModalOpen(false)}
+                                    className="flex-1 py-3 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 text-xs font-bold uppercase tracking-wider transition-colors"
+                                >
+                                    Cancelar
+                                </button>
+                                <button
+                                    onClick={handleAddRule}
+                                    className="flex-1 py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-white text-xs font-bold uppercase tracking-wider shadow-lg shadow-emerald-500/20 transition-all"
+                                >
+                                    Agregar Regla
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )
+            }
 
             {/* COLUMN 3: STRATEGIC AI DIRECTOR */}
             <ChampionColumn
@@ -115,7 +154,11 @@ export const ChampionBriefingView: React.FC = () => {
                                     <h4 className="text-xs font-bold text-violet-900 uppercase tracking-widest">Director Creativo</h4>
                                     <p className="text-[10px] text-violet-500 font-medium">Análisis de Oportunidad</p>
                                 </div>
-                                <button className="ml-auto p-2 bg-white rounded-full text-violet-400 hover:text-violet-600 shadow-sm transition-colors" title="Regenerar Estrategia">
+                                <button
+                                    className="ml-auto p-2 bg-white rounded-full text-violet-400 hover:text-violet-600 shadow-sm transition-colors"
+                                    title="Regenerar Estrategia"
+                                    onClick={() => actions.generateTacticalHint()}
+                                >
                                     <Icon svg={ICONS.refresh} className="w-3 h-3" />
                                 </button>
                             </div>
@@ -125,10 +168,10 @@ export const ChampionBriefingView: React.FC = () => {
                                     "Para <span className="font-bold text-slate-800">{state.brief.brand}</span> en una competencia de <span className="font-bold text-slate-800">{state.brief.competitionType}</span>, el jurado buscará..."
                                 </p>
 
-                                {strategyText ? (
+                                {state.tacticalHint ? (
                                     <div className="p-4 bg-violet-100/50 rounded-xl text-xs text-violet-800 animate-in fade-in slide-in-from-bottom-2">
                                         <p className="font-bold mb-1">💡 Hint Táctico:</p>
-                                        {strategyText}
+                                        "{state.tacticalHint}"
                                     </div>
                                 ) : (
                                     <ul className="space-y-3 mt-4">
@@ -149,16 +192,16 @@ export const ChampionBriefingView: React.FC = () => {
                             </div>
 
                             <button
-                                onClick={generateHint}
-                                disabled={isThinking}
+                                onClick={() => actions.generateTacticalHint()}
+                                disabled={state.statusMessage?.includes('Analizando')}
                                 className="w-full mt-6 py-3 bg-white border border-violet-100 text-violet-600 rounded-xl text-xs font-bold uppercase tracking-wider hover:bg-violet-50 transition-colors shadow-sm disabled:opacity-50"
                             >
-                                {isThinking ? 'Analizando...' : 'Generar Hint Táctico'}
+                                {state.statusMessage?.includes('Analizando') ? 'Analizando...' : 'Generar Hint Táctico'}
                             </button>
                         </div>
                     </div>
                 </div>
             </ChampionColumn>
-        </div>
+        </div >
     );
 };
