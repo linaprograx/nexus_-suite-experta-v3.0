@@ -83,7 +83,7 @@ export const AvatarIntelligenceView: React.FC = () => {
             <div className="w-full max-w-[1600px] mx-auto h-full flex flex-col lg:flex-row items-center justify-between px-8 pt-24 pb-8 z-10 gap-12 lg:gap-0">
 
                 {/* --- LEFT COLUMN: CONTROLS & MATRIX --- */}
-                <div className="w-full lg:w-[320px] h-full flex flex-col gap-6 animate-in slide-in-from-left-8 duration-700 order-2 lg:order-1 relative z-20">
+                <div className="w-full lg:w-[320px] h-full flex flex-col gap-6 animate-in slide-in-from-left-8 duration-700 order-2 lg:order-1 relative z-20 overflow-y-auto custom-scrollbar pr-2">
                     {/* Profile Selector (Moved to Left Column) */}
                     <div className="flex flex-col gap-3 mb-4">
                         <div className="flex justify-between items-center">
@@ -203,7 +203,7 @@ export const AvatarIntelligenceView: React.FC = () => {
 
                 {/* --- RIGHT COLUMN: INTERACTIVE SIMULATION (Layer 3 - Floating Window) --- */}
                 <div className="w-full lg:w-[360px] h-full flex flex-col justify-center animate-in slide-in-from-right-8 duration-700 order-3 lg:order-3 z-30 py-4">
-                    <div className="bg-white/60 dark:bg-black/40 backdrop-blur-2xl border border-white/20 dark:border-white/10 rounded-3xl p-6 w-full max-h-full flex flex-col relative overflow-hidden shadow-2xl ring-1 ring-black/5">
+                    <div className="bg-white/60 dark:bg-black/40 backdrop-blur-2xl border border-white/20 dark:border-white/10 rounded-3xl p-6 w-full max-h-full flex flex-col relative overflow-y-auto custom-scrollbar shadow-2xl ring-1 ring-black/5">
                         <div className="flex justify-between items-center border-b border-slate-200 dark:border-white/5 pb-4 mb-4">
                             <span className="text-[10px] font-bold text-slate-400 dark:text-rose-200/40 uppercase tracking-[0.2em]">Simulador de Decisión</span>
                             <div className="w-2 h-2 rounded-full bg-emerald-500/50 animate-pulse" />
@@ -246,7 +246,7 @@ export const AvatarIntelligenceView: React.FC = () => {
                         </div>
 
                         {/* Results Output - TERMINAL (Forced Dark Mode) */}
-                        <div className="flex-1 bg-slate-950 rounded-xl p-4 font-mono text-[10px] text-rose-200/80 overflow-y-auto custom-scrollbar border border-slate-800 shadow-inner">
+                        <div className="min-h-[400px] bg-slate-950 rounded-xl p-4 font-mono text-[10px] text-rose-200/80 border border-slate-800 shadow-inner">
                             {isSimulating ? (
                                 <div className="h-full flex flex-col items-center justify-center space-y-2 opacity-50">
                                     <div className="w-8 h-8 border-2 border-t-rose-500 border-r-transparent border-b-rose-500 border-l-transparent rounded-full animate-spin" />
@@ -270,6 +270,22 @@ export const AvatarIntelligenceView: React.FC = () => {
                                             {simResult.reasoning.map((r, i) => <li key={i}>{r}</li>)}
                                         </ul>
                                     </div>
+                                    {simResult.tradeoffs && (
+                                        <div>
+                                            <span className="text-slate-500 block mb-1">&gt; TRADE-OFFS</span>
+                                            <ul className="list-disc list-inside space-y-1 text-amber-500/80">
+                                                {simResult.tradeoffs.length > 0 ? simResult.tradeoffs.map((t, i) => <li key={i}>{t}</li>) : <li className="italic text-slate-600">Ninguno detectado</li>}
+                                            </ul>
+                                        </div>
+                                    )}
+                                    {simResult.expectedFeedback && (
+                                        <div>
+                                            <span className="text-slate-500 block mb-1">&gt; FEEDBACK ESPERADO</span>
+                                            <span className="text-xs text-rose-300 font-medium block bg-rose-500/10 p-2 rounded border border-rose-500/10">
+                                                {simResult.expectedFeedback}
+                                            </span>
+                                        </div>
+                                    )}
                                 </div>
                             ) : (
                                 <div className="h-full flex items-center justify-center text-slate-600 italic">

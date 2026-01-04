@@ -29,7 +29,7 @@ export const ChampionModeView: React.FC = () => {
 
     return (
         <ChampionProvider engine={engine}>
-            <div className="w-full h-[calc(100vh-7rem)] p-6 relative flex flex-col font-sans overflow-hidden overscroll-none">
+            <div className="w-full h-full p-6 relative flex flex-col font-sans overflow-hidden overscroll-none">
 
                 {/* INTRO BANNER (Only in Design Mode) */}
                 {viewMode !== 'PRESENTATION' && <ChampionIntroBanner />}

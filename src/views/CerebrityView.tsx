@@ -77,6 +77,7 @@ const SaveModal = ({ isOpen, onClose, options, powerName, onConfirm }: { isOpen:
 
 import { useRecipes } from '../hooks/useRecipes';
 import { useIngredients } from '../hooks/useIngredients';
+import { useCerebrityOrchestrator } from '../hooks/useCerebrityOrchestrator';
 
 interface CerebrityViewProps {
   db: Firestore;
@@ -93,6 +94,7 @@ interface CerebrityViewProps {
 const CerebrityView: React.FC<CerebrityViewProps> = ({ db, userId, storage, appId, onOpenRecipeModal, initialText, onAnalysisDone }) => {
   const { recipes: allRecipes } = useRecipes();
   const { ingredients: allIngredients } = useIngredients();
+  const { actions: orchestratorActions, state: orchestratorState } = useCerebrityOrchestrator();
 
   const [activeTab, setActiveTab] = React.useState<'creativity' | 'lab' | 'trendLocator'>('creativity'); // Added trendLocator
   const [selectedRecipe, setSelectedRecipe] = React.useState<Recipe | null>(null);
@@ -536,31 +538,53 @@ const CerebrityView: React.FC<CerebrityViewProps> = ({ db, userId, storage, appI
     setLoading(true);
     setError(null);
     setResult(null);
+
     if (!selectedRecipe && !rawInput.trim()) {
       setError("Por favor, seleccione una receta o introduzca ingredientes.");
       setLoading(false);
       return;
     }
-    const promptBase = selectedRecipe ? `Receta: ${selectedRecipe.nombre}. Ingredientes: ${selectedRecipe.ingredientes?.map(i => i.nombre).join(', ')}` : `Ingredientes crudos: ${rawInput}`;
-    try {
-      const response = await callGeminiApi(`Analiza la siguiente base y genera las mejoras: ${promptBase}`, "Eres un director creativo de mixología...", {
-        responseMimeType: "application/json",
-        responseSchema: { type: Type.OBJECT, properties: { mejora: { type: Type.STRING }, garnishComplejo: { type: Type.STRING }, storytelling: { type: Type.STRING }, promptImagen: { type: Type.STRING } } }
-      });
-      const textResult = JSON.parse(response.text.replace(/^```json\s*/, '').replace(/```$/, ''));
-      setResult({ ...textResult, imageUrl: null });
 
+    const promptBase = selectedRecipe ? `Receta: ${selectedRecipe.nombre}.\nIngredientes: ${selectedRecipe.ingredientes?.map(i => i.nombre).join(', ')}` : `Concepto/Ingredientes: ${rawInput}`;
+
+    try {
+      // 1. Text Generation via Orchestrator (World Class Logic)
+      const worldClassResult = await orchestratorActions.generateWorldClassOutput(promptBase);
+
+      // Map Orchestrator Output to CerebrityResult structure
+      // Note: We map 'ejecucion_tecnica' to 'mejora' approx, or combine fields.
+      const textResult: CerebrityResult & { isWorldClass?: boolean } = {
+        mejora: `[${worldClassResult.titulo}] ${worldClassResult.intencion_cognitiva}\n\nDECISIONES CLAVE:\n${worldClassResult.decisiones_clave.join('\n- ')}\n\nEJECUCIÓN TÉCNICA:\n${worldClassResult.ejecucion_tecnica}`,
+        garnishComplejo: "Garnish alineado con " + worldClassResult.firma_world_class,
+        storytelling: worldClassResult.is_world_class ? `NARRATIVA WORLD CLASS: ${worldClassResult.firma_world_class} - ${worldClassResult.intencion_cognitiva}` : worldClassResult.intencion_cognitiva,
+        promptImagen: `Professional cocktail photography, ${worldClassResult.titulo}, ${worldClassResult.ejecucion_tecnica}, cinematic lighting, 8k, highly detailed`,
+        imageUrl: null,
+        isWorldClass: worldClassResult.is_world_class
+      };
+
+      setResult(textResult);
+
+      // 2. Image Generation (Standard Gemini Call)
       setImageLoading(true);
       const imageResponse = await generateImage(textResult.promptImagen);
       const base64Data = imageResponse.predictions[0].bytesBase64Encoded;
+
       if (!storage) throw new Error("Storage no disponible");
       const storageRef = ref(storage, `users/${userId}/recipe-images/${Date.now()}.jpg`);
       await uploadString(storageRef, base64Data, 'base64', { contentType: 'image/jpeg' });
       const downloadURL = await getDownloadURL(storageRef);
+
       setResult(prev => prev ? ({ ...prev, imageUrl: downloadURL }) : null);
-      await addDoc(collection(db, `users/${userId}/cerebrity-history`), { ...textResult, imageUrl: downloadURL, createdAt: serverTimestamp() });
+
+      await addDoc(collection(db, `users/${userId}/cerebrity-history`), {
+        ...textResult,
+        imageUrl: downloadURL,
+        createdAt: serverTimestamp(),
+        orchestratorData: worldClassResult
+      });
+
     } catch (e: any) {
-      setError("Error en la generación. " + e.message);
+      setError("Error en la generación: " + e.message);
     } finally {
       setLoading(false);
       setImageLoading(false);

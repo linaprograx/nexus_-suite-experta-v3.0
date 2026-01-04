@@ -241,7 +241,7 @@ const AvatarOrchestrator: React.FC<ConfigModalProps> = ({ onClose, avatarType, m
                                         <label className="text-[10px] text-slate-400 uppercase tracking-widest mb-3 block">Enfoque Primario</label>
                                         <div className="flex flex-wrap gap-2">
                                             {['Precisión', 'Creatividad', 'Competición', 'Coste', 'Alta cocina'].map((axis) => (
-                                                <button key={axis} onClick={() => setConfig({ ...config, researchAxis: axis as ResearchAxis })} className={`px-3 py-1.5 rounded-md text-[10px] font-bold uppercase tracking-wide transition-all ${config.researchAxis === axis ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'bg-black/20 text-slate-500 border border-white/5 hover:bg-white/5'}`}>{axis}</button>
+                                                <button key={axis} onClick={() => setConfig({ ...config, researchAxis: [axis as ResearchAxis] })} className={`px-3 py-1.5 rounded-md text-[10px] font-bold uppercase tracking-wide transition-all ${config.researchAxis.includes(axis as ResearchAxis) ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'bg-black/20 text-slate-500 border border-white/5 hover:bg-white/5'}`}>{axis}</button>
                                             ))}
                                         </div>
                                     </div>
@@ -492,8 +492,9 @@ export const AvatarCoreView: React.FC = () => {
     const narrativeTier = getNarrativeTier(userPlan);
 
     return (
-        <div className="h-full overflow-y-auto custom-scrollbar p-8 bg-transparent relative">
-            <style>{`
+        <div className="h-full w-full relative overflow-hidden">
+            <div className="h-full w-full overflow-y-auto custom-scrollbar p-8 bg-transparent pb-32">
+                <style>{`
                 @keyframes shine {
                     0% { left: -100%; top: -100%; }
                     100% { left: 200%; top: 200%; }
@@ -519,71 +520,71 @@ export const AvatarCoreView: React.FC = () => {
                 .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.2); }
             `}</style>
 
-            <div className="relative z-10 mb-20 text-center max-w-4xl mx-auto pt-12 animate-in fade-in slide-in-from-bottom-8 duration-1000">
-                <span className="text-[10px] font-bold text-indigo-500/80 uppercase tracking-[0.4em] mb-6 block">
-                    Nexus Cognitive System
-                </span>
-                <h1 className="text-5xl md:text-6xl font-serif text-white mb-8 tracking-tight drop-shadow-2xl">
-                    Avatar Core
-                </h1>
-                <p className="text-xl text-slate-400 font-light leading-relaxed max-w-2xl mx-auto">
-                    Tu identidad digital no es estática. Es una entidad cognitiva viva que evoluciona con tu nivel de consciencia operativa.
-                </p>
-            </div>
+                <div className="relative z-10 mb-20 text-center max-w-4xl mx-auto pt-12 animate-in fade-in slide-in-from-bottom-8 duration-1000">
+                    <span className="text-[10px] font-bold text-indigo-500/80 uppercase tracking-[0.4em] mb-6 block">
+                        Nexus Cognitive System
+                    </span>
+                    <h1 className="text-5xl md:text-6xl font-serif text-white mb-8 tracking-tight drop-shadow-2xl">
+                        Avatar Core
+                    </h1>
+                    <p className="text-xl text-slate-400 font-light leading-relaxed max-w-2xl mx-auto">
+                        Tu identidad digital no es estática. Es una entidad cognitiva viva que evoluciona con tu nivel de consciencia operativa.
+                    </p>
+                </div>
 
-            <div className="relative z-10 grid grid-cols-1 md:grid-cols-3 gap-8 max-w-[1400px] mx-auto px-4 pb-48 animate-in fade-in zoom-in-95 duration-1000 delay-200">
-                {AVATARS.map((avatar, index) => {
-                    const isLatent = index >= unlockedSlots;
-                    return (
-                        <AvatarCard
-                            key={avatar.type}
-                            type={avatar.type}
-                            description={avatar.description}
-                            isActive={activeAvatarType === avatar.type}
-                            isLatent={isLatent}
-                            membershipTier={narrativeTier}
-                            config={avatarConfigs[avatar.type]}
-                            onSelect={() => !isLatent && setActiveAvatarType(avatar.type)}
-                            onConfigure={() => setConfigAvatarType(avatar.type)}
-                        />
-                    );
-                })}
-            </div>
+                <div className="relative z-10 grid grid-cols-1 md:grid-cols-3 gap-8 max-w-[1400px] mx-auto px-4 pb-48 animate-in fade-in zoom-in-95 duration-1000 delay-200">
+                    {AVATARS.map((avatar, index) => {
+                        const isLatent = index >= unlockedSlots;
+                        return (
+                            <AvatarCard
+                                key={avatar.type}
+                                type={avatar.type}
+                                description={avatar.description}
+                                isActive={activeAvatarType === avatar.type}
+                                isLatent={isLatent}
+                                membershipTier={narrativeTier}
+                                config={avatarConfigs[avatar.type]}
+                                onSelect={() => !isLatent && setActiveAvatarType(avatar.type)}
+                                onConfigure={() => setConfigAvatarType(avatar.type)}
+                            />
+                        );
+                    })}
+                </div>
 
-            <div className="fixed bottom-12 left-0 w-full flex justify-center z-20 pointer-events-none animate-in fade-in slide-in-from-bottom-12 duration-1000 delay-500">
-                <button
-                    onClick={() => setShowMap(true)}
-                    className="pointer-events-auto flex items-center gap-12 px-12 py-5 rounded-full bg-slate-950/60 backdrop-blur-2xl border border-white/10 shadow-[0_20px_50px_-12px_rgba(0,0,0,0.8)] hover:bg-slate-950/80 transition-all hover:scale-[1.02] hover:border-white/20 hover:shadow-indigo-500/20 group hover:animate-pulse-slow"
-                >
-                    <div className="flex flex-col text-right group-hover:text-indigo-200 transition-colors">
-                        <span className="text-[9px] text-slate-500 uppercase tracking-widest font-bold mb-1">Estado de Consciencia</span>
-                        <span className="text-lg text-white font-serif tracking-wide">{narrativeTier}</span>
-                    </div>
-
-                    <div className="w-px h-10 bg-gradient-to-b from-transparent via-white/20 to-transparent group-hover:via-indigo-400/50 transition-colors" />
-
-                    <div className="flex flex-col text-left group-hover:text-indigo-200 transition-colors">
-                        <span className="text-[9px] text-slate-500 uppercase tracking-widest font-bold mb-1">Capacidad de Manifestación</span>
-                        <div className="flex items-center gap-2">
-                            <span className="text-lg text-white font-mono">{unlockedSlots >= 99 ? '∞' : unlockedSlots}</span>
-                            <span className="text-[10px] text-slate-600 uppercase">Avatares</span>
+                <div className="fixed bottom-12 left-0 w-full flex justify-center z-20 pointer-events-none animate-in fade-in slide-in-from-bottom-12 duration-1000 delay-500">
+                    <button
+                        onClick={() => setShowMap(true)}
+                        className="pointer-events-auto flex items-center gap-12 px-12 py-5 rounded-full bg-slate-950/60 backdrop-blur-2xl border border-white/10 shadow-[0_20px_50px_-12px_rgba(0,0,0,0.8)] hover:bg-slate-950/80 transition-all hover:scale-[1.02] hover:border-white/20 hover:shadow-indigo-500/20 group hover:animate-pulse-slow"
+                    >
+                        <div className="flex flex-col text-right group-hover:text-indigo-200 transition-colors">
+                            <span className="text-[9px] text-slate-500 uppercase tracking-widest font-bold mb-1">Estado de Consciencia</span>
+                            <span className="text-lg text-white font-serif tracking-wide">{narrativeTier}</span>
                         </div>
-                    </div>
-                </button>
-            </div>
 
-            {configAvatarType && (
-                <AvatarOrchestrator
-                    avatarType={configAvatarType}
-                    membershipTier={narrativeTier}
-                    currentConfig={avatarConfigs[configAvatarType]}
-                    onSave={(newConfig) => {
-                        updateConfig(configAvatarType, newConfig);
-                    }}
-                    onClose={() => setConfigAvatarType(null)}
-                />
-            )}
-            {showMap && <ConsciousnessMap currentPlan={userPlan} onClose={() => setShowMap(false)} />}
+                        <div className="w-px h-10 bg-gradient-to-b from-transparent via-white/20 to-transparent group-hover:via-indigo-400/50 transition-colors" />
+
+                        <div className="flex flex-col text-left group-hover:text-indigo-200 transition-colors">
+                            <span className="text-[9px] text-slate-500 uppercase tracking-widest font-bold mb-1">Capacidad de Manifestación</span>
+                            <div className="flex items-center gap-2">
+                                <span className="text-lg text-white font-mono">{unlockedSlots >= 99 ? '∞' : unlockedSlots}</span>
+                                <span className="text-[10px] text-slate-600 uppercase">Avatares</span>
+                            </div>
+                        </div>
+                    </button>
+                </div>
+
+                {configAvatarType && (
+                    <AvatarOrchestrator
+                        avatarType={configAvatarType}
+                        membershipTier={narrativeTier}
+                        onSave={(newConfig) => {
+                            updateConfig(configAvatarType, newConfig);
+                        }}
+                        onClose={() => setConfigAvatarType(null)}
+                    />
+                )}
+                {showMap && <ConsciousnessMap currentPlan={userPlan} onClose={() => setShowMap(false)} />}
+            </div>
         </div>
     );
 };

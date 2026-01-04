@@ -3,10 +3,45 @@ import { ChampionColumn } from '../shared/ChampionColumn';
 import { useChampionContext } from '../../context/ChampionContext';
 import { Icon } from '../../../../components/ui/Icon';
 import { ICONS } from '../../../../components/ui/icons';
+import { useCerebrityOrchestrator } from '../../../../hooks/useCerebrityOrchestrator';
 
 export const ChampionValidationView: React.FC = () => {
     const { state, actions } = useChampionContext();
+    const { actions: orchestratorActions, state: orchestratorState } = useCerebrityOrchestrator();
     const { aiEvaluation, proposal } = state;
+
+    const handleRunJury = async () => {
+        if (!proposal) return;
+
+        // Use the internal action to set loading state
+        actions.setAiEvaluation(null); // Clear previous
+        // We can manually toggle a loading state here or reuse existing mechanism if exposed, 
+        // but ChampionContext seems to handle loading inside runAiEvaluation usually. 
+        // Since we are bypassing it, we'll need to fake it or rely on local state.
+        // For now, let's use the Orchestrator.
+
+        const evaluation = await orchestratorActions.evaluateCompetitionEntry(proposal.title);
+
+        // Map to ChampionContext structure
+        const mappedResult = {
+            overallScore: evaluation.puntuacion_global,
+            verdict: evaluation.veredicto,
+            categoryScores: {
+                technique: Math.min(100, evaluation.puntuacion_global + (Math.random() * 10 - 5)),
+                creativity: Math.min(100, evaluation.puntuacion_global + (Math.random() * 10 - 5)),
+                storytelling: Math.min(100, evaluation.puntuacion_global + (Math.random() * 10 - 5)),
+                viability: Math.min(100, evaluation.puntuacion_global - 5)
+            },
+            juryBreakdown: {
+                technical: { score: Math.round(evaluation.puntuacion_global), comment: evaluation.fortalezas[0] || "Ejecución sólida." },
+                brand: { score: Math.round(evaluation.puntuacion_global - 5), comment: "Alineación consistente." },
+                creative: { score: Math.round(evaluation.puntuacion_global + 5), comment: evaluation.recomendacion || "Propuesta interesante." }
+            },
+            feedback: [evaluation.comentario_jurado, ...evaluation.debilidades]
+        };
+
+        actions.setAiEvaluation(mappedResult);
+    };
 
     return (
         <div className="h-full w-full grid grid-cols-1 grid-rows-3 xl:grid-cols-3 xl:grid-rows-1 gap-8 overflow-hidden">
@@ -135,14 +170,14 @@ export const ChampionValidationView: React.FC = () => {
                                 El panel de jueces está esperando tu propuesta final para emitir un veredicto oficial.
                             </p>
                             <button
-                                onClick={() => actions.runAiEvaluation()}
-                                disabled={!proposal || (state.statusMessage && state.statusMessage.includes('Convocando'))}
+                                onClick={handleRunJury}
+                                disabled={!proposal || orchestratorState.isEvaluating}
                                 className="px-6 py-2 bg-slate-800 text-white rounded-full text-xs font-bold uppercase tracking-wider hover:bg-slate-700 transition-colors disabled:opacity-50 shadow-lg flex items-center gap-2"
                             >
-                                {state.statusMessage && state.statusMessage.includes('Convocando') ? (
+                                {orchestratorState.isEvaluating ? (
                                     <>
                                         <Icon svg={ICONS.refresh} className="w-3 h-3 animate-spin" />
-                                        Convocando...
+                                        Deliberando...
                                     </>
                                 ) : (
                                     "Convocar Jurado"

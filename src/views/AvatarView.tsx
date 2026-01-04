@@ -49,7 +49,7 @@ const AvatarView: React.FC<AvatarViewProps> = () => {
     };
 
     return (
-        <div className="h-[calc(100vh-80px)] w-full flex flex-col px-4 lg:px-8 py-6">
+        <div className="h-full w-full flex flex-col px-4 lg:px-8 py-6 overflow-hidden">
 
             {/* Navigation Pill Container (Invisible BG) */}
             <div className="flex-shrink-0 mb-6 z-10 overflow-x-auto no-scrollbar">
@@ -111,7 +111,7 @@ const AvatarView: React.FC<AvatarViewProps> = () => {
 
             {/* Main Content Card */}
             <div
-                className={`flex-1 overflow-hidden rounded-[2rem] p-0 shadow-2xl ring-1 ring-white/10 border-b-0 relative transition-all duration-700 ${getBorderClass()}`}
+                className={`flex-1 w-full overflow-hidden rounded-[2rem] p-0 shadow-2xl ring-1 ring-white/10 border-b-0 relative transition-all duration-700 ${getBorderClass()}`}
                 style={getGradientStyle()}
             >
                 {/* Background Glows/Noise */}

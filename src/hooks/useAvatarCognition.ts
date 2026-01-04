@@ -28,7 +28,8 @@ export interface SimulationResult {
     reasoning: string[];
     principlesActivated: string[];
     tradeoffs: string[];
-    riskAssessment: string;
+    riskAssessment: 'Bajo' | 'Medio' | 'Alto' | 'Crítico';
+    expectedFeedback: string;
 }
 
 export interface AvatarConfig {
@@ -163,8 +164,8 @@ export const useAvatarCognition = () => {
         if (!profile) return;
 
         let limit = 1;
-        if (userPlan === 'ASCENDANT') limit = 2;
-        if (userPlan === 'PLATINUM' || userPlan === 'JUPITER') limit = 99;
+        if (userPlan === 'PRO') limit = 2;
+        if (userPlan === 'EXPERT' || userPlan === 'STUDIO') limit = 99;
 
         const isActive = profile.activePrinciples.includes(principleId);
         let newPrinciples = [];
@@ -197,8 +198,8 @@ export const useAvatarCognition = () => {
         if (!profile) return;
 
         let limit = 1;
-        if (userPlan === 'ASCENDANT') limit = 2;
-        if (userPlan === 'PLATINUM' || userPlan === 'JUPITER') limit = 99;
+        if (userPlan === 'PRO') limit = 2;
+        if (userPlan === 'EXPERT' || userPlan === 'STUDIO') limit = 99;
 
         const isActive = profile.researchAxis.includes(axis);
         let newAxis: ResearchAxis[] = [];
@@ -240,41 +241,95 @@ export const useAvatarCognition = () => {
     };
 
     // --- Simulation Logic (Mock) ---
+    // --- Simulation Logic (Real Cognitive Engine) ---
     const simulateDecision = (context: SimulationContext): SimulationResult => {
         const profile = getActiveProfile();
-        if (!profile) return { decision: 'Error', reasoning: [], principlesActivated: [], tradeoffs: [], riskAssessment: 'Unknown' };
+        // Fallback for safety
+        if (!profile) return {
+            decision: 'Error de Perfil',
+            reasoning: ['No hay perfil activo.'],
+            principlesActivated: [],
+            tradeoffs: [],
+            riskAssessment: 'Bajo',
+            expectedFeedback: 'Configurar perfil.'
+        };
 
-        // Simple mock logic based on profile traits
-        let decision = "Proceder con cautela";
-        let risk = "Bajo";
-        const reasoning = [];
-        const tradeoffs = [];
+        // 1. Membership Gating (Mapping: FREE->GENESIS, PRO->ASCENDANT, EXPERT->PLATINUM, STUDIO->JUPITER)
+        // If plan is low, we simplify the output or limit complexity.
+        // For simulation, we allow full logic but maybe add a warning if they are exceeding their "Real" capacity.
+        // Actually, logic said: "Genesis: 1 Axis...". We enforce limits in toggle, but here we enforce logic outcome.
 
-        if (profile.tone === 'Vanguardista' || profile.riskTolerance === 'Audaz') {
-            decision = "Ejecutar técnica experimental";
-            risk = "Alto";
-            reasoning.push("Priorizando impacto visual sobre estabilidad.");
-            tradeoffs.push("Mayor coste de ingredientes", "Posible inconsistencia");
-            reasoning.push("Priorizando impacto visual sobre estabilidad.");
-            tradeoffs.push("Mayor coste de ingredientes", "Posible inconsistencia");
-        } else if (profile.researchAxis.includes('Coste')) {
-            decision = "Optimizar receta estándar";
-            reasoning.push("Maximizando margen operativo.");
-            tradeoffs.push("Menor complejidad aromática");
-        } else {
-            reasoning.push("Manteniendo estándares de calidad base.");
+        let decision = "";
+        let riskValue: 'Bajo' | 'Medio' | 'Alto' | 'Crítico' = "Bajo";
+        const reasoning: string[] = [];
+        const tradeoffs: string[] = [];
+        const activePrinciples = profile.activePrinciples;
+        let effectiveRiskTolerance = profile.riskTolerance;
+
+        // 2. Context Modifier
+        // CRISIS lowers risk tolerance automatically.
+        if (context.contextType === 'Crisis') {
+            reasoning.push("CONTEXTO CRÍTICO DETECTADO: Reduciendo tolerancia al riesgo.");
+            effectiveRiskTolerance = 'Conservador';
         }
 
-        if (context.pressureLevel > 80 && profile.riskTolerance !== 'Experimental') {
-            reasoning.push("Presión crítica detectada: Simplificando ejecución.");
+        // 3. Cognitive Engine Core
+        const axis = profile.researchAxis;
+
+        // --- Heuristic: TONE vs RISK ---
+        if (effectiveRiskTolerance === 'Conservador') {
+            riskValue = "Bajo";
+            decision = `Ejecución estándar orientada a ${axis.length > 0 ? axis.join(' y ') : 'estabilidad'}.`;
+            reasoning.push("Prioridad absoluta: Estabilidad y consistencia.");
+            if (activePrinciples.includes('p4')) tradeoffs.push("Impacto Visual reducido por seguridad.");
+        }
+        else if (effectiveRiskTolerance === 'Moderado') {
+            riskValue = "Medio";
+            decision = `Optimización balanceada entre técnica y ${axis[0] || 'calidad'}.`;
+            reasoning.push("Busca mejora incremental sin arriesgar el servicio.");
+        }
+        else if (effectiveRiskTolerance === 'Audaz') {
+            riskValue = "Alto";
+            decision = `Propuesta disruptiva enfocada en ${axis.join(' + ')}.`;
+            reasoning.push("Se acepta volatilidad a cambio de impacto.");
+            tradeoffs.push("Posible inconsistencia en servicio masivo.");
+        }
+        else if (effectiveRiskTolerance === 'Experimental') {
+            riskValue = "Crítico";
+            decision = "Innovación radical (Beta).";
+            reasoning.push("Maximización de novedad. Ignorando restricciones de seguridad estándar.");
+            tradeoffs.push("Alto coste operativo", "Inviabilidad comercial potencial");
         }
 
+        // --- Heuristic: AXIS CONFLICTS ---
+        // Coste vs Alta cocina/Creatividad
+        if (axis.includes('Coste') && (axis.includes('Creatividad') || axis.includes('Alta cocina'))) {
+            tradeoffs.push("Conflicto Eje: Coste limita la expresión creativa.");
+            reasoning.push("Se aplicarán técnicas de 'Creatividad Frugal' para cumplir ambos ejes.");
+        }
+
+        // --- Heuristic: PRINCIPLES ---
+        if (activePrinciples.includes('p3') && context.pressureLevel > 70) {
+            // Eficacia de Coste + Presión
+            decision = "Simplificación operativa inmediata.";
+            reasoning.push("Principio 'Eficacia de Coste' dominando bajo presión.");
+        }
+
+        // --- Heuristic: CONTEXT PRESSURE ---
+        if (context.pressureLevel > 85 && effectiveRiskTolerance !== 'Experimental') {
+            decision = "Protocolo de Supervivencia: Servicio Base.";
+            reasoning.push(`PRESIÓN EXTREMA (${context.pressureLevel}%): Abortando procesos complejos.`);
+            riskValue = "Medio"; // Risk is managed by simplifying
+        }
+
+        // 4. Final Formatting
         return {
             decision,
             reasoning,
-            principlesActivated: profile.activePrinciples,
+            principlesActivated: activePrinciples,
             tradeoffs,
-            riskAssessment: risk
+            riskAssessment: riskValue,
+            expectedFeedback: riskValue === 'Alto' || riskValue === 'Crítico' ? "Polarizante (Love/Hate)" : "Consistente"
         };
     };
 
