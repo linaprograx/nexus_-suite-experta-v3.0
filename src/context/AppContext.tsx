@@ -93,6 +93,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             const unsubscribe = onSnapshot(profileDocRef, (doc) => {
                 if (doc.exists()) {
                     setUserProfile(doc.data());
+                } else {
+                    setUserProfile({});
                 }
             });
             return () => unsubscribe();

@@ -67,12 +67,12 @@ export const PremiumLayout: React.FC<PremiumLayoutProps> = ({
 
     // Avatar Standard Column Class
     // User Update: Optional transparent columns (no shadow, no bg)
-    const columnClass = `h-full min-h-0 flex flex-col relative z-20 ${transparentColumns || layoutMode === 'zen' ? 'bg-transparent shadow-none border-0' : 'bg-transparent shadow-premium'} rounded-2xl overflow-y-auto ${layoutMode === 'zen' ? 'p-0' : 'p-6'} scrollbar-hide`;
+    const columnClass = `h-full min-h-0 flex flex-col relative z-20 ${transparentColumns || layoutMode === 'zen' ? 'bg-transparent shadow-none border-0' : 'bg-transparent shadow-premium'} rounded-2xl ${(layoutMode === 'colegium' || layoutMode === 'zen') ? 'overflow-hidden' : 'overflow-y-auto'} ${layoutMode === 'zen' ? 'p-0' : 'p-6'} scrollbar-hide`;
 
     const isZen = layoutMode === 'zen';
 
     return (
-        <div id={id} className={`w-full flex flex-col ${isZen ? 'h-screen p-0' : 'h-[calc(100vh-80px)] px-4 lg:px-8 py-6'} ${className}`}>
+        <div id={id} className={`w-full flex flex-col ${isZen ? 'h-full p-0 py-6' : 'h-full px-4 lg:px-8 py-6'} ${className}`}>
             {/* Header / Navbar Area */}
             {header && !isZen && (
                 <div className="flex-shrink-0 mb-4 z-30 relative">

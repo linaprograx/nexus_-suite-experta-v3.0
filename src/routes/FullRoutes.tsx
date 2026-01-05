@@ -63,6 +63,7 @@ export const FullRoutes = ({
             <Route path="/unleash" element={<Navigate to="/cerebrity" replace />} />
             <Route path="/avatar" element={<AvatarView />} />
             <Route path="/make-menu" element={<MakeMenuView db={db} userId={userId} appId={appId} />} />
+            <Route path="/collegium" element={<ColegiumView />} />
             <Route path="/colegium" element={<ColegiumView />} />
             <Route path="/personal" element={<PersonalView db={db} userId={userId} storage={storage} auth={auth} />} />
 

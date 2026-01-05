@@ -73,10 +73,20 @@ const DEFAULT_CONFIG: AvatarConfig = {
 
 // --- Hook Implementation ---
 
+// --- Hook Implementation ---
+
 export const useAvatarCognition = () => {
     const { userPlan } = useApp();
-    // Mock State - In real app, this would use Context or Zustand with Persistence
-    const [activeAvatarType, setActiveAvatarType] = useState<AvatarType>('Mixologist');
+    // Initialize from LocalStorage or default to Mixologist
+    const [activeAvatarType, setActiveAvatarType] = useState<AvatarType>(() => {
+        const saved = localStorage.getItem('nexus_active_avatar');
+        return (saved as AvatarType) || 'Mixologist';
+    });
+
+    // Persist active avatar changes
+    useEffect(() => {
+        localStorage.setItem('nexus_active_avatar', activeAvatarType);
+    }, [activeAvatarType]);
 
     // We store a map of configs per avatar type
     const [avatarConfigs, setAvatarConfigs] = useState<Record<AvatarType, AvatarConfig>>({
