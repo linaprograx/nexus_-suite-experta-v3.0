@@ -172,119 +172,125 @@ const ColegiumView: React.FC<ColegiumViewProps> = () => {
         }, 1200);
     };
 
-    // Bento Menu Component
+    // Bento Menu Component with Premium Gradient
     const BentoMenu = () => (
-        <div className="h-full overflow-y-auto custom-scrollbar p-6">
-            <div className="max-w-5xl mx-auto space-y-8">
-                {/* Header */}
-                <div className="text-center mb-10">
-                    <h2 className="text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 mb-2">
-                        Nexus Colegium
-                    </h2>
-                    <p className="text-slate-500 dark:text-slate-400">Escoge tu desafío de hoy</p>
-                </div>
+        <div className="h-full relative overflow-hidden">
+            {/* Solid Purple Gradient - Fades at 20%, Transparent at 40% */}
+            <div className="absolute inset-0 bg-gradient-to-b from-purple-500 from-0% via-purple-400/80 via-20% to-transparent to-40%" />
 
-                {/* Grid - Adjusted for better spacing: 3 Columns max */}
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 auto-rows-[220px]">
+            {/* Content with scroll */}
+            <div className="relative z-10 h-full overflow-y-auto custom-scrollbar p-8">
+                <div className="max-w-6xl mx-auto space-y-8">
+                    {/* Header */}
+                    <div className="text-center mb-12">
+                        <h2 className="text-5xl font-serif text-white mb-3">
+                            Nexus Colegium
+                        </h2>
+                        <p className="text-lg text-white/90">Selecciona tu desafío de dominio</p>
+                    </div>
 
-                    {/* 1. Statistics / Progress (Tall Card - Left) - Anonymous Stats now */}
-                    <div className="row-span-2 col-span-1 rounded-3xl p-6 bg-gradient-to-br from-indigo-500 to-purple-700 text-white shadow-xl relative overflow-hidden group hover:scale-[1.02] transition-transform duration-500 flex flex-col justify-between">
-                        <div className="absolute top-0 right-0 w-40 h-40 bg-white/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
+                    {/* Grid - Premium Layout: Better spacing and sizing */}
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 auto-rows-[240px]">
 
-                        <div className="relative z-10">
-                            <div className="flex items-center gap-3 mb-6 opacity-80">
-                                <div className="p-2 bg-white/20 rounded-lg">
-                                    <Icon svg={ICONS.trendingUp} className="w-6 h-6 text-white" />
+                        {/* 1. Statistics / Progress (Tall Card - Left) - Anonymous Stats now */}
+                        <div className="row-span-2 col-span-1 rounded-3xl p-6 bg-gradient-to-br from-indigo-500 to-purple-700 text-white shadow-xl relative overflow-hidden group hover:scale-[1.02] transition-transform duration-500 flex flex-col justify-between">
+                            <div className="absolute top-0 right-0 w-40 h-40 bg-white/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
+
+                            <div className="relative z-10">
+                                <div className="flex items-center gap-3 mb-6 opacity-80">
+                                    <div className="p-2 bg-white/20 rounded-lg">
+                                        <Icon svg={ICONS.trendingUp} className="w-6 h-6 text-white" />
+                                    </div>
+                                    <span className="text-sm font-bold uppercase tracking-widest">Tu Progreso</span>
                                 </div>
-                                <span className="text-sm font-bold uppercase tracking-widest">Tu Progreso</span>
+
+                                <div className="mt-2 text-center">
+                                    <h3 className="text-lg font-bold opacity-90 mb-1">Nivel de Dominio</h3>
+                                    <div className="text-6xl font-bold mb-2 tracking-tighter">12</div>
+                                    <div className="inline-block px-3 py-1 rounded-full bg-white/20 backdrop-blur-md text-xs font-semibold border border-white/30">
+                                        Mixólogo Senior
+                                    </div>
+                                </div>
                             </div>
 
-                            <div className="mt-2 text-center">
-                                <h3 className="text-lg font-bold opacity-90 mb-1">Nivel Actual</h3>
-                                <div className="text-6xl font-bold mb-2 tracking-tighter">12</div>
-                                <div className="inline-block px-3 py-1 rounded-full bg-white/20 backdrop-blur-md text-xs font-semibold border border-white/30">
-                                    Mixólogo Senior
-                                </div>
+                            <div className="relative z-10 w-full h-32 mt-6">
+                                <ChartContainer>
+                                    <AreaChart data={[{ v: 30 }, { v: 45 }, { v: 35 }, { v: 60 }, { v: 55 }, { v: 80 }, { v: 75 }]}>
+                                        <defs>
+                                            <linearGradient id="chartG" x1="0" y1="0" x2="0" y2="1">
+                                                <stop offset="5%" stopColor="#fff" stopOpacity={0.5} />
+                                                <stop offset="95%" stopColor="#fff" stopOpacity={0} />
+                                            </linearGradient>
+                                        </defs>
+                                        <Area type="monotone" dataKey="v" stroke="#fff" strokeWidth={3} fill="url(#chartG)" />
+                                    </AreaChart>
+                                </ChartContainer>
+                                <p className="text-center text-xs opacity-60 mt-2">Actividad últimos 7 días</p>
                             </div>
                         </div>
 
-                        <div className="relative z-10 w-full h-32 mt-6">
-                            <ChartContainer>
-                                <AreaChart data={[{ v: 30 }, { v: 45 }, { v: 35 }, { v: 60 }, { v: 55 }, { v: 80 }, { v: 75 }]}>
-                                    <defs>
-                                        <linearGradient id="chartG" x1="0" y1="0" x2="0" y2="1">
-                                            <stop offset="5%" stopColor="#fff" stopOpacity={0.5} />
-                                            <stop offset="95%" stopColor="#fff" stopOpacity={0} />
-                                        </linearGradient>
-                                    </defs>
-                                    <Area type="monotone" dataKey="v" stroke="#fff" strokeWidth={3} fill="url(#chartG)" />
-                                </AreaChart>
-                            </ChartContainer>
-                            <p className="text-center text-xs opacity-60 mt-2">Actividad últimos 7 días</p>
+                        {/* 2. Main Game (Wide - Top Right) */}
+                        <div className="col-span-1 lg:col-span-2 row-span-1">
+                            <GameCard
+                                title="Evaluación de Conocimiento"
+                                description="Modo estándar para avanzar en dominio. 5 preguntas diarias."
+                                icon={ICONS.book}
+                                color="from-indigo-500 to-purple-500"
+                                stats="Diario: 5/5"
+                                onPlay={() => { setQuizSettings({ topic: 'Evaluación de Conocimiento', difficulty: 'Normal', numQuestions: 5 }); setQuizPhase('setup'); }}
+                                delay={100}
+                            />
                         </div>
-                    </div>
 
-                    {/* 2. Main Game (Wide - Top Right) */}
-                    <div className="col-span-1 lg:col-span-2 row-span-1">
-                        <GameCard
-                            title="Quiz Clásico"
-                            description="Modo estándar para subir de nivel. 5 Preguntas diarias."
-                            icon={ICONS.book}
-                            color="from-indigo-500 to-purple-500"
-                            stats="Diario: 5/5"
-                            onPlay={() => { setQuizSettings({ topic: 'Quiz Clásico', difficulty: 'Normal', numQuestions: 5 }); setQuizPhase('setup'); }}
-                            delay={100}
-                        />
-                    </div>
+                        {/* 3. Speed Run */}
+                        <div className="col-span-1 row-span-1">
+                            <GameCard
+                                title="Speed Run"
+                                description="30 segs. ¿Cuántas aciertas?"
+                                icon={ICONS.clock}
+                                color="from-rose-400 to-red-500"
+                                onPlay={() => handleStartQuiz('Speed Round', 'Normal')}
+                                delay={200}
+                            />
+                        </div>
 
-                    {/* 3. Speed Run */}
-                    <div className="col-span-1 row-span-1">
-                        <GameCard
-                            title="Speed Run"
-                            description="30 segs. ¿Cuántas aciertas?"
-                            icon={ICONS.clock}
-                            color="from-rose-400 to-red-500"
-                            onPlay={() => handleStartQuiz('Speed Round', 'Normal')}
-                            delay={200}
-                        />
-                    </div>
+                        {/* 4. Cata a Ciegas */}
+                        <div className="col-span-1 row-span-1">
+                            <GameCard
+                                title="Cata a Ciegas"
+                                description="Adivina el cóctel."
+                                icon={ICONS.eye}
+                                color="from-sky-400 to-blue-500"
+                                onPlay={() => handleStartQuiz('Cata a Ciegas', 'Normal')}
+                                delay={250}
+                            />
+                        </div>
 
-                    {/* 4. Cata a Ciegas */}
-                    <div className="col-span-1 row-span-1">
-                        <GameCard
-                            title="Cata a Ciegas"
-                            description="Adivina el cóctel."
-                            icon={ICONS.eye}
-                            color="from-sky-400 to-blue-500"
-                            onPlay={() => handleStartQuiz('Cata a Ciegas', 'Normal')}
-                            delay={250}
-                        />
-                    </div>
+                        {/* 5. Flavor Pairing (Wide Bottom) */}
+                        <div className="col-span-1 lg:col-span-2 row-span-1">
+                            <GameCard
+                                title="Flavor Pairing"
+                                description="Combina sabores y domina el arte del maridaje molecular."
+                                icon={ICONS.wand}
+                                color="from-emerald-400 to-teal-500"
+                                onPlay={() => handleStartQuiz('Flavor Pairing', 'Difícil')}
+                                delay={300}
+                            />
+                        </div>
 
-                    {/* 5. Flavor Pairing (Wide Bottom) */}
-                    <div className="col-span-1 lg:col-span-2 row-span-1">
-                        <GameCard
-                            title="Flavor Pairing"
-                            description="Combina sabores y domina el arte del maridaje molecular."
-                            icon={ICONS.wand}
-                            color="from-emerald-400 to-teal-500"
-                            onPlay={() => handleStartQuiz('Flavor Pairing', 'Difícil')}
-                            delay={300}
-                        />
-                    </div>
+                        {/* 6. Desafío (Small) */}
+                        <div className="col-span-1 row-span-1">
+                            <GameCard
+                                title="Desafío Diario"
+                                description="XP x2 Hoy."
+                                icon={ICONS.star}
+                                color="from-amber-400 to-orange-500"
+                                onPlay={() => handleStartQuiz('Quiz Clásico', 'Difícil')}
+                                delay={350}
+                            />
+                        </div>
 
-                    {/* 6. Desafío (Small) */}
-                    <div className="col-span-1 row-span-1">
-                        <GameCard
-                            title="Desafío Diario"
-                            description="XP x2 Hoy."
-                            icon={ICONS.star}
-                            color="from-amber-400 to-orange-500"
-                            onPlay={() => handleStartQuiz('Quiz Clásico', 'Difícil')}
-                            delay={350}
-                        />
                     </div>
-
                 </div>
             </div>
         </div>
@@ -301,15 +307,6 @@ const ColegiumView: React.FC<ColegiumViewProps> = () => {
                     gamesPlayed={42}
                     userName={profile.displayName || 'Usuario Nexus'}
                     userPhoto={profile.photoURL}
-                />
-            }
-            rightSidebar={
-                <ColegiumContextSidebar
-                    phase={quizPhase === 'menu' ? 'dashboard' : quizPhase}
-                    timer={timer}
-                    currentQuestion={currentQuestionIndex}
-                    totalQuestions={quizData.length}
-                    score={score}
                 />
             }
             mainContent={

@@ -27,12 +27,12 @@ const AvatarView: React.FC<AvatarViewProps> = () => {
     // Vertical Gradients (Top-to-Bottom)
     const getGradientStyle = () => {
         switch (activeTab) {
-            case 'core': return { background: 'linear-gradient(180deg, #000000 0%, rgba(0, 0, 0, 0.85) 45%, rgba(0,0,0,0) 100%)' };
-            // REFINED GRADIENT for Legibility: Strong Rosé top, fast fade to transparent by 35%
-            case 'intelligence': return { background: 'linear-gradient(180deg, #e11d48 0%, rgba(225, 29, 72, 0.8) 15%, rgba(225, 29, 72, 0) 35%)' };
-            case 'insights': return { background: 'linear-gradient(180deg, #FB923C 0%, rgba(251, 146, 60, 0.1) 45%, rgba(0,0,0,0) 100%)' };
-            case 'digital-bar': return { background: 'linear-gradient(180deg, #22D3EE 0%, rgba(34, 211, 238, 0.1) 45%, rgba(0,0,0,0) 100%)' };
-            case 'champion': return { background: 'linear-gradient(180deg, #84CC16 0%, rgba(132, 204, 22, 0.1) 45%, rgba(0,0,0,0) 100%)' };
+            case 'core': return { background: 'linear-gradient(180deg, #000000 0%, rgba(0, 0, 0, 0.8) 20%, rgba(0,0,0,0) 40%)' };
+            // REFINED GRADIENT for Legibility: Strong Rosé top, fast fade to transparent by 40% (Matched to PremiumLayout Standard)
+            case 'intelligence': return { background: 'linear-gradient(180deg, #e11d48 0%, rgba(225, 29, 72, 0.8) 20%, rgba(225, 29, 72, 0) 40%)' };
+            case 'insights': return { background: 'linear-gradient(180deg, #FB923C 0%, rgba(251, 146, 60, 0.8) 20%, rgba(0,0,0,0) 40%)' };
+            case 'digital-bar': return { background: 'linear-gradient(180deg, #22D3EE 0%, rgba(34, 211, 238, 0.8) 20%, rgba(0,0,0,0) 40%)' };
+            case 'champion': return { background: 'linear-gradient(180deg, #84CC16 0%, rgba(132, 204, 22, 0.8) 20%, rgba(0,0,0,0) 40%)' };
             default: return { background: 'none' };
         }
     };

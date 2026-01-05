@@ -50,7 +50,7 @@ const AvatarCard: React.FC<AvatarCardProps> = ({ type, description, isActive, is
             className={`
                 relative overflow-hidden rounded-[32px] p-8 h-[460px] transition-all duration-1000 group flex flex-col
                 ${isLatent
-                    ? 'cursor-default border border-white/5 bg-white/[0.01] backdrop-blur-[2px] opacity-60' // Removed hover opacity change to be less "interactive"
+                    ? 'cursor-default border border-white/20 bg-slate-600 opacity-90' // Solid Medium Grey, high visibility
                     : isActive
                         ? 'cursor-pointer border border-indigo-500/50 bg-[#0f1322] shadow-[0_0_50px_rgba(99,102,241,0.4)] z-10'
                         : 'cursor-pointer border border-white/10 bg-white/[0.03] backdrop-blur-md hover:bg-white/[0.06] hover:border-white/20 hover:shadow-2xl'
@@ -75,7 +75,7 @@ const AvatarCard: React.FC<AvatarCardProps> = ({ type, description, isActive, is
                         <div className={`w-16 h-16 rounded-2xl flex items-center justify-center text-3xl transition-all duration-700 ${isActive
                             ? 'bg-gradient-to-br from-indigo-600 to-indigo-800 text-white shadow-lg shadow-indigo-500/40'
                             : isLatent
-                                ? 'bg-white/5 grayscale opacity-30'
+                                ? 'bg-slate-600/50 text-slate-300'
                                 : 'bg-white/5 group-hover:bg-white/10 group-hover:scale-105'
                             }`}>
                             {isLatent ? <Icon svg={ICONS.lock} className="w-6 h-6 text-slate-600" /> : displayEmoji}
@@ -91,8 +91,8 @@ const AvatarCard: React.FC<AvatarCardProps> = ({ type, description, isActive, is
                                     <span className="text-[9px] font-bold uppercase tracking-widest">{membershipTier}</span>
                                 </div>
                             ) : (
-                                <div className="px-3 py-1 rounded-full bg-white/5 border border-white/5 backdrop-blur-sm">
-                                    <span className="text-[9px] font-medium uppercase tracking-widest text-slate-600">No Manifestado</span>
+                                <div className="px-3 py-1 rounded-full bg-slate-600/50 border border-white/10">
+                                    <span className="text-[9px] font-bold uppercase tracking-widest text-slate-300">No Manifestado</span>
                                 </div>
                             )}
 
@@ -106,7 +106,7 @@ const AvatarCard: React.FC<AvatarCardProps> = ({ type, description, isActive, is
                     </div>
 
                     <div className="space-y-4">
-                        <h3 className={`text-3xl font-serif font-medium tracking-wide transition-colors duration-500 leading-tight ${isActive ? 'text-white drop-shadow-lg' : isLatent ? 'text-slate-600 blur-[0.5px]' : 'text-slate-300 group-hover:text-white'
+                        <h3 className={`text-3xl font-serif font-medium tracking-wide transition-colors duration-500 leading-tight ${isActive ? 'text-white drop-shadow-lg' : isLatent ? 'text-slate-200' : 'text-slate-300 group-hover:text-white'
                             }`}>
                             {displayName}
                         </h3>
@@ -115,7 +115,7 @@ const AvatarCard: React.FC<AvatarCardProps> = ({ type, description, isActive, is
                                 {type}
                             </p>
                         )}
-                        <p className={`text-sm leading-relaxed font-light transition-colors duration-500 ${isLatent ? 'text-slate-700' : 'text-slate-400 group-hover:text-slate-300'
+                        <p className={`text-sm leading-relaxed font-light transition-colors duration-500 ${isLatent ? 'text-slate-300' : 'text-slate-400 group-hover:text-slate-300'
                             }`}>
                             {description}
                         </p>
@@ -124,8 +124,8 @@ const AvatarCard: React.FC<AvatarCardProps> = ({ type, description, isActive, is
 
                 <div className={`transition-all duration-700 mt-auto ${isLatent ? 'opacity-70' : ''}`}>
                     {isLatent ? (
-                        <div className="border-t border-white/5 pt-6">
-                            <p className="text-xs text-slate-600 font-serif italic mb-4">
+                        <div className="border-t border-white/10 pt-6">
+                            <p className="text-xs text-slate-400 font-serif italic mb-4">
                                 "Esta entidad se activa cuando tu Avatar asciende al siguiente estado."
                             </p>
                             <button className="flex items-center gap-2 text-[10px] text-slate-500 uppercase tracking-widest font-bold group-hover:text-indigo-400/70 transition-colors">

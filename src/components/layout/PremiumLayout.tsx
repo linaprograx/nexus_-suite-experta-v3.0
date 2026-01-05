@@ -34,19 +34,19 @@ export const PremiumLayout: React.FC<PremiumLayoutProps> = ({
     // 3/4 (75%) -> 10% opacity
     // 4/4 (100%) -> 0% transparent from middle downwards
     const gradients: Record<GradientTheme, string> = {
-        violet: "bg-[linear-gradient(to_bottom,rgb(139,92,246)_0%,rgba(139,92,246,0.5)_50%,rgba(139,92,246,0.1)_75%,transparent_100%)] dark:bg-[linear-gradient(to_bottom,rgba(139,92,246,0.4)_0%,rgba(139,92,246,0.2)_50%,rgba(139,92,246,0.05)_75%,transparent_100%)]",
-        cyan: "bg-[linear-gradient(to_bottom,rgb(6,182,212)_0%,rgba(6,182,212,0.5)_50%,rgba(6,182,212,0.1)_75%,transparent_100%)] dark:bg-[linear-gradient(to_bottom,rgba(6,182,212,0.4)_0%,rgba(6,182,212,0.2)_50%,rgba(6,182,212,0.05)_75%,transparent_100%)]",
-        emerald: "bg-[linear-gradient(to_bottom,rgb(16,185,129)_0%,rgba(16,185,129,0.5)_50%,rgba(16,185,129,0.1)_75%,transparent_100%)] dark:bg-[linear-gradient(to_bottom,rgba(16,185,129,0.4)_0%,rgba(16,185,129,0.2)_50%,rgba(16,185,129,0.05)_75%,transparent_100%)]",
-        amber: "bg-[linear-gradient(to_bottom,rgb(245,158,11)_0%,rgba(245,158,11,0.5)_50%,rgba(245,158,11,0.1)_75%,transparent_100%)] dark:bg-[linear-gradient(to_bottom,rgba(245,158,11,0.4)_0%,rgba(245,158,11,0.2)_50%,rgba(245,158,11,0.05)_75%,transparent_100%)]",
-        rose: "bg-[linear-gradient(to_bottom,rgb(244,63,94)_0%,rgba(244,63,94,0.5)_50%,rgba(244,63,94,0.1)_75%,transparent_100%)] dark:bg-[linear-gradient(to_bottom,rgba(244,63,94,0.4)_0%,rgba(244,63,94,0.2)_50%,rgba(244,63,94,0.05)_75%,transparent_100%)]",
-        indigo: "bg-[linear-gradient(to_bottom,rgb(99,102,241)_0%,rgba(99,102,241,0.5)_50%,rgba(99,102,241,0.1)_75%,transparent_100%)] dark:bg-[linear-gradient(to_bottom,rgba(99,102,241,0.4)_0%,rgba(99,102,241,0.2)_50%,rgba(99,102,241,0.05)_75%,transparent_100%)]",
-        slate: "bg-[linear-gradient(to_bottom,rgb(100,116,139)_0%,rgba(100,116,139,0.5)_50%,rgba(100,116,139,0.1)_75%,transparent_100%)] dark:bg-[linear-gradient(to_bottom,rgba(100,116,139,0.4)_0%,rgba(100,116,139,0.2)_50%,rgba(100,116,139,0.05)_75%,transparent_100%)]",
-        blue: "bg-[linear-gradient(to_bottom,rgb(59,130,246)_0%,rgba(59,130,246,0.5)_50%,rgba(59,130,246,0.1)_75%,transparent_100%)] dark:bg-[linear-gradient(to_bottom,rgba(59,130,246,0.4)_0%,rgba(59,130,246,0.2)_50%,rgba(59,130,246,0.05)_75%,transparent_100%)]",
-        colegium: "bg-[linear-gradient(to_bottom,rgb(168,85,247)_0%,rgba(168,85,247,0.5)_50%,rgba(168,85,247,0.1)_75%,transparent_100%)] dark:bg-[linear-gradient(to_bottom,rgba(168,85,247,0.4)_0%,rgba(168,85,247,0.2)_50%,rgba(168,85,247,0.05)_75%,transparent_100%)]",
-        red: "bg-[linear-gradient(to_bottom,rgb(239,68,68)_0%,rgba(239,68,68,0.5)_50%,rgba(239,68,68,0.1)_75%,transparent_100%)] dark:bg-[linear-gradient(to_bottom,rgba(239,68,68,0.4)_0%,rgba(239,68,68,0.2)_50%,rgba(239,68,68,0.05)_75%,transparent_100%)]",
-        yellow: "bg-[linear-gradient(to_bottom,rgb(234,179,8)_0%,rgba(234,179,8,0.5)_50%,rgba(234,179,8,0.1)_75%,transparent_100%)] dark:bg-[linear-gradient(to_bottom,rgba(234,179,8,0.4)_0%,rgba(234,179,8,0.2)_50%,rgba(234,179,8,0.05)_75%,transparent_100%)]",
-        ice: "bg-[linear-gradient(to_bottom,rgb(14,165,233)_0%,rgba(14,165,233,0.5)_50%,rgba(14,165,233,0.1)_75%,transparent_100%)] dark:bg-[linear-gradient(to_bottom,rgba(14,165,233,0.4)_0%,rgba(14,165,233,0.2)_50%,rgba(14,165,233,0.05)_75%,transparent_100%)]",
-        lime: "bg-[linear-gradient(to_bottom,rgb(132,204,22)_0%,rgba(132,204,22,0.5)_50%,rgba(132,204,22,0.1)_75%,transparent_100%)] dark:bg-[linear-gradient(to_bottom,rgba(132,204,22,0.4)_0%,rgba(132,204,22,0.2)_50%,rgba(132,204,22,0.05)_75%,transparent_100%)]"
+        violet: "bg-[linear-gradient(to_bottom,rgb(139,92,246)_0%,rgba(139,92,246,0.8)_20%,transparent_40%)] dark:bg-[linear-gradient(to_bottom,rgba(139,92,246,0.7)_0%,rgba(139,92,246,0.5)_20%,transparent_40%)]",
+        cyan: "bg-[linear-gradient(to_bottom,rgb(6,182,212)_0%,rgba(6,182,212,0.8)_20%,transparent_40%)] dark:bg-[linear-gradient(to_bottom,rgba(6,182,212,0.7)_0%,rgba(6,182,212,0.5)_20%,transparent_40%)]",
+        emerald: "bg-[linear-gradient(to_bottom,rgb(16,185,129)_0%,rgba(16,185,129,0.8)_20%,transparent_40%)] dark:bg-[linear-gradient(to_bottom,rgba(16,185,129,0.7)_0%,rgba(16,185,129,0.5)_20%,transparent_40%)]",
+        amber: "bg-[linear-gradient(to_bottom,rgb(245,158,11)_0%,rgba(245,158,11,0.8)_20%,transparent_40%)] dark:bg-[linear-gradient(to_bottom,rgba(245,158,11,0.7)_0%,rgba(245,158,11,0.5)_20%,transparent_40%)]",
+        rose: "bg-[linear-gradient(to_bottom,rgb(244,63,94)_0%,rgba(244,63,94,0.8)_20%,transparent_40%)] dark:bg-[linear-gradient(to_bottom,rgba(244,63,94,0.7)_0%,rgba(244,63,94,0.5)_20%,transparent_40%)]",
+        indigo: "bg-[linear-gradient(to_bottom,rgb(99,102,241)_0%,rgba(99,102,241,0.8)_20%,transparent_40%)] dark:bg-[linear-gradient(to_bottom,rgba(99,102,241,0.7)_0%,rgba(99,102,241,0.5)_20%,transparent_40%)]",
+        slate: "bg-[linear-gradient(to_bottom,rgb(100,116,139)_0%,rgba(100,116,139,0.8)_20%,transparent_40%)] dark:bg-[linear-gradient(to_bottom,rgba(100,116,139,0.7)_0%,rgba(100,116,139,0.5)_20%,transparent_40%)]",
+        blue: "bg-[linear-gradient(to_bottom,rgb(59,130,246)_0%,rgba(59,130,246,0.8)_20%,transparent_40%)] dark:bg-[linear-gradient(to_bottom,rgba(59,130,246,0.7)_0%,rgba(59,130,246,0.5)_20%,transparent_40%)]",
+        colegium: "bg-[linear-gradient(to_bottom,rgb(147,51,234)_0%,rgba(147,51,234,0.8)_20%,transparent_40%)] dark:bg-[linear-gradient(to_bottom,rgba(147,51,234,0.7)_0%,rgba(147,51,234,0.5)_20%,transparent_40%)]",
+        red: "bg-[linear-gradient(to_bottom,rgb(239,68,68)_0%,rgba(239,68,68,0.8)_20%,transparent_40%)] dark:bg-[linear-gradient(to_bottom,rgba(239,68,68,0.7)_0%,rgba(239,68,68,0.5)_20%,transparent_40%)]",
+        yellow: "bg-[linear-gradient(to_bottom,rgb(234,179,8)_0%,rgba(234,179,8,0.8)_20%,transparent_40%)] dark:bg-[linear-gradient(to_bottom,rgba(234,179,8,0.7)_0%,rgba(234,179,8,0.5)_20%,transparent_40%)]",
+        ice: "bg-[linear-gradient(to_bottom,rgb(14,165,233)_0%,rgba(14,165,233,0.8)_20%,transparent_40%)] dark:bg-[linear-gradient(to_bottom,rgba(14,165,233,0.7)_0%,rgba(14,165,233,0.5)_20%,transparent_40%)]",
+        lime: "bg-[linear-gradient(to_bottom,rgb(132,204,22)_0%,rgba(132,204,22,0.8)_20%,transparent_40%)] dark:bg-[linear-gradient(to_bottom,rgba(132,204,22,0.7)_0%,rgba(132,204,22,0.5)_20%,transparent_40%)]"
     };
 
     const activeGradient = gradients[gradientTheme];
@@ -59,8 +59,8 @@ export const PremiumLayout: React.FC<PremiumLayoutProps> = ({
         // Compact: Smaller sidebars ~10% each
         gridCols = 'grid-cols-1 md:grid-cols-[1fr_8fr_1fr]';
     } else if (layoutMode === 'colegium') {
-        // Colegium: Balanced sidebars ~15% each
-        gridCols = 'grid-cols-1 md:grid-cols-[1.5fr_7fr_1.5fr]';
+        // Colegium: 2 columns - Left sidebar wider, main content (no right sidebar)
+        gridCols = 'grid-cols-1 md:grid-cols-[2.5fr_7.5fr]';
     } else if (layoutMode === 'zen') {
         gridCols = 'grid-cols-1';
     }
@@ -94,10 +94,12 @@ export const PremiumLayout: React.FC<PremiumLayoutProps> = ({
                     {mainContent}
                 </div>
 
-                {/* Right Sidebar Column */}
-                <div className={columnClass}>
-                    {rightSidebar}
-                </div>
+                {/* Right Sidebar Column - Hidden in colegium mode */}
+                {layoutMode !== 'colegium' && (
+                    <div className={columnClass}>
+                        {rightSidebar}
+                    </div>
+                )}
 
             </div>
             {/* Render children (Modals, Overlays) independent of slots */}
