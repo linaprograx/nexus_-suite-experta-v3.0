@@ -31,7 +31,7 @@ export const TrendLocatorTab: React.FC<TrendLocatorTabProps> = ({
     onCreateRecipe
 }) => {
     return (
-        <div className="h-full flex flex-col bg-slate-50/50 dark:bg-slate-900/50 backdrop-blur-sm rounded-2xl border border-white/20 dark:border-white/5 p-4 lg:p-6 overflow-hidden relative">
+        <div className="h-full flex flex-col rounded-2xl p-4 lg:p-6 overflow-hidden relative">
             {/* Results Area */}
             <div className="flex-1 overflow-y-auto custom-scrollbar">
                 {loading && (

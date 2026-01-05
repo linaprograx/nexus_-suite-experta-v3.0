@@ -11,9 +11,8 @@ const APP_ROUTES: { view: ViewName; label: string; icon: string }[] = [
   { view: 'dashboard', label: 'Dashboard', icon: ICONS.grid },
   { view: 'grimorium', label: 'Grimorium', icon: ICONS.book },
   { view: 'cerebrIty', label: 'CerebrIty', icon: ICONS.brain },
-  { view: 'unleash', label: 'Unleash', icon: ICONS.zap }, // New Section
   { view: 'pizarron', label: 'Pizarrón', icon: ICONS.layoutGrid },
-  { view: 'avatar', label: 'Avatar', icon: ICONS.radar }, // New Avatar Section
+  { view: 'avatar', label: 'Avatar', icon: ICONS.radar },
   { view: 'colegium', label: 'Colegium', icon: ICONS.school },
 ];
 

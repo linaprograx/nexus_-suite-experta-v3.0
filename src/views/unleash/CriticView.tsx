@@ -72,9 +72,9 @@ const CriticView: React.FC = () => {
         <div className="h-full grid grid-cols-1 lg:grid-cols-[220px,minmax(0,1fr),220px] gap-6">
             {/* Left Sidebar - Configuration */}
             <div className="h-full min-h-0 flex flex-col relative z-20">
-                <div className="h-full rounded-2xl border border-amber-200/50 overflow-hidden bg-white/40 backdrop-blur-md shadow-sm flex flex-col">
-                    <div className="p-4 border-b border-amber-100 bg-white/50">
-                        <h3 className="font-bold text-amber-900 tracking-wide text-sm uppercase">Configuración</h3>
+                <div className="h-full rounded-2xl overflow-hidden backdrop-blur-xl bg-white/40 dark:bg-slate-900/40 border border-white/20 shadow-lg flex flex-col">
+                    <div className="p-4 border-b border-white/10">
+                        <h3 className="font-bold text-slate-800 dark:text-white tracking-wide text-sm uppercase">Configuración</h3>
                     </div>
 
                     <div className="p-4 space-y-6 flex-1 overflow-y-auto custom-scrollbar">

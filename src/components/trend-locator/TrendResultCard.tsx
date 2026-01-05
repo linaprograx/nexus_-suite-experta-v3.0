@@ -29,7 +29,7 @@ export const TrendResultCard: React.FC<TrendResultCardProps> = ({ item, db, user
     };
 
     return (
-        <div className="bg-white/60 dark:bg-slate-900/40 backdrop-blur-sm rounded-xl border border-white/20 dark:border-white/5 p-5 shadow-sm hover:shadow-md transition-all flex flex-col h-full">
+        <div className="backdrop-blur-xl bg-white/40 dark:bg-slate-900/40 border border-white/20 shadow-lg rounded-xl p-5 hover:shadow-xl transition-all flex flex-col h-full">
             <div className="mb-4">
                 <h3 className="font-bold text-lg text-slate-900 dark:text-white mb-1 leading-tight">
                     {(item as any).conceptName || item.titulo || "Sin título"}

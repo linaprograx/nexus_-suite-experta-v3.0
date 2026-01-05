@@ -17,7 +17,7 @@ export const CerebrityHistorySidebar: React.FC<CerebrityHistorySidebarProps> = (
         setLoading(true);
         const historyCol = collection(db, `users/${userId}/cerebrity-history`);
         const q = query(historyCol, orderBy('createdAt', 'desc'), limit(20));
-        
+
         const unsubscribe = onSnapshot(q, snapshot => {
             const historyData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as CerebrityResult & { id: string }));
             setHistory(historyData);
@@ -31,7 +31,7 @@ export const CerebrityHistorySidebar: React.FC<CerebrityHistorySidebarProps> = (
     }, [db, userId]);
 
     return (
-        <div className="h-full flex flex-col backdrop-blur-xl bg-white/40 dark:bg-slate-900/40 border border-white/20 shadow-lg rounded-xl p-4">
+        <div className="h-full flex flex-col p-4">
             <div className="flex-shrink-0 mb-4">
                 <h3 className="text-sm font-bold text-slate-800 dark:text-slate-200">Historial Creativo</h3>
             </div>
@@ -40,16 +40,16 @@ export const CerebrityHistorySidebar: React.FC<CerebrityHistorySidebarProps> = (
                 {loading && <div className="p-4 text-center text-sm text-slate-500">Cargando...</div>}
                 {!loading && history.length === 0 && <div className="p-4 text-center text-sm text-slate-500">No hay historial.</div>}
                 {history.map(item => (
-                    <div 
-                        key={item.id} 
-                        onClick={() => onLoadHistory(item)} 
+                    <div
+                        key={item.id}
+                        onClick={() => onLoadHistory(item)}
                         className="flex gap-3 rounded-lg p-2 bg-white/60 dark:bg-slate-800/60 border border-white/30 shadow-sm hover:shadow-md hover:scale-[1.02] transition-all duration-200 cursor-pointer"
                     >
                         {item.imageUrl && (
-                            <img 
-                                src={item.imageUrl} 
-                                className="w-12 h-12 rounded-md object-cover flex-shrink-0 border border-slate-200 dark:border-slate-700" 
-                                alt="Generated recipe" 
+                            <img
+                                src={item.imageUrl}
+                                className="w-12 h-12 rounded-md object-cover flex-shrink-0 border border-slate-200 dark:border-slate-700"
+                                alt="Generated recipe"
                             />
                         )}
                         <div className="flex-1 overflow-hidden">

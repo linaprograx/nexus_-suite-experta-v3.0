@@ -23,8 +23,8 @@ const CriticControls: React.FC<CriticControlsProps> = ({
     onInvoke
 }) => {
     return (
-        <div className="bg-white/60 dark:bg-slate-900/30 backdrop-blur-md rounded-2xl border border-white/20 dark:border-white/5 h-full flex flex-col overflow-hidden">
-            <div className="p-4 border-b border-white/10 dark:border-white/5 bg-white/40 dark:bg-slate-900/40">
+        <div className="backdrop-blur-xl bg-white/40 dark:bg-slate-900/40 border border-white/20 shadow-lg rounded-2xl h-full flex flex-col overflow-hidden">
+            <div className="p-4 border-b border-white/10">
                 <h3 className="font-semibold text-slate-800 dark:text-slate-200">The Critic Eye</h3>
                 <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Sube tu material para análisis</p>
             </div>
@@ -74,7 +74,7 @@ const CriticControls: React.FC<CriticControlsProps> = ({
                 <Button
                     onClick={onInvoke}
                     disabled={loading}
-                    className="w-full bg-orange-500 hover:bg-orange-600 text-white shadow-premium py-3 transition-all hover:scale-[1.02]"
+                    className="w-full bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white shadow-lg py-3 transition-all hover:scale-[1.02]"
                 >
                     {loading ? (
                         <span className="flex items-center gap-2">

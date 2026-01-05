@@ -35,7 +35,7 @@ const DesignerResults: React.FC<DesignerResultsProps> = ({ results, loading, err
 
     if (results.length === 0) {
         return (
-            <div className="flex flex-col items-center justify-center h-full text-slate-400 border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-2xl bg-white/20 dark:bg-slate-900/10 p-8">
+            <div className="flex flex-col items-center justify-center h-full text-slate-400 p-8">
                 <div className="p-4 bg-rose-50 dark:bg-rose-900/10 rounded-full mb-4">
                     <Icon svg={ICONS.menu} className="w-12 h-12 text-rose-300" />
                 </div>
@@ -64,7 +64,7 @@ const DesignerResults: React.FC<DesignerResultsProps> = ({ results, loading, err
                 ))}
             </div>
 
-            <div className="flex-1 overflow-y-auto rounded-2xl border border-slate-200 dark:border-slate-700/50 bg-white/50 dark:bg-slate-900/20 backdrop-blur-sm p-1">
+            <div className="flex-1 overflow-y-auto p-1">
                 <MenuResultCard item={results[activeTab]} db={db} userId={userId} appId={appId} />
             </div>
         </div>

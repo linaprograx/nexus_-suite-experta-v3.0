@@ -35,7 +35,7 @@ const CriticDashboard: React.FC<CriticDashboardProps> = ({ result, loading, erro
 
     if (!result) {
         return (
-            <div className="flex flex-col items-center justify-center h-full text-slate-400 border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-2xl bg-white/20 dark:bg-slate-900/10 p-8">
+            <div className="flex flex-col items-center justify-center h-full text-slate-400 p-8">
                 <div className="p-4 bg-rose-50 dark:bg-rose-900/10 rounded-full mb-4">
                     <Icon svg={ICONS.critic} className="w-12 h-12 text-rose-300" />
                 </div>

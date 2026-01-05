@@ -16,6 +16,8 @@ import { TrendLocatorTab } from '../components/trend-locator/TrendLocatorTab';
 import { TrendLocatorControls } from '../components/trend-locator/TrendLocatorControls';
 import { TrendHistorySidebar } from '../components/trend-locator/TrendHistorySidebar';
 import { TrendResult } from '../types';
+import MakeMenuView from './MakeMenuView';
+import CriticView from './unleash/CriticView';
 
 // Define SaveModal before it is used or move to separate file. 
 // Ideally it should be at top or hoisted.
@@ -96,7 +98,7 @@ const CerebrityView: React.FC<CerebrityViewProps> = ({ db, userId, storage, appI
   const { ingredients: allIngredients } = useIngredients();
   const { actions: orchestratorActions, state: orchestratorState } = useCerebrityOrchestrator();
 
-  const [activeTab, setActiveTab] = React.useState<'creativity' | 'lab' | 'trendLocator'>('creativity'); // Added trendLocator
+  const [activeTab, setActiveTab] = React.useState<'creativity' | 'makeMenu' | 'critic' | 'lab' | 'trendLocator'>('creativity');
   const [selectedRecipe, setSelectedRecipe] = React.useState<Recipe | null>(null);
   const [rawInput, setRawInput] = React.useState("");
   const [loading, setLoading] = React.useState(false);
@@ -647,52 +649,74 @@ const CerebrityView: React.FC<CerebrityViewProps> = ({ db, userId, storage, appI
     }
   };
 
-  const backgroundClass = activeTab === 'creativity'
-    ? "from-violet-500/90 via-violet-500/40 to-white/10 dark:from-violet-500/40 dark:via-violet-500/20 dark:to-slate-950/20"
-    : (activeTab === 'lab'
-      ? "from-cyan-500/90 via-cyan-500/40 to-white/10 dark:from-cyan-500/40 dark:via-cyan-500/20 dark:to-slate-950/20"
-      : "from-fuchsia-500/90 via-fuchsia-500/40 to-white/10 dark:from-fuchsia-500/40 dark:via-fuchsia-500/20 dark:to-slate-950/20" // Trend Locator Gradient
-    );
-
   return (
     <div className="h-[calc(100vh-80px)] w-full flex flex-col px-4 lg:px-8 py-6">
       <div className="flex-shrink-0 mb-4">
         <div className="flex items-center gap-2 bg-slate-100/80 dark:bg-slate-900/80 p-1 rounded-full w-fit">
-          <button onClick={() => setActiveTab('creativity')} className={`py-2 px-5 text-sm font-semibold rounded-full transition-all duration-300 ${activeTab === 'creativity' ? 'bg-violet-600 text-white shadow-md' : 'text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-800'}`}>CerebrIty</button>
-          <button onClick={() => setActiveTab('lab')} className={`py-2 px-5 text-sm font-semibold rounded-full transition-all duration-300 ${activeTab === 'lab' ? 'bg-cyan-600 text-white shadow-md' : 'text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-800'}`}>The Lab</button>
-          <button onClick={() => setActiveTab('trendLocator')} className={`py-2 px-5 text-sm font-semibold rounded-full transition-all duration-300 ${activeTab === 'trendLocator' ? 'bg-fuchsia-600 text-white shadow-md' : 'text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-800'}`}>Trend Locator</button>
+          <button onClick={() => setActiveTab('creativity')} className={`py-2 px-5 text-xs font-bold rounded-full transition-all duration-300 whitespace-nowrap ${activeTab === 'creativity' ? 'bg-violet-600 text-white shadow-lg shadow-violet-600/25' : 'text-slate-400 hover:text-white hover:bg-white/5'}`}>Synthesis</button>
+          <button onClick={() => setActiveTab('makeMenu')} className={`py-2 px-5 text-xs font-bold rounded-full transition-all duration-300 whitespace-nowrap ${activeTab === 'makeMenu' ? 'bg-teal-600 text-white shadow-lg shadow-teal-600/25' : 'text-slate-400 hover:text-white hover:bg-white/5'}`}>Make Menu</button>
+          <button onClick={() => setActiveTab('critic')} className={`py-2 px-5 text-xs font-bold rounded-full transition-all duration-300 whitespace-nowrap ${activeTab === 'critic' ? 'bg-orange-600 text-white shadow-lg shadow-orange-600/25' : 'text-slate-400 hover:text-white hover:bg-white/5'}`}>The Critic</button>
+          <button onClick={() => setActiveTab('lab')} className={`py-2 px-5 text-xs font-bold rounded-full transition-all duration-300 whitespace-nowrap ${activeTab === 'lab' ? 'bg-cyan-600 text-white shadow-lg shadow-cyan-600/25' : 'text-slate-400 hover:text-white hover:bg-white/5'}`}>The Lab</button>
+          <button onClick={() => setActiveTab('trendLocator')} className={`py-2 px-5 text-xs font-bold rounded-full transition-all duration-300 whitespace-nowrap ${activeTab === 'trendLocator' ? 'bg-fuchsia-600 text-white shadow-lg shadow-fuchsia-600/25' : 'text-slate-400 hover:text-white hover:bg-white/5'}`}>Trend Locator</button>
         </div>
       </div>
-      <div className={`flex-1 grid grid-cols-1 lg:grid-cols-[310px,minmax(0,1fr),320px] gap-6 overflow-hidden rounded-3xl bg-gradient-to-b ${backgroundClass} p-6`}>
-        <div className="h-full min-h-0 flex flex-col relative">
-          {activeTab === 'creativity' ? (
-            <CerebrityHistorySidebar db={db} userId={userId} onLoadHistory={(item) => setResult(item)} />
-          ) : activeTab === 'lab' ? (
-            <TheLabHistorySidebar db={db} historyPath={`users/${userId}/the-lab-history`} onLoadHistory={(item) => setLabResult(item.result)} />
-          ) : (
-            <TrendHistorySidebar db={db} trendHistoryPath={`users/${userId}/trend-history`} onLoadHistory={(item) => setTrendResults((item as any).results || [])} />
-          )}
-        </div>
-        <div className="h-full min-h-0 flex flex-col relative">
-          {activeTab === 'creativity' ? (
-            <CreativityTab db={db} userId={userId} appId={appId} allRecipes={allRecipes} selectedRecipe={selectedRecipe} setSelectedRecipe={setSelectedRecipe} rawInput={rawInput} setRawInput={setRawInput} handleGenerate={handleGenerate} loading={loading} imageLoading={imageLoading} error={error} result={result} setResult={setResult} onOpenRecipeModal={onOpenRecipeModal} />
-          ) : activeTab === 'lab' ? (
-            <LabView db={db} userId={userId} appId={appId} allIngredients={allIngredients} allRecipes={allRecipes} labResult={labResult} setLabResult={setLabResult} labInputs={labInputs} setLabInputs={setLabInputs} />
-          ) : (
-            <TrendLocatorTab loading={trendLoading} error={trendError} trendResults={trendResults} trendSources={[]} db={db} userId={userId} appId={appId} trendHistoryPath={`users/${userId}/trend-history`} />
-          )}
-        </div>
-        <div className="h-full min-h-0 flex flex-col relative">
-          {activeTab === 'trendLocator' ? (
-            <TrendLocatorControls sourceFilter={sourceFilter} setSourceFilter={setSourceFilter} topicFilter={topicFilter} setTopicFilter={setTopicFilter} keyword={keyword} setKeyword={setKeyword} loading={trendLoading} onSearch={handleTrendSearch} />
-          ) : (
-            <PowerTreeColumn
-              mode={activeTab === 'creativity' ? 'cerebrity' : 'lab'}
-              powers={allPowers}
-              onClickPower={handlePowerClick}
-            />
-          )}
-        </div>
+      <div className={`flex-1 ${(activeTab === 'makeMenu' || activeTab === 'critic') ? 'flex' : 'grid grid-cols-1 lg:grid-cols-[310px,minmax(0,1fr),320px] gap-6'} overflow-hidden rounded-3xl relative p-6`}>
+        {/* Avatar Intelligence-style gradient background */}
+        <div
+          className="absolute inset-0 pointer-events-none rounded-3xl"
+          style={{
+            background: activeTab === 'creativity'
+              ? 'linear-gradient(180deg, #8b5cf6 0%, rgba(139, 92, 246, 0.8) 15%, rgba(139, 92, 246, 0) 35%)'
+              : activeTab === 'makeMenu'
+                ? 'linear-gradient(180deg, #14b8a6 0%, rgba(20, 184, 166, 0.8) 15%, rgba(20, 184, 166, 0) 35%)'
+                : activeTab === 'critic'
+                  ? 'linear-gradient(180deg, #f97316 0%, rgba(249, 115, 22, 0.8) 15%, rgba(249, 115, 22, 0) 35%)'
+                  : activeTab === 'lab'
+                    ? 'linear-gradient(180deg, #06b6d4 0%, rgba(6, 182, 212, 0.8) 15%, rgba(6, 182, 212, 0) 35%)'
+                    : 'linear-gradient(180deg, #d946ef 0%, rgba(217, 70, 239, 0.8) 15%, rgba(217, 70, 239, 0) 35%)'
+          }}
+        />
+        {(activeTab === 'makeMenu' || activeTab === 'critic') ? (
+          <div className="h-full w-full min-h-0 flex flex-col relative overflow-y-auto">
+            {activeTab === 'makeMenu' ? (
+              <MakeMenuView db={db} userId={userId} appId={appId} />
+            ) : (
+              <CriticView />
+            )}
+          </div>
+        ) : (
+          <>
+            <div className="h-full min-h-0 flex flex-col relative">
+              {activeTab === 'creativity' ? (
+                <CerebrityHistorySidebar db={db} userId={userId} onLoadHistory={(item) => setResult(item)} />
+              ) : activeTab === 'lab' ? (
+                <TheLabHistorySidebar db={db} historyPath={`users/${userId}/the-lab-history`} onLoadHistory={(item) => setLabResult(item.result)} />
+              ) : (
+                <TrendHistorySidebar db={db} trendHistoryPath={`users/${userId}/trend-history`} onLoadHistory={(item) => setTrendResults((item as any).results || [])} />
+              )}
+            </div>
+            <div className="h-full min-h-0 flex flex-col relative">
+              {activeTab === 'creativity' ? (
+                <CreativityTab db={db} userId={userId} appId={appId} allRecipes={allRecipes} selectedRecipe={selectedRecipe} setSelectedRecipe={setSelectedRecipe} rawInput={rawInput} setRawInput={setRawInput} handleGenerate={handleGenerate} loading={loading} imageLoading={imageLoading} error={error} result={result} setResult={setResult} onOpenRecipeModal={onOpenRecipeModal} />
+              ) : activeTab === 'lab' ? (
+                <LabView db={db} userId={userId} appId={appId} allIngredients={allIngredients} allRecipes={allRecipes} labResult={labResult} setLabResult={setLabResult} labInputs={labInputs} setLabInputs={setLabInputs} />
+              ) : (
+                <TrendLocatorTab loading={trendLoading} error={trendError} trendResults={trendResults} trendSources={[]} db={db} userId={userId} appId={appId} trendHistoryPath={`users/${userId}/trend-history`} />
+              )}
+            </div>
+            <div className="h-full min-h-0 flex flex-col relative">
+              {activeTab === 'trendLocator' ? (
+                <TrendLocatorControls sourceFilter={sourceFilter} setSourceFilter={setSourceFilter} topicFilter={topicFilter} setTopicFilter={setTopicFilter} keyword={keyword} setKeyword={setKeyword} loading={trendLoading} onSearch={handleTrendSearch} />
+              ) : (
+                <PowerTreeColumn
+                  mode={activeTab === 'creativity' ? 'cerebrity' : 'lab'}
+                  powers={allPowers}
+                  onClickPower={handlePowerClick}
+                />
+              )}
+            </div>
+          </>
+        )}
       </div>
       {isPowerModalOpen && (
         <Modal title={powerModalState?.title || ''} isOpen={isPowerModalOpen} onClose={() => { setIsPowerModalOpen(false); setStorytellingTheme(''); }}>

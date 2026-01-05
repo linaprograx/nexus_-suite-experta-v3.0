@@ -26,7 +26,7 @@ export const TheLabHistorySidebar: React.FC<TheLabHistorySidebarProps> = ({ db, 
     }, [db, historyPath]);
 
     return (
-        <div className="h-full flex flex-col backdrop-blur-xl bg-white/40 dark:bg-slate-900/40 border border-white/20 shadow-lg rounded-xl p-4">
+        <div className="h-full flex flex-col p-4">
             <div className="flex-shrink-0 mb-4">
                 <h3 className="text-sm font-bold text-slate-800 dark:text-slate-200">Historial del Laboratorio</h3>
             </div>
@@ -35,14 +35,14 @@ export const TheLabHistorySidebar: React.FC<TheLabHistorySidebarProps> = ({ db, 
                 {loading && <div className="p-4 text-center text-sm text-slate-500">Cargando...</div>}
                 {!loading && history.length === 0 && <div className="p-4 text-center text-sm text-slate-500">No hay historial.</div>}
                 {history.map(item => (
-                    <div 
+                    <div
                         key={item.id}
                         onClick={() => onLoadHistory(item)}
                         className="p-3 rounded-lg bg-white/60 dark:bg-slate-800/60 border border-white/30 shadow-sm hover:shadow-md hover:scale-[1.02] transition-all duration-200 cursor-pointer"
                     >
                         <p className="font-semibold text-xs text-slate-800 dark:text-slate-200 truncate">Análisis de: {item.combination}</p>
                         <p className="text-xs text-slate-500 dark:text-slate-400 truncate mt-1">{item.result?.perfil}</p>
-                         <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-2">
+                        <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-2">
                             {item.createdAt?.toDate ? item.createdAt.toDate().toLocaleDateString() : 'Reciente'}
                         </p>
                     </div>

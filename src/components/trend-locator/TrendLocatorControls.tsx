@@ -28,7 +28,7 @@ export const TrendLocatorControls: React.FC<TrendLocatorControlsProps> = ({
     loading, onSearch
 }) => {
     return (
-        <div className="h-full flex flex-col bg-white/50 dark:bg-slate-900/30 backdrop-blur-md rounded-2xl border border-white/20 dark:border-white/5 p-4 overflow-y-auto">
+        <div className="h-full flex flex-col backdrop-blur-xl bg-white/40 dark:bg-slate-900/40 border border-white/20 shadow-lg rounded-2xl p-4 overflow-y-auto">
             <h3 className="font-semibold text-slate-800 dark:text-slate-200 mb-4 flex items-center gap-2">
                 <Icon svg={ICONS.filter} className="w-4 h-4" />
                 Filtros de Búsqueda
@@ -56,7 +56,7 @@ export const TrendLocatorControls: React.FC<TrendLocatorControlsProps> = ({
             </div>
 
             <div className="mt-6 pt-4 border-t border-slate-200/50 dark:border-slate-700/50">
-                <Button onClick={onSearch} disabled={loading} className="w-full bg-violet-600 hover:bg-violet-700 text-white shadow-premium transition-all hover:scale-[1.02]">
+                <Button onClick={onSearch} disabled={loading} className="w-full bg-gradient-to-r from-fuchsia-500 to-pink-500 hover:from-fuchsia-600 hover:to-pink-600 text-white shadow-lg transition-all hover:scale-[1.02]">
                     {loading ? <Spinner className="w-4 h-4 mr-2" /> : <Icon svg={ICONS.search} className="w-4 h-4 mr-2" />}
                     Buscar Tendencias
                 </Button>

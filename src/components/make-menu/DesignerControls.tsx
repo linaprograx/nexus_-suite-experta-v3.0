@@ -33,8 +33,8 @@ const DesignerControls: React.FC<DesignerControlsProps> = ({
     const pizarronAprobado = allPizarronTasks.filter(task => task.status === 'aprobado');
 
     return (
-        <div className="bg-white/60 dark:bg-slate-900/30 backdrop-blur-md rounded-2xl border border-white/20 dark:border-white/5 h-full flex flex-col overflow-hidden">
-            <div className="p-4 border-b border-white/10 dark:border-white/5 bg-white/40 dark:bg-slate-900/40">
+        <div className="backdrop-blur-xl bg-white/40 dark:bg-slate-900/40 border border-white/20 shadow-lg rounded-2xl h-full flex flex-col overflow-hidden">
+            <div className="p-4 border-b border-white/10">
                 <h3 className="font-semibold text-slate-800 dark:text-slate-200">Creative Studio</h3>
                 <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Configura tu diseño</p>
             </div>
@@ -85,34 +85,15 @@ const DesignerControls: React.FC<DesignerControlsProps> = ({
                 </div>
             </div>
 
-            <div className="p-4 border-t border-white/10 dark:border-white/5 bg-white/30 dark:bg-slate-900/20">
+            <div className="p-4 border-t border-white/10 bg-white/30 dark:bg-slate-900/20">
                 <Button
                     onClick={onGenerate}
                     disabled={loading || (selectedRecipeIds.length + selectedTaskIds.length < 1)}
-                    className="w-full bg-rose-600 hover:bg-rose-700 text-white shadow-lg shadow-rose-500/20"
+                    className="w-full bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-600 hover:to-emerald-600 text-white shadow-lg"
                 >
                     {loading ? <Spinner className="w-4 h-4 mr-2" /> : <Icon svg={ICONS.menu} className="w-4 h-4 mr-2" />}
                     Generar Conceptos
                 </Button>
-
-                {pizarronDraft && (
-                    <div className="mt-3 p-3 bg-blue-50 dark:bg-blue-900/10 border border-blue-200 dark:border-blue-800/50 rounded-xl animate-in fade-in slide-in-from-bottom-2 duration-700">
-                        <div className="flex items-center justify-between mb-2">
-                            <span className="text-[10px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-widest">Pizarrón Sync</span>
-                            <div className="h-1.5 w-1.5 rounded-full bg-blue-500 animate-pulse" />
-                        </div>
-                        <p className="text-[11px] text-blue-700 dark:text-blue-300 mb-2 leading-tight">
-                            Se detectó un diseño conceptual de Pizarrón con {pizarronDraft.sections.length} secciones.
-                        </p>
-                        <Button
-                            onClick={onApplyIntention}
-                            className="w-full py-1.5 h-auto text-[11px] bg-blue-600 hover:bg-blue-700 text-white border-0 shadow-sm"
-                        >
-                            <Icon svg={ICONS.activity} className="w-3 h-3 mr-1.5" />
-                            Aplicar Intención
-                        </Button>
-                    </div>
-                )}
             </div>
         </div>
     );

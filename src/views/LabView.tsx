@@ -1,7 +1,7 @@
 import React from 'react';
 import { Firestore, collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { Recipe, Ingredient } from '../../types';
-import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '../components/ui/Card';
+import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Spinner } from '../components/ui/Spinner';
 import { Alert } from '../components/ui/Alert';
@@ -71,46 +71,35 @@ const LabView: React.FC<LabViewProps> = ({ db, userId, appId, allIngredients, al
         }
     };
 
-    const handleSaveLabResultToPizarron = async (title: string, content: string) => {
-        if (!labResult) return;
-        const combination = labInputs.map(i => i.nombre).join(', ');
-        const taskContent = `[The Lab: ${combination}] ${title} - ${content}`.substring(0, 500);
-        try {
-            await addDoc(collection(db, `artifacts/${appId}/public/data/pizarron-tasks`), {
-                content: taskContent, status: 'Ideas', category: 'Ideas', createdAt: serverTimestamp(), boardId: 'general'
-            });
-            // Consider a more subtle notification system in the future
-            alert("Idea guardada en el Pizarrón.");
-        } catch (e) {
-            console.error("Error guardando en Pizarrón: ", e);
-        }
-    };
-
     return (
         <div className="h-full flex flex-col gap-6 overflow-y-auto custom-scrollbar p-1">
-            <Card className="flex-shrink-0 backdrop-blur-xl bg-white/40 dark:bg-slate-900/40 border border-white/20 shadow-lg rounded-xl">
+            <Card className="flex-shrink-0 backdrop-blur-xl bg-white/40 dark:bg-slate-900/40 border border-white/20 shadow-lg rounded-2xl">
                 <CardHeader>
-                    <CardTitle className="text-cyan-800 dark:text-cyan-200">The Lab: Análisis Molecular</CardTitle>
-                    <CardDescription>Construya un "pool" de análisis con recetas e ingredientes.</CardDescription>
+                    <CardTitle className="text-2xl font-bold text-cyan-800 dark:text-cyan-200">Laboratorio Molecular</CardTitle>
+                    <p className="text-sm text-slate-500 mt-1">Experimenta con combinaciones y descubre perfiles aromáticos</p>
                 </CardHeader>
                 <CardContent className="space-y-4 px-6 pb-6">
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <Combobox items={allIngredients} onSelect={item => setLabInputs([...labInputs, item])} placeholder="Añadir ingrediente..." />
                         <Combobox items={allRecipes} onSelect={item => setLabInputs([...labInputs, item])} placeholder="Añadir receta..." />
                     </div>
-                    <div className="p-2 border rounded-md min-h-[60px] flex flex-wrap gap-2 bg-slate-50 dark:bg-slate-800/50">
-                        {labInputs.length === 0 ? <p className="text-sm text-muted-foreground p-2">Seleccione para analizar.</p> :
+                    <div className="p-4 rounded-xl bg-gradient-to-br from-cyan-50 to-teal-50 dark:from-cyan-950/20 dark:to-teal-950/20 border-2 border-cyan-300 dark:border-cyan-700 min-h-[100px] flex flex-wrap gap-2">
+                        {labInputs.length === 0 ? <p className="text-sm text-slate-500 dark:text-slate-400 p-2 w-full text-center">Seleccione ingredientes o recetas para analizar</p> :
                             labInputs.map((item, index) => (
-                                <div key={`${item.id}-${index}`} className="flex items-center gap-1 bg-cyan-100 text-cyan-800 rounded-full px-3 py-1 text-sm dark:bg-cyan-900 dark:text-cyan-100">
-                                    <span>{item.nombre}</span>
-                                    <button onClick={() => setLabInputs(labInputs.filter((_, i) => i !== index))} className="text-cyan-600 hover:text-cyan-800 dark:text-cyan-300 dark:hover:text-cyan-100">
+                                <div key={`${item.id}-${index}`} className="flex items-center gap-1 bg-cyan-100 text-cyan-800 rounded-full px-3 py-1.5 text-sm dark:bg-cyan-900 dark:text-cyan-100 shadow-sm">
+                                    <span className="font-medium">{item.nombre}</span>
+                                    <button onClick={() => setLabInputs(labInputs.filter((_, i) => i !== index))} className="text-cyan-600 hover:text-cyan-800 dark:text-cyan-300 dark:hover:text-cyan-100 ml-1">
                                         <Icon svg={ICONS.x} className="h-3 w-3" />
                                     </button>
                                 </div>
                             ))
                         }
                     </div>
-                    <Button onClick={handleAnalyzeLab} disabled={labLoading} className="w-full rounded-xl bg-teal-500 hover:bg-teal-600 text-white font-semibold py-2.5 shadow-premium transition-all hover:scale-[1.02]">
+                    <Button
+                        onClick={handleAnalyzeLab}
+                        disabled={labLoading}
+                        className="w-full rounded-xl bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-600 hover:to-teal-600 text-white font-semibold py-3 shadow-lg transition-all hover:scale-[1.02]"
+                    >
                         {labLoading ? <Spinner className="mr-2" /> : <Icon svg={ICONS.flask} className="mr-2 h-5 w-5" />}
                         Analizar Combinación
                     </Button>
@@ -127,9 +116,9 @@ const LabView: React.FC<LabViewProps> = ({ db, userId, appId, allIngredients, al
             )}
 
             {labResult && (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <Card className="md:col-span-2 backdrop-blur-xl bg-white/40 dark:bg-slate-900/40 border border-white/20 shadow-lg rounded-xl">
-                        <CardHeader><CardTitle>Perfil de Sabor Molecular</CardTitle></CardHeader>
+                <div className="space-y-6 animate-in fade-in duration-500">
+                    <Card className="backdrop-blur-xl bg-white/40 dark:bg-slate-900/40 border border-white/20 shadow-lg rounded-2xl">
+                        <CardHeader><CardTitle className="text-xl font-bold text-cyan-800 dark:text-cyan-200">Perfil de Sabor Molecular</CardTitle></CardHeader>
                         <div className="h-[250px]">
                             <ChartContainer height={250}>
                                 <PieChart>
@@ -142,49 +131,39 @@ const LabView: React.FC<LabViewProps> = ({ db, userId, appId, allIngredients, al
                         </div>
                     </Card>
 
-                    <Card className="md:col-span-2 backdrop-blur-xl bg-white/40 dark:bg-slate-900/40 border border-white/20 shadow-lg rounded-xl">
-                        <CardHeader>
-                            <CardTitle>Perfil Aromático</CardTitle>
-                        </CardHeader>
+                    <Card className="backdrop-blur-xl bg-white/40 dark:bg-slate-900/40 border border-white/20 shadow-lg rounded-2xl">
+                        <CardHeader><CardTitle>Perfil Aromático</CardTitle></CardHeader>
                         <CardContent className="px-7 pb-7">
-                            <p className="text-slate-600 leading-relaxed dark:text-slate-300">
-                                {labResult?.perfil}
-                            </p>
+                            <p className="text-slate-600 leading-relaxed dark:text-slate-300">{labResult?.perfil}</p>
                         </CardContent>
                     </Card>
 
-                    <Card className="backdrop-blur-xl bg-white/40 dark:bg-slate-900/40 border border-white/20 shadow-lg rounded-xl">
-                        <CardHeader>
-                            <CardTitle>Clásicos</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <ul className="list-disc list-inside space-y-1 text-slate-600 dark:text-slate-300">
-                                {Array.isArray(labResult?.clasicos) &&
-                                    labResult.clasicos.map((c: string, i: number) => <li key={i}>{c}</li>)}
-                            </ul>
-                        </CardContent>
-                    </Card>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <Card className="backdrop-blur-xl bg-white/40 dark:bg-slate-900/40 border border-white/20 shadow-lg rounded-2xl">
+                            <CardHeader><CardTitle>Clásicos</CardTitle></CardHeader>
+                            <CardContent>
+                                <ul className="list-disc list-inside space-y-1 text-slate-600 dark:text-slate-300">
+                                    {Array.isArray(labResult?.clasicos) &&
+                                        labResult.clasicos.map((c: string, i: number) => <li key={i}>{c}</li>)}
+                                </ul>
+                            </CardContent>
+                        </Card>
 
-                    <Card className="backdrop-blur-xl bg-white/40 dark:bg-slate-900/40 border border-white/20 shadow-lg rounded-xl">
-                        <CardHeader>
-                            <CardTitle>Moleculares</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <ul className="list-disc list-inside space-y-1 text-slate-600 dark:text-slate-300">
-                                {Array.isArray(labResult?.moleculares) &&
-                                    labResult.moleculares.map((c: string, i: number) => <li key={i}>{c}</li>)}
-                            </ul>
-                        </CardContent>
-                    </Card>
+                        <Card className="backdrop-blur-xl bg-white/40 dark:bg-slate-900/40 border border-white/20 shadow-lg rounded-2xl">
+                            <CardHeader><CardTitle>Moleculares</CardTitle></CardHeader>
+                            <CardContent>
+                                <ul className="list-disc list-inside space-y-1 text-slate-600 dark:text-slate-300">
+                                    {Array.isArray(labResult?.moleculares) &&
+                                        labResult.moleculares.map((c: string, i: number) => <li key={i}>{c}</li>)}
+                                </ul>
+                            </CardContent>
+                        </Card>
+                    </div>
 
-                    <Card className="md:col-span-2 backdrop-blur-xl bg-white/40 dark:bg-slate-900/40 border border-white/20 shadow-lg rounded-xl">
-                        <CardHeader>
-                            <CardTitle>Técnica Sugerida</CardTitle>
-                        </CardHeader>
+                    <Card className="backdrop-blur-xl bg-white/40 dark:bg-slate-900/40 border border-white/20 shadow-lg rounded-2xl">
+                        <CardHeader><CardTitle>Técnica Sugerida</CardTitle></CardHeader>
                         <CardContent className="px-7 pb-7">
-                            <p className="text-slate-600 leading-relaxed dark:text-slate-300">
-                                {labResult?.tecnica}
-                            </p>
+                            <p className="text-slate-600 leading-relaxed dark:text-slate-300">{labResult?.tecnica}</p>
                         </CardContent>
                     </Card>
                 </div>

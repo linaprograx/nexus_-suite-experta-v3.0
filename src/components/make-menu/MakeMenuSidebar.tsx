@@ -9,7 +9,7 @@ interface MakeMenuSidebarProps {
 
 const MakeMenuSidebar: React.FC<MakeMenuSidebarProps> = ({ activeMode, onModeChange }) => {
     return (
-        <div className="bg-white/60 dark:bg-slate-900/30 backdrop-blur-md rounded-2xl border border-white/20 dark:border-white/5 h-full flex flex-col overflow-hidden p-4 gap-6">
+        <div className="backdrop-blur-xl bg-white/40 dark:bg-slate-900/40 border border-white/20 shadow-lg rounded-2xl h-full flex flex-col overflow-hidden p-4 gap-6">
             <div>
                 <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4 px-2">Personalización</h3>
                 <div className="space-y-4">

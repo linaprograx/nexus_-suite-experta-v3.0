@@ -60,7 +60,7 @@ export const FullRoutes = ({
                 />
             } />
             <Route path="/trend-locator" element={<TrendLocatorView db={db} userId={userId} appId={appId} />} />
-            <Route path="/unleash" element={<UnleashView />} />
+            <Route path="/unleash" element={<Navigate to="/cerebrity" replace />} />
             <Route path="/avatar" element={<AvatarView />} />
             <Route path="/make-menu" element={<MakeMenuView db={db} userId={userId} appId={appId} />} />
             <Route path="/colegium" element={<ColegiumView />} />
