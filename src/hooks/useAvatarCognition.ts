@@ -335,6 +335,84 @@ export const useAvatarCognition = () => {
 
     const isManagerActive = () => activeAvatarType === 'Manager' || activeAvatarType === 'Owner';
 
+    // Create new avatar with membership limits
+    const createNewAvatar = (type: AvatarType, customName?: string, customEmoji?: string): { success: boolean; error?: string } => {
+        // Get membership limits
+        const avatarLimit = {
+            'FREE': 1,
+            'PRO': 2,
+            'EXPERT': 4,
+            'STUDIO': 99
+        }[userPlan] || 1;
+
+        // Count existing avatars (non-default configs)
+        const existingAvatars = Object.values(avatarConfigs).filter(config =>
+            config.profiles.length > 0 || config.name !== DEFAULT_CONFIG.name
+        ).length;
+
+        if (existingAvatars >= avatarLimit) {
+            return {
+                success: false,
+                error: `Tu estado actual permite ${avatarLimit} manifestación(es). Esta capacidad se expande al alcanzar el siguiente nivel de consciencia.`
+            };
+        }
+
+        // Check if avatar type already exists
+        const existing = avatarConfigs[type];
+        if (existing && (existing.profiles.length > 0 || existing.name !== DEFAULT_CONFIG.name)) {
+            return {
+                success: false,
+                error: `La manifestación ${type} ya existe. Selecciónala para configurarla.`
+            };
+        }
+
+        // Create new avatar with default profile
+        const defaultProfile: CognitiveProfile = {
+            id: `${type.toLowerCase()}_default`,
+            name: 'Perfil Estándar',
+            tone: 'Técnico',
+            researchAxis: ['Precisión'],
+            activePrinciples: [],
+            riskTolerance: 'Moderado'
+        };
+
+        const newConfig: AvatarConfig = {
+            ...DEFAULT_CONFIG,
+            name: customName || type,
+            emoji: customEmoji || getDefaultEmoji(type),
+            profiles: [defaultProfile],
+            activeProfileId: defaultProfile.id,
+            tone: 'Técnico',
+            researchAxis: ['Precisión'],
+            activePrinciples: []
+        };
+
+        setAvatarConfigs(prev => ({
+            ...prev,
+            [type]: newConfig
+        }));
+
+        // Auto-select the new avatar
+        setActiveAvatarType(type);
+
+        return { success: true };
+    };
+
+    // Helper to get default emoji
+    const getDefaultEmoji = (type: AvatarType): string => {
+        const emojiMap: Record<AvatarType, string> = {
+            'Mixologist': '🍸',
+            'Chef': '👨‍🍳',
+            'Patissier': '🍰',
+            'Sommelier': '🍷',
+            'Barista': '☕',
+            'Concierge': '🛎️',
+            'Manager': '💼',
+            'Owner': '👑'
+        };
+        return emojiMap[type] || '🤖';
+    };
+
     return {
         activeAvatarType,
         avatarConfigs,
@@ -348,6 +426,7 @@ export const useAvatarCognition = () => {
         togglePrinciple,
         toggleResearchAxis,
         simulateDecision,
-        isManagerActive
+        isManagerActive,
+        createNewAvatar
     };
 };

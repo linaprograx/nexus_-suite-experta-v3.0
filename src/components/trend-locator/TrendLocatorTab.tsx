@@ -37,7 +37,7 @@ export const TrendLocatorTab: React.FC<TrendLocatorTabProps> = ({
                 {loading && (
                     <div className="absolute inset-0 flex flex-col items-center justify-center bg-white/50 dark:bg-black/50 backdrop-blur-sm z-10 rounded-2xl">
                         <Spinner className="w-10 h-10 text-amber-500 mb-4" />
-                        <p className="text-amber-700 dark:text-amber-300 font-medium animate-pulse">Analizando tendencias...</p>
+                        <p className="text-amber-700 dark:text-amber-300 font-medium animate-pulse">Explorando patrones emergentes...</p>
                     </div>
                 )}
 
@@ -46,7 +46,7 @@ export const TrendLocatorTab: React.FC<TrendLocatorTabProps> = ({
                 {!loading && trendResults.length === 0 && !error ? (
                     <div className="h-full flex flex-col items-center justify-center text-slate-400 text-center opacity-60">
                         <Icon svg={ICONS.search} className="w-16 h-16 mb-4 text-slate-300 dark:text-slate-600" />
-                        <p className="text-lg">Configura los filtros a la derecha y busca inspiración.</p>
+                        <p className="text-lg">Espacio de exploración vacío</p>
                     </div>
                 ) : (
                     <div className="flex flex-col gap-4 pb-4">

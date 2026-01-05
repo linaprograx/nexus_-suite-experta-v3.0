@@ -14,6 +14,7 @@ import DesignerResults from '../components/make-menu/DesignerResults';
 
 import { useRecipes } from '../hooks/useRecipes';
 import { usePizarronData } from '../hooks/usePizarronData';
+import { useCerebrityOrchestrator } from '../hooks/useCerebrityOrchestrator';
 
 interface MakeMenuViewProps {
     db: Firestore;
@@ -25,6 +26,7 @@ interface MakeMenuViewProps {
 const MakeMenuView: React.FC<MakeMenuViewProps> = ({ db, userId, appId }) => {
     const { recipes: allRecipes } = useRecipes();
     const { tasks: allPizarronTasks } = usePizarronData();
+    const { actions: orchestratorActions } = useCerebrityOrchestrator();
 
     // --- Designer State ---
     const [selectedRecipeIds, setSelectedRecipeIds] = useState<string[]>([]);
@@ -127,6 +129,14 @@ const MakeMenuView: React.FC<MakeMenuViewProps> = ({ db, userId, appId }) => {
         const selectedRecipes = allRecipes.filter(r => effectiveRecipeIds.includes(r.id));
         const pizarronAprobado = allPizarronTasks.filter(task => task.status === 'aprobado');
         const selectedTasks = pizarronAprobado.filter(t => selectedTaskIds.includes(t.id));
+
+        // Validate coherence with Avatar profile
+        const coherenceValidation = orchestratorActions.validateMenuCoherence(selectedRecipes);
+        if (!coherenceValidation.valid) {
+            setErrorDesigner(`Incoherencia con Avatar: ${coherenceValidation.reason}`);
+            setLoadingDesigner(false);
+            return;
+        }
 
         const sectionTitles = effectiveDraft?.sections?.map((s: any) => s.title) || [];
 

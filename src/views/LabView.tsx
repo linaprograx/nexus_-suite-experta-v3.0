@@ -12,6 +12,7 @@ import { PieChart, Pie, Cell, Tooltip } from 'recharts';
 import { ChartContainer } from '../components/ui/ChartContainer';
 import { callGeminiApi } from '../utils/gemini';
 import { Type } from "@google/genai";
+import { useCerebrityOrchestrator } from '../hooks/useCerebrityOrchestrator';
 
 interface LabViewProps {
     db: Firestore;
@@ -27,8 +28,12 @@ interface LabViewProps {
 }
 
 const LabView: React.FC<LabViewProps> = ({ db, userId, appId, allIngredients, allRecipes, labResult, setLabResult, labInputs, setLabInputs }) => {
+    const { actions: orchestratorActions } = useCerebrityOrchestrator();
     const [labLoading, setLabLoading] = React.useState(false);
     const [labError, setLabError] = React.useState<string | null>(null);
+
+    // Get Avatar analysis bias for display
+    const analysisBias = orchestratorActions.getLabAnalysisBias();
 
     const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#AF19FF', '#FF4560', '#775DD0'];
     const flavorProfileData = (labResult && labResult.perfilSabor && typeof labResult.perfilSabor === 'object')
@@ -101,7 +106,7 @@ const LabView: React.FC<LabViewProps> = ({ db, userId, appId, allIngredients, al
                         className="w-full rounded-xl bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-600 hover:to-teal-600 text-white font-semibold py-3 shadow-lg transition-all hover:scale-[1.02]"
                     >
                         {labLoading ? <Spinner className="mr-2" /> : <Icon svg={ICONS.flask} className="mr-2 h-5 w-5" />}
-                        Analizar Combinación
+                        {labLoading ? 'Evaluando composición...' : 'Evaluar Composición'}
                     </Button>
                 </CardContent>
                 {labError && <div className="px-6 pb-6"><Alert variant="destructive" title="Error de Análisis" description={labError} /></div>}

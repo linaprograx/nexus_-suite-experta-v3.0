@@ -38,8 +38,8 @@ export const CreativityTab: React.FC<CreativityTabProps> = ({
         <div className="h-full flex flex-col gap-6 overflow-y-auto custom-scrollbar p-1">
             <Card className="flex-shrink-0 backdrop-blur-xl bg-white/40 dark:bg-slate-900/40 border border-white/20 shadow-lg rounded-2xl">
                 <CardHeader>
-                    <CardTitle className="text-2xl font-bold text-violet-800 dark:text-violet-200">Exploración Creativa</CardTitle>
-                    <p className="text-sm text-slate-500 mt-1">Punto de partida: define tu dirección creativa</p>
+                    <CardTitle className="text-2xl font-bold text-violet-800 dark:text-violet-200">Síntesis Cognitiva</CardTitle>
+                    <p className="text-sm text-slate-500 mt-1">Punto de partida para exploración creativa</p>
                 </CardHeader>
                 <CardContent className="space-y-4 px-6 pb-6">
                     <div>
@@ -70,7 +70,7 @@ export const CreativityTab: React.FC<CreativityTabProps> = ({
                         disabled={loading || imageLoading}
                     >
                         {(loading || imageLoading) && <Spinner className="mr-2" />}
-                        {loading ? 'Sintetizando...' : 'Iniciar Síntesis'}
+                        {loading ? 'Sintetizando criterio...' : 'Sintetizar'}
                     </Button>
                 </CardContent>
                 {error && <div className="px-6 pb-6"><Alert variant="destructive" title="Error" description={error} /></div>}
@@ -96,8 +96,8 @@ export const CreativityTab: React.FC<CreativityTabProps> = ({
                                 <button
                                     onClick={() => setActiveResultTab('mejora')}
                                     className={`px-4 py-2 text-sm font-medium transition-all ${activeResultTab === 'mejora'
-                                            ? 'text-violet-600 dark:text-violet-400 border-b-2 border-violet-600 dark:border-violet-400'
-                                            : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
+                                        ? 'text-violet-600 dark:text-violet-400 border-b-2 border-violet-600 dark:border-violet-400'
+                                        : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
                                         }`}
                                 >
                                     Mejora Táctica
@@ -105,8 +105,8 @@ export const CreativityTab: React.FC<CreativityTabProps> = ({
                                 <button
                                     onClick={() => setActiveResultTab('garnish')}
                                     className={`px-4 py-2 text-sm font-medium transition-all ${activeResultTab === 'garnish'
-                                            ? 'text-violet-600 dark:text-violet-400 border-b-2 border-violet-600 dark:border-violet-400'
-                                            : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
+                                        ? 'text-violet-600 dark:text-violet-400 border-b-2 border-violet-600 dark:border-violet-400'
+                                        : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
                                         }`}
                                 >
                                     Garnish
@@ -114,8 +114,8 @@ export const CreativityTab: React.FC<CreativityTabProps> = ({
                                 <button
                                     onClick={() => setActiveResultTab('storytelling')}
                                     className={`px-4 py-2 text-sm font-medium transition-all ${activeResultTab === 'storytelling'
-                                            ? 'text-violet-600 dark:text-violet-400 border-b-2 border-violet-600 dark:border-violet-400'
-                                            : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
+                                        ? 'text-violet-600 dark:text-violet-400 border-b-2 border-violet-600 dark:border-violet-400'
+                                        : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
                                         }`}
                                 >
                                     Storytelling

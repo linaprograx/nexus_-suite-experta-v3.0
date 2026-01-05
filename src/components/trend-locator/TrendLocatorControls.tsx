@@ -58,7 +58,7 @@ export const TrendLocatorControls: React.FC<TrendLocatorControlsProps> = ({
             <div className="mt-6 pt-4 border-t border-slate-200/50 dark:border-slate-700/50">
                 <Button onClick={onSearch} disabled={loading} className="w-full bg-gradient-to-r from-fuchsia-500 to-pink-500 hover:from-fuchsia-600 hover:to-pink-600 text-white shadow-lg transition-all hover:scale-[1.02]">
                     {loading ? <Spinner className="w-4 h-4 mr-2" /> : <Icon svg={ICONS.search} className="w-4 h-4 mr-2" />}
-                    Buscar Tendencias
+                    {loading ? 'Explorando patrones...' : 'Explorar Tendencias'}
                 </Button>
             </div>
         </div>

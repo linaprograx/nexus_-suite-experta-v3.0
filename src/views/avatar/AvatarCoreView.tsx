@@ -469,9 +469,11 @@ const ConsciousnessMap: React.FC<{ onClose: () => void, currentPlan: PlanTier }>
 // --- Main View ---
 export const AvatarCoreView: React.FC = () => {
     const { userPlan } = useApp();
-    const { activeAvatarType, avatarConfigs, setActiveAvatarType, updateConfig } = useAvatarCognition();
+    const { activeAvatarType, avatarConfigs, setActiveAvatarType, updateConfig, createNewAvatar } = useAvatarCognition();
     const [configAvatarType, setConfigAvatarType] = useState<AvatarType | null>(null);
     const [showMap, setShowMap] = useState(false);
+    const [modalMode, setModalMode] = useState<'consciousness' | 'create'>('consciousness');
+    const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
     const AVATARS: { type: AvatarType; description: string }[] = [
         {
@@ -549,6 +551,24 @@ export const AvatarCoreView: React.FC = () => {
                             />
                         );
                     })}
+
+                    {/* Create New Avatar Button */}
+                    {Object.values(avatarConfigs).filter(c => c.profiles.length > 0).length < getUnlockCount(userPlan) && (
+                        <div
+                            onClick={() => { setModalMode('create'); setShowMap(true); }}
+                            className="relative overflow-hidden rounded-[32px] p-8 h-[460px] transition-all duration-500 cursor-pointer border-2 border-dashed border-indigo-500/30 bg-indigo-500/5 hover:bg-indigo-500/10 hover:border-indigo-500/50 flex flex-col items-center justify-center group"
+                        >
+                            <div className="text-center">
+                                <div className="w-20 h-20 rounded-full bg-indigo-500/20 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                                    <Icon svg={ICONS.plus} className="w-10 h-10 text-indigo-400" />
+                                </div>
+                                <h3 className="text-2xl font-serif text-white mb-4">Manifestar Nueva Identidad</h3>
+                                <p className="text-sm text-slate-400 max-w-xs mx-auto">
+                                    Capacidad disponible: {getUnlockCount(userPlan) - Object.values(avatarConfigs).filter(c => c.profiles.length > 0).length} manifestación(es)
+                                </p>
+                            </div>
+                        </div>
+                    )}
                 </div>
 
                 <div className="fixed bottom-12 left-0 w-full flex justify-center z-20 pointer-events-none animate-in fade-in slide-in-from-bottom-12 duration-1000 delay-500">
@@ -583,7 +603,81 @@ export const AvatarCoreView: React.FC = () => {
                         onClose={() => setConfigAvatarType(null)}
                     />
                 )}
-                {showMap && <ConsciousnessMap currentPlan={userPlan} onClose={() => setShowMap(false)} />}
+                {showMap && modalMode === 'consciousness' && <ConsciousnessMap currentPlan={userPlan} onClose={() => setShowMap(false)} />}
+
+                {/* Create Avatar Modal */}
+                {showMap && modalMode === 'create' && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                        <div className="absolute inset-0 bg-slate-950/90 backdrop-blur-3xl" onClick={() => setShowMap(false)} />
+                        <div className="relative max-w-4xl w-full bg-[#0B0F19] border border-white/10 rounded-[40px] p-8 shadow-2xl">
+                            <div className="text-center mb-8">
+                                <span className="text-[10px] font-bold text-indigo-500 uppercase tracking-[0.3em] mb-4 block">Nueva Manifestación</span>
+                                <h2 className="text-4xl font-serif text-white mb-4">Selecciona un Rol</h2>
+                                <p className="text-slate-400">Define la identidad profesional de tu nueva manifestación cognitiva</p>
+                            </div>
+
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                                {(['Mixologist', 'Chef', 'Patissier', 'Sommelier', 'Barista', 'Concierge', 'Manager', 'Owner'] as AvatarType[]).map(type => {
+                                    const exists = avatarConfigs[type].profiles.length > 0;
+                                    return (
+                                        <button
+                                            key={type}
+                                            onClick={() => {
+                                                if (!exists) {
+                                                    const result = createNewAvatar(type);
+                                                    if (result.success) {
+                                                        setShowMap(false);
+                                                    } else {
+                                                        setErrorMessage(result.error || 'Error al crear avatar');
+                                                    }
+                                                }
+                                            }}
+                                            disabled={exists}
+                                            className={`p-6 rounded-2xl border transition-all ${exists
+                                                ? 'border-white/5 bg-white/[0.02] opacity-40 cursor-not-allowed'
+                                                : 'border-indigo-500/30 bg-indigo-500/5 hover:bg-indigo-500/10 hover:border-indigo-500/50 cursor-pointer hover:scale-105'
+                                                }`}
+                                        >
+                                            <div className="text-4xl mb-3">{avatarConfigs[type].emoji}</div>
+                                            <div className="text-sm font-bold text-white mb-1">{type}</div>
+                                            {exists && <div className="text-[10px] text-indigo-400 uppercase tracking-wider">Ya existe</div>}
+                                        </button>
+                                    );
+                                })}
+                            </div>
+
+                            <button
+                                onClick={() => setShowMap(false)}
+                                className="w-full py-3 rounded-xl bg-white/5 hover:bg-white/10 text-white transition-colors"
+                            >
+                                Cancelar
+                            </button>
+                        </div>
+                    </div>
+                )}
+
+                {/* Glassmorphism Error Modal */}
+                {errorMessage && (
+                    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+                        <div className="absolute inset-0 bg-slate-950/80 backdrop-blur-xl" onClick={() => setErrorMessage(null)} />
+                        <div className="relative bg-gradient-to-br from-slate-900/90 to-slate-800/90 backdrop-blur-2xl border border-white/20 rounded-3xl p-8 shadow-[0_20px_80px_-12px_rgba(0,0,0,0.8)] max-w-md w-full animate-in zoom-in-95 fade-in duration-300">
+                            <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/10 to-rose-500/10 rounded-3xl" />
+                            <div className="relative z-10">
+                                <div className="w-16 h-16 rounded-full bg-rose-500/20 flex items-center justify-center mx-auto mb-6">
+                                    <Icon svg={ICONS.alertCircle} className="w-8 h-8 text-rose-400" />
+                                </div>
+                                <h3 className="text-xl font-serif text-white text-center mb-4">Capacidad Alcanzada</h3>
+                                <p className="text-slate-300 text-center mb-6 leading-relaxed">{errorMessage}</p>
+                                <button
+                                    onClick={() => setErrorMessage(null)}
+                                    className="w-full py-3 rounded-xl bg-gradient-to-r from-indigo-600 to-indigo-500 hover:from-indigo-500 hover:to-indigo-400 text-white font-medium transition-all shadow-lg hover:shadow-indigo-500/50"
+                                >
+                                    Aceptar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     );

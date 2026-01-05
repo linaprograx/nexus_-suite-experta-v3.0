@@ -1,11 +1,21 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Type } from "@google/genai";
 import { callGeminiApi } from '../../utils/gemini';
 import { blobToBase64 } from '../../utils/blobToBase64';
 import CriticControls from '../../components/make-menu/CriticControls';
 import CriticDashboard, { CriticResultType } from '../../components/make-menu/CriticDashboard';
+import { useCerebrityOrchestrator } from '../../hooks/useCerebrityOrchestrator';
+import { useApp } from '../../context/AppContext';
+import { AvatarMembershipService } from '../../services/avatarMembershipService';
+import { AscensionInvite } from '../../components/membership/AscensionInvite';
 
 const CriticView: React.FC = () => {
+    const { actions } = useCerebrityOrchestrator();
+    const { userPlan } = useApp();
+
+    // Check membership access
+    const canAccessFullCritic = AvatarMembershipService.canAccess('critic_full', userPlan);
+
     // --- Critic State ---
     const [criticMenuText, setCriticMenuText] = useState('');
     const [criticMenuImage, setCriticMenuImage] = useState<File | null>(null);
@@ -13,9 +23,16 @@ const CriticView: React.FC = () => {
     const [errorCritic, setErrorCritic] = useState<string | null>(null);
     const [criticResult, setCriticResult] = useState<CriticResultType | null>(null);
 
-    // Configuration State
+    // Configuration State - Auto-selected from Avatar
     const [criticPersona, setCriticPersona] = useState('Inspector Michelin');
     const [criticFocus, setCriticFocus] = useState<string[]>(['Coherencia']);
+
+    // Auto-select persona from Avatar on mount and when Avatar changes
+    useEffect(() => {
+        const avatarPersona = actions.getCriticPersona();
+        setCriticPersona(avatarPersona);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [actions.getCriticPersona]);
 
     // --- Critic Handlers ---
     const handleInvokeCritic = async () => {
@@ -136,11 +153,30 @@ const CriticView: React.FC = () => {
 
             {/* Main Content - Dashboard */}
             <div className="h-full min-h-0 overflow-hidden flex flex-col relative rounded-2xl z-20">
-                <CriticDashboard
-                    result={criticResult}
-                    loading={loadingCritic}
-                    error={errorCritic}
-                />
+                {!canAccessFullCritic && criticResult ? (
+                    // Preview mode for FREE users
+                    <div className="relative h-full">
+                        {/* Blurred preview */}
+                        <div className="absolute inset-0 blur-md opacity-40 pointer-events-none">
+                            <CriticDashboard
+                                result={criticResult}
+                                loading={false}
+                                error={null}
+                            />
+                        </div>
+                        {/* Ascension invite overlay */}
+                        <AscensionInvite
+                            {...AvatarMembershipService.getAscensionNarrative('critic_full', userPlan)}
+                        />
+                    </div>
+                ) : (
+                    // Full access for PRO+
+                    <CriticDashboard
+                        result={criticResult}
+                        loading={loadingCritic}
+                        error={errorCritic}
+                    />
+                )}
             </div>
 
             {/* Right Sidebar - Controls */}

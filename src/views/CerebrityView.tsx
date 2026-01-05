@@ -122,6 +122,11 @@ const CerebrityView: React.FC<CerebrityViewProps> = ({ db, userId, storage, appI
   const [topicFilter, setTopicFilter] = React.useState("Conceptos");
   const [keyword, setKeyword] = React.useState("");
 
+  // Apply Avatar-based filtering to trends
+  const filteredTrendResults = React.useMemo(() => {
+    return orchestratorActions.filterTrendsByAvatar(trendResults);
+  }, [trendResults, orchestratorActions]);
+
   const safeJsonParse = (raw: string): any => {
     try {
       return JSON.parse(raw);
@@ -701,7 +706,7 @@ const CerebrityView: React.FC<CerebrityViewProps> = ({ db, userId, storage, appI
               ) : activeTab === 'lab' ? (
                 <LabView db={db} userId={userId} appId={appId} allIngredients={allIngredients} allRecipes={allRecipes} labResult={labResult} setLabResult={setLabResult} labInputs={labInputs} setLabInputs={setLabInputs} />
               ) : (
-                <TrendLocatorTab loading={trendLoading} error={trendError} trendResults={trendResults} trendSources={[]} db={db} userId={userId} appId={appId} trendHistoryPath={`users/${userId}/trend-history`} />
+                <TrendLocatorTab loading={trendLoading} error={trendError} trendResults={filteredTrendResults} trendSources={[]} db={db} userId={userId} appId={appId} trendHistoryPath={`users/${userId}/trend-history`} />
               )}
             </div>
             <div className="h-full min-h-0 flex flex-col relative">

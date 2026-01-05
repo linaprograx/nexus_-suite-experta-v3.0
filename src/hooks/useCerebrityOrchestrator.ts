@@ -1,6 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { useAvatarCognition, SimulationResult, CognitiveProfile, SimulationContext } from './useAvatarCognition';
+import { getCerebrityCognitiveCore, CerebrityCognitiveState } from '../services/cerebrityCognitiveCore';
+import { SynthesisAdapter, MakeMenuAdapter, LabAdapter, CriticAdapter, TrendLocatorAdapter } from '../services/cerebrityAdapters';
 
 // --- Types ---
 
@@ -28,6 +30,7 @@ export interface OrchestratorState {
     lastEvaluation: JuryEvaluation | null;
     isGenerating: boolean;
     isEvaluating: boolean;
+    cognitiveState: CerebrityCognitiveState | null;
 }
 
 // --- Hook ---
@@ -35,13 +38,33 @@ export interface OrchestratorState {
 export const useCerebrityOrchestrator = () => {
     const { userPlan } = useApp();
     const { getActiveProfile, simulateDecision } = useAvatarCognition();
+    const cognitiveCore = getCerebrityCognitiveCore();
 
     const [state, setState] = useState<OrchestratorState>({
         lastGeneration: null,
         lastEvaluation: null,
         isGenerating: false,
-        isEvaluating: false
+        isEvaluating: false,
+        cognitiveState: null
     });
+
+    // Sync Avatar profile to cognitive core
+    useEffect(() => {
+        const profile = getActiveProfile();
+        if (profile) {
+            cognitiveCore.updateAvatarProfile(profile);
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+    // Subscribe to cognitive state changes
+    useEffect(() => {
+        const unsubscribe = cognitiveCore.subscribe((cognitiveState) => {
+            setState(prev => ({ ...prev, cognitiveState }));
+        });
+        return () => { unsubscribe(); };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     // 1. World Class Generation Logic (Platinum+ Gate)
     const generateWorldClassOutput = async (prompt_context: string): Promise<WorldClassOutput> => {
@@ -150,11 +173,100 @@ export const useCerebrityOrchestrator = () => {
         return evaluation;
     };
 
+    // ============================================================================
+    // NEW: AVATAR-AWARE CEREBRITY ACTIONS
+    // ============================================================================
+
+    /**
+     * Get cognitive filter for Synthesis
+     */
+    const getSynthesisFilter = (rawInput: string): string => {
+        const profile = getActiveProfile();
+        if (!profile) return rawInput;
+        return SynthesisAdapter.applyCognitiveFilter(rawInput, profile);
+    };
+
+    /**
+     * Get editorial style for Make Menu
+     */
+    const getMenuEditorialStyle = (): string => {
+        const profile = getActiveProfile();
+        if (!profile) return 'Estilo estándar';
+        return MakeMenuAdapter.getEditorialStyle(profile);
+    };
+
+    /**
+     * Validate menu coherence
+     */
+    const validateMenuCoherence = (recipes: any[]): { valid: boolean; reason?: string } => {
+        const profile = getActiveProfile();
+        if (!profile) return { valid: true };
+
+        const synthesisOutput = cognitiveCore.getLatestSynthesisOutput();
+        return MakeMenuAdapter.validateMenuCoherence(recipes, profile, synthesisOutput || undefined);
+    };
+
+    /**
+     * Get Lab analysis bias
+     */
+    const getLabAnalysisBias = (): string => {
+        const profile = getActiveProfile();
+        if (!profile) return 'Análisis neutral';
+        return LabAdapter.getAnalysisBias(profile);
+    };
+
+    /**
+     * Auto-select Critic persona
+     */
+    const getCriticPersona = (): string => {
+        const profile = getActiveProfile();
+        if (!profile) return 'Inspector Michelin';
+        return CriticAdapter.selectCriticPersona(profile);
+    };
+
+    /**
+     * Get Critic severity
+     */
+    const getCriticSeverity = (): number => {
+        const profile = getActiveProfile();
+        if (!profile) return 0.5;
+        return CriticAdapter.getCriticSeverity(profile.riskTolerance);
+    };
+
+    /**
+     * Filter trends by Avatar
+     */
+    const filterTrendsByAvatar = (trends: any[]): any[] => {
+        const profile = getActiveProfile();
+        if (!profile) return trends;
+        return TrendLocatorAdapter.filterTrendsByAvatar(trends, profile);
+    };
+
+    /**
+     * Get creative context for cross-section flow
+     */
+    const getCreativeContext = () => {
+        return cognitiveCore.getCreativeContext();
+    };
+
     return {
         state,
         actions: {
+            // Legacy actions
             generateWorldClassOutput,
-            evaluateCompetitionEntry
-        }
+            evaluateCompetitionEntry,
+
+            // New Avatar-aware actions
+            getSynthesisFilter,
+            getMenuEditorialStyle,
+            validateMenuCoherence,
+            getLabAnalysisBias,
+            getCriticPersona,
+            getCriticSeverity,
+            filterTrendsByAvatar,
+            getCreativeContext
+        },
+        // Expose cognitive core for direct access if needed
+        cognitiveCore
     };
 };
