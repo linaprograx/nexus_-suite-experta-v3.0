@@ -33,6 +33,14 @@ export const SYS_STATE = {
     ERROR: (problem: string, fix: string) => `${problem}. ${fix}`, // e.g. "Failed. Retry."
 } as const;
 
+export const LABEL = {
+    MEMBER_SINCE: 'Member since',
+    ROLE: 'Role',
+    STATUS: 'Status',
+    LEVEL: 'Level',
+    XP: 'XP',
+} as const;
+
 export const BTN_TEXT = {
     SAVE: 'Save',
     CANCEL: 'Cancel',
@@ -41,6 +49,8 @@ export const BTN_TEXT = {
     NEXT: 'Next',
     BACK: 'Back',
     RETRY: 'Retry',
+    VIEW_PROFILE: 'View Profile',
+    VALIDATE_MEMBERSHIP: 'Validate Membership',
     // Prohibiting "Let's go", "Start journey", etc.
 } as const;
 
