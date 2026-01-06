@@ -7,11 +7,13 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 import { AppProvider, useApp } from './context/AppContext';
 import { UIProvider, useUI } from './context/UIContext';
+import { UiModeProvider, useUiMode } from './providers/UiModeProvider';
 
 import { Spinner } from './components/ui/Spinner';
 import { Sidebar } from './components/layout/Sidebar';
 // import { ContentView } from './src/views/ContentView'; // DEPRECATED
 import { AppRoutes } from './routes';
+import { ProductApp } from './product/ProductApp';
 import { RecipeFormModal } from './components/grimorium/RecipeFormModal';
 
 import { NotificationsDrawer } from './components/dashboard/NotificationsDrawer';
@@ -162,9 +164,14 @@ const AppLayout: React.FC<any> = ({
 
 const AppContent: React.FC = () => {
     const { isAuthReady, user } = useApp();
+    const { uiMode } = useUiMode();
 
     if (!isAuthReady) return <div className='flex h-screen items-center justify-center'><Spinner className='w-12 h-12' /></div>;
     if (!user) return <AuthComponent />;
+
+    if (uiMode === 'product') {
+        return <ProductApp />;
+    }
 
     return (
         <>
@@ -178,11 +185,13 @@ const App: React.FC = () => {
     return (
         <AppProvider>
             <UIProvider>
-                <ErrorBoundary>
-                    <QueryClientProvider client={queryClient}>
-                        <AppContent />
-                    </QueryClientProvider>
-                </ErrorBoundary>
+                <UiModeProvider>
+                    <ErrorBoundary>
+                        <QueryClientProvider client={queryClient}>
+                            <AppContent />
+                        </QueryClientProvider>
+                    </ErrorBoundary>
+                </UiModeProvider>
             </UIProvider>
         </AppProvider>
     );
