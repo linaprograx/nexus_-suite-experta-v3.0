@@ -10,7 +10,6 @@ import { UIProvider, useUI } from './context/UIContext';
 
 import { Spinner } from './components/ui/Spinner';
 import { Sidebar } from './components/layout/Sidebar';
-import { Topbar } from './components/layout/Topbar';
 // import { ContentView } from './src/views/ContentView'; // DEPRECATED
 import { AppRoutes } from './routes';
 import { RecipeFormModal } from './components/grimorium/RecipeFormModal';
@@ -135,7 +134,6 @@ const AppLayout: React.FC<any> = ({
             />
 
             <div className={`flex-1 flex flex-col transition-all duration-300 h-screen ${isSidebarCollapsed ? 'md:ml-20' : 'md:ml-64'}`}>
-                <Topbar onToggleMobileSidebar={() => setIsMobileSidebarOpen(true)} onShowNotifications={() => setShowNotificationsDrawer(true)} unreadNotifications={notifications.some((n: any) => !n.read)} title='Nexus Suite' />
 
                 <main className='flex-1 overflow-y-auto p-4'>
                     <AppRoutes

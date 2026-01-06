@@ -1,6 +1,7 @@
 import React from 'react';
 import { Firestore, collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { FirebaseStorage, ref, uploadString, getDownloadURL } from 'firebase/storage';
+import { useLocation } from 'react-router-dom';
 import { Recipe, Ingredient, CerebrityResult } from '../types';
 import { CreativityTab } from '../components/cerebrity/CreativityTab';
 import { CerebrityHistorySidebar } from '../components/cerebrity/CerebrityHistorySidebar';
@@ -97,6 +98,7 @@ const CerebrityView: React.FC<CerebrityViewProps> = ({ db, userId, storage, appI
   const { recipes: allRecipes } = useRecipes();
   const { ingredients: allIngredients } = useIngredients();
   const { actions: orchestratorActions, state: orchestratorState } = useCerebrityOrchestrator();
+  const location = useLocation();
 
   const [activeTab, setActiveTab] = React.useState<'creativity' | 'makeMenu' | 'critic' | 'lab' | 'trendLocator'>('creativity');
   const [selectedRecipe, setSelectedRecipe] = React.useState<Recipe | null>(null);
@@ -519,8 +521,10 @@ const CerebrityView: React.FC<CerebrityViewProps> = ({ db, userId, storage, appI
       setRawInput(initialText);
       setActiveTab('creativity');
       onAnalysisDone();
+    } else if (location.state?.tab) {
+      setActiveTab(location.state.tab);
     }
-  }, [initialText, onAnalysisDone]);
+  }, [initialText, onAnalysisDone, location.state]);
 
   // Automatic Test for Phase 6
   React.useEffect(() => {

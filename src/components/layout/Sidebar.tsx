@@ -143,7 +143,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
         <button
           onClick={() => { onShowNotifications(); onCloseMobile(); }}
-          className={`w-full flex items-center gap-3 rounded-xl py-2 text-sm font-medium transition text-slate-600 dark:text-slate-300 hover:bg-white/50 dark:hover:bg-white/10 hover:text-slate-900 dark:hover:text-white dark:hover:shadow-[0_0_20px_rgba(15,23,42,0.6)] ${isSidebarCollapsed ? 'justify-center px-0' : 'px-3'}`}
+          className={`flex items-center gap-3 rounded-xl py-2 px-3 text-sm font-medium transition text-slate-600 dark:text-slate-300 hover:bg-white/50 dark:hover:bg-white/10 hover:text-slate-900 dark:hover:text-white dark:hover:shadow-[0_0_20px_rgba(15,23,42,0.6)] ${isSidebarCollapsed ? 'justify-center' : ''}`}
           title={isSidebarCollapsed ? "Notificaciones" : ""}
         >
           <div className="relative flex items-center justify-center">
@@ -155,7 +155,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
         <button
           onClick={() => setTheme(prevTheme => prevTheme === 'dark' ? 'light' : 'dark')}
-          className={`w-full flex items-center gap-3 rounded-xl py-2 text-sm font-medium transition text-slate-600 dark:text-slate-300 hover:bg-white/50 dark:hover:bg-white/10 hover:text-slate-900 dark:hover:text-white dark:hover:shadow-[0_0_20px_rgba(15,23,42,0.6)] ${isSidebarCollapsed ? 'justify-center px-0' : 'px-3'}`}
+          className={`flex items-center gap-3 rounded-xl py-2 px-3 text-sm font-medium transition text-slate-600 dark:text-slate-300 hover:bg-white/50 dark:hover:bg-white/10 hover:text-slate-900 dark:hover:text-white dark:hover:shadow-[0_0_20px_rgba(15,23,42,0.6)] ${isSidebarCollapsed ? 'justify-center' : ''}`}
           title={isSidebarCollapsed ? "Cambiar Tema" : ""}
         >
           <div className="flex items-center justify-center">
@@ -166,7 +166,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
         <button
           onClick={() => auth.signOut()}
-          className={`w-full flex items-center gap-3 rounded-xl py-2 text-sm font-medium transition text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-600 ${isSidebarCollapsed ? 'justify-center px-0' : 'px-3'}`}
+          className={`flex items-center gap-3 rounded-xl py-2 px-3 text-sm font-medium transition text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-600 ${isSidebarCollapsed ? 'justify-center' : ''}`}
           title={isSidebarCollapsed ? "Cerrar Sesión" : ""}
         >
           <div className="flex items-center justify-center">

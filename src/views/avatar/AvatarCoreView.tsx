@@ -574,20 +574,20 @@ export const AvatarCoreView: React.FC = () => {
                 <div className="fixed bottom-12 left-0 w-full flex justify-center z-20 pointer-events-none animate-in fade-in slide-in-from-bottom-12 duration-1000 delay-500">
                     <button
                         onClick={() => setShowMap(true)}
-                        className="pointer-events-auto flex items-center gap-12 px-12 py-5 rounded-full bg-slate-950/60 backdrop-blur-2xl border border-white/10 shadow-[0_20px_50px_-12px_rgba(0,0,0,0.8)] hover:bg-slate-950/80 transition-all hover:scale-[1.02] hover:border-white/20 hover:shadow-indigo-500/20 group hover:animate-pulse-slow"
+                        className="pointer-events-auto flex items-center gap-8 px-8 py-2 rounded-full bg-slate-950/60 backdrop-blur-2xl border border-white/10 shadow-[0_20px_50px_-12px_rgba(0,0,0,0.8)] hover:bg-slate-950/80 transition-all hover:scale-[1.02] hover:border-white/20 hover:shadow-indigo-500/20 group hover:animate-pulse-slow"
                     >
                         <div className="flex flex-col text-right group-hover:text-indigo-200 transition-colors">
-                            <span className="text-[9px] text-slate-500 uppercase tracking-widest font-bold mb-1">Estado de Consciencia</span>
-                            <span className="text-lg text-white font-serif tracking-wide">{narrativeTier}</span>
+                            <span className="text-[9px] text-slate-500 uppercase tracking-widest font-bold mb-0.5">Estado de Consciencia</span>
+                            <span className="text-base text-white font-serif tracking-wide">{narrativeTier}</span>
                         </div>
 
-                        <div className="w-px h-10 bg-gradient-to-b from-transparent via-white/20 to-transparent group-hover:via-indigo-400/50 transition-colors" />
+                        <div className="w-px h-8 bg-gradient-to-b from-transparent via-white/20 to-transparent group-hover:via-indigo-400/50 transition-colors" />
 
                         <div className="flex flex-col text-left group-hover:text-indigo-200 transition-colors">
-                            <span className="text-[9px] text-slate-500 uppercase tracking-widest font-bold mb-1">Capacidad de Manifestación</span>
+                            <span className="text-[9px] text-slate-500 uppercase tracking-widest font-bold mb-0.5">Capacidad de Manifestación</span>
                             <div className="flex items-center gap-2">
-                                <span className="text-lg text-white font-mono">{unlockedSlots >= 99 ? '∞' : unlockedSlots}</span>
-                                <span className="text-[10px] text-slate-600 uppercase">Avatares</span>
+                                <span className="text-base text-white font-mono">{unlockedSlots >= 99 ? '∞' : unlockedSlots}</span>
+                                <span className="text-[9px] text-slate-600 uppercase">Avatares</span>
                             </div>
                         </div>
                     </button>

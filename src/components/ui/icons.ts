@@ -113,4 +113,7 @@ export const ICONS = {
     redo: '<path d="M21 7v6h-6"/><path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3l3 3.7"/>',
     lightbulb: '<path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-1 1.5-2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5"/><path d="M9 18h6"/><path d="M10 22h4"/>',
     play: '<polygon points="5 3 19 12 5 21 5 3"/>',
+    key: '<path d="m21 2-2 2m-7.6 7.6a6.5 6.5 0 1 1-2.1-2.1l8.1-8.1a2 2 0 0 1 2.8 2.8L11.4 11.6z"/><path d="M15 7h1v1h-1z"/>',
+    close: '<path d="M18 6 6 18"/><path d="m6 6 12 12"/>',
+    chevronUp: '<polyline points="18 15 12 9 6 15" />',
 };

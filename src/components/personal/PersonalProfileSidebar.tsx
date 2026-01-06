@@ -25,7 +25,7 @@ export const PersonalProfileSidebar: React.FC<PersonalProfileSidebarProps> = ({
 
     return (
         <div className="h-full flex flex-col gap-6 overflow-y-auto custom-scrollbar p-1">
-            <Card className="flex flex-col items-center p-8 bg-white/50 dark:bg-slate-900/50 backdrop-blur-md border-slate-200 dark:border-slate-800 flex-shrink-0">
+            <Card className="flex flex-col items-center p-8 bg-transparent border-0 flex-shrink-0">
                 <div className="relative group">
                     <div className="absolute -inset-0.5 bg-gradient-to-r from-pink-500 to-violet-500 rounded-full blur opacity-75 group-hover:opacity-100 transition duration-1000 group-hover:duration-200 animate-tilt"></div>
                     <img

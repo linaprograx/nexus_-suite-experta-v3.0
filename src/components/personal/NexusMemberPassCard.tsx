@@ -31,21 +31,21 @@ export const NexusMemberPassCard: React.FC<NexusMemberPassCardProps> = ({
         switch (variant) {
             case 'essential':
                 return {
-                    bg: 'bg-gradient-to-br from-slate-400 to-slate-600',
+                    bg: 'bg-gradient-to-br from-slate-500 to-slate-700', // Vibrant Slate
                     badge: 'ESSENTIAL',
                     badgeColor: 'bg-slate-200/20 text-slate-100',
-                    iconColor: 'text-slate-300'
+                    iconColor: 'text-slate-200'
                 };
             case 'elite':
                 return {
-                    bg: 'bg-gradient-to-br from-amber-500 via-yellow-500 to-amber-600',
+                    bg: 'bg-gradient-to-br from-amber-500 via-orange-500 to-amber-600', // Vibrant Amber
                     badge: 'ELITE',
                     badgeColor: 'bg-black/20 text-white',
                     iconColor: 'text-white'
                 };
             case 'jupiter':
                 return {
-                    bg: 'bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-slate-900 via-purple-900 to-slate-900',
+                    bg: 'bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-slate-900 via-fuchsia-900 to-slate-900 shadow-[0_0_25px_5px_rgba(192,38,211,0.6)] ring-2 ring-fuchsia-400', // Jupiter Halo
                     badge: 'JUPITER INTERNAL',
                     badgeColor: 'bg-cyan-500/10 text-cyan-400 border-cyan-500/20',
                     iconColor: 'text-cyan-400'
@@ -53,7 +53,7 @@ export const NexusMemberPassCard: React.FC<NexusMemberPassCardProps> = ({
             case 'pro':
             default:
                 return {
-                    bg: 'bg-gradient-to-br from-indigo-500 to-purple-600',
+                    bg: 'bg-gradient-to-br from-indigo-600 to-violet-700', // Vibrant Indigo
                     badge: 'PRO MEMBER',
                     badgeColor: 'bg-white/20 text-white',
                     iconColor: 'text-yellow-300'
@@ -65,9 +65,12 @@ export const NexusMemberPassCard: React.FC<NexusMemberPassCardProps> = ({
 
     return (
         <Card
-            className={`group relative overflow-hidden p-6 ${styles.bg} text-white border-none shadow-xl cursor-pointer transition-all duration-300 ${showLevelDetails ? 'row-span-2' : ''} ${!active ? 'opacity-80 grayscale-[0.3] hover:grayscale-0' : 'ring-2 ring-offset-2 ring-indigo-500'}`}
+            className={`group relative overflow-hidden p-6 ${styles.bg} text-white border-0 shadow-lg shadow-black/20 hover:shadow-[0_0_40px_rgba(236,72,153,0.5)] cursor-pointer transition-all duration-500 ease-out ${showLevelDetails ? 'row-span-2' : ''} ${!active ? 'hover:scale-105 hover:ring-2 hover:ring-pink-400 scale-95' : 'ring-2 ring-pink-500 scale-[1.02] shadow-[0_0_30px_rgba(236,72,153,0.3)]'}`}
             onClick={() => setShowLevelDetails(!showLevelDetails)}
         >
+            {/* Subtle Mirror Reflection / Gloss Effect */}
+            {/* Subtle Mirror Reflection / Gloss Effect - Enhanced Visibility */}
+            <div className="absolute inset-0 bg-gradient-to-br from-white/30 via-white/5 to-transparent pointer-events-none"></div>
             <div className="flex items-center justify-between mb-4">
                 <span className="font-bold uppercase tracking-wider text-xs opacity-70">NEXUS ID</span>
                 <Icon svg={showLevelDetails ? ICONS.chevronUp : ICONS.star} className={`w-5 h-5 transition-transform ${styles.iconColor}`} />
