@@ -1,0 +1,24 @@
+
+{
+  "project": "NEXUS SUITE - Mobile Prototype",
+  "version": "1.0.0-iteration0",
+  "mapping": {
+    "Login": "Génesis / Auth Flow",
+    "Dashboard": "Operational Snapshot / Global Hub",
+    "GrimorioRecipes": "R&D Manager / Recipe Analytics",
+    "GrimorioMarket": "Procurement / Supplier Marketplace",
+    "GrimorioStock": "Inventory / Predictive Supply Chain",
+    "Pizarron": "Creative Canvas / Collaborative Infinite Board",
+    "CerebritySynthesis": "Neural Synthesis / AI Idea Generator",
+    "CerebrityCritic": "Critic Eye / QA & Compliance AI",
+    "CerebrityLab": "Molecular Lab / Ingredient Synergy",
+    "Avatar": "Digital Twin / Cognitive States",
+    "Personal": "User Profile / Membership Pass"
+  },
+  "visual_system": {
+    "atmosphere_layer": "Fixed top-0 viewport gradient (35% height)",
+    "glass_rules": "backdrop-blur-xl, bg-white/10, border-white/20, shadow-2xl",
+    "elevation": "Z-index 10 for content, 50 for Atmosphere, 100 for Floating UI",
+    "standard_pizarron": "Rotation 1-3deg, grid-based background, high information density"
+  }
+}

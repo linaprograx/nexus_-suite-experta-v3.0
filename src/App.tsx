@@ -196,26 +196,12 @@ const App: React.FC = () => {
     // Safety check: specific query params could bypass this if needed in dev
     // const forceDesktop = new URLSearchParams(window.location.search).get('desktop') === 'true';
 
-    if (isMobile) {
-        return (
-            <AppProvider>
-                <UIProvider>
-                    <ErrorBoundary>
-                        <QueryClientProvider client={queryClient}>
-                            <MobileShell />
-                        </QueryClientProvider>
-                    </ErrorBoundary>
-                </UIProvider>
-            </AppProvider>
-        );
-    }
-
     return (
         <AppProvider>
             <UIProvider>
                 <ErrorBoundary>
                     <QueryClientProvider client={queryClient}>
-                        <AppContent />
+                        {isMobile ? <MobileShell /> : <AppContent />}
                     </QueryClientProvider>
                 </ErrorBoundary>
             </UIProvider>

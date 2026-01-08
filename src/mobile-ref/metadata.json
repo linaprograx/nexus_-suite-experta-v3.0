@@ -1,0 +1,8 @@
+{
+  "name": "MOBILE PROTOTYPE - NEXUS SUITE ",
+  "description": "A premium, dense, and visually saturated mobile prototype for the Nexus ecosystem, featuring 12 unique modules with rich gradients and deep functional replicas.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}

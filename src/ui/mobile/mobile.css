@@ -1,0 +1,65 @@
+/* Mobile Layer Scoped Styles */
+.mobile-layer-root {
+    --neu-base: #EFEEEE;
+    --neu-text-main: #3E4E5E;
+    --neu-text-sec: #7D8C9E;
+
+    --neu-shadow-light: rgba(255, 255, 255, 0.8);
+    --neu-shadow-dark: rgba(163, 177, 198, 0.6);
+
+    --neu-accent-violet: #6D28D9;
+    --neu-accent-emerald: #10B981;
+    --neu-accent-amber: #F59E0B;
+    --neu-accent-red: #EF4444;
+
+    font-family: 'Outfit', sans-serif;
+    background-color: var(--neu-base);
+    color: var(--neu-text-main);
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+}
+
+/* Neumorphic Utilities - Scoped */
+.mobile-layer-root .neu-flat {
+    background: var(--neu-base);
+    box-shadow:
+        9px 9px 16px var(--neu-shadow-dark),
+        -9px -9px 16px var(--neu-shadow-light);
+    border-radius: 2rem;
+    border: 1px solid rgba(255, 255, 255, 0.4);
+}
+
+.mobile-layer-root .neu-btn {
+    background: linear-gradient(145deg, #ffffff, #d7d6d6);
+    box-shadow:
+        5px 5px 10px var(--neu-shadow-dark),
+        -5px -5px 10px var(--neu-shadow-light);
+    border-radius: 1rem;
+    color: var(--neu-text-main);
+    transition: all 0.2s ease;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.mobile-layer-root .neu-btn:active {
+    box-shadow:
+        inset 5px 5px 10px var(--neu-shadow-dark),
+        inset -5px -5px 10px var(--neu-shadow-light);
+}
+
+.mobile-layer-root .neu-pressed {
+    background: var(--neu-base);
+    box-shadow:
+        inset 6px 6px 10px 0 var(--neu-shadow-dark),
+        inset -6px -6px 10px 0 var(--neu-shadow-light);
+    border-radius: 1.5rem;
+    border: none;
+}
+
+.mobile-layer-root .text-neu-main {
+    color: var(--neu-text-main);
+}
+
+.mobile-layer-root .text-neu-sec {
+    color: var(--neu-text-sec);
+}
