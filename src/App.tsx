@@ -183,7 +183,33 @@ const AppContent: React.FC = () => {
     );
 };
 
+
+// ... (imports remain)
+import { useIsMobile } from './hooks/useIsMobile';
+import { MobileShell } from './ui/mobile/MobileShell';
+
+// ... (other components remain)
+
 const App: React.FC = () => {
+    const isMobile = useIsMobile();
+
+    // Safety check: specific query params could bypass this if needed in dev
+    // const forceDesktop = new URLSearchParams(window.location.search).get('desktop') === 'true';
+
+    if (isMobile) {
+        return (
+            <AppProvider>
+                <UIProvider>
+                    <ErrorBoundary>
+                        <QueryClientProvider client={queryClient}>
+                            <MobileShell />
+                        </QueryClientProvider>
+                    </ErrorBoundary>
+                </UIProvider>
+            </AppProvider>
+        );
+    }
+
     return (
         <AppProvider>
             <UIProvider>
