@@ -21,6 +21,11 @@ import { PrintStyles } from './components/ui/PrintStyles';
 import { AddTaskModal } from './components/pizarron/AddTaskModal';
 import { aiPrefetcher } from './features/prefetch/aiPrefetchEngine';
 
+import { useNexusProfile } from './hooks/useNexusProfile';
+import { useIngredients } from './hooks/useIngredients';
+
+// ... (other imports remain, but useFirebaseData is gone)
+
 const queryClient = new QueryClient({
     defaultOptions: {
         queries: {
@@ -31,11 +36,6 @@ const queryClient = new QueryClient({
         },
     },
 });
-
-import { useNexusProfile } from './hooks/useNexusProfile';
-import { useIngredients } from './hooks/useIngredients';
-
-// ... (other imports remain, but useFirebaseData is gone)
 
 const MainAppContent: React.FC = () => {
     const { db, userId, auth, storage, appId } = useApp();
@@ -67,13 +67,22 @@ const MainAppContent: React.FC = () => {
                 db={db} userId={userId} auth={auth} storage={storage} appId={appId}
                 allIngredients={allIngredients} notifications={notifications}
                 isSidebarCollapsed={isSidebarCollapsed}
-                showNotificationsDrawer={showNotificationsDrawer} setShowNotificationsDrawer={setShowNotificationsDrawer}
-                isMobileSidebarOpen={isMobileSidebarOpen} setIsMobileSidebarOpen={setIsMobileSidebarOpen}
-                recipeToEdit={recipeToEdit} setRecipeToEdit={setRecipeToEdit} setShowRecipeModal={setShowRecipeModal} showRecipeModal={showRecipeModal}
-                taskToOpen={taskToOpen} setTaskToOpen={setTaskToOpen}
-                draggingRecipe={draggingRecipe} setDraggingRecipe={setDraggingRecipe}
-                draggingTask={draggingTask} setDraggingTask={setDraggingTask}
-                textToAnalyze={textToAnalyze} setTextToAnalyze={setTextToAnalyze}
+                showNotificationsDrawer={showNotificationsDrawer}
+                setShowNotificationsDrawer={setShowNotificationsDrawer}
+                isMobileSidebarOpen={isMobileSidebarOpen}
+                setIsMobileSidebarOpen={setIsMobileSidebarOpen}
+                recipeToEdit={recipeToEdit}
+                setRecipeToEdit={setRecipeToEdit}
+                setShowRecipeModal={setShowRecipeModal}
+                showRecipeModal={showRecipeModal}
+                taskToOpen={taskToOpen}
+                setTaskToOpen={setTaskToOpen}
+                draggingRecipe={draggingRecipe}
+                setDraggingRecipe={setDraggingRecipe}
+                draggingTask={draggingTask}
+                setDraggingTask={setDraggingTask}
+                textToAnalyze={textToAnalyze}
+                setTextToAnalyze={setTextToAnalyze}
             />
         </BrowserRouter>
     );
@@ -122,13 +131,13 @@ const AppLayout: React.FC<any> = ({
             <Sidebar
                 // Passing a fake setCurrentView that uses navigate
                 currentView={"" as any} // Requires Sidebar update to read from URL
-                setCurrentView={(view) => {
+                setCurrentView={(view: string) => {
                     // Simple mapping for now, ideally Sidebar links should be <Link>
                     if (view === 'dashboard') navigate('/');
                     else navigate('/' + view);
                 }}
                 onShowNotifications={() => setShowNotificationsDrawer(true)}
-                unreadNotifications={notifications.some((n: any) => !n.read)}
+                unreadNotifications={notifications && notifications.some ? notifications.some((n: any) => !n.read) : false}
                 isMobileOpen={isMobileSidebarOpen}
                 onCloseMobile={() => setIsMobileSidebarOpen(false)}
             />
