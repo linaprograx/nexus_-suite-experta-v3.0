@@ -15,7 +15,7 @@ const pageVariants = {
 const AnimatedPage: React.FC<Props> = ({ children, className = "" }) => {
     return (
         <motion.div
-            className={`flex-1 flex flex-col h-full ${className}`}
+            className={`flex-1 flex flex-col ${className}`}
             initial="initial"
             animate="animate"
             exit="exit"

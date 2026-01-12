@@ -1,95 +1,109 @@
-import React from 'react';
-import { PageName } from '../types';
-import NeuButton from '../components/NeuButton';
+import React, { useState } from 'react';
+import { PageName, UserProfile } from '../types';
+import GlassCard from '../components/GlassCard';
+import PremiumButton from '../components/PremiumButton';
 
 interface Props {
     onNavigate: (page: PageName) => void;
+    user?: UserProfile;
 }
 
 const CerebrityTrend: React.FC<Props> = ({ onNavigate }) => {
+    // Mock trends
     const trends = [
-        { title: 'Cyber-Organic Fusion', volume: '1.2M', growth: '+24%', tags: ['Future', 'Design'], color: 'pink' },
-        { title: 'Neural Interfaces', volume: '840K', growth: '+12%', tags: ['Tech', 'Bio'], color: 'rose' },
-        { title: 'Sustainable Voidtech', volume: '420K', growth: '+8%', tags: ['Eco', 'Industrial'], color: 'fuchsia' },
+        { name: 'Low-ABV Cocktails', growth: '+245%', category: 'Health Conscious', hot: true },
+        { name: 'Mezcal Renaissance', growth: '+180%', category: 'Spirits', hot: true },
+        { name: 'Botanical Infusions', growth: '+95%', category: 'Ingredients', hot: false },
+        { name: 'Clarified Milk Punch', growth: '+67%', category: 'Technique', hot: false },
     ];
 
     return (
-        <div className="flex-1 bg-transparent relative overflow-hidden flex flex-col pt-4">
+        <div className="bg-transparent relative overflow-hidden flex flex-col h-full">
 
-            <header className="px-6 pt-6 pb-2">
-                <div className="flex justify-between items-center mb-6">
-                    <div>
-                        <h1 className="text-2xl font-black text-[#ec4899] tracking-tight">Cerebrity</h1>
-                        <p className="text-[10px] font-black text-neu-sec uppercase tracking-[0.3em]">AI Protocol</p>
-                    </div>
-                    <NeuButton onClick={() => onNavigate(PageName.Dashboard)} className="w-10 h-10 rounded-xl text-neu-sec"><span className="material-symbols-outlined">close</span></NeuButton>
-                </div>
-
-                <div className="flex gap-4 overflow-x-auto scrollbar-hide pb-2">
-                    <NeuButton onClick={() => onNavigate(PageName.CerebritySynthesis)} variant="flat" className="px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest shrink-0 text-neu-sec">
-                        Synthesis
-                    </NeuButton>
-                    <NeuButton onClick={() => onNavigate(PageName.CerebrityCritic)} variant="flat" className="px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest shrink-0 text-neu-sec">
-                        Critic
-                    </NeuButton>
-                    <NeuButton onClick={() => onNavigate(PageName.CerebrityLab)} variant="flat" className="px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest shrink-0 text-neu-sec">
-                        Lab
-                    </NeuButton>
-                    <NeuButton onClick={() => { }} variant="pressed" className="px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest shrink-0 text-[#ec4899] bg-pink-50/50">
-                        Trend
-                    </NeuButton>
-                    <NeuButton onClick={() => onNavigate(PageName.CerebrityMakeMenu)} variant="flat" className="px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest shrink-0 text-neu-sec">
-                        Make
-                    </NeuButton>
+            {/* Header */}
+            <header className="px-5 pt-6 pb-4 relative z-10">
+                <div className="mb-6 px-2">
+                    <p className="text-[9px] font-bold text-white/60 uppercase tracking-[0.25em] mb-2">Cerebrity AI</p>
+                    <h1 className="text-5xl font-black text-white tracking-tighter leading-[0.9] mb-2">
+                        Trend<br />
+                        <span className="text-white/70">Locator</span>
+                    </h1>
+                    <p className="text-xs text-white/70 max-w-xs leading-relaxed">
+                        Análisis en tiempo real de tendencias globales en mixología.
+                    </p>
                 </div>
             </header>
 
-            <main className="flex-1 overflow-y-auto scrollbar-hide px-6 py-6 space-y-8 pb-32 z-10 pt-2">
-                <div className="neu-flat rounded-[2.5rem] p-8 relative overflow-hidden text-neu-main">
-                    <div className="absolute top-[-20px] right-[-20px] opacity-10 pointer-events-none">
-                        <span className="material-symbols-outlined text-[120px] text-[#ec4899]">trending_up</span>
-                    </div>
-                    <h3 className="text-4xl font-black text-neu-main leading-none mb-3">Global<br />Pulse</h3>
-                    <p className="text-xs text-neu-sec mb-8 max-w-[70%] font-medium">Tracking aesthetic shifts and technical breakthroughs in real-time.</p>
-                    <button className="neu-btn text-[#ec4899] px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-wider active:scale-95 transition-all">Start Scanning</button>
-                </div>
+            {/* Main Content */}
+            <main className="flex-1 overflow-y-auto custom-scroll px-5 space-y-4">
 
-                <div className="grid grid-cols-2 gap-4">
-                    <div className="neu-pressed rounded-3xl p-5">
-                        <span className="text-[9px] font-black text-[#ec4899] uppercase tracking-widest">Engagement</span>
-                        <p className="text-2xl font-black text-neu-main mt-2">4.2B</p>
-                        <div className="h-2 w-full bg-slate-200/50 rounded-full mt-4 overflow-hidden">
-                            <div className="h-full w-[70%] bg-[#ec4899] rounded-full shadow-sm"></div>
+                {/* Search Card */}
+                <GlassCard rounded="3xl" padding="xl" className="bg-gradient-to-r from-amber-50 to-transparent">
+                    <div className="flex items-center gap-5 mb-5">
+                        <div className="w-16 h-16 rounded-2xl bg-amber-600 flex items-center justify-center text-white shadow-xl action-glow-gold">
+                            <span className="material-symbols-outlined text-3xl fill-1">trending_up</span>
+                        </div>
+                        <div className="flex-1">
+                            <h3 className="text-xl font-bold text-zinc-900 mb-1">Descubrir Tendencias</h3>
+                            <p className="text-xs text-zinc-600">Análisis de mercado global</p>
                         </div>
                     </div>
-                    <div className="neu-pressed rounded-3xl p-5">
-                        <span className="text-[9px] font-black text-[#ec4899] uppercase tracking-widest">Active nodes</span>
-                        <p className="text-2xl font-black text-neu-main mt-2">12.8K</p>
-                        <div className="h-2 w-full bg-slate-200/50 rounded-full mt-4 overflow-hidden">
-                            <div className="h-full w-[45%] bg-[#ec4899] rounded-full shadow-sm"></div>
-                        </div>
-                    </div>
-                </div>
 
-                <div className="space-y-4">
-                    <h3 className="text-xs font-black text-neu-sec uppercase tracking-widest px-1">Trending Topics</h3>
+                    <div className="mb-4" style={{
+                        background: 'rgba(255, 255, 255, 0.5)',
+                        border: '1px solid rgba(255, 255, 255, 0.6)',
+                        borderRadius: '1rem',
+                        overflow: 'hidden'
+                    }}>
+                        <input
+                            type="text"
+                            placeholder="Buscar tendencias..."
+                            className="w-full bg-transparent py-4 px-5 text-sm font-bold text-zinc-900 placeholder:text-zinc-500 outline-none"
+                        />
+                    </div>
+
+                    <PremiumButton
+                        customColor="#FFD700"
+                        customGradient="linear-gradient(135deg, #FFD700 0%, #D97706 100%)"
+                        variant="gradient"
+                        size="lg"
+                        fullWidth
+                        icon={<span className="material-symbols-outlined !text-base">search</span>}
+                        iconPosition="right"
+                    >
+                        BUSCAR TENDENCIAS
+                    </PremiumButton>
+                </GlassCard>
+
+                {/* Trending Now */}
+                <div>
+                    <h3 className="text-xs font-black text-white/80 uppercase tracking-wider mb-3 px-2">Tendencias Ahora</h3>
                     {trends.map((trend, i) => (
-                        <div key={i} className="neu-flat rounded-3xl p-6 flex items-center justify-between group active:scale-[0.98] transition-all cursor-pointer">
-                            <div className="flex-1">
-                                <h4 className="font-bold text-neu-main text-lg leading-tight mb-3">{trend.title}</h4>
-                                <div className="flex gap-2">
-                                    {trend.tags.map(tag => (
-                                        <span key={tag} className="text-[8px] font-black uppercase tracking-wider neu-pressed text-[#ec4899] px-3 py-1.5 rounded-lg bg-transparent">
-                                            {tag}
-                                        </span>
-                                    ))}
+                        <GlassCard
+                            key={i}
+                            rounded="3xl"
+                            padding="md"
+                            className="mb-3"
+                        >
+                            <div className="flex items-center justify-between">
+                                <div className="flex-1">
+                                    <div className="flex items-center gap-2 mb-1">
+                                        <h4 className="text-lg font-bold text-zinc-900">{trend.name}</h4>
+                                        {trend.hot && (
+                                            <span className="px-2 py-0.5 bg-red-100 text-red-600 rounded-full text-[8px] font-black uppercase tracking-wide flex items-center gap-1">
+                                                <span className="material-symbols-outlined !text-xs fill-1">local_fire_department</span>
+                                                HOT
+                                            </span>
+                                        )}
+                                    </div>
+                                    <p className="text-xs text-zinc-500 mb-2">{trend.category}</p>
+                                    <span className="text-sm font-black text-emerald-600">{trend.growth}</span>
+                                </div>
+                                <div className="w-12 h-12 rounded-xl bg-amber-100 flex items-center justify-center">
+                                    <span className="material-symbols-outlined text-amber-600 fill-1">arrow_upward</span>
                                 </div>
                             </div>
-                            <div className="text-right">
-                                <p className="text-xl font-black text-neu-main">{trend.volume}</p>
-                                <p className="text-[9px] font-bold text-[#10B981] mt-1">{trend.growth}</p>
-                            </div>
-                        </div>
+                        </GlassCard>
                     ))}
                 </div>
             </main>

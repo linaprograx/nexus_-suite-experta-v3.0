@@ -1,133 +1,170 @@
-import React, { useState } from 'react';
-import { AnimatePresence } from 'framer-motion';
-import './mobile.css';
-import Atmosphere from './components/Atmosphere';
-import BottomNav from './components/BottomNav';
-import Login from './views/Login';
-import Dashboard from './views/Dashboard';
-import GrimorioRecipes from './views/GrimorioRecipes';
-import GrimorioStock from './views/GrimorioStock';
-import GrimorioMarket from './views/GrimorioMarket';
-import Pizarron from './views/Pizarron';
-import CerebritySynthesis from './views/CerebritySynthesis';
-import CerebrityCritic from './views/CerebrityCritic';
-import CerebrityMakeMenu from './views/CerebrityMakeMenu';
-import CerebrityLab from './views/CerebrityLab';
-import CerebrityTrend from './views/CerebrityTrend';
-import Colegium from './views/Colegium';
-import Personal from './views/Personal';
-import Avatar from './views/Avatar';
-import { PageName, UserProfile } from './types';
+import React, { useState, useEffect } from 'react';
+import { useApp } from '../../context/AppContext';
+import FloatingBottomNav from './components/FloatingBottomNav';
+import MobileRoutes from './MobileRoutes';
+import { PageName, PAGE_THEMES } from './types';
+import { useLocation, useNavigate, BrowserRouter } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
 
-export const MobileShell: React.FC = () => {
-    // Local state for navigation
-    const [currentPage, setCurrentPage] = useState<PageName>(PageName.Login);
+const MobileShellContent: React.FC = () => {
+    const { user, isAuthReady } = useApp();
+    const location = useLocation();
+    const navigate = useNavigate();
 
-    // Dummy user for UI dev (will link to real context in Phase 4)
-    const [user] = useState<UserProfile>({
-        name: 'Lian Alviz',
-        photo: 'https://images.unsplash.com/photo-1583394838336-acd977736f90?w=400&h=400&fit=crop',
-        role: 'Bar Manager'
-    });
+    // Authentication check: Redirect to login if not authenticated and auth is ready
+    useEffect(() => {
+        if (isAuthReady && !user && location.pathname !== '/login') {
+            navigate('/login');
+        }
+    }, [isAuthReady, user, navigate, location.pathname]);
 
-    const handleUnlock = () => {
-        // Simulate unlock delay if needed, or just switch
-        setCurrentPage(PageName.Dashboard);
+    // Determine current page from path
+    const getCurrentPage = (): PageName => {
+        const path = location.pathname;
+        if (path === '/') return PageName.Dashboard;
+
+        // Grimorio
+        if (path.includes('/grimorio/recipes')) return PageName.GrimorioRecipes;
+        if (path.includes('/grimorio/stock')) return PageName.GrimorioStock;
+        if (path.includes('/grimorio/market')) return PageName.GrimorioMarket;
+
+        // Cerebrity (Check specific sub-routes first!)
+        if (path.includes('/cerebrity/critic')) return PageName.CerebrityCritic;
+        if (path.includes('/cerebrity/lab')) return PageName.CerebrityLab;
+        if (path.includes('/cerebrity/trend')) return PageName.CerebrityTrend;
+        if (path.includes('/cerebrity/make-menu')) return PageName.CerebrityMakeMenu;
+        if (path.includes('/cerebrity')) return PageName.CerebritySynthesis; // Default for /cerebrity
+
+        // Avatar (Check specific sub-routes first!)
+        if (path.includes('/avatar/intelligence')) return PageName.AvatarIntelligence;
+        if (path.includes('/avatar/competition')) return PageName.AvatarCompetition;
+        if (path.includes('/avatar')) return PageName.AvatarCore; // Default for /avatar
+
+        if (path.includes('/pizarron')) return PageName.Pizarron;
+        if (path.includes('/colegium')) return PageName.Colegium;
+        if (path.includes('/personal')) return PageName.Personal;
+        if (path.includes('/login')) return PageName.Login;
+
+        return PageName.Dashboard; // Default
     };
 
-    const handleNavigate = (page: string) => {
-        // Cast string to PageName if valid, logic to be refined
-        setCurrentPage(page as PageName);
-    };
+    const currentPage = getCurrentPage();
+    const theme = PAGE_THEMES[currentPage] || PAGE_THEMES['default'];
 
-    // Simple notify mock
+    // Notifications
+    const [toast, setToast] = useState<{ msg: string; type: 'success' | 'error' | 'loading' } | null>(null);
+
     const notify = (msg: string, type: 'success' | 'error' | 'loading' = 'success') => {
-        console.log(`[MobileShell] Notify: ${msg} (${type})`);
-    };
-
-    const renderContent = () => {
-        switch (currentPage) {
-            case PageName.Login:
-                return <Login onUnlock={handleUnlock} user={user} />;
-            case PageName.Dashboard:
-                return <Dashboard onNavigate={handleNavigate as any} user={user} />;
-            case PageName.GrimorioRecipes:
-                return <GrimorioRecipes onNavigate={handleNavigate as any} user={user} />;
-            case PageName.GrimorioStock:
-                return <GrimorioStock onNavigate={handleNavigate as any} user={user} />;
-            case PageName.GrimorioMarket:
-                return <GrimorioMarket onNavigate={handleNavigate as any} user={user} />;
-            case PageName.Pizarron:
-                return <Pizarron onNavigate={handleNavigate as any} user={user} notify={notify} />;
-            case PageName.CerebritySynthesis:
-                return <CerebritySynthesis onNavigate={handleNavigate as any} user={user} notify={notify} />;
-            case PageName.CerebrityCritic:
-                return <CerebrityCritic onNavigate={handleNavigate as any} />;
-            case PageName.CerebrityLab:
-                return <CerebrityLab onNavigate={handleNavigate as any} />;
-            case PageName.CerebrityTrend:
-                return <CerebrityTrend onNavigate={handleNavigate as any} />;
-            case PageName.CerebrityMakeMenu:
-                return <CerebrityMakeMenu onNavigate={handleNavigate as any} />;
-            case PageName.Colegium:
-                return <Colegium onNavigate={handleNavigate as any} />;
-            case PageName.Personal:
-                return <Personal onNavigate={handleNavigate as any} user={user} />;
-            case PageName.AvatarCore:
-            case PageName.AvatarIntelligence:
-            case PageName.AvatarCompetition:
-                return <Avatar onNavigate={handleNavigate as any} user={user} notify={notify} initialTab={currentPage === PageName.AvatarIntelligence ? 'Intelligence' : currentPage === PageName.AvatarCompetition ? 'Competition' : 'Core'} />;
-            default:
-                // Fallback to dashboard for implemented views, placeholder for others
-                if (currentPage === PageName.Dashboard) return <Dashboard onNavigate={handleNavigate as any} user={user} />;
-                return (
-                    <div className="flex items-center justify-center h-full text-neu-sec">
-                        <p>Work in progress: {currentPage}</p>
-                    </div>
-                );
+        setToast({ msg, type });
+        if (type !== 'loading') {
+            setTimeout(() => setToast(null), 3000);
         }
     };
 
+    const handleNavigate = (page: PageName) => {
+        navigate(getRouteForPage(page));
+    };
+
+    if (!isAuthReady) return <div className="h-screen w-full bg-slate-900 flex items-center justify-center text-white">Loading Nexus...</div>;
+
+    // Determine background based on page - all pages use light background now
+    const bgColor = 'bg-slate-100';
+    const frameBg = 'bg-[#F8F9FA]';
+
     return (
-        <div className="mobile-layer-root flex items-center justify-center bg-slate-900">
-            {/* Phone Frame Container */}
-            <div className="relative w-full max-w-[390px] h-full max-h-[844px] overflow-hidden shadow-2xl md:rounded-[3rem] border-[8px] border-[#EFEEEE] flex flex-col font-sans bg-[#EFEEEE] neu-flat text-[#3E4E5E]">
+        <div className={`h-screen w-screen overflow-hidden flex items-center justify-center font-sans text-slate-900 selection:bg-indigo-500/30 ${bgColor}`}>
 
-                {/* Atmosphere Layer */}
-                <Atmosphere currentPage={currentPage} />
+            {/* Phone Frame */}
+            <div className={`w-full h-full max-w-md relative overflow-hidden flex flex-col phone-frame ${frameBg}`}>
 
-                {/* Notch */}
-                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-28 h-7 bg-black rounded-b-2xl z-[100] flex items-center justify-center pointer-events-none">
-                    <div className="w-10 h-1 bg-white/10 rounded-full"></div>
-                </div>
+                {/* Atmospheric Gradient Layer */}
+                <div
+                    className="absolute top-0 left-0 w-full h-full z-0 pointer-events-none transition-opacity duration-700 ease-in-out opacity-90 gradient-mask-bottom"
+                    style={{
+                        background: theme.gradient,
+                    }}
+                />
 
-                {/* Status Bar */}
-                <div className={`px-8 pt-6 pb-1 flex justify-between items-center text-xs font-semibold z-[60] transition-colors duration-500 pointer-events-none ${currentPage === PageName.Login ? 'text-white' : 'text-slate-800'}`}>
-                    <span>9:41</span>
-                    <div className="flex gap-1.5 items-center">
-                        <span className="material-symbols-outlined text-[16px]">signal_cellular_alt</span>
-                        <span className="material-symbols-outlined text-[16px]">wifi</span>
-                        <span className="material-symbols-outlined text-[16px]">battery_full</span>
+                {/* 1. Status Bar (Visual Only) */}
+                <div className="h-12 w-full flex justify-between items-end px-6 pb-2 z-50 select-none pointer-events-none bg-transparent">
+                    <span className="text-[10px] font-black text-neu-main tracking-widest mix-blend-multiply opacity-80">{new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                    <div className="flex gap-1.5 opacity-80 mix-blend-multiply text-neu-main">
+                        <span className="material-symbols-outlined text-[10px]">signal_cellular_alt</span>
+                        <span className="material-symbols-outlined text-[10px]">wifi</span>
+                        <span className="material-symbols-outlined text-[10px]">battery_5_bar</span>
                     </div>
                 </div>
 
-                {/* Content Area */}
-                <div className="flex-1 overflow-hidden relative z-10 flex flex-col">
-                    <AnimatePresence mode="wait">
-                        <div key={currentPage} className="h-full w-full flex flex-col">
-                            {renderContent()}
-                        </div>
-                    </AnimatePresence>
+                {/* 2. Main Content Area with Custom Scrollbar */}
+                <div className="flex-1 relative z-10 overflow-y-auto custom-scroll pb-32">
+                    <MobileRoutes user={user!} notify={notify} onNavigate={handleNavigate} />
                 </div>
 
-                {/* Navigation (Hidden on Login) */}
+                {/* 3. Bottom Navigation - New Floating Style */}
                 {currentPage !== PageName.Login && (
-                    <BottomNav currentPage={currentPage} onNavigate={handleNavigate as any} />
+                    <FloatingBottomNav currentPage={currentPage} onNavigate={handleNavigate} />
                 )}
 
-                {/* Home Indicator */}
-                <div className="absolute bottom-1.5 left-1/2 -translate-x-1/2 w-32 h-1 bg-slate-900/10 rounded-full z-[110] pointer-events-none"></div>
+                {/* Bottom Gradient Fade */}
+                <div className="absolute bottom-0 w-full h-32 bg-gradient-to-t from-[#F8F9FA] via-[#F8F9FA]/80 to-transparent pointer-events-none z-40"></div>
+
+                {/* 4. Notification Toast */}
+                <AnimatePresence>
+                    {toast && (
+                        <motion.div
+                            initial={{ y: -50, opacity: 0 }}
+                            animate={{ y: 0, opacity: 1 }}
+                            exit={{ y: -50, opacity: 0 }}
+                            className="absolute top-14 left-0 right-0 z-[100] flex justify-center pointer-events-none"
+                        >
+                            <div className="bg-slate-900/90 backdrop-blur-md text-white px-6 py-3 rounded-full shadow-2xl flex items-center gap-3">
+                                {toast.type === 'loading' ? (
+                                    <span className="material-symbols-outlined animate-spin text-sm text-yellow-500">sync</span>
+                                ) : toast.type === 'error' ? (
+                                    <span className="material-symbols-outlined text-sm text-rose-500">error</span>
+                                ) : (
+                                    <span className="material-symbols-outlined text-sm text-emerald-500">check_circle</span>
+                                )}
+                                <span className="text-xs font-bold tracking-wide">{toast.msg}</span>
+                            </div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+
             </div>
         </div>
     );
 };
+
+const MobileShell: React.FC = () => {
+    return (
+        <BrowserRouter>
+            <MobileShellContent />
+        </BrowserRouter>
+    );
+};
+
+// Helper for navigation
+function getRouteForPage(page: PageName): string {
+    switch (page) {
+        case PageName.Dashboard: return '/';
+        case PageName.GrimorioRecipes: return '/grimorio/recipes';
+        case PageName.GrimorioStock: return '/grimorio/stock';
+        case PageName.GrimorioMarket: return '/grimorio/market';
+        case PageName.Pizarron: return '/pizarron';
+        case PageName.CerebritySynthesis: return '/cerebrity/synthesis';
+        case PageName.CerebrityCritic: return '/cerebrity/critic';
+        case PageName.CerebrityLab: return '/cerebrity/lab';
+        case PageName.CerebrityTrend: return '/cerebrity/trend';
+        case PageName.CerebrityMakeMenu: return '/cerebrity/make-menu';
+        case PageName.AvatarCore: return '/avatar/core';
+        case PageName.AvatarIntelligence: return '/avatar/intelligence';
+        case PageName.AvatarCompetition: return '/avatar/competition';
+        case PageName.Colegium: return '/colegium';
+        case PageName.Personal: return '/personal';
+        case PageName.Login: return '/login';
+        default: return '/';
+    }
+}
+
+export default MobileShell;

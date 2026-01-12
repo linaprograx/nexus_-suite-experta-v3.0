@@ -1,99 +1,113 @@
-import React from 'react';
-import { PageName } from '../types';
-import NeuButton from '../components/NeuButton';
+import React, { useState } from 'react';
+import { PageName, UserProfile } from '../types';
+import GlassCard from '../components/GlassCard';
+import PremiumButton from '../components/PremiumButton';
 
 interface Props {
     onNavigate: (page: PageName) => void;
+    user?: UserProfile;
 }
 
 const CerebrityCritic: React.FC<Props> = ({ onNavigate }) => {
+    // Mock critique logs
+    const critiques = [
+        {
+            recipe: 'Mojito Classic',
+            score: 8.5,
+            feedback: 'Excellent balance, consider premium rum upgrade',
+            date: '2h ago',
+            severity: 'minor'
+        },
+        {
+            recipe: 'Negroni Variant',
+            score: 6.2,
+            feedback: 'Ratio needs adjustment. Sweetness overpowers bitter notes',
+            date: '5h ago',
+            severity: 'major'
+        },
+    ];
+
     return (
-        <div className="flex-1 bg-transparent relative overflow-hidden flex flex-col">
+        <div className="bg-transparent relative overflow-hidden flex flex-col h-full">
 
-            <header className="px-6 pt-6 pb-2">
-                <div className="flex justify-between items-center mb-6">
-                    <div>
-                        <h1 className="text-2xl font-black text-[#EA580C] tracking-tight">Cerebrity</h1>
-                        <p className="text-[10px] font-black text-neu-sec uppercase tracking-[0.3em]">AI Protocol</p>
-                    </div>
-                    <NeuButton onClick={() => onNavigate(PageName.Dashboard)} className="w-10 h-10 rounded-xl text-neu-sec"><span className="material-symbols-outlined">close</span></NeuButton>
-                </div>
-
-                <div className="flex gap-4 overflow-x-auto scrollbar-hide pb-2">
-                    <NeuButton onClick={() => onNavigate(PageName.CerebritySynthesis)} variant="flat" className="px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest shrink-0 text-neu-sec">
-                        Synthesis
-                    </NeuButton>
-                    <NeuButton onClick={() => { }} variant="pressed" className="px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest shrink-0 text-[#EA580C] bg-orange-50/50">
-                        Critic
-                    </NeuButton>
-                    <NeuButton onClick={() => onNavigate(PageName.CerebrityLab)} variant="flat" className="px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest shrink-0 text-neu-sec">
-                        Lab
-                    </NeuButton>
-                    <NeuButton onClick={() => onNavigate(PageName.CerebrityTrend)} variant="flat" className="px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest shrink-0 text-neu-sec">
-                        Trend
-                    </NeuButton>
-                    <NeuButton onClick={() => onNavigate(PageName.CerebrityMakeMenu)} variant="flat" className="px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest shrink-0 text-neu-sec">
-                        Make
-                    </NeuButton>
+            {/* Header */}
+            <header className="px-5 pt-6 pb-4 relative z-10">
+                <div className="mb-6 px-2">
+                    <p className="text-[9px] font-bold text-white/60 uppercase tracking-[0.25em] mb-2">Cerebrity AI</p>
+                    <h1 className="text-5xl font-black text-white tracking-tighter leading-[0.9] mb-2">
+                        The<br />
+                        <span className="text-white/70">Critic</span>
+                    </h1>
+                    <p className="text-xs text-white/70 max-w-xs leading-relaxed">
+                        Evaluación implacable de tus recetas por un jurado especializado.
+                    </p>
                 </div>
             </header>
 
-            <main className="flex-1 overflow-y-auto scrollbar-hide px-6 py-6 space-y-8 pb-32 z-10 pt-2">
-                {/* Panel Configuración Michelin */}
-                <section className="neu-flat rounded-[2.5rem] p-8 relative overflow-hidden group">
-                    <div className="absolute top-0 right-0 p-8 opacity-5">
-                        <span className="material-symbols-outlined text-[100px] text-[#EA580C]">rate_review</span>
-                    </div>
-                    <h3 className="text-[10px] font-black text-neu-sec uppercase tracking-[0.2em] mb-6">Configuración</h3>
-                    <div className="space-y-6">
-                        <div>
-                            <label className="text-[9px] font-black text-neu-sec uppercase tracking-widest mb-4 block">Perfil del Crítico</label>
-                            <div className="neu-pressed rounded-2xl p-4 flex justify-between items-center text-neu-main cursor-pointer active:scale-98 transition-all">
-                                <span className="font-bold text-xs flex items-center gap-2">
-                                    Inspector Michelin <span className="text-[#EA580C]">★</span>
-                                </span>
-                                <span className="material-symbols-outlined text-neu-sec">expand_more</span>
-                            </div>
-                            <p className="text-[8px] text-neu-sec font-bold mt-3 ml-1 opacity-70">Define la personalidad y severidad del análisis.</p>
+            {/* Main Content */}
+            <main className="flex-1 overflow-y-auto custom-scroll px-5 space-y-4">
+
+                {/* Invoke Card */}
+                <GlassCard rounded="3xl" padding="xl" className="bg-gradient-to-r from-cyan-50 to-transparent">
+                    <div className="flex items-center gap-5 mb-5">
+                        <div className="w-16 h-16 rounded-2xl bg-cyan-600 flex items-center justify-center text-white shadow-xl action-glow-turquoise">
+                            <span className="material-symbols-outlined text-3xl fill-1">rate_review</span>
+                        </div>
+                        <div className="flex-1">
+                            <h3 className="text-xl font-bold text-zinc-900 mb-1">Invocar Crítico</h3>
+                            <p className="text-xs text-zinc-600">Obtén retroalimentación profesional</p>
                         </div>
                     </div>
-                </section>
 
-                {/* Estado Espera Material */}
-                <div className="flex flex-col items-center justify-center py-6 text-center">
-                    <div className="w-16 h-16 neu-pressed rounded-2xl flex items-center justify-center text-[#EA580C] mb-6">
-                        <span className="material-symbols-outlined text-3xl">edit_note</span>
-                    </div>
-                    <h3 className="text-xl font-black text-neu-main mb-2">Esperando Material</h3>
-                    <p className="text-xs text-neu-sec max-w-[70%] leading-relaxed font-medium">
-                        Sube tu menú o escribe su contenido en el panel derecho para recibir un análisis profesional.
-                    </p>
+                    <PremiumButton
+                        customColor="#00E5FF"
+                        customGradient="linear-gradient(135deg, #00E5FF 0%, #0097A7 100%)"
+                        variant="gradient"
+                        size="lg"
+                        fullWidth
+                        icon={<span className="material-symbols-outlined !text-base">psychology</span>}
+                        iconPosition="right"
+                    >
+                        ENVIAR PARA REVISIÓN
+                    </PremiumButton>
+                </GlassCard>
+
+                {/* Critique Log */}
+                <div>
+                    <h3 className="text-xs font-black text-white/80 uppercase tracking-wider mb-3 px-2">Críticas Recientes</h3>
+                    {critiques.map((item, i) => (
+                        <GlassCard
+                            key={i}
+                            rounded="3xl"
+                            padding="md"
+                            className="mb-3"
+                        >
+                            <div className="flex items-start justify-between mb-3">
+                                <div className="flex-1">
+                                    <div className="flex items-center gap-2 mb-2">
+                                        <h4 className="text-lg font-bold text-zinc-900">{item.recipe}</h4>
+                                        <span className={`text-2xl font-black ${item.score >= 8 ? 'text-emerald-600' : item.score >= 7 ? 'text-cyan-600' : 'text-amber-600'}`}>
+                                            {item.score}
+                                        </span>
+                                    </div>
+                                    <p className="text-xs text-zinc-600 mb-2">{item.feedback}</p>
+                                    <span className="text-[9px] text-zinc-400">{item.date}</span>
+                                </div>
+                                <span className={`px-2 py-1 rounded-full text-[8px] font-black uppercase tracking-wide ${item.severity === 'major' ? 'bg-amber-100 text-amber-700' : 'bg-cyan-100 text-cyan-700'
+                                    }`}>
+                                    {item.severity}
+                                </span>
+                            </div>
+
+                            <div className="flex gap-2">
+                                <button className="flex-1 py-3 rounded-2xl text-[10px] font-black text-zinc-500 bg-zinc-100 border border-zinc-200 uppercase tracking-wider hover:bg-zinc-200 transition-colors">
+                                    Ver Reporte Completo
+                                </button>
+                            </div>
+                        </GlassCard>
+                    ))}
                 </div>
-
-                {/* Actions Section */}
-                <section className="neu-pressed rounded-[2.5rem] p-6">
-                    <h3 className="text-[11px] font-black text-neu-main uppercase tracking-widest mb-1">The Critic Eye</h3>
-                    <p className="text-[9px] text-neu-sec font-bold mb-6 uppercase">Sube tu material para análisis</p>
-
-                    <div className="grid grid-cols-2 gap-3">
-                        {[
-                            { icon: 'search', label: 'Alérgenos', delay: 0 },
-                            { icon: 'palette', label: 'Diseño', delay: 100 },
-                            { icon: 'payments', label: 'Precios', delay: 200 },
-                            { icon: 'spellcheck', label: 'Textos', delay: 300 }
-                        ].map((btn, i) => (
-                            <button key={i} className="neu-flat py-4 px-4 rounded-2xl flex items-center gap-3 text-[9px] font-black text-neu-main uppercase tracking-tight active:scale-95 transition-all">
-                                <span className="material-symbols-outlined text-sm text-[#EA580C]">{btn.icon}</span>
-                                {btn.label}
-                            </button>
-                        ))}
-                    </div>
-                </section>
             </main>
-
-            <button className="absolute bottom-28 right-8 w-16 h-16 neu-btn rounded-full flex items-center justify-center text-[#EA580C] z-50 bg-[#EFEEEE]">
-                <span className="material-symbols-outlined filled text-2xl">chat_bubble</span>
-            </button>
         </div>
     );
 };

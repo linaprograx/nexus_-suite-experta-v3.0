@@ -1,61 +1,146 @@
-import React from 'react';
-import { UserProfile } from '../types';
+import React, { useState } from 'react';
+import { PageName, UserProfile } from '../types';
+import { useApp } from '../../../context/AppContext';
+import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
+import GlassCard from '../components/GlassCard';
+import PremiumButton from '../components/PremiumButton';
 
 interface LoginProps {
-    onUnlock: () => void;
-    user: UserProfile;
+    onNavigate: (page: PageName) => void;
 }
 
-const Login: React.FC<LoginProps> = ({ onUnlock }) => {
+const Login: React.FC<LoginProps> = ({ onNavigate }) => {
+    const { auth } = useApp();
+    const [isLogin, setIsLogin] = useState(true);
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const [error, setError] = useState('');
+    const [loading, setLoading] = useState(false);
+
+    const handleAuth = async () => {
+        if (!auth) return;
+        setLoading(true);
+        setError('');
+
+        try {
+            if (isLogin) {
+                await signInWithEmailAndPassword(auth, email, password);
+            } else {
+                await createUserWithEmailAndPassword(auth, email, password);
+            }
+            onNavigate(PageName.Dashboard);
+        } catch (err: any) {
+            let msg = err.message;
+            if (msg.includes('invalid-credential')) msg = 'Credenciales inválidas';
+            if (msg.includes('invalid-email')) msg = 'Email inválido';
+            if (msg.includes('user-not-found')) msg = 'Usuario no encontrado';
+            if (msg.includes('wrong-password')) msg = 'Contraseña incorrecta';
+            if (msg.includes('weak-password')) msg = 'Contraseña débil';
+            setError(msg);
+            setLoading(false);
+        }
+    };
+
     return (
         <div className="flex-1 bg-transparent relative overflow-hidden flex flex-col items-center justify-center px-6">
 
-            {/* Central Neumorphic Card */}
-            <div className="w-full max-w-[340px] neu-flat rounded-[3rem] p-10 relative overflow-hidden flex flex-col items-center animate-[fadeIn_0.7s_ease-out]">
-
-                {/* Logo Container */}
-                <div className="w-24 h-24 rounded-full neu-pressed flex items-center justify-center mb-8 shrink-0">
-                    <div className="w-16 h-16 rounded-full neu-btn flex items-center justify-center text-[#6D28D9]">
-                        <span className="material-symbols-outlined text-4xl">grid_view</span>
-                    </div>
+            {/* Logo Glass Card */}
+            <GlassCard rounded="3xl" padding="lg" className="w-32 h-32 mb-8 flex items-center justify-center">
+                <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 flex items-center justify-center text-white shadow-xl">
+                    <span className="material-symbols-outlined text-5xl fill-1">grid_view</span>
                 </div>
+            </GlassCard>
 
-                {/* Title */}
-                <h1 className="text-3xl font-black text-neu-main mb-2 tracking-tight">Nexus</h1>
-                <p className="text-[10px] font-black text-neu-sec uppercase tracking-[0.3em] mb-12">Suite Experta</p>
+            {/* Title */}
+            <h1 className="text-6xl font-black text-white mb-3 tracking-tighter text-center" style={{ textShadow: '0 4px 20px rgba(0,0,0,0.3)' }}>
+                NEXUS
+            </h1>
+            <p className="text-sm font-bold text-white/80 uppercase tracking-[0.3em] mb-12">Suite Experta</p>
 
-                {/* Inputs */}
-                <div className="w-full space-y-6 mb-10">
-                    <div className="neu-pressed rounded-2xl p-1">
+            {/* Login Form Glass Card */}
+            <GlassCard rounded="3xl" padding="xl" className="w-full max-w-sm">
+                <div className="space-y-5 mb-6">
+                    {/* Email Input */}
+                    <div
+                        className="relative input-glow rounded-2xl overflow-hidden"
+                        style={{
+                            background: 'rgba(255, 255, 255, 0.5)',
+                            border: '1px solid rgba(255, 255, 255, 0.6)',
+                        }}
+                    >
                         <input
-                            type="text"
-                            placeholder="USUARIO"
-                            className="w-full bg-transparent text-center py-4 text-[10px] font-black text-neu-main placeholder:text-neu-sec uppercase tracking-widest outline-none"
+                            type="email"
+                            placeholder="Correo Electrónico"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                            className="w-full bg-transparent py-4 px-5 text-sm font-bold text-zinc-900 placeholder:text-zinc-500 outline-none"
                         />
                     </div>
-                    <div className="neu-pressed rounded-2xl p-1">
+
+                    {/* Password Input */}
+                    <div
+                        className="relative input-glow rounded-2xl overflow-hidden"
+                        style={{
+                            background: 'rgba(255, 255, 255, 0.5)',
+                            border: '1px solid rgba(255, 255, 255, 0.6)',
+                        }}
+                    >
                         <input
                             type="password"
-                            placeholder="CONTRASEÑA"
-                            className="w-full bg-transparent text-center py-4 text-[10px] font-black text-neu-main placeholder:text-neu-sec uppercase tracking-widest outline-none"
+                            placeholder="Contraseña"
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            onKeyPress={(e) => e.key === 'Enter' && handleAuth()}
+                            className="w-full bg-transparent py-4 px-5 text-sm font-bold text-zinc-900 placeholder:text-zinc-500 outline-none"
                         />
                     </div>
                 </div>
 
-                {/* Action Button */}
-                <button
-                    onClick={onUnlock}
-                    className="w-full neu-btn text-[#6D28D9] py-5 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] active:scale-95 transition-all mb-8"
-                >
-                    Acceder
-                </button>
+                {/* Error Message */}
+                {error && (
+                    <div className="mb-5 px-4 py-3 bg-red-100 text-red-600 rounded-2xl text-xs font-bold text-center">
+                        {error}
+                    </div>
+                )}
 
-                <button className="text-[9px] font-bold text-neu-sec uppercase tracking-widest hover:text-neu-main transition-colors">
-                    Crear Cuenta
+                {/* Action Button */}
+                <PremiumButton
+                    module="login"
+                    variant="gradient"
+                    size="lg"
+                    fullWidth
+                    onClick={handleAuth}
+                    disabled={loading}
+                    customGradient="linear-gradient(135deg, #2563EB 0%, #7C3AED 50%, #DB2777 100%)"
+                    icon={<span className="material-symbols-outlined !text-base">arrow_forward</span>}
+                    iconPosition="right"
+                >
+                    {loading ? 'CARGANDO...' : 'ENTRAR A SUITE'}
+                </PremiumButton>
+
+                {/* Toggle Login/Register */}
+                <button
+                    onClick={() => { setIsLogin(!isLogin); setError(''); }}
+                    className="w-full mt-5 text-xs font-bold text-zinc-600 uppercase tracking-wider hover:text-zinc-900 transition-colors"
+                >
+                    {isLogin ? 'Crear Cuenta' : 'Iniciar Sesión'}
                 </button>
+            </GlassCard>
+
+            {/* Biometric Icons */}
+            <div className="flex gap-6 mt-10">
+                <div className="w-14 h-14 rounded-full bg-white/30 backdrop-blur-md border border-white/40 flex items-center justify-center shadow-lg cursor-pointer hover:scale-110 transition-transform">
+                    <span className="material-symbols-outlined text-white text-2xl">fingerprint</span>
+                </div>
+                <div className="w-14 h-14 rounded-full bg-white/30 backdrop-blur-md border border-white/40 flex items-center justify-center shadow-lg cursor-pointer hover:scale-110 transition-transform">
+                    <span className="material-symbols-outlined text-white text-2xl">face</span>
+                </div>
             </div>
 
-            <p className="absolute bottom-12 text-[8px] font-black text-neu-sec uppercase tracking-[0.4em] opacity-40">Protección de Identidad Biometrica v4.2</p>
+            {/* Footer */}
+            <p className="absolute bottom-10 text-[9px] font-bold text-white/50 uppercase tracking-[0.3em]">
+                Acceso Biométrico v4.2
+            </p>
         </div>
     );
 };

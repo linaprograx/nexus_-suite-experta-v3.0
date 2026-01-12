@@ -312,7 +312,8 @@ export const useChampionCreativeEngine = () => {
             saveToGrimorium,
             createTrainingPlan,
             addBrand,
-            removeBrand
+            removeBrand,
+            setAiEvaluation: (evalData: any) => setState(prev => ({ ...prev, aiEvaluation: evalData }))
         }
     };
 };

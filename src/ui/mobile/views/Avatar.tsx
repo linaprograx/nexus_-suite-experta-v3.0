@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { PageName, UserProfile } from '../types';
-import AnimatedPage from '../components/AnimatedPage';
-import NeuCard from '../components/NeuCard';
-import NeuButton from '../components/NeuButton';
+import GlassCard from '../components/GlassCard';
+import PremiumButton from '../components/PremiumButton';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useAvatarCognition, AvatarType } from '../../../hooks/useAvatarCognition';
+import { useApp } from '../../../context/AppContext';
 
 interface Props {
     onNavigate: (page: PageName) => void;
@@ -13,176 +14,283 @@ interface Props {
 }
 
 const Avatar: React.FC<Props> = ({ onNavigate, initialTab = 'Core', notify }) => {
+    const { userPlan } = useApp();
+    const { activeAvatarType, avatarConfigs, setActiveAvatarType } = useAvatarCognition();
     const [activeTab, setActiveTab] = useState<'Core' | 'Intelligence' | 'Competition'>(initialTab);
 
-    const TABS = ['Core', 'Intelligence', 'Competition'];
+    const AVATARS: AvatarType[] = ['Mixologist', 'Chef', 'Patissier'];
 
-    const getAccentColor = () => {
-        switch (activeTab) {
-            case 'Core': return 'text-slate-800';
-            case 'Intelligence': return 'text-rose-600';
-            case 'Competition': return 'text-emerald-600';
-        }
+    // Tab labels in Spanish
+    const TAB_LABELS = {
+        Core: 'Núcleo',
+        Intelligence: 'Inteligencia',
+        Competition: 'Competición'
     };
 
-    return (
-        <AnimatedPage className="bg-transparent relative overflow-hidden flex flex-col h-full">
+    // Determine unlocked avatars based on plan
+    const unlockedSlots = userPlan === 'FREE' ? 1 : userPlan === 'PRO' ? 2 : userPlan === 'EXPERT' ? 4 : 99;
 
-            {/* Header with Navigation */}
-            <header className="px-6 pt-6 pb-2">
-                <div className="flex justify-between items-center mb-6">
-                    <h1 className={`text-2xl font-black tracking-tight ${getAccentColor()}`}>Avatar</h1>
-                    <NeuButton onClick={() => onNavigate(PageName.Dashboard)} className="w-10 h-10 rounded-xl text-neu-sec"><span className="material-symbols-outlined">close</span></NeuButton>
+    // Get theme colors based on tab
+    const tabTheme = {
+        Core: { bg: 'from-violet-900/40', accent: '#7C3AED', text: 'text-violet-300' },
+        Intelligence: { bg: 'from-red-900/40', accent: '#DC2626', text: 'text-red-300' },
+        Competition: { bg: 'from-emerald-900/40', accent: '#10B981', text: 'text-emerald-300' },
+    }[activeTab];
+
+    return (
+        <div className="bg-transparent relative overflow-hidden flex flex-col h-full">
+
+            {/* Header */}
+            <header className="px-5 pt-6 pb-4 relative z-10">
+                <div className="flex justify-between items-center mb-5">
+                    <div className="flex-1"></div>
+                    <button
+                        onClick={() => onNavigate(PageName.Dashboard)}
+                        className="w-10 h-10 rounded-full bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center text-white hover:bg-white/20 transition-all"
+                    >
+                        <span className="material-symbols-outlined text-lg">close</span>
+                    </button>
                 </div>
 
-                <div className="flex gap-4 overflow-x-auto scrollbar-hide pb-2">
-                    <NeuButton
-                        onClick={() => setActiveTab('Core')}
-                        variant={activeTab === 'Core' ? 'pressed' : 'flat'}
-                        className={`px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest shrink-0 ${activeTab === 'Core' ? 'text-slate-800 bg-slate-100' : 'text-neu-sec'}`}
-                    >
-                        Core
-                    </NeuButton>
-                    <NeuButton
-                        onClick={() => setActiveTab('Intelligence')}
-                        variant={activeTab === 'Intelligence' ? 'pressed' : 'flat'}
-                        className={`px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest shrink-0 ${activeTab === 'Intelligence' ? 'text-rose-600 bg-rose-50/50' : 'text-neu-sec'}`}
-                    >
-                        Intelligence
-                    </NeuButton>
-                    <NeuButton
-                        onClick={() => setActiveTab('Competition')}
-                        variant={activeTab === 'Competition' ? 'pressed' : 'flat'}
-                        className={`px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest shrink-0 ${activeTab === 'Competition' ? 'text-emerald-600 bg-emerald-50/50' : 'text-neu-sec'}`}
-                    >
-                        Competition
-                    </NeuButton>
+                {/* Title */}
+                <div className="mb-6 px-2">
+                    <p className="text-[9px] font-bold text-white/60 uppercase tracking-[0.25em] mb-2">Sistema Cognitivo Nexus</p>
+                    <h1 className="text-5xl font-black text-white tracking-tighter leading-[0.9] mb-2">Núcleo Avatar</h1>
+                    <p className="text-xs text-white/70 max-w-xs leading-relaxed">
+                        Tu identidad digital evoluciona con tu consciencia operativa.
+                    </p>
+                </div>
+
+                {/* Tabs */}
+                <div className="flex gap-2">
+                    {(['Core', 'Intelligence', 'Competition'] as const).map(tab => (
+                        <button
+                            key={tab}
+                            onClick={() => setActiveTab(tab)}
+                            className={`px-5 py-2.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === tab
+                                ? 'bg-white text-zinc-900 shadow-md'
+                                : 'bg-white/10 backdrop-blur-md border border-white/20 text-white/80 hover:bg-white/20'
+                                }`}
+                            style={activeTab === tab ? { color: tabTheme.accent } : {}}
+                        >
+                            {TAB_LABELS[tab]}
+                        </button>
+                    ))}
                 </div>
             </header>
 
-            <main className="flex-1 overflow-y-auto scrollbar-hide px-6 py-6 pb-32">
+            {/* Main Content */}
+            <main className="flex-1 overflow-y-auto custom-scroll px-5 pb-32 relative z-10">
                 <AnimatePresence mode="wait">
 
-                    {/* --- CORE SECTION (Graphite/Black) --- */}
+                    {/* CORE TAB */}
                     {activeTab === 'Core' && (
                         <motion.div
                             key="Core"
-                            initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }}
-                            className="space-y-6"
+                            initial={{ opacity: 0, x: -20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            exit={{ opacity: 0, x: 20 }}
+                            className="space-y-4"
                         >
-                            <NeuCard className="p-8 rounded-[3rem] flex flex-col items-center justify-center text-center bg-slate-800 text-white">
-                                <div className="w-24 h-24 rounded-full border-4 border-white/10 p-1 mb-4 relative">
-                                    <img src="https://images.unsplash.com/photo-1583394838336-acd977736f90?w=400&h=400&fit=crop" className="w-full h-full rounded-full object-cover" />
-                                </div>
-                                <h2 className="text-2xl font-black">Lian Alviz</h2>
-                                <p className="text-[10px] font-bold opacity-60 uppercase tracking-widest mt-1">Bar Manager • Level 4</p>
+                            {AVATARS.map((type, index) => {
+                                const config = avatarConfigs[type];
+                                const isActive = activeAvatarType === type;
+                                const isLocked = index >= unlockedSlots;
 
-                                <div className="h-px w-full bg-white/10 my-6"></div>
-
-                                <div className="grid grid-cols-3 gap-6 w-full">
-                                    <div className="flex flex-col items-center">
-                                        <span className="text-xl font-black">142</span>
-                                        <span className="text-[8px] uppercase font-bold opacity-40">Shifts</span>
-                                    </div>
-                                    <div className="flex flex-col items-center">
-                                        <span className="text-xl font-black">4.9</span>
-                                        <span className="text-[8px] uppercase font-bold opacity-40">Rating</span>
-                                    </div>
-                                    <div className="flex flex-col items-center">
-                                        <span className="text-xl font-black">8</span>
-                                        <span className="text-[8px] uppercase font-bold opacity-40">Badges</span>
-                                    </div>
-                                </div>
-                            </NeuCard>
-
-                            <div className="space-y-2">
-                                <h3 className="text-[10px] font-black text-neu-sec uppercase tracking-widest pl-2 mb-2">Active Shifts</h3>
-                                {[1, 2].map(i => (
-                                    <NeuCard key={i} className="p-4 rounded-2xl flex justify-between items-center">
-                                        <div>
-                                            <h4 className="text-sm font-bold text-slate-800">Dinner Service</h4>
-                                            <p className="text-[10px] text-neu-sec">Today • 18:00 - 02:00</p>
+                                return (
+                                    <GlassCard
+                                        key={type}
+                                        rounded="3xl"
+                                        padding="lg"
+                                        className={`relative transition-all cursor-pointer ${isActive ? 'shadow-xl' : ''
+                                            }`}
+                                        onClick={() => !isLocked && setActiveAvatarType(type)}
+                                        style={isActive ? {
+                                            boxShadow: `0 8px 30px ${tabTheme.accent}30, 0 0 0 2px ${tabTheme.accent}20`
+                                        } : {}}
+                                    >
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center gap-4">
+                                                <div
+                                                    className={`w-16 h-16 rounded-2xl flex items-center justify-center text-3xl transition-all ${isLocked
+                                                        ? 'bg-zinc-700 text-zinc-500'
+                                                        : isActive
+                                                            ? 'text-white shadow-lg'
+                                                            : 'bg-zinc-100 text-zinc-700'
+                                                        }`}
+                                                    style={isActive ? { backgroundColor: tabTheme.accent } : {}}
+                                                >
+                                                    {isLocked ? '🔒' : config.emoji}
+                                                </div>
+                                                <div>
+                                                    <h3 className={`text-xl font-bold ${isActive ? 'text-zinc-900' : 'text-zinc-700'}`}>
+                                                        {config.name || type}
+                                                    </h3>
+                                                    {isActive && (
+                                                        <span className="text-xs font-medium" style={{ color: tabTheme.accent }}>
+                                                            Profesional Activo
+                                                        </span>
+                                                    )}
+                                                    {isLocked && (
+                                                        <span className="text-xs font-medium text-zinc-500">
+                                                            Upgrade to unlock
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            </div>
+                                            {isActive && (
+                                                <span className="px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-wider text-white" style={{ backgroundColor: `${tabTheme.accent}40`, color: tabTheme.accent }}>
+                                                    Active
+                                                </span>
+                                            )}
                                         </div>
-                                        <span className="px-3 py-1 bg-emerald-100 text-emerald-600 text-[9px] font-black uppercase rounded-lg">Active</span>
-                                    </NeuCard>
-                                ))}
-                            </div>
+
+                                        {!isLocked && isActive && (
+                                            <div className="mt-5 pt-5 border-t border-zinc-200">
+                                                <PremiumButton
+                                                    variant="secondary"
+                                                    size="sm"
+                                                    fullWidth
+                                                    customColor={tabTheme.accent}
+                                                >
+                                                    Configurar Avatar
+                                                </PremiumButton>
+                                            </div>
+                                        )}
+                                    </GlassCard>
+                                );
+                            })}
+
+                            {/* Estados de Consciencia */}
+                            <GlassCard rounded="3xl" padding="lg" className="bg-gradient-to-r from-violet-50 to-transparent">
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <h3 className="text-lg font-bold text-zinc-900 mb-1">Estados de Consciencia</h3>
+                                        <p className="text-xs text-zinc-600">Evolución del sistema cognitivo</p>
+                                    </div>
+                                    <PremiumButton
+                                        variant="secondary"
+                                        size="sm"
+                                        customColor={tabTheme.accent}
+                                    >
+                                        Ver Mapa
+                                    </PremiumButton>
+                                </div>
+                            </GlassCard>
                         </motion.div>
                     )}
 
-                    {/* --- INTELLIGENCE SECTION (Vivid Red) --- */}
+                    {/* INTELLIGENCE TAB */}
                     {activeTab === 'Intelligence' && (
                         <motion.div
                             key="Intelligence"
-                            initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }}
-                            className="space-y-6"
+                            initial={{ opacity: 0, x: -20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            exit={{ opacity: 0, x: 20 }}
+                            className="space-y-4"
                         >
-                            <NeuCard className="p-8 rounded-[2.5rem] bg-rose-600 text-white relative overflow-hidden">
-                                <div className="absolute top-0 right-0 p-8 opacity-20">
-                                    <span className="material-symbols-outlined text-[100px]">psychology</span>
+                            <GlassCard rounded="3xl" padding="xl" className="bg-gradient-to-r from-red-50 to-transparent">
+                                <div className="flex items-center gap-5 mb-6">
+                                    <div className="w-20 h-20 rounded-2xl bg-red-600 flex items-center justify-center text-white text-4xl shadow-xl action-glow-red">
+                                        {avatarConfigs[activeAvatarType].emoji}
+                                    </div>
+                                    <div className="flex-1">
+                                        <span className="px-3 py-1 bg-red-100 text-red-700 rounded-full text-[8px] font-black uppercase tracking-wider">
+                                            Perfil Activo
+                                        </span>
+                                        <h2 className="text-2xl font-bold text-zinc-900 mt-2">{avatarConfigs[activeAvatarType].name}</h2>
+                                    </div>
                                 </div>
-                                <span className="px-3 py-1 bg-white/20 rounded-full text-[9px] font-black uppercase tracking-widest backdrop-blur-md">Cognitive Load</span>
-                                <h2 className="text-4xl font-black mt-4 mb-2">High</h2>
-                                <p className="text-xs font-medium opacity-80 max-w-[80%]">System is prioritizing creative tasks. Operational load is balanced.</p>
-                            </NeuCard>
 
-                            <div className="grid grid-cols-2 gap-4">
-                                <NeuCard className="p-6 rounded-[2rem] flex flex-col items-center justify-center text-center border-2 border-rose-100">
-                                    <span className="text-3xl font-black text-rose-600 mb-1">92%</span>
-                                    <p className="text-[9px] text-rose-600/60 uppercase font-black tracking-widest">Creativity</p>
-                                </NeuCard>
-                                <NeuCard className="p-6 rounded-[2rem] flex flex-col items-center justify-center text-center border-2 border-slate-100">
-                                    <span className="text-3xl font-black text-neu-main mb-1">85%</span>
-                                    <p className="text-[9px] text-neu-sec uppercase font-black tracking-widest">Efficiency</p>
-                                </NeuCard>
+                                <div className="space-y-3">
+                                    <div>
+                                        <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider mb-2">Tono</p>
+                                        <span className="px-3 py-1.5 bg-red-100 text-red-700 rounded-full text-xs font-bold">
+                                            {avatarConfigs[activeAvatarType].tone}
+                                        </span>
+                                    </div>
+                                    <div>
+                                        <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider mb-2">Eje de Investigación</p>
+                                        <div className="flex flex-wrap gap-2">
+                                            {avatarConfigs[activeAvatarType].researchAxis.map(axis => (
+                                                <span key={axis} className="px-3 py-1.5 bg-zinc-100 text-zinc-700 rounded-full text-xs font-bold">
+                                                    {axis}
+                                                </span>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
+                            </GlassCard>
+
+                            {/* Active Principles */}
+                            <div>
+                                <h3 className="text-xs font-black text-white/80 uppercase tracking-wider mb-3 px-2">Principios Activos</h3>
+                                <div className="grid grid-cols-2 gap-3">
+                                    {avatarConfigs[activeAvatarType].activePrinciples.map(principle => (
+                                        <GlassCard key={principle} rounded="2xl" padding="md">
+                                            <p className="text-xs font-bold text-zinc-900">{principle}</p>
+                                        </GlassCard>
+                                    ))}
+                                </div>
                             </div>
                         </motion.div>
                     )}
 
-                    {/* --- COMPETITION SECTION (Green) --- */}
+                    {/* COMPETITION TAB */}
                     {activeTab === 'Competition' && (
                         <motion.div
                             key="Competition"
-                            initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }}
+                            initial={{ opacity: 0, x: -20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            exit={{ opacity: 0, x: 20 }}
                             className="space-y-4"
                         >
-                            <div className="bg-emerald-600 rounded-[2.5rem] p-8 text-white mb-4">
-                                <h2 className="text-2xl font-black mb-1">Season 4</h2>
-                                <p className="text-xs font-medium opacity-80 mb-6">Global Bartender League</p>
-                                <div className="flex justify-between items-end">
-                                    <div>
-                                        <span className="text-[9px] uppercase font-black tracking-widest opacity-60 block">Your Rank</span>
-                                        <span className="text-3xl font-black">#42</span>
+                            <GlassCard rounded="3xl" padding="xl" className="bg-gradient-to-r from-emerald-50 to-transparent">
+                                <div className="flex items-center gap-4 mb-6">
+                                    <div className="w-16 h-16 rounded-2xl bg-emerald-600 flex items-center justify-center text-white shadow-xl action-glow-emerald">
+                                        <span className="material-symbols-outlined text-3xl fill-1">emoji_events</span>
                                     </div>
-                                    <div className="text-right">
-                                        <span className="text-[9px] uppercase font-black tracking-widest opacity-60 block">Points</span>
-                                        <span className="text-xl font-black">8,450</span>
+                                    <div>
+                                        <span className="px-3 py-1 bg-emerald-100 text-emerald-700 rounded-full text-[8px] font-black uppercase tracking-wider">
+                                            Modo Campeón
+                                        </span>
+                                        <h2 className="text-xl font-bold text-zinc-900 mt-2">Arena de Competición</h2>
                                     </div>
                                 </div>
-                            </div>
 
-                            <h3 className="text-[10px] font-black text-neu-sec uppercase tracking-widest pl-2">Leaderboard</h3>
-                            {[1, 2, 3, 4, 5].map((pos, i) => (
-                                <NeuCard key={pos} className="p-4 rounded-3xl flex items-center gap-4">
-                                    <div className={`w-8 h-8 flex items-center justify-center font-black rounded-lg ${pos <= 3 ? 'bg-emerald-100 text-emerald-600' : 'neu-pressed text-neu-sec'}`}>
-                                        {pos}
+                                <p className="text-sm text-zinc-600 mb-6">
+                                    Participa en desafíos creativos y recibe retroalimentación de un jurado especializado.
+                                </p>
+
+                                <PremiumButton
+                                    module="avatarCompetition"
+                                    variant="gradient"
+                                    size="lg"
+                                    fullWidth
+                                    icon={<span className="material-symbols-outlined !text-base">arrow_forward</span>}
+                                    iconPosition="right"
+                                >
+                                    Entrar al Modo Campeón
+                                </PremiumButton>
+                            </GlassCard>
+
+                            {/* Championship History (mock) */}
+                            <div>
+                                <h3 className="text-xs font-black text-white/80 uppercase tracking-wider mb-3 px-2">Desafíos Recientes</h3>
+                                <GlassCard rounded="2xl" padding="lg">
+                                    <div className="text-center py-6">
+                                        <span className="material-symbols-outlined text-5xl text-emerald-500 mb-3 block">workspace_premium</span>
+                                        <h4 className="text-sm font-bold text-zinc-900 mb-2">Aún no hay desafíos</h4>
+                                        <p className="text-xs text-zinc-500">Entra al Modo Campeón para empezar a competir</p>
                                     </div>
-                                    <div className="w-10 h-10 rounded-full bg-slate-200">
-                                        <img src={`https://i.pravatar.cc/150?u=${pos}`} className="w-full h-full rounded-full object-cover" />
-                                    </div>
-                                    <div className="flex-1">
-                                        <h4 className="text-sm font-bold text-neu-main">User_{882 + pos}</h4>
-                                        <p className="text-[9px] font-black text-neu-sec uppercase tracking-wider">Tokyo, JP</p>
-                                    </div>
-                                    <span className="text-sm font-black text-neu-sec">{9850 - (pos * 150)}</span>
-                                </NeuCard>
-                            ))}
+                                </GlassCard>
+                            </div>
                         </motion.div>
                     )}
+
                 </AnimatePresence>
             </main>
-
-        </AnimatedPage>
+        </div>
     );
 };
 

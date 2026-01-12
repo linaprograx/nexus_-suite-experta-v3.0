@@ -186,7 +186,7 @@ const AppContent: React.FC = () => {
 
 // ... (imports remain)
 import { useIsMobile } from './hooks/useIsMobile';
-import { MobileShell } from './ui/mobile/MobileShell';
+import MobileShell from './ui/mobile/MobileShell';
 
 // ... (other components remain)
 

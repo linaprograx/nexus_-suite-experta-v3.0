@@ -1,126 +1,116 @@
-import React from 'react';
-import { PageName } from '../types';
-import NeuButton from '../components/NeuButton';
+import React, { useState } from 'react';
+import { PageName, UserProfile } from '../types';
+import GlassCard from '../components/GlassCard';
+import PremiumButton from '../components/PremiumButton';
 
 interface Props {
     onNavigate: (page: PageName) => void;
+    user?: UserProfile;
 }
 
 const CerebrityLab: React.FC<Props> = ({ onNavigate }) => {
-    return (
-        <div className="flex-1 bg-transparent relative overflow-hidden flex flex-col">
-            {/* Tabs Superiores */}
-            <header className="px-6 pt-6 pb-2">
-                <div className="flex justify-between items-center mb-6">
-                    <div>
-                        <h1 className="text-2xl font-black text-[#0891B2] tracking-tight">Cerebrity</h1>
-                        <p className="text-[10px] font-black text-neu-sec uppercase tracking-[0.3em]">AI Protocol</p>
-                    </div>
-                    <NeuButton onClick={() => onNavigate(PageName.Dashboard)} className="w-10 h-10 rounded-xl text-neu-sec"><span className="material-symbols-outlined">close</span></NeuButton>
-                </div>
+    // Mock compositions
+    const activeComps = [
+        { name: 'Botanical Fusion', ingredients: 5, status: 'In Progress', progress: 65 },
+        { name: 'Tropical Blend', ingredients: 4, status: 'Testing', progress: 85 },
+    ];
 
-                <div className="flex gap-4 overflow-x-auto scrollbar-hide pb-2">
-                    <NeuButton onClick={() => onNavigate(PageName.CerebritySynthesis)} variant="flat" className="px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest shrink-0 text-neu-sec">
-                        Synthesis
-                    </NeuButton>
-                    <NeuButton onClick={() => onNavigate(PageName.CerebrityCritic)} variant="flat" className="px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest shrink-0 text-neu-sec">
-                        Critic
-                    </NeuButton>
-                    <NeuButton onClick={() => { }} variant="pressed" className="px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest shrink-0 text-[#0891B2] bg-cyan-50/50">
-                        Lab
-                    </NeuButton>
-                    <NeuButton onClick={() => onNavigate(PageName.CerebrityTrend)} variant="flat" className="px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest shrink-0 text-neu-sec">
-                        Trend
-                    </NeuButton>
-                    <NeuButton onClick={() => onNavigate(PageName.CerebrityMakeMenu)} variant="flat" className="px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest shrink-0 text-neu-sec">
-                        Make
-                    </NeuButton>
+    return (
+        <div className="bg-transparent relative overflow-hidden flex flex-col h-full">
+
+            {/* Header */}
+            <header className="px-5 pt-6 pb-4 relative z-10">
+                <div className="mb-6 px-2">
+                    <p className="text-[9px] font-bold text-white/60 uppercase tracking-[0.25em] mb-2">Cerebrity AI</p>
+                    <h1 className="text-5xl font-black text-white tracking-tighter leading-[0.9] mb-2">
+                        The<br />
+                        <span className="text-white/70">Lab</span>
+                    </h1>
+                    <p className="text-xs text-white/70 max-w-xs leading-relaxed">
+                        Experimentación algorítmica con ingredientes y combinaciones.
+                    </p>
                 </div>
             </header>
 
-            <div className="px-6 py-2 flex items-center justify-between z-10">
+            {/* Main Content */}
+            <main className="flex-1 overflow-y-auto custom-scroll px-5 space-y-4">
+
+                {/* New Composition Card */}
+                <GlassCard rounded="3xl" padding="xl" className="bg-gradient-to-r from-fuchsia-50 to-transparent">
+                    <div className="flex items-center gap-5 mb-5">
+                        <div className="w-16 h-16 rounded-2xl bg-fuchsia-600 flex items-center justify-center text-white shadow-xl action-glow-pink">
+                            <span className="material-symbols-outlined text-3xl fill-1">science</span>
+                        </div>
+                        <div className="flex-1">
+                            <h3 className="text-xl font-bold text-zinc-900 mb-1">Nuevo Experimento</h3>
+                            <p className="text-xs text-zinc-600">Mezcla ingredientes algorítmicamente</p>
+                        </div>
+                    </div>
+
+                    <PremiumButton
+                        customColor="#F000FF"
+                        customGradient="linear-gradient(135deg, #F000FF 0%, #6200EE 100%)"
+                        variant="gradient"
+                        size="lg"
+                        fullWidth
+                        icon={<span className="material-symbols-outlined !text-base">add_circle</span>}
+                        iconPosition="right"
+                    >
+                        INICIAR EXPERIMENTO
+                    </PremiumButton>
+                </GlassCard>
+
+                {/* Active Compositions */}
                 <div>
-                    <h2 className="text-[9px] text-[#0891B2] font-black tracking-widest uppercase mb-1">Cerebrity Intelligence</h2>
-                    <h1 className="text-3xl font-black text-neu-main tracking-tight">The Lab</h1>
-                </div>
-                <div className="w-14 h-14 rounded-2xl neu-flat p-1 overflow-hidden">
-                    <img src="https://picsum.photos/seed/user-lab/100/100" className="w-full h-full rounded-xl object-cover grayscale" alt="User" />
-                </div>
-            </div>
-
-            <main className="flex-1 overflow-y-auto scrollbar-hide px-6 py-2 space-y-8 pb-32 z-10">
-                <div className="neu-flat rounded-[2.5rem] p-8 relative group overflow-hidden">
-                    <div className="absolute top-[-20px] right-[-20px] opacity-10 pointer-events-none">
-                        <span className="material-symbols-outlined text-[100px] text-[#0891B2]">science</span>
-                    </div>
-                    <div className="flex justify-between items-start mb-6 relative z-10">
-                        <span className="neu-pressed text-[#0891B2] text-[9px] font-black uppercase tracking-widest px-4 py-2 rounded-full bg-transparent">Processing v4</span>
-                        <span className="text-[9px] font-mono text-neu-sec tracking-widest font-black uppercase">ID: #LAB-8842</span>
-                    </div>
-                    <h3 className="text-xl font-bold text-neu-main mb-2 relative z-10">Neural Compound V4</h3>
-                    <p className="text-xs text-neu-sec mb-8 leading-relaxed relative z-10 max-w-[90%]">Sintetizando potenciadores cognitivos para lógica de retención de memoria.</p>
-                    <div className="space-y-3 relative z-10">
-                        <div className="flex justify-between items-center text-[9px] font-black uppercase tracking-widest text-[#0891B2]">
-                            <span>Synthesis Progression</span>
-                            <span className="text-neu-main">78%</span>
-                        </div>
-                        <div className="h-4 w-full neu-pressed rounded-full overflow-hidden p-[3px]">
-                            <div className="h-full bg-gradient-to-r from-[#06b6d4] to-[#3b82f6] w-[78%] rounded-full shadow-sm"></div>
-                        </div>
-                    </div>
-                </div>
-
-                <section className="space-y-5">
-                    <h3 className="text-[10px] font-black text-neu-sec uppercase tracking-widest px-2">Ingredient Pool</h3>
-                    <div className="grid grid-cols-4 gap-3">
-                        {[
-                            { name: 'Alpha Leaf', icon: 'local_florist', color: 'purple' },
-                            { name: 'Liquid N2', icon: 'water_drop', color: 'cyan', active: true },
-                            { name: 'Synapse', icon: 'bolt', color: 'amber' },
-                        ].map((ing, i) => (
-                            <div key={i} className={`aspect-square rounded-2xl flex flex-col items-center justify-center p-2 relative group transition-all duration-300 cursor-pointer
-                  ${ing.active ? 'neu-pressed' : 'neu-flat hover:scale-[1.02]'}`}>
-                                <div className={`w-10 h-10 rounded-xl flex items-center justify-center mb-1 ${ing.active ? 'text-[#0891B2] bg-cyan-100/50' : 'text-neu-sec'}`}>
-                                    <span className="material-symbols-outlined text-xl">{ing.icon}</span>
+                    <h3 className="text-xs font-black text-white/80 uppercase tracking-wider mb-3 px-2">Composiciones Activas</h3>
+                    {activeComps.map((comp, i) => (
+                        <GlassCard
+                            key={i}
+                            rounded="3xl"
+                            padding="md"
+                            className="mb-3"
+                        >
+                            <div className="flex items-center justify-between mb-4">
+                                <div>
+                                    <h4 className="text-lg font-bold text-zinc-900 mb-1">{comp.name}</h4>
+                                    <p className="text-xs text-zinc-500">{comp.ingredients} ingredients • {comp.status}</p>
                                 </div>
-                                <span className={`text-[8px] font-black uppercase text-center leading-tight ${ing.active ? 'text-[#0891B2]' : 'text-neu-sec'}`}>{ing.name}</span>
-                                {ing.active && <div className="absolute top-2 right-2 w-2 h-2 bg-[#0891B2] rounded-full shadow-[0_0_8px_rgba(8,145,178,0.5)]"></div>}
-                            </div>
-                        ))}
-                        <button className="aspect-square rounded-2xl border-2 border-dashed border-slate-300 flex flex-col items-center justify-center text-slate-300 hover:border-[#0891B2] hover:text-[#0891B2] transition-all">
-                            <span className="material-symbols-outlined text-2xl">add</span>
-                        </button>
-                    </div>
-                </section>
-
-                <section className="neu-flat rounded-[2.5rem] p-6 relative overflow-hidden">
-                    <div className="absolute top-0 right-0 p-6 opacity-5 pointer-events-none">
-                        <span className="material-symbols-outlined text-[80px]">analytics</span>
-                    </div>
-                    <h3 className="text-lg font-bold mb-6 relative z-10 flex items-center gap-2 text-neu-main">
-                        Live Analysis <span className="w-2 h-2 rounded-full bg-[#10B981] animate-pulse"></span>
-                    </h3>
-                    <div className="flex gap-3 h-32 items-end justify-between px-2 relative z-10">
-                        {[40, 70, 50, 90, 60, 45].map((h, i) => (
-                            <div key={i} className="flex-1 relative group cursor-pointer h-full flex flex-col justify-end">
-                                <div style={{ height: `${h}%` }} className="bg-neu-pressed rounded-t-xl hover:bg-cyan-100 transition-all duration-500 relative">
-                                    <div className="absolute top-0 left-0 right-0 h-1 bg-[#0891B2] opacity-50"></div>
+                                <div className="w-12 h-12 rounded-xl bg-fuchsia-100 flex items-center justify-center">
+                                    <span className="material-symbols-outlined text-fuchsia-600 fill-1">circle</span>
                                 </div>
-                                <span className="mt-3 text-[7px] font-black text-neu-sec uppercase tracking-widest text-center">
-                                    {['Bio', 'Neu', 'Syn', 'Chm', 'Phy', 'Atm'][i]}
-                                </span>
                             </div>
-                        ))}
-                    </div>
-                </section>
+
+                            {/* Progress */}
+                            <div className="mb-4">
+                                <div className="flex justify-between items-center mb-1.5">
+                                    <span className="text-[9px] font-bold text-zinc-500 uppercase tracking-wider">Progreso</span>
+                                    <span className="text-[10px] font-black text-fuchsia-600">{comp.progress}%</span>
+                                </div>
+                                <div className="w-full bg-zinc-100 rounded-full h-1.5">
+                                    <div
+                                        className="bg-fuchsia-600 h-1.5 rounded-full transition-all"
+                                        style={{ width: `${comp.progress}%` }}
+                                    ></div>
+                                </div>
+                            </div>
+
+                            <div className="flex gap-2">
+                                <button className="flex-[0.4] py-3 rounded-2xl text-[10px] font-black text-zinc-500 bg-zinc-100 border border-zinc-200 uppercase tracking-wider hover:bg-zinc-200 transition-colors">
+                                    Ver
+                                </button>
+                                <PremiumButton
+                                    customColor="#F000FF"
+                                    variant="secondary"
+                                    size="md"
+                                    className="flex-1"
+                                >
+                                    Continuar
+                                </PremiumButton>
+                            </div>
+                        </GlassCard>
+                    ))}
+                </div>
             </main>
-
-            <div className="absolute bottom-28 left-6 right-6 z-40 px-6">
-                <button className="w-full py-5 rounded-2xl neu-btn text-[#0891B2] font-black text-sm uppercase tracking-widest active:scale-95 transition-all flex items-center justify-center gap-3">
-                    <span className="material-symbols-outlined text-lg">science</span>
-                    Execute Lab Scan
-                </button>
-            </div>
         </div>
     );
 };

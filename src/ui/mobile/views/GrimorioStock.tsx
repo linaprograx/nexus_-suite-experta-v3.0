@@ -1,8 +1,11 @@
-import React from 'react';
-import { PageName, StockItem, UserProfile } from '../types';
-import AnimatedPage from '../components/AnimatedPage';
-import NeuCard from '../components/NeuCard';
-import NeuButton from '../components/NeuButton';
+import React, { useMemo, useState } from 'react';
+import { PageName, UserProfile } from '../types';
+import { Ingredient } from '../../../types';
+import GlassCard from '../components/GlassCard';
+import PremiumButton from '../components/PremiumButton';
+import { useIngredients } from '../../../hooks/useIngredients';
+import { useApp } from '../../../context/AppContext';
+import { IngredientFormModal } from '../../../components/grimorium/IngredientFormModal';
 
 interface Props {
     onNavigate: (page: PageName) => void;
@@ -10,90 +13,187 @@ interface Props {
 }
 
 const GrimorioStock: React.FC<Props> = ({ onNavigate }) => {
-    const stockItems: StockItem[] = [
-        { id: '1', name: 'Vodka Premium', current: 2, min: 5, unit: 'botellas', supplier: 'Dist. Nacional', price: 45.00 },
-        { id: '2', name: 'Lima Fresca', current: 15, min: 20, unit: 'kg', supplier: 'Frutas Locales', price: 2.50 },
-        { id: '3', name: 'Sirope de Agave', current: 4, min: 4, unit: 'botellas', supplier: 'Import. Bio', price: 12.00 },
-    ];
+    const { db, userId, appId } = useApp();
+    const { ingredients, isLoading } = useIngredients();
+
+    const [showIngredientModal, setShowIngredientModal] = useState(false);
+    const [editingIngredient, setEditingIngredient] = useState<Ingredient | null>(null);
+
+    const stats = useMemo(() => {
+        const total = ingredients.length;
+        const lowStock = ingredients.filter(i => (i.stock || 0) <= (i.minStock || 0)).length;
+        const criticalStock = ingredients.filter(i => (i.stock || 0) < (i.minStock || 0) * 0.5).length;
+        return { total, lowStock, criticalStock };
+    }, [ingredients]);
+
+    const handleIngredientClick = (ing: Ingredient) => {
+        setEditingIngredient(ing);
+        setShowIngredientModal(true);
+    };
+
+    const handleNewIngredient = () => {
+        setEditingIngredient(null);
+        setShowIngredientModal(true);
+    };
+
+    const criticalItems = ingredients.filter(i => (i.stock || 0) < (i.minStock || 0) * 0.5).slice(0, 4);
 
     return (
-        <AnimatedPage className="bg-transparent relative overflow-hidden flex flex-col h-full">
+        <div className="bg-transparent relative overflow-hidden flex flex-col h-full">
 
-            {/* 1. Header (Red Title) */}
-            <header className="px-6 pt-6 pb-2">
-                <h1 className="text-2xl font-black text-rose-500 tracking-tight mb-4">Stock</h1>
+            {/* Header */}
+            <header className="pt-4 pb-4 px-5 z-10 relative">
+                <div className="flex justify-between items-start mb-6 px-2">
+                    <div>
+                        <p className="text-[10px] font-black tracking-[0.2em] text-white/80 uppercase mb-1">Nexus Suite</p>
+                        <h1 className="text-5xl font-extrabold text-white tracking-tighter leading-[0.9]">
+                            STOCK<br />
+                            <span className="text-white/70">ALERT</span>
+                        </h1>
+                    </div>
+                    <div
+                        className="bg-white/20 backdrop-blur-2xl border border-white/30 rounded-full p-3 shadow-xl cursor-pointer hover:bg-white/30 transition-all"
+                        onClick={handleNewIngredient}
+                    >
+                        <span className="material-symbols-outlined text-white fill-1">add</span>
+                    </div>
+                </div>
 
                 {/* Tab Bar */}
-                <div className="flex gap-4 overflow-x-auto scrollbar-hide pb-2">
-                    <NeuButton onClick={() => onNavigate(PageName.GrimorioRecipes)} variant="flat" className="px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest shrink-0 text-neu-sec">
-                        Recipes
-                    </NeuButton>
-                    <NeuButton onClick={() => onNavigate(PageName.GrimorioStock)} variant="pressed" className="px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest shrink-0 text-rose-500 bg-rose-50/50">
-                        Stock
-                    </NeuButton>
-                    <NeuButton onClick={() => onNavigate(PageName.GrimorioMarket)} variant="flat" className="px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest shrink-0 text-neu-sec">
-                        Market
-                    </NeuButton>
+                <div className="bg-black/10 backdrop-blur-md border border-white/20 rounded-2xl p-1 flex items-center">
+                    <button
+                        onClick={() => onNavigate(PageName.GrimorioRecipes)}
+                        className="flex-1 py-3 rounded-xl text-[11px] font-bold text-white/80 hover:text-white transition-all"
+                    >
+                        INVENTORY
+                    </button>
+                    <button className="flex-1 py-3 rounded-xl bg-white text-red-600 text-[11px] font-black shadow-lg">
+                        CRITICAL
+                    </button>
+                    <button
+                        onClick={() => onNavigate(PageName.GrimorioMarket)}
+                        className="flex-1 py-3 rounded-xl text-[11px] font-bold text-white/80 hover:text-white transition-all"
+                    >
+                        REPORTS
+                    </button>
                 </div>
             </header>
 
-            {/* 2. Content */}
-            <main className="flex-1 overflow-y-auto scrollbar-hide px-6 py-4 space-y-4 pb-32">
+            {/* Main Content */}
+            <main className="flex-1 overflow-y-auto custom-scroll px-5 space-y-4">
 
-                {/* Alert Card */}
-                <NeuCard className="p-4 rounded-2xl flex items-center justify-between border-l-4 border-l-rose-500 bg-rose-50/20" delay={0.1}>
-                    <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full neu-pressed text-rose-500 flex items-center justify-center">
-                            <span className="material-symbols-outlined text-xl">warning</span>
+                {/* Emergency Card */}
+                {stats.criticalStock > 0 && (
+                    <GlassCard rounded="3xl" padding="lg" className="relative overflow-hidden group mb-6">
+                        <div className="absolute inset-0 bg-gradient-to-r from-red-500/10 to-transparent pointer-events-none"></div>
+                        <div className="relative z-10 flex items-center justify-between">
+                            <div className="flex items-center gap-5">
+                                <div className="w-14 h-14 rounded-2xl bg-red-600 flex items-center justify-center text-white action-glow-red">
+                                    <span className="material-symbols-outlined text-3xl font-bold">priority_high</span>
+                                </div>
+                                <div>
+                                    <h3 className="text-xl font-extrabold text-zinc-900 leading-tight">Emergency</h3>
+                                    <p className="text-xs font-medium text-zinc-500">{stats.criticalStock} SKUs below threshold</p>
+                                </div>
+                            </div>
+                            <span className="material-symbols-outlined text-zinc-400 group-hover:text-red-600 transition-colors">chevron_right</span>
                         </div>
-                        <div>
-                            <h4 className="font-bold text-neu-main text-xs">Critical Levels</h4>
-                            <p className="text-[9px] text-neu-sec">3 items below minimum</p>
-                        </div>
-                    </div>
-                    <NeuButton className="px-4 py-2 text-[9px] font-black text-rose-500 uppercase bg-white/50" variant="flat">
-                        Review
-                    </NeuButton>
-                </NeuCard>
+                    </GlassCard>
+                )}
 
+                {/* Critical Items List */}
                 <div className="space-y-4">
-                    {stockItems.map((item, i) => {
-                        const isLow = item.current <= item.min;
+                    {isLoading ? (
+                        <div className="flex justify-center py-10">
+                            <span className="material-symbols-outlined animate-spin text-red-600">sync</span>
+                        </div>
+                    ) : criticalItems.length > 0 ? criticalItems.map((item, i) => {
+                        const current = item.stock || 0;
+                        const min = item.minStock || 0;
+                        const percentage = Math.min(Math.max((current / (min || 1)) * 100, 0), 100);
+                        const isExhausted = current === 0;
+
                         return (
-                            <NeuCard key={item.id} className="p-5 rounded-[2rem]" delay={0.2 + (i * 0.1)}>
+                            <GlassCard
+                                key={item.id}
+                                rounded="3xl"
+                                padding="md"
+                                className="relative transition-all active:scale-[0.98] cursor-pointer"
+                                onClick={() => handleIngredientClick(item)}
+                            >
                                 <div className="flex justify-between items-start mb-4">
-                                    <div>
-                                        <h4 className="font-bold text-neu-main text-lg">{item.name}</h4>
-                                        <p className="text-[10px] text-neu-sec font-bold uppercase tracking-wider">{item.supplier} • ${item.price}/{item.unit}</p>
+                                    <div className="flex gap-4">
+                                        <div className="w-12 h-12 rounded-2xl bg-zinc-50 border border-zinc-100 flex items-center justify-center">
+                                            <span className="material-symbols-outlined text-red-600 fill-1">
+                                                {isExhausted ? 'dangerous' : 'liquor'}
+                                            </span>
+                                        </div>
+                                        <div>
+                                            <h2 className="text-lg font-bold text-zinc-900">{item.nombre}</h2>
+                                            <p className="text-[10px] font-bold text-red-600/80 uppercase tracking-widest mt-0.5">
+                                                {isExhausted ? 'Status: Exhausted' : 'Stock level: Critical'}
+                                            </p>
+                                        </div>
                                     </div>
-                                    <div className={`text-right ${isLow ? 'text-rose-500' : 'text-emerald-500'}`}>
-                                        <span className="block text-2xl font-black">{item.current}</span>
-                                        <span className="text-[8px] font-black uppercase">Current</span>
+                                    <div className="text-right">
+                                        <span className="text-2xl font-black text-red-600">{current.toString().padStart(2, '0')}</span>
+                                        <p className="text-[9px] font-bold text-zinc-400 uppercase tracking-wider">{item.unidad || 'UNITS'}</p>
                                     </div>
                                 </div>
 
                                 {/* Progress Bar */}
-                                <div className="h-2 w-full neu-pressed rounded-full mb-4 overflow-hidden">
+                                <div className="w-full bg-zinc-100 rounded-full h-1.5 mb-5">
                                     <div
-                                        style={{ width: `${Math.min((item.current / item.min) * 50, 100)}%` }}
-                                        className={`h-full rounded-full ${isLow ? 'bg-rose-500' : 'bg-emerald-500'}`}
+                                        className="bg-red-600 h-1.5 rounded-full"
+                                        style={{ width: `${percentage}%` }}
                                     ></div>
                                 </div>
 
-                                <div className="flex gap-3">
-                                    <NeuButton className="flex-1 py-3 text-[10px] font-black uppercase text-neu-sec hover:text-rose-500">
-                                        Adjust
-                                    </NeuButton>
-                                    <NeuButton className={`flex-1 py-3 text-[10px] font-black uppercase ${isLow ? 'text-rose-500' : 'text-emerald-500'}`}>
-                                        Reorder
-                                    </NeuButton>
+                                {/* Action Buttons */}
+                                <div className="flex gap-2">
+                                    <button
+                                        className="flex-[0.4] py-3.5 rounded-2xl text-[10px] font-black text-zinc-500 bg-zinc-100 border border-zinc-200 uppercase tracking-wider hover:bg-zinc-200 transition-colors"
+                                        onClick={(e) => { e.stopPropagation(); console.log('Scan'); }}
+                                    >
+                                        Scan
+                                    </button>
+                                    <PremiumButton
+                                        module="grimorioStock"
+                                        variant="gradient"
+                                        size="md"
+                                        icon={<span className="material-symbols-outlined !text-sm">bolt</span>}
+                                        iconPosition="right"
+                                        className="flex-1"
+                                    >
+                                        {isExhausted ? 'EMERGENCY ORDER' : 'REORDER NOW'}
+                                    </PremiumButton>
                                 </div>
-                            </NeuCard>
+                            </GlassCard>
                         );
-                    })}
+                    }) : (
+                        <GlassCard rounded="2xl" padding="xl">
+                            <div className="text-center py-8">
+                                <span className="material-symbols-outlined text-6xl text-emerald-500 mb-4 block">inventory</span>
+                                <h3 className="text-lg font-bold text-zinc-900 mb-2">All Stock Levels Normal</h3>
+                                <p className="text-sm text-zinc-500">No critical alerts at this time</p>
+                            </div>
+                        </GlassCard>
+                    )}
                 </div>
             </main>
-        </AnimatedPage>
+
+            {/* Ingredient Modal */}
+            {showIngredientModal && db && userId && appId && (
+                <IngredientFormModal
+                    isOpen={showIngredientModal}
+                    onClose={() => setShowIngredientModal(false)}
+                    db={db}
+                    userId={userId}
+                    appId={appId}
+                    editingIngredient={editingIngredient}
+                />
+            )}
+        </div>
     );
 };
 
