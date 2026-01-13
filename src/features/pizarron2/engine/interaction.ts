@@ -1,5 +1,6 @@
 import { pizarronStore } from '../state/store';
 import { BoardNode, Viewport } from './types';
+import { snapEngine } from './SnapEngine';
 
 interface Point {
     x: number;
@@ -598,9 +599,10 @@ export class InteractionManager {
         const currentTool = state.uiFlags.activeTool;
         const isHandTool = currentTool === 'hand';
         const isCreatingTool = ['rectangle', 'shape', 'text', 'line'].includes(currentTool);
+        const isTemporaryPan = state.interactionState.temporaryPanMode; // Spacebar-triggered
 
-        // PAN CONDITION
-        if (isMiddleClick || isHandTool) {
+        // PAN CONDITION (includes spacebar temporary pan)
+        if (isMiddleClick || isHandTool || isTemporaryPan) {
             this.isPanning = true;
             this.panStartScreen = screenPoint; // Use Screen Coords
             this.startViewport = { ...viewport };
@@ -1457,33 +1459,42 @@ export class InteractionManager {
 
         if (hitId) {
             const node = state.nodes[hitId];
-            if (node.type === 'text' || node.type === 'shape' || node.type === 'card' || node.type === 'board' || node.type === 'menu-design') {
-                // Trigger Editing Mode
-                // For now, we set a flag. Ideally, we might open a modal or inline editor.
-                // pizarronStore.updateInteractionState({ editingNodeId: hitId });
-                // Actually, let's just ensure it's selected and maybe trigger a specific UI flag if we had one for "Edit Mode".
-                // But Inspector handles editing based on selection.
 
-                // For Text/Menu/Card, determine sub-target
-                let subId: string | undefined = undefined;
-                if (node.type === 'board' || node.type === 'card' || node.type === 'menu-design') {
-                    const cx = node.x + node.w / 2;
-                    const cy = node.y + node.h / 2;
-                    const unrotatedPoint = this.rotatePoint(worldPoint, { x: cx, y: cy }, -(node.rotation || 0));
-                    const localY = unrotatedPoint.y - node.y;
+            // Text nodes: always open editor
+            if (node.type === 'text') {
+                pizarronStore.updateInteractionState({ editingTextId: hitId });
+                return;
+            }
 
-                    if (localY > 45) {
-                        subId = 'body';
-                    } else {
-                        subId = 'title';
-                    }
+            // Shape nodes: add editable text if none exists, or open editor
+            if (node.type === 'shape') {
+                // If shape doesn't have title, add it with contrasting color
+                if (!node.content.title) {
+                    pizarronStore.updateNode(hitId, {
+                        content: {
+                            ...node.content,
+                            title: 'Text',
+                            titleColor: '#ffffff',  // White text for visibility
+                            fontSize: 16,
+                            fontFamily: 'Inter, sans-serif',
+                            fontWeight: '400'
+                        }
+                    });
                 }
+                // Open editor for the title
+                pizarronStore.updateInteractionState({ editingNodeId: hitId, editingSubId: 'title' });
+                return;
+            }
 
-                if (node.type === 'text') {
-                    pizarronStore.updateInteractionState({ editingTextId: hitId });
-                } else {
-                    pizarronStore.updateInteractionState({ editingNodeId: hitId, editingSubId: subId });
-                }
+            // Card, Board, Menu nodes: determine which part was clicked
+            if (node.type === 'card' || node.type === 'board' || node.type === 'menu-design') {
+                const cx = node.x + node.w / 2;
+                const cy = node.y + node.h / 2;
+                const unrotatedPoint = this.rotatePoint(worldPoint, { x: cx, y: cy }, -(node.rotation || 0));
+                const localY = unrotatedPoint.y - node.y;
+
+                const subId = localY > 45 ? 'body' : 'title';
+                pizarronStore.updateInteractionState({ editingNodeId: hitId, editingSubId: subId });
             }
         }
     }

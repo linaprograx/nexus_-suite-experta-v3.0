@@ -72,6 +72,8 @@ const FloatingBottomNav: React.FC<FloatingBottomNavProps> = ({ currentPage, onNa
                     WebkitBackdropFilter: MOBILE_BLUR.navigation,
                     border: MOBILE_BORDERS.glassSubtle,
                     boxShadow: MOBILE_SHADOWS.navBlur,
+                    maxWidth: '400px', // Limit to ~5 items (5 * 72px + gaps + padding)
+                    margin: '0 auto'
                 }}
             >
                 <nav className="flex items-center justify-start h-full gap-2 min-w-max">

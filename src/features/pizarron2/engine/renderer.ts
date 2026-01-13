@@ -808,6 +808,19 @@ export class PizarronRenderer {
             ctx.fill();
             if (borderWidth > 0) ctx.stroke();
 
+            // Draw text on shape if title exists
+            if (node.content.title) {
+                ctx.fillStyle = node.content.titleColor || '#ffffff';
+                ctx.font = `${node.content.fontWeight || '400'} ${node.content.fontSize || 16}px ${node.content.fontFamily || 'Inter, sans-serif'}`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+
+                const textX = node.w / 2;
+                const textY = node.h / 2;
+
+                ctx.fillText(node.content.title, textX, textY);
+            }
+
             // Render Internal Structure if present (e.g. Injected Grid)
             if (node.structure) {
                 this.drawBoardStructure(ctx, node, zoom);
@@ -1486,15 +1499,21 @@ export class PizarronRenderer {
                 if (node.rotation) ctx.rotate(node.rotation);
                 ctx.translate(-cx, -cy);
 
-                ctx.strokeRect(node.x, node.y, node.w, node.h);
-                ctx.restore();
+                // Only draw desktop selection overlay if NOT in mobile mode
+                const isMobile = document.body.classList.contains('mobile-pizarron-mode');
+                if (!isMobile) {
+                    ctx.strokeRect(node.x, node.y, node.w, node.h);
+                    ctx.restore();
 
-                if (!isLocked) {
-                    ctx.save();
-                    ctx.translate(cx, cy);
-                    if (node.rotation) ctx.rotate(node.rotation);
-                    ctx.translate(-node.w / 2, -node.h / 2);
-                    this.drawControls(ctx, node, zoom, PREMIUM_COLOR);
+                    if (!isLocked) {
+                        ctx.save();
+                        ctx.translate(cx, cy);
+                        if (node.rotation) ctx.rotate(node.rotation);
+                        ctx.translate(-node.w / 2, -node.h / 2);
+                        this.drawControls(ctx, node, zoom, PREMIUM_COLOR);
+                        ctx.restore();
+                    }
+                } else {
                     ctx.restore();
                 }
             }

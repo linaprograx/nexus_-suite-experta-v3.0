@@ -239,7 +239,7 @@ export const PizarraManager: React.FC<{ onClose: () => void; appId: string }> = 
         >
             <ErrorBoundary>
                 <div
-                    className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-[900px] h-[600px] flex overflow-hidden pointer-events-auto animate-in fade-in zoom-in duration-200 border border-slate-200 dark:border-slate-800"
+                    className="pizarra-manager-modal bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-[900px] h-[600px] flex overflow-hidden pointer-events-auto animate-in fade-in zoom-in duration-200 border border-slate-200 dark:border-slate-800"
                 >
                     {/* Sidebar */}
                     <div className="w-64 bg-slate-50 dark:bg-slate-950 border-r border-slate-200 dark:border-slate-800 p-4 flex flex-col">

@@ -362,6 +362,7 @@ export interface InteractionState {
 
     // Transient Signals
     requestThumbnailCapture?: boolean;
+    temporaryPanMode?: boolean; // Spacebar-triggered pan mode
 }
 
 export interface GuideLine {

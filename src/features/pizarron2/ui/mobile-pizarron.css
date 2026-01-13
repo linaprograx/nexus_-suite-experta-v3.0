@@ -1,0 +1,267 @@
+/* Mobile Pizarron Adaptations */
+
+/* Hide ONLY the layout elements (not modals) */
+.mobile-pizarron-mode .desktop-only {
+    display: none !important;
+}
+
+/* Hide TopBar and LeftRail layout elements */
+.mobile-pizarron-mode .top-bar-desktop {
+    display: none !important;
+}
+
+.mobile-pizarron-mode .left-rail-desktop {
+    display: none !important;
+}
+
+/* Hide desktop MiniToolbar ONLY in mobile mode - use MobileMiniToolbar instead */
+.mobile-pizarron-mode .mini-toolbar-desktop {
+    display: none !important;
+}
+
+/* Increase touch target sizes for mobile */
+.mobile-pizarron-mode .resize-handle {
+    width: 32px;
+    height: 32px;
+    /* Larger hit areas for fingers */
+}
+
+.mobile-pizarron-mode .rotate-handle {
+    width: 36px;
+    height: 36px;
+}
+
+/* Canvas modifications for mobile */
+.mobile-pizarron-mode .canvas-container {
+    /* Enable smooth scrolling on touch devices */
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-x pan-y pinch-zoom;
+}
+
+/* Prevent body scroll when dragging/panning */
+.mobile-pizarron-mode.is-dragging,
+.mobile-pizarron-mode.is-panning {
+    overflow: hidden;
+    touch-action: none;
+}
+
+/* Prevent body scroll lock */
+.mobile-pizarron-mode.is-dragging body,
+.mobile-pizarron-mode.is-panning body {
+    overflow: hidden;
+    position: fixed;
+    width: 100%;
+}
+
+/* Mobile Modals - Full screen overlays */
+.mobile-pizarron-mode .inspector-panel,
+.mobile-pizarron-mode .grimorio-picker,
+.mobile-pizarron-mode .library-side-panel {
+    position: fixed !important;
+    inset: 0 !important;
+    z-index: 100 !important;
+    background: white !important;
+    display: flex !important;
+    flex-direction: column !important;
+    overflow-y: auto !important;
+}
+
+/* PizarraManager - Full screen mobile modal */
+.mobile-pizarron-mode .pizarra-manager-modal {
+    position: fixed !important;
+    inset: 0 !important;
+    z-index: 100 !important;
+    background: white !important;
+    overflow-y: auto !important;
+    padding: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    max-width: none !important;
+    max-height: none !important;
+    border-radius: 0 !important;
+    flex-direction: column !important;
+}
+
+/* Hide desktop sidebar in mobile */
+.mobile-pizarron-mode .pizarra-manager-modal>div:first-child {
+    display: none !important;
+}
+
+/* Content area full width */
+.mobile-pizarron-mode .pizarra-manager-modal>div:last-child {
+    width: 100% !important;
+    padding: 20px 16px !important;
+}
+
+/* Template grid - single column */
+.mobile-pizarron-mode .pizarra-manager-modal .grid {
+    grid-template-columns: 1fr !important;
+    gap: 16px !important;
+}
+
+/* Template cards - full width, better height */
+.mobile-pizarron-mode .pizarra-manager-modal button,
+.mobile-pizarron-mode .pizarra-manager-modal .group {
+    width: 100% !important;
+    min-height: 140px !important;
+}
+
+/* Headers smaller */
+.mobile-pizarron-mode .pizarra-manager-modal h3 {
+    font-size: 24px !important;
+}
+
+.mobile-pizarron-mode .pizarra-manager-modal h4 {
+    font-size: 16px !important;
+}
+
+/* Touch-friendly buttons */
+.mobile-pizarron-mode .pizarra-manager-modal button {
+    min-height: 52px !important;
+    font-size: 16px !important;
+}
+
+/* Text Editor - MUST be visible */
+.mobile-pizarron-mode .text-editor-overlay {
+    position: fixed !important;
+    inset: 0 !important;
+    z-index: 100 !important;
+    background: rgba(0, 0, 0, 0.5) !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 20px !important;
+}
+
+.mobile-pizarron-mode .text-editor {
+    max-width: 90% !important;
+    max-height: 80vh !important;
+    background: white !important;
+    border-radius: 24px !important;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3) !important;
+    overflow-y: auto !important;
+}
+
+/* Increase node selection ring thickness for visibility */
+.mobile-pizarron-mode .node-selected {
+    outline: 4px solid rgb(99, 102, 241);
+    outline-offset: 2px;
+}
+
+/* Larger font sizes for mobile readability */
+.mobile-pizarron-mode .node-title {
+    font-size: 16px;
+    line-height: 1.4;
+}
+
+.mobile-pizarron-mode .node-body {
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+/* Touch feedback */
+.mobile-pizarron-mode .touch-target {
+    -webkit-tap-highlight-color: rgba(99, 102, 241, 0.1);
+}
+
+.mobile-pizarron-mode .touch-target:active {
+    opacity: 0.7;
+}
+
+/* Hide minimap on mobile (too small to be useful) */
+.mobile-pizarron-mode .mini-map {
+    display: none !important;
+}
+
+/* Hide collapsed dock on mobile */
+.mobile-pizarron-mode .collapsed-dock {
+    display: none !important;
+}
+
+/* Make guide overlay less intrusive on mobile */
+.mobile-pizarron-mode .guide-line {
+    opacity: 0.3;
+    stroke-width: 1px;
+}
+
+/* Mobile zoom controls - position at top */
+.mobile-pizarron-mode .zoom-controls {
+    position: fixed;
+    top: 16px;
+    right: 16px;
+    z-index: 50;
+    display: flex;
+    gap: 8px;
+    background: white;
+    border-radius: 16px;
+    padding: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* Prevent double-tap zoom on canvas */
+.mobile-pizarron-mode canvas {
+    touch-action: none;
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+/* Mobile presentation mode - full screen */
+.mobile-pizarron-mode.presentation-mode {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+}
+
+/* Optimize rendering for mobile */
+.mobile-pizarron-mode canvas {
+    will-change: transform;
+}
+
+/* Long-press visual feedback */
+@keyframes long-press-pulse {
+
+    0%,
+    100% {
+        transform: scale(1);
+    }
+
+    50% {
+        transform: scale(1.05);
+    }
+}
+
+.mobile-pizarron-mode .node-long-pressing {
+    animation: long-press-pulse 0.5s ease-in-out;
+}
+
+/* Multi-select mode indicator */
+.mobile-pizarron-mode.multi-select-active .node-selected {
+    outline-color: rgb(245, 158, 11);
+}
+
+/* Prevent text selection during touch interactions */
+.mobile-pizarron-mode * {
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
+}
+
+/* Allow text selection in input fields */
+.mobile-pizarron-mode input,
+.mobile-pizarron-mode textarea {
+    -webkit-touch-callout: default;
+    -webkit-user-select: text;
+    user-select: text;
+}
+
+/* Bottom padding to account for mobile toolbars */
+.mobile-pizarron-mode .canvas-wrapper {
+    padding-bottom: 120px;
+}
+
+/* Safe area insets for notched devices */
+@supports (padding: env(safe-area-inset-bottom)) {
+    .mobile-pizarron-mode .bottom-toolbar {
+        padding-bottom: calc(16px + env(safe-area-inset-bottom));
+    }
+}

@@ -9,6 +9,7 @@ import { Inspector } from './overlays/Inspector';
 import { TextEditor } from './overlays/TextEditor';
 import { PresentationMode } from './presentation/PresentationMode';
 import { usePizarronIntelligence } from '../hooks/usePizarronIntelligence'; // Added import
+import { KeyboardShortcutsManager } from '../engine/KeyboardShortcutsManager';
 
 import { MiniToolbar } from './overlays/MiniToolbar';
 import { GuideOverlay } from './overlays/GuideOverlay';
@@ -30,6 +31,20 @@ interface PizarronRootProps {
 }
 
 export const PizarronRoot: React.FC<PizarronRootProps> = ({ appId, boardId, userId, db }) => {
+    // Detect if running in mobile mode (via body class)
+    const [isMobileMode, setIsMobileMode] = React.useState(false);
+
+    React.useEffect(() => {
+        const checkMobileMode = () => {
+            setIsMobileMode(document.body.classList.contains('mobile-pizarron-mode'));
+        };
+        checkMobileMode();
+        // Re-check on class changes
+        const observer = new MutationObserver(checkMobileMode);
+        observer.observe(document.body, { attributes: true, attributeFilter: ['class'] });
+        return () => observer.disconnect();
+    }, []);
+
     // Phase 6.3: Reactivity for Intelligence
     // Fix: Use granular selector to avoid re-rendering on viewport changes
     const nodes = pizarronStore.useSelector(s => s.nodes);
@@ -103,26 +118,11 @@ export const PizarronRoot: React.FC<PizarronRootProps> = ({ appId, boardId, user
     // editingImageId is tracked in store, but seemingly not used forconditional rendering here.
 
 
-    // Global Keybinds
+    // Global Keyboard Shortcuts
     React.useEffect(() => {
-        const handleKeyDown = (e: KeyboardEvent) => {
-            // Ignore if input is focused
-            if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement || (e.target as HTMLElement).isContentEditable) return;
-
-            // Delete
-            if (e.key === 'Delete' || e.key === 'Backspace') {
-                const sel = pizarronStore.getState().selection;
-                if (sel.size > 0) {
-                    sel.forEach(id => pizarronStore.deleteNode(id));
-                    pizarronStore.setSelection([]);
-                }
-            }
-            // Arrow Keys for Nudging (if we have selection)
-            // ...
-        };
-
-        window.addEventListener('keydown', handleKeyDown);
-        return () => window.removeEventListener('keydown', handleKeyDown);
+        const shortcutsManager = new KeyboardShortcutsManager();
+        shortcutsManager.attach();
+        return () => shortcutsManager.detach();
     }, []);
 
     // Cinematic Entry
@@ -133,28 +133,21 @@ export const PizarronRoot: React.FC<PizarronRootProps> = ({ appId, boardId, user
 
     return (
         <div className={`w-full h-full relative flex flex-col bg-slate-50 dark:bg-slate-950 overflow-hidden transition-all duration-700 ease-out-expo ${mounted ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`}>
-            {/* Standard Overlays (Hidden during Presentation) */}
-            <div className={`absolute inset-0 z-10 pointer-events-none transition-opacity duration-500 ${isPresenting ? 'opacity-0' : 'opacity-100'}`}>
+            {/* Standard Overlays (Hidden during Presentation AND Mobile) */}
+            <div className={`absolute inset-0 z-10 pointer-events-none transition-opacity duration-500 ${isPresenting ? 'opacity-0' : 'opacity-100'} ${isMobileMode ? 'hidden' : ''}`}>
                 {/* Overlays */}
-                {!isPresenting && (
+                {!isPresenting && !isMobileMode && (
                     <>
                         <TopBar />
-                        {/* Overlays */}
+                        {/* Desktop-Only Overlays */}
                         <LeftRail />
-                        <MiniToolbar />
                         <Inspector />
                         <GuideOverlay />
                         <MiniMap />
                         <CollapsedDock />
 
-                        {showLibrary && <LibrarySidePanel />}
-                        {showProjectManager && (
-                            <PizarraManager
-                                appId={appId}
-                                onClose={() => pizarronStore.setUIFlag('showProjectManager', false)}
-                            />
-                        )}
-                        <TextEditor />
+                        {/* MiniToolbar - appears above selected elements */}
+                        <MiniToolbar />
 
                         {/* Bottom Status */}
                         <div className="absolute bottom-6 right-6 pointer-events-none">
@@ -168,6 +161,16 @@ export const PizarronRoot: React.FC<PizarronRootProps> = ({ appId, boardId, user
 
             {/* Presentation Overlay */}
             <PresentationMode />
+
+            {/* Modals - Available in BOTH desktop and mobile */}
+            {showLibrary && <LibrarySidePanel />}
+            {showProjectManager && (
+                <PizarraManager
+                    appId={appId}
+                    onClose={() => pizarronStore.setUIFlag('showProjectManager', false)}
+                />
+            )}
+            <TextEditor />
 
             {/* Main Stage */}
             <div className="flex-1 relative z-0">

@@ -920,13 +920,34 @@ class PizarronStore {
 
     // Ephemeral Clipboard (run-time only)
     private clipboard: BoardNode[] = [];
+    private clipboardIdMap: Map<string, string> = new Map(); // Track ID remapping for children
 
     copySelection() {
         const selectedIds = Array.from(this.state.selection);
-        this.clipboard = selectedIds
-            .map(id => this.state.nodes[id])
-            .filter(n => !!n)
-            .map(n => JSON.parse(JSON.stringify(n))); // Deep copy
+        this.clipboard = [];
+        this.clipboardIdMap.clear();
+
+        // Deep copy selected nodes including children
+        selectedIds.forEach(id => {
+            const node = this.state.nodes[id];
+            if (!node) return;
+
+            // Deep clone the node
+            const clonedNode = JSON.parse(JSON.stringify(node));
+            this.clipboard.push(clonedNode);
+
+            // If it's a group, also copy all children
+            if (node.type === 'group' && node.childrenIds) {
+                node.childrenIds.forEach(childId => {
+                    const child = this.state.nodes[childId];
+                    if (child) {
+                        this.clipboard.push(JSON.parse(JSON.stringify(child)));
+                    }
+                });
+            }
+        });
+
+        console.log('[Store] Copied', this.clipboard.length, 'nodes to clipboard');
     }
 
     paste() {
@@ -934,24 +955,79 @@ class PizarronStore {
 
         this.setState(state => {
             const newIds: string[] = [];
+            this.clipboardIdMap.clear();
+
+            // First pass: Generate new IDs for all nodes
             this.clipboard.forEach(nodeData => {
+                const newId = crypto.randomUUID();
+                this.clipboardIdMap.set(nodeData.id, newId);
+            });
+
+            // Calculate viewport-based offset for smart positioning
+            const viewport = state.viewport;
+            const canvasCenter = {
+                x: (window.innerWidth / 2 - viewport.x) / viewport.zoom,
+                y: (window.innerHeight / 2 - viewport.y) / viewport.zoom
+            };
+
+            // Find clipboard bounds to calculate offset
+            let minX = Infinity, minY = Infinity;
+            this.clipboard.forEach(n => {
+                minX = Math.min(minX, n.x);
+                minY = Math.min(minY, n.y);
+            });
+
+            // Offset to place near canvas center (or simple +20 offset if near center already)
+            const centerDistance = Math.hypot(
+                (minX + 100) - canvasCenter.x,
+                (minY + 100) - canvasCenter.y
+            );
+
+            const offsetX = centerDistance > 500 ? canvasCenter.x - minX - 100 : 20;
+            const offsetY = centerDistance > 500 ? canvasCenter.y - minY - 100 : 20;
+
+            // Second pass: Create new nodes with remapped IDs
+            this.clipboard.forEach(nodeData => {
+                const newId = this.clipboardIdMap.get(nodeData.id)!;
                 const newNode = { ...nodeData };
-                newNode.id = crypto.randomUUID();
-                newNode.x += 20; // Offset
-                newNode.y += 20;
+                newNode.id = newId;
+                newNode.x += offsetX;
+                newNode.y += offsetY;
                 newNode.zIndex = state.order.length + newIds.length;
                 newNode.createdAt = Date.now();
                 newNode.updatedAt = Date.now();
 
+                // Remap parent/children IDs
+                if (newNode.parentId && this.clipboardIdMap.has(newNode.parentId)) {
+                    newNode.parentId = this.clipboardIdMap.get(newNode.parentId);
+                } else {
+                    newNode.parentId = undefined; // Parent not in clipboard, detach
+                }
+
+                if (newNode.childrenIds) {
+                    newNode.childrenIds = newNode.childrenIds
+                        .map((cid: string) => this.clipboardIdMap.get(cid))
+                        .filter(Boolean) as string[];
+                }
+
                 state.nodes[newNode.id] = newNode;
                 state.order.push(newNode.id);
-                newIds.push(newNode.id);
-            });
-            state.selection = new Set(newIds);
-        });
 
-        // Cascade for subsequent pastes
-        this.clipboard.forEach(n => { n.x += 20; n.y += 20; });
+                // Only select top-level pasted nodes
+                if (!newNode.parentId) {
+                    newIds.push(newNode.id);
+                }
+            });
+
+            state.selection = new Set(newIds);
+            console.log('[Store] Pasted', this.clipboard.length, 'nodes');
+        }, true); // Save to history
+
+        // Update clipboard positions for next paste (cascade effect)
+        this.clipboard.forEach(n => {
+            n.x += 20;
+            n.y += 20;
+        });
     }
 
     // --- Transformations & Alignment ---

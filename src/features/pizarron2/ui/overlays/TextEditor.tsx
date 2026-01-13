@@ -262,7 +262,7 @@ export const TextEditor: React.FC = () => {
                     className="w-full h-full bg-transparent resize-none outline-none overflow-hidden"
                     style={{
                         fontSize: `${fontSize}px`,
-                        color: node.content.color || '#1e293b',
+                        color: node.content?.titleColor || '#ffffff',  // Use titleColor for visibility
                         fontFamily: node.content.fontFamily || 'Inter',
                         fontWeight: node.content.fontWeight || 'normal',
                         textAlign: textAlign,
