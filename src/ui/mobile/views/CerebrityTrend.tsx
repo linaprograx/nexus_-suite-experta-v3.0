@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { PageName, UserProfile } from '../types';
 import GlassCard from '../components/GlassCard';
 import PremiumButton from '../components/PremiumButton';
+import { CerebrityHeader } from '../components/CerebrityHeader';
 
 interface Props {
     onNavigate: (page: PageName) => void;
@@ -21,18 +22,20 @@ const CerebrityTrend: React.FC<Props> = ({ onNavigate }) => {
         <div className="bg-transparent relative overflow-hidden flex flex-col h-full">
 
             {/* Header */}
-            <header className="px-5 pt-6 pb-4 relative z-10">
-                <div className="mb-6 px-2">
-                    <p className="text-[9px] font-bold text-white/60 uppercase tracking-[0.25em] mb-2">Cerebrity AI</p>
-                    <h1 className="text-5xl font-black text-white tracking-tighter leading-[0.9] mb-2">
-                        Trend<br />
-                        <span className="text-white/70">Locator</span>
-                    </h1>
-                    <p className="text-xs text-white/70 max-w-xs leading-relaxed">
-                        Análisis en tiempo real de tendencias globales en mixología.
-                    </p>
-                </div>
-            </header>
+            <CerebrityHeader
+                currentPage={PageName.CerebrityTrend}
+                onNavigate={onNavigate}
+            />
+
+            {/* View Title Overlay */}
+            <div className="px-7 -mt-2 mb-4 relative z-10">
+                <h2 className="text-4xl font-black text-white tracking-tighter leading-none opacity-80 uppercase">
+                    Trend Locator
+                </h2>
+                <p className="text-xs text-white/50 mt-1 font-bold uppercase tracking-widest opacity-60">
+                    Real-time Market Intel
+                </p>
+            </div>
 
             {/* Main Content */}
             <main className="flex-1 overflow-y-auto custom-scroll px-5 space-y-4">

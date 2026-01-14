@@ -53,6 +53,7 @@ export const IngredientFormModal: React.FC<{
     categoria: 'General',
     precioCompra: 0,
     unidadCompra: 'Botella (700ml)',
+    unidad: 'und', // Added missing field
     standardUnit: 'ml',
     standardQuantity: 700,
     wastePercentage: 0,
@@ -63,35 +64,61 @@ export const IngredientFormModal: React.FC<{
 
   React.useEffect(() => {
     // Force form rewrite whenever the modal opens or the editing ingredient changes
-    if (isOpen) {
-      if (editingIngredient) {
-        setFormData({
-          nombre: editingIngredient.nombre || '',
-          categoria: editingIngredient.categoria || 'General',
-          precioCompra: editingIngredient.precioCompra || 0,
-          unidadCompra: editingIngredient.unidadCompra || 'Botella (700ml)',
-          standardUnit: editingIngredient.standardUnit || 'ml',
-          standardQuantity: editingIngredient.standardQuantity || 700,
-          wastePercentage: editingIngredient.wastePercentage || 0,
-          proveedores: editingIngredient.proveedores || [],
-          stockActual: (editingIngredient as any).stockActual || 0,
-          cantidadComprada: (editingIngredient as any).cantidadComprada || 0
-        });
-      } else {
-        // Reset for new ingredient
-        setFormData({
-          nombre: '',
-          categoria: 'General',
-          precioCompra: 0,
-          unidadCompra: 'Botella (700ml)',
-          standardUnit: 'ml',
-          standardQuantity: 700,
-          wastePercentage: 0,
-          proveedores: [],
-          stockActual: 0,
-          cantidadComprada: 0
-        });
-      }
+    if (editingIngredient) {
+      // Robust Fetchers for Modal
+      const getInitialPrice = (ing: any) => {
+        const candidates = [ing.precioCompra, ing.costo, ing.cost, ing.price, ing.unitPrice, ing.lastPrice, ing.standardPrice, ing.averageUnitCost];
+        if (ing.supplierData) {
+          const first = Object.values(ing.supplierData)[0] as any;
+          if (first?.price) candidates.push(first.price);
+        }
+        for (let val of candidates) {
+          if (val !== undefined && val !== null && val !== '') {
+            const num = parseFloat(String(val).replace(',', '.'));
+            if (!isNaN(num) && num > 0) return num;
+          }
+        }
+        return 0;
+      };
+
+      const getInitialStock = (ing: any) => {
+        const candidates = [ing.stockActual, ing.stock, ing.cantidad, ing.quantity, ing.quantityAvailable];
+        for (let val of candidates) {
+          if (val !== undefined && val !== null && val !== '') {
+            const num = parseFloat(String(val).replace(',', '.'));
+            if (!isNaN(num)) return num;
+          }
+        }
+        return 0;
+      };
+
+      setFormData({
+        nombre: editingIngredient.nombre || '',
+        categoria: editingIngredient.categoria || 'General',
+        unidad: editingIngredient.unidad || 'und', // Default unit
+        precioCompra: getInitialPrice(editingIngredient),
+        unidadCompra: editingIngredient.unidadCompra || '',
+        standardUnit: editingIngredient.standardUnit || 'ml',
+        standardQuantity: editingIngredient.standardQuantity || 700,
+        wastePercentage: editingIngredient.wastePercentage || 0,
+        proveedores: editingIngredient.proveedores || [],
+        stockActual: getInitialStock(editingIngredient),
+        cantidadComprada: (editingIngredient as any).cantidadComprada || 0
+      });
+    } else {
+      setFormData({
+        nombre: '',
+        categoria: 'General',
+        unidad: 'und',
+        precioCompra: 0,
+        unidadCompra: 'Botella (700ml)',
+        standardUnit: 'ml',
+        standardQuantity: 700,
+        wastePercentage: 0,
+        proveedores: [],
+        stockActual: 0,
+        cantidadComprada: 0
+      });
     }
   }, [editingIngredient, isOpen]);
 
@@ -125,7 +152,7 @@ export const IngredientFormModal: React.FC<{
     };
 
     if (editingIngredient) {
-      await setDoc(doc(db, ingredientsColPath, editingIngredient.id), dataToSave);
+      await setDoc(doc(db, ingredientsColPath, editingIngredient.id), dataToSave, { merge: true });
     } else {
       await addDoc(collection(db, ingredientsColPath), dataToSave);
     }

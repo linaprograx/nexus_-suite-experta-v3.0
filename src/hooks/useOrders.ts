@@ -42,17 +42,33 @@ export const useOrders = () => {
         return () => unsubscribe();
     }, [db, userId]);
 
-    const createOrder = async (items: OrderItem[], name?: string) => {
+    const createOrder = async (items: OrderItem[], name?: string, status: 'draft' | 'completed' = 'draft') => {
         if (!userId || !db) return;
-        const totalEstimatedCost = items.reduce((acc, item) => acc + item.estimatedCost, 0);
 
-        await addDoc(collection(db, `users/${userId}/orders`), {
-            items,
-            totalEstimatedCost,
-            status: 'draft',
-            createdAt: serverTimestamp(),
-            name: name || `Pedido ${new Date().toLocaleDateString()}`
+        // Chunk items to prevent document size limits (max 1MB per doc, safe limit ~500 items)
+        const CHUNK_SIZE = 500;
+        const chunks = [];
+        for (let i = 0; i < items.length; i += CHUNK_SIZE) {
+            chunks.push(items.slice(i, i + CHUNK_SIZE));
+        }
+
+        const baseName = name || `Pedido ${new Date().toLocaleDateString()}`;
+
+        // Create an order doc for each chunk
+        const promises = chunks.map(async (chunk, index) => {
+            const totalEstimatedCost = chunk.reduce((acc, item) => acc + item.estimatedCost, 0);
+            const chunkName = chunks.length > 1 ? `${baseName} (Parte ${index + 1}/${chunks.length})` : baseName;
+
+            return addDoc(collection(db, `users/${userId}/orders`), {
+                items: chunk,
+                totalEstimatedCost,
+                status: status,
+                createdAt: serverTimestamp(),
+                name: chunkName
+            });
         });
+
+        await Promise.all(promises);
     };
 
     const deleteOrder = async (orderId: string) => {

@@ -79,44 +79,227 @@ const FloatingBottomNav: React.FC<FloatingBottomNavProps> = ({ currentPage, onNa
                 <nav className="flex items-center justify-start h-full gap-2 min-w-max">
                     {navItems.map((item, index) => {
                         const active = isActive(item.page);
-                        return (
-                            <button
-                                key={item.page}
-                                onClick={() => onNavigate(item.page)}
-                                className={`
-                  flex flex-col items-center justify-center
-                  w-[68px] h-14
-                  rounded-xl
-                  transition-all duration-300
-                  flex-shrink-0
-                  ${active
-                                        ? 'bg-white shadow-lg scale-110'
-                                        : 'bg-transparent hover:bg-white/30 hover:scale-105'
-                                    }
-                `}
-                                style={active ? {
-                                    boxShadow: `0 4px 20px ${themeColor}40, 0 0 0 2px ${themeColor}20`
-                                } : {}}
-                            >
-                                <span
-                                    className={`
-                    material-symbols-outlined !text-[22px] transition-colors
-                    ${active ? 'fill-1' : ''}
-                  `}
-                                    style={{
-                                        color: active ? themeColor : '#71717a'
-                                    }}
+
+                        // Check if any Grimorio is active for border
+                        const isAnyGrimorioActive = [
+                            PageName.GrimorioRecipes,
+                            PageName.GrimorioStock,
+                            PageName.GrimorioMarket
+                        ].includes(currentPage);
+
+                        // Get Grimorio border color
+                        const grimorioBorderColor =
+                            currentPage === PageName.GrimorioRecipes ? '#f97316' : // orange
+                                currentPage === PageName.GrimorioStock ? '#ef4444' : // red
+                                    currentPage === PageName.GrimorioMarket ? '#10b981' : // emerald
+                                        'transparent';
+
+                        // Group Grimorio items
+                        const isGrimorioItem = [
+                            PageName.GrimorioRecipes,
+                            PageName.GrimorioStock,
+                            PageName.GrimorioMarket
+                        ].includes(item.page);
+
+                        const isCerebrityItem = [
+                            PageName.CerebrityMakeMenu,
+                            PageName.CerebrityCritic,
+                            PageName.CerebrityLab,
+                            PageName.CerebrityTrend
+                        ].includes(item.page);
+
+                        // If first grimorio item, wrap all 3 in border
+                        if (item.page === PageName.GrimorioRecipes) {
+                            const grimorioItems = navItems.filter(nav => [
+                                PageName.GrimorioRecipes,
+                                PageName.GrimorioStock,
+                                PageName.GrimorioMarket
+                            ].includes(nav.page));
+
+                            return (
+                                <div
+                                    key="grimorio-group"
+                                    className={`flex gap-2 ${isAnyGrimorioActive ? 'border rounded-[2rem] p-1' : ''}`}
+                                    style={isAnyGrimorioActive ? {
+                                        borderColor: grimorioBorderColor,
+                                        borderWidth: '1px',
+                                        transition: 'border-color 0.3s ease'
+                                    } : {}}
                                 >
-                                    {item.icon}
-                                </span>
-                                {active && (
-                                    <div
-                                        className="w-1.5 h-1.5 rounded-full mt-1"
-                                        style={{ backgroundColor: themeColor }}
-                                    ></div>
-                                )}
-                            </button>
-                        );
+                                    {grimorioItems.map(gItem => {
+                                        const gActive = isActive(gItem.page);
+                                        const gTheme = PAGE_THEMES[gItem.page] || PAGE_THEMES['default'];
+                                        const gColor = gTheme.accent;
+
+                                        return (
+                                            <button
+                                                key={gItem.page}
+                                                onClick={() => onNavigate(gItem.page)}
+                                                className={`
+                                                    flex flex-col items-center justify-center
+                                                    w-[68px] h-14
+                                                    rounded-[1.5rem]
+                                                    transition-all duration-300
+                                                    flex-shrink-0
+                                                    ${gActive
+                                                        ? 'bg-white shadow-lg scale-110'
+                                                        : 'bg-transparent hover:bg-white/30 hover:scale-105'
+                                                    }
+                                                `}
+                                                style={gActive ? {
+                                                    boxShadow: `0 4px 20px ${gColor}40, 0 0 0 2px ${gColor}20`
+                                                } : {}}
+                                            >
+                                                <span
+                                                    className={`
+                                                        material-symbols-outlined !text-[22px] transition-colors
+                                                        ${gActive ? 'fill-1' : ''}
+                                                    `}
+                                                    style={{
+                                                        color: gActive ? gColor : '#71717a'
+                                                    }}
+                                                >
+                                                    {gItem.icon}
+                                                </span>
+                                                {gActive && (
+                                                    <div
+                                                        className="w-1.5 h-1.5 rounded-full mt-1"
+                                                        style={{ backgroundColor: gColor }}
+                                                    ></div>
+                                                )}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            );
+                        }
+
+                        // Handle Cerebrity items (grouping)
+                        if (item.page === PageName.CerebrityMakeMenu) {
+                            const cerebrityPages = [
+                                PageName.CerebrityMakeMenu,
+                                PageName.CerebrityCritic,
+                                PageName.CerebrityLab,
+                                PageName.CerebrityTrend
+                            ];
+                            const isAnyCerebrityActive = cerebrityPages.includes(currentPage);
+                            const cerebrityItems = navItems.filter(nav => cerebrityPages.includes(nav.page));
+
+                            // Get accurate theme accent for the ring
+                            const currentCerebrityTheme = PAGE_THEMES[currentPage] || PAGE_THEMES['default'];
+                            const ringColor = isAnyCerebrityActive ? currentCerebrityTheme.accent : 'transparent';
+
+                            return (
+                                <div
+                                    key="cerebrity-group"
+                                    className={`flex gap-2 transition-all duration-500 ease-in-out ${isAnyCerebrityActive ? 'border rounded-[2rem] p-1' : ''}`}
+                                    style={isAnyCerebrityActive ? {
+                                        borderColor: ringColor,
+                                        borderWidth: '1.5px',
+                                        boxShadow: `0 0 15px ${ringColor}30`
+                                    } : {}}
+                                >
+                                    {cerebrityItems.map(cItem => {
+                                        const cActive = isActive(cItem.page);
+                                        const cTheme = PAGE_THEMES[cItem.page] || PAGE_THEMES['default'];
+                                        const cColor = cTheme.accent;
+
+                                        return (
+                                            <button
+                                                key={cItem.page}
+                                                onClick={() => onNavigate(cItem.page)}
+                                                className={`
+                                                    flex flex-col items-center justify-center
+                                                    w-[68px] h-14
+                                                    rounded-[1.5rem]
+                                                    transition-all duration-300
+                                                    flex-shrink-0
+                                                    ${cActive
+                                                        ? 'bg-white shadow-lg scale-110'
+                                                        : 'bg-transparent hover:bg-white/30 hover:scale-105'
+                                                    }
+                                                `}
+                                                style={cActive ? {
+                                                    boxShadow: `0 4px 20px ${cColor}40, 0 0 0 2px ${cColor}20`
+                                                } : {}}
+                                            >
+                                                <span
+                                                    className={`
+                                                        material-symbols-outlined !text-[22px] transition-colors
+                                                        ${cActive ? 'fill-1' : ''}
+                                                    `}
+                                                    style={{
+                                                        color: cActive ? cColor : '#71717a'
+                                                    }}
+                                                >
+                                                    {cItem.icon}
+                                                </span>
+                                                {cActive && (
+                                                    <div
+                                                        className="w-1.5 h-1.5 rounded-full mt-1"
+                                                        style={{ backgroundColor: cColor }}
+                                                    ></div>
+                                                )}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            );
+                        }
+
+                        // Skip individual items already grouped
+                        if (isCerebrityItem) {
+                            return null;
+                        }
+
+                        // Skip individual grimorio items (already rendered in group)
+                        if (isGrimorioItem) {
+                            return null;
+                        }
+
+                        // Render non-Grimorio items normally
+                        if (!isGrimorioItem) {
+                            return (
+                                <button
+                                    key={item.page}
+                                    onClick={() => onNavigate(item.page)}
+                                    className={`
+                                        flex flex-col items-center justify-center
+                                        w-[68px] h-14
+                                        rounded-[1.5rem]
+                                        transition-all duration-300
+                                        flex-shrink-0
+                                        ${active
+                                            ? 'bg-white shadow-lg scale-110'
+                                            : 'bg-transparent hover:bg-white/30 hover:scale-105'
+                                        }
+                                    `}
+                                    style={active ? {
+                                        boxShadow: `0 4px 20px ${themeColor}40, 0 0 0 2px ${themeColor}20`
+                                    } : {}}
+                                >
+                                    <span
+                                        className={`
+                                            material-symbols-outlined !text-[22px] transition-colors
+                                            ${active ? 'fill-1' : ''}
+                                        `}
+                                        style={{
+                                            color: active ? themeColor : '#71717a'
+                                        }}
+                                    >
+                                        {item.icon}
+                                    </span>
+                                    {active && (
+                                        <div
+                                            className="w-1.5 h-1.5 rounded-full mt-1"
+                                            style={{ backgroundColor: themeColor }}
+                                        ></div>
+                                    )}
+                                </button>
+                            );
+                        }
+
+                        return null;
                     })}
                 </nav>
             </div>

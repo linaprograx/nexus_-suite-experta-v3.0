@@ -6,6 +6,7 @@ import { Input } from '../ui/Input';
 import { Ingredient, StockRule } from '../../types';
 import { Modal } from '../ui/Modal';
 import { StockItem } from '../../types';
+import { StockRuleModal } from '../grimorium/StockRuleModal';
 
 interface StockRulesPanelProps {
     allIngredients: Ingredient[];
@@ -36,10 +37,7 @@ export const StockRulesPanel: React.FC<StockRulesPanelProps> = ({
     // Removed local rules state
 
     const [isRuleModalOpen, setIsRuleModalOpen] = useState(false);
-    const [searchQuery, setSearchQuery] = useState('');
     const [quickSearchQuery, setQuickSearchQuery] = useState('');
-    const [selectedIngredients, setSelectedIngredients] = useState<Ingredient[]>([]);
-    const [newRule, setNewRule] = useState<{ minStock: number; reorderQuantity: number }>({ minStock: 0, reorderQuantity: 0 });
     const [editingRuleId, setEditingRuleId] = useState<string | null>(null); // New local state for internal edit if no prop provided
 
     // ... (rest of filtering logic)
@@ -49,11 +47,7 @@ export const StockRulesPanel: React.FC<StockRulesPanelProps> = ({
             onEditRule(rule);
         } else {
             // Local fallback (simplified)
-            setNewRule({ minStock: rule.minStock, reorderQuantity: rule.reorderQuantity });
             setEditingRuleId(rule.id);
-            // Pre-select ingredient
-            const ing = allIngredients.find(i => i.id === rule.ingredientId);
-            if (ing) setSelectedIngredients([ing]);
             setIsRuleModalOpen(true);
         }
     };
@@ -67,14 +61,7 @@ export const StockRulesPanel: React.FC<StockRulesPanelProps> = ({
         }
     };
 
-    const filteredIngredients = useMemo(() => {
-        if (!searchQuery) return [];
-        return allIngredients.filter(i =>
-            i.nombre.toLowerCase().includes(searchQuery.toLowerCase()) &&
-            // Filter to show only items that exist in stock (Inventory)
-            stockItems.some(s => s.ingredientId === i.id)
-        );
-    }, [allIngredients, stockItems, searchQuery]);
+    // FilteredIngredients memo moved to StockRuleModal
 
     const filteredQuickSearch = useMemo(() => {
         if (!quickSearchQuery) return [];
@@ -102,36 +89,21 @@ export const StockRulesPanel: React.FC<StockRulesPanelProps> = ({
         }).filter(Boolean) as { rule: StockRule, item: any }[];
     }, [rules, stockItems]);
 
-    const handleSaveRule = () => {
+    const handleSaveRule = (newRuleObj: StockRule) => {
         const newRulesList = [...rules];
 
-        // Remove existing if editing
+        // Remove existing if editing (or if ID matches)
         let rulesToSave = editingRuleId ? newRulesList.filter(r => r.id !== editingRuleId) : newRulesList;
 
-        selectedIngredients.forEach(ing => {
-            // Avoid duplicates (unless editing same rule, but we filtered it out)
-            if (!rulesToSave.find(r => r.ingredientId === ing.id)) {
-                const newRuleObj: StockRule = {
-                    id: editingRuleId || Math.random().toString(36).substr(2, 9),
-                    ingredientId: ing.id,
-                    ingredientName: ing.nombre,
-                    minStock: newRule.minStock || 1,
-                    reorderQuantity: newRule.reorderQuantity || 1,
-                    active: true
-                };
-                rulesToSave.push(newRuleObj);
-                // Call props
-                if (onSaveRule) onSaveRule(newRuleObj);
-            }
-        });
+        // Add new
+        rulesToSave.push(newRuleObj);
 
+        // Call props
+        if (onSaveRule) onSaveRule(newRuleObj);
         if (onUpdateRules) onUpdateRules(rulesToSave);
 
         setIsRuleModalOpen(false);
-        setSelectedIngredients([]);
-        setNewRule({ minStock: 0, reorderQuantity: 0 });
         setEditingRuleId(null);
-        setSearchQuery('');
     };
 
     const handleDelete = (id: string) => {
@@ -320,86 +292,17 @@ export const StockRulesPanel: React.FC<StockRulesPanelProps> = ({
             </div>
 
             {/* Modal for New Rule */}
-            <Modal isOpen={isRuleModalOpen} onClose={() => setIsRuleModalOpen(false)} title="Nueva Regla de Stock">
-                <div className="space-y-4">
-                    <div>
-                        <h4 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">1. Selecciona Ingredientes ({selectedIngredients.length})</h4>
-                        <p className="text-xs text-slate-400 mb-2">Solo ingredientes presentes en tu inventario.</p>
-                        <Input
-                            placeholder="Buscar en inventario..."
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            className="bg-white dark:bg-slate-800"
-                        />
-                        {/* SELECTED TAGS */}
-                        {selectedIngredients.length > 0 && (
-                            <div className="flex flex-wrap gap-2 mt-2 max-h-24 overflow-y-auto">
-                                {selectedIngredients.map(ing => (
-                                    <div key={ing.id} className="bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-200 text-xs px-2 py-1 rounded-full flex items-center gap-1">
-                                        <span>{ing.nombre}</span>
-                                        <button onClick={() => setSelectedIngredients(prev => prev.filter(i => i.id !== ing.id))} className="hover:text-indigo-900"><Icon svg={ICONS.x} className="w-3 h-3" /></button>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-
-                        {searchQuery && filteredIngredients.length > 0 && (
-                            <div className="mt-1 border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden max-h-40 overflow-y-auto bg-white dark:bg-slate-800 shadow-lg relative z-50">
-                                {filteredIngredients.map(ing => {
-                                    const isSelected = selectedIngredients.some(i => i.id === ing.id);
-                                    return (
-                                        <div
-                                            key={ing.id}
-                                            className={`p-2 cursor-pointer text-sm border-b border-slate-100 dark:border-slate-700 last:border-0 flex justify-between items-center ${isSelected ? 'bg-indigo-50 dark:bg-indigo-900/20' : 'hover:bg-slate-50 dark:hover:bg-slate-800'}`}
-                                            onClick={() => {
-                                                if (!isSelected) {
-                                                    setSelectedIngredients(prev => [...prev, ing]);
-                                                    setSearchQuery('');
-                                                }
-                                            }}
-                                        >
-                                            <span>{ing.nombre}</span>
-                                            {isSelected && <Icon svg={ICONS.check} className="w-4 h-4 text-indigo-500" />}
-                                        </div>
-                                    );
-                                })}
-                            </div>
-                        )}
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4">
-                        <div>
-                            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Stock Mínimo</label>
-                            <Input
-                                type="number"
-                                min={0}
-                                step="any"
-                                value={newRule.minStock || ''}
-                                onChange={(e) => setNewRule(prev => ({ ...prev, minStock: parseFloat(e.target.value) || 0 }))}
-                            />
-                            <p className="text-[10px] text-slate-400 mt-1">Alerta si baja de esto</p>
-                        </div>
-                        <div>
-                            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Pedido Auto</label>
-                            <Input
-                                type="number"
-                                min={0}
-                                step="any"
-                                value={newRule.reorderQuantity || ''}
-                                onChange={(e) => setNewRule(prev => ({ ...prev, reorderQuantity: parseFloat(e.target.value) || 0 }))}
-                            />
-                            <p className="text-[10px] text-slate-400 mt-1">Cantidad a sugerir</p>
-                        </div>
-                    </div>
-
-                    <div className="pt-4 flex justify-end gap-2">
-                        <Button variant="ghost" onClick={() => setIsRuleModalOpen(false)}>Cancelar</Button>
-                        <Button onClick={handleSaveRule} disabled={selectedIngredients.length === 0 || !newRule.minStock || !newRule.reorderQuantity} className="bg-indigo-600 hover:bg-indigo-700 text-white">
-                            Guardar Regla
-                        </Button>
-                    </div>
-                </div>
-            </Modal>
+            {/* Modal for New Rule using Reusable Component */}
+            <StockRuleModal
+                isOpen={isRuleModalOpen}
+                onClose={() => {
+                    setIsRuleModalOpen(false);
+                    setEditingRuleId(null);
+                }}
+                allIngredients={allIngredients}
+                onSaveRule={handleSaveRule}
+                initialRule={editingRuleId ? rules.find(r => r.id === editingRuleId) : undefined}
+            />
         </div>
     );
 };

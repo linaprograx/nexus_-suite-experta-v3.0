@@ -144,6 +144,20 @@ export interface SupplierOrder {
     receivedAt?: any;
 }
 
+export interface OrderDraft {
+    id: string;
+    items: {
+        ingredientId: string;
+        name: string;
+        quantity: number;
+        unit: string;
+        currentStock?: number;
+    }[];
+    status: 'draft';
+    createdAt: any;
+    updatedAt: any;
+}
+
 // ---------------------------
 
 export interface StockRule {
@@ -165,12 +179,21 @@ export interface CatalogoItem {
     ultimaActualizacionPrecio: any; // Timestamp
 }
 
+// --- RECIPE Helpers ---
+export interface IngredientLineItem {
+    ingredientId: string | null;
+    nombre: string;
+    cantidad: number;
+    unidad: string;
+}
+
 export interface Recipe {
     id: string;
     nombre: string;
     categorias?: string[]; // Added
-    ingredientes: Ingredient[];
+    ingredientes: IngredientLineItem[] | Ingredient[]; // Support both for legacy/compatibility
     instrucciones?: string;
+    preparacion?: string; // Alias for UI
     storytelling?: string;
     imageUrl?: string | null;
     costoTotal?: number;

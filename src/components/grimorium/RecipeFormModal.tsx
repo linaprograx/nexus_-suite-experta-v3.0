@@ -10,7 +10,7 @@ import { Button } from '../ui/Button';
 import { Icon } from '../ui/Icon';
 import { Autocomplete } from '../ui/Autocomplete';
 import { ICONS } from '../ui/icons';
-import { Recipe, Ingredient, IngredientLineItem } from '../../../types';
+import { Recipe, Ingredient, IngredientLineItem } from '../../types';
 import { useApp } from '../../context/AppContext';
 import { calculateRecipeCost } from '../../modules/costing/costCalculator';
 
@@ -47,7 +47,13 @@ export const RecipeFormModal: React.FC<RecipeFormModalProps> = ({ isOpen, onClos
 
     const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
-        if (!file || !recipe || !storage) return;
+        if (!file) return;
+
+        if (!storage) {
+            alert('Error: Firebase Storage no está inicializado.');
+            console.error('Storage is null');
+            return;
+        }
 
         setIsUploading(true);
         try {
@@ -55,9 +61,9 @@ export const RecipeFormModal: React.FC<RecipeFormModalProps> = ({ isOpen, onClos
             await uploadBytes(storageRef, file);
             const imageUrl = await getDownloadURL(storageRef);
             setRecipe(prev => ({ ...prev, imageUrl }));
-        } catch (error) {
+        } catch (error: any) {
             console.error("Error uploading image:", error);
-            alert("Error al subir la imagen.");
+            alert(`Error al subir la imagen: ${error.message || error}`);
         } finally {
             setIsUploading(false);
         }
@@ -92,15 +98,23 @@ export const RecipeFormModal: React.FC<RecipeFormModalProps> = ({ isOpen, onClos
         try {
             if (dataToSave.id) {
                 await updateDoc(doc(db, `users/${userId}/grimorio`, dataToSave.id), dataToSave);
+                console.log("✅ Receta actualizada:", dataToSave.id);
             } else {
-                await addDoc(collection(db, `users/${userId}/grimorio`), dataToSave);
+                const docRef = await addDoc(collection(db, `users/${userId}/grimorio`), dataToSave);
+                console.log("✅ Nueva receta creada:", docRef.id);
             }
-            // Invalidate Cache to force UI update
-            queryClient.invalidateQueries({ queryKey: ['recipes'] });
+            // Invalidate Cache
+            console.log("🔄 Invalidando query 'recipes'...");
+            await queryClient.invalidateQueries({ queryKey: ['recipes'] });
+            await queryClient.invalidateQueries({ queryKey: ['recipes', userId] });
+
+            // Force delay to ensure propagation if needed (optional hack, but useful for testing)
+            // await new Promise(r => setTimeout(r, 500));
+
             onClose();
-        } catch (error) {
-            console.error("Error saving recipe:", error);
-            alert("Error al guardar la receta.");
+        } catch (error: any) {
+            console.error("❌ Error saving recipe:", error);
+            alert(`Error al guardar la receta: ${error.message || error}`);
         }
     };
 
@@ -114,189 +128,163 @@ export const RecipeFormModal: React.FC<RecipeFormModalProps> = ({ isOpen, onClos
             {/* Premium Gradient Modal Content */}
             <div className="relative w-full max-w-4xl max-h-[90vh] flex flex-col bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/20 dark:border-white/5 overflow-hidden animate-in zoom-in-95 duration-200">
                 {/* Header with Gradient Background */}
-                <div className="relative p-6 border-b border-white/10 overflow-hidden">
+                <div className="relative p-4 border-b border-white/10 overflow-hidden shrink-0">
                     <div className="absolute inset-0 bg-gradient-to-r from-indigo-600 via-violet-600 to-indigo-600 opacity-100" />
-                    <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20" /> {/* Texture if possible, or just gradient */}
+                    <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20" />
 
                     <div className="relative flex items-center justify-between z-10">
-                        <h2 className="text-2xl font-bold text-white shadow-sm">
+                        <Button variant="ghost" size="icon" onClick={onClose} className="rounded-full bg-white/10 hover:bg-white/20 text-white border border-white/10 w-9 h-9">
+                            <Icon svg={ICONS.x} className="w-5 h-5" />
+                        </Button>
+                        <h2 className="text-lg font-bold text-white shadow-sm flex-1 text-center truncate px-2">
                             {recipe.id ? "Editar Receta" : "Nueva Receta"}
                         </h2>
-                        <Button variant="ghost" size="icon" onClick={onClose} className="rounded-full bg-white/10 hover:bg-white/20 text-white border border-white/10">
-                            <Icon svg={ICONS.x} />
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={handleSubmit}
+                            disabled={isUploading}
+                            className={`rounded-full ${isUploading ? 'bg-gray-400' : 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/20'} font-bold text-xs px-4 h-9 border border-white/10`}
+                        >
+                            {isUploading ? '...' : 'Guardar'}
                         </Button>
                     </div>
                 </div>
 
                 {/* Scrollable Content */}
-                <div className="flex-1 overflow-y-auto custom-scrollbar p-6 space-y-6">
+                <div className="flex-1 overflow-y-auto custom-scrollbar p-5 space-y-6">
                     <form id="recipe-form" onSubmit={handleSubmit} className="space-y-6">
                         {/* Image & Basic Info */}
-                        <div className="grid grid-cols-1 md:grid-cols-[200px_1fr] gap-6">
-                            <div className="space-y-2">
-                                <div className={`w-full aspect-square rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 relative group`}>
+                        <div className="flex flex-col gap-6">
+                            {/* Mobile Optimized Image Uploader */}
+                            <div className="w-full flex justify-center">
+                                <div className="relative w-40 h-40 rounded-2xl overflow-hidden border-2 border-slate-200 dark:border-slate-700 shadow-md group">
                                     {recipe.imageUrl ? (
                                         <img src={recipe.imageUrl} alt="Preview" className="w-full h-full object-cover" />
                                     ) : (
-                                        <div className="w-full h-full flex items-center justify-center text-slate-300">
+                                        <div className="w-full h-full flex flex-col items-center justify-center bg-slate-100 dark:bg-slate-800 text-slate-400 gap-2">
                                             <Icon svg={ICONS.camera} className="w-8 h-8" />
+                                            <span className="text-[10px] uppercase font-bold tracking-wider">Foto</span>
                                         </div>
                                     )}
-                                    <label className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
-                                        <span className="text-white text-xs font-medium">Cambiar</span>
+                                    {/* Always visible edit button on Mobile */}
+                                    <label className="absolute bottom-0 inset-x-0 bg-black/60 backdrop-blur-md py-2 flex items-center justify-center cursor-pointer active:bg-black/80 transition-colors">
+                                        <span className="text-white text-[10px] font-bold uppercase tracking-widest flex items-center gap-1">
+                                            <Icon svg={ICONS.camera} className="w-3 h-3" /> Cambiar
+                                        </span>
                                         <input type="file" className="hidden" accept="image/*" onChange={handleImageUpload} disabled={isUploading} />
                                     </label>
                                 </div>
                             </div>
+
                             <div className="space-y-4">
                                 <div className="space-y-1">
                                     <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Nombre</label>
-                                    <Input name="nombre" value={recipe.nombre || ''} onChange={handleRecipeChange} placeholder="Ej. Margarita" className="text-lg font-medium" required />
-                                </div>
-                                {/* Status Field */}
-                                <div className="space-y-1">
-                                    <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Estado</label>
-                                    <Select
-                                        name="estado"
-                                        value={recipe.categorias?.find(c => ['Idea', 'En pruebas', 'Terminado', 'Archivada'].includes(c)) || 'Idea'}
-                                        onChange={e => {
-                                            const newStatus = e.target.value;
-                                            setRecipe(r => {
-                                                const cats = r.categorias?.filter(c => !['Idea', 'En pruebas', 'Terminado', 'Archivada'].includes(c)) || [];
-                                                return { ...r, categorias: [...cats, newStatus] };
-                                            });
-                                        }}
-                                        className="bg-white/50 dark:bg-slate-800/50"
-                                    >
-                                        <option value="Idea">Idea</option>
-                                        <option value="En pruebas">En pruebas</option>
-                                        <option value="Terminado">Terminado (Carta)</option>
-                                        <option value="Archivada">Archivada</option>
-                                    </Select>
+                                    <Input name="nombre" value={recipe.nombre || ''} onChange={handleRecipeChange} placeholder="Nombre del Coctel" className="text-lg font-medium bg-slate-50 border-slate-200" required />
                                 </div>
 
-                                {/* Multi-Category Field with "Create New" */}
-                                <div className="space-y-1">
-                                    <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Categorías</label>
-
-                                    {/* Selected Tags */}
-                                    <div className="flex flex-wrap gap-2 mb-2">
-                                        {recipe.categorias?.filter(c => !['Idea', 'En pruebas', 'Terminado', 'Archivada'].includes(c)).map(cat => (
-                                            <span key={cat} className="px-2 py-1 rounded-md bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 text-xs font-bold flex items-center gap-1">
-                                                {cat}
-                                                <button type="button" onClick={() => setRecipe(r => ({ ...r, categorias: r.categorias?.filter(c => c !== cat) }))} className="hover:text-indigo-900 dark:hover:text-indigo-100">×</button>
-                                            </span>
-                                        ))}
-                                    </div>
-
-                                    {/* Selection Row with Inline Button */}
-                                    <div className="flex gap-2">
+                                {/* Status & Category Row */}
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-1">
+                                        <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Estado</label>
                                         <Select
-                                            value=""
+                                            name="estado"
+                                            value={recipe.categorias?.find(c => ['Idea', 'En pruebas', 'Terminado', 'Archivada'].includes(c)) || 'Idea'}
                                             onChange={e => {
-                                                if (e.target.value && !recipe.categorias?.includes(e.target.value)) {
-                                                    setRecipe(r => ({ ...r, categorias: [...(r.categorias || []), e.target.value] }));
-                                                }
+                                                const newStatus = e.target.value;
+                                                setRecipe(r => {
+                                                    const cats = r.categorias?.filter(c => !['Idea', 'En pruebas', 'Terminado', 'Archivada'].includes(c)) || [];
+                                                    return { ...r, categorias: [...cats, newStatus] };
+                                                });
                                             }}
-                                            className="bg-white/50 dark:bg-slate-800/50 text-sm flex-1"
+                                            className="bg-slate-50 text-sm py-2"
                                         >
-                                            <option value="">Añadir existente...</option>
-                                            <option value="Coctel">Cóctel</option>
-                                            <option value="Mocktail">Mocktail</option>
-                                            <option value="Preparacion">Preparación</option>
-                                            <option value="Otro">Otro</option>
-                                            <option value="Citrico">Cítrico</option>
-                                            <option value="Dulce">Dulce</option>
-                                            <option value="Amargo">Amargo</option>
+                                            <option value="Idea">Idea 💡</option>
+                                            <option value="En pruebas">En Pruebas 🧪</option>
+                                            <option value="Terminado">Carta ✅</option>
+                                            <option value="Archivada">Archivada 📦</option>
                                         </Select>
-                                        <button
-                                            type="button"
-                                            className="px-3 py-2 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-600 font-bold text-xs uppercase tracking-wider border border-indigo-100 transition-colors"
-                                            onClick={() => {
-                                                const newCat = prompt("Nombre de la nueva categoría:");
-                                                if (newCat && newCat.trim()) {
-                                                    setRecipe(r => ({ ...r, categorias: [...(r.categorias || []), newCat.trim()] }));
-                                                }
+                                    </div>
+                                    <div className="space-y-1">
+                                        <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Tipo</label>
+                                        <Select
+                                            value={recipe.categorias?.find(c => ['Coctel', 'Mocktail', 'Preparacion'].includes(c)) || ''}
+                                            onChange={e => {
+                                                const type = e.target.value;
+                                                if (!type) return;
+                                                setRecipe(r => {
+                                                    const cats = r.categorias?.filter(c => !['Coctel', 'Mocktail', 'Preparacion'].includes(c)) || [];
+                                                    return { ...r, categorias: [...cats, type] };
+                                                });
                                             }}
+                                            className="bg-slate-50 text-sm py-2"
                                         >
-                                            + Nueva
-                                        </button>
+                                            <option value="">Seleccionar...</option>
+                                            <option value="Coctel">Cóctel 🍸</option>
+                                            <option value="Mocktail">Mocktail 🥤</option>
+                                            <option value="Preparacion">Prep 🥣</option>
+                                        </Select>
                                     </div>
                                 </div>
+
+                                {/* Previous Category Logic (Hidden or Simplified if needed, keeping simple for mobile now) */}
                             </div>
                         </div>
 
-                        {/* Prep & Garnish */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {/* Prep & Garnish (Tabs or Stacked? Stacked is fine) */}
+                        <div className="space-y-4">
                             <div className="space-y-1">
                                 <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Preparación</label>
-                                <Textarea name="preparacion" value={recipe.preparacion || ''} onChange={handleRecipeChange} placeholder="Pasos de la receta..." className="h-32" />
-                            </div>
-                            <div className="space-y-1">
-                                <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Garnish / Decoración</label>
-                                <Textarea name="garnish" value={recipe.garnish || ''} onChange={handleRecipeChange} placeholder="Detalles de presentación..." className="h-32" />
+                                <Textarea name="preparacion" value={recipe.preparacion || ''} onChange={handleRecipeChange} placeholder="Instrucciones..." className="h-24 text-sm bg-slate-50 border-slate-200" />
                             </div>
                         </div>
 
-                        {/* Ingredients Section - NOW WITHOUT OVERFLOW CLIPPING */}
-                        <div className="space-y-3">
+                        {/* Ingredients Section */}
+                        <div className="space-y-3 pb-4">
                             <div className="flex items-center justify-between">
                                 <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Ingredientes</label>
-                                <Button type="button" size="sm" variant="outline" onClick={addLineItem} className="h-8 text-xs">
-                                    <Icon svg={ICONS.plus} className="mr-1 h-3 w-3" /> Añadir
+                                <Button type="button" size="sm" variant="outline" onClick={addLineItem} className="h-7 text-[10px] px-3 rounded-full bg-indigo-50 text-indigo-600 border-indigo-100">
+                                    <Icon svg={ICONS.plus} className="mr-1 h-3 w-3" /> AÑADIR
                                 </Button>
                             </div>
-                            <div className="space-y-2 bg-slate-50/50 dark:bg-slate-800/30 p-4 rounded-xl border border-slate-200/50 dark:border-slate-700/50">
+                            <div className="space-y-2">
                                 {lineItems.length === 0 && (
-                                    <p className="text-sm text-slate-400 text-center py-4 italic">No hay ingredientes añadidos.</p>
+                                    <div className="text-center py-6 bg-slate-50 rounded-xl border border-dashed border-slate-200">
+                                        <span className="text-xs text-slate-400 italic">Sin ingredientes</span>
+                                    </div>
                                 )}
                                 {lineItems.map((item, index) => (
-                                    <div key={index} className="grid grid-cols-12 gap-2 items-start relative z-auto"> {/* Removed z-index manipulation unless needed */}
-                                        <div className="col-span-6 relative">
-                                            {/* Z-Index for Autocomplete container to ensure it floats over subsequent rows if needed */}
-                                            <div style={{ zIndex: 50 - index, position: 'relative' }}>
-                                                <Autocomplete
-                                                    items={allIngredients}
-                                                    selectedId={item.ingredientId}
-                                                    onSelect={(id) => updateLineItem(index, 'ingredientId', id)}
-                                                    placeholder="Ingrediente"
-                                                />
-                                            </div>
-                                        </div>
-                                        <div className="col-span-2">
-                                            <Input
-                                                type="number"
-                                                step="any"
-                                                value={item.cantidad || ''}
-                                                onChange={e => {
-                                                    const val = parseFloat(e.target.value);
-                                                    updateLineItem(index, 'cantidad', isNaN(val) ? 0 : val);
-                                                }}
-                                                placeholder="0"
-                                                className="bg-white dark:bg-slate-800"
+                                    <div key={index} className="flex gap-2 items-center bg-white p-2 rounded-xl border border-slate-100 shadow-sm relative z-auto">
+                                        <div className="flex-1 min-w-0 z-[1]"> {/* Check z-index */}
+                                            <Autocomplete
+                                                items={allIngredients}
+                                                selectedId={item.ingredientId}
+                                                onSelect={(id) => updateLineItem(index, 'ingredientId', id)}
+                                                placeholder="Busca ingrediente..."
                                             />
                                         </div>
-                                        <div className="col-span-3">
-                                            <Select value={item.unidad} onChange={e => updateLineItem(index, 'unidad', e.target.value)} className="bg-white dark:bg-slate-800">
+                                        <div className="w-16">
+                                            <Input
+                                                type="number"
+                                                value={item.cantidad || ''}
+                                                onChange={e => updateLineItem(index, 'cantidad', parseFloat(e.target.value))}
+                                                placeholder="0"
+                                                className="text-center bg-slate-50 px-1 py-1 h-9 text-sm"
+                                            />
+                                        </div>
+                                        <div className="w-16">
+                                            <Select value={item.unidad} onChange={e => updateLineItem(index, 'unidad', e.target.value)} className="bg-slate-50 px-1 py-1 h-9 text-xs">
                                                 <option value="ml">ml</option>
                                                 <option value="cl">cl</option>
                                                 <option value="oz">oz</option>
-                                                <option value="l">L</option>
-                                                <option value="g">g</option>
-                                                <option value="kg">kg</option>
-                                                <option value="lb">lb</option>
                                                 <option value="und">und</option>
-                                                <option value="dash">dash</option>
-                                                <option value="barspoon">barspoon</option>
-                                                <option value="tsp">tsp</option>
-                                                <option value="gal">gal</option>
+                                                <option value="g">g</option>
+                                                <option value="dash">dsh</option>
                                             </Select>
                                         </div>
-                                        <div className="col-span-1 flex justify-center">
-                                            <Button type="button" variant="ghost" size="icon" onClick={() => removeLineItem(index)} className="hover:bg-red-100 hover:text-red-500 dark:hover:bg-red-900/30">
-                                                <Icon svg={ICONS.trash} className="h-4 w-4" />
-                                            </Button>
-                                        </div>
+                                        <button onClick={() => removeLineItem(index)} className="w-8 h-8 flex items-center justify-center text-slate-300 hover:text-red-500">
+                                            <Icon svg={ICONS.trash} className="h-4 w-4" />
+                                        </button>
                                     </div>
                                 ))}
                             </div>
@@ -304,54 +292,41 @@ export const RecipeFormModal: React.FC<RecipeFormModalProps> = ({ isOpen, onClos
                     </form>
                 </div>
 
-                {/* Footer */}
-                {/* Footer with Cost & Margin Logic */}
-                <div className="p-6 border-t border-slate-200/50 dark:border-slate-700/50 bg-slate-50/50 dark:bg-slate-800/50">
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-                        {/* Helper for Margin */}
+                {/* Compact Footer */}
+                <div className="p-4 border-t border-slate-200/50 bg-slate-50/80 backdrop-blur-md pb-8 md:pb-4 shrink-0 z-20">
+                    <div className="flex items-center justify-between gap-2">
                         {(() => {
                             const costo = currentCost;
                             const venta = parseFloat(String(recipe.precioVenta || 0));
-                            const iva = 0; // Assuming basic calc for now or user inputted Net Price? Let's assume Net for Grimorium fast calc.
                             const margen = venta > 0 ? ((venta - costo) / venta) * 100 : 0;
 
                             return (
                                 <>
-                                    <div className="p-3 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm">
-                                        <span className="text-xs text-slate-500 uppercase tracking-wider block mb-1">Costo Total</span>
-                                        <span className="text-2xl font-bold text-slate-800 dark:text-slate-100">€{costo.toFixed(2)}</span>
+                                    <div className="flex flex-col">
+                                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Costo</span>
+                                        <span className="text-lg font-bold text-slate-700">€{costo.toFixed(2)}</span>
                                     </div>
-                                    <div className="p-3 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm">
-                                        <span className="text-xs text-slate-500 uppercase tracking-wider block mb-1">Precio Venta (Neto)</span>
+                                    <div className="h-8 w-px bg-slate-200"></div>
+                                    <div className="flex flex-col flex-1 px-4">
+                                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Precio Venta</span>
                                         <div className="flex items-center">
-                                            <span className="text-lg font-medium text-slate-400 mr-1">€</span>
+                                            <span className="text-sm text-slate-400 mr-1">€</span>
                                             <input
                                                 type="number"
-                                                step="0.01"
-                                                className="w-full bg-transparent text-2xl font-bold text-slate-800 dark:text-slate-100 outline-none placeholder-slate-300"
-                                                placeholder="0.00"
                                                 value={recipe.precioVenta || ''}
-                                                onChange={e => {
-                                                    const val = parseFloat(e.target.value);
-                                                    setRecipe(prev => ({ ...prev, precioVenta: isNaN(val) ? 0 : val }));
-                                                }}
+                                                onChange={e => setRecipe({ ...recipe, precioVenta: parseFloat(e.target.value) })}
+                                                className="w-full bg-transparent font-bold text-lg text-slate-800 outline-none p-0"
+                                                placeholder="0.00"
                                             />
                                         </div>
                                     </div>
-                                    <div className={`p-3 rounded-xl border shadow-sm flex flex-col justify-center ${margen < 20 ? 'bg-red-50 border-red-200 text-red-700' : margen < 70 ? 'bg-amber-50 border-amber-200 text-amber-700' : 'bg-emerald-50 border-emerald-200 text-emerald-700'}`}>
-                                        <span className="text-xs uppercase tracking-wider block mb-1 opacity-80">Margen Bruto</span>
-                                        <span className="text-2xl font-bold">{margen.toFixed(1)}%</span>
+                                    <div className={`px-4 py-2 rounded-xl flex flex-col items-center justify-center min-w-[80px] ${margen < 20 ? 'bg-red-100 text-red-700' : 'bg-emerald-100 text-emerald-700'}`}>
+                                        <span className="text-[9px] font-black uppercase opacity-60">Margen</span>
+                                        <span className="text-sm font-black">{margen.toFixed(0)}%</span>
                                     </div>
                                 </>
                             );
                         })()}
-                    </div>
-
-                    <div className="flex justify-end gap-3">
-                        <Button variant="outline" onClick={onClose}>Cancelar</Button>
-                        <Button type="submit" form="recipe-form" className="bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-500/20 px-8">
-                            Guardar Receta
-                        </Button>
                     </div>
                 </div>
             </div>

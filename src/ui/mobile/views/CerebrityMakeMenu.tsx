@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { PageName, UserProfile } from '../types';
 import GlassCard from '../components/GlassCard';
 import PremiumButton from '../components/PremiumButton';
+import { CerebrityHeader } from '../components/CerebrityHeader';
 import { useRecipes } from '../../../hooks/useRecipes';
 import { useApp } from '../../../context/AppContext';
 
@@ -37,18 +38,20 @@ const CerebrityMakeMenu: React.FC<Props> = ({ onNavigate }) => {
         <div className="bg-transparent relative overflow-hidden flex flex-col h-full">
 
             {/* Header */}
-            <header className="px-5 pt-6 pb-4 relative z-10">
-                <div className="mb-6 px-2">
-                    <p className="text-[9px] font-bold text-zinc-900 uppercase tracking-[0.25em] mb-2 drop-shadow-sm">Cerebrity AI</p>
-                    <h1 className="text-5xl font-black text-zinc-900 tracking-tighter leading-[0.9] mb-2 drop-shadow-md">
-                        Make<br />
-                        <span className="text-zinc-700">Menu</span>
-                    </h1>
-                    <p className="text-xs text-zinc-700 max-w-xs leading-relaxed drop-shadow-sm">
-                        Genera menús completos optimizados para estacionalidad y rentabilidad.
-                    </p>
-                </div>
-            </header>
+            <CerebrityHeader
+                currentPage={PageName.CerebrityMakeMenu}
+                onNavigate={onNavigate}
+            />
+
+            {/* View Title Overlay (Large text as per user request) */}
+            <div className="px-7 -mt-2 mb-4 relative z-10">
+                <h2 className="text-4xl font-black text-zinc-900 tracking-tighter leading-none opacity-80 uppercase">
+                    Make Menu
+                </h2>
+                <p className="text-xs text-zinc-500 mt-1 font-bold uppercase tracking-widest opacity-60">
+                    Optimization Engine
+                </p>
+            </div>
 
             {/* Main Content */}
             <main className="flex-1 overflow-y-auto custom-scroll px-5 pb-32 space-y-4">

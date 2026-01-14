@@ -20,7 +20,8 @@ interface StockReplenishmentModalProps {
     ingredients: Ingredient[];
     onConfirm: (orders: { providerId: string; providerName: string; items: OrderItem[] }[]) => void;
     suppliers: any[];
-    initialOrder?: Order | null; // Support editing
+    initialOrder?: Order | null;
+    filterSupplierId?: string | null; // Added filter
 }
 
 export const StockReplenishmentModal: React.FC<StockReplenishmentModalProps> = ({
@@ -29,7 +30,8 @@ export const StockReplenishmentModal: React.FC<StockReplenishmentModalProps> = (
     ingredients = [],
     onConfirm,
     suppliers = [],
-    initialOrder
+    initialOrder,
+    filterSupplierId
 }) => {
     // Selection & Quantities
     const [selectedIds, setSelectedIds] = useState<string[]>([]);
@@ -75,8 +77,11 @@ export const StockReplenishmentModal: React.FC<StockReplenishmentModalProps> = (
         const groups: Record<string, { providerName: string, items: Ingredient[] }> = {};
 
         filtered.forEach(ing => {
-            // Find Provider
             const pid = ing.proveedor || 'unknown';
+
+            // Apply supplier filter if provided
+            if (filterSupplierId && pid !== filterSupplierId) return;
+
             const pname = suppliers.find(s => s.id === pid)?.name || (pid === 'unknown' ? 'Sin Proveedor Asignado' : pid);
 
             if (!groups[pid]) {
@@ -126,7 +131,12 @@ export const StockReplenishmentModal: React.FC<StockReplenishmentModalProps> = (
                     <div className="p-2 rounded-full bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-5 h-5"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" strokeLinecap="round" strokeLinejoin="round" /></svg>
                     </div>
-                    <span>Generar Pedidos por Proveedor</span>
+                    <span>
+                        {filterSupplierId
+                            ? `Generar Pedido: ${suppliers.find(s => s.id === filterSupplierId)?.name || 'Proveedor'}`
+                            : 'Generar Pedidos por Proveedor'
+                        }
+                    </span>
                 </div>
             }
             className="!max-w-5xl"
