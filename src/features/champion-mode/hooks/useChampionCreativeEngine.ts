@@ -26,6 +26,7 @@ export interface ChampionCreativeState {
         imageUrl?: string;   // Phase 2
         imagePrompt?: string; // Phase 2
         recipe: { ingredient: string; amount: string }[];
+        preparation_steps?: string[];
         method?: string;
         complexPreparations?: { name: string; yield: string; ingredients: string; method: string }[];
         glassware?: string;
@@ -47,6 +48,7 @@ export interface ChampionCreativeState {
 
     // Global Config
     availableBrands: string[];
+    availableCompetitionTypes: string[];
 }
 
 export const useChampionCreativeEngine = () => {
@@ -76,6 +78,10 @@ export const useChampionCreativeEngine = () => {
         availableBrands: (() => {
             const saved = localStorage.getItem('champion_brands');
             return saved ? JSON.parse(saved) : ['Nexus Spirits', 'Aether Gin', 'Solaris Rum', 'Vortex Vodka'];
+        })(),
+        availableCompetitionTypes: (() => {
+            const saved = localStorage.getItem('champion_comp_types');
+            return saved ? JSON.parse(saved) : ['Signature Serve', 'Sustainable Challenge', 'Speed Round', 'Storytelling'];
         })()
     });
 
@@ -291,6 +297,32 @@ export const useChampionCreativeEngine = () => {
         }));
     };
 
+    const addCompetitionType = (type: string) => {
+        if (!type || state.availableCompetitionTypes.includes(type)) return;
+        const updated = [...state.availableCompetitionTypes, type];
+        localStorage.setItem('champion_comp_types', JSON.stringify(updated));
+        setState(prev => ({
+            ...prev,
+            availableCompetitionTypes: updated,
+            brief: { ...prev.brief, competitionType: type }
+        }));
+    };
+
+    const removeCompetitionType = (type: string) => {
+        const updated = state.availableCompetitionTypes.filter((t: string) => t !== type);
+        localStorage.setItem('champion_comp_types', JSON.stringify(updated));
+        setState(prev => ({
+            ...prev,
+            availableCompetitionTypes: updated,
+            brief: {
+                ...prev.brief,
+                competitionType: prev.brief.competitionType === type
+                    ? (updated[0] || 'Signature Serve')
+                    : prev.brief.competitionType
+            }
+        }));
+    };
+
     return {
         state: { ...state, statusMessage },
         actions: {
@@ -313,6 +345,8 @@ export const useChampionCreativeEngine = () => {
             createTrainingPlan,
             addBrand,
             removeBrand,
+            addCompetitionType,
+            removeCompetitionType,
             setAiEvaluation: (evalData: any) => setState(prev => ({ ...prev, aiEvaluation: evalData }))
         }
     };

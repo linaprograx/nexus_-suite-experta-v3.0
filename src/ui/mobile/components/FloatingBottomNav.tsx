@@ -16,12 +16,15 @@ const FloatingBottomNav: React.FC<FloatingBottomNavProps> = ({ currentPage, onNa
         { page: PageName.GrimorioRecipes, icon: 'book_2', label: 'Recipes' },
         { page: PageName.GrimorioStock, icon: 'inventory_2', label: 'Stock' },
         { page: PageName.GrimorioMarket, icon: 'travel_explore', label: 'Market' },
+        { page: PageName.CerebritySynthesis, icon: 'auto_awesome', label: 'Synthesis' },
         { page: PageName.CerebrityMakeMenu, icon: 'edit_note', label: 'Make Menu' },
         { page: PageName.CerebrityCritic, icon: 'rate_review', label: 'Critic' },
         { page: PageName.CerebrityLab, icon: 'science', label: 'Lab' },
         { page: PageName.CerebrityTrend, icon: 'trending_up', label: 'Trends' },
         { page: PageName.Pizarron, icon: 'layers', label: 'Pizarrón' },
-        { page: PageName.AvatarCore, icon: 'person', label: 'Avatar' },
+        { page: PageName.AvatarCore, icon: 'person', label: 'Núcleo' },
+        { page: PageName.AvatarIntelligence, icon: 'psychology', label: 'Inteligencia' },
+        { page: PageName.AvatarCompetition, icon: 'emoji_events', label: 'Competición' },
         { page: PageName.Personal, icon: 'credit_card', label: 'Personal' },
         { page: PageName.Colegium, icon: 'school', label: 'Colegium' },
     ];
@@ -102,10 +105,17 @@ const FloatingBottomNav: React.FC<FloatingBottomNavProps> = ({ currentPage, onNa
                         ].includes(item.page);
 
                         const isCerebrityItem = [
+                            PageName.CerebritySynthesis,
                             PageName.CerebrityMakeMenu,
                             PageName.CerebrityCritic,
                             PageName.CerebrityLab,
                             PageName.CerebrityTrend
+                        ].includes(item.page);
+
+                        const isAvatarItem = [
+                            PageName.AvatarCore,
+                            PageName.AvatarIntelligence,
+                            PageName.AvatarCompetition
                         ].includes(item.page);
 
                         // If first grimorio item, wrap all 3 in border
@@ -175,8 +185,9 @@ const FloatingBottomNav: React.FC<FloatingBottomNavProps> = ({ currentPage, onNa
                         }
 
                         // Handle Cerebrity items (grouping)
-                        if (item.page === PageName.CerebrityMakeMenu) {
+                        if (item.page === PageName.CerebritySynthesis) {
                             const cerebrityPages = [
+                                PageName.CerebritySynthesis,
                                 PageName.CerebrityMakeMenu,
                                 PageName.CerebrityCritic,
                                 PageName.CerebrityLab,
@@ -247,8 +258,85 @@ const FloatingBottomNav: React.FC<FloatingBottomNavProps> = ({ currentPage, onNa
                             );
                         }
 
+                        // Handle Avatar items (grouping)
+                        if (item.page === PageName.AvatarCore) {
+                            const avatarPages = [
+                                PageName.AvatarCore,
+                                PageName.AvatarIntelligence,
+                                PageName.AvatarCompetition
+                            ];
+                            const isAnyAvatarActive = avatarPages.includes(currentPage);
+                            const avatarItems = navItems.filter(nav => avatarPages.includes(nav.page));
+
+                            // Get accurate theme accent for the ring
+                            const currentAvatarTheme = PAGE_THEMES[currentPage] || PAGE_THEMES['default'];
+                            const ringColor = isAnyAvatarActive ? currentAvatarTheme.accent : 'transparent';
+
+                            return (
+                                <div
+                                    key="avatar-group"
+                                    className={`flex gap-2 transition-all duration-500 ease-in-out ${isAnyAvatarActive ? 'border rounded-[2rem] p-1' : ''}`}
+                                    style={isAnyAvatarActive ? {
+                                        borderColor: ringColor,
+                                        borderWidth: '1.5px',
+                                        boxShadow: `0 0 15px ${ringColor}30`
+                                    } : {}}
+                                >
+                                    {avatarItems.map(aItem => {
+                                        const aActive = isActive(aItem.page);
+                                        const aTheme = PAGE_THEMES[aItem.page] || PAGE_THEMES['default'];
+                                        const aColor = aTheme.accent;
+
+                                        return (
+                                            <button
+                                                key={aItem.page}
+                                                onClick={() => onNavigate(aItem.page)}
+                                                className={`
+                                                    flex flex-col items-center justify-center
+                                                    w-[68px] h-14
+                                                    rounded-[1.5rem]
+                                                    transition-all duration-300
+                                                    flex-shrink-0
+                                                    ${aActive
+                                                        ? 'bg-white shadow-lg scale-110'
+                                                        : 'bg-transparent hover:bg-white/30 hover:scale-105'
+                                                    }
+                                                `}
+                                                style={aActive ? {
+                                                    boxShadow: `0 4px 20px ${aColor}40, 0 0 0 2px ${aColor}20`
+                                                } : {}}
+                                            >
+                                                <span
+                                                    className={`
+                                                        material-symbols-outlined !text-[22px] transition-colors
+                                                        ${aActive ? 'fill-1' : ''}
+                                                    `}
+                                                    style={{
+                                                        color: aActive ? aColor : '#71717a'
+                                                    }}
+                                                >
+                                                    {aItem.icon}
+                                                </span>
+                                                {aActive && (
+                                                    <div
+                                                        className="w-1.5 h-1.5 rounded-full mt-1"
+                                                        style={{ backgroundColor: aColor }}
+                                                    ></div>
+                                                )}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            );
+                        }
+
                         // Skip individual items already grouped
                         if (isCerebrityItem) {
+                            return null;
+                        }
+
+                        // Skip individual avatar items
+                        if (isAvatarItem) {
                             return null;
                         }
 

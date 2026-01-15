@@ -70,11 +70,7 @@ export const useCerebrityOrchestrator = () => {
     const generateWorldClassOutput = async (prompt_context: string): Promise<WorldClassOutput> => {
         setState(prev => ({ ...prev, isGenerating: true }));
 
-        // Simulate async work
-        await new Promise(resolve => setTimeout(resolve, 1500));
-
         const profile = getActiveProfile();
-
         // Gate: Only EXPERT (Platinum) or STUDIO (Jupiter) can generate World Class
         const canGenerateWorldClass = userPlan === 'EXPERT' || userPlan === 'STUDIO';
 
@@ -91,38 +87,56 @@ export const useCerebrityOrchestrator = () => {
             return fallback;
         }
 
-        if (!canGenerateWorldClass) {
-            const standardOutput: WorldClassOutput = {
-                titulo: `Generación Estándar: ${prompt_context}`,
-                intencion_cognitiva: "Ejecución funcional eficiente.",
-                decisiones_clave: ["Optimización de recursos", "Enfoque en viabilidad"],
-                ejecucion_tecnica: "Correcta y alineada a estándares de mercado.",
-                firma_world_class: "Bloqueado (Requiere Platinum)",
+        try {
+            const systemPrompt = `Actúa como un genio de la coctelería con estas características:
+- Tono: ${profile.tone}
+- Ejes de Investigación: ${profile.researchAxis.join(', ')}
+- Tolerancia al Riesgo: ${profile.riskTolerance}
+${!canGenerateWorldClass ? '\nNOTA: Genera una respuesta estándar, no World Class, ya que el usuario no tiene nivel Platinum.' : ''}
+
+JSON estrictamente con este esquema:
+{
+  "titulo": "Nombre creativo",
+  "intencion_cognitiva": "Explicación del porqué conceptual",
+  "decisiones_clave": ["Decisión 1", "Decisión 2"],
+  "ejecucion_tecnica": "Detalles de preparación",
+  "firma_world_class": "Una frase de autoría",
+  "is_world_class": ${canGenerateWorldClass}
+}`;
+
+            const { callGeminiApi } = await import('../utils/gemini');
+            const { safeParseJson } = await import('../utils/json');
+
+            const response = await callGeminiApi(
+                `Contexto: ${prompt_context}`,
+                systemPrompt,
+                { responseMimeType: "application/json" }
+            );
+
+            const result = safeParseJson(response.text);
+            if (result) {
+                const output = {
+                    ...result,
+                    is_world_class: canGenerateWorldClass && (result.is_world_class !== false)
+                };
+                setState(prev => ({ ...prev, isGenerating: false, lastGeneration: output }));
+                return output;
+            } else {
+                throw new Error("Invalid AI response format");
+            }
+        } catch (error) {
+            console.error("Synthesis Error:", error);
+            const errorFallback: WorldClassOutput = {
+                titulo: "Error de Generación",
+                intencion_cognitiva: "La IA no pudo procesar la solicitud en este momento.",
+                decisiones_clave: ["Verificar conexión", "Intentar de nuevo"],
+                ejecucion_tecnica: "N/A",
+                firma_world_class: "Soporte Nexus",
                 is_world_class: false
             };
-            setState(prev => ({ ...prev, isGenerating: false, lastGeneration: standardOutput }));
-            return standardOutput;
+            setState(prev => ({ ...prev, isGenerating: false }));
+            return errorFallback;
         }
-
-        // Logic for World Class
-        // We use the profile to "color" the output
-        const axisStr = profile.researchAxis.join(' + ');
-        const toneStr = profile.tone;
-
-        const worldClassOutput: WorldClassOutput = {
-            titulo: `${prompt_context} [${toneStr.toUpperCase()}]`,
-            intencion_cognitiva: `Manifestación de ${axisStr} filtrada por ${profile.riskTolerance}.`,
-            decisiones_clave: [
-                `Priorizar ${profile.researchAxis[0] || 'Técnica'} sobre accesibilidad.`,
-                profile.riskTolerance === 'Audaz' || profile.riskTolerance === 'Experimental' ? "Incorporar elementos disonantes intencionales." : "Asegurar armonía clásica."
-            ],
-            ejecucion_tecnica: `Precisión absoluta en ${axisStr}.`,
-            firma_world_class: `Sello de ${profile.name} // Nexus Elite`,
-            is_world_class: true
-        };
-
-        setState(prev => ({ ...prev, isGenerating: false, lastGeneration: worldClassOutput }));
-        return worldClassOutput;
     };
 
     // 2. Competition Jury Mode Logic

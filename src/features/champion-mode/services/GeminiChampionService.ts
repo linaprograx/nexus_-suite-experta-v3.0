@@ -185,17 +185,19 @@ export const GeminiChampionService = {
             const jsonText = response.text.replace(/```json|```/g, '').trim();
             const proposal = JSON.parse(jsonText);
 
-            // REAL VISUAL IDENTITY LAYER
-            // 1. Generate specialized visual prompt
-            const visualPrompt = await GeminiChampionService.generateVisualCocktailPrompt(proposal);
+            // OPTIMIZATION: Parallelize visual tasks
+            const [visualData, visualAnalysis] = await Promise.all([
+                (async () => {
+                    const prompt = await GeminiChampionService.generateVisualCocktailPrompt(proposal);
+                    const url = await GeminiChampionService.generateCocktailImage(prompt);
+                    return { prompt, url };
+                })(),
+                GeminiChampionService.generateVisualImpactAssessment(proposal)
+            ]);
 
-            // 2. Generate Image
-            proposal.imageUrl = await GeminiChampionService.generateCocktailImage(visualPrompt);
-            proposal.imagePrompt = visualPrompt; // Update with the better prompt
-
-            // 3. Generate Visual Impact Assessment
-            proposal.visualAnalysis = await GeminiChampionService.generateVisualImpactAssessment(proposal);
-
+            proposal.imageUrl = visualData.url;
+            proposal.imagePrompt = visualData.prompt;
+            proposal.visualAnalysis = visualAnalysis;
 
             return proposal;
         } catch (e) {

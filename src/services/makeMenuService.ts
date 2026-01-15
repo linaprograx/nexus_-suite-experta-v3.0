@@ -2,6 +2,7 @@ import { Type } from "@google/genai";
 import { collection, addDoc, serverTimestamp, Firestore } from "firebase/firestore";
 import { callGeminiApi } from "../utils/gemini";
 import { Recipe, PizarronTask, MenuLayout } from "../types";
+import { safeParseJson } from "../utils/json";
 
 export interface MenuDesignProposal {
     id: string;
@@ -18,7 +19,15 @@ export const makeMenuService = {
      * Generates 3 menu design proposals using the Gemini engine.
      * This is the canonical algorithm used by Make Menu.
      */
-    async generateProposals(recipes: Recipe[], tasks: any[], sections: string[], menuContext: 'cocktails' | 'food' = 'cocktails'): Promise<MenuDesignProposal[]> { // Added menuContext
+    async generateProposals(
+        recipes: Recipe[],
+        tasks: any[],
+        sections: string[],
+        menuContext: 'cocktails' | 'food' = 'cocktails',
+        style: string = 'Moderno',
+        color: string = '#14b8a6'
+    ): Promise<MenuDesignProposal[]> {
+
         const contextPrompt = recipes.map(r => r.nombre).join(', ');
         // Support PizarronTask[] (legacy) or string[]
         const taskTexts = tasks.map(t => typeof t === 'string' ? t : t.texto || '');
@@ -38,6 +47,10 @@ export const makeMenuService = {
         You are an expert Menu Graphic Designer. 
         ${contextInstructions}
         
+        USER PREFERENCES:
+        - Style: ${style}
+        - Main Color Accent: ${color} (Use this color for titles, lines, or highlights in the HTML).
+
         Generate exactly 3 DISTINCT design proposals. They must be structurally and conceptually unique.
         
         1. Variant A (Narrative/Editorial): Story, philosophy, complex descriptions, grouped by mood or origin.
@@ -57,7 +70,7 @@ export const makeMenuService = {
         Return strictly a JSON array.
         `;
 
-        const userQuery = `Create 3 layouts for: ${contextPrompt}. Total Items: ${recipes.length}.`;
+        const userQuery = `Create 3 layouts for: ${contextPrompt}. Style: ${style}. Accent Color: ${color}. Total Items: ${recipes.length}.`;
 
         const generationConfig = {
             responseMimeType: "application/json",
@@ -90,8 +103,11 @@ export const makeMenuService = {
             const response = await callGeminiApi(userQuery, systemPrompt, generationConfig);
             if (!response.text) throw new Error("La IA no devolvió texto válido.");
 
-            const cleanText = response.text.replace(/```json/g, '').replace(/```/g, '').trim();
-            const results: any[] = JSON.parse(cleanText);
+            const results = safeParseJson(response.text);
+            if (!results || !Array.isArray(results)) {
+                console.error("[MakeMenuService] Invalid response format:", response.text);
+                throw new Error("La IA no devolvió un formato válido.");
+            }
 
             return results.map((r, i) => {
                 // Map itemIndices to actual IDs

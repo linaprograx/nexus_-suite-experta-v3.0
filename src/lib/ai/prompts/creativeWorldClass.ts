@@ -11,11 +11,11 @@ INPUTS:
 - PALETA VISUAL: {{palette}}
 - ESTILO: {{visualRefs}}
 
-GENERA UN JSON EXTRICTO CON ESTA ESTRUCTURA (NO AÑADAS TEXTO FUERA DEL JSON):
+GENERA UN JSON ESTRICTO CON ESTA ESTRUCTURA (NO AÑADAS TEXTO FUERA DEL JSON):
 
 {
-  "title": "Nombre del Cóctel (Memorable, Corto, Vinculado a la Marca)",
-  "shortIntro": "Hook conceptual de 2-3 líneas. Vende el concepto.",
+  "title": "Nombre del Cóctel (EVOCATIVO, CON ALMA, SIN USAR LA PALABRA 'NEXUS'. Debe transmitir la esencia y el concepto)",
+  "shortIntro": "Hook conceptual de 2-3 líneas. Cuenta la historia detrás del cóctel de forma persuasiva.",
   "imagePrompt": "Prompt detallado para generación de imagen (Ultra-realistic, 8k, professional studio lighting, focus on texture and garnish, cinematic stroke)",
   "recipe": [
     { "ingredient": "Nombre (incluyendo marca si aplica)", "amount": "Cantidad (ml/gr/dash)" }
@@ -33,7 +33,12 @@ GENERA UN JSON EXTRICTO CON ESTA ESTRUCTURA (NO AÑADAS TEXTO FUERA DEL JSON):
     "description": "Descripción visual y funcional."
   },
   "glassware": "Tipo de vaso/copa específico (ej: Kimura Crumple, Nude Savage)",
-  "method": "Método de elaboración final (ej: Stirred, Thrown, Shake & Fine Strain)",
+  "preparation_steps": [
+    "Paso 1 detallado",
+    "Paso 2 detallado",
+    "Paso 3 detallado... Incluye temperaturas, tiempos y técnica precisa"
+  ],
+  "method": "Clasificación general (ej: Stirred, Thrown, Shake & Fine Strain)",
   "ritual": "Descripción del ritual de servicio paso a paso para el jurado. WOW factor.",
   "flavorProfile": {
     "aroma": "Notas olfativas",
@@ -50,8 +55,10 @@ GENERA UN JSON EXTRICTO CON ESTA ESTRUCTURA (NO AÑADAS TEXTO FUERA DEL JSON):
 
 REGLAS DE ORO:
 1. Respeta las restricciones ({{constraints}}) A RAJATABLA.
-2. Si el concepto es simple, elévalo con técnica. Si es complejo, refínalo.
-3. Usa ingredientes reales y técnicas modernas (Fat-wash, Milk Punch, Oleo Saccharum) si encajan.
-4. NUNCA inventes ingredientes imposibles, deben ser plausibles en un bar de alta gama.
-5. El tono debe ser SOFISTICADO, TÉCNICO y PERSUASIVO.
+2. La MARCA PATROCINADORA ({{brand}}) debe ser la PROTAGONISTA. El nombre, los ingredientes y la historia deben gritar la identidad de {{brand}}.
+3. Si el concepto es simple, elévalo con técnica. Si es complejo, refínalo.
+4. Usa ingredientes reales y técnicas modernas (Fat-wash, Milk Punch, Oleo Saccharum) si encajan.
+5. NUNCA inventes ingredientes imposibles, deben ser plausibles en un bar de alta gama.
+6. El tono debe ser SOFISTICADO, TÉCNICO y PERSUASIVO.
+7. El nombre NO debe contener la palabra NEXUS ni variaciones genéricas. Busca impacto emocional y vínculo directo con {{brand}}.
 `;

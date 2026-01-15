@@ -15,6 +15,7 @@ interface PremiumButtonProps {
     glowEffect?: boolean;
     customGradient?: string;
     customColor?: string;
+    loading?: boolean;
 }
 
 const PremiumButton: React.FC<PremiumButtonProps> = ({
@@ -31,6 +32,7 @@ const PremiumButton: React.FC<PremiumButtonProps> = ({
     glowEffect = true,
     customGradient,
     customColor,
+    loading = false,
 }) => {
     // Size classes
     const sizeClasses = {
@@ -118,9 +120,14 @@ const PremiumButton: React.FC<PremiumButtonProps> = ({
       `}
             style={variantStyles}
         >
-            {icon && iconPosition === 'left' && <span className="flex-shrink-0">{icon}</span>}
-            <span>{children}</span>
-            {icon && iconPosition === 'right' && <span className="flex-shrink-0">{icon}</span>}
+            {icon && iconPosition === 'left' && !loading && <span className="flex-shrink-0">{icon}</span>}
+            {loading && (
+                <span className="material-symbols-outlined animate-spin text-inherit !text-lg">
+                    sync
+                </span>
+            )}
+            <span>{loading ? 'Procesando...' : children}</span>
+            {icon && iconPosition === 'right' && !loading && <span className="flex-shrink-0">{icon}</span>}
         </button>
     );
 };

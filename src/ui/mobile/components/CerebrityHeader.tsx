@@ -1,5 +1,6 @@
 import React from 'react';
 import { PageName, PAGE_THEMES } from '../types';
+import { useCerebrityOrchestrator } from '../../../hooks/useCerebrityOrchestrator';
 
 interface CerebrityHeaderProps {
     currentPage: PageName;
@@ -11,6 +12,7 @@ export const CerebrityHeader: React.FC<CerebrityHeaderProps> = ({
     onNavigate
 }) => {
     const sections = [
+        { id: PageName.CerebritySynthesis, label: 'SYNTESIS', icon: 'auto_awesome' },
         { id: PageName.CerebrityMakeMenu, label: 'MAKE MENU', icon: 'edit_note' },
         { id: PageName.CerebrityCritic, label: 'CRITIC', icon: 'rate_review' },
         { id: PageName.CerebrityLab, label: 'THE LAB', icon: 'science' },
@@ -21,18 +23,18 @@ export const CerebrityHeader: React.FC<CerebrityHeaderProps> = ({
     const activeColor = activeTheme.accent;
 
     return (
-        <header className="pt-6 pb-4 px-5 z-10 relative">
+        <header className="pt-4 pb-2 px-5 z-10 relative">
             {/* Title Section */}
-            <div className="mb-6 px-2">
-                <h1 className="text-6xl font-black text-zinc-900 italic tracking-tighter leading-[0.9] mb-1"
-                    style={{ fontFamily: 'Georgia, serif' }}>
+            <div className="mb-4 px-2">
+                <h1 className="text-4xl font-black text-white italic tracking-tighter leading-[0.9] mb-1"
+                    style={{ fontFamily: 'Georgia, serif', textShadow: '0 4px 20px rgba(0,0,0,0.3)' }}>
                     Cerebrity
                 </h1>
                 <div className="flex items-center gap-2">
-                    <span className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.3em]">
+                    <span className="text-[10px] font-black text-white/50 uppercase tracking-[0.3em]">
                         Artificial Intelligence
                     </span>
-                    <div className="h-px flex-1 bg-zinc-200"></div>
+                    <div className="h-px flex-1 bg-white/10"></div>
                 </div>
             </div>
 
@@ -48,7 +50,7 @@ export const CerebrityHeader: React.FC<CerebrityHeaderProps> = ({
                             key={section.id}
                             onClick={() => onNavigate(section.id)}
                             className={`
-                                px-5 py-2.5 rounded-full text-[9px] font-black uppercase tracking-widest 
+                                px-4 py-2 rounded-full text-[8px] font-black uppercase tracking-widest 
                                 whitespace-nowrap transition-all relative flex items-center gap-2
                                 ${isActive
                                     ? 'bg-white text-zinc-800 shadow-lg scale-105'
