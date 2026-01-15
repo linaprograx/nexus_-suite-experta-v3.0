@@ -146,50 +146,50 @@ void main(){
 `;
 
 const CinematicPlane = () => {
-    const mesh = useRef<THREE.Mesh>(null);
-    const { size } = useThree();
-    const intro = useRef(0);
+  const mesh = useRef<THREE.Mesh>(null);
+  const { size } = useThree();
+  const intro = useRef(0);
 
-    const uniforms = useMemo(() => ({
-        uTime: { value: 0 },
-        uResolution: { value: new THREE.Vector2(size.width, size.height) },
-        uIntro: { value: 0 }
-    }), []);
+  const uniforms = useMemo(() => ({
+    uTime: { value: 0 },
+    uResolution: { value: new THREE.Vector2(size.width, size.height) },
+    uIntro: { value: 0 }
+  }), []);
 
-    useEffect(() => {
-        uniforms.uResolution.value.set(size.width, size.height);
-    }, [size]);
+  useEffect(() => {
+    uniforms.uResolution.value.set(size.width, size.height);
+  }, [size]);
 
-    useFrame((state, delta) => {
-        if (!mesh.current) return;
-        const mat = mesh.current.material as THREE.ShaderMaterial;
-        mat.uniforms.uTime.value = state.clock.getElapsedTime();
-        intro.current = Math.min(1, intro.current + delta / 1.2);
-        mat.uniforms.uIntro.value = intro.current;
-    });
+  useFrame((state, delta) => {
+    if (!mesh.current) return;
+    const mat = mesh.current.material as THREE.ShaderMaterial;
+    mat.uniforms.uTime.value = state.clock.getElapsedTime();
+    intro.current = Math.min(1, intro.current + delta / 1.2);
+    mat.uniforms.uIntro.value = intro.current;
+  });
 
-    return (
-        <mesh ref={mesh}>
-            <planeGeometry args={[2, 2]} />
-            <shaderMaterial
-                fragmentShader={fragmentShader}
-                vertexShader={vertexShader}
-                uniforms={uniforms}
-                depthWrite={false}
-            />
-        </mesh>
-    );
+  return (
+    <mesh ref={mesh}>
+      <planeGeometry args={[2, 2]} />
+      <shaderMaterial
+        fragmentShader={fragmentShader}
+        vertexShader={vertexShader}
+        uniforms={uniforms}
+        depthWrite={false}
+      />
+    </mesh>
+  );
 };
 
 export const AuthBackground = () => (
-    <div className="fixed inset-0 z-0 pointer-events-none bg-[#010205]">
-        <Canvas
-            key="auth-bg-nexus-final"
-            camera={{ position: [0, 0, 1] }}
-            gl={{ antialias: false, depth: false }}
-            dpr={[1, 1.5]}
-        >
-            <CinematicPlane />
-        </Canvas>
-    </div>
+  <div className="absolute inset-0 z-0 pointer-events-none bg-[#010205]">
+    <Canvas
+      key="auth-bg-nexus-final"
+      camera={{ position: [0, 0, 1] }}
+      gl={{ antialias: false, depth: false }}
+      dpr={[1, 1.5]}
+    >
+      <CinematicPlane />
+    </Canvas>
+  </div>
 );

@@ -19,7 +19,9 @@ export enum PageName {
 
 export interface UserProfile {
     name: string;
+    displayName?: string;
     photo: string;
+    photoURL?: string;
     role: string;
 }
 

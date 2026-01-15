@@ -25,8 +25,8 @@ const FloatingBottomNav: React.FC<FloatingBottomNavProps> = ({ currentPage, onNa
         { page: PageName.AvatarCore, icon: 'person', label: 'Núcleo' },
         { page: PageName.AvatarIntelligence, icon: 'psychology', label: 'Inteligencia' },
         { page: PageName.AvatarCompetition, icon: 'emoji_events', label: 'Competición' },
-        { page: PageName.Personal, icon: 'credit_card', label: 'Personal' },
         { page: PageName.Colegium, icon: 'school', label: 'Colegium' },
+        { page: PageName.Personal, icon: 'dvr', label: 'Personal' },
     ];
 
     // Determine if a nav item should be highlighted

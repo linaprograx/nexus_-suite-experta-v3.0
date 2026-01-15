@@ -1,8 +1,12 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo } from 'react';
 import { PageName, UserProfile } from '../types';
-import GlassCard from '../components/GlassCard';
+import { useApp } from '../../../context/AppContext';
 import PremiumButton from '../components/PremiumButton';
+import { useDashboardMetrics } from '../../../features/dashboard/useDashboardMetrics';
+import { useRecipes } from '../../../hooks/useRecipes';
 import { useIngredients } from '../../../hooks/useIngredients';
+import { usePizarronData } from '../../../hooks/usePizarronData';
+import { motion } from 'framer-motion';
 
 interface DashboardProps {
     onNavigate: (page: PageName) => void;
@@ -11,356 +15,189 @@ interface DashboardProps {
 }
 
 const Dashboard: React.FC<DashboardProps> = ({ onNavigate, user }) => {
-    const { ingredients } = useIngredients();
-    const [activeTab, setActiveTab] = useState<'overview' | 'analytics' | 'system'>('overview');
+    // 1. Data Hooks
+    const { userProfile: globalUserProfile } = useApp(); // Get global profile
+    // Merge prop with global context for PhotoURL stability, prioritizing global
+    const effectiveUser = { ...user, ...globalUserProfile };
+    const userPhoto = effectiveUser?.photoURL || user?.photoURL;
+    const displayName = effectiveUser?.displayName || user?.name || 'Lian';
+    const displayRole = effectiveUser?.role || user?.role || 'Mixologist';
 
-    const TAB_LABELS = {
-        overview: 'General',
-        analytics: 'Analíticas',
-        system: 'Sistema'
-    };
+    const { recipes: allRecipes } = useRecipes();
+    const { ingredients: allIngredients } = useIngredients();
+    const { tasks: allPizarronTasks } = usePizarronData();
 
-    // Calculate real stats from ingredients
-    const stats = useMemo(() => {
-        const lowStockCount = ingredients.filter(i => (i.stock || 0) <= (i.minStock || 0)).length;
-
-        return [
-            { label: 'Operaciones', value: '98%', status: 'óptimo', color: '#10B981', icon: 'check_circle' },
-            { label: 'Rendimiento', value: '94%', status: 'alto', color: '#0066FF', icon: 'speed' },
-            { label: 'Red', value: '112ms', status: 'estable', color: '#6366F1', icon: 'signal_cellular_alt' },
-            { label: 'Sincronización', value: 'Activa', status: 'sincronizado', color: '#00E5FF', icon: 'cloud_done' },
-        ];
-    }, [ingredients]);
+    // 2. Intelligence Hook
+    const {
+        nba: { data: nbaData },
+        kpis,
+        creativeTrendData,
+    } = useDashboardMetrics({
+        allRecipes,
+        allPizarronTasks,
+        allIngredients,
+        userProfile: user
+    });
 
     return (
-        <div className="px-5 py-6 pb-32 overflow-y-auto custom-scroll">
+        <div className="px-5 pt-8 pb-32 min-h-full bg-[#F8F9FA] dark:bg-[#0f172a] transition-colors duration-500">
 
-            {/* Header */}
-            <header className="mb-6">
-                <p className="text-[10px] font-black tracking-[0.2em] text-white/80 uppercase mb-2">Nexus Suite v3.0</p>
-                <h1 className="text-6xl font-extrabold text-white tracking-tighter leading-[0.9] mb-4">
-                    NEXUS<br />
-                    <span className="text-white/70">DASHBOARD</span>
-                </h1>
-
-                {/* Tab Pills */}
-                <div className="flex gap-2 overflow-x-auto scrollbar-hide">
-                    {(['overview', 'analytics', 'system'] as const).map(tab => (
-                        <button
-                            key={tab}
-                            onClick={() => setActiveTab(tab)}
-                            className={`px-6 py-2.5 rounded-full text-[10px] font-black uppercase tracking-widest shadow-md whitespace-nowrap transition-all ${activeTab === tab
-                                ? 'bg-white text-blue-600'
-                                : 'bg-white/20 backdrop-blur-md border border-white/30 text-white hover:bg-white/30'
-                                }`}
-                        >
-                            {TAB_LABELS[tab]}
-                        </button>
-                    ))}
+            {/* A. CONTEXT HEADER (Desktop Parity) */}
+            <header className="flex items-center justify-between mb-8">
+                <div>
+                    <h1 className="text-2xl font-serif font-medium text-slate-900 dark:text-white leading-tight">
+                        Buenas noches, <span className="text-indigo-600 dark:text-indigo-400 font-semibold">{displayName}</span>
+                    </h1>
+                    <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mt-1 flex items-center gap-2">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                        {displayRole} • "Servicio Estándar"
+                    </p>
+                </div>
+                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 p-[2px] shadow-lg">
+                    <div className="w-full h-full rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center overflow-hidden border-2 border-transparent">
+                        {userPhoto ? (
+                            <img src={userPhoto} alt="Avatar" className="w-full h-full object-cover" />
+                        ) : (
+                            <span className="text-lg font-bold text-indigo-600 dark:text-indigo-400">{displayName.charAt(0)}</span>
+                        )}
+                    </div>
                 </div>
             </header>
 
-            {/* OVERVIEW TAB */}
-            {activeTab === 'overview' && (
-                <>
-                    {/* System Status Cards */}
-                    <section className="space-y-4 mb-6">
-                        {stats.map((stat, i) => (
-                            <GlassCard
-                                key={i}
-                                rounded="3xl"
-                                padding="md"
-                                className="relative group"
-                            >
-                                <div className="flex items-center justify-between">
-                                    <div className="flex items-center gap-4">
-                                        <div
-                                            className="w-14 h-14 rounded-2xl flex items-center justify-center text-white shadow-lg"
-                                            style={{
-                                                backgroundColor: stat.color,
-                                                boxShadow: `0 8px 20px -6px ${stat.color}60`
-                                            }}
-                                        >
-                                            <span className="material-symbols-outlined text-2xl fill-1">{stat.icon}</span>
-                                        </div>
-                                        <div>
-                                            <h3 className="text-lg font-bold text-zinc-900 mb-1">{stat.label}</h3>
-                                            <p className="text-xs font-medium text-zinc-500">Estado: {stat.status}</p>
-                                        </div>
-                                    </div>
-                                    <div className="text-right">
-                                        <span
-                                            className="text-3xl font-black tracking-tight"
-                                            style={{ color: stat.color }}
-                                        >
-                                            {stat.value}
-                                        </span>
-                                    </div>
-                                </div>
+            {/* B. OPERATIONAL SNAPSHOT (White Card) */}
+            <div className="bg-white dark:bg-slate-800 rounded-[2rem] p-6 shadow-[0_8px_30px_rgba(0,0,0,0.04)] dark:shadow-none mb-6 border border-slate-100 dark:border-slate-700 transition-colors duration-500">
+                <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-6">Snapshot Operativo</h3>
+                <div className="grid grid-cols-2 gap-y-8 gap-x-4">
+                    {/* Metric 1 */}
+                    <div>
+                        <h4 className="text-3xl font-bold text-slate-900 dark:text-white mb-1">{allRecipes.length || 17}</h4>
+                        <p className="text-xs font-medium text-indigo-500 dark:text-indigo-400 flex items-center gap-1">
+                            <span className="material-symbols-outlined text-[14px]">menu_book</span> Recetas
+                        </p>
+                    </div>
+                    {/* Metric 2 */}
+                    <div>
+                        <h4 className="text-3xl font-bold text-slate-900 dark:text-white mb-1">{kpis.ideasCount || 98}</h4>
+                        <p className="text-xs font-medium text-amber-500 dark:text-amber-400 flex items-center gap-1">
+                            <span className="material-symbols-outlined text-[14px]">lightbulb</span> Ideas
+                        </p>
+                    </div>
+                    {/* Metric 3 */}
+                    <div className="border-t border-slate-100 dark:border-slate-700 pt-6">
+                        <h4 className="text-3xl font-bold text-slate-900 dark:text-white mb-1">33h</h4>
+                        <p className="text-xs font-medium text-slate-400 uppercase tracking-wider">Ahorro Tiempo</p>
+                    </div>
+                    {/* Metric 4 */}
+                    <div className="border-t border-slate-100 dark:border-slate-700 pt-6">
+                        <h4 className="text-3xl font-bold text-slate-900 dark:text-white mb-1">85%</h4>
+                        <p className="text-xs font-medium text-slate-400 uppercase tracking-wider">Ritmo Creativo</p>
+                    </div>
+                </div>
+            </div>
 
-                                {/* Progress Bar */}
-                                {stat.value.includes('%') && (
-                                    <div className="mt-4">
-                                        <div className="w-full bg-zinc-100 rounded-full h-1.5">
-                                            <div
-                                                className="h-1.5 rounded-full transition-all"
-                                                style={{
-                                                    width: stat.value,
-                                                    backgroundColor: stat.color
-                                                }}
-                                            ></div>
-                                        </div>
-                                    </div>
-                                )}
-                            </GlassCard>
-                        ))}
-                    </section>
+            {/* C. HERO AI (Purple Card - Exact Replica) */}
+            <div className="relative rounded-[2rem] p-6 mb-6 overflow-hidden shadow-[0_20px_40px_-10px_rgba(79,70,229,0.3)] bg-gradient-to-br from-[#4338ca] to-[#7e22ce] text-white">
+                {/* Top Label */}
+                <div className="flex justify-between items-start mb-6">
+                    <div className="px-3 py-1 rounded-full bg-white/10 backdrop-blur-md border border-white/20 flex items-center gap-2">
+                        <span className="material-symbols-outlined text-[12px] animate-pulse text-white">auto_awesome</span>
+                        <span className="text-[9px] font-bold uppercase tracking-wider text-white">Recomendación IA</span>
+                    </div>
+                    <span className="material-symbols-outlined text-white/50 text-lg">refresh</span>
+                </div>
 
-                    {/* AI Next Best Action */}
-                    <GlassCard rounded="3xl" padding="lg" className="bg-gradient-to-r from-blue-50 to-transparent mb-6">
-                        <div className="flex items-center gap-4 mb-5">
-                            <div className="w-16 h-16 rounded-2xl bg-blue-600 flex items-center justify-center text-white shadow-xl action-glow-blue">
-                                <span className="material-symbols-outlined text-3xl fill-1">auto_awesome</span>
+                {/* Content */}
+                <h2 className="text-2xl font-bold leading-tight mb-4">
+                    {nbaData?.title || "Prueba y estandariza la receta 'PULSO'"}
+                </h2>
+                <p className="text-sm text-indigo-100 leading-relaxed mb-8 opacity-90 font-medium">
+                    {nbaData?.description || "Esto iniciará el proceso de llevar recetas existentes a un estado de terminación para el menú FENÓMENO."}
+                </p>
+
+                {/* Action Bar */}
+                <div className="flex items-center gap-3">
+                    <div className="px-3 py-2 rounded-lg bg-white/10 border border-white/10 text-[10px] font-bold uppercase tracking-wider">
+                        Media
+                    </div>
+                    <div className="px-3 py-2 rounded-lg bg-white/10 border border-white/10 text-[10px] font-bold uppercase tracking-wider flex items-center gap-1">
+                        <span className="material-symbols-outlined text-[12px]">schedule</span> 3m
+                    </div>
+
+                    <button
+                        onClick={() => onNavigate(nbaData?.actionRoute ? (nbaData.actionRoute as PageName) : PageName.CerebritySynthesis)}
+                        className="flex-1 bg-white text-indigo-700 py-3 rounded-xl text-xs font-bold uppercase tracking-widest hover:bg-indigo-50 transition-colors flex items-center justify-center gap-2 shadow-lg"
+                    >
+                        Ejecutar <span className="material-symbols-outlined text-sm">arrow_forward</span>
+                    </button>
+                </div>
+            </div>
+
+            {/* D. PIZARRÓN HOY (White Card) */}
+            <div className="bg-white dark:bg-slate-800 rounded-[2rem] p-6 shadow-[0_8px_30px_rgba(0,0,0,0.04)] dark:shadow-none mb-6 border border-slate-100 dark:border-slate-700 transition-colors duration-500">
+                <div className="flex items-center justify-between mb-6">
+                    <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Pizarrón Hoy</h3>
+                    <button onClick={() => onNavigate(PageName.Pizarron)} className="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider hover:underline">Ver Todo</button>
+                </div>
+
+                <div className="space-y-4">
+                    {/* Active Tasks or Fallback */}
+                    {(allPizarronTasks.length > 0 ? allPizarronTasks.slice(0, 3) : [
+                        { title: 'Low Waste Concept', status: 'urgente', label: 'Prioridad' },
+                        { title: 'Margarita Clásica', status: 'desarrollo', label: 'Desarrollo' },
+                        { title: 'Terminar Recetario', status: 'revision', label: 'Revisión' }
+                    ]).map((task: any, i) => (
+                        <div key={i} className="group">
+                            <div className="flex items-center gap-3 mb-1">
+                                <span className={`w-2 h-2 rounded-full ${i === 0 ? 'bg-rose-500' : 'bg-amber-400'}`}></span>
+                                <h4 className="text-sm font-bold text-slate-800 dark:text-slate-200">{task.title}</h4>
                             </div>
-                            <div className="flex-1">
-                                <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-[8px] font-black uppercase tracking-wider">
-                                    Recomendación IA
+                            <div className="pl-5 flex gap-2">
+                                <span className="px-2 py-0.5 bg-slate-100 text-slate-500 rounded text-[9px] font-bold uppercase tracking-wider">
+                                    {task.label || 'Tarea'}
                                 </span>
-                                <h3 className="text-xl font-black text-zinc-900 mt-2 mb-1">Sintetizar Nuevo Menú</h3>
-                                <p className="text-xs text-zinc-600 font-medium">3 cócteles listos para revisar en Cerebrity</p>
+                                {i === 0 && (
+                                    <span className="px-2 py-0.5 bg-rose-50 text-rose-600 rounded text-[9px] font-bold uppercase tracking-wider flex items-center gap-1">
+                                        <span className="material-symbols-outlined text-[10px]">timer</span> Urgente
+                                    </span>
+                                )}
                             </div>
                         </div>
+                    ))}
+                </div>
 
-                        <div className="flex gap-2">
-                            <button
-                                className="flex-[0.4] py-3 rounded-2xl text-[10px] font-black text-zinc-500 bg-zinc-100 border border-zinc-200 uppercase tracking-wider hover:bg-zinc-200 transition-colors"
-                            >
-                                Más Tarde
-                            </button>
-                            <PremiumButton
-                                module="dashboard"
-                                variant="gradient"
-                                size="md"
-                                icon={<span className="material-symbols-outlined !text-sm">arrow_forward</span>}
-                                iconPosition="right"
-                                className="flex-1"
-                                onClick={() => onNavigate(PageName.CerebritySynthesis)}
-                            >
-                                ABRIR CEREBRITY
-                            </PremiumButton>
+                <button
+                    onClick={() => onNavigate(PageName.Pizarron)}
+                    className="w-full mt-6 py-3 rounded-xl bg-indigo-50 text-indigo-600 text-xs font-bold uppercase tracking-widest hover:bg-indigo-100 transition-colors flex items-center justify-center gap-2"
+                >
+                    <span className="material-symbols-outlined text-sm">add</span> Nueva Tarea
+                </button>
+            </div>
+
+            {/* E. QUICK ACTIONS (2x2 Grid) */}
+            <div className="grid grid-cols-2 gap-4 mb-8">
+                {[
+                    { label: 'Nueva Receta', icon: 'flask', color: 'text-emerald-500', bg: 'bg-emerald-50', route: PageName.GrimorioRecipes },
+                    { label: 'Explorar', icon: 'search', color: 'text-purple-500', bg: 'bg-purple-50', route: PageName.CerebritySynthesis },
+                    { label: 'Idea Rápida', icon: 'lightbulb', color: 'text-amber-500', bg: 'bg-amber-50', route: PageName.Pizarron },
+                    { label: 'Analizar', icon: 'analytics', color: 'text-rose-500', bg: 'bg-rose-50', route: PageName.GrimorioStock },
+                ].map((action, i) => (
+                    <div
+                        key={i}
+                        onClick={() => onNavigate(action.route)}
+                        className="bg-white p-5 rounded-3xl shadow-[0_4px_20px_rgba(0,0,0,0.02)] border border-slate-100 flex flex-col items-center justify-center gap-3 cursor-pointer active:scale-95 transition-transform"
+                    >
+                        <div className={`w-10 h-10 rounded-full ${action.bg} ${action.color} flex items-center justify-center`}>
+                            <span className="material-symbols-outlined text-lg">{action.icon}</span>
                         </div>
-                    </GlassCard>
-
-                    {/* Quick Actions Grid */}
-                    <section className="grid grid-cols-2 gap-3">
-                        <GlassCard
-                            rounded="2xl"
-                            padding="md"
-                            className="cursor-pointer active:scale-95 transition-all"
-                            onClick={() => onNavigate(PageName.GrimorioStock)}
-                        >
-                            <div className="w-10 h-10 rounded-xl bg-red-100 text-red-600 flex items-center justify-center mb-3">
-                                <span className="material-symbols-outlined fill-1">inventory_2</span>
-                            </div>
-                            <h4 className="text-sm font-bold text-zinc-900 mb-1">Inventario</h4>
-                            <p className="text-[10px] text-zinc-500 font-medium">Ver alertas</p>
-                        </GlassCard>
-
-                        <GlassCard
-                            rounded="2xl"
-                            padding="md"
-                            className="cursor-pointer active:scale-95 transition-all"
-                            onClick={() => onNavigate(PageName.GrimorioRecipes)}
-                        >
-                            <div className="w-10 h-10 rounded-xl bg-orange-100 text-orange-600 flex items-center justify-center mb-3">
-                                <span className="material-symbols-outlined fill-1">book_2</span>
-                            </div>
-                            <h4 className="text-sm font-bold text-zinc-900 mb-1">Recetas</h4>
-                            <p className="text-[10px] text-zinc-500 font-medium">Ver lógica</p>
-                        </GlassCard>
-
-                        <GlassCard
-                            rounded="2xl"
-                            padding="md"
-                            className="cursor-pointer active:scale-95 transition-all"
-                            onClick={() => onNavigate(PageName.Pizarron)}
-                        >
-                            <div className="w-10 h-10 rounded-xl bg-cyan-100 text-cyan-600 flex items-center justify-center mb-3">
-                                <span className="material-symbols-outlined fill-1">layers</span>
-                            </div>
-                            <h4 className="text-sm font-bold text-zinc-900 mb-1">Pizarrón</h4>
-                            <p className="text-[10px] text-zinc-500 font-medium">Abrir canvas</p>
-                        </GlassCard>
-
-                        <GlassCard
-                            rounded="2xl"
-                            padding="md"
-                            className="cursor-pointer active:scale-95 transition-all"
-                            onClick={() => onNavigate(PageName.AvatarCore)}
-                        >
-                            <div className="w-10 h-10 rounded-xl bg-purple-100 text-purple-600 flex items-center justify-center mb-3">
-                                <span className="material-symbols-outlined fill-1">person</span>
-                            </div>
-                            <h4 className="text-sm font-bold text-zinc-900 mb-1">Avatar</h4>
-                            <p className="text-[10px] text-zinc-500 font-medium">Ver perfil</p>
-                        </GlassCard>
-                    </section>
-                </>
-            )}
-
-            {/* ANALYTICS TAB */}
-            {activeTab === 'analytics' && (
-                <>
-                    {/* Revenue Card */}
-                    <GlassCard rounded="3xl" padding="xl" className="bg-gradient-to-r from-emerald-50 to-transparent mb-4">
-                        <div className="flex items-center justify-between mb-5">
-                            <div>
-                                <p className="text-xs font-bold text-zinc-500 uppercase tracking-wider mb-1">Ingresos Totales</p>
-                                <h2 className="text-4xl font-black text-emerald-600">$24,580</h2>
-                                <span className="text-xs font-bold text-emerald-600">+12.5% vs mes anterior</span>
-                            </div>
-                            <div className="w-16 h-16 rounded-2xl bg-emerald-600 flex items-center justify-center text-white shadow-xl action-glow-emerald">
-                                <span className="material-symbols-outlined text-3xl fill-1">payments</span>
-                            </div>
-                        </div>
-                        <div className="w-full bg-zinc-100 rounded-full h-2">
-                            <div className="bg-emerald-600 h-2 rounded-full" style={{ width: '75%' }}></div>
-                        </div>
-                    </GlassCard>
-
-                    {/* Metrics Grid */}
-                    <div className="grid grid-cols-2 gap-3 mb-4">
-                        <GlassCard rounded="2xl" padding="md">
-                            <div className="w-10 h-10 rounded-xl bg-blue-100 text-blue-600 flex items-center justify-center mb-3">
-                                <span className="material-symbols-outlined fill-1">receipt_long</span>
-                            </div>
-                            <p className="text-xs font-bold text-zinc-500 uppercase tracking-wider mb-1">Pedidos</p>
-                            <h4 className="text-2xl font-black text-zinc-900">1,247</h4>
-                        </GlassCard>
-
-                        <GlassCard rounded="2xl" padding="md">
-                            <div className="w-10 h-10 rounded-xl bg-purple-100 text-purple-600 flex items-center justify-center mb-3">
-                                <span className="material-symbols-outlined fill-1">groups</span>
-                            </div>
-                            <p className="text-xs font-bold text-zinc-500 uppercase tracking-wider mb-1">Clientes</p>
-                            <h4 className="text-2xl font-black text-zinc-900">856</h4>
-                        </GlassCard>
-
-                        <GlassCard rounded="2xl" padding="md">
-                            <div className="w-10 h-10 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center mb-3">
-                                <span className="material-symbols-outlined fill-1">star</span>
-                            </div>
-                            <p className="text-xs font-bold text-zinc-500 uppercase tracking-wider mb-1">Calificación</p>
-                            <h4 className="text-2xl font-black text-zinc-900">4.8</h4>
-                        </GlassCard>
-
-                        <GlassCard rounded="2xl" padding="md">
-                            <div className="w-10 h-10 rounded-xl bg-red-100 text-red-600 flex items-center justify-center mb-3">
-                                <span className="material-symbols-outlined fill-1">trending_up</span>
-                            </div>
-                            <p className="text-xs font-bold text-zinc-500 uppercase tracking-wider mb-1">Crecimiento</p>
-                            <h4 className="text-2xl font-black text-zinc-900">+18%</h4>
-                        </GlassCard>
+                        <span className="text-xs font-bold text-slate-700">{action.label}</span>
                     </div>
+                ))}
+            </div>
 
-                    {/* Top Performers */}
-                    <div>
-                        <h3 className="text-xs font-black text-white/80 uppercase tracking-wider mb-3 px-2">Mejores Resultados</h3>
-                        {['Mojito Classic', 'Negroni Sbagliato', 'Espresso Martini'].map((name, i) => (
-                            <GlassCard key={i} rounded="2xl" padding="md" className="mb-3">
-                                <div className="flex items-center justify-between">
-                                    <div className="flex items-center gap-3">
-                                        <span className="text-2xl font-black text-zinc-300">#{i + 1}</span>
-                                        <div>
-                                            <h4 className="text-sm font-bold text-zinc-900">{name}</h4>
-                                            <p className="text-xs text-zinc-500">{145 - (i * 20)} pedidos</p>
-                                        </div>
-                                    </div>
-                                    <span className="text-lg font-black text-emerald-600">+{25 - (i * 3)}%</span>
-                                </div>
-                            </GlassCard>
-                        ))}
-                    </div>
-                </>
-            )}
-
-            {/* SYSTEM TAB */}
-            {activeTab === 'system' && (
-                <>
-                    {/* System Info Card */}
-                    <GlassCard rounded="3xl" padding="xl" className="bg-gradient-to-r from-slate-50 to-transparent mb-4">
-                        <div className="flex items-center gap-5 mb-5">
-                            <div className="w-16 h-16 rounded-2xl bg-slate-900 flex items-center justify-center text-white shadow-xl">
-                                <span className="material-symbols-outlined text-3xl fill-1">settings</span>
-                            </div>
-                            <div className="flex-1">
-                                <h3 className="text-xl font-black text-zinc-900 mb-1">Configuración del Sistema</h3>
-                                <p className="text-xs text-zinc-600">Todos los sistemas operativos</p>
-                            </div>
-                        </div>
-                        <div className="bg-slate-100 rounded-2xl p-4">
-                            <div className="flex justify-between items-center mb-2">
-                                <span className="text-xs font-bold text-zinc-600">Versión</span>
-                                <span className="text-xs font-mono text-zinc-900">v3.0.2</span>
-                            </div>
-                            <div className="flex justify-between items-center">
-                                <span className="text-xs font-bold text-zinc-600">Entorno</span>
-                                < span className="px-2 py-0.5 bg-emerald-100 text-emerald-700 rounded-full text-[9px] font-black">PRODUCCIÓN</span>
-                            </div>
-                        </div>
-                    </GlassCard>
-
-                    {/* Settings List */}
-                    <div>
-                        <h3 className="text-xs font-black text-white/80 uppercase tracking-wider mb-3 px-2">Configuración</h3>
-                        {[
-                            { icon: 'notifications', label: 'Notificaciones', value: 'Activado' },
-                            { icon: 'lock', label: 'Seguridad', value: '2FA Activo' },
-                            { icon: 'cloud_sync', label: 'Auto Sincronizar', value: 'On' },
-                            { icon: 'dark_mode', label: 'Tema', value: 'Premium' },
-                        ].map((setting, i) => (
-                            <GlassCard key={i} rounded="2xl" padding="md" className="mb-3">
-                                <div className="flex items-center justify-between">
-                                    <div className="flex items-center gap-4">
-                                        <div className="w-12 h-12 rounded-xl bg-zinc-100 text-zinc-700 flex items-center justify-center">
-                                            <span className="material-symbols-outlined fill-1">{setting.icon}</span>
-                                        </div>
-                                        <div>
-                                            <h4 className="text-sm font-bold text-zinc-900">{setting.label}</h4>
-                                            <p className="text-xs text-zinc-500">{setting.value}</p>
-                                        </div>
-                                    </div>
-                                    <span className="material-symbols-outlined text-zinc-400">chevron_right</span>
-                                </div>
-                            </GlassCard>
-                        ))}
-                    </div>
-
-                    {/* Actions */}
-                    <div className="mt-6 space-y-3">
-                        <PremiumButton
-                            variant="secondary"
-                            size="lg"
-                            fullWidth
-                            customColor="#DC2626"
-                            icon={<span className="material-symbols-outlined !text-base">refresh</span>}
-                            iconPosition="left"
-                        >
-                            Limpiar Caché
-                        </PremiumButton>
-                        <PremiumButton
-                            variant="outline"
-                            size="lg"
-                            fullWidth
-                            customColor="#6B7280"
-                            icon={<span className="material-symbols-outlined !text-base">logout</span>}
-                            iconPosition="left"
-                        >
-                            Cerrar Sesión
-                        </PremiumButton>
-                    </div>
-                </>
-            )}
+            {/* Footer Brand */}
+            <div className="flex justify-center mt-8 pb-4 opacity-30">
+                <span className="text-[9px] font-serif text-slate-400 tracking-widest">NEXUS SUITE v3.0</span>
+            </div>
 
         </div>
     );
