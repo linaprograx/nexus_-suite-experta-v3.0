@@ -63,7 +63,7 @@ const FloatingBottomNav: React.FC<FloatingBottomNavProps> = ({ currentPage, onNa
 
     return (
         <div
-            className="absolute bottom-6 left-5 right-5 z-50"
+            className="absolute bottom-6 left-5 right-5 z-50 mb-[env(safe-area-inset-bottom)]"
             style={{ pointerEvents: 'auto' }}
         >
             <div

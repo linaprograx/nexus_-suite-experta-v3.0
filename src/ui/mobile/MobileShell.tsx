@@ -65,14 +65,14 @@ const MobileShellContent: React.FC = () => {
         navigate(getRouteForPage(page));
     };
 
-    if (!isAuthReady) return <div className="h-screen w-full bg-slate-900 flex items-center justify-center text-white">Loading Nexus...</div>;
+    if (!isAuthReady) return <div className="h-[100dvh] w-full bg-slate-900 flex items-center justify-center text-white">Loading Nexus...</div>;
 
     // Determine background based on page - all pages use light background now
     const bgColor = 'bg-slate-100';
     const frameBg = 'bg-[#F8F9FA]';
 
     return (
-        <div className={`h-screen w-screen overflow-hidden flex items-center justify-center font-sans text-slate-900 selection:bg-indigo-500/30 ${bgColor}`}>
+        <div className={`h-[100dvh] w-full overflow-hidden flex items-center justify-center font-sans text-slate-900 selection:bg-indigo-500/30 ${bgColor}`}>
 
             {/* Phone Frame */}
             <div className={`w-full h-full max-w-md relative overflow-hidden flex flex-col phone-frame ${frameBg}`}>
@@ -85,8 +85,8 @@ const MobileShellContent: React.FC = () => {
                     }}
                 />
 
-                {/* 1. Status Bar (Visual Only) */}
-                <div className="h-12 w-full flex justify-between items-end px-6 pb-2 z-50 select-none pointer-events-none bg-transparent">
+                {/* 1. Status Bar (Visual Only + Safe Area) */}
+                <div className="w-full flex justify-between items-end px-6 pb-2 z-50 select-none pointer-events-none bg-transparent pt-[env(safe-area-inset-top)] min-h-[env(safe-area-inset-top)]">
                     <span className="text-[10px] font-black text-neu-main tracking-widest mix-blend-multiply opacity-80">{new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                     <div className="flex gap-1.5 opacity-80 mix-blend-multiply text-neu-main">
                         <span className="material-symbols-outlined text-[10px]">signal_cellular_alt</span>
