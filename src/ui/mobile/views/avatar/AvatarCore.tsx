@@ -356,13 +356,13 @@ const AvatarCore: React.FC<Props> = ({
                 <GlassCard rounded="2xl" padding="none" className="flex-1 bg-white/60 border-white/40 backdrop-blur-xl transition-all active:scale-[0.98] cursor-pointer shadow-sm" onClick={() => setIsMapOpen(true)}>
                     <div className="flex flex-col items-center justify-center py-3">
                         <span className="text-[7px] font-black text-zinc-400 uppercase tracking-[0.2em] mb-1">Estado de Consciencia</span>
-                        <span className="text-xs font-black text-zinc-800 tracking-widest">{currentTier.toUpperCase()}</span>
+                        <span className="text-xs font-black text-zinc-800 dark:text-white tracking-widest">{currentTier.toUpperCase()}</span>
                     </div>
                 </GlassCard>
                 <GlassCard rounded="2xl" padding="none" className="flex-1 bg-white/60 border-white/40 backdrop-blur-xl transition-all active:scale-[0.98] cursor-pointer shadow-sm" onClick={() => setIsCreateOpen(activeConfigs.length < unlockedSlots)}>
                     <div className="flex flex-col items-center justify-center py-3">
                         <span className="text-[7px] font-black text-zinc-400 uppercase tracking-[0.2em] mb-1">Capacidad de Manifestación</span>
-                        <span className="text-xs font-black text-zinc-800 tracking-widest uppercase">{unlockedSlots >= 99 ? '∞' : unlockedSlots} Avatares</span>
+                        <span className="text-xs font-black text-zinc-800 dark:text-white tracking-widest uppercase">{unlockedSlots >= 99 ? '∞' : unlockedSlots} Avatares</span>
                     </div>
                 </GlassCard>
             </div>
@@ -383,7 +383,7 @@ const AvatarCore: React.FC<Props> = ({
                             <GlassCard
                                 rounded="3xl"
                                 padding="none"
-                                className={`relative transition-all cursor-pointer overflow-hidden ${isActive ? 'ring-2' : ''
+                                className={`relative transition-all cursor-pointer overflow-hidden dark:!bg-white/5 dark:!border-white/10 ${isActive ? 'ring-2' : ''
                                     }`}
                                 onClick={() => setActiveAvatarType(type)}
                                 style={isActive ? { borderColor: `${accentColor}40` } : {}}
@@ -392,15 +392,15 @@ const AvatarCore: React.FC<Props> = ({
                                     <div className="flex items-center gap-4">
                                         <div
                                             className={`w-14 h-14 rounded-2xl flex items-center justify-center text-2xl shadow-inner ${isActive
-                                                ? 'bg-zinc-900 text-white shadow-lg'
-                                                : 'bg-zinc-200/50 text-zinc-500'
+                                                ? 'bg-zinc-900 dark:bg-white text-white dark:text-black shadow-lg'
+                                                : 'bg-zinc-200/50 dark:!bg-white/10 text-zinc-500 dark:text-zinc-400'
                                                 }`}
                                         >
                                             {config.emoji}
                                         </div>
                                         <div>
                                             <div className="flex items-center gap-2 mb-1">
-                                                <h3 className="text-lg font-black text-zinc-900 uppercase tracking-tight">
+                                                <h3 className="text-lg font-black text-zinc-900 dark:text-white uppercase tracking-tight">
                                                     {config.name || type}
                                                 </h3>
                                                 {isActive && (
@@ -427,8 +427,7 @@ const AvatarCore: React.FC<Props> = ({
                                 {isActive && (
                                     <div className="px-5 pb-5 pt-2 flex gap-2">
                                         <button
-                                            onClick={(e) => { e.stopPropagation(); setConfigModalType(type); }}
-                                            className="w-full py-4 bg-zinc-100 text-zinc-600 border border-zinc-200 rounded-2xl text-[9px] font-black uppercase tracking-widest transition-all active:scale-95 hover:bg-zinc-200"
+                                            className="w-full py-4 bg-zinc-100 dark:!bg-white/10 text-zinc-600 dark:text-white border border-zinc-200 dark:!border-white/10 rounded-2xl text-[9px] font-black uppercase tracking-widest transition-all active:scale-95 hover:bg-zinc-200 dark:hover:bg-white/20"
                                         >
                                             CONFIGURAR AVATAR
                                         </button>

@@ -52,24 +52,35 @@ const GlassCard: React.FC<GlassCardProps> = ({
         xl: 'p-8',
     };
 
-    const glassBorder = variant === 'dark' ? MOBILE_BORDERS.glassDark : MOBILE_BORDERS.glass;
+    const backgroundClasses = {
+        standard: 'bg-white/60',
+        light: 'bg-white/70',
+        dark: 'bg-white/40',
+        intense: 'bg-white/65',
+    };
+
+    const borderClasses = {
+        standard: 'border border-white/60',
+        light: 'border border-white/80',
+        dark: 'border border-white/20',
+        intense: 'border border-white/50',
+    };
 
     return (
         <div
             className={`
         ${roundedClasses[rounded]}
         ${paddingClasses[padding]}
-        ${paddingClasses[padding]}
+        ${backgroundClasses[variant]}
+        ${borderClasses[variant]}
         ${onClick ? CLASS_NAMES.pressEffect : ''}
         transition-all duration-300
         ${className}
       `}
             onClick={onClick}
             style={{
-                background: backgrounds[variant],
                 backdropFilter: MOBILE_BLUR.standard,
                 WebkitBackdropFilter: MOBILE_BLUR.standard,
-                border: glassBorder,
                 boxShadow: shadows[variant],
                 ...style,
             }}

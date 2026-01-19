@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { PageName, UserProfile } from '../types';
 import GlassCard from '../components/GlassCard';
 import PremiumButton from '../components/PremiumButton';
-import { CerebrityHeader } from '../components/CerebrityHeader';
+
 import { useRecipes } from '../../../hooks/useRecipes';
 import { usePizarronData } from '../../../hooks/usePizarronData';
 import { useApp } from '../../../context/AppContext';
@@ -128,25 +128,21 @@ const CerebrityMakeMenu: React.FC<Props> = ({ onNavigate }) => {
     return (
         <div className="bg-transparent relative overflow-hidden flex flex-col h-full">
 
-            {/* Header */}
-            <CerebrityHeader
-                currentPage={PageName.CerebrityMakeMenu}
-                onNavigate={onNavigate}
-            />
+            {/* Header Removed (Hoisted to Layout) */}
 
 
 
             {/* 🧠 Hard Logic: Editorial Style & Coherence Alerts */}
             <div className="px-5 mb-2 space-y-2">
                 {/* Personalization Grid */}
-                <GlassCard rounded="2xl" padding="sm" className="bg-white/40 border-white/30 backdrop-blur-xl">
+                <GlassCard rounded="2xl" padding="sm" className="bg-white/40 dark:!bg-white/5 border-white/30 dark:!border-white/10 backdrop-blur-xl">
                     <div className="flex items-center justify-between gap-4">
                         <div className="flex-1">
                             <label className="text-[8px] font-black text-zinc-400 uppercase tracking-widest block mb-0.5">Estilo</label>
                             <select
                                 value={selectedStyle}
                                 onChange={(e) => setSelectedStyle(e.target.value)}
-                                className="w-full bg-transparent text-[10px] font-bold text-zinc-900 outline-none"
+                                className="w-full bg-transparent text-[10px] font-bold text-zinc-900 dark:text-white outline-none"
                             >
                                 {styles.map(s => <option key={s} value={s}>{s}</option>)}
                             </select>
@@ -184,14 +180,14 @@ const CerebrityMakeMenu: React.FC<Props> = ({ onNavigate }) => {
             <main className="flex-1 overflow-y-auto custom-scroll px-5 pb-32 space-y-4">
 
                 {/* Generate Card */}
-                <GlassCard rounded="3xl" padding="xl" className="bg-gradient-to-r from-yellow-50 to-transparent">
+                <GlassCard rounded="3xl" padding="xl" className="bg-gradient-to-r from-yellow-50 to-transparent dark:!bg-white/5 dark:from-yellow-500/10 dark:to-transparent dark:!border-white/10">
                     <div className="flex items-center gap-5 mb-5">
                         <div className="w-16 h-16 rounded-2xl bg-yellow-500 flex items-center justify-center text-white shadow-xl" style={{ boxShadow: '0 0 20px rgba(255, 230, 0, 0.4)' }}>
                             <span className="material-symbols-outlined text-3xl fill-1">edit_note</span>
                         </div>
                         <div className="flex-1">
-                            <h3 className="text-xl font-bold text-zinc-900 mb-1">Generar Menú</h3>
-                            <p className="text-xs text-zinc-600">
+                            <h3 className="text-xl font-bold text-zinc-900 dark:text-white mb-1">Generar Menú</h3>
+                            <p className="text-xs text-zinc-600 dark:text-zinc-400">
                                 {selectedRecipeIds.length} recetas seleccionadas
                             </p>
                         </div>
@@ -217,7 +213,7 @@ const CerebrityMakeMenu: React.FC<Props> = ({ onNavigate }) => {
                 <div className="space-y-6">
                     {/* Recipes Selection */}
                     <div>
-                        <h3 className="text-xs font-black text-zinc-900 uppercase tracking-wider mb-3 px-2">Selecciona Recetas</h3>
+                        <h3 className="text-xs font-black text-zinc-900 dark:text-white uppercase tracking-wider mb-3 px-2">Selecciona Recetas</h3>
                         <div className="space-y-2">
                             {isLoadingRecipes ? (
                                 <div className="p-10 text-center"><span className="material-symbols-outlined animate-spin text-yellow-500">sync</span></div>
@@ -229,14 +225,14 @@ const CerebrityMakeMenu: React.FC<Props> = ({ onNavigate }) => {
                                         key={recipe.id}
                                         onClick={() => toggleRecipe(recipe.id)}
                                         className={`w-full flex items-center gap-3 p-3 rounded-2xl border transition-all ${selectedRecipeIds.includes(recipe.id)
-                                            ? 'bg-yellow-50 border-yellow-200 shadow-sm'
-                                            : 'bg-white/40 border-white/20'
+                                            ? 'bg-yellow-50 dark:!bg-yellow-500/10 border-yellow-200 dark:!border-yellow-500/20 shadow-sm'
+                                            : 'bg-white/40 dark:!bg-white/5 border-white/20 dark:!border-white/10'
                                             }`}
                                     >
-                                        <div className={`w-5 h-5 rounded-md border flex items-center justify-center transition-colors ${selectedRecipeIds.includes(recipe.id) ? 'bg-yellow-500 border-yellow-500' : 'bg-transparent border-zinc-300'}`}>
+                                        <div className={`w-5 h-5 rounded-md border flex items-center justify-center transition-colors ${selectedRecipeIds.includes(recipe.id) ? 'bg-yellow-500 border-yellow-500' : 'bg-transparent border-zinc-300 dark:!border-white/20'}`}>
                                             {selectedRecipeIds.includes(recipe.id) && <span className="material-symbols-outlined text-white text-[14px]">check</span>}
                                         </div>
-                                        <span className="flex-1 text-left text-xs font-bold text-zinc-800">{recipe.nombre}</span>
+                                        <span className="flex-1 text-left text-xs font-bold text-zinc-800 dark:text-zinc-200">{recipe.nombre}</span>
                                     </button>
                                 ))
                             )}
@@ -245,7 +241,7 @@ const CerebrityMakeMenu: React.FC<Props> = ({ onNavigate }) => {
 
                     {/* Pizarron Ideas Selection */}
                     <div>
-                        <h3 className="text-xs font-black text-zinc-900 uppercase tracking-wider mb-3 px-2">Conceptos Aprobados</h3>
+                        <h3 className="text-xs font-black text-zinc-900 dark:text-white uppercase tracking-wider mb-3 px-2">Conceptos Aprobados</h3>
                         <div className="space-y-2">
                             {isLoadingTasks ? (
                                 <div className="p-10 text-center"><span className="material-symbols-outlined animate-spin text-yellow-500">sync</span></div>
@@ -257,15 +253,15 @@ const CerebrityMakeMenu: React.FC<Props> = ({ onNavigate }) => {
                                         key={task.id}
                                         onClick={() => toggleTask(task.id)}
                                         className={`w-full flex items-center gap-3 p-3 rounded-2xl border transition-all ${selectedTaskIds.includes(task.id)
-                                            ? 'bg-yellow-50 border-yellow-200 shadow-sm'
-                                            : 'bg-white/40 border-white/20'
+                                            ? 'bg-yellow-50 dark:!bg-yellow-500/10 border-yellow-200 dark:!border-yellow-500/20 shadow-sm'
+                                            : 'bg-white/40 dark:!bg-white/5 border-white/20 dark:!border-white/10'
                                             }`}
                                     >
-                                        <div className={`w-5 h-5 rounded-md border flex items-center justify-center transition-colors ${selectedTaskIds.includes(task.id) ? 'bg-yellow-500 border-yellow-500' : 'bg-transparent border-zinc-300'}`}>
+                                        <div className={`w-5 h-5 rounded-md border flex items-center justify-center transition-colors ${selectedTaskIds.includes(task.id) ? 'bg-yellow-500 border-yellow-500' : 'bg-transparent border-zinc-300 dark:!border-white/20'}`}>
                                             {selectedTaskIds.includes(task.id) && <span className="material-symbols-outlined text-white text-[14px]">check</span>}
                                         </div>
                                         <div className="flex-1 text-left">
-                                            <p className="text-[10px] leading-tight font-bold text-zinc-800 line-clamp-1">{task.content}</p>
+                                            <p className="text-[10px] leading-tight font-bold text-zinc-800 dark:text-zinc-200 line-clamp-1">{task.content}</p>
                                             <p className="text-[8px] text-zinc-400 uppercase tracking-widest font-black">Pizarrón Idea</p>
                                         </div>
                                     </button>

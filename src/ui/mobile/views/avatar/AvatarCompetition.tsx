@@ -70,7 +70,7 @@ const CompetitionContent: React.FC = () => {
                     <div className="space-y-6 pt-4">
                         <div className="space-y-4">
                             <h3 className="text-[10px] font-black text-emerald-400 uppercase tracking-widest text-center">El Ritual</h3>
-                            <GlassCard rounded="3xl" padding="lg" className="bg-white/5 border-white/10 italic text-sm text-white/90 leading-relaxed font-medium text-center">
+                            <GlassCard rounded="3xl" padding="lg" className="bg-white/5 dark:!bg-white/5 border-white/10 italic text-sm text-white/90 leading-relaxed font-medium text-center">
                                 "{state.proposal.ritual}"
                             </GlassCard>
                         </div>
@@ -117,7 +117,7 @@ const CompetitionContent: React.FC = () => {
                                     ? 'bg-emerald-950 border-emerald-400 text-white shadow-xl shadow-emerald-900/40 scale-110'
                                     : isCompleted
                                         ? 'bg-emerald-600 border-emerald-600 text-white'
-                                        : 'bg-white/40 border-emerald-900/10 text-emerald-900/20 backdrop-blur-sm'
+                                        : 'bg-white/40 dark:!bg-white/5 border-emerald-900/10 dark:!border-white/10 text-emerald-900/20 dark:text-emerald-100/30 backdrop-blur-sm'
                                     }`}>
                                     {isCompleted ? (
                                         <span className="material-symbols-outlined !text-[16px]">check</span>

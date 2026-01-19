@@ -69,9 +69,9 @@ const FloatingBottomNav: React.FC<FloatingBottomNavProps> = ({ currentPage, onNa
         >
             <div
                 ref={scrollContainerRef}
-                className="h-[4.5rem] rounded-[2rem] overflow-x-auto overflow-y-hidden no-scrollbar px-4"
+                className="h-[4.5rem] rounded-[2rem] overflow-x-auto overflow-y-hidden no-scrollbar px-4 dark:!bg-black/40 dark:!border-white/10 dark:!shadow-lg"
                 style={{
-                    background: MOBILE_BACKGROUNDS.navBlur,
+                    backgroundColor: MOBILE_BACKGROUNDS.navBlur,
                     backdropFilter: MOBILE_BLUR.navigation,
                     WebkitBackdropFilter: MOBILE_BLUR.navigation,
                     border: MOBILE_BORDERS.glassSubtle,
@@ -153,8 +153,8 @@ const FloatingBottomNav: React.FC<FloatingBottomNavProps> = ({ currentPage, onNa
                                                     transition-all duration-300
                                                     flex-shrink-0
                                                     ${gActive
-                                                        ? 'bg-white shadow-lg scale-110'
-                                                        : 'bg-transparent hover:bg-white/30 hover:scale-105'
+                                                        ? 'bg-white dark:bg-zinc-800 shadow-lg scale-110'
+                                                        : 'bg-transparent hover:bg-white/30 dark:hover:bg-white/10 hover:scale-105'
                                                     }
                                                     ${CLASS_NAMES.pressEffect}
                                                 `}
@@ -228,8 +228,8 @@ const FloatingBottomNav: React.FC<FloatingBottomNavProps> = ({ currentPage, onNa
                                                     transition-all duration-300
                                                     flex-shrink-0
                                                     ${cActive
-                                                        ? 'bg-white shadow-lg scale-110'
-                                                        : 'bg-transparent hover:bg-white/30 hover:scale-105'
+                                                        ? 'bg-white dark:bg-zinc-800 shadow-lg scale-110'
+                                                        : 'bg-transparent hover:bg-white/30 dark:hover:bg-white/10 hover:scale-105'
                                                     }
                                                     ${CLASS_NAMES.pressEffect}
                                                 `}
@@ -301,8 +301,8 @@ const FloatingBottomNav: React.FC<FloatingBottomNavProps> = ({ currentPage, onNa
                                                     transition-all duration-300
                                                     flex-shrink-0
                                                     ${aActive
-                                                        ? 'bg-white shadow-lg scale-110'
-                                                        : 'bg-transparent hover:bg-white/30 hover:scale-105'
+                                                        ? 'bg-white dark:bg-zinc-800 shadow-lg scale-110'
+                                                        : 'bg-transparent hover:bg-white/30 dark:hover:bg-white/10 hover:scale-105'
                                                     }
                                                     ${CLASS_NAMES.pressEffect}
                                                 `}
@@ -362,8 +362,8 @@ const FloatingBottomNav: React.FC<FloatingBottomNavProps> = ({ currentPage, onNa
                                         transition-all duration-300
                                         flex-shrink-0
                                         ${active
-                                            ? 'bg-white shadow-lg scale-110'
-                                            : 'bg-transparent hover:bg-white/30 hover:scale-105'
+                                            ? 'bg-white dark:bg-zinc-800 shadow-lg scale-110'
+                                            : 'bg-transparent hover:bg-white/30 dark:hover:bg-white/10 hover:scale-105'
                                         }
                                         ${CLASS_NAMES.pressEffect}
                                     `}
@@ -396,7 +396,7 @@ const FloatingBottomNav: React.FC<FloatingBottomNavProps> = ({ currentPage, onNa
                     })}
                 </nav>
             </div>
-        </div>
+        </div >
     );
 };
 

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { PageName, UserProfile } from '../types';
 import GlassCard from '../components/GlassCard';
 import PremiumButton from '../components/PremiumButton';
-import { CerebrityHeader } from '../components/CerebrityHeader';
+
 import { useCerebrityOrchestrator } from '../../../hooks/useCerebrityOrchestrator';
 import { callGeminiApi } from '../../../utils/gemini';
 import { Type } from "@google/genai";
@@ -117,14 +117,10 @@ const CerebrityCritic: React.FC<Props> = ({ onNavigate }) => {
     return (
         <div className="bg-transparent relative overflow-hidden flex flex-col h-full">
 
-            {/* Header */}
-            <CerebrityHeader
-                currentPage={PageName.CerebrityCritic}
-                onNavigate={onNavigate}
-            />
+            {/* Header Removed (Hoisted to Layout) */}
 
             <div className="px-5 mb-2 mt-2">
-                <GlassCard rounded="2xl" padding="sm" className="bg-white/10 border-white/20 mb-2">
+                <GlassCard rounded="2xl" padding="sm" className="bg-white/10 dark:!bg-white/5 border-white/20 dark:!border-white/10 mb-2">
                     <div className="flex items-center justify-between">
                         <p className="text-[9px] font-black text-white/60 uppercase tracking-widest">Severidad del Algoritmo</p>
                         <div className="flex items-center gap-2">
@@ -142,7 +138,7 @@ const CerebrityCritic: React.FC<Props> = ({ onNavigate }) => {
 
             <div className="px-5 mb-2">
                 {/* Focus Checklist (Desktop Parity) */}
-                <GlassCard rounded="2xl" padding="sm" className="bg-white/10 border-white/20">
+                <GlassCard rounded="2xl" padding="sm" className="bg-white/10 dark:!bg-white/5 border-white/20 dark:!border-white/10">
                     <div className="flex items-center justify-between mb-2 px-1">
                         <p className="text-[10px] font-black text-white uppercase tracking-widest">Foco Principal</p>
                         <span className="text-[9px] font-bold text-cyan-400 uppercase tracking-tighter">Avatar: {activePersona}</span>
@@ -168,14 +164,14 @@ const CerebrityCritic: React.FC<Props> = ({ onNavigate }) => {
             <main className="flex-1 overflow-y-auto custom-scroll px-5 space-y-4">
 
                 {/* Invoke Card */}
-                <GlassCard rounded="3xl" padding="xl" className="bg-gradient-to-r from-cyan-50 to-transparent">
+                <GlassCard rounded="3xl" padding="xl" className="bg-gradient-to-r from-cyan-50 to-transparent dark:!bg-white/5 dark:from-cyan-900/10 dark:to-transparent dark:!border-white/10">
                     <div className="flex items-center gap-5 mb-5">
                         <div className="w-16 h-16 rounded-2xl bg-cyan-600 flex items-center justify-center text-white shadow-xl action-glow-turquoise">
                             <span className="material-symbols-outlined text-3xl fill-1">rate_review</span>
                         </div>
                         <div className="flex-1">
-                            <h3 className="text-xl font-bold text-zinc-900 mb-1">Invocar Crítico</h3>
-                            <p className="text-xs text-zinc-600">Pega el texto de tu menú abajo</p>
+                            <h3 className="text-xl font-bold text-zinc-900 dark:text-white mb-1">Invocar Crítico</h3>
+                            <p className="text-xs text-zinc-600 dark:text-zinc-400">Pega el texto de tu menú abajo</p>
                         </div>
                     </div>
 
@@ -183,26 +179,26 @@ const CerebrityCritic: React.FC<Props> = ({ onNavigate }) => {
                         value={menuText}
                         onChange={(e) => setMenuText(e.target.value)}
                         placeholder="Ej: Margarita - Tequila, Triple Sec, Lima..."
-                        className="w-full h-24 p-4 bg-white/60 border border-cyan-100 rounded-2xl text-[11px] text-zinc-800 placeholder:text-zinc-400 focus:ring-2 focus:ring-cyan-500 outline-none mb-3 transition-all"
+                        className="w-full h-24 p-4 bg-white/60 dark:!bg-white/5 border border-cyan-100 dark:!border-white/10 rounded-2xl text-[11px] text-zinc-800 dark:text-white placeholder:text-zinc-400 dark:placeholder:text-white/40 focus:ring-2 focus:ring-cyan-500 outline-none mb-3 transition-all"
                     />
 
                     {/* Specialized Quick Actions */}
                     <div className="grid grid-cols-2 gap-2 mb-4">
-                        <button onClick={() => handleInviteCritic('allergens')} className="flex items-center gap-2 p-3 bg-zinc-100/50 rounded-xl hover:bg-zinc-100 transition-colors border border-zinc-200/50">
-                            <span className="material-symbols-outlined text-xs text-amber-600">medical_services</span>
-                            <span className="text-[9px] font-black text-zinc-600 uppercase tracking-wide">Alérgenos</span>
+                        <button onClick={() => handleInviteCritic('allergens')} className="flex items-center gap-2 p-3 bg-zinc-100/50 dark:!bg-white/5 rounded-xl hover:bg-zinc-100 dark:hover:bg-white/10 transition-colors border border-zinc-200/50 dark:!border-white/5">
+                            <span className="material-symbols-outlined text-xs text-amber-600 dark:text-amber-400">medical_services</span>
+                            <span className="text-[9px] font-black text-zinc-600 dark:text-zinc-300 uppercase tracking-wide">Alérgenos</span>
                         </button>
-                        <button onClick={() => handleInviteCritic('design')} className="flex items-center gap-2 p-3 bg-zinc-100/50 rounded-xl hover:bg-zinc-100 transition-colors border border-zinc-200/50">
-                            <span className="material-symbols-outlined text-xs text-purple-600">palette</span>
-                            <span className="text-[9px] font-black text-zinc-600 uppercase tracking-wide">Diseño</span>
+                        <button onClick={() => handleInviteCritic('design')} className="flex items-center gap-2 p-3 bg-zinc-100/50 dark:!bg-white/5 rounded-xl hover:bg-zinc-100 dark:hover:bg-white/10 transition-colors border border-zinc-200/50 dark:!border-white/5">
+                            <span className="material-symbols-outlined text-xs text-purple-600 dark:text-purple-400">palette</span>
+                            <span className="text-[9px] font-black text-zinc-600 dark:text-zinc-300 uppercase tracking-wide">Diseño</span>
                         </button>
-                        <button onClick={() => handleInviteCritic('prices')} className="flex items-center gap-2 p-3 bg-zinc-100/50 rounded-xl hover:bg-zinc-100 transition-colors border border-zinc-200/50">
-                            <span className="material-symbols-outlined text-xs text-emerald-600">payments</span>
-                            <span className="text-[9px] font-black text-zinc-600 uppercase tracking-wide">Precios</span>
+                        <button onClick={() => handleInviteCritic('prices')} className="flex items-center gap-2 p-3 bg-zinc-100/50 dark:!bg-white/5 rounded-xl hover:bg-zinc-100 dark:hover:bg-white/10 transition-colors border border-zinc-200/50 dark:!border-white/5">
+                            <span className="material-symbols-outlined text-xs text-emerald-600 dark:text-emerald-400">payments</span>
+                            <span className="text-[9px] font-black text-zinc-600 dark:text-zinc-300 uppercase tracking-wide">Precios</span>
                         </button>
-                        <button onClick={() => handleInviteCritic('text')} className="flex items-center gap-2 p-3 bg-zinc-100/50 rounded-xl hover:bg-zinc-100 transition-colors border border-zinc-200/50">
-                            <span className="material-symbols-outlined text-xs text-blue-600">spellcheck</span>
-                            <span className="text-[9px] font-black text-zinc-600 uppercase tracking-wide">Textos</span>
+                        <button onClick={() => handleInviteCritic('text')} className="flex items-center gap-2 p-3 bg-zinc-100/50 dark:!bg-white/5 rounded-xl hover:bg-zinc-100 dark:hover:bg-white/10 transition-colors border border-zinc-200/50 dark:!border-white/5">
+                            <span className="material-symbols-outlined text-xs text-blue-600 dark:text-blue-400">spellcheck</span>
+                            <span className="text-[9px] font-black text-zinc-600 dark:text-zinc-300 uppercase tracking-wide">Textos</span>
                         </button>
                     </div>
 
@@ -229,7 +225,7 @@ const CerebrityCritic: React.FC<Props> = ({ onNavigate }) => {
                         <GlassCard
                             rounded="3xl"
                             padding="md"
-                            className="mb-6 bg-white/90 border-cyan-200"
+                            className="mb-6 bg-white/90 dark:!bg-white/5 border-cyan-200 dark:!border-white/10"
                         >
                             <div className="flex items-center justify-between mb-6">
                                 <div className="flex items-baseline gap-2">
@@ -282,17 +278,17 @@ const CerebrityCritic: React.FC<Props> = ({ onNavigate }) => {
                             key={i}
                             rounded="3xl"
                             padding="md"
-                            className="mb-3"
+                            className="mb-3 bg-white/40 dark:!bg-white/5 border-white/20 dark:!border-white/10"
                         >
                             <div className="flex items-start justify-between mb-3">
                                 <div className="flex-1">
                                     <div className="flex items-center gap-2 mb-2">
-                                        <h4 className="text-lg font-bold text-zinc-900">{item.recipe}</h4>
-                                        <span className={`text-2xl font-black ${item.score >= 8 ? 'text-emerald-600' : item.score >= 7 ? 'text-cyan-600' : 'text-amber-600'}`}>
+                                        <h4 className="text-lg font-bold text-zinc-900 dark:text-white">{item.recipe}</h4>
+                                        <span className={`text-2xl font-black ${item.score >= 8 ? 'text-emerald-600 dark:text-emerald-400' : item.score >= 7 ? 'text-cyan-600 dark:text-cyan-400' : 'text-amber-600 dark:text-amber-400'}`}>
                                             {item.score}
                                         </span>
                                     </div>
-                                    <p className="text-xs text-zinc-600 mb-2">{item.feedback}</p>
+                                    <p className="text-xs text-zinc-600 dark:text-zinc-400 mb-2">{item.feedback}</p>
                                     <span className="text-[9px] text-zinc-400">{item.date}</span>
                                 </div>
                                 <span className={`px-2 py-1 rounded-full text-[8px] font-black uppercase tracking-wide ${item.severity === 'major' ? 'bg-amber-100 text-amber-700' : 'bg-cyan-100 text-cyan-700'
@@ -302,7 +298,7 @@ const CerebrityCritic: React.FC<Props> = ({ onNavigate }) => {
                             </div>
 
                             <div className="flex gap-2">
-                                <button className="flex-1 py-3 rounded-2xl text-[10px] font-black text-zinc-500 bg-zinc-100 border border-zinc-200 uppercase tracking-wider hover:bg-zinc-200 transition-colors">
+                                <button className="flex-1 py-3 rounded-2xl text-[10px] font-black text-zinc-500 dark:text-zinc-400 bg-zinc-100 dark:!bg-white/5 border border-zinc-200 dark:!border-white/10 uppercase tracking-wider hover:bg-zinc-200 dark:hover:bg-white/10 transition-colors">
                                     Ver Reporte Completo
                                 </button>
                             </div>

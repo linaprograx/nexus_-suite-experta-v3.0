@@ -15,6 +15,7 @@ import Colegium from './views/Colegium';
 import Personal from './views/Personal';
 import Avatar from './views/Avatar';
 import Login from './views/Login';
+import { CerebrityLayout } from './layouts/CerebrityLayout';
 
 interface MobileRoutesProps {
     user: any; // Type strictly later
@@ -41,11 +42,13 @@ const MobileRoutes: React.FC<MobileRoutesProps> = ({ user, onNavigate, notify })
 
             {/* Cerebrity Sub-routes */}
             <Route path="/cerebrity" element={<Navigate to="/cerebrity/synthesis" replace />} />
-            <Route path="/cerebrity/synthesis" element={<CerebritySynthesis onNavigate={onNavigate} user={user} notify={notify} />} />
-            <Route path="/cerebrity/critic" element={<CerebrityCritic onNavigate={onNavigate} />} />
-            <Route path="/cerebrity/lab" element={<CerebrityLab onNavigate={onNavigate} />} />
-            <Route path="/cerebrity/trend" element={<CerebrityTrend onNavigate={onNavigate} />} />
-            <Route path="/cerebrity/make-menu" element={<CerebrityMakeMenu onNavigate={onNavigate} />} />
+            <Route element={<CerebrityLayout />}>
+                <Route path="/cerebrity/synthesis" element={<CerebritySynthesis onNavigate={onNavigate} user={user} notify={notify} />} />
+                <Route path="/cerebrity/critic" element={<CerebrityCritic onNavigate={onNavigate} />} />
+                <Route path="/cerebrity/lab" element={<CerebrityLab onNavigate={onNavigate} />} />
+                <Route path="/cerebrity/trend" element={<CerebrityTrend onNavigate={onNavigate} />} />
+                <Route path="/cerebrity/make-menu" element={<CerebrityMakeMenu onNavigate={onNavigate} />} />
+            </Route>
 
             <Route path="/avatar" element={<Navigate to="/avatar/core" replace />} />
             <Route path="/avatar/core" element={<Avatar onNavigate={onNavigate} user={user} notify={notify} initialTab="Core" />} />

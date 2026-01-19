@@ -29,7 +29,7 @@ const AvatarIntelligence: React.FC<Props> = ({ config, accentColor }) => {
                 </button>
                 <button
                     onClick={() => setMode('Competition')}
-                    className={`flex-1 py-3 rounded-full text-[9px] font-black uppercase tracking-widest transition-all ${mode === 'Competition' ? 'bg-zinc-900 text-white shadow-lg' : 'bg-white/40 text-zinc-500 border border-white/40'
+                    className={`flex-1 py-3 rounded-full text-[9px] font-black uppercase tracking-widest transition-all ${mode === 'Competition' ? 'bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 shadow-lg' : 'bg-white/40 dark:!bg-white/10 text-zinc-500 dark:text-zinc-400 border border-white/40 dark:!border-white/10'
                         }`}
                 >
                     Modo Competición
@@ -60,42 +60,42 @@ const AvatarIntelligence: React.FC<Props> = ({ config, accentColor }) => {
                 {/* Sub-metrics */}
                 <div className="flex gap-10 mt-6">
                     <div className="text-center">
-                        <p className="text-[7px] font-black text-red-950/60 uppercase tracking-widest mb-1">Precisión</p>
-                        <p className="text-sm font-black text-red-950">94.2%</p>
+                        <p className="text-[7px] font-black text-red-950/60 dark:text-red-200/60 uppercase tracking-widest mb-1">Precisión</p>
+                        <p className="text-sm font-black text-red-950 dark:text-red-100">94.2%</p>
                     </div>
                     <div className="text-center">
-                        <p className="text-[7px] font-black text-red-950/60 uppercase tracking-widest mb-1">Creatividad</p>
-                        <p className="text-sm font-black text-red-950">88.5%</p>
+                        <p className="text-[7px] font-black text-red-950/60 dark:text-red-200/60 uppercase tracking-widest mb-1">Creatividad</p>
+                        <p className="text-sm font-black text-red-950 dark:text-red-100">88.5%</p>
                     </div>
                 </div>
             </div>
 
             {/* Principles Section */}
             <div>
-                <h3 className="text-[10px] font-black text-red-950/70 uppercase tracking-widest mb-3 px-2">Principios Activos</h3>
+                <h3 className="text-[10px] font-black text-red-950/70 dark:text-red-200/70 uppercase tracking-widest mb-3 px-2">Principios Activos</h3>
                 <div className="space-y-2">
                     {config.activePrinciples.map((principle, idx) => (
-                        <GlassCard key={principle} rounded="2xl" padding="md" className="flex items-center justify-between border-black/5 bg-white/40 shadow-sm">
-                            <span className="text-xs font-black text-red-950 uppercase tracking-tight">{principle}</span>
+                        <GlassCard key={principle} rounded="2xl" padding="md" className="flex items-center justify-between border-black/5 dark:!border-white/10 bg-white/40 dark:!bg-white/10 shadow-sm">
+                            <span className="text-xs font-black text-red-950 dark:text-red-100 uppercase tracking-tight">{principle}</span>
                             <div className="w-1.5 h-1.5 rounded-full bg-red-600 shadow-[0_0_8px_rgba(239,68,68,0.4)]"></div>
                         </GlassCard>
                     ))}
-                    <GlassCard rounded="2xl" padding="md" className="border-black/5 bg-white/10 opacity-40">
-                        <span className="text-xs font-black text-red-950/40 uppercase tracking-tight">Impacto Visual</span>
+                    <GlassCard rounded="2xl" padding="md" className="border-black/5 dark:!border-white/10 bg-white/10 dark:!bg-white/5 opacity-40">
+                        <span className="text-xs font-black text-red-950/40 dark:text-red-100/40 uppercase tracking-tight">Impacto Visual</span>
                     </GlassCard>
                 </div>
             </div>
 
             {/* Decision Simulator */}
-            <GlassCard rounded="3xl" padding="lg" className="bg-red-950/10 border-red-950/5 shadow-sm">
-                <h3 className="text-[10px] font-black text-red-950/80 uppercase tracking-widest mb-6">Simulador de Decisión</h3>
+            <GlassCard rounded="3xl" padding="lg" className="bg-red-950/10 dark:!bg-red-900/20 border-red-950/5 dark:!border-white/10 shadow-sm">
+                <h3 className="text-[10px] font-black text-red-950/80 dark:text-red-200/80 uppercase tracking-widest mb-6">Simulador de Decisión</h3>
 
                 <div className="space-y-6">
                     <div>
                         <p className="text-[8px] font-black text-red-950/60 uppercase tracking-widest mb-3">Contexto</p>
                         <div className="flex flex-wrap gap-2">
                             {['SERVICE', 'COMPETITION', 'R&D', 'CRISIS'].map(tag => (
-                                <button key={tag} className={`px-3 py-1.5 rounded-lg text-[8px] font-black border transition-all ${tag === 'SERVICE' ? 'bg-red-950 border-red-900 text-white' : 'bg-white/40 border-black/10 text-red-950/60'
+                                <button key={tag} className={`px-3 py-1.5 rounded-lg text-[8px] font-black border transition-all ${tag === 'SERVICE' ? 'bg-red-950 border-red-900 text-white' : 'bg-white/40 dark:!bg-white/5 border-black/10 dark:!border-white/10 text-red-950/60 dark:text-red-200/60'
                                     }`}>
                                     {tag}
                                 </button>
@@ -105,8 +105,8 @@ const AvatarIntelligence: React.FC<Props> = ({ config, accentColor }) => {
 
                     <div>
                         <div className="flex justify-between items-center mb-2">
-                            <p className="text-[8px] font-black text-red-950/60 uppercase tracking-widest">Presión</p>
-                            <span className="text-[10px] font-black text-red-950">{pressure}%</span>
+                            <p className="text-[8px] font-black text-red-950/60 dark:text-red-200/60 uppercase tracking-widest">Presión</p>
+                            <span className="text-[10px] font-black text-red-950 dark:text-red-100">{pressure}%</span>
                         </div>
                         <input
                             type="range"
@@ -117,7 +117,7 @@ const AvatarIntelligence: React.FC<Props> = ({ config, accentColor }) => {
                         />
                     </div>
 
-                    <button className="w-full py-3 bg-red-950 text-white rounded-2xl flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-widest hover:bg-red-900 transition-all group shadow-md">
+                    <button className="w-full py-3 bg-red-950 dark:bg-red-900 text-white rounded-2xl flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-widest hover:bg-red-900 dark:hover:bg-red-800 transition-all group shadow-md">
                         Ejecutar Simulación
                         <span className="material-symbols-outlined !text-sm group-hover:translate-x-1 transition-transform">arrow_forward</span>
                     </button>

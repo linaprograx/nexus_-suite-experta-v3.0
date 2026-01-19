@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { PageName, UserProfile } from '../types';
 import GlassCard from '../components/GlassCard';
 import PremiumButton from '../components/PremiumButton';
-import { CerebrityHeader } from '../components/CerebrityHeader';
+
 import { useCerebrityOrchestrator } from '../../../hooks/useCerebrityOrchestrator';
 import { useIngredients } from '../../../hooks/useIngredients';
 import { useRecipes } from '../../../hooks/useRecipes';
@@ -203,11 +203,7 @@ const CerebrityLab: React.FC<Props> = ({ onNavigate }) => {
     return (
         <div className="bg-transparent relative overflow-hidden flex flex-col h-full">
 
-            {/* Header */}
-            <CerebrityHeader
-                currentPage={PageName.CerebrityLab}
-                onNavigate={onNavigate}
-            />
+            {/* Header Removed (Hoisted to Layout) */}
 
 
 
@@ -227,14 +223,14 @@ const CerebrityLab: React.FC<Props> = ({ onNavigate }) => {
             <main className="flex-1 overflow-y-auto custom-scroll px-5 space-y-4">
 
                 {/* New Experiment Card */}
-                <GlassCard rounded="3xl" padding="xl" className="bg-gradient-to-r from-fuchsia-50 to-transparent">
+                <GlassCard rounded="3xl" padding="xl" className="bg-gradient-to-r from-fuchsia-50 to-transparent dark:!bg-white/5 dark:from-fuchsia-900/10 dark:to-transparent dark:!border-white/10">
                     <div className="flex items-center gap-5 mb-5">
                         <div className="w-16 h-16 rounded-2xl bg-fuchsia-600 flex items-center justify-center text-white shadow-xl action-glow-pink">
                             <span className="material-symbols-outlined text-3xl fill-1">science</span>
                         </div>
                         <div className="flex-1">
-                            <h3 className="text-xl font-bold text-zinc-900 mb-1">Nuevo Experimento</h3>
-                            <p className="text-xs text-zinc-600">{selectedItems.length} elementos seleccionados</p>
+                            <h3 className="text-xl font-bold text-zinc-900 dark:text-white mb-1">Nuevo Experimento</h3>
+                            <p className="text-xs text-zinc-600 dark:text-zinc-400">{selectedItems.length} elementos seleccionados</p>
                         </div>
                     </div>
 
@@ -244,7 +240,7 @@ const CerebrityLab: React.FC<Props> = ({ onNavigate }) => {
                             <select
                                 value={selectedIngredientId}
                                 onChange={handleIngredientSelect}
-                                className="w-full bg-white/50 border border-zinc-200 rounded-xl py-2 px-3 text-[10px] font-bold text-zinc-900 outline-none appearance-none"
+                                className="w-full bg-white/50 dark:!bg-white/5 border border-zinc-200 dark:!border-white/10 rounded-xl py-2 px-3 text-[10px] font-bold text-zinc-900 dark:text-white outline-none appearance-none"
                             >
                                 <option value="">+ Ingrediente</option>
                                 {ingredients.slice(0, 20).map(i => <option key={i.id} value={i.id}>{i.nombre}</option>)}
@@ -254,7 +250,7 @@ const CerebrityLab: React.FC<Props> = ({ onNavigate }) => {
                             <select
                                 value={selectedRecipeId}
                                 onChange={handleRecipeSelect}
-                                className="w-full bg-white/50 border border-zinc-200 rounded-xl py-2 px-3 text-[10px] font-bold text-zinc-900 outline-none appearance-none"
+                                className="w-full bg-white/50 dark:!bg-white/5 border border-zinc-200 dark:!border-white/10 rounded-xl py-2 px-3 text-[10px] font-bold text-zinc-900 dark:text-white outline-none appearance-none"
                             >
                                 <option value="">+ Receta</option>
                                 {recipes.slice(0, 15).map(r => <option key={r.id} value={r.id}>{r.nombre}</option>)}
@@ -265,9 +261,9 @@ const CerebrityLab: React.FC<Props> = ({ onNavigate }) => {
                     <div className="flex flex-wrap gap-2 mb-6">
                         {selectedItems.length === 0 && <p className="text-[10px] text-zinc-400 italic py-2 px-1">Selecciona elementos para analizar...</p>}
                         {selectedItems.map((item, idx) => (
-                            <div key={idx} className="flex items-center gap-1.5 bg-white border border-fuchsia-200 text-fuchsia-700 rounded-2xl px-3 py-2 text-[10px] font-black uppercase tracking-tight shadow-sm animate-in zoom-in-50 duration-200">
+                            <div key={idx} className="flex items-center gap-1.5 bg-white dark:bg-fuchsia-900/40 border border-fuchsia-200 dark:border-fuchsia-500/20 text-fuchsia-700 dark:text-fuchsia-300 rounded-2xl px-3 py-2 text-[10px] font-black uppercase tracking-tight shadow-sm animate-in zoom-in-50 duration-200">
                                 <span>{item.nombre}</span>
-                                <button onClick={() => toggleItem(item)} className="material-symbols-outlined text-[14px] hover:text-fuchsia-900 transition-colors">close</button>
+                                <button onClick={() => toggleItem(item)} className="material-symbols-outlined text-[14px] hover:text-fuchsia-900 dark:hover:text-fuchsia-100 transition-colors">close</button>
                             </div>
                         ))}
                     </div>
@@ -296,10 +292,12 @@ const CerebrityLab: React.FC<Props> = ({ onNavigate }) => {
                             <button
                                 key={i}
                                 onClick={() => handlePowerClick(power.name)}
-                                className="flex flex-col items-center justify-center p-5 rounded-[2.5rem] bg-white/10 backdrop-blur-md border border-white/20 active:scale-90 transition-all text-center group shadow-lg hover:bg-white/20"
+                                className="flex flex-col items-center justify-center p-4 rounded-[2rem] bg-white/10 backdrop-blur-md border border-white/20 active:scale-95 transition-all text-center group"
                             >
-                                <span className="material-symbols-outlined text-3xl mb-2 text-white group-hover:scale-110 transition-transform">{power.icon}</span>
-                                <span className="text-[9px] font-black text-white/90 uppercase tracking-tighter leading-tight">{power.name}</span>
+                                <div className={`w-10 h-10 rounded-xl bg-${power.color}-500/20 flex items-center justify-center mb-2 group-hover:bg-${power.color}-500/40 transition-colors`}>
+                                    <span className={`material-symbols-outlined text-${power.color}-400 text-xl`}>{power.icon}</span>
+                                </div>
+                                <span className="text-[6px] font-black text-white leading-tight uppercase tracking-tight opacity-80">{power.name}</span>
                             </button>
                         ))}
                     </div>
@@ -309,7 +307,7 @@ const CerebrityLab: React.FC<Props> = ({ onNavigate }) => {
                 {labResult && (
                     <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
                         <h3 className="text-xs font-black text-white/80 uppercase tracking-wider mb-3 px-2">Perfil Molecular</h3>
-                        <GlassCard rounded="3xl" padding="md" className="mb-6 bg-white shadow-xl ring-1 ring-black/5">
+                        <GlassCard rounded="3xl" padding="md" className="mb-6 bg-white dark:!bg-white/5 shadow-xl ring-1 ring-black/5 dark:ring-white/10">
                             <div className="p-5 mb-5 rounded-[2rem] bg-emerald-50 border border-emerald-100 shadow-inner">
                                 <h4 className="text-[10px] font-black text-emerald-800 uppercase tracking-widest mb-2 flex items-center gap-1">
                                     <span className="material-symbols-outlined text-xs">science</span>
@@ -356,12 +354,12 @@ const CerebrityLab: React.FC<Props> = ({ onNavigate }) => {
                                 key={item.id || i}
                                 rounded="3xl"
                                 padding="md"
-                                className="mb-3"
+                                className="mb-3 bg-white/40 dark:!bg-white/5 border-white/20 dark:!border-white/10"
                             >
                                 <div className="flex items-center justify-between">
                                     <div className="flex-1">
-                                        <h4 className="text-sm font-bold text-zinc-900 mb-1 line-clamp-1">{item.combination}</h4>
-                                        <p className="text-[10px] text-zinc-500 line-clamp-1">{item.result?.tecnica}</p>
+                                        <h4 className="text-sm font-bold text-zinc-900 dark:text-white mb-1 line-clamp-1">{item.combination}</h4>
+                                        <p className="text-[10px] text-zinc-500 dark:text-zinc-400 line-clamp-1">{item.result?.tecnica}</p>
                                     </div>
                                     <button
                                         onClick={() => setLabResult(item.result)}

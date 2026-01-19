@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { PageName, UserProfile } from '../types';
 import GlassCard from '../components/GlassCard';
 import PremiumButton from '../components/PremiumButton';
-import { CerebrityHeader } from '../components/CerebrityHeader';
+
 import { CerebrityResponseModal } from '../components/CerebrityResponseModal';
 import { useCerebrityOrchestrator } from '../../../hooks/useCerebrityOrchestrator';
 import { useApp } from '../../../context/AppContext';
@@ -192,11 +192,7 @@ const CerebritySynthesis: React.FC<Props> = ({ onNavigate }) => {
     return (
         <div className="bg-transparent relative overflow-hidden flex flex-col h-full">
 
-            {/* Header */}
-            <CerebrityHeader
-                currentPage={PageName.CerebritySynthesis}
-                onNavigate={onNavigate}
-            />
+            {/* Header Removed (Hoisted to Layout) */}
 
 
 
@@ -205,14 +201,14 @@ const CerebritySynthesis: React.FC<Props> = ({ onNavigate }) => {
             <main className="flex-1 overflow-y-auto custom-scroll px-5 space-y-4">
 
                 {/* Action Card */}
-                <GlassCard rounded="3xl" padding="lg" className="bg-gradient-to-r from-pink-50 to-transparent">
+                <GlassCard rounded="3xl" padding="lg" className="bg-gradient-to-r from-pink-50 to-transparent dark:!bg-white/5 dark:from-pink-900/10 dark:to-transparent dark:!border-white/10">
                     <div className="flex items-center gap-5 mb-5">
                         <div className="w-14 h-14 rounded-2xl bg-[#FF00CC] flex items-center justify-center text-white shadow-xl action-glow-pink flex-shrink-0">
                             <span className="material-symbols-outlined text-3xl fill-1">auto_awesome</span>
                         </div>
                         <div className="flex-1">
-                            <h3 className="text-xl font-bold text-zinc-900 mb-0.5">Síntesis Cognitiva</h3>
-                            <p className="text-[10px] text-zinc-600 font-bold uppercase tracking-tight opacity-70">
+                            <h3 className="text-xl font-bold text-zinc-900 dark:text-white mb-0.5">Síntesis Cognitiva</h3>
+                            <p className="text-[10px] text-zinc-600 dark:text-zinc-400 font-bold uppercase tracking-tight opacity-70">
                                 Punto de partida para exploración creativa
                             </p>
                         </div>
@@ -225,11 +221,11 @@ const CerebritySynthesis: React.FC<Props> = ({ onNavigate }) => {
                             <select
                                 value={selectedRecipeId}
                                 onChange={(e) => setSelectedRecipeId(e.target.value)}
-                                className="w-full bg-white/50 border border-zinc-200 rounded-2xl py-3 px-4 text-sm font-bold text-zinc-900 outline-none focus:ring-2 focus:ring-pink-500/20 transition-all appearance-none"
+                                className="w-full bg-white/50 dark:!bg-white/5 border border-zinc-200 dark:!border-white/10 rounded-2xl py-3 px-4 text-sm font-bold text-zinc-900 dark:text-white outline-none focus:ring-2 focus:ring-pink-500/20 transition-all appearance-none"
                             >
-                                <option value="">Seleccionar receta base...</option>
+                                <option value="" className="text-zinc-900">Seleccionar receta base...</option>
                                 {(allRecipes || []).map(r => (
-                                    <option key={r.id} value={r.id}>{r.nombre}</option>
+                                    <option key={r.id} value={r.id} className="text-zinc-900">{r.nombre}</option>
                                 ))}
                             </select>
                         </div>
@@ -240,7 +236,7 @@ const CerebritySynthesis: React.FC<Props> = ({ onNavigate }) => {
                                 value={rawInput}
                                 onChange={(e) => setRawInput(e.target.value)}
                                 placeholder="Ej: Ginebra, tónica, piel de limón, romero..."
-                                className="w-full bg-white/50 border border-zinc-200 rounded-2xl py-3 px-4 text-[11px] font-medium text-zinc-900 placeholder:text-zinc-500 outline-none focus:ring-1 focus:ring-pink-500/20 transition-all resize-none h-20"
+                                className="w-full bg-white/50 dark:!bg-white/5 border border-zinc-200 dark:!border-white/10 rounded-2xl py-3 px-4 text-[11px] font-medium text-zinc-900 dark:text-white placeholder:text-zinc-500 dark:placeholder:text-white/40 outline-none focus:ring-1 focus:ring-pink-500/20 transition-all resize-none h-20"
                             />
                         </div>
                     </div>
@@ -273,7 +269,7 @@ const CerebritySynthesis: React.FC<Props> = ({ onNavigate }) => {
                                 <div className={`w-10 h-10 rounded-xl bg-${power.color}-500/20 flex items-center justify-center mb-2 group-hover:bg-${power.color}-500/40 transition-colors`}>
                                     <span className={`material-symbols-outlined text-${power.color}-400 text-xl`}>{power.icon}</span>
                                 </div>
-                                <span className="text-[8px] font-black text-white leading-tight uppercase tracking-tight opacity-80">{power.name}</span>
+                                <span className="text-[6px] font-black text-white leading-tight uppercase tracking-tight opacity-80">{power.name}</span>
                             </button>
                         ))}
                     </div>
@@ -292,14 +288,14 @@ const CerebritySynthesis: React.FC<Props> = ({ onNavigate }) => {
                                 key={item.id || i}
                                 rounded="3xl"
                                 padding="md"
-                                className="mb-3"
+                                className="mb-3 bg-white/40 dark:!bg-white/5 border-white/20 dark:!border-white/10"
                             >
                                 <div className="flex items-center justify-between mb-3">
                                     <div>
-                                        <h4 className="text-lg font-bold text-zinc-900 line-clamp-1">
+                                        <h4 className="text-lg font-bold text-zinc-900 dark:text-white line-clamp-1">
                                             {item.orchestratorData?.titulo || "Investigación sin título"}
                                         </h4>
-                                        <p className="text-xs text-zinc-500 line-clamp-2">
+                                        <p className="text-xs text-zinc-500 dark:text-zinc-400 line-clamp-2">
                                             {item.storytelling}
                                         </p>
                                     </div>
@@ -321,7 +317,7 @@ const CerebritySynthesis: React.FC<Props> = ({ onNavigate }) => {
                                 <div className="flex gap-2">
                                     <button
                                         onClick={() => showAlert(item.orchestratorData?.titulo || "Detalles", item.mejora, "ai")}
-                                        className="flex-[0.3] py-3 rounded-2xl text-[10px] font-black text-zinc-500 bg-zinc-100 border border-zinc-200 uppercase tracking-wider hover:bg-zinc-200 transition-colors"
+                                        className="flex-[0.3] py-3 rounded-2xl text-[10px] font-black text-zinc-500 dark:text-zinc-400 bg-zinc-100 dark:!bg-white/5 border border-zinc-200 dark:!border-white/10 uppercase tracking-wider hover:bg-zinc-200 dark:hover:bg-white/10 transition-colors"
                                     >
                                         Detalles
                                     </button>

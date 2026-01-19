@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { PageName, UserProfile } from '../types';
 import GlassCard from '../components/GlassCard';
 import PremiumButton from '../components/PremiumButton';
-import { CerebrityHeader } from '../components/CerebrityHeader';
+
 import { useCerebrityOrchestrator } from '../../../hooks/useCerebrityOrchestrator';
 import { useApp } from '../../../context/AppContext';
 import { callGeminiApi } from '../../../utils/gemini';
@@ -117,10 +117,7 @@ const CerebrityTrend: React.FC<Props> = ({ onNavigate }) => {
     return (
         <div className="bg-transparent relative overflow-hidden flex flex-col h-full">
 
-            <CerebrityHeader
-                currentPage={PageName.CerebrityTrend}
-                onNavigate={onNavigate}
-            />
+
 
 
             <div className="px-5 mb-2">
@@ -133,14 +130,14 @@ const CerebrityTrend: React.FC<Props> = ({ onNavigate }) => {
             </div>
 
             <main className="flex-1 overflow-y-auto custom-scroll px-5 space-y-4">
-                <GlassCard rounded="3xl" padding="md" className="bg-gradient-to-r from-amber-50 to-transparent">
+                <GlassCard rounded="3xl" padding="md" className="bg-gradient-to-r from-amber-50 to-transparent dark:!bg-white/5 dark:from-amber-500/10 dark:to-transparent dark:!border-white/10">
                     <div className="flex items-center gap-5 mb-4">
                         <div className="w-14 h-14 rounded-2xl bg-amber-600 flex items-center justify-center text-white shadow-xl action-glow-gold">
                             <span className="material-symbols-outlined text-2xl fill-1">trending_up</span>
                         </div>
                         <div className="flex-1">
-                            <h3 className="text-lg font-bold text-zinc-900 mb-1">Descubrir Tendencias</h3>
-                            <p className="text-[10px] text-zinc-600">Análisis de mercado global</p>
+                            <h3 className="text-lg font-bold text-zinc-900 dark:text-white mb-1">Descubrir Tendencias</h3>
+                            <p className="text-[10px] text-zinc-600 dark:text-zinc-400">Análisis de mercado global</p>
                         </div>
                     </div>
 
@@ -151,7 +148,7 @@ const CerebrityTrend: React.FC<Props> = ({ onNavigate }) => {
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
                                 placeholder="Buscar tendencias..."
-                                className="w-full bg-transparent py-3 px-4 text-sm font-bold text-zinc-900 placeholder:text-zinc-500 outline-none"
+                                className="w-full bg-transparent py-3 px-4 text-sm font-bold text-zinc-900 dark:text-white placeholder:text-zinc-500 dark:placeholder:text-zinc-400 outline-none"
                             />
                         </div>
                         {/* Quick Filters */}
@@ -163,7 +160,7 @@ const CerebrityTrend: React.FC<Props> = ({ onNavigate }) => {
                                         <button
                                             key={opt}
                                             onClick={() => setSelectedInspiration(opt)}
-                                            className={`px-3 py-1.5 rounded-full text-[9px] font-bold whitespace-nowrap transition-all ${selectedInspiration === opt ? 'bg-amber-500 text-white' : 'bg-zinc-100 text-zinc-500 border border-zinc-200'}`}
+                                            className={`px-3 py-1.5 rounded-full text-[9px] font-bold whitespace-nowrap transition-all ${selectedInspiration === opt ? 'bg-amber-500 text-white' : 'bg-zinc-100 dark:!bg-white/5 text-zinc-500 dark:text-zinc-400 border border-zinc-200 dark:!border-white/10'}`}
                                         >
                                             {opt}
                                         </button>
@@ -177,7 +174,7 @@ const CerebrityTrend: React.FC<Props> = ({ onNavigate }) => {
                                         <button
                                             key={opt}
                                             onClick={() => setSelectedFocus(opt)}
-                                            className={`px-3 py-1.5 rounded-full text-[9px] font-bold whitespace-nowrap transition-all ${selectedFocus === opt ? 'bg-amber-500 text-white' : 'bg-zinc-100 text-zinc-500 border border-zinc-200'}`}
+                                            className={`px-3 py-1.5 rounded-full text-[9px] font-bold whitespace-nowrap transition-all ${selectedFocus === opt ? 'bg-amber-500 text-white' : 'bg-zinc-100 dark:!bg-white/5 text-zinc-500 dark:text-zinc-400 border border-zinc-200 dark:!border-white/10'}`}
                                         >
                                             {opt}
                                         </button>
@@ -208,14 +205,14 @@ const CerebrityTrend: React.FC<Props> = ({ onNavigate }) => {
                     {sessionTrends.length > 0 && (
                         <div className="mb-6 space-y-3">
                             {sessionTrends.map((trend, i) => (
-                                <GlassCard key={`session-${i}`} rounded="3xl" padding="md" className="border-amber-200 bg-white/10 shadow-xl animate-in fade-in slide-in-from-bottom-2">
+                                <GlassCard key={`session-${i}`} rounded="3xl" padding="md" className="border-amber-200 dark:border-white/10 bg-white/10 dark:!bg-white/5 shadow-xl animate-in fade-in slide-in-from-bottom-2">
                                     <div className="flex items-center justify-between">
                                         <div className="flex-1">
                                             <div className="flex items-center gap-2 mb-1">
-                                                <h4 className="text-lg font-bold text-zinc-900">{trend.name}</h4>
+                                                <h4 className="text-lg font-bold text-zinc-900 dark:text-white">{trend.name}</h4>
                                                 {trend.hot && <span className="bg-red-100 text-red-600 text-[8px] font-black px-2 py-0.5 rounded-full">HOT</span>}
                                             </div>
-                                            <p className="text-xs text-zinc-500 mb-2">{trend.category}</p>
+                                            <p className="text-xs text-zinc-500 dark:text-zinc-400 mb-2">{trend.category}</p>
                                         </div>
                                         <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center text-amber-600">
                                             <span className="material-symbols-outlined">trending_up</span>
@@ -236,12 +233,12 @@ const CerebrityTrend: React.FC<Props> = ({ onNavigate }) => {
                                 key={trend.id || i}
                                 rounded="3xl"
                                 padding="md"
-                                className="mb-3"
+                                className="mb-3 bg-white/40 dark:!bg-white/5 border-white/20 dark:!border-white/10"
                             >
                                 <div className="flex items-center justify-between">
                                     <div className="flex-1">
                                         <div className="flex items-center gap-2 mb-1">
-                                            <h4 className="text-lg font-bold text-zinc-900 line-clamp-1">{trend.name}</h4>
+                                            <h4 className="text-lg font-bold text-zinc-900 dark:text-white line-clamp-1">{trend.name}</h4>
                                             {trend.hot && (
                                                 <span className="px-2 py-0.5 bg-red-100 text-red-600 rounded-full text-[8px] font-black uppercase tracking-wide flex items-center gap-1">
                                                     <span className="material-symbols-outlined !text-xs fill-1">local_fire_department</span>
@@ -249,10 +246,10 @@ const CerebrityTrend: React.FC<Props> = ({ onNavigate }) => {
                                                 </span>
                                             )}
                                         </div>
-                                        <p className="text-xs text-zinc-500 mb-2">{trend.category}</p>
+                                        <p className="text-xs text-zinc-500 dark:text-zinc-400 mb-2">{trend.category}</p>
                                         <div className="flex items-center gap-3">
-                                            <span className="text-sm font-black text-emerald-600">{trend.growth}</span>
-                                            <div className="h-3 w-px bg-zinc-200"></div>
+                                            <span className="text-sm font-black text-emerald-600 dark:text-emerald-400">{trend.growth}</span>
+                                            <div className="h-3 w-px bg-zinc-200 dark:bg-white/10"></div>
                                             <div className="flex items-center gap-1">
                                                 <span className="text-[9px] font-black text-zinc-400 uppercase">Alineación</span>
                                                 <span className={`text-[10px] font-black ${trend.avatarAlignment > 80 ? 'text-amber-600' : 'text-zinc-500'}`}>
