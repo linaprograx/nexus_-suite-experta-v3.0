@@ -1,5 +1,5 @@
-import React from 'react';
 import { MOBILE_BACKGROUNDS, MOBILE_BORDERS, MOBILE_BLUR, MOBILE_SHADOWS } from '../design-tokens';
+import { CLASS_NAMES } from '../../../theme/motion';
 
 interface GlassCardProps {
     children: React.ReactNode;
@@ -59,7 +59,8 @@ const GlassCard: React.FC<GlassCardProps> = ({
             className={`
         ${roundedClasses[rounded]}
         ${paddingClasses[padding]}
-        ${onClick ? 'cursor-pointer active:scale-[0.98]' : ''}
+        ${paddingClasses[padding]}
+        ${onClick ? CLASS_NAMES.pressEffect : ''}
         transition-all duration-300
         ${className}
       `}

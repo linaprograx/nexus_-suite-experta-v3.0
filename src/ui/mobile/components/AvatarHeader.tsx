@@ -1,6 +1,8 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PageName, PAGE_THEMES } from '../types';
+import { CLASS_NAMES, TRANSITIONS } from '../../../theme/motion';
+import { motion } from 'framer-motion';
 
 interface AvatarHeaderProps {
     currentPage: PageName;
@@ -56,17 +58,23 @@ export const AvatarHeader: React.FC<AvatarHeaderProps> = ({
                             className={`
                                 px-6 py-2.5 rounded-full text-[10px] font-black uppercase tracking-widest 
                                 whitespace-nowrap transition-all relative flex items-center gap-2
-                                ${isActive
-                                    ? 'bg-white text-zinc-800 shadow-lg scale-105'
-                                    : 'bg-zinc-200/50 backdrop-blur-md border border-zinc-300/30 text-zinc-500 hover:bg-zinc-200'
-                                }
+                                ${CLASS_NAMES.pressEffect}
+                                ${isActive ? 'text-zinc-800 scale-105' : 'bg-zinc-200/50 backdrop-blur-md border border-zinc-300/30 text-zinc-500 hover:bg-zinc-200'}
                             `}
                         >
-                            <span className={`material-symbols-outlined !text-sm ${isActive ? 'fill-1' : ''}`}
+                            {isActive && (
+                                <motion.div
+                                    layoutId="activeAvatarPill"
+                                    className="absolute inset-0 bg-white rounded-full shadow-lg"
+                                    transition={TRANSITIONS.spring}
+                                    initial={false}
+                                />
+                            )}
+                            <span className={`material-symbols-outlined !text-sm relative z-10 ${isActive ? 'fill-1' : ''}`}
                                 style={{ color: isActive ? sectionColor : 'inherit' }}>
                                 {section.icon}
                             </span>
-                            {section.label}
+                            <span className="relative z-10">{section.label}</span>
                         </button>
                     );
                 })}

@@ -1,5 +1,6 @@
 import React from 'react';
 import { MOBILE_SHADOWS, MOBILE_COLORS, ModuleName } from '../design-tokens';
+import { CLASS_NAMES } from '../../../theme/motion';
 
 interface PremiumButtonProps {
     children: React.ReactNode;
@@ -108,14 +109,7 @@ const PremiumButton: React.FC<PremiumButtonProps> = ({
         transition-all
         duration-300
         hover:brightness-110
-        active:scale-[0.98]
-        disabled:opacity-50
-        disabled:cursor-not-allowed
-        disabled:hover:brightness-100
-        flex
-        items-center
-        justify-center
-        gap-2
+        ${CLASS_NAMES.pressEffect}
         ${className}
       `}
             style={variantStyles}

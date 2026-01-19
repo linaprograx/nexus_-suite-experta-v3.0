@@ -1,5 +1,7 @@
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { CLASS_NAMES, TRANSITIONS } from '../../../theme/motion';
+import { motion } from 'framer-motion';
 
 interface GrimorioHeaderProps {
     activeSection: 'recipes' | 'stock' | 'market';
@@ -79,13 +81,19 @@ export const GrimorioHeader: React.FC<GrimorioHeaderProps> = ({
                             className={`
                                 px-6 py-2.5 rounded-full text-[10px] font-black uppercase tracking-widest 
                                 whitespace-nowrap transition-all relative
-                                ${isActive
-                                    ? 'bg-white text-zinc-800 shadow-lg'
-                                    : 'bg-white/20 backdrop-blur-md border border-white/30 text-white hover:bg-white/30'
-                                }
+                                ${CLASS_NAMES.pressEffect}
+                                ${isActive ? 'text-zinc-800 scale-105' : 'bg-white/20 backdrop-blur-md border border-white/30 text-white hover:bg-white/30'}
                             `}
                         >
-                            {section.label}
+                            {isActive && (
+                                <motion.div
+                                    layoutId="activeGrimorioPill"
+                                    className="absolute inset-0 bg-white rounded-full shadow-lg"
+                                    transition={TRANSITIONS.spring}
+                                    initial={false}
+                                />
+                            )}
+                            <span className="relative z-10">{section.label}</span>
                         </button>
                     );
                 })}

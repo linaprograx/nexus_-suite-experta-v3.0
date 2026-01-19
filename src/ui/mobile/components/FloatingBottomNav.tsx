@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { PageName, PAGE_THEMES } from '../types';
 import { MOBILE_BACKGROUNDS, MOBILE_BLUR, MOBILE_SHADOWS, MOBILE_BORDERS } from '../design-tokens';
+import { CLASS_NAMES } from '../../../theme/motion';
 
 interface FloatingBottomNavProps {
     currentPage: PageName;
@@ -155,6 +156,7 @@ const FloatingBottomNav: React.FC<FloatingBottomNavProps> = ({ currentPage, onNa
                                                         ? 'bg-white shadow-lg scale-110'
                                                         : 'bg-transparent hover:bg-white/30 hover:scale-105'
                                                     }
+                                                    ${CLASS_NAMES.pressEffect}
                                                 `}
                                                 style={gActive ? {
                                                     boxShadow: `0 4px 20px ${gColor}40, 0 0 0 2px ${gColor}20`
@@ -229,6 +231,7 @@ const FloatingBottomNav: React.FC<FloatingBottomNavProps> = ({ currentPage, onNa
                                                         ? 'bg-white shadow-lg scale-110'
                                                         : 'bg-transparent hover:bg-white/30 hover:scale-105'
                                                     }
+                                                    ${CLASS_NAMES.pressEffect}
                                                 `}
                                                 style={cActive ? {
                                                     boxShadow: `0 4px 20px ${cColor}40, 0 0 0 2px ${cColor}20`
@@ -301,6 +304,7 @@ const FloatingBottomNav: React.FC<FloatingBottomNavProps> = ({ currentPage, onNa
                                                         ? 'bg-white shadow-lg scale-110'
                                                         : 'bg-transparent hover:bg-white/30 hover:scale-105'
                                                     }
+                                                    ${CLASS_NAMES.pressEffect}
                                                 `}
                                                 style={aActive ? {
                                                     boxShadow: `0 4px 20px ${aColor}40, 0 0 0 2px ${aColor}20`
@@ -361,6 +365,7 @@ const FloatingBottomNav: React.FC<FloatingBottomNavProps> = ({ currentPage, onNa
                                             ? 'bg-white shadow-lg scale-110'
                                             : 'bg-transparent hover:bg-white/30 hover:scale-105'
                                         }
+                                        ${CLASS_NAMES.pressEffect}
                                     `}
                                     style={active ? {
                                         boxShadow: `0 4px 20px ${themeColor}40, 0 0 0 2px ${themeColor}20`
