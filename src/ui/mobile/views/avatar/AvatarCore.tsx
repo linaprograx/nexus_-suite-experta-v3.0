@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import GlassCard from '../../components/GlassCard';
 import { AvatarType, AvatarConfig, Tone, ResearchAxis } from '../../../../hooks/useAvatarCognition';
+import { AvatarHeader } from '../../components/AvatarHeader';
+import { PageName } from '../../types';
 
 interface Props {
     activeAvatarType: AvatarType;
@@ -206,8 +208,8 @@ const ConsciousnessMapModal: React.FC<{
                                         <div className={`relative w-full h-full transition-all duration-700 preserve-3d ${isFlipped ? 'rotate-y-180' : ''}`}>
                                             {/* Front */}
                                             <div className={`absolute inset-0 backface-hidden rounded-[2rem] p-6 flex items-center justify-between border transition-all z-10 ${isCurrent
-                                                    ? 'bg-zinc-900 border-indigo-400 shadow-[0_0_20px_rgba(99,102,241,0.3)]'
-                                                    : 'bg-white/5 border-white/10 opacity-60'
+                                                ? 'bg-zinc-900 border-indigo-400 shadow-[0_0_20px_rgba(99,102,241,0.3)]'
+                                                : 'bg-white/5 border-white/10 opacity-60'
                                                 }`}>
                                                 <div className="flex-1">
                                                     <div className="flex items-center gap-2 mb-1">
@@ -347,18 +349,20 @@ const AvatarCore: React.FC<Props> = ({
 
     return (
         <div className="space-y-6">
+            <AvatarHeader currentPage={PageName.AvatarCore} />
+
             {/* Legend / Status Bar */}
-            <div className="flex gap-2 mb-2">
-                <GlassCard rounded="2xl" padding="sm" className="flex-1 bg-zinc-900/80 border-white/10 backdrop-blur-xl transition-all active:scale-[0.98] cursor-pointer" onClick={() => setIsMapOpen(true)}>
-                    <div className="flex flex-col items-center justify-center py-1">
-                        <span className="text-[7px] font-black text-white/60 uppercase tracking-[0.2em] mb-1">Estado de Consciencia</span>
-                        <span className="text-sm font-black text-white tracking-widest">{currentTier.toUpperCase()}</span>
+            <div className="flex gap-3 mb-2 px-1">
+                <GlassCard rounded="2xl" padding="none" className="flex-1 bg-white/60 border-white/40 backdrop-blur-xl transition-all active:scale-[0.98] cursor-pointer shadow-sm" onClick={() => setIsMapOpen(true)}>
+                    <div className="flex flex-col items-center justify-center py-3">
+                        <span className="text-[7px] font-black text-zinc-400 uppercase tracking-[0.2em] mb-1">Estado de Consciencia</span>
+                        <span className="text-xs font-black text-zinc-800 tracking-widest">{currentTier.toUpperCase()}</span>
                     </div>
                 </GlassCard>
-                <GlassCard rounded="2xl" padding="sm" className="flex-1 bg-zinc-900/80 border-white/10 backdrop-blur-xl transition-all active:scale-[0.98] cursor-pointer" onClick={() => setIsCreateOpen(activeConfigs.length < unlockedSlots)}>
-                    <div className="flex flex-col items-center justify-center py-1">
-                        <span className="text-[7px] font-black text-white/60 uppercase tracking-[0.2em] mb-1">Capacidad de Manifestación</span>
-                        <span className="text-sm font-black text-white tracking-widest uppercase">{unlockedSlots >= 99 ? '∞' : unlockedSlots} Avatares</span>
+                <GlassCard rounded="2xl" padding="none" className="flex-1 bg-white/60 border-white/40 backdrop-blur-xl transition-all active:scale-[0.98] cursor-pointer shadow-sm" onClick={() => setIsCreateOpen(activeConfigs.length < unlockedSlots)}>
+                    <div className="flex flex-col items-center justify-center py-3">
+                        <span className="text-[7px] font-black text-zinc-400 uppercase tracking-[0.2em] mb-1">Capacidad de Manifestación</span>
+                        <span className="text-xs font-black text-zinc-800 tracking-widest uppercase">{unlockedSlots >= 99 ? '∞' : unlockedSlots} Avatares</span>
                     </div>
                 </GlassCard>
             </div>
@@ -388,24 +392,24 @@ const AvatarCore: React.FC<Props> = ({
                                     <div className="flex items-center gap-4">
                                         <div
                                             className={`w-14 h-14 rounded-2xl flex items-center justify-center text-2xl shadow-inner ${isActive
-                                                ? 'bg-white text-zinc-900 active-glow'
-                                                : 'bg-zinc-100/10 text-white/80'
+                                                ? 'bg-zinc-900 text-white shadow-lg'
+                                                : 'bg-zinc-200/50 text-zinc-500'
                                                 }`}
                                         >
                                             {config.emoji}
                                         </div>
                                         <div>
                                             <div className="flex items-center gap-2 mb-1">
-                                                <h3 className="text-lg font-black text-white uppercase tracking-tight">
+                                                <h3 className="text-lg font-black text-zinc-900 uppercase tracking-tight">
                                                     {config.name || type}
                                                 </h3>
                                                 {isActive && (
-                                                    <span className="px-2 py-0.5 bg-indigo-500/20 text-indigo-300 rounded-sm text-[7px] font-black uppercase tracking-widest border border-indigo-500/30">
+                                                    <span className="px-2 py-0.5 bg-indigo-100 text-indigo-600 rounded-sm text-[7px] font-black uppercase tracking-widest border border-indigo-200">
                                                         MANIFESTADO
                                                     </span>
                                                 )}
                                             </div>
-                                            <p className="text-[10px] text-white/70 font-medium leading-tight max-w-[180px]">
+                                            <p className="text-[10px] text-zinc-500 font-medium leading-tight max-w-[180px]">
                                                 {type === 'Mixologist' ? 'Arquitecto de sabores líquidos. Domina la alquimia de los espirituosos.' : 'Maestro de la materia prima. Transforma ingredientes en experiencias.'}
                                             </p>
                                         </div>
@@ -413,9 +417,9 @@ const AvatarCore: React.FC<Props> = ({
 
                                     <div className="flex flex-col items-end">
                                         {isActive ? (
-                                            <span className="material-symbols-outlined text-indigo-400 fill-1">check_circle</span>
+                                            <span className="material-symbols-outlined text-indigo-500 fill-1">check_circle</span>
                                         ) : (
-                                            <button className="text-[8px] font-bold text-white/30 hover:text-white uppercase tracking-widest">Manifestar</button>
+                                            <button className="text-[8px] font-bold text-zinc-400 hover:text-zinc-900 uppercase tracking-widest">Manifestar</button>
                                         )}
                                     </div>
                                 </div>
@@ -424,7 +428,7 @@ const AvatarCore: React.FC<Props> = ({
                                     <div className="px-5 pb-5 pt-2 flex gap-2">
                                         <button
                                             onClick={(e) => { e.stopPropagation(); setConfigModalType(type); }}
-                                            className="w-full py-4 bg-white/5 text-white/60 border border-white/10 rounded-2xl text-[9px] font-black uppercase tracking-widest transition-all active:scale-95 hover:bg-white/10"
+                                            className="w-full py-4 bg-zinc-100 text-zinc-600 border border-zinc-200 rounded-2xl text-[9px] font-black uppercase tracking-widest transition-all active:scale-95 hover:bg-zinc-200"
                                         >
                                             CONFIGURAR AVATAR
                                         </button>
@@ -438,10 +442,10 @@ const AvatarCore: React.FC<Props> = ({
                 {activeConfigs.length < unlockedSlots && (
                     <button
                         onClick={() => setIsCreateOpen(true)}
-                        className="w-full py-6 border-2 border-dashed border-white/10 bg-white/5 rounded-[2.5rem] flex flex-col items-center justify-center gap-2 opacity-60 hover:opacity-100 transition-all active:scale-[0.98]"
+                        className="w-full py-6 border-2 border-dashed border-zinc-300/50 bg-white/40 rounded-[2.5rem] flex flex-col items-center justify-center gap-2 opacity-60 hover:opacity-100 transition-all active:scale-[0.98]"
                     >
-                        <span className="material-symbols-outlined text-white/40">add_circle</span>
-                        <span className="text-[10px] font-black text-white/40 uppercase tracking-widest">Nueva Manifestación</span>
+                        <span className="material-symbols-outlined text-zinc-400">add_circle</span>
+                        <span className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Nueva Manifestación</span>
                     </button>
                 )}
             </div>

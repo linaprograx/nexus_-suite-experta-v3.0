@@ -134,15 +134,7 @@ const CerebrityMakeMenu: React.FC<Props> = ({ onNavigate }) => {
                 onNavigate={onNavigate}
             />
 
-            {/* View Title Overlay */}
-            <div className="px-7 mb-3 relative z-10">
-                <h2 className="text-3xl font-black text-zinc-900 tracking-tighter leading-none opacity-80 uppercase">
-                    Make Menu
-                </h2>
-                <p className="text-[10px] text-zinc-500 mt-1 font-bold uppercase tracking-widest opacity-60">
-                    Optimization Engine
-                </p>
-            </div>
+
 
             {/* 🧠 Hard Logic: Editorial Style & Coherence Alerts */}
             <div className="px-5 mb-2 space-y-2">
@@ -206,8 +198,8 @@ const CerebrityMakeMenu: React.FC<Props> = ({ onNavigate }) => {
                     </div>
 
                     <PremiumButton
-                        customColor="#FFE600"
-                        customGradient="linear-gradient(135deg, #FFE600 0%, #FFB800 100%)"
+                        customColor="#84cc16"
+                        customGradient="linear-gradient(135deg, #84cc16 0%, #65a30d 100%)"
                         variant="gradient"
                         size="lg"
                         fullWidth

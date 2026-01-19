@@ -18,7 +18,7 @@ interface Props {
 
 const Avatar: React.FC<Props> = ({ onNavigate, initialTab = 'Core', notify }) => {
     const { userPlan } = useApp();
-    const { activeAvatarType, avatarConfigs, setActiveAvatarType } = useAvatarCognition();
+    const { activeAvatarType, avatarConfigs, setActiveAvatarType, updateConfig, createNewAvatar } = useAvatarCognition();
     const [activeTab, setActiveTab] = useState<'Core' | 'Intelligence' | 'Competition'>(initialTab);
 
     // Sync state with prop for standalone routing
@@ -40,57 +40,7 @@ const Avatar: React.FC<Props> = ({ onNavigate, initialTab = 'Core', notify }) =>
 
     return (
         <div className="bg-transparent relative overflow-hidden flex flex-col h-full">
-            {/* Minimal Header */}
-            <header className="px-5 pt-8 pb-4 relative z-10">
-                <div className="flex justify-between items-center mb-6">
-                    <div>
-                        <p className={`text-[8px] font-black uppercase tracking-[0.2em] mb-1 ${activeTab === 'Core' ? 'text-white/40' : 'text-black/30'
-                            }`}>Nexus Cognitive System</p>
-                        <h1 className={`text-4xl font-black uppercase tracking-tighter leading-none ${activeTab === 'Core' ? 'text-white' : 'text-zinc-950'
-                            }`}>
-                            {currentTheme.label}
-                        </h1>
-                    </div>
-                    <button
-                        onClick={() => onNavigate(PageName.Dashboard)}
-                        className={`w-10 h-10 rounded-full backdrop-blur-md border flex items-center justify-center transition-all ${activeTab === 'Core'
-                            ? 'bg-white/5 border-white/10 text-white/40 hover:text-white'
-                            : 'bg-black/5 border-black/10 text-black/40 hover:text-black'
-                            }`}
-                    >
-                        <span className="material-symbols-outlined text-lg">close</span>
-                    </button>
-                </div>
-
-                <p className={`text-[10px] max-w-[240px] leading-relaxed mb-6 font-medium ${activeTab === 'Core' ? 'text-white/50' : 'text-black/50'
-                    }`}>
-                    {currentTheme.description}
-                </p>
-
-                {/* Internal Tabs (Sync with Global Navigation) */}
-                <div className="flex gap-2">
-                    {(['Core', 'Intelligence', 'Competition'] as const).map(tab => {
-                        const targetPage = tab === 'Core' ? PageName.AvatarCore
-                            : tab === 'Intelligence' ? PageName.AvatarIntelligence
-                                : PageName.AvatarCompetition;
-                        return (
-                            <button
-                                key={tab}
-                                onClick={() => onNavigate(targetPage)}
-                                className={`px-4 py-2 rounded-xl text-[8px] font-black uppercase tracking-widest transition-all ${activeTab === tab
-                                    ? 'bg-white text-zinc-900 shadow-xl'
-                                    : 'bg-white/5 text-white/40 border border-white/5'
-                                    }`}
-                            >
-                                {tab === 'Core' ? 'Núcleo' : tab === 'Intelligence' ? 'Inteligencia' : 'Competición'}
-                            </button>
-                        );
-                    })}
-                </div>
-            </header>
-
-            {/* Main Content */}
-            <main className="flex-1 overflow-y-auto custom-scroll px-5 pb-40 relative z-10">
+            <main className="flex-1 overflow-y-auto custom-scroll pb-24 relative z-10 pt-2">
                 <AnimatePresence mode="wait">
                     <motion.div
                         key={activeTab}
@@ -104,19 +54,23 @@ const Avatar: React.FC<Props> = ({ onNavigate, initialTab = 'Core', notify }) =>
                                 activeAvatarType={activeAvatarType}
                                 avatarConfigs={avatarConfigs}
                                 setActiveAvatarType={setActiveAvatarType}
-                                updateConfig={useAvatarCognition().updateConfig}
-                                createNewAvatar={useAvatarCognition().createNewAvatar}
+                                updateConfig={updateConfig}
+                                createNewAvatar={createNewAvatar}
                                 unlockedSlots={unlockedSlots}
-                                accentColor={currentTheme.accent}
+                                accentColor={THEMES.Core.accent}
                             />
                         )}
 
-                        {activeTab === 'Intelligence' && (
+                        {activeTab === 'Intelligence' && avatarConfigs[activeAvatarType] ? (
                             <AvatarIntelligence
                                 config={avatarConfigs[activeAvatarType]}
-                                accentColor={currentTheme.accent}
+                                accentColor={THEMES.Intelligence.accent}
                             />
-                        )}
+                        ) : activeTab === 'Intelligence' ? (
+                            <div className="p-8 text-center bg-white/5 rounded-3xl border border-white/10 mt-20">
+                                <p className="text-xs text-zinc-500">Selecciona un Avatar en el Núcleo para ver su Inteligencia.</p>
+                            </div>
+                        ) : null}
 
                         {activeTab === 'Competition' && (
                             <AvatarCompetition />
@@ -124,14 +78,6 @@ const Avatar: React.FC<Props> = ({ onNavigate, initialTab = 'Core', notify }) =>
                     </motion.div>
                 </AnimatePresence>
             </main>
-
-            {/* Bottom Glow Atmosphere */}
-            <div
-                className="fixed bottom-0 left-0 right-0 h-40 pointer-events-none z-0 transition-all duration-1000"
-                style={{
-                    background: `radial-gradient(circle at 50% 100%, ${currentTheme.accent}20 0%, transparent 70%)`
-                }}
-            />
         </div>
     );
 };

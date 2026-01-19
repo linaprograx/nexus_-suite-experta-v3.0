@@ -3,6 +3,8 @@ import { motion } from 'framer-motion';
 import GlassCard from '../../components/GlassCard';
 import PremiumButton from '../../components/PremiumButton';
 import { AvatarConfig } from '../../../../hooks/useAvatarCognition';
+import { AvatarHeader } from '../../components/AvatarHeader';
+import { PageName } from '../../types';
 
 interface Props {
     config: AvatarConfig;
@@ -15,18 +17,19 @@ const AvatarIntelligence: React.FC<Props> = ({ config, accentColor }) => {
 
     return (
         <div className="space-y-6">
+            <AvatarHeader currentPage={PageName.AvatarIntelligence} />
             {/* Header / Mode Toggle */}
-            <div className="flex bg-black/10 p-1 rounded-2xl border border-black/5 backdrop-blur-sm">
+            <div className="flex bg-transparent p-1 mx-4 gap-2">
                 <button
                     onClick={() => setMode('Standard')}
-                    className={`flex-1 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${mode === 'Standard' ? 'bg-red-950 text-white shadow-lg' : 'text-red-950/40'
+                    className={`flex-1 py-3 rounded-full text-[9px] font-black uppercase tracking-widest transition-all ${mode === 'Standard' ? 'bg-zinc-900 text-white shadow-lg' : 'bg-white/40 text-zinc-500 border border-white/40'
                         }`}
                 >
                     Servicio Estándar
                 </button>
                 <button
                     onClick={() => setMode('Competition')}
-                    className={`flex-1 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${mode === 'Competition' ? 'bg-red-950 text-white shadow-lg' : 'text-red-950/40'
+                    className={`flex-1 py-3 rounded-full text-[9px] font-black uppercase tracking-widest transition-all ${mode === 'Competition' ? 'bg-zinc-900 text-white shadow-lg' : 'bg-white/40 text-zinc-500 border border-white/40'
                         }`}
                 >
                     Modo Competición

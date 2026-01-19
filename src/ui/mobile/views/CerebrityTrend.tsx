@@ -121,18 +121,7 @@ const CerebrityTrend: React.FC<Props> = ({ onNavigate }) => {
                 currentPage={PageName.CerebrityTrend}
                 onNavigate={onNavigate}
             />
-            {/* View Title Overlay */}
-            <div className="px-7 mb-3 relative z-10 flex items-baseline justify-between">
-                <div>
-                    <h2 className="text-3xl font-black text-white tracking-tighter leading-none uppercase"
-                        style={{ textShadow: '0 2px 10px rgba(0,0,0,0.5)' }}>
-                        Trend Locator
-                    </h2>
-                    <p className="text-[10px] text-white/50 mt-1 font-bold uppercase tracking-widest opacity-80">
-                        Global Market Analysis
-                    </p>
-                </div>
-            </div>
+
 
             <div className="px-5 mb-2">
                 <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 backdrop-blur-md">

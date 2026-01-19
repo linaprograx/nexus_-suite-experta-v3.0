@@ -198,18 +198,7 @@ const CerebritySynthesis: React.FC<Props> = ({ onNavigate }) => {
                 onNavigate={onNavigate}
             />
 
-            {/* View Title Overlay */}
-            <div className="px-7 mb-3 relative z-10 flex items-baseline justify-between">
-                <div>
-                    <h2 className="text-3xl font-black text-white tracking-tighter leading-none uppercase"
-                        style={{ textShadow: '0 2px 10px rgba(0,0,0,0.5)' }}>
-                        Synthesis
-                    </h2>
-                    <p className="text-[10px] text-white/50 mt-1 font-bold uppercase tracking-widest opacity-80">
-                        Creativity Engine
-                    </p>
-                </div>
-            </div>
+
 
 
             {/* Main Content */}
@@ -218,7 +207,7 @@ const CerebritySynthesis: React.FC<Props> = ({ onNavigate }) => {
                 {/* Action Card */}
                 <GlassCard rounded="3xl" padding="lg" className="bg-gradient-to-r from-pink-50 to-transparent">
                     <div className="flex items-center gap-5 mb-5">
-                        <div className="w-14 h-14 rounded-2xl bg-pink-600 flex items-center justify-center text-white shadow-xl action-glow-pink flex-shrink-0">
+                        <div className="w-14 h-14 rounded-2xl bg-[#FF00CC] flex items-center justify-center text-white shadow-xl action-glow-pink flex-shrink-0">
                             <span className="material-symbols-outlined text-3xl fill-1">auto_awesome</span>
                         </div>
                         <div className="flex-1">
@@ -258,7 +247,7 @@ const CerebritySynthesis: React.FC<Props> = ({ onNavigate }) => {
 
                     <PremiumButton
                         customColor="#FF00CC"
-                        customGradient="linear-gradient(135deg, #FF00CC 0%, #8F00FF 100%)"
+                        customGradient="linear-gradient(135deg, #FF00CC 0%, #D946EF 100%)"
                         variant="gradient"
                         size="lg"
                         fullWidth

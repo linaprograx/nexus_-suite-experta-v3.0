@@ -19,7 +19,7 @@ export const MobileSelectionHUD: React.FC = () => {
                 animate={{ y: 0, opacity: 1 }}
                 exit={{ y: -50, opacity: 0 }}
                 transition={{ type: 'spring', stiffness: 300, damping: 25 }}
-                className="fixed top-20 left-1/2 -translate-x-1/2 z-[60]
+                className="fixed top-[calc(env(safe-area-inset-top)+1rem)] left-1/2 -translate-x-1/2 z-[60]
                            bg-slate-900/90 dark:bg-slate-800/90 backdrop-blur-md
                            text-white rounded-full px-5 py-2.5
                            text-sm font-semibold shadow-xl border border-white/10"

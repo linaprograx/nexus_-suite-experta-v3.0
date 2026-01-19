@@ -123,7 +123,7 @@ const MobileZoomControls: React.FC = () => {
     const zoomPercent = Math.round((viewport?.zoom || 1) * 100);
 
     return (
-        <div className="fixed top-4 right-4 z-[60] flex gap-2 bg-white/95 dark:bg-slate-900/95 
+        <div className="fixed top-[calc(env(safe-area-inset-top)+1rem)] right-4 z-[60] flex gap-2 bg-white/95 dark:bg-slate-900/95 
                         backdrop-blur-md rounded-2xl p-2 shadow-xl border border-slate-200 dark:border-slate-700">
             <button
                 onClick={handleZoomOut}

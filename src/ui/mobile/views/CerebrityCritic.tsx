@@ -123,29 +123,21 @@ const CerebrityCritic: React.FC<Props> = ({ onNavigate }) => {
                 onNavigate={onNavigate}
             />
 
-            {/* View Title Overlay */}
-            <div className="px-7 mb-3 relative z-10 flex items-baseline justify-between">
-                <div>
-                    <h2 className="text-3xl font-black text-white tracking-tighter leading-none uppercase"
-                        style={{ textShadow: '0 2px 10px rgba(0,0,0,0.5)' }}>
-                        The Critic
-                    </h2>
-                    <p className="text-[10px] text-white/50 mt-1 font-bold uppercase tracking-widest opacity-80">
-                        Proprietary Algorithm
-                    </p>
-                </div>
-                <div className="text-right">
-                    <p className="text-[9px] font-black text-white/40 uppercase tracking-widest mb-0.5">Severidad</p>
-                    <div className="flex items-center gap-1 justify-end">
-                        <span className="text-xs font-black text-white">{(severity * 100).toFixed(0)}%</span>
-                        <div className="w-10 h-1 bg-white/10 rounded-full overflow-hidden">
-                            <div
-                                className="h-full bg-cyan-400"
-                                style={{ width: `${severity * 100}%` }}
-                            ></div>
+            <div className="px-5 mb-2 mt-2">
+                <GlassCard rounded="2xl" padding="sm" className="bg-white/10 border-white/20 mb-2">
+                    <div className="flex items-center justify-between">
+                        <p className="text-[9px] font-black text-white/60 uppercase tracking-widest">Severidad del Algoritmo</p>
+                        <div className="flex items-center gap-2">
+                            <span className="text-xs font-black text-white">{(severity * 100).toFixed(0)}%</span>
+                            <div className="w-16 h-1.5 bg-white/10 rounded-full overflow-hidden">
+                                <div
+                                    className="h-full bg-cyan-400"
+                                    style={{ width: `${severity * 100}%` }}
+                                ></div>
+                            </div>
                         </div>
                     </div>
-                </div>
+                </GlassCard>
             </div>
 
             <div className="px-5 mb-2">
@@ -215,8 +207,8 @@ const CerebrityCritic: React.FC<Props> = ({ onNavigate }) => {
                     </div>
 
                     <PremiumButton
-                        customColor="#FF0000"
-                        customGradient="linear-gradient(135deg, #FF0000 0%, #990000 100%)"
+                        customColor="#06b6d4"
+                        customGradient="linear-gradient(135deg, #06b6d4 0%, #0891b2 100%)"
                         variant="gradient"
                         size="lg"
                         fullWidth

@@ -209,18 +209,7 @@ const CerebrityLab: React.FC<Props> = ({ onNavigate }) => {
                 onNavigate={onNavigate}
             />
 
-            {/* View Title Overlay */}
-            <div className="px-7 mb-3 relative z-10 flex items-baseline justify-between">
-                <div>
-                    <h2 className="text-3xl font-black text-white tracking-tighter leading-none uppercase"
-                        style={{ textShadow: '0 2px 10px rgba(0,0,0,0.5)' }}>
-                        The Lab
-                    </h2>
-                    <p className="text-[10px] text-white/50 mt-1 font-bold uppercase tracking-widest opacity-80">
-                        Molecular Synthesis
-                    </p>
-                </div>
-            </div>
+
 
             {/* 🧠 Hard Logic: Analysis Bias Card */}
             <div className="px-5 mb-3">

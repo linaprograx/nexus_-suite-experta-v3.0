@@ -1,33 +1,33 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { PageName, PAGE_THEMES } from '../types';
-import { useCerebrityOrchestrator } from '../../../hooks/useCerebrityOrchestrator';
 
-interface CerebrityHeaderProps {
+interface AvatarHeaderProps {
     currentPage: PageName;
-    onNavigate: (page: PageName) => void;
 }
 
-export const CerebrityHeader: React.FC<CerebrityHeaderProps> = ({
-    currentPage,
-    onNavigate
+export const AvatarHeader: React.FC<AvatarHeaderProps> = ({
+    currentPage
 }) => {
+    const navigate = useNavigate();
+
     const pageTitles: Record<string, string> = {
-        [PageName.CerebritySynthesis]: 'SYNTHESIS',
-        [PageName.CerebrityMakeMenu]: 'MAKE MENU',
-        [PageName.CerebrityCritic]: 'THE CRITIC',
-        [PageName.CerebrityLab]: 'THE LAB',
-        [PageName.CerebrityTrend]: 'TRENDS'
+        [PageName.AvatarCore]: 'CORE',
+        [PageName.AvatarIntelligence]: 'INTELLIGENCE',
+        [PageName.AvatarCompetition]: 'COMPETITION'
     };
 
-    const activeTitle = pageTitles[currentPage] || 'ARTIFICIAL INTELLIGENCE';
+    const activeTitle = pageTitles[currentPage] || 'CORE';
 
     const sections = [
-        { id: PageName.CerebritySynthesis, label: 'SYNTESIS', icon: 'auto_awesome' },
-        { id: PageName.CerebrityMakeMenu, label: 'MAKE MENU', icon: 'edit_note' },
-        { id: PageName.CerebrityCritic, label: 'CRITIC', icon: 'rate_review' },
-        { id: PageName.CerebrityLab, label: 'THE LAB', icon: 'science' },
-        { id: PageName.CerebrityTrend, label: 'TRENDS', icon: 'trending_up' }
+        { id: PageName.AvatarCore, label: 'CORE', icon: 'person', route: '/avatar/core' },
+        { id: PageName.AvatarIntelligence, label: 'INTELLIGENCE', icon: 'psychology', route: '/avatar/intelligence' },
+        { id: PageName.AvatarCompetition, label: 'COMPETITION', icon: 'emoji_events', route: '/avatar/competition' }
     ];
+
+    const handleNavigate = (route: string) => {
+        navigate(route);
+    };
 
     return (
         <header className="pt-4 pb-4 px-5 z-10 relative">
@@ -35,7 +35,7 @@ export const CerebrityHeader: React.FC<CerebrityHeaderProps> = ({
             <div className="mb-6 px-2">
                 <h1 className="text-6xl font-black text-white italic tracking-tighter leading-[0.9] mb-2 drop-shadow-xl"
                     style={{ fontFamily: 'Georgia, serif', textShadow: '0 4px 20px rgba(0,0,0,0.3)' }}>
-                    Cerebrity
+                    Avatar
                 </h1>
                 <p className="text-lg font-bold text-white/90 tracking-wide drop-shadow-md">
                     {activeTitle}
@@ -43,7 +43,7 @@ export const CerebrityHeader: React.FC<CerebrityHeaderProps> = ({
             </div>
 
             {/* Sub-Navigation Pills */}
-            <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-2">
+            <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-4 px-1">
                 {sections.map(section => {
                     const isActive = currentPage === section.id;
                     const sectionTheme = PAGE_THEMES[section.id] || PAGE_THEMES['default'];
@@ -52,7 +52,7 @@ export const CerebrityHeader: React.FC<CerebrityHeaderProps> = ({
                     return (
                         <button
                             key={section.id}
-                            onClick={() => onNavigate(section.id)}
+                            onClick={() => handleNavigate(section.route)}
                             className={`
                                 px-6 py-2.5 rounded-full text-[10px] font-black uppercase tracking-widest 
                                 whitespace-nowrap transition-all relative flex items-center gap-2

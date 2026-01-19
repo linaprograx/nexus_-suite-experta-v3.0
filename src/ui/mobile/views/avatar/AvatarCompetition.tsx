@@ -10,6 +10,8 @@ import { MobileChampionValidation } from './support/MobileChampionValidation';
 import { MobileChampionPlan } from './support/MobileChampionPlan';
 import { useChampionContext } from '../../../../features/champion-mode/context/ChampionContext';
 import GlassCard from '../../components/GlassCard';
+import { AvatarHeader } from '../../components/AvatarHeader';
+import { PageName } from '../../types';
 
 const CompetitionContent: React.FC = () => {
     const { state, actions } = useChampionContext();
@@ -96,6 +98,7 @@ const CompetitionContent: React.FC = () => {
 
     return (
         <div className="space-y-8 pb-12">
+            <AvatarHeader currentPage={PageName.AvatarCompetition} />
             {/* Phase Tracker */}
             <div className="px-2">
                 <div className="flex items-center justify-between relative">
@@ -133,7 +136,7 @@ const CompetitionContent: React.FC = () => {
             </div>
 
             {/* Active Sub-view */}
-            <div className="min-h-[500px]">
+            <div className="min-h-[500px] px-5">
                 <AnimatePresence mode="wait">
                     <motion.div
                         key={activeStepIndex}

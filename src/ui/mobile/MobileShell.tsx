@@ -52,36 +52,38 @@ const MobileShellContent: React.FC = () => {
 
     // Desktop-Parity Gradients (from PremiumLayout.tsx)
     const gradients: Record<string, string> = {
-        violet: "bg-[linear-gradient(to_bottom,rgb(139,92,246)_0%,rgba(139,92,246,0.8)_20%,transparent_40%)] dark:bg-[linear-gradient(to_bottom,rgba(139,92,246,0.7)_0%,rgba(139,92,246,0.5)_20%,transparent_40%)]",
-        cyan: "bg-[linear-gradient(to_bottom,rgb(6,182,212)_0%,rgba(6,182,212,0.8)_20%,transparent_40%)] dark:bg-[linear-gradient(to_bottom,rgba(6,182,212,0.7)_0%,rgba(6,182,212,0.5)_20%,transparent_40%)]",
-        emerald: "bg-[linear-gradient(to_bottom,rgb(16,185,129)_0%,rgba(16,185,129,0.8)_20%,transparent_40%)] dark:bg-[linear-gradient(to_bottom,rgba(16,185,129,0.7)_0%,rgba(16,185,129,0.5)_20%,transparent_40%)]",
-        amber: "bg-[linear-gradient(to_bottom,rgb(245,158,11)_0%,rgba(245,158,11,0.8)_20%,transparent_40%)] dark:bg-[linear-gradient(to_bottom,rgba(245,158,11,0.7)_0%,rgba(245,158,11,0.5)_20%,transparent_40%)]",
+        violet: "bg-[linear-gradient(to_bottom,#4c1d95_0%,#6d28d9_20%,#8b5cf600_45%)] dark:bg-[linear-gradient(to_bottom,#4c1d95_0%,#6d28d9_20%,#8b5cf600_45%)]",
+        cyan: "bg-[linear-gradient(to_bottom,rgb(6,182,212)_0%,rgba(6,182,212,0.8)_20%,transparent_45%)] dark:bg-[linear-gradient(to_bottom,rgba(6,182,212,0.7)_0%,rgba(6,182,212,0.5)_20%,transparent_45%)]",
+        emerald: "bg-[linear-gradient(to_bottom,#064e3b_0%,#059669_20%,#10b98100_45%)] dark:bg-[linear-gradient(to_bottom,#064e3b_0%,#059669_20%,#10b98100_45%)]",
+        amber: "bg-[linear-gradient(to_bottom,rgb(180,83,9)_0%,rgba(245,158,11,0.8)_35%,rgba(245,158,11,0)_85%)] dark:bg-[linear-gradient(to_bottom,rgb(180,83,9)_0%,rgba(245,158,11,0.8)_35%,rgba(245,158,11,0)_85%)]",
         rose: "bg-[linear-gradient(to_bottom,rgb(244,63,94)_0%,rgba(244,63,94,0.8)_20%,transparent_40%)] dark:bg-[linear-gradient(to_bottom,rgba(244,63,94,0.7)_0%,rgba(244,63,94,0.5)_20%,transparent_40%)]",
         indigo: "bg-[linear-gradient(to_bottom,rgb(99,102,241)_0%,rgba(99,102,241,0.8)_20%,transparent_40%)] dark:bg-[linear-gradient(to_bottom,rgba(99,102,241,0.7)_0%,rgba(99,102,241,0.5)_20%,transparent_40%)]",
         slate: "bg-[linear-gradient(to_bottom,rgb(100,116,139)_0%,rgba(100,116,139,0.8)_20%,transparent_40%)] dark:bg-[linear-gradient(to_bottom,rgba(100,116,139,0.7)_0%,rgba(100,116,139,0.5)_20%,transparent_40%)]",
-        blue: "bg-[linear-gradient(to_bottom,rgb(59,130,246)_0%,rgba(59,130,246,0.8)_20%,transparent_40%)] dark:bg-[linear-gradient(to_bottom,rgba(59,130,246,0.7)_0%,rgba(59,130,246,0.5)_20%,transparent_40%)]",
-        colegium: "bg-[linear-gradient(to_bottom,rgb(147,51,234)_0%,rgba(147,51,234,0.8)_20%,transparent_40%)] dark:bg-[linear-gradient(to_bottom,rgba(147,51,234,0.7)_0%,rgba(147,51,234,0.5)_20%,transparent_40%)]",
+        blue: "bg-[linear-gradient(to_bottom,#1e3a8a_0%,#2563eb_20%,#3b82f600_45%)] dark:bg-[linear-gradient(to_bottom,#1e3a8a_0%,#2563eb_20%,#3b82f600_45%)]",
+        colegium: "bg-[linear-gradient(to_bottom,rgb(147,51,234)_0%,rgba(147,51,234,0.8)_20%,transparent_45%)] dark:bg-[linear-gradient(to_bottom,rgba(147,51,234,0.7)_0%,rgba(147,51,234,0.5)_20%,transparent_45%)]",
         red: "bg-[linear-gradient(to_bottom,rgb(239,68,68)_0%,rgba(239,68,68,0.8)_20%,transparent_40%)] dark:bg-[linear-gradient(to_bottom,rgba(239,68,68,0.7)_0%,rgba(239,68,68,0.5)_20%,transparent_40%)]",
-        yellow: "bg-[linear-gradient(to_bottom,rgb(234,179,8)_0%,rgba(234,179,8,0.8)_20%,transparent_40%)] dark:bg-[linear-gradient(to_bottom,rgba(234,179,8,0.7)_0%,rgba(234,179,8,0.5)_20%,transparent_40%)]",
+        yellow: "bg-[linear-gradient(to_bottom,rgb(234,179,8)_0%,rgba(234,179,8,0.8)_20%,transparent_45%)] dark:bg-[linear-gradient(to_bottom,rgba(234,179,8,0.7)_0%,rgba(234,179,8,0.5)_20%,transparent_45%)]",
         ice: "bg-[linear-gradient(to_bottom,rgb(14,165,233)_0%,rgba(14,165,233,0.8)_20%,transparent_40%)] dark:bg-[linear-gradient(to_bottom,rgba(14,165,233,0.7)_0%,rgba(14,165,233,0.5)_20%,transparent_40%)]",
-        lime: "bg-[linear-gradient(to_bottom,rgb(132,204,22)_0%,rgba(132,204,22,0.8)_20%,transparent_40%)] dark:bg-[linear-gradient(to_bottom,rgba(132,204,22,0.7)_0%,rgba(132,204,22,0.5)_20%,transparent_40%)]"
+        lime: "bg-[linear-gradient(to_bottom,rgb(132,204,22)_0%,rgba(132,204,22,0.8)_20%,transparent_45%)] dark:bg-[linear-gradient(to_bottom,rgba(132,204,22,0.7)_0%,rgba(132,204,22,0.5)_20%,transparent_45%)]",
+        fuchsia: "bg-[linear-gradient(to_bottom,rgb(255,0,204)_0%,rgba(255,0,204,0.8)_20%,transparent_45%)] dark:bg-[linear-gradient(to_bottom,rgba(255,0,204,0.7)_0%,rgba(255,0,204,0.5)_20%,transparent_45%)]"
     };
 
     // Map Pages to Theme Keys
     const getPageThemeKey = (page: PageName): string => {
         switch (page) {
             case PageName.Dashboard: return 'blue'; // Dashboard -> Blue (Nexus Standard)
-            case PageName.GrimorioRecipes: return 'amber'; // Recipes -> Amber
-            case PageName.GrimorioStock: return 'red'; // Stock -> Red
-            case PageName.GrimorioMarket: return 'emerald'; // Market -> Emerald
+            case PageName.GrimorioRecipes: return 'violet'; // Recipes -> Purple
+            case PageName.GrimorioStock: return 'blue'; // Stock -> Blue
+            case PageName.GrimorioMarket: return 'emerald'; // Market -> Emerald (Matched to screenshot)
             case PageName.Pizarron: return 'ice'; // Pizarron -> Ice
-            case PageName.CerebritySynthesis: return 'colegium'; // Synthesis -> Violet/Colegium
+            case PageName.CerebritySynthesis: return 'fuchsia'; // Synthesis -> Fuchsia/Pink
             case PageName.CerebrityCritic: return 'cyan'; // Critic -> Cyan
             case PageName.CerebrityLab: return 'colegium'; // Lab -> Violet
             case PageName.CerebrityTrend: return 'yellow'; // Trend -> Yellow
             case PageName.CerebrityMakeMenu: return 'lime'; // Menu -> Lime
             case PageName.AvatarCore: return 'indigo'; // Avatar -> Indigo
             case PageName.AvatarIntelligence: return 'rose'; // Intelligence -> Rose
+            case PageName.AvatarCompetition: return 'emerald'; // Competition -> Emerald
             case PageName.AvatarCompetition: return 'emerald'; // Competition -> Emerald
             case PageName.Colegium: return 'colegium'; // Colegium -> Colegium
             case PageName.Personal: return 'slate'; // Personal -> Slate
@@ -92,6 +94,7 @@ const MobileShellContent: React.FC = () => {
 
     const currentPage = getCurrentPage();
     // Use the class mapping instead of pageTheme object
+    // FIX: Re-enable global gradient for Grimorio pages with updated fade
     const gradientClass = gradients[getPageThemeKey(currentPage)] || gradients['indigo'];
 
     // Notifications
@@ -124,23 +127,15 @@ const MobileShellContent: React.FC = () => {
             {/* Phone Frame */}
             <div className="w-full h-full max-w-md relative overflow-hidden flex flex-col phone-frame transition-all duration-500 bg-[#F8F9FA] dark:bg-slate-900">
 
-                {/* Atmospheric Gradient Layer - Uses Tailwind Classes now */}
+                {/* Atmospheric Gradient Layer - Remove opacity-90 to ensure true colors */}
                 <div
-                    className={`absolute top-0 left-0 w-full h-full z-0 pointer-events-none transition-all duration-700 ease-in-out opacity-90 ${gradientClass}`}
+                    className={`absolute top-0 left-0 w-full h-full z-0 pointer-events-none transition-all duration-700 ease-in-out ${gradientClass}`}
                 />
 
-                {/* 1. Status Bar (Visual Only + Safe Area) */}
-                <div className={`w-full flex justify-between items-end px-6 pb-2 z-50 select-none pointer-events-none bg-transparent pt-[env(safe-area-inset-top)] min-h-[env(safe-area-inset-top)] ${compactMode ? 'mb-0' : ''}`}>
-                    <span className="text-[10px] font-black tracking-widest opacity-80 text-neu-main dark:text-white mix-blend-multiply dark:mix-blend-screen">{new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                    <div className="flex gap-1.5 opacity-80 text-neu-main dark:text-white mix-blend-multiply dark:mix-blend-screen">
-                        <span className="material-symbols-outlined text-[10px]">signal_cellular_alt</span>
-                        <span className="material-symbols-outlined text-[10px]">wifi</span>
-                        <span className="material-symbols-outlined text-[10px]">battery_5_bar</span>
-                    </div>
-                </div>
+
 
                 {/* 2. Main Content Area with Custom Scrollbar */}
-                <div className="flex-1 relative z-10 overflow-y-auto custom-scroll overflow-x-hidden flex flex-col items-center">
+                <div className="flex-1 relative z-10 overflow-y-auto custom-scroll overflow-x-hidden flex flex-col items-center pt-[env(safe-area-inset-top)]">
                     <div
                         className={`w-full flex-1 ${currentPage === PageName.Login ? '' : 'pb-32'}`}
                         style={contentStyle}

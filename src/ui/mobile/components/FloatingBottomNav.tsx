@@ -92,8 +92,8 @@ const FloatingBottomNav: React.FC<FloatingBottomNavProps> = ({ currentPage, onNa
 
                         // Get Grimorio border color
                         const grimorioBorderColor =
-                            currentPage === PageName.GrimorioRecipes ? '#f97316' : // orange
-                                currentPage === PageName.GrimorioStock ? '#ef4444' : // red
+                            currentPage === PageName.GrimorioRecipes ? '#7e22ce' : // purple
+                                currentPage === PageName.GrimorioStock ? '#2563eb' : // blue
                                     currentPage === PageName.GrimorioMarket ? '#10b981' : // emerald
                                         'transparent';
 

@@ -92,19 +92,19 @@ export const PAGE_THEMES: Record<PageName | string, { gradient: string; accent: 
 
     // Grimorium Theme Parity - Ultra-Vivid
     [PageName.GrimorioRecipes]: {
-        gradient: 'linear-gradient(180deg, #ff5e00 0%, #ff8800 25%, rgba(255, 136, 0, 0) 45%)',
-        accent: '#ff6a00',
-        glowColor: '#ff8800'
+        gradient: 'linear-gradient(180deg, #2e1065 0%, #7e22ce 40%, rgba(126, 34, 206, 0) 70%)',
+        accent: '#7e22ce',
+        glowColor: '#a855f7'
     },
     [PageName.GrimorioStock]: {
-        gradient: 'linear-gradient(180deg, #FF2E2E 0%, #FF4D4D 35%, rgba(255, 46, 77, 0) 55%)',
-        accent: '#FF2E2E',
-        glowColor: '#FF4D4D'
+        gradient: 'linear-gradient(180deg, #172554 0%, #1d4ed8 40%, rgba(29, 78, 216, 0) 70%)',
+        accent: '#2563eb',
+        glowColor: '#3b82f6'
     },
     [PageName.GrimorioMarket]: {
-        gradient: 'linear-gradient(180deg, #00E096 0%, #10B981 35%, rgba(16, 185, 129, 0) 65%)',
-        accent: '#00E096',
-        glowColor: '#10B981'
+        gradient: 'linear-gradient(180deg, #10b981 0%, #34d399 40%, rgba(52, 211, 153, 0) 70%)',
+        accent: '#10b981',
+        glowColor: '#34d399'
     },
 
     [PageName.Pizarron]: {
@@ -135,9 +135,9 @@ export const PAGE_THEMES: Record<PageName | string, { gradient: string; accent: 
         glowColor: '#D97706'
     },
     [PageName.CerebrityMakeMenu]: {
-        gradient: 'linear-gradient(180deg, rgba(255, 230, 0, 0.3) 0%, rgba(255, 230, 0, 0.1) 35%, rgba(255, 230, 0, 0) 60%)',
-        accent: '#FFE600',
-        glowColor: '#FFE600'
+        gradient: 'linear-gradient(180deg, #84cc16 0%, #65a30d 35%, rgba(101, 163, 13, 0) 65%)',
+        accent: '#84cc16',
+        glowColor: '#65a30d'
     },
 
     // Avatar Themes - Ultra-Vivid

@@ -57,11 +57,11 @@ export const GrimorioHeader: React.FC<GrimorioHeaderProps> = ({
         <header className="pt-4 pb-4 px-5 z-10 relative">
             {/* Title Section */}
             <div className="mb-6 px-2">
-                <h1 className="text-6xl font-black text-white italic tracking-tighter leading-[0.9] mb-2"
+                <h1 className="text-6xl font-black text-white italic tracking-tighter leading-[0.9] mb-2 drop-shadow-xl"
                     style={{ fontFamily: 'Georgia, serif' }}>
                     Grimorio
                 </h1>
-                <p className="text-lg font-bold text-white/90 tracking-wide">
+                <p className="text-lg font-bold text-white/90 tracking-wide drop-shadow-md">
                     {pageTitle}
                 </p>
             </div>
@@ -86,9 +86,6 @@ export const GrimorioHeader: React.FC<GrimorioHeaderProps> = ({
                             `}
                         >
                             {section.label}
-                            {isActive && (
-                                <div className={`absolute bottom-0 left-0 right-0 h-0.5 ${colors.active} rounded-full`}></div>
-                            )}
                         </button>
                     );
                 })}
