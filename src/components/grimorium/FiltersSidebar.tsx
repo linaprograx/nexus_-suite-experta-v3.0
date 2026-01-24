@@ -48,7 +48,7 @@ export const FiltersSidebar: React.FC<FiltersSidebarProps> = ({
 
       {/* SECTION 1: TOP (Providers / Active Filters) - Only for Ingredients Tab */}
       {activeTab === 'ingredients' && (
-        <div className="h-auto flex flex-col min-h-0 border-b border-slate-200 dark:border-slate-800">
+        <div className="h-auto flex flex-col min-h-0">
           <div className="p-4">
             <button
               onClick={onOpenSuppliers}
@@ -90,7 +90,7 @@ export const FiltersSidebar: React.FC<FiltersSidebarProps> = ({
         </div>
 
         {/* Legacy Actions */}
-        <div className="p-4 border-t border-white/10 space-y-2 bg-white/5">
+        <div className="p-4 space-y-2">
           {activeTab === 'recipes' && (
             <>
               <Button variant="outline" className="w-full justify-start text-xs h-9" onClick={onImportPdf}>

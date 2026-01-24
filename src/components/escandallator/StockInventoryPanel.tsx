@@ -136,82 +136,70 @@ export const StockInventoryPanel: React.FC<StockInventoryPanelProps> = ({
             {/* HIDE IF EXTERNAL CONTROLS ARE PROVIDED */}
             {(externalSearchTerm === undefined && externalCategory === undefined) && (
                 <div className="shrink-0 px-6 pb-4 pt-2 z-20 relative">
-                    <div className="flex gap-4 items-center">
-                        <div className="flex-1 flex gap-4">
-                            {/* Search Bar (3/4 approx via flex-grow) */}
-                            <div className="flex-[3] relative group">
-                                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                                    <Icon svg={ICONS.search} className="w-5 h-5 text-slate-400 group-focus-within:text-emerald-500 transition-colors" />
-                                </div>
-                                <input
-                                    placeholder="Buscar por nombre..."
-                                    value={searchQuery}
-                                    onChange={(e) => setInternalSearchQuery(e.target.value)}
-                                    className="pl-11 h-14 text-base bg-white/40 dark:bg-slate-800/40 backdrop-blur-md border border-white/20 dark:border-white/10 rounded-2xl w-full shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 text-slate-800 dark:text-slate-100 placeholder:text-slate-400 transition-all hover:bg-white/60"
-                                />
+                    <div className="flex gap-2 items-center w-full">
+                        {/* Search Bar - Grows */}
+                        <div className="relative flex-1 group">
+                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <Icon svg={ICONS.search} className="w-4 h-4 text-slate-400 group-focus-within:text-emerald-500 transition-colors" />
                             </div>
-
-                            {/* Category Button (1/4 approx) */}
-                            <div className="flex-1 relative">
-                                <button
-                                    onClick={() => setShowCategoryDropdown(!showCategoryDropdown)}
-                                    className="h-14 w-full px-4 bg-white/40 dark:bg-slate-800/40 backdrop-blur-md border border-white/20 dark:border-white/10 rounded-2xl flex items-center justify-between text-slate-700 dark:text-slate-200 hover:bg-white/60 transition-all font-medium relative group shadow-sm hover:shadow-md"
-                                >
-                                    <div className="flex flex-col items-start truncate overflow-hidden">
-                                        <span className="text-[10px] text-slate-400 uppercase tracking-wider font-bold">Categoría</span>
-                                        <span className="truncate w-full text-left -mt-0.5 text-sm font-bold">
-                                            {selectedCategory === 'all' ? 'Todas' : selectedCategory}
-                                        </span>
-                                    </div>
-
-                                    <div className="flex items-center gap-2 shrink-0">
-                                        {selectedCategory !== 'all' && (
-                                            <span className="text-[10px] bg-emerald-100/50 text-emerald-700 px-1.5 py-0.5 rounded-full font-bold">
-                                                {categoryStats[selectedCategory]}
-                                            </span>
-                                        )}
-                                        <Icon svg={ICONS.chevronDown} className="w-4 h-4 opacity-50 group-hover:opacity-100 transition-opacity" />
-                                    </div>
-                                </button>
-
-                                {/* Dropdown Menu */}
-                                {showCategoryDropdown && (
-                                    <div className="absolute top-[calc(100%+8px)] right-0 w-full min-w-[220px] max-h-64 overflow-y-auto custom-scrollbar bg-white/90 dark:bg-slate-900/95 backdrop-blur-xl border border-white/20 rounded-2xl shadow-xl z-50 p-2 animate-in fade-in zoom-in-95 duration-100 origin-top-right">
-                                        <button
-                                            onClick={() => { setInternalSelectedCategory('all'); setShowCategoryDropdown(false); }}
-                                            className="w-full text-left px-3 py-3 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800/50 text-sm font-medium transition-colors flex justify-between group items-center mb-1"
-                                        >
-                                            <span className="text-slate-600 dark:text-slate-300 group-hover:text-emerald-600 font-bold">Todas las Categorías</span>
-                                            <span className="text-xs bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-md text-slate-400 group-hover:text-emerald-500 transition-colors">{stockItems.length}</span>
-                                        </button>
-                                        <div className="h-px bg-slate-100 dark:bg-slate-700/50 my-1 mx-2"></div>
-                                        {categories.map(cat => (
-                                            <button
-                                                key={cat}
-                                                onClick={() => { setInternalSelectedCategory(cat); setShowCategoryDropdown(false); }}
-                                                className="w-full text-left px-3 py-2.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800/50 text-sm transition-colors flex justify-between group items-center"
-                                            >
-                                                <span className="text-slate-700 dark:text-slate-300 group-hover:text-emerald-600 dark:group-hover:text-emerald-400">{cat}</span>
-                                                <span className="text-xs text-slate-400 group-hover:text-emerald-500 font-medium">({categoryStats[cat]})</span>
-                                            </button>
-                                        ))}
-                                    </div>
-                                )}
-                            </div>
+                            <input
+                                placeholder="Buscar por nombre..."
+                                value={searchQuery}
+                                onChange={(e) => setInternalSearchQuery(e.target.value)}
+                                className="pl-10 h-10 text-sm bg-white/40 dark:bg-slate-800/40 backdrop-blur-md border border-white/20 dark:border-white/10 rounded-xl w-full shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 text-slate-800 dark:text-slate-100 placeholder:text-slate-400 transition-all hover:bg-white/60"
+                            />
                         </div>
 
-                        {selectedIngIds.size > 0 ? (
+                        {/* Category Button */}
+                        <div className="relative min-w-[140px]">
+                            <button
+                                onClick={() => setShowCategoryDropdown(!showCategoryDropdown)}
+                                className="h-10 w-full px-3 bg-white/40 dark:bg-slate-800/40 backdrop-blur-md border border-white/20 dark:border-white/10 rounded-xl flex items-center justify-between text-slate-700 dark:text-slate-200 hover:bg-white/60 transition-all text-sm group shadow-sm"
+                            >
+                                <div className="flex items-center gap-2 truncate">
+                                    <span className="text-slate-500 dark:text-slate-400 hidden sm:inline">Cat:</span>
+                                    <span className="font-bold truncate max-w-[120px]">
+                                        {selectedCategory === 'all' ? 'Todas' : selectedCategory}
+                                    </span>
+                                </div>
+                                <Icon svg={ICONS.chevronDown} className="w-4 h-4 opacity-50 group-hover:opacity-100 transition-opacity ml-2 shrink-0" />
+                            </button>
+
+                            {/* Dropdown Menu */}
+                            {showCategoryDropdown && (
+                                <div className="absolute top-[calc(100%+8px)] right-0 w-full min-w-[220px] max-h-64 overflow-y-auto custom-scrollbar bg-white/90 dark:bg-slate-900/95 backdrop-blur-xl border border-white/20 rounded-2xl shadow-xl z-50 p-2 animate-in fade-in zoom-in-95 duration-100 origin-top-right">
+                                    <button
+                                        onClick={() => { setInternalSelectedCategory('all'); setShowCategoryDropdown(false); }}
+                                        className="w-full text-left px-3 py-3 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800/50 text-sm font-medium transition-colors flex justify-between group items-center mb-1"
+                                    >
+                                        <span className="text-slate-600 dark:text-slate-300 group-hover:text-emerald-600 font-bold">Todas las Categorías</span>
+                                        <span className="text-xs bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-md text-slate-400 group-hover:text-emerald-500 transition-colors">{stockItems.length}</span>
+                                    </button>
+                                    <div className="h-px bg-slate-100 dark:bg-slate-700/50 my-1 mx-2"></div>
+                                    {categories.map(cat => (
+                                        <button
+                                            key={cat}
+                                            onClick={() => { setInternalSelectedCategory(cat); setShowCategoryDropdown(false); }}
+                                            className="w-full text-left px-3 py-2.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800/50 text-sm transition-colors flex justify-between group items-center"
+                                        >
+                                            <span className="text-slate-700 dark:text-slate-300 group-hover:text-emerald-600 dark:group-hover:text-emerald-400">{cat}</span>
+                                            <span className="text-xs text-slate-400 group-hover:text-emerald-500 font-medium">({categoryStats[cat]})</span>
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+
+                        {selectedIngIds.size > 0 && (
                             <Button
                                 variant="destructive"
                                 size="icon"
                                 onClick={handleDeleteSelected}
                                 title={`Eliminar ${selectedIngIds.size} seleccionados`}
-                                className="h-14 w-14 shrink-0 rounded-2xl shadow-lg shadow-red-500/20 bg-red-500 hover:bg-red-600 text-white transition-all animate-in zoom-in-50"
+                                className="h-10 w-10 shrink-0 rounded-xl shadow-lg shadow-red-500/20 bg-red-500 hover:bg-red-600 text-white transition-all animate-in zoom-in-50"
                             >
-                                <Icon svg={ICONS.trash} className="w-6 h-6" />
+                                <Icon svg={ICONS.trash} className="w-4 h-4" />
                             </Button>
-                        ) : (
-                            <div className="w-14 h-14 shrink-0" />
                         )}
                     </div>
                 </div>

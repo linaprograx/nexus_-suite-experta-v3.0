@@ -1,5 +1,6 @@
 import React from 'react';
 import { Recipe } from '../../types';
+import { Button } from '../../components/ui/Button';
 
 interface EconosViewProps {
     allRecipes: Recipe[];
@@ -105,13 +106,14 @@ const EconosView: React.FC<EconosViewProps> = ({ allRecipes }) => {
                                 <option key={p.id} value={p.id}>{p.name}</option>
                             ))}
                         </select>
-                        <button
+                        <Button
                             onClick={handleFileUpload}
-                            className="p-2 bg-slate-200 hover:bg-emerald-600 hover:text-white text-slate-600 rounded-lg transition-colors border border-emerald-200"
+                            variant="secondary"
+                            className="bg-slate-200 hover:bg-emerald-600 hover:text-white text-slate-600 rounded-lg transition-colors border border-emerald-200 p-2 h-auto"
                             title="Subir Catálogo Actualizado"
                         >
                             <span className="text-lg">📂</span>
-                        </button>
+                        </Button>
                     </div>
                     {selectedProvider && (
                         <p className="text-[10px] text-emerald-600 italic text-right font-medium">
@@ -120,13 +122,13 @@ const EconosView: React.FC<EconosViewProps> = ({ allRecipes }) => {
                     )}
                 </SectionBlock>
 
-                <button
+                <Button
                     onClick={handleCalculate}
                     disabled={!selectedRecipeId}
-                    className={`w-full py-3 font-bold rounded-xl shadow-lg transition-all mt-4 ${selectedRecipeId ? 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-900/30' : 'bg-slate-200 text-slate-400 cursor-not-allowed'}`}
+                    className={`w-full py-6 font-bold rounded-xl shadow-lg transition-all mt-4 ${selectedRecipeId ? 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-900/30' : 'bg-slate-200 text-slate-400 cursor-not-allowed'}`}
                 >
                     CALCULAR COSTE
-                </button>
+                </Button>
             </UnleashColumn>
 
             {/* Column 2: Análisis de Coste */}

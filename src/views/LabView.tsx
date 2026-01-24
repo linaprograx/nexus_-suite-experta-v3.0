@@ -80,7 +80,7 @@ const LabView: React.FC<LabViewProps> = ({ db, userId, appId, allIngredients, al
         <div className="h-full flex flex-col gap-6 overflow-y-auto custom-scrollbar p-1">
             <Card className="flex-shrink-0 backdrop-blur-xl bg-white/40 dark:bg-slate-900/40 border border-white/20 shadow-lg rounded-2xl">
                 <CardHeader>
-                    <CardTitle className="text-2xl font-bold text-cyan-800 dark:text-cyan-200">Laboratorio Molecular</CardTitle>
+                    <CardTitle className="text-2xl font-bold text-violet-800 dark:text-violet-200">Laboratorio Molecular</CardTitle>
                     <p className="text-sm text-slate-500 mt-1">Experimenta con combinaciones y descubre perfiles aromáticos</p>
                 </CardHeader>
                 <CardContent className="space-y-4 px-6 pb-6">
@@ -88,12 +88,12 @@ const LabView: React.FC<LabViewProps> = ({ db, userId, appId, allIngredients, al
                         <Combobox items={allIngredients} onSelect={item => setLabInputs([...labInputs, item])} placeholder="Añadir ingrediente..." />
                         <Combobox items={allRecipes} onSelect={item => setLabInputs([...labInputs, item])} placeholder="Añadir receta..." />
                     </div>
-                    <div className="p-4 rounded-xl bg-gradient-to-br from-cyan-50 to-teal-50 dark:from-cyan-950/20 dark:to-teal-950/20 border-2 border-cyan-300 dark:border-cyan-700 min-h-[100px] flex flex-wrap gap-2">
+                    <div className="p-4 rounded-xl bg-gradient-to-br from-violet-50 to-fuchsia-50 dark:from-violet-950/20 dark:to-fuchsia-950/20 border-2 border-violet-300 dark:border-violet-700 min-h-[100px] flex flex-wrap gap-2">
                         {labInputs.length === 0 ? <p className="text-sm text-slate-500 dark:text-slate-400 p-2 w-full text-center">Seleccione ingredientes o recetas para analizar</p> :
                             labInputs.map((item, index) => (
-                                <div key={`${item.id}-${index}`} className="flex items-center gap-1 bg-cyan-100 text-cyan-800 rounded-full px-3 py-1.5 text-sm dark:bg-cyan-900 dark:text-cyan-100 shadow-sm">
+                                <div key={`${item.id}-${index}`} className="flex items-center gap-1 bg-violet-100 text-violet-800 rounded-full px-3 py-1.5 text-sm dark:bg-violet-900 dark:text-violet-100 shadow-sm">
                                     <span className="font-medium">{item.nombre}</span>
-                                    <button onClick={() => setLabInputs(labInputs.filter((_, i) => i !== index))} className="text-cyan-600 hover:text-cyan-800 dark:text-cyan-300 dark:hover:text-cyan-100 ml-1">
+                                    <button onClick={() => setLabInputs(labInputs.filter((_, i) => i !== index))} className="text-violet-600 hover:text-violet-800 dark:text-violet-300 dark:hover:text-violet-100 ml-1">
                                         <Icon svg={ICONS.x} className="h-3 w-3" />
                                     </button>
                                 </div>
@@ -103,7 +103,7 @@ const LabView: React.FC<LabViewProps> = ({ db, userId, appId, allIngredients, al
                     <Button
                         onClick={handleAnalyzeLab}
                         disabled={labLoading}
-                        className="w-full rounded-xl bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-600 hover:to-teal-600 text-white font-semibold py-3 shadow-lg transition-all hover:scale-[1.02]"
+                        className="w-full rounded-xl bg-gradient-to-r from-[#8b5cf6] to-[#6d28d9] hover:from-[#7c3aed] hover:to-[#5b21b6] text-white font-semibold py-3 shadow-lg transition-all hover:scale-[1.02]"
                     >
                         {labLoading ? <Spinner className="mr-2" /> : <Icon svg={ICONS.flask} className="mr-2 h-5 w-5" />}
                         {labLoading ? 'Evaluando composición...' : 'Evaluar Composición'}
@@ -112,7 +112,7 @@ const LabView: React.FC<LabViewProps> = ({ db, userId, appId, allIngredients, al
                 {labError && <div className="px-6 pb-6"><Alert variant="destructive" title="Error de Análisis" description={labError} /></div>}
             </Card>
 
-            {labLoading && <div className="flex justify-center items-center h-64"><Spinner className="w-12 h-12 text-cyan-500" /></div>}
+            {labLoading && <div className="flex justify-center items-center h-64"><Spinner className="w-12 h-12 text-violet-500" /></div>}
 
             {!labLoading && !labResult && (
                 <div className="text-center p-10">
@@ -123,7 +123,7 @@ const LabView: React.FC<LabViewProps> = ({ db, userId, appId, allIngredients, al
             {labResult && (
                 <div className="space-y-6 animate-in fade-in duration-500">
                     <Card className="backdrop-blur-xl bg-white/40 dark:bg-slate-900/40 border border-white/20 shadow-lg rounded-2xl">
-                        <CardHeader><CardTitle className="text-xl font-bold text-cyan-800 dark:text-cyan-200">Perfil de Sabor Molecular</CardTitle></CardHeader>
+                        <CardHeader><CardTitle className="text-xl font-bold text-violet-800 dark:text-violet-200">Perfil de Sabor Molecular</CardTitle></CardHeader>
                         <div className="h-[250px]">
                             <ChartContainer height={250}>
                                 <PieChart>

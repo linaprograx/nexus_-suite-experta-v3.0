@@ -5,6 +5,7 @@ import AvatarInsightsView from './avatar/AvatarInsightsView';
 import DigitalBarView from './avatar/DigitalBarView';
 import ChampionModeView from './avatar/ChampionModeView';
 import { useAvatarCognition } from '../hooks/useAvatarCognition';
+import { Button } from '../components/ui/Button';
 
 interface AvatarViewProps {
     // Add props if needed (e.g., global state)
@@ -54,56 +55,61 @@ const AvatarView: React.FC<AvatarViewProps> = () => {
             {/* Navigation Pill Container (Invisible BG) */}
             <div className="flex-shrink-0 mb-6 z-10 overflow-x-auto no-scrollbar">
                 <div className="inline-flex p-1.5 rounded-full">
-                    <button
+                    <Button
                         onClick={() => setActiveTab('core')}
-                        className={`py-2 px-6 text-xs font-bold rounded-full transition-all duration-300 whitespace-nowrap ${activeTab === 'core'
-                            ? 'bg-[#6366F1] text-white shadow-lg shadow-[#6366F1]/25'
+                        variant="ghost"
+                        className={`rounded-full transition-all duration-300 whitespace-nowrap ${activeTab === 'core'
+                            ? 'bg-[#6366F1] text-white shadow-lg shadow-[#6366F1]/25 hover:bg-[#6366F1]/90'
                             : 'text-slate-400 hover:text-white hover:bg-white/5'
                             }`}
                     >
                         Avatar Core
-                    </button>
+                    </Button>
 
-                    <button
+                    <Button
                         onClick={() => setActiveTab('intelligence')}
-                        className={`py-2 px-6 text-xs font-bold rounded-full transition-all duration-300 whitespace-nowrap ${activeTab === 'intelligence'
-                            ? 'bg-rose-500/80 text-white shadow-lg shadow-rose-500/25'
+                        variant="ghost"
+                        className={`rounded-full transition-all duration-300 whitespace-nowrap ${activeTab === 'intelligence'
+                            ? 'bg-rose-500/80 text-white shadow-lg shadow-rose-500/25 hover:bg-rose-500'
                             : 'text-slate-400 hover:text-white hover:bg-white/5'
                             }`}
                     >
                         Avatar Intelligence
-                    </button>
+                    </Button>
 
-                    <button
+                    <Button
                         onClick={() => setActiveTab('champion')}
-                        className={`py-2 px-6 text-xs font-bold rounded-full transition-all duration-300 whitespace-nowrap ${activeTab === 'champion'
-                            ? 'bg-[#84CC16] text-white shadow-lg shadow-[#84CC16]/25'
+                        variant="ghost"
+                        className={`rounded-full transition-all duration-300 whitespace-nowrap ${activeTab === 'champion'
+                            ? 'bg-[#84CC16] text-white shadow-lg shadow-[#84CC16]/25 hover:bg-[#84CC16]/90'
                             : 'text-slate-400 hover:text-white hover:bg-white/5'
                             }`}
                     >
                         Modo Competición
-                    </button>
+                    </Button>
 
                     {showManagerTabs && (
                         <>
-                            <button
+                            <Button
                                 onClick={() => setActiveTab('insights')}
-                                className={`py-2 px-6 text-xs font-bold rounded-full transition-all duration-300 whitespace-nowrap ${activeTab === 'insights'
-                                    ? 'bg-[#FB923C] text-white shadow-lg shadow-[#FB923C]/25'
+                                variant="ghost"
+                                className={`rounded-full transition-all duration-300 whitespace-nowrap ${activeTab === 'insights'
+                                    ? 'bg-[#FB923C] text-white shadow-lg shadow-[#FB923C]/25 hover:bg-[#FB923C]/90'
                                     : 'text-slate-400 hover:text-white hover:bg-white/5'
                                     }`}
                             >
                                 Performance Insights
-                            </button>
-                            <button
+                            </Button>
+                            <Button
                                 onClick={() => setActiveTab('digital-bar')}
-                                className={`py-2 px-6 text-xs font-bold rounded-full transition-all duration-300 whitespace-nowrap ${activeTab === 'digital-bar'
-                                    ? 'bg-[#22D3EE] text-white shadow-lg shadow-[#22D3EE]/25'
+                                variant="ghost"
+                                className={`rounded-full transition-all duration-300 whitespace-nowrap ${activeTab === 'digital-bar'
+                                    ? 'bg-[#22D3EE] text-white shadow-lg shadow-[#22D3EE]/25 hover:bg-[#22D3EE]/90'
                                     : 'text-slate-400 hover:text-white hover:bg-white/5'
                                     }`}
                             >
                                 Digital Bar
-                            </button>
+                            </Button>
                         </>
                     )}
                 </div>

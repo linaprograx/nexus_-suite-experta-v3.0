@@ -1,7 +1,7 @@
 import { Ingredient, Recipe } from '../../types';
-import { parseIngredient } from '../modules/ingredients/ingredientParser';
-import { findBestMatch } from '../modules/ingredients/ingredientMatcher';
-import { calculateRecipeCost } from '../modules/costing/costCalculator';
+import { parseIngredient } from '../features/ingredients/ingredientParser';
+import { findBestMatch } from '../features/ingredients/ingredientMatcher';
+import { calculateRecipeCost } from '../core/costing/costCalculator';
 
 // Tipos de datos que necesita el módulo
 export interface IngredientLineItem {
@@ -95,7 +95,7 @@ export const parseMultipleRecipes = (txt: string, allIngredients: Ingredient[]):
 
     for (const line of ingredientLines) {
       if (!line.trim()) continue;
-      
+
       const parsedIngredient = parseIngredient(line);
       const bestMatch = findBestMatch(parsedIngredient, allIngredients);
 
@@ -115,9 +115,9 @@ export const parseMultipleRecipes = (txt: string, allIngredients: Ingredient[]):
     // Auto-calculate cost upon import
     const { costoTotal } = calculateRecipeCost(finalRecipe, allIngredients);
     finalRecipe.costoReceta = costoTotal;
-    
+
     finalRecipes.push(finalRecipe as RecipeFirestore);
   }
-  
+
   return finalRecipes;
 };

@@ -19,6 +19,7 @@ import { TrendHistorySidebar } from '../components/trend-locator/TrendHistorySid
 import { TrendResult } from '../types';
 import MakeMenuView from './MakeMenuView';
 import CriticView from './unleash/CriticView';
+import { motion } from 'framer-motion';
 
 // Define SaveModal before it is used or move to separate file. 
 // Ideally it should be at top or hoisted.
@@ -659,32 +660,72 @@ const CerebrityView: React.FC<CerebrityViewProps> = ({ db, userId, storage, appI
   };
 
   return (
-    <div className="h-[calc(100vh-80px)] w-full flex flex-col px-4 lg:px-8 py-6">
-      <div className="flex-shrink-0 mb-4">
-        <div className="flex items-center gap-2 bg-slate-100/80 dark:bg-slate-900/80 p-1 rounded-full w-fit">
-          <button onClick={() => setActiveTab('creativity')} className={`py-2 px-5 text-xs font-bold rounded-full transition-all duration-300 whitespace-nowrap ${activeTab === 'creativity' ? 'bg-violet-600 text-white shadow-lg shadow-violet-600/25' : 'text-slate-400 hover:text-white hover:bg-white/5'}`}>Synthesis</button>
-          <button onClick={() => setActiveTab('makeMenu')} className={`py-2 px-5 text-xs font-bold rounded-full transition-all duration-300 whitespace-nowrap ${activeTab === 'makeMenu' ? 'bg-teal-600 text-white shadow-lg shadow-teal-600/25' : 'text-slate-400 hover:text-white hover:bg-white/5'}`}>Make Menu</button>
-          <button onClick={() => setActiveTab('critic')} className={`py-2 px-5 text-xs font-bold rounded-full transition-all duration-300 whitespace-nowrap ${activeTab === 'critic' ? 'bg-orange-600 text-white shadow-lg shadow-orange-600/25' : 'text-slate-400 hover:text-white hover:bg-white/5'}`}>The Critic</button>
-          <button onClick={() => setActiveTab('lab')} className={`py-2 px-5 text-xs font-bold rounded-full transition-all duration-300 whitespace-nowrap ${activeTab === 'lab' ? 'bg-cyan-600 text-white shadow-lg shadow-cyan-600/25' : 'text-slate-400 hover:text-white hover:bg-white/5'}`}>The Lab</button>
-          <button onClick={() => setActiveTab('trendLocator')} className={`py-2 px-5 text-xs font-bold rounded-full transition-all duration-300 whitespace-nowrap ${activeTab === 'trendLocator' ? 'bg-fuchsia-600 text-white shadow-lg shadow-fuchsia-600/25' : 'text-slate-400 hover:text-white hover:bg-white/5'}`}>Trend Locator</button>
+    <div className="h-[calc(100vh-80px)] w-full flex flex-col px-4 lg:px-8 py-6 relative">
+      {/* Vibrant Gradient Background (Mobile Style) - First Child = Behind */}
+      <div
+        className="absolute inset-0 pointer-events-none transition-all duration-700 ease-in-out rounded-3xl z-0"
+        style={{
+          background: activeTab === 'creativity'
+            ? 'linear-gradient(180deg, #FF00CC 0%, rgba(255, 0, 204, 0.4) 30%, rgba(255, 0, 204, 0) 45%)'
+            : activeTab === 'makeMenu'
+              ? 'linear-gradient(180deg, #84CC16 0%, rgba(132, 204, 22, 0.4) 30%, rgba(132, 204, 22, 0) 45%)'
+              : activeTab === 'critic'
+                ? 'linear-gradient(180deg, #06b6d4 0%, rgba(6, 182, 212, 0.4) 30%, rgba(6, 182, 212, 0) 45%)'
+                : activeTab === 'lab'
+                  ? 'linear-gradient(180deg, #8b5cf6 0%, rgba(139, 92, 246, 0.4) 30%, rgba(139, 92, 246, 0) 45%)'
+                  : 'linear-gradient(180deg, #F59E0B 0%, rgba(245, 158, 11, 0.4) 30%, rgba(245, 158, 11, 0) 45%)'
+        }}
+      />
+
+      {/* Mobile-Style Header (Desktop Adapted) - z-10 to stay on top */}
+      <div className="flex-shrink-0 mb-6 z-10 text-white relative">
+        <div className="mb-4 pl-2">
+          <h1 className="text-7xl font-black italic tracking-tighter leading-[0.8] mb-1 drop-shadow-xl"
+            style={{ fontFamily: 'Georgia, serif', textShadow: '0 4px 30px rgba(0,0,0,0.3)' }}>
+            Cerebrity
+          </h1>
+          <p className="text-xl font-bold tracking-widest uppercase opacity-90 pl-1">
+            {activeTab === 'creativity' ? 'SYNTHESIS' :
+              activeTab === 'makeMenu' ? 'MAKE MENU' :
+                activeTab === 'critic' ? 'THE CRITIC' :
+                  activeTab === 'lab' ? 'THE LAB' : 'TRENDS'}
+          </p>
+        </div>
+
+        <div className="flex gap-3 overflow-x-auto py-4 px-6 scrollbar-hide">
+          {[
+            { id: 'creativity', label: 'SYNTHESIS', icon: 'auto_awesome', color: '#FF00CC' },
+            { id: 'makeMenu', label: 'MAKE MENU', icon: 'edit_note', color: '#84CC16' },
+            { id: 'critic', label: 'CRITIC', icon: 'rate_review', color: '#06b6d4' },
+            { id: 'lab', label: 'THE LAB', icon: 'science', color: '#8b5cf6' },
+            { id: 'trendLocator', label: 'TRENDS', icon: 'trending_up', color: '#F59E0B' }
+          ].map(tab => {
+            const isActive = activeTab === tab.id;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id as any)}
+                className={`
+                  relative px-6 py-2 rounded-full text-xs font-black uppercase tracking-widest 
+                  flex items-center gap-2 transition-all duration-300
+                  ${isActive
+                    ? 'bg-white shadow-xl scale-105'
+                    : 'bg-white/10 text-white hover:bg-white/20 border border-white/10'
+                  }
+                `}
+                style={{ color: isActive ? tab.color : undefined }}
+              >
+                <span className={`material-symbols-outlined !text-base ${isActive ? 'fill-1' : ''}`}
+                  style={{ color: 'inherit' }}>
+                  {tab.icon}
+                </span>
+                <span>{tab.label}</span>
+              </button>
+            )
+          })}
         </div>
       </div>
       <div className={`flex-1 ${(activeTab === 'makeMenu' || activeTab === 'critic') ? 'flex' : 'grid grid-cols-1 lg:grid-cols-[310px,minmax(0,1fr),320px] gap-6'} overflow-hidden rounded-3xl relative p-6`}>
-        {/* Avatar Intelligence-style gradient background */}
-        <div
-          className="absolute inset-0 pointer-events-none rounded-3xl"
-          style={{
-            background: activeTab === 'creativity'
-              ? 'linear-gradient(180deg, #8b5cf6 0%, rgba(139, 92, 246, 0.8) 15%, rgba(139, 92, 246, 0) 35%)'
-              : activeTab === 'makeMenu'
-                ? 'linear-gradient(180deg, #14b8a6 0%, rgba(20, 184, 166, 0.8) 15%, rgba(20, 184, 166, 0) 35%)'
-                : activeTab === 'critic'
-                  ? 'linear-gradient(180deg, #f97316 0%, rgba(249, 115, 22, 0.8) 15%, rgba(249, 115, 22, 0) 35%)'
-                  : activeTab === 'lab'
-                    ? 'linear-gradient(180deg, #06b6d4 0%, rgba(6, 182, 212, 0.8) 15%, rgba(6, 182, 212, 0) 35%)'
-                    : 'linear-gradient(180deg, #d946ef 0%, rgba(217, 70, 239, 0.8) 15%, rgba(217, 70, 239, 0) 35%)'
-          }}
-        />
         {(activeTab === 'makeMenu' || activeTab === 'critic') ? (
           <div className="h-full w-full min-h-0 flex flex-col relative overflow-y-auto">
             {activeTab === 'makeMenu' ? (
@@ -727,53 +768,57 @@ const CerebrityView: React.FC<CerebrityViewProps> = ({ db, userId, storage, appI
           </>
         )}
       </div>
-      {isPowerModalOpen && (
-        <Modal title={powerModalState?.title || ''} isOpen={isPowerModalOpen} onClose={() => { setIsPowerModalOpen(false); setStorytellingTheme(''); }}>
-          <div className="p-4 max-h-[55vh] overflow-y-auto pr-2">
-            {powerLoading ? (
-              <div className="flex justify-center items-center p-8"><Spinner /></div>
-            ) : (
-              <>
-                {powerModalState?.title === 'Mejora de Storytelling' && !powerOutput && (
-                  <div className="mb-4">
-                    <label htmlFor="storytelling-theme" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Tema (Opcional)</label>
-                    <input
-                      id="storytelling-theme"
-                      type="text"
-                      value={storytellingTheme}
-                      onChange={(e) => setStorytellingTheme(e.target.value)}
-                      className="w-full px-3 py-2 bg-white dark:bg-slate-800 border rounded-md"
-                    />
-                  </div>
-                )}
-                {powerModalState?.content ? powerModalState.content : renderPowerContent(powerOutput)}
-              </>
-            )}
-          </div>
-          <div className="p-4 flex justify-between items-center border-t">
-            <div>
-              {powerModalState?.title === 'Mejora de Storytelling' && !powerOutput && !powerLoading && (
-                <Button onClick={runStorytellingImprovement}>Activar Poder</Button>
-              )}
-              {!powerLoading && powerOutput && (
-                <Button onClick={() => handleSavePowerResult(powerModalState?.title || 'Resultado', powerOutput)}>Guardar</Button>
+      {
+        isPowerModalOpen && (
+          <Modal title={powerModalState?.title || ''} isOpen={isPowerModalOpen} onClose={() => { setIsPowerModalOpen(false); setStorytellingTheme(''); }}>
+            <div className="p-4 max-h-[55vh] overflow-y-auto pr-2">
+              {powerLoading ? (
+                <div className="flex justify-center items-center p-8"><Spinner /></div>
+              ) : (
+                <>
+                  {powerModalState?.title === 'Mejora de Storytelling' && !powerOutput && (
+                    <div className="mb-4">
+                      <label htmlFor="storytelling-theme" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Tema (Opcional)</label>
+                      <input
+                        id="storytelling-theme"
+                        type="text"
+                        value={storytellingTheme}
+                        onChange={(e) => setStorytellingTheme(e.target.value)}
+                        className="w-full px-3 py-2 bg-white dark:bg-slate-800 border rounded-md"
+                      />
+                    </div>
+                  )}
+                  {powerModalState?.content ? powerModalState.content : renderPowerContent(powerOutput)}
+                </>
               )}
             </div>
-            <Button onClick={() => { setIsPowerModalOpen(false); setStorytellingTheme(''); }} variant="secondary">Cerrar</Button>
-          </div>
-        </Modal>
-      )}
+            <div className="p-4 flex justify-between items-center border-t">
+              <div>
+                {powerModalState?.title === 'Mejora de Storytelling' && !powerOutput && !powerLoading && (
+                  <Button onClick={runStorytellingImprovement}>Activar Poder</Button>
+                )}
+                {!powerLoading && powerOutput && (
+                  <Button onClick={() => handleSavePowerResult(powerModalState?.title || 'Resultado', powerOutput)}>Guardar</Button>
+                )}
+              </div>
+              <Button onClick={() => { setIsPowerModalOpen(false); setStorytellingTheme(''); }} variant="secondary">Cerrar</Button>
+            </div>
+          </Modal>
+        )
+      }
 
-      {saveModalState.isOpen && (
-        <SaveModal
-          isOpen={saveModalState.isOpen}
-          onClose={() => setSaveModalState({ isOpen: false, options: [], powerName: '' })}
-          options={saveModalState.options}
-          powerName={saveModalState.powerName}
-          onConfirm={confirmSave}
-        />
-      )}
-    </div>
+      {
+        saveModalState.isOpen && (
+          <SaveModal
+            isOpen={saveModalState.isOpen}
+            onClose={() => setSaveModalState({ isOpen: false, options: [], powerName: '' })}
+            options={saveModalState.options}
+            powerName={saveModalState.powerName}
+            onConfirm={confirmSave}
+          />
+        )
+      }
+    </div >
   );
 };
 

@@ -65,7 +65,7 @@ export const CreativityTab: React.FC<CreativityTabProps> = ({
                         />
                     </div>
                     <Button
-                        className="mt-4 w-full rounded-xl bg-gradient-to-r from-violet-500 to-purple-500 hover:from-violet-600 hover:to-purple-600 text-white font-semibold py-3 shadow-lg transition-all hover:scale-[1.02]"
+                        className="mt-4 w-full rounded-xl bg-gradient-to-r from-[#FF00CC] to-[#a21caf] hover:from-[#d900ad] hover:to-[#7e1688] text-white font-semibold py-3 shadow-lg transition-all hover:scale-[1.02]"
                         onClick={handleGenerate}
                         disabled={loading || imageLoading}
                     >

@@ -8,7 +8,7 @@ import { useSuppliers } from '../features/suppliers/hooks/useSuppliers';
 import { useOrders, Order } from '../hooks/useOrders';
 import { Ingredient, Recipe, ViewName, ZeroWasteResult } from '../types';
 import { parseMultipleRecipes } from '../utils/recipeImporter';
-import { importPdfRecipes } from '../modules/pdf/importPdfRecipes';
+import { importPdfRecipes } from '../lib/pdf/importPdfRecipes';
 import { useApp } from '../context/AppContext';
 import { parseEuroNumber } from "../utils/parseEuroNumber";
 import { useGrimorium } from '../features/grimorium/useGrimorium';
@@ -624,7 +624,7 @@ const GrimoriumInner: React.FC<GrimoriumViewProps> = ({ onOpenRecipeModal, onDra
     const currentGradient = activeLayer === 'optimization' ? 'lime' :
         activeLayer === 'cost' ? 'red' :
             viewMode === 'stock' ? 'ice' :
-                viewMode === 'recipes' ? 'indigo' : 'emerald'; // Market
+                viewMode === 'recipes' ? 'violet' : 'emerald'; // Market
 
     // --- RECIPE IMPORT HANDLERS ---
     const handleRecipeCsvImport = async (file: File) => {
@@ -761,6 +761,7 @@ const GrimoriumInner: React.FC<GrimoriumViewProps> = ({ onOpenRecipeModal, onDra
         <PremiumLayout
             id="grimorium-section"
             gradientTheme={currentGradient}
+            backgroundMode="screen"
             transparentColumns={true}
             className=""
             header={<GrimoriumToolbar />}
@@ -874,7 +875,7 @@ const GrimoriumInner: React.FC<GrimoriumViewProps> = ({ onOpenRecipeModal, onDra
                 </>
             }
             mainContent={
-                <div className="premium-panel p-0 relative">
+                <div className="h-full flex flex-col relative p-0 bg-transparent shadow-none border-none">
                     <div className="flex-1 overflow-y-auto custom-scrollbar">
                         {/* COST LAYER (Takes precedence if active) - REVERTED: Now in Right Sidebar */}
 

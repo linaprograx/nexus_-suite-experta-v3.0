@@ -135,12 +135,24 @@ const MobileShellContent: React.FC = () => {
 
 
                 {/* 2. Main Content Area with Custom Scrollbar */}
-                <div className="flex-1 relative z-10 overflow-y-auto custom-scroll overflow-x-hidden flex flex-col items-center pt-[env(safe-area-inset-top)]">
+                {/* FIX: Grimorio Pages (Recipes, Stock, Market) handle their own scrolling internally to support Fixed Headers. */}
+                {/* Therefore, we switched from 'overflow-y-auto' to 'overflow-hidden' for these specific pages within the shell. */}
+                {/* DOUBLE FIX: Added 'min-h-0' to prevent flex item from growing beyond parent, which was causing the component to expand fully and break internal scroll. */}
+                <div className={`flex-1 min-h-0 relative z-10 flex flex-col items-center pt-[env(safe-area-inset-top)] ${(currentPage === PageName.GrimorioRecipes || currentPage === PageName.GrimorioStock || currentPage === PageName.GrimorioMarket)
+                        ? 'overflow-hidden'
+                        : 'overflow-y-auto custom-scroll'
+                    } overflow-x-hidden`}>
                     <div
-                        className={`w-full flex-1 ${currentPage === PageName.Login ? '' : 'pb-32'}`}
+                        className={`w-full h-full flex flex-col ${currentPage === PageName.Login ? '' : 'pb-32'}`}
                         style={contentStyle}
                     >
-                        <MobileRoutes user={user!} notify={notify} onNavigate={handleNavigate} />
+                        {/* Wrapper for routes needs to be flex-1 to verify h-full inside routes works? 
+                            Actually if we use h-full on this div, we are good.
+                            Changed flex-1 to h-full flex flex-col to be explicit about filling the parent.
+                        */}
+                        <div className="flex-1 min-h-0 w-full">
+                            <MobileRoutes user={user!} notify={notify} onNavigate={handleNavigate} />
+                        </div>
                     </div>
                 </div>
 

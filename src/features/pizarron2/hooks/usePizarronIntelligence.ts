@@ -4,7 +4,7 @@ import { useIngredients } from '../../../hooks/useIngredients';
 import { BoardNode } from '../engine/types';
 import { evaluateCostSignals, evaluateMarketSignals, evaluateStockSignals } from '../../../core/signals/signal.engine';
 import { Signal, CostSignalInput, MarketSignalInput, StockSignalInput } from '../../../core/signals/signal.types';
-import { calculateRecipeCost } from '../../../modules/costing/costCalculator';
+import { calculateRecipeCost } from '../../../core/costing/costCalculator';
 
 export interface PlanningHint {
     type: 'cost' | 'market' | 'stock';

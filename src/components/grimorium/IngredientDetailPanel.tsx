@@ -4,7 +4,7 @@ import { Card } from '../ui/Card';
 import { Button } from '../ui/Button';
 import { Icon } from '../ui/Icon';
 import { ICONS } from '../ui/icons';
-import { AromaticFamily } from '../../modules/ingredients/families';
+import { AromaticFamily } from '../../features/ingredients/families';
 import { useSuppliers } from '../../features/suppliers/hooks/useSuppliers';
 import { useApp, useCapabilities } from '../../context/AppContext';
 import { evaluateCrossLayerContext } from '../../core/context/crossLayer.engine';

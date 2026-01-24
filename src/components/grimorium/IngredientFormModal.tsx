@@ -8,7 +8,7 @@ import { Input } from '../ui/Input';
 import { Select } from '../ui/Select';
 import { Label } from '../ui/Label';
 import { calculateIngredientPrice } from '../../utils/costCalculator';
-import { classifyIngredient } from '../../modules/ingredients/families';
+import { classifyIngredient } from '../../features/ingredients/families';
 
 import { useSuppliers } from '../../features/suppliers/hooks/useSuppliers'; // Updated import
 

@@ -8,9 +8,9 @@ import { useUI } from '../../context/UIContext';
 import { RecipeActionsPanel } from '../../features/recipes/ui/RecipeActionsPanel';
 import { ViewName } from '../../types';
 
-import { calculateRecipeCost, CostedIngredient } from '../../modules/costing/costCalculator';
-import { calculatePricing } from '../../modules/costing/pricingEngine';
-import { formatCost, getMarginBgColor, getMarginTextColor } from '../../modules/costing/costFormatter';
+import { calculateRecipeCost, CostedIngredient } from '../../core/costing/costCalculator';
+import { calculatePricing } from '../../core/costing/pricingEngine';
+import { formatCost, getMarginBgColor, getMarginTextColor } from '../../core/costing/costFormatter';
 
 
 export const RecipeDetailPanel: React.FC<{

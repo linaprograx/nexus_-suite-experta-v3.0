@@ -12,7 +12,7 @@ import { Autocomplete } from '../ui/Autocomplete';
 import { ICONS } from '../ui/icons';
 import { Recipe, Ingredient, IngredientLineItem } from '../../types';
 import { useApp } from '../../context/AppContext';
-import { calculateRecipeCost } from '../../modules/costing/costCalculator';
+import { calculateRecipeCost } from '../../core/costing/costCalculator';
 
 interface RecipeFormModalProps {
     isOpen: boolean;

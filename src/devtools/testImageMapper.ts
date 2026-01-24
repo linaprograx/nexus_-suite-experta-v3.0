@@ -1,4 +1,4 @@
-import { createImageMap } from '../modules/images/imageNameResolver';
+import { createImageMap } from '../lib/images/imageNameResolver';
 import { Recipe } from '../../types';
 
 const mockRecipes: Partial<Recipe>[] = [

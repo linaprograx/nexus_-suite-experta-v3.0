@@ -1,0 +1,59 @@
+{
+    "palette": {
+        "synthesis": {
+            "name": "Neon Pink",
+            "hex": "#FF00CC",
+            "rgb": "255, 0, 204",
+            "tailwind_from": "from-[#FF00CC]",
+            "tailwind_to": "to-[#a21caf]"
+        },
+        "make_menu": {
+            "name": "Lime Green",
+            "hex": "#84CC16",
+            "rgb": "132, 204, 22",
+            "tailwind_from": "from-[#84CC16]",
+            "tailwind_to": "to-[#15803d]"
+        },
+        "critic": {
+            "name": "Cyan",
+            "hex": "#06b6d4",
+            "rgb": "6, 182, 212",
+            "tailwind_from": "from-[#06b6d4]",
+            "tailwind_to": "to-[#0891b2]"
+        },
+        "lab": {
+            "name": "Electric Purple",
+            "hex": "#8b5cf6",
+            "rgb": "139, 92, 246",
+            "tailwind_from": "from-[#8b5cf6]",
+            "tailwind_to": "to-[#6d28d9]"
+        },
+        "trends": {
+            "name": "Amber",
+            "hex": "#F59E0B",
+            "rgb": "245, 158, 11",
+            "tailwind_from": "from-[#F59E0B]",
+            "tailwind_to": "to-[#b45309]"
+        }
+    },
+    "components": {
+        "gradient_backdrop": {
+            "className": "absolute inset-0 pointer-events-none transition-all duration-700 ease-in-out rounded-3xl z-0",
+            "styleTemplate": "linear-gradient(180deg, ${HEX} 0%, rgba(${RGB}, 0.4) 30%, rgba(${RGB}, 0) 45%)"
+        },
+        "nav_container": {
+            "className": "flex gap-3 overflow-x-auto py-4 px-6 scrollbar-hide"
+        },
+        "nav_pill_active": {
+            "className": "relative px-6 py-2 rounded-full text-xs font-black uppercase tracking-widest flex items-center gap-2 transition-all duration-300 bg-white shadow-xl scale-105"
+        },
+        "nav_pill_inactive": {
+            "className": "relative px-6 py-2 rounded-full text-xs font-black uppercase tracking-widest flex items-center gap-2 transition-all duration-300 bg-white/10 text-white hover:bg-white/20 border border-white/10"
+        },
+        "header_title": {
+            "className": "text-7xl font-black italic tracking-tighter leading-[0.8] mb-1 drop-shadow-xl",
+            "fontFamily": "Georgia, serif",
+            "textShadow": "0 4px 30px rgba(0,0,0,0.3)"
+        }
+    }
+}

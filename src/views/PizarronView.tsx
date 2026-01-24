@@ -3,7 +3,7 @@ import { Firestore } from 'firebase/firestore';
 import { Auth } from 'firebase/auth';
 import { FirebaseStorage } from 'firebase/storage';
 import { PizarronRoot } from '../features/pizarron2/ui/PizarronRoot';
-import { UserProfile } from '../types';
+import { UserProfile, Recipe } from '../types';
 import { useUI } from '../context/UIContext';
 
 interface PizarronViewProps {
@@ -14,7 +14,7 @@ interface PizarronViewProps {
   storage: FirebaseStorage | null;
   taskToOpen: string | null;
   onTaskOpened: () => void;
-  draggingRecipe: any | null;
+  draggingRecipe: Recipe | null;
   draggingTask: string | null;
   onDropEnd: () => void;
   onDragTaskStart: (taskId: string) => void;

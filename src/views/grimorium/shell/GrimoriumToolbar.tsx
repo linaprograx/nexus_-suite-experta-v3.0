@@ -9,82 +9,117 @@ export const GrimoriumToolbar: React.FC = () => {
     const { viewMode, setViewMode, activeLayer, toggleLayer } = useItemContext();
     const [showIntelPanel, setShowIntelPanel] = useState(false);
 
-    // Helper for View Mode Buttons (The "Tabs")
-    const ViewButton = ({ mode, label, colorClass }: { mode: GrimoriumViewMode, label: string, colorClass: string }) => {
+    // Color Mapping for Text matching the old bg classes
+    const getColorStyle = (mode: GrimoriumViewMode) => {
+        switch (mode) {
+            case 'recipes': return '#7c3aed'; // violet-600
+            case 'stock': return '#0284c7'; // sky-600
+            case 'market': return '#059669'; // emerald-600
+        }
+    };
+
+    // Helper for View Mode Buttons (The "Tabs") - MIGRATOR STYLE PILLS
+    const ViewButton = ({ mode, label }: { mode: GrimoriumViewMode, label: string }) => {
         const isActive = viewMode === mode;
-        const baseClass = "flex-shrink-0 py-2 px-5 text-sm font-semibold rounded-full transition-all duration-300";
-        const activeClass = `${colorClass} text-white shadow-md transform scale-105`;
-        const inactiveClass = "text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-800";
+        const color = getColorStyle(mode);
 
         return (
             <button
                 onClick={() => setViewMode(mode)}
-                className={`${baseClass} ${isActive ? activeClass : inactiveClass}`}
+                className={`
+                  relative px-6 py-2 rounded-full text-xs font-black uppercase tracking-widest 
+                  flex items-center gap-2 transition-all duration-300
+                  ${isActive
+                        ? 'bg-white shadow-xl scale-105'
+                        : 'bg-white/10 text-white hover:bg-white/20 border border-white/10'
+                    }
+                `}
+                style={{ color: isActive ? color : undefined }}
             >
-                {label}
+                <span>{label}</span>
             </button>
         );
     };
 
-    // Helper for Layer Toggles (The "Tools")
+    // Helper for Layer Toggles (The "Tools") - MIGRATOR STYLE
     const LayerToggle = ({ layer, label, icon, colorClass }: { layer: GrimoriumLayer, label: string, icon: string, colorClass: string }) => {
         const isActive = activeLayer === layer;
-        const baseClass = "flex items-center gap-2 py-1.5 px-4 text-xs font-semibold rounded-full transition-all duration-300 border border-transparent";
-        // Active: Filled with color
-        const activeClass = `${colorClass} text-white shadow-sm`;
-        // Inactive: Ghost with hover
-        const inactiveClass = "text-slate-500 hover:bg-white/50 dark:hover:bg-slate-800/50 hover:border-slate-200 dark:hover:border-slate-700";
+
+        // Extract hex from colorClass approx or hardcode for now for simplicity, 
+        // or just use text class if active? 
+        // Let's stick to simple text classes for tools for now, or match the Pill style if desired.
+        // User asked to style "Grimorio Desktop" like "Grimorio Mobile". 
+        // Mobile screenshot 4 doesn't show these tools clearly, but let's make them consistent pills too.
 
         return (
             <button
                 onClick={() => toggleLayer(layer)}
-                className={`${baseClass} ${isActive ? activeClass : inactiveClass}`}
+                className={`
+                  relative px-4 py-2 rounded-full text-xs font-bold uppercase tracking-wider
+                  flex items-center gap-2 transition-all duration-300 border
+                  ${isActive
+                        ? 'bg-white shadow-md border-transparent' // Active: White bg
+                        : 'bg-white/10 text-white border-white/10 hover:bg-white/20' // Inactive: Glass
+                    }
+                `}
+                // We'll use the colorClass to text color if active
                 title={`Toggle ${label} Layer`}
             >
-                <Icon svg={icon} className={`w-4 h-4 ${isActive ? 'text-white' : 'text-slate-400'}`} />
-                <span className="hidden sm:inline">{label}</span>
+                <Icon svg={icon} className={`w-4 h-4 ${isActive ? colorClass.replace('bg-', 'text-') : 'text-white'}`} />
+                <span className={`${isActive ? colorClass.replace('bg-', 'text-') : 'text-white'}`}>{label}</span>
             </button>
         );
     };
 
     return (
-        <div className="flex items-center w-full max-w-full overflow-x-auto no-scrollbar justify-between pr-2">
-            {/* LEFT: Core Views (The "Where am I?") */}
-            <div className="flex items-center gap-2">
-                <ViewButton mode="recipes" label="Recetas" colorClass="bg-indigo-600" />
-                <ViewButton mode="stock" label="Stock" colorClass="bg-sky-500" />
-                <ViewButton mode="market" label="Market" colorClass="bg-emerald-600" />
+        <div className="flex flex-col w-full">
+            {/* 1. MIGRATOR STYLE HEADER TITLE */}
+            <div className="mb-6 pl-2 z-10 text-white relative">
+                <h1 className="text-7xl font-black italic tracking-tighter leading-[0.8] mb-1 drop-shadow-xl"
+                    style={{ fontFamily: 'Georgia, serif', textShadow: '0 4px 30px rgba(0,0,0,0.3)' }}>
+                    Grimorio
+                </h1>
+                <p className="text-xl font-bold tracking-widest uppercase opacity-90 pl-1">
+                    Recetario Maestro
+                </p>
             </div>
 
-            {/* DIVIDER */}
-            <div className="h-6 w-px bg-slate-300 dark:bg-slate-700 mx-4 hidden sm:block"></div>
+            {/* 2. NAVIGATION ROW */}
+            <div className="flex items-center w-full max-w-full overflow-x-auto p-2 scrollbar-hide justify-between">
+                {/* LEFT: Core Views (The Pill Tabs) */}
+                <div className="flex gap-3">
+                    <ViewButton mode="recipes" label="RECETAS" />
+                    <ViewButton mode="stock" label="INVENTARIO" />
+                    <ViewButton mode="market" label="MERCADO" />
+                </div>
 
-            {/* RIGHT: Functional Layers (The "What tool am I using?") */}
-            <div className="flex items-center gap-2">
-                {/* Intel / Brain Preferences */}
-                <button
-                    onClick={() => setShowIntelPanel(true)}
-                    className="p-1.5 rounded-full text-slate-400 hover:text-indigo-500 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors mr-1"
-                    title="Inteligencia Activa"
-                >
-                    <Icon svg={ICONS.sparkles} className="w-5 h-5 text-amber-400 dark:text-amber-300" />
-                </button>
+                {/* RIGHT: Functional Layers (Tools) */}
+                <div className="flex items-center gap-2">
+                    {/* Intel / Brain Preferences */}
+                    <button
+                        onClick={() => setShowIntelPanel(true)}
+                        className="p-2 rounded-full bg-white/10 text-white hover:bg-white/20 border border-white/10 transition-colors"
+                        title="Inteligencia Activa"
+                    >
+                        <Icon svg={ICONS.sparkles} className="w-5 h-5 text-amber-300" />
+                    </button>
 
-                {/* Cost Layer (Escandallo) */}
-                <LayerToggle
-                    layer="cost"
-                    label="Costes"
-                    icon={ICONS.chart}
-                    colorClass="bg-rose-500"
-                />
+                    {/* Cost Layer (Escandallo) */}
+                    <LayerToggle
+                        layer="cost"
+                        label="Costes"
+                        icon={ICONS.chart}
+                        colorClass="bg-rose-500"
+                    />
 
-                {/* Optimization Layer (Zero Waste) */}
-                <LayerToggle
-                    layer="optimization"
-                    label="Zero Waste"
-                    icon={ICONS.refresh}
-                    colorClass="bg-lime-500"
-                />
+                    {/* Optimization Layer (Zero Waste) */}
+                    <LayerToggle
+                        layer="optimization"
+                        label="Zero Waste"
+                        icon={ICONS.refresh}
+                        colorClass="bg-lime-500"
+                    />
+                </div>
             </div>
 
             {showIntelPanel && <IntelPreferencesPanel onClose={() => setShowIntelPanel(false)} />}

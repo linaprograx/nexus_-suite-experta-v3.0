@@ -89,7 +89,7 @@ const DesignerControls: React.FC<DesignerControlsProps> = ({
                 <Button
                     onClick={onGenerate}
                     disabled={loading || (selectedRecipeIds.length + selectedTaskIds.length < 1)}
-                    className="w-full bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-600 hover:to-emerald-600 text-white shadow-lg"
+                    className="w-full bg-gradient-to-r from-[#84CC16] to-[#15803d] hover:from-[#65a30d] hover:to-[#166534] text-white shadow-lg"
                 >
                     {loading ? <Spinner className="w-4 h-4 mr-2" /> : <Icon svg={ICONS.menu} className="w-4 h-4 mr-2" />}
                     {loading ? 'Ejecutando diseño...' : 'Ejecutar Diseño'}

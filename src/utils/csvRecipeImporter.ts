@@ -1,5 +1,5 @@
 import { Ingredient, Recipe } from '../types';
-import { calculateRecipeCost } from '../modules/costing/costCalculator';
+import { calculateRecipeCost } from '../core/costing/costCalculator';
 
 export interface IngredientLineItem {
     ingredientId: string | null;

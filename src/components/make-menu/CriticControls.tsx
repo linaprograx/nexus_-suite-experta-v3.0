@@ -74,7 +74,7 @@ const CriticControls: React.FC<CriticControlsProps> = ({
                 <Button
                     onClick={onInvoke}
                     disabled={loading}
-                    className="w-full bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white shadow-lg py-3 transition-all hover:scale-[1.02]"
+                    className="w-full bg-gradient-to-r from-[#06b6d4] to-[#0891b2] hover:from-[#0891b2] hover:to-[#0e7490] text-white shadow-lg py-3 transition-all hover:scale-[1.02]"
                 >
                     {loading ? (
                         <span className="flex items-center gap-2">

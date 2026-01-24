@@ -1,6 +1,6 @@
 import React from 'react';
 import { Recipe, Ingredient } from '../../types';
-import { calculateRecipeCost } from '../../modules/costing/costCalculator';
+import { calculateRecipeCost } from '../../core/costing/costCalculator';
 import { Card } from '../ui/Card';
 import { Button } from '../ui/Button';
 import { Icon } from '../ui/Icon';

@@ -4,10 +4,10 @@ import { Ingredient, Recipe, IngredientLineItem } from '../../../types';
 import { extractTextFromPdf } from './pdfTextExtractor';
 import { extractImagesFromPdf } from './pdfImageExtractor';
 import { parsePdfRecipeBlocks } from './parsePdfRecipeBlocks';
-import { parseIngredient } from '../ingredients/ingredientParser';
-import { findBestMatch } from '../ingredients/ingredientMatcher';
-import { calculateRecipeCost } from '../costing/costCalculator';
-import { classifyIngredient } from '../ingredients/families';
+import { parseIngredient } from '../../features/ingredients/ingredientParser';
+import { findBestMatch } from '../../features/ingredients/ingredientMatcher';
+import { calculateRecipeCost } from '../../core/costing/costCalculator';
+import { classifyIngredient } from '../../features/ingredients/families';
 import { mapImagesToRecipesOCR } from '../images/pdfImageMapper';
 
 const uploadImage = async (storage: FirebaseStorage, userId: string, imageBase64: string): Promise<string> => {
