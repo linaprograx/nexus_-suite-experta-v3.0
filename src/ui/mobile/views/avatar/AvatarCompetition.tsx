@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { SafeImage } from '../../../../components/ui/SafeImage';
 import { ChampionProvider } from '../../../../features/champion-mode/context/ChampionContext';
 import { useChampionCreativeEngine } from '../../../../features/champion-mode/hooks/useChampionCreativeEngine';
 
@@ -62,13 +63,13 @@ const CompetitionContent: React.FC = () => {
                         <h2 className="text-4xl font-black text-white uppercase tracking-tighter italic">{state.proposal.title}</h2>
                     </div>
 
-                    <div className="relative group mx-auto w-full max-w-[320px]">
-                        <img
+                    <div className="relative group mx-auto w-full max-w-[320px] aspect-[4/5]">
+                        <SafeImage
                             src={state.proposal.imageUrl}
                             alt={state.proposal.title}
-                            className="w-full aspect-[4/5] object-cover rounded-[3rem] shadow-[0_20px_60px_rgba(0,0,0,0.5)] border border-white/10"
+                            className="w-full h-full rounded-[3rem] shadow-[0_20px_60px_rgba(0,0,0,0.5)] border border-white/10"
                         />
-                        <div className={`absolute -bottom-4 -right-4 ${THEME_BG} text-white w-14 h-14 rounded-full flex items-center justify-center shadow-xl border-4 border-black`}>
+                        <div className={`absolute -bottom-4 -right-4 ${THEME_BG} text-white w-14 h-14 rounded-full flex items-center justify-center shadow-xl border-4 border-black z-20`}>
                             <span className="material-symbols-outlined">workspace_premium</span>
                         </div>
                     </div>

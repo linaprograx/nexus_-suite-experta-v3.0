@@ -169,7 +169,8 @@ export const ChampionCreativePanel: React.FC = () => {
                                         className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-700"
                                         onError={(e) => {
                                             e.currentTarget.onerror = null;
-                                            e.currentTarget.src = "https://images.unsplash.com/photo-1514362545857-3bc16c4c7d1b?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80";
+                                            // Fallback to abstract dark fluid art so it looks intentional, not "broken" or "generic cocktail"
+                                            e.currentTarget.src = "https://pollinations.ai/p/dark_abstract_liquid_gold_and_purple_smoke_4k_cinematic?width=800&height=800&model=turbo&seed=999";
                                         }}
                                     />
                                     <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-6">

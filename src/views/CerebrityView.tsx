@@ -576,15 +576,39 @@ const CerebrityView: React.FC<CerebrityViewProps> = ({ db, userId, storage, appI
 
       setResult(textResult);
 
-      // 2. Image Generation (Standard Gemini Call)
+      setResult(textResult);
+
+      // 2. Image Generation (Unified Engine -> "Nano Banana")
       setImageLoading(true);
-      const imageResponse = await generateImage(textResult.promptImagen);
-      const base64Data = imageResponse.predictions[0].bytesBase64Encoded;
+
+      // Use the unified ImageGenerator (Pollinations/Gemini hybrid)
+      // Import it first! (Adding import in next step if missing, or assuming global available in replacements)
+      // We need to fetch the helper
+      const { ImageGenerator } = await import('../lib/ai/image/imageGenerator'); // Dynamic import to avoid top-level issues if not ready
+
+      const imageUrlOrBase64 = await ImageGenerator.generateImageUrl(textResult.promptImagen);
+      let downloadURL = imageUrlOrBase64;
 
       if (!storage) throw new Error("Storage no disponible");
       const storageRef = ref(storage, `users/${userId}/recipe-images/${Date.now()}.jpg`);
-      await uploadString(storageRef, base64Data, 'base64', { contentType: 'image/jpeg' });
-      const downloadURL = await getDownloadURL(storageRef);
+
+      // Prepare data for upload
+      let base64Data = "";
+
+      if (imageUrlOrBase64.startsWith('data:image')) {
+        // If it's base64 (Gemini), we upload it
+        base64Data = imageUrlOrBase64.split(',')[1];
+      }
+
+      // If it's strictly a URL (Pollinations), we just save the URL directly to Firestore.
+      // Trying to fetch -> blob -> upload often triggers CORS hurdles.
+      // We rely on the hotlink.
+
+      // Upload if we have data
+      if (base64Data) {
+        await uploadString(storageRef, base64Data, 'base64', { contentType: 'image/jpeg' });
+        downloadURL = await getDownloadURL(storageRef);
+      }
 
       setResult(prev => prev ? ({ ...prev, imageUrl: downloadURL }) : null);
 
@@ -596,7 +620,11 @@ const CerebrityView: React.FC<CerebrityViewProps> = ({ db, userId, storage, appI
       });
 
     } catch (e: any) {
-      setError("Error en la generación: " + e.message);
+      setError("Error en la generación visual: " + e.message);
+      // Don't kill the text result if image fails
+      if (result) {
+        // Just ensure loading is off
+      }
     } finally {
       setLoading(false);
       setImageLoading(false);

@@ -86,59 +86,24 @@ export const GeminiChampionService = {
     },
 
     // --- NEW: Visual Prompt Helpers ---
+    // --- NEW: Visual Prompt Helpers (OPTIMIZED - NO AI CALL) ---
     async generateVisualCocktailPrompt(proposal: any): Promise<string> {
-        const context = `
-        COCKTAIL DETAILS:
-        Name: ${proposal.title}
-        Glassware: ${proposal.glassware || "Elegant Glass"}
-        Garnish: ${JSON.stringify(proposal.garnish)}
-        Color/Appearance: ${proposal.appearance || "Vibrant"}
-        Ingredients: ${JSON.stringify(proposal.recipe)}
-        `;
+        // Deterministic Prompt Construction to save API Quota (Fixes 429 Error)
+        const glassware = proposal.glassware || "Elegant Glass";
+        const garnish = typeof proposal.garnish === 'string' ? proposal.garnish : proposal.garnish?.name || "minimalist garnish";
 
-        try {
-            const response = await callGeminiApi(visualCocktailPrompt + "\n\n" + context, "Visual Director");
-            return response.text.replace(/[*_`]/g, '').trim();
-        } catch (e) {
-            return `Cocktail ${proposal.title}, professional photography, 8k`;
-        }
+        // "Nano Banana" Template
+        return `Hyper-realistic award-winning cocktail photography of "${proposal.title}". Served in a ${glassware}. Garnish: ${garnish}. Style: Cinematic lighting, 8k resolution, shallow depth of field, liquid texture focus, professional studio, dark moody background with brand colors, 8k, photorealistic`;
     },
 
     async generateVisualBrandPrompt(brief: any, proposal: any): Promise<string> {
-        const context = `
-        BRAND: ${brief.brand}
-        COCKTAIL: ${proposal.title}
-        CONCEPT: ${proposal.shortIntro}
-        `;
-
-        try {
-            const response = await callGeminiApi(visualBrandPrompt + "\n\n" + context, "Brand Strategist");
-            // The prompt asks for: 1. Description, 2. Prompt. We assume the model separates them or we just use the whole text as context for the image gen if strictly followed.
-            // But the user prompt `visualBrand.ts` says "You must output...".
-            // Let's assume the last paragraph is the prompt or we just use the whole aesthetic description.
-            // To be safe, let's treat the whole response as the aesthetic definition for the image generator.
-            return response.text.trim();
-        } catch (e) {
-            return `Futuristic radar chart for ${brief.brand}, neon colors, data visualization`;
-        }
+        // Deterministic Fallback to save quota
+        return `Futuristic radar chart for ${brief.brand}, neon colors, data visualization, minimalist, clean lines, ${proposal.shortIntro || "concept"}, 8k, vector style`;
     },
 
     async generateVisualImpactAssessment(proposal: any): Promise<string> {
-        const prompt = `
-        Analyze the visual description of this cocktail: "${proposal.title}".
-        Garnish: ${JSON.stringify(proposal.garnish)}
-        Glass: ${proposal.glassware}
-        
-        Write a 3-line "Visual Impact Assessment" for a competition jury.
-        Tone: Professional, appreciative of details.
-        Output: Just the text.
-        `;
-        try {
-            const response = await callGeminiApi(prompt, "Visual Judge");
-            return response.text.trim();
-        } catch (e) {
-            return "Visually striking presentation with strong brand alignment.";
-        }
+        // Deterministic Fallback to save quota
+        return "Visually striking presentation with strong brand alignment and premium execution.";
     },
 
     // --- NEW: Real Image Generation (Refactored) ---
@@ -147,7 +112,10 @@ export const GeminiChampionService = {
             return await ImageGenerator.generateImageUrl(imagePrompt);
         } catch (e) {
             console.error("Image Gen Error", e);
-            return "https://images.unsplash.com/photo-1514362545857-3bc16c4c7d1b?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80";
+            // DYNAMIC FALLBACK: Pollinations with the actual prompt
+            const encoded = encodeURIComponent(imagePrompt + ", 8k, photorealistic");
+            // Switched to Turbo due to Flux maintenance
+            return `https://pollinations.ai/p/${encoded}?width=1024&height=1024&model=turbo&nologo=true`;
         }
     },
 
@@ -180,29 +148,68 @@ export const GeminiChampionService = {
             .replace('{{palette}}', palette || "No especificada")
             .replace('{{visualRefs}}', visualRefs?.join(', ') || "Estilo Libre");
 
+        // FORCE GLASSWARE INTO THE CONCEPT IF NOT PRESENT
+        // This ensures the creative director considers it, but the prompt template might need it.
+        // Actually, the prompt *output* determines the glassware. We need to respect *that* output in the image.
+
+
         try {
+            console.log(">>> CALLING GEMINI CREATIVE: ", prompt.substring(0, 100) + "...");
             const response = await callGeminiApi(prompt, SYSTEM_ROLES.CREATIVE_DIRECTOR, { responseMimeType: "application/json" });
-            const jsonText = response.text.replace(/```json|```/g, '').trim();
-            const proposal = JSON.parse(jsonText);
+            console.log(">>> GEMINI RAW RESPONSE:", response.text);
+
+            // ROBUST JSON CLEANING
+            let jsonText = response.text || "";
+            // Remove markdown code blocks if present
+            jsonText = jsonText.replace(/```json/g, "").replace(/```/g, "").trim();
+
+            // Find the first '{' and last '}' to ensure we have a valid object
+            const firstBrace = jsonText.indexOf('{');
+            const lastBrace = jsonText.lastIndexOf('}');
+
+            if (firstBrace !== -1 && lastBrace !== -1) {
+                jsonText = jsonText.substring(firstBrace, lastBrace + 1);
+            }
+
+            let proposal;
+            try {
+                proposal = JSON.parse(jsonText);
+            } catch (parseError) {
+                console.error("JSON Parse Error. Raw Text:", response.text);
+                throw new Error("La IA generó una respuesta inválida. Intenta de nuevo.");
+            }
 
             // OPTIMIZATION: Parallelize visual tasks
-            const [visualData, visualAnalysis] = await Promise.all([
-                (async () => {
-                    const prompt = await GeminiChampionService.generateVisualCocktailPrompt(proposal);
-                    const url = await GeminiChampionService.generateCocktailImage(prompt);
-                    return { prompt, url };
-                })(),
-                GeminiChampionService.generateVisualImpactAssessment(proposal)
-            ]);
+            // We wrap visual generation in its own try/catch so it doesn't fail the whole proposal
+            let imageUrl = null;
+            let imagePrompt = null;
+            let visualAnalysis = null;
 
-            proposal.imageUrl = visualData.url;
-            proposal.imagePrompt = visualData.prompt;
+            try {
+                const [visualData, analysis] = await Promise.all([
+                    (async () => {
+                        const prompt = await GeminiChampionService.generateVisualCocktailPrompt(proposal);
+                        const url = await GeminiChampionService.generateCocktailImage(prompt);
+                        return { prompt, url };
+                    })(),
+                    GeminiChampionService.generateVisualImpactAssessment(proposal)
+                ]);
+                imageUrl = visualData.url;
+                imagePrompt = visualData.prompt;
+                visualAnalysis = analysis;
+            } catch (visualError) {
+                console.warn("Visual Generation Failed (Non-critical):", visualError);
+                // Fallbacks are already handled in helper methods, but just in case
+            }
+
+            proposal.imageUrl = imageUrl;
+            proposal.imagePrompt = imagePrompt;
             proposal.visualAnalysis = visualAnalysis;
 
             return proposal;
         } catch (e) {
-            console.error("Gemini Creative Error", e);
-            throw new Error("Error generando propuesta World Class.");
+            console.error("Gemini Creative Critical Error (DEBUG_001):", e);
+            throw new Error("GEMINI_CRITICAL_FAIL_DEBUG_001: " + (e as Error).message);
         }
     },
 

@@ -7,26 +7,44 @@ if (!GEMINI_API_KEY) {
 
 export const callGeminiApi = async (userQuery: string | { parts: any[], role?: string }, systemPrompt: string, generationConfig: any = null) => {
     const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
-    try {
-        const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
-            contents: typeof userQuery === 'string' ? [{ parts: [{ text: userQuery }] }] : userQuery,
-            config: {
-                systemInstruction: systemPrompt,
-                ...(generationConfig && generationConfig)
-            }
-        });
 
-        // Standardize return to prevent access errors in views
-        const text = typeof response.text === 'function' ? response.text() : response.text;
-        // If the SDK version changes property vs function, this covers both, or we inspect candidates if needed.
-        // Based on google-genai SDK 0.x, response.text() is common. If using @google/genai, it might be a property.
-        // Let's assume we return an object mimicking the structure needed.
-        return { text: text || "" };
-    } catch (error) {
-        console.error("Error calling Gemini API:", error);
-        throw new Error("Error en la llamada a la API de Gemini. Verifique la consola para más detalles.");
+    // Retry Logic for 429 (Rate Limit)
+    let attempts = 0;
+    const maxAttempts = 3;
+
+    while (attempts < maxAttempts) {
+        try {
+            const response = await ai.models.generateContent({
+                model: 'gemini-2.5-flash',
+                contents: typeof userQuery === 'string' ? [{ parts: [{ text: userQuery }] }] : userQuery,
+                config: {
+                    systemInstruction: systemPrompt,
+                    ...(generationConfig && generationConfig)
+                }
+            });
+
+            // Standardize return to prevent access errors in views
+            const text = typeof response.text === 'function' ? response.text() : response.text;
+            return { text: text || "" };
+
+        } catch (error: any) {
+            // Check for 429 (Quota Exceeded) or 503 (Server Overload)
+            const isRateLimit = error.message?.includes('429') || error.status === 429 || error.message?.includes('Quota exceeded');
+
+            if (isRateLimit && attempts < maxAttempts - 1) {
+                console.warn(`Gemini 429 Rate Limit hit. Retrying in ${(attempts + 1) * 2}s...`);
+                await new Promise(resolve => setTimeout(resolve, (attempts + 1) * 2000));
+                attempts++;
+                continue;
+            }
+
+            console.error("Error calling Gemini API:", error);
+            throw new Error("Error en la llamada a la API de Gemini (Rate Limit o Red). Verifique la consola.");
+        }
     }
+    // Fallback if loop finishes without return (should stay in try/catch usually)
+    throw new Error("Gemini API Failed after retries.");
+
 };
 
 export const generateImage = async (prompt: string) => {
@@ -36,22 +54,22 @@ export const generateImage = async (prompt: string) => {
 
     const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
     try {
-        // FIX: Se asegura que la llamada a la API se asigna a una constante 'response'.
+        // ATTEMPT 1: Imagen 3.0 (Official Stable)
         const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash-image',
+            model: 'imagen-3.0-generate-001',
             contents: { parts: [{ text: prompt }] },
             config: { responseModalities: [Modality.IMAGE] },
         });
 
-        // FIX: Se define 'base64Data' a partir de la 'response' obtenida.
         const base64Data = response.candidates?.[0]?.content?.parts?.find(p => p.inlineData)?.inlineData?.data;
         if (!base64Data) {
-            throw new Error("La respuesta de la API de Imagen (flash) no contenía datos de imagen válidos.");
+            throw new Error("Imagen 3 no devolvió datos válidos.");
         }
         return { predictions: [{ bytesBase64Encoded: base64Data }] };
-    } catch (error) {
-        console.error("Error en la API de Imagen (flash):", error);
-        throw new Error("La llamada a la API de imagen falló. Revisa la consola.");
+
+    } catch (error: any) {
+        console.warn("Imagen 3 API Failed. trying fallback...", error.message);
+        throw error; // Re-throw to let ImageGenerator handle the fallback
     }
 };
 

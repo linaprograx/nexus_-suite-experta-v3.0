@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
+import { SafeImage } from '../../../../components/ui/SafeImage';
 import GlassCard from '../../../components/GlassCard';
 import { useChampionContext } from '../../../../../features/champion-mode/context/ChampionContext';
 
 export const MobileChampionCreative: React.FC = () => {
     const { state, actions } = useChampionContext();
     const { proposal, isGenerating } = state;
+    const [imageError, setImageError] = useState(false);
 
     return (
         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-10">
@@ -73,13 +75,22 @@ export const MobileChampionCreative: React.FC = () => {
             {proposal && (
                 <div className="space-y-6 animate-in fade-in zoom-in-95 duration-700">
                     {/* Hero Display */}
-                    <div className="relative group">
-                        <img
-                            src={proposal.imageUrl}
-                            alt={proposal.title}
-                            className="w-full aspect-[4/5] object-cover rounded-[3rem] shadow-2xl"
-                        />
-                        <div className="absolute inset-0 bg-gradient-to-t from-emerald-950 via-transparent to-transparent rounded-[3rem] flex flex-col justify-end p-8">
+                    <div className="relative group aspect-[4/5] w-full rounded-[3rem] shadow-2xl overflow-hidden bg-neutral-900">
+                        {(!imageError) ? (
+                            <img
+                                src={proposal.imageUrl}
+                                alt={proposal.title}
+                                className="w-full h-full object-cover"
+                                onError={() => setImageError(true)}
+                            />
+                        ) : (
+                            <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-emerald-900 to-black p-6 text-center">
+                                <span className="material-symbols-outlined text-4xl text-emerald-500/50 mb-2">image_not_supported</span>
+                                <p className="text-xs text-emerald-500/50 font-bold uppercase tracking-widest">Imagen no disponible</p>
+                            </div>
+                        )}
+
+                        <div className="absolute inset-0 bg-gradient-to-t from-emerald-950 via-transparent to-transparent flex flex-col justify-end p-8 pointer-events-none">
                             <h4 className="text-[10px] font-black text-emerald-400 uppercase tracking-widest mb-2">Concepto Final</h4>
                             <h2 className="text-3xl font-black text-white uppercase tracking-tighter leading-none">{proposal.title}</h2>
                         </div>

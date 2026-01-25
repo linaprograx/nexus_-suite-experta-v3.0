@@ -56,7 +56,7 @@ export const ChampionPresentationView: React.FC = () => {
                                 className="w-full h-full object-cover object-[center_30%] opacity-60 hover:opacity-100 transition-opacity duration-1000 scale-105"
                                 onError={(e) => {
                                     e.currentTarget.onerror = null;
-                                    e.currentTarget.src = "https://images.unsplash.com/photo-1514362545857-3bc16c4c7d1b?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80";
+                                    e.currentTarget.src = "https://pollinations.ai/p/dark_abstract_liquid_gold_and_purple_smoke_4k_cinematic?width=800&height=800&model=turbo&seed=999";
                                 }}
                             />
                             <div className="absolute inset-0 bg-gradient-to-b from-slate-950/90 via-slate-950/40 to-slate-950" />
