@@ -68,16 +68,7 @@ export const AvatarIntelligenceView: React.FC = () => {
     // --- RENDER ---
     return (
         <div className="h-full w-full relative overflow-hidden flex flex-col">
-            {/* Header - Fixed Top Center */}
-            <div className="absolute top-4 left-0 w-full text-center z-10 pointer-events-none">
-                <span className="text-[10px] uppercase tracking-[0.3em] text-rose-600/60 dark:text-rose-300/40 block mb-1 font-bold">Nexus Cognitive System</span>
-                <h1 className="text-2xl font-serif text-slate-900 dark:text-white tracking-tight drop-shadow-sm opacity-90 mb-1">
-                    Avatar Intelligence
-                </h1>
-                <p className="text-xs text-slate-600 dark:text-rose-100/60 font-light tracking-wide max-w-lg mx-auto leading-relaxed opacity-80">
-                    Laboratorio de calibración cognitiva.
-                </p>
-            </div>
+
 
             {/* MAIN CONTENT GRID - Fixed height, no page scroll */}
             <div className="w-full max-w-[1600px] mx-auto h-full flex flex-col lg:flex-row items-center justify-between px-8 pt-24 pb-8 z-10 gap-12 lg:gap-0">
@@ -166,7 +157,7 @@ export const AvatarIntelligenceView: React.FC = () => {
 
                 {/* --- CENTER COLUMN: COGNITIVE CORE (Layer 1) --- */}
                 <div className="relative w-full lg:flex-1 h-full flex flex-col items-center justify-center animate-in zoom-in-95 duration-1000 order-1 lg:order-2 z-10">
-                    <div className="relative w-72 h-72 group cursor-pointer mt-[-40px]" onClick={() => setActiveModal('calibration')}>
+                    <div className="relative w-72 h-72 aspect-square flex-shrink-0 group cursor-pointer mt-[-40px]" onClick={() => setActiveModal('calibration')}>
                         {/* Orbitals */}
                         <div className="absolute inset-0 rounded-full border border-rose-400/20 dark:border-rose-500/10 scale-[1.4] animate-[spin_40s_linear_infinite]" />
                         <div className="absolute inset-0 rounded-full border border-rose-400/30 dark:border-rose-500/20 scale-125 animate-[spin_20s_linear_infinite]" />

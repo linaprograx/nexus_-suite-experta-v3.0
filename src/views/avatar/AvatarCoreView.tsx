@@ -522,17 +522,7 @@ export const AvatarCoreView: React.FC = () => {
                 .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.2); }
             `}</style>
 
-                <div className="relative z-10 mb-20 text-center max-w-4xl mx-auto pt-12 animate-in fade-in slide-in-from-bottom-8 duration-1000">
-                    <span className="text-[10px] font-bold text-indigo-500/80 uppercase tracking-[0.4em] mb-6 block">
-                        Nexus Cognitive System
-                    </span>
-                    <h1 className="text-5xl md:text-6xl font-serif text-white mb-8 tracking-tight drop-shadow-2xl">
-                        Avatar Core
-                    </h1>
-                    <p className="text-xl text-slate-400 font-light leading-relaxed max-w-2xl mx-auto">
-                        Tu identidad digital no es estática. Es una entidad cognitiva viva que evoluciona con tu nivel de consciencia operativa.
-                    </p>
-                </div>
+
 
                 <div className="relative z-10 grid grid-cols-1 md:grid-cols-3 gap-8 max-w-[1400px] mx-auto px-4 pb-48 animate-in fade-in zoom-in-95 duration-1000 delay-200">
                     {AVATARS.map((avatar, index) => {

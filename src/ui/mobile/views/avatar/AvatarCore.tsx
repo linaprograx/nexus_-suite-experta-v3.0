@@ -367,8 +367,8 @@ const AvatarCore: React.FC<Props> = ({
                 </GlassCard>
             </div>
 
-            {/* Avatar Cards */}
-            <div className="space-y-4">
+            {/* Avatar Cards - Premium Desktop Port */}
+            <div className="space-y-6 px-1 pb-32">
                 {activeConfigs.map((type, index) => {
                     const config = avatarConfigs[type];
                     const isActive = activeAvatarType === type;
@@ -376,64 +376,75 @@ const AvatarCore: React.FC<Props> = ({
                     return (
                         <motion.div
                             key={type}
-                            initial={{ opacity: 0, y: 10 }}
+                            initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: index * 0.1 }}
+                            transition={{ delay: index * 0.1, duration: 0.6 }}
+                            onClick={() => setActiveAvatarType(type)}
+                            className={`
+                                relative overflow-hidden rounded-[2.5rem] p-6 transition-all duration-700 cursor-pointer group
+                                ${isActive
+                                    ? 'bg-[#0f1322] border-indigo-500/50 shadow-[0_0_40px_rgba(99,102,241,0.3)] z-10'
+                                    : 'bg-white/5 border-white/5 hover:bg-white/10 active:scale-[0.98]'
+                                }
+                                border
+                            `}
                         >
-                            <GlassCard
-                                rounded="3xl"
-                                padding="none"
-                                className={`relative transition-all cursor-pointer overflow-hidden dark:!bg-white/5 dark:!border-white/10 ${isActive ? 'ring-2' : ''
-                                    }`}
-                                onClick={() => setActiveAvatarType(type)}
-                                style={isActive ? { borderColor: `${accentColor}40` } : {}}
-                            >
-                                <div className="p-5 flex items-center justify-between">
-                                    <div className="flex items-center gap-4">
-                                        <div
-                                            className={`w-14 h-14 rounded-2xl flex items-center justify-center text-2xl shadow-inner ${isActive
-                                                ? 'bg-zinc-900 dark:bg-white text-white dark:text-black shadow-lg'
-                                                : 'bg-zinc-200/50 dark:!bg-white/10 text-zinc-500 dark:text-zinc-400'
-                                                }`}
-                                        >
-                                            {config.emoji}
-                                        </div>
-                                        <div>
-                                            <div className="flex items-center gap-2 mb-1">
-                                                <h3 className="text-lg font-black text-zinc-900 dark:text-white uppercase tracking-tight">
-                                                    {config.name || type}
-                                                </h3>
-                                                {isActive && (
-                                                    <span className="px-2 py-0.5 bg-indigo-100 text-indigo-600 rounded-sm text-[7px] font-black uppercase tracking-widest border border-indigo-200">
-                                                        MANIFESTADO
-                                                    </span>
-                                                )}
-                                            </div>
-                                            <p className="text-[10px] text-zinc-500 font-medium leading-tight max-w-[180px]">
-                                                {type === 'Mixologist' ? 'Arquitecto de sabores líquidos. Domina la alquimia de los espirituosos.' : 'Maestro de la materia prima. Transforma ingredientes en experiencias.'}
-                                            </p>
-                                        </div>
+                            {/* Active Glows */}
+                            {isActive && (
+                                <div className="absolute -top-32 -right-32 w-80 h-80 bg-indigo-500/20 blur-[100px] rounded-full pointer-events-none animate-pulse-slow" />
+                            )}
+
+                            {/* Shine Effect */}
+                            <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-1000 pointer-events-none overflow-hidden">
+                                <div className="absolute -inset-full top-0 block h-full w-1/2 -skew-x-12 bg-gradient-to-r from-transparent to-white opacity-5 group-hover:animate-shine" />
+                            </div>
+
+                            <div className="relative z-10">
+                                <div className="flex justify-between items-start mb-6">
+                                    <div className={`w-14 h-14 rounded-2xl flex items-center justify-center text-3xl transition-all duration-700 ${isActive
+                                            ? 'bg-gradient-to-br from-indigo-600 to-indigo-800 text-white shadow-lg shadow-indigo-500/40'
+                                            : 'bg-white/5 text-slate-400'
+                                        }`}>
+                                        {config.emoji}
                                     </div>
 
-                                    <div className="flex flex-col items-end">
-                                        {isActive ? (
-                                            <span className="material-symbols-outlined text-indigo-500 fill-1">check_circle</span>
-                                        ) : (
-                                            <button className="text-[8px] font-bold text-zinc-400 hover:text-zinc-900 uppercase tracking-widest">Manifestar</button>
-                                        )}
-                                    </div>
+                                    {isActive && (
+                                        <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-950/50 border border-indigo-500/30 shadow-[0_0_15px_-3px_rgba(99,102,241,0.4)] backdrop-blur-md">
+                                            <div className="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-pulse" />
+                                            <span className="text-[9px] font-bold uppercase tracking-widest text-indigo-200">Manifestado</span>
+                                        </div>
+                                    )}
                                 </div>
 
-                                {isActive && (
-                                    <div className="px-5 pb-5 pt-2 flex gap-2">
-                                        <button
-                                            className="w-full py-4 bg-zinc-100 dark:!bg-white/10 text-zinc-600 dark:text-white border border-zinc-200 dark:!border-white/10 rounded-2xl text-[9px] font-black uppercase tracking-widest transition-all active:scale-95 hover:bg-zinc-200 dark:hover:bg-white/20"
-                                        >
-                                            CONFIGURAR AVATAR
-                                        </button>
-                                    </div>
-                                )}
-                            </GlassCard>
+                                <div className="space-y-3 mb-6">
+                                    <h3 className={`text-2xl font-serif font-medium tracking-wide transition-colors leading-tight ${isActive ? 'text-white' : 'text-slate-300'
+                                        }`}>
+                                        {config.name || type}
+                                    </h3>
+                                    <p className="text-xs text-slate-400 font-light leading-relaxed max-w-[240px]">
+                                        {type === 'Mixologist' ? 'Arquitecto de sabores líquidos. Domina la alquimia de los espirituosos.' :
+                                            type === 'Chef' ? 'Maestro de la materia prima. Transforma ingredientes en experiencias.' :
+                                                'Especialista cognitivo de alto rendimiento.'}
+                                    </p>
+                                </div>
+
+                                <button
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        if (isActive) {
+                                            // Handle Config
+                                        } else {
+                                            setActiveAvatarType(type);
+                                        }
+                                    }}
+                                    className={`w-full py-4 rounded-xl text-[10px] uppercase tracking-widest font-bold transition-all duration-300 border ${isActive
+                                            ? 'bg-gradient-to-r from-indigo-600 to-indigo-700 text-white shadow-lg shadow-indigo-900/40 border-indigo-400/20'
+                                            : 'bg-white/5 text-slate-400 border-white/5 hover:bg-white/10 hover:text-white'
+                                        }`}
+                                >
+                                    {isActive ? 'Configurar Avatar' : 'Seleccionar'}
+                                </button>
+                            </div>
                         </motion.div>
                     );
                 })}
@@ -441,10 +452,12 @@ const AvatarCore: React.FC<Props> = ({
                 {activeConfigs.length < unlockedSlots && (
                     <button
                         onClick={() => setIsCreateOpen(true)}
-                        className="w-full py-6 border-2 border-dashed border-zinc-300/50 bg-white/40 rounded-[2.5rem] flex flex-col items-center justify-center gap-2 opacity-60 hover:opacity-100 transition-all active:scale-[0.98]"
+                        className="w-full py-8 border-2 border-dashed border-indigo-500/20 bg-indigo-500/5 rounded-[2.5rem] flex flex-col items-center justify-center gap-3 active:scale-[0.98] transition-all group hover:bg-indigo-500/10 hover:border-indigo-500/40"
                     >
-                        <span className="material-symbols-outlined text-zinc-400">add_circle</span>
-                        <span className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Nueva Manifestación</span>
+                        <div className="w-12 h-12 rounded-full bg-indigo-500/10 flex items-center justify-center group-hover:scale-110 transition-transform">
+                            <span className="material-symbols-outlined text-indigo-400">add</span>
+                        </div>
+                        <span className="text-[10px] font-black text-indigo-300 uppercase tracking-widest">Nueva Manifestación</span>
                     </button>
                 )}
             </div>

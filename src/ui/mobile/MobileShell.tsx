@@ -138,7 +138,7 @@ const MobileShellContent: React.FC = () => {
                 {/* FIX: Grimorio Pages (Recipes, Stock, Market) handle their own scrolling internally to support Fixed Headers. */}
                 {/* Therefore, we switched from 'overflow-y-auto' to 'overflow-hidden' for these specific pages within the shell. */}
                 {/* DOUBLE FIX: Added 'min-h-0' to prevent flex item from growing beyond parent, which was causing the component to expand fully and break internal scroll. */}
-                <div className={`flex-1 min-h-0 relative z-10 flex flex-col items-center pt-[env(safe-area-inset-top)] ${(currentPage === PageName.GrimorioRecipes || currentPage === PageName.GrimorioStock || currentPage === PageName.GrimorioMarket)
+                <div className={`flex-1 min-h-0 relative z-10 flex flex-col items-center pt-[env(safe-area-inset-top)] ${(currentPage === PageName.GrimorioRecipes || currentPage === PageName.GrimorioStock || currentPage === PageName.GrimorioMarket || currentPage === PageName.AvatarCore || currentPage === PageName.AvatarIntelligence || currentPage === PageName.AvatarCompetition)
                         ? 'overflow-hidden'
                         : 'overflow-y-auto custom-scroll'
                     } overflow-x-hidden`}>

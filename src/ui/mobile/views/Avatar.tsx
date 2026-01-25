@@ -38,8 +38,21 @@ const Avatar: React.FC<Props> = ({ onNavigate, initialTab = 'Core', notify }) =>
 
     const currentTheme = THEMES[activeTab];
 
+    // Mobile Gradient Logic (Matched to Desktop for Total Identity)
+    const getGradientStyle = () => {
+        switch (activeTab) {
+            case 'Core': return { background: 'linear-gradient(180deg, #000000 0%, rgba(0, 0, 0, 0.8) 30%, rgba(0,0,0,0) 50%)' }; // Slightly extended for mobile verticality
+            case 'Intelligence': return { background: 'linear-gradient(180deg, #e11d48 0%, rgba(225, 29, 72, 0.8) 20%, rgba(225, 29, 72, 0) 40%)' };
+            case 'Competition': return { background: 'linear-gradient(180deg, #84CC16 0%, rgba(132, 204, 22, 0.8) 20%, rgba(0,0,0,0) 40%)' };
+            default: return { background: 'none' };
+        }
+    };
+
     return (
-        <div className="bg-transparent relative overflow-hidden flex flex-col h-full">
+        <div
+            className="relative overflow-hidden flex flex-col h-full transition-all duration-700"
+            style={getGradientStyle()}
+        >
             <main className="flex-1 overflow-y-auto custom-scroll pb-24 relative z-10 pt-2">
                 <AnimatePresence mode="wait">
                     <motion.div

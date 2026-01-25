@@ -144,7 +144,7 @@ const AppLayout: React.FC<any> = ({
 
             <div className={`flex-1 flex flex-col transition-all duration-300 h-screen ${isSidebarCollapsed ? 'md:ml-20' : 'md:ml-64'}`}>
 
-                <main className='flex-1 overflow-y-auto p-4'>
+                <main className={`flex-1 overflow-y-auto p-4`}>
                     <AppRoutes
                         db={db} userId={userId} appId={appId} auth={auth} storage={storage}
                         // allRecipes, allPizarronTasks, userProfile removed as they are fetched internally by views

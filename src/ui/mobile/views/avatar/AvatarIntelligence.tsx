@@ -1,132 +1,144 @@
 import React, { useState } from 'react';
-import { motion } from 'framer-motion';
-import GlassCard from '../../components/GlassCard';
-import PremiumButton from '../../components/PremiumButton';
-import { AvatarConfig } from '../../../../hooks/useAvatarCognition';
+import { motion, AnimatePresence } from 'framer-motion';
+import { AvatarConfig, useAvatarCognition, Tone, ResearchAxis, RiskLevel } from '../../../../hooks/useAvatarCognition';
 import { AvatarHeader } from '../../components/AvatarHeader';
 import { PageName } from '../../types';
+import { Icon } from '../../../../components/ui/Icon';
+import { ICONS } from '../../../../components/ui/icons';
 
 interface Props {
     config: AvatarConfig;
     accentColor: string;
 }
 
-const AvatarIntelligence: React.FC<Props> = ({ config, accentColor }) => {
-    const [mode, setMode] = useState<'Standard' | 'Competition'>('Standard');
-    const [pressure, setPressure] = useState(50);
+const AvatarIntelligence: React.FC<Props> = ({ config }) => {
+    const { activeAvatarType, getActiveProfile, updateActiveProfile, togglePrinciple, toggleResearchAxis } = useAvatarCognition();
+    const activeProfile = getActiveProfile();
+
+    const [isSimulating, setIsSimulating] = useState(false);
+    const [simResult, setSimResult] = useState<string | null>(null);
+
+    const handleSimulation = () => {
+        setIsSimulating(true);
+        setTimeout(() => {
+            setSimResult("Decisión Óptima: Proceder con cautela. Riesgo calculado dentro de parámetros aceptables.");
+            setIsSimulating(false);
+        }, 2000);
+    };
+
+    if (!activeProfile) return <div className="p-8 text-center text-white/50">Perfil no activo</div>;
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-6 pb-32">
             <AvatarHeader currentPage={PageName.AvatarIntelligence} />
-            {/* Header / Mode Toggle */}
-            <div className="flex bg-transparent p-1 mx-4 gap-2">
-                <button
-                    onClick={() => setMode('Standard')}
-                    className={`flex-1 py-3 rounded-full text-[9px] font-black uppercase tracking-widest transition-all ${mode === 'Standard' ? 'bg-zinc-900 text-white shadow-lg' : 'bg-white/40 text-zinc-500 border border-white/40'
-                        }`}
-                >
-                    Servicio Estándar
-                </button>
-                <button
-                    onClick={() => setMode('Competition')}
-                    className={`flex-1 py-3 rounded-full text-[9px] font-black uppercase tracking-widest transition-all ${mode === 'Competition' ? 'bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 shadow-lg' : 'bg-white/40 dark:!bg-white/10 text-zinc-500 dark:text-zinc-400 border border-white/40 dark:!border-white/10'
-                        }`}
-                >
-                    Modo Competición
-                </button>
-            </div>
 
-            {/* Cognitive Dial Section */}
-            <div className="flex flex-col items-center justify-center py-6 bg-gradient-to-b from-red-950/10 to-transparent rounded-[3rem] border border-black/5">
-                <div className="relative w-48 h-48 flex items-center justify-center">
-                    {/* Outer Ring */}
-                    <div className="absolute inset-0 rounded-full border-[10px] border-black/5 shadow-inner"></div>
-                    <div className="absolute inset-0 rounded-full border-[2px] border-red-500/10"></div>
+            {/* MAIN VISUAL CORE - Desktop Parity */}
+            <div className="relative px-4">
+                <div className="relative w-full aspect-square max-w-[320px] mx-auto flex items-center justify-center">
+                    {/* Orbitals - Rose Theme */}
+                    <div className="absolute inset-0 rounded-full border border-rose-500/10 scale-[1.2] animate-[spin_40s_linear_infinite]" />
+                    <div className="absolute inset-4 rounded-full border border-rose-500/20 scale-100 animate-[spin_20s_linear_infinite_reverse]" />
+                    <div className="absolute inset-12 rounded-full border border-rose-500/5 border-t-rose-500/30 animate-[spin_10s_linear_infinite]" />
 
-                    {/* The Dial itself */}
-                    <div className="w-40 h-40 bg-white rounded-full flex flex-col items-center justify-center shadow-2xl relative z-10">
-                        <span className="text-[7px] font-black text-zinc-400 uppercase tracking-widest mb-1">Tono Cognitivo</span>
-                        <span className="text-xl font-black text-zinc-900 uppercase">Eficiente</span>
-                        <div className="mt-2 px-2 py-0.5 bg-red-100 text-red-600 rounded-full text-[7px] font-black uppercase tracking-tighter flex items-center gap-1">
-                            <span className="w-1 h-1 bg-red-600 rounded-full"></span>
-                            COSTE
+                    {/* Core Nucleus */}
+                    <div className="relative z-10 w-48 h-48 rounded-full bg-[#0f0406]/80 backdrop-blur-xl border border-rose-500/30 shadow-[0_0_60px_rgba(225,29,72,0.15)] flex flex-col items-center justify-center text-center p-4">
+                        <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-rose-500/10 to-transparent animate-pulse pointer-events-none" />
+
+                        <span className="text-[9px] font-black text-rose-300/60 uppercase tracking-widest mb-1">Tono Cognitivo</span>
+                        <h2 className="text-2xl font-black text-white uppercase tracking-tight mb-2 drop-shadow-lg leading-none">
+                            {activeProfile.tone}
+                        </h2>
+
+                        <div className="px-3 py-1 rounded-full bg-rose-500/10 border border-rose-500/20 flex items-center gap-1.5 backdrop-blur-md">
+                            <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse" />
+                            <span className="text-[8px] font-bold text-rose-200 uppercase tracking-widest">
+                                {activeProfile.researchAxis[0] || 'GENERAL'}
+                            </span>
                         </div>
                     </div>
-
-                    {/* Accent Glow */}
-                    <div className="absolute -bottom-2 w-1/2 h-4 bg-red-600/20 blur-xl rounded-full"></div>
                 </div>
 
-                {/* Sub-metrics */}
-                <div className="flex gap-10 mt-6">
+                {/* Metrics */}
+                <div className="flex justify-center gap-8 mt-[-20px] relative z-20">
                     <div className="text-center">
-                        <p className="text-[7px] font-black text-red-950/60 dark:text-red-200/60 uppercase tracking-widest mb-1">Precisión</p>
-                        <p className="text-sm font-black text-red-950 dark:text-red-100">94.2%</p>
+                        <span className="text-[8px] font-black text-rose-300/40 uppercase tracking-widest block mb-1">Precisión</span>
+                        <span className="text-lg font-mono text-rose-100 font-bold">94.2%</span>
                     </div>
                     <div className="text-center">
-                        <p className="text-[7px] font-black text-red-950/60 dark:text-red-200/60 uppercase tracking-widest mb-1">Creatividad</p>
-                        <p className="text-sm font-black text-red-950 dark:text-red-100">88.5%</p>
+                        <span className="text-[8px] font-black text-rose-300/40 uppercase tracking-widest block mb-1">Creatividad</span>
+                        <span className="text-lg font-mono text-rose-100 font-bold">88.5%</span>
                     </div>
                 </div>
             </div>
 
-            {/* Principles Section */}
-            <div>
-                <h3 className="text-[10px] font-black text-red-950/70 dark:text-red-200/70 uppercase tracking-widest mb-3 px-2">Principios Activos</h3>
-                <div className="space-y-2">
-                    {config.activePrinciples.map((principle, idx) => (
-                        <GlassCard key={principle} rounded="2xl" padding="md" className="flex items-center justify-between border-black/5 dark:!border-white/10 bg-white/40 dark:!bg-white/10 shadow-sm">
-                            <span className="text-xs font-black text-red-950 dark:text-red-100 uppercase tracking-tight">{principle}</span>
-                            <div className="w-1.5 h-1.5 rounded-full bg-red-600 shadow-[0_0_8px_rgba(239,68,68,0.4)]"></div>
-                        </GlassCard>
+            {/* CONTROLS STACK */}
+            <div className="px-4 space-y-4">
+                {/* Mode Selector */}
+                <div className="bg-[#0f0406]/60 border border-rose-500/10 rounded-3xl p-1 flex">
+                    {['Standard', 'Competition'].map(m => (
+                        <button
+                            key={m}
+                            className={`flex-1 py-3 rounded-[1.3rem] text-[9px] font-black uppercase tracking-widest transition-all ${true ? 'bg-rose-500/10 text-rose-100' : 'text-rose-500/40' // Dummy logic for now
+                                }`}
+                        >
+                            {m}
+                        </button>
                     ))}
-                    <GlassCard rounded="2xl" padding="md" className="border-black/5 dark:!border-white/10 bg-white/10 dark:!bg-white/5 opacity-40">
-                        <span className="text-xs font-black text-red-950/40 dark:text-red-100/40 uppercase tracking-tight">Impacto Visual</span>
-                    </GlassCard>
+                </div>
+
+                {/* Principles Card */}
+                <div className="bg-[#0f0406]/80 backdrop-blur-md border border-rose-500/20 rounded-[2rem] p-6 shadow-lg shadow-rose-900/10">
+                    <h3 className="text-xs font-black text-rose-200/50 uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
+                        <Icon svg={ICONS.activity} className="w-3 h-3 text-rose-500" />
+                        Principios Activos
+                    </h3>
+                    <div className="grid grid-cols-1 gap-2">
+                        {['Técnica > Narrativa', 'Minimalismo Radical', 'Eficacia de Coste', 'Impacto Visual'].map((p, i) => {
+                            const isActive = activeProfile.activePrinciples.includes('p' + (i + 1)); // Simplified mapping
+                            return (
+                                <div key={p} className={`flex justify-between items-center p-3 rounded-xl border transition-all ${isActive
+                                        ? 'bg-rose-500/10 border-rose-500/30'
+                                        : 'bg-white/5 border-transparent opacity-50'
+                                    }`}>
+                                    <span className={`text-[10px] font-bold uppercase tracking-wide ${isActive ? 'text-rose-100' : 'text-slate-500'}`}>{p}</span>
+                                    {isActive && <div className="w-1.5 h-1.5 rounded-full bg-rose-500 shadow-[0_0_8px_currentColor]" />}
+                                </div>
+                            )
+                        })}
+                    </div>
+                </div>
+
+                {/* Simulation Card */}
+                <div className="bg-gradient-to-br from-[#0f0406] to-rose-950/20 backdrop-blur-md border border-rose-500/20 rounded-[2rem] p-6 shadow-xl relative overflow-hidden">
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-rose-500/5 blur-[50px] rounded-full pointer-events-none" />
+
+                    <h3 className="text-xs font-black text-rose-200/50 uppercase tracking-[0.2em] mb-6 relative z-10">Simulador de Decisión</h3>
+
+                    <div className="flex flex-col gap-4 relative z-10">
+                        <button
+                            onClick={handleSimulation}
+                            disabled={isSimulating}
+                            className="w-full py-4 bg-rose-600 hover:bg-rose-500 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-rose-900/40 active:scale-[0.98] transition-all flex items-center justify-center gap-2"
+                        >
+                            {isSimulating ? <span className="animate-spin text-lg">⟳</span> : <Icon svg={ICONS.play} className="w-4 h-4" />}
+                            {isSimulating ? 'Procesando...' : 'Ejecutar Simulación'}
+                        </button>
+
+                        {simResult && (
+                            <motion.div
+                                initial={{ opacity: 0, y: 10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                className="bg-black/40 border border-rose-500/20 rounded-xl p-4"
+                            >
+                                <p className="text-[10px] text-rose-200 font-mono leading-relaxed">
+                                    <span className="text-rose-500 mr-2">{">"}</span>
+                                    {simResult}
+                                </p>
+                            </motion.div>
+                        )}
+                    </div>
                 </div>
             </div>
-
-            {/* Decision Simulator */}
-            <GlassCard rounded="3xl" padding="lg" className="bg-red-950/10 dark:!bg-red-900/20 border-red-950/5 dark:!border-white/10 shadow-sm">
-                <h3 className="text-[10px] font-black text-red-950/80 dark:text-red-200/80 uppercase tracking-widest mb-6">Simulador de Decisión</h3>
-
-                <div className="space-y-6">
-                    <div>
-                        <p className="text-[8px] font-black text-red-950/60 uppercase tracking-widest mb-3">Contexto</p>
-                        <div className="flex flex-wrap gap-2">
-                            {['SERVICE', 'COMPETITION', 'R&D', 'CRISIS'].map(tag => (
-                                <button key={tag} className={`px-3 py-1.5 rounded-lg text-[8px] font-black border transition-all ${tag === 'SERVICE' ? 'bg-red-950 border-red-900 text-white' : 'bg-white/40 dark:!bg-white/5 border-black/10 dark:!border-white/10 text-red-950/60 dark:text-red-200/60'
-                                    }`}>
-                                    {tag}
-                                </button>
-                            ))}
-                        </div>
-                    </div>
-
-                    <div>
-                        <div className="flex justify-between items-center mb-2">
-                            <p className="text-[8px] font-black text-red-950/60 dark:text-red-200/60 uppercase tracking-widest">Presión</p>
-                            <span className="text-[10px] font-black text-red-950 dark:text-red-100">{pressure}%</span>
-                        </div>
-                        <input
-                            type="range"
-                            min="0" max="100"
-                            value={pressure}
-                            onChange={(e) => setPressure(parseInt(e.target.value))}
-                            className="w-full h-1 bg-black/10 rounded-full appearance-none accent-red-950"
-                        />
-                    </div>
-
-                    <button className="w-full py-3 bg-red-950 dark:bg-red-900 text-white rounded-2xl flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-widest hover:bg-red-900 dark:hover:bg-red-800 transition-all group shadow-md">
-                        Ejecutar Simulación
-                        <span className="material-symbols-outlined !text-sm group-hover:translate-x-1 transition-transform">arrow_forward</span>
-                    </button>
-
-                    <div className="bg-white/60 rounded-2xl p-4 font-mono text-[9px] text-red-950/70 min-h-[80px] border border-black/5 shadow-inner">
-                        <span className="opacity-60">{">"}</span> Esperando parámetros de simulación...
-                    </div>
-                </div>
-            </GlassCard>
         </div>
     );
 };

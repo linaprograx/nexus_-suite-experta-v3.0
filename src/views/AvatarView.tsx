@@ -5,7 +5,7 @@ import AvatarInsightsView from './avatar/AvatarInsightsView';
 import DigitalBarView from './avatar/DigitalBarView';
 import ChampionModeView from './avatar/ChampionModeView';
 import { useAvatarCognition } from '../hooks/useAvatarCognition';
-import { Button } from '../components/ui/Button';
+// import { Button } from '../components/ui/Button'; // Removed in favor of native button for styling control
 
 interface AvatarViewProps {
     // Add props if needed (e.g., global state)
@@ -25,11 +25,10 @@ const AvatarView: React.FC<AvatarViewProps> = () => {
         }
     }, [showManagerTabs, activeTab]);
 
-    // Vertical Gradients (Top-to-Bottom)
+    // Vertical Gradients (Top-to-Bottom) applied to the OUTER wrapper
     const getGradientStyle = () => {
         switch (activeTab) {
             case 'core': return { background: 'linear-gradient(180deg, #000000 0%, rgba(0, 0, 0, 0.8) 20%, rgba(0,0,0,0) 40%)' };
-            // REFINED GRADIENT for Legibility: Strong Rosé top, fast fade to transparent by 40% (Matched to PremiumLayout Standard)
             case 'intelligence': return { background: 'linear-gradient(180deg, #e11d48 0%, rgba(225, 29, 72, 0.8) 20%, rgba(225, 29, 72, 0) 40%)' };
             case 'insights': return { background: 'linear-gradient(180deg, #FB923C 0%, rgba(251, 146, 60, 0.8) 20%, rgba(0,0,0,0) 40%)' };
             case 'digital-bar': return { background: 'linear-gradient(180deg, #22D3EE 0%, rgba(34, 211, 238, 0.8) 20%, rgba(0,0,0,0) 40%)' };
@@ -38,98 +37,121 @@ const AvatarView: React.FC<AvatarViewProps> = () => {
         }
     };
 
-    const getBorderClass = () => {
+    // Determine current page title/subtitle based on active tab
+    const getPageHeaderInfo = () => {
         switch (activeTab) {
-            case 'core': return 'border-t border-[#6366F1]/30';
-            case 'intelligence': return 'border-t border-rose-500/20'; // Rosé Border
-            case 'insights': return 'border-t border-[#FB923C]/30';
-            case 'digital-bar': return 'border-t border-[#22D3EE]/30';
-            case 'champion': return 'border-t border-[#84CC16]/30';
-            default: return 'border-t border-slate-700/20';
+            case 'core': return { subtitle: 'Identidad Digital', themeColor: 'text-[#6366F1]' };
+            case 'intelligence': return { subtitle: 'Cognición Activa', themeColor: 'text-rose-500' };
+            case 'champion': return { subtitle: 'Global Rank', themeColor: 'text-[#84CC16]' };
+            case 'insights': return { subtitle: 'Performance Insights', themeColor: 'text-[#FB923C]' };
+            case 'digital-bar': return { subtitle: 'Gestión Operativa', themeColor: 'text-[#22D3EE]' };
+            default: return { subtitle: 'System', themeColor: 'text-slate-400' };
         }
     };
 
+    const headerInfo = getPageHeaderInfo();
+
     return (
-        <div className="h-full w-full flex flex-col px-4 lg:px-8 py-6 overflow-hidden">
+        <div className="h-full w-full flex flex-col relative">
+            {/* VIBRANT GRADIENT BACKGROUND (Full Screen with Floating feel via internal padding) */}
+            <div
+                className="absolute inset-0 pointer-events-none transition-all duration-700 ease-in-out z-0 rounded-3xl"
+                style={getGradientStyle()}
+            />
 
-            {/* Navigation Pill Container (Invisible BG) */}
-            <div className="flex-shrink-0 mb-6 z-10 overflow-x-auto no-scrollbar">
-                <div className="inline-flex p-1.5 rounded-full">
-                    <Button
+            {/* Background Glows/Noise */}
+            <div className="absolute inset-0 overflow-hidden z-0 pointer-events-none rounded-3xl">
+                <div className="absolute top-0 left-0 w-full h-full bg-noise opacity-[0.02]"></div>
+                <div className="absolute -top-[20%] -right-[10%] w-[50%] h-[50%] bg-white/5 blur-[100px] rounded-full mix-blend-overlay"></div>
+            </div>
+
+            {/* PERSISTENT HEADER SECTION */}
+            <div className="flex-shrink-0 pt-8 pb-4 z-10 relative px-12">
+
+                {/* Titles */}
+                <div className="flex flex-col items-start gap-1 mb-6">
+                    <h1 className="text-8xl font-black italic text-white tracking-tighter drop-shadow-2xl leading-none opacity-90 pl-1"
+                        style={{ fontFamily: 'Georgia, serif' }}>
+                        Avatar
+                    </h1>
+                    <span className="text-2xl font-bold text-white/80 tracking-wide drop-shadow-md flex items-center gap-2 font-sans ml-2">
+                        {headerInfo.subtitle}
+                    </span>
+                </div>
+
+                {/* Navigation Pills - Standard Nexus Style (Pills) */}
+                <div className="flex flex-wrap justify-start gap-3 animate-in fade-in slide-in-from-left-4 duration-1000 delay-200">
+                    <button
                         onClick={() => setActiveTab('core')}
-                        variant="ghost"
-                        className={`rounded-full transition-all duration-300 whitespace-nowrap ${activeTab === 'core'
-                            ? 'bg-[#6366F1] text-white shadow-lg shadow-[#6366F1]/25 hover:bg-[#6366F1]/90'
-                            : 'text-slate-400 hover:text-white hover:bg-white/5'
+                        className={`rounded-full transition-all duration-300 px-8 py-3 text-xs font-black uppercase tracking-widest border ${activeTab === 'core'
+                            ? 'bg-indigo-600 border-indigo-500 text-white shadow-lg shadow-indigo-900/40 scale-105'
+                            : 'bg-white/10 border-white/20 text-white/70 hover:bg-white/20'
                             }`}
                     >
-                        Avatar Core
-                    </Button>
+                        Núcleo
+                    </button>
 
-                    <Button
+                    <button
                         onClick={() => setActiveTab('intelligence')}
-                        variant="ghost"
-                        className={`rounded-full transition-all duration-300 whitespace-nowrap ${activeTab === 'intelligence'
-                            ? 'bg-rose-500/80 text-white shadow-lg shadow-rose-500/25 hover:bg-rose-500'
-                            : 'text-slate-400 hover:text-white hover:bg-white/5'
+                        className={`rounded-full transition-all duration-300 px-8 py-3 text-xs font-black uppercase tracking-widest border ${activeTab === 'intelligence'
+                            ? 'bg-rose-600 border-rose-500 text-white shadow-lg shadow-rose-900/40 scale-105'
+                            : 'bg-white/10 border-white/20 text-white/70 hover:bg-white/20'
                             }`}
                     >
-                        Avatar Intelligence
-                    </Button>
+                        Inteligencia
+                    </button>
 
-                    <Button
+                    <button
                         onClick={() => setActiveTab('champion')}
-                        variant="ghost"
-                        className={`rounded-full transition-all duration-300 whitespace-nowrap ${activeTab === 'champion'
-                            ? 'bg-[#84CC16] text-white shadow-lg shadow-[#84CC16]/25 hover:bg-[#84CC16]/90'
-                            : 'text-slate-400 hover:text-white hover:bg-white/5'
+                        className={`rounded-full transition-all duration-300 px-8 py-3 text-xs font-black uppercase tracking-widest border ${activeTab === 'champion'
+                            ? 'bg-[#84CC16] border-[#bef264] text-white shadow-lg shadow-lime-900/40 scale-105'
+                            : 'bg-white/10 border-white/20 text-white/70 hover:bg-white/20'
                             }`}
                     >
-                        Modo Competición
-                    </Button>
+                        Competición
+                    </button>
 
                     {showManagerTabs && (
                         <>
-                            <Button
+                            <div className="w-px h-8 bg-white/20 mx-2 self-center" />
+                            <button
                                 onClick={() => setActiveTab('insights')}
-                                variant="ghost"
-                                className={`rounded-full transition-all duration-300 whitespace-nowrap ${activeTab === 'insights'
-                                    ? 'bg-[#FB923C] text-white shadow-lg shadow-[#FB923C]/25 hover:bg-[#FB923C]/90'
-                                    : 'text-slate-400 hover:text-white hover:bg-white/5'
+                                className={`rounded-full transition-all duration-300 px-8 py-3 text-xs font-black uppercase tracking-widest border ${activeTab === 'insights'
+                                    ? 'bg-orange-500 border-orange-400 text-white shadow-lg shadow-orange-900/40 scale-105'
+                                    : 'bg-white/10 border-white/20 text-white/70 hover:bg-white/20'
                                     }`}
                             >
-                                Performance Insights
-                            </Button>
-                            <Button
+                                Insights
+                            </button>
+                            <button
                                 onClick={() => setActiveTab('digital-bar')}
-                                variant="ghost"
-                                className={`rounded-full transition-all duration-300 whitespace-nowrap ${activeTab === 'digital-bar'
-                                    ? 'bg-[#22D3EE] text-white shadow-lg shadow-[#22D3EE]/25 hover:bg-[#22D3EE]/90'
-                                    : 'text-slate-400 hover:text-white hover:bg-white/5'
+                                className={`rounded-full transition-all duration-300 px-8 py-3 text-xs font-black uppercase tracking-widest border ${activeTab === 'digital-bar'
+                                    ? 'bg-cyan-500 border-cyan-400 text-white shadow-lg shadow-cyan-900/40 scale-105'
+                                    : 'bg-white/10 border-white/20 text-white/70 hover:bg-white/20'
                                     }`}
                             >
-                                Digital Bar
-                            </Button>
+                                Bar
+                            </button>
                         </>
                     )}
                 </div>
             </div>
 
-            {/* Main Content Card */}
-            <div
-                className={`flex-1 w-full overflow-hidden rounded-[2rem] p-0 shadow-2xl ring-1 ring-white/10 border-b-0 relative transition-all duration-700 ${getBorderClass()}`}
-                style={getGradientStyle()}
-            >
-                {/* Background Glows/Noise */}
-                <div className="absolute top-0 left-0 w-full h-full bg-noise opacity-[0.02] pointer-events-none"></div>
-                <div className="absolute -top-[20%] -right-[10%] w-[50%] h-[50%] bg-white/5 blur-[100px] rounded-full pointer-events-none mix-blend-overlay"></div>
-
-                {activeTab === 'core' && <AvatarCoreView />}
-                {activeTab === 'intelligence' && <AvatarIntelligenceView />}
-                {activeTab === 'champion' && <ChampionModeView />}
-                {showManagerTabs && activeTab === 'insights' && <AvatarInsightsView />}
-                {showManagerTabs && activeTab === 'digital-bar' && <DigitalBarView />}
+            {/* MAIN CONTENT AREA - Maximize Space */}
+            <div className="flex-1 w-full overflow-hidden relative z-10 flex flex-col">
+                <div className="flex-1 w-full h-full relative overflow-y-auto no-scrollbar bg-transparent px-12 pb-12">
+                    {activeTab === 'core' && <AvatarCoreView />}
+                    {activeTab === 'intelligence' && <AvatarIntelligenceView />}
+                    {activeTab === 'champion' && <ChampionModeView />}
+                    {showManagerTabs && activeTab === 'insights' && <AvatarInsightsView />}
+                    {showManagerTabs && activeTab === 'digital-bar' && <DigitalBarView />}
+                </div>
             </div>
+
+            <style>{`
+                .no-scrollbar::-webkit-scrollbar { display: none; }
+                .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+            `}</style>
         </div>
     );
 };
