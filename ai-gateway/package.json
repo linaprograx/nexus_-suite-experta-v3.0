@@ -1,0 +1,22 @@
+{
+    "name": "nexus-ai-gateway",
+    "version": "1.0.0",
+    "private": true,
+    "type": "module",
+    "scripts": {
+        "dev": "tsx watch src/server.ts"
+    },
+    "dependencies": {
+        "express": "^4.21.2",
+        "cors": "^2.8.5",
+        "dotenv": "^16.4.7",
+        "google-auth-library": "^9.15.0"
+    },
+    "devDependencies": {
+        "typescript": "^5.7.3",
+        "tsx": "^4.19.2",
+        "@types/express": "^5.0.0",
+        "@types/cors": "^2.8.17",
+        "@types/node": "^22.10.7"
+    }
+}

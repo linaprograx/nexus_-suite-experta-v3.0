@@ -1,35 +1,70 @@
-
-import { generateImage } from '../../../utils/gemini';
+import { generateImage as generateGeminiImage } from '../../../utils/gemini';
+import { generateImage as generateVertexImage } from '../../../services/ai/imageService';
+import { buildImagePrompt } from '../../../ai/promptBuilders/buildImagePrompt';
+import { selectScenario, ScenarioId } from '../../../ai/presets/editorialScenarios';
 
 /**
  * Nexus Visual Identity AI Layer
- * Image Generator Service v2.1 (Restored Hybrid/Turbo)
+ * Image Generator Service v3.0 (Vertex Gateway + Dynamic Editorial Scenarios)
  */
+
+// Toggle this to enable/disable the new Gateway integration
+const TRY_VERTEX_GATEWAY = true;
+
+// Toggle 'editorial' to use professional photorealistic presets, or 'free' for raw prompt
+type ImageMode = 'editorial' | 'free';
+const IMAGE_MODE: ImageMode = 'editorial';
 
 export const ImageGenerator = {
     /**
      * Generates a hyper-realistic image URL.
      * Strategy:
-     * 1. Try Gemini "Imagen 3" (Official Key).
-     * 2. Fallback to Pollinations "Turbo" (Direct Image URL).
+     * 0. Vertex AI Gateway with Dynamic Scenarios
+     * 1. Fallback to methods
      * 
-     * @param prompt The detailed visual prompt
-     * @param seed Optional seed only if deterministic results are needed
-     * @returns The direct URL (or Data URL) to the generated image
+     * @param prompt The detailed visual prompt (Subject only, or full desc)
+     * @param seed Optional seed
+     * @param explicitScenarioId Optional override for the scenario (e.g. 'BAR_AT_NIGHT')
      */
-    generateImageUrl: async (prompt: string, seed?: number): Promise<string> => {
+    generateImageUrl: async (prompt: string, seed?: number, explicitScenarioId?: ScenarioId): Promise<string> => {
         const timestamp = Date.now();
         const randomSeed = seed || Math.floor(Math.random() * 1000000) + timestamp;
 
-        // 1. Prepare Prompt
-        // Truncate to avoid URL overflow in fallback, but keep enough detail
-        const cleanPrompt = prompt.replace(/[*_`]/g, '').trim().slice(0, 450);
-        const enhancedPrompt = `${cleanPrompt}, hyper-realistic, 8k resolution, cinematic lighting, professional photography, shallow depth of field`;
+        // 1. Prepare Prompt with Creative Control
+        let enhancedPrompt = prompt;
 
-        // 2. ATTEMPT 1: REAL AI (Gemini Imagen 3)
+        if (IMAGE_MODE === 'editorial') {
+            // Intelligent Scenario Selection:
+            // 1. Use explicit Override if provided
+            // 2. Auto-detect from prompt keywords (night, studio, etc.)
+            // 3. Default to TABLETOP_LUXE (The "Michelin" standard)
+            const scenario = selectScenario(prompt, explicitScenarioId);
+
+            console.log(`🎨 Editorial Mode: Using scenario [${scenario.id}]`);
+            enhancedPrompt = buildImagePrompt(prompt, scenario);
+        } else {
+            // Legacy/Free mode basic cleanup
+            const cleanPrompt = prompt.replace(/[*_`]/g, '').trim().slice(0, 450);
+            enhancedPrompt = `${cleanPrompt}, hyper-realistic, 8k resolution, cinematic lighting, professional photography, shallow depth of field`;
+        }
+
+        // 0. ATTEMPT 0: VERTEX AI GATEWAY (Secure Backend)
+        if (TRY_VERTEX_GATEWAY) {
+            try {
+                console.log("Attempting Vertex AI Gateway generation...");
+                const vertexImageUrl = await generateVertexImage(enhancedPrompt);
+                if (vertexImageUrl) {
+                    return vertexImageUrl;
+                }
+            } catch (vertexError: any) {
+                console.warn("Vertex Gateway failed. Falling back to legacy methods.", vertexError.message);
+            }
+        }
+
+        // 2. ATTEMPT 1: LEGACY GEMINI (Client-side)
         try {
-            console.log("Attempting Gemini Imagen 3 generation...");
-            const result = await generateImage(enhancedPrompt);
+            console.log("Attempting Legacy Gemini Imagen 3 generation...");
+            const result = await generateGeminiImage(enhancedPrompt);
             const base64 = result.predictions?.[0]?.bytesBase64Encoded;
             if (base64) {
                 return `data:image/png;base64,${base64}`;
@@ -60,7 +95,7 @@ export const ImageGenerator = {
         // Same strategy: Try Real AI first, then fallback
         try {
             // We use the same generateImage helper which now targets Imagen
-            const result = await generateImage(enhancedPrompt);
+            const result = await generateGeminiImage(enhancedPrompt);
             const base64 = result.predictions?.[0]?.bytesBase64Encoded;
             if (base64) return `data:image/png;base64,${base64}`;
         } catch (e) {
