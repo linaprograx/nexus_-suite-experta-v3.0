@@ -3,6 +3,7 @@ import { Icon } from '../../../components/ui/Icon';
 import { ICONS } from '../../../components/ui/icons';
 import { useChampionContext } from '../context/ChampionContext';
 import { soundEngine } from '../../avatar/soundEngine';
+import { SafeImage } from '../../../components/ui/SafeImage';
 
 export const ChampionCreativePanel: React.FC = () => {
     const { state, actions } = useChampionContext();
@@ -162,18 +163,14 @@ export const ChampionCreativePanel: React.FC = () => {
 
                                 {/* GENERATED IMAGE HERO (Moved Up) */}
                                 <div className="relative w-full aspect-square rounded-[24px] overflow-hidden shadow-xl group cursor-pointer mb-8 animate-in fade-in zoom-in-95 duration-700">
-                                    <img
-                                        key={state.proposal.imageUrl}
+                                    <SafeImage
                                         src={state.proposal.imageUrl}
                                         alt={state.proposal.title}
                                         className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-700"
-                                        onError={(e) => {
-                                            e.currentTarget.onerror = null;
-                                            // Fallback to abstract dark fluid art so it looks intentional, not "broken" or "generic cocktail"
-                                            e.currentTarget.src = "https://pollinations.ai/p/dark_abstract_liquid_gold_and_purple_smoke_4k_cinematic?width=800&height=800&model=turbo&seed=999";
-                                        }}
+                                        fallbackText="Generando Visual..."
+                                        fallbackIcon="brush"
                                     />
-                                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-6">
+                                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-6 pointer-events-none">
                                         <p className="text-white text-xs font-medium italic">
                                             "{state.proposal.imagePrompt.slice(0, 100)}..."
                                         </p>

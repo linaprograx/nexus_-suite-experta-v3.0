@@ -37,9 +37,9 @@ export const SafeImage: React.FC<SafeImageProps> = ({
 
             {/* Error / Placeholder State */}
             {status === 'error' && (
-                <div className="absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-br from-neutral-800 to-black p-6 text-center z-10">
-                    <span className="material-symbols-outlined text-4xl text-white/20 mb-2">{fallbackIcon}</span>
-                    <p className="text-[10px] font-bold text-white/20 uppercase tracking-widest">{fallbackText}</p>
+                <div className="absolute inset-0 flex flex-col items-center justify-center bg-neutral-900 p-6 text-center z-10 border border-neutral-800">
+                    <span className="material-symbols-outlined text-4xl text-red-500 mb-2">{fallbackIcon}</span>
+                    <p className="text-xs font-bold text-white uppercase tracking-widest">{fallbackText}</p>
                 </div>
             )}
         </div>

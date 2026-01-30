@@ -1,4 +1,3 @@
-import { generateImage as generateGeminiImage } from '../../../utils/gemini';
 import { generateImage as generateVertexImage } from '../../../services/ai/imageService';
 import { buildImagePrompt } from '../../../ai/promptBuilders/buildImagePrompt';
 import { selectScenario, ScenarioId } from '../../../ai/presets/editorialScenarios';
@@ -61,17 +60,7 @@ export const ImageGenerator = {
             }
         }
 
-        // 2. ATTEMPT 1: LEGACY GEMINI (Client-side)
-        try {
-            console.log("Attempting Legacy Gemini Imagen 3 generation...");
-            const result = await generateGeminiImage(enhancedPrompt);
-            const base64 = result.predictions?.[0]?.bytesBase64Encoded;
-            if (base64) {
-                return `data:image/png;base64,${base64}`;
-            }
-        } catch (geminiError) {
-            console.warn("Gemini Imagen 3 failed (Auth/Quota). Switching to Fallback provider.", geminiError);
-        }
+        // REMOVED LEGACY GEMINI ATTEMPT (Deprecated/Broken)
 
         // 3. ATTEMPT 2: FALLBACK (Pollinations Turbo)
         // We use 'image.pollinations.ai' to ensure we get a binary image response, not HTML.
@@ -93,14 +82,7 @@ export const ImageGenerator = {
         const enhancedPrompt = `${cleanPrompt}, vector style, abstract data visualization, minimal3d, behance style, premium design, 8k resolution`;
 
         // Same strategy: Try Real AI first, then fallback
-        try {
-            // We use the same generateImage helper which now targets Imagen
-            const result = await generateGeminiImage(enhancedPrompt);
-            const base64 = result.predictions?.[0]?.bytesBase64Encoded;
-            if (base64) return `data:image/png;base64,${base64}`;
-        } catch (e) {
-            console.warn("Gemini Graphic Generation Failed. Falling back.", e);
-        }
+        // (Legacy Gemini attempt removed)
 
         const encodedPrompt = encodeURIComponent(enhancedPrompt);
         return `https://image.pollinations.ai/prompt/${encodedPrompt}?width=800&height=800&seed=${randomSeed}&model=turbo&nologo=true&t=${timestamp}`;

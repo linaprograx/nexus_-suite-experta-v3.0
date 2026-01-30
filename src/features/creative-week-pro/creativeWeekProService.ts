@@ -1,4 +1,4 @@
-import { callGeminiApi } from '../../utils/gemini';
+import { generateText } from '../../services/ai/textService';
 import { PizarronTask } from '../../types';
 
 export interface CreativeWeekData {
@@ -44,13 +44,9 @@ const FALLBACK_DATA: CreativeWeekData = {
 async function ensureSpanish(text: string): Promise<string> {
     if (!text) return "";
 
-    // Heurística simple: si contiene palabras comunes en inglés, traducimos.
-    // O mejor, para ser robustos, hacemos una llamada rápida pidiendo traducción si es necesario.
-    // Dado que el sistema pide explícitamente esta función y su uso:
-
     try {
         const prompt = `Translate the following text to Spanish. If it is already in Spanish, just return it exactly as is. Do not add any explanation or quotes. Text: "${text}"`;
-        const response = await callGeminiApi(
+        const response = await generateText(
             prompt,
             "Eres un traductor experto. Solo devuelves el texto traducido al español."
         );
@@ -142,10 +138,10 @@ export const getCreativeWeekInsights = async (tasks: PizarronTask[], userName: s
           }
         }`;
 
-        const response = await callGeminiApi(
+        // Pass payload as prompt string since Gateway takes prompt + systemInstruction
+        const response = await generateText(
             JSON.stringify(payload),
-            systemPrompt,
-            { responseMimeType: "application/json" }
+            systemPrompt
         );
 
         const text = response.text || "";
@@ -153,7 +149,14 @@ export const getCreativeWeekInsights = async (tasks: PizarronTask[], userName: s
         try {
             // Clean potentially markdown wrapped response
             const cleanText = text.replace(/```json/g, '').replace(/```/g, '').trim();
-            data = JSON.parse(cleanText);
+            // Try to find JSON object if wrapped in other text
+            const firstBrace = cleanText.indexOf('{');
+            const lastBrace = cleanText.lastIndexOf('}');
+            const jsonStr = (firstBrace !== -1 && lastBrace !== -1)
+                ? cleanText.substring(firstBrace, lastBrace + 1)
+                : cleanText;
+
+            data = JSON.parse(jsonStr);
         } catch (e) {
             console.error("Gemini parse error", e, text);
             return FALLBACK_DATA;

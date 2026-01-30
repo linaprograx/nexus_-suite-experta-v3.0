@@ -1,4 +1,4 @@
-import { callGeminiApi } from '../../../utils/gemini';
+import { generateText } from '../../../services/ai/textService';
 import { PlanTier } from '../../../core/product/plans.types';
 import { brandGuardianBasePrompt } from '../../../lib/ai/prompts/brandGuardian/base';
 import { genericProfile } from '../../../lib/ai/prompts/brandGuardian/profiles/generic';
@@ -36,11 +36,11 @@ export interface JuryEvaluationParams {
 
 const SYSTEM_ROLES = {
     TACTICIAN: "Eres un estratega veterano de competencias (World Class). Tu objetivo es dar UN consejo táctico breve y específico basado en las reglas.",
-    CREATIVE_DIRECTOR: "Eres el Director Creativo de Nexus Spirits. Transformas conceptos en recetas de alto nivel, con storytelling inmersivo y rituales WOW.",
-    JURY_PANEL: "Eres un panel de jueces internacionales. Eres estricto y evalúas con precisión técnica, creativa y de marca.",
-    INTERVIEWER: "Eres un juez inquisidor. Valoras la precisión técnica y el conocimiento de producto.",
-    COACH: "Eres un entrenador de bartenders campeones. Das feedback constructivo pero directo sobre las respuestas del alumno.",
-    BRAND_GUARDIAN: "You are a World Class Brand Guardian. You protect brand equity above all else."
+    CREATIVE_DIRECTOR: "Eres el Director Creativo de Nexus Spirits. Transformas conceptos en recetas de alto nivel, con storytelling inmersivo y rituales WOW. Responde SIEMPRE en formato JSON.",
+    JURY_PANEL: "Eres un panel de jueces internacionales. Eres estricto y evalúas con precisión técnica, creativa y de marca. Responde SIEMPRE en formato JSON.",
+    INTERVIEWER: "Eres un juez inquisidor. Valoras la precisión técnica y el conocimiento de producto. Responde SIEMPRE en formato JSON.",
+    COACH: "Eres un entrenador de bartenders campeones. Das feedback constructivo pero directo sobre las respuestas del alumno. Responde SIEMPRE en formato JSON.",
+    BRAND_GUARDIAN: "You are a World Class Brand Guardian. You protect brand equity above all else. Always respond in JSON."
 };
 
 // --- Service ---
@@ -59,7 +59,6 @@ const getBrandProfile = (brandName: string): string => {
 export const GeminiChampionService = {
 
     // --- NEW: Brand Guardian ---
-    // --- NEW: Brand Guardian ---
     async evaluateBrandAlignment(proposal: any, brief: any): Promise<any> {
         const profile = getBrandProfile(brief.brand);
 
@@ -67,7 +66,8 @@ export const GeminiChampionService = {
         prompt += `CONTEXT:\nBrand: ${brief.brand}\nCocktail: ${proposal.title}\nIntro: ${proposal.shortIntro || proposal.description}\nRitual: ${proposal.ritual}\nTechnique: ${proposal.method}`;
 
         try {
-            const response = await callGeminiApi(prompt, SYSTEM_ROLES.BRAND_GUARDIAN, { responseMimeType: "application/json" });
+            // Using textService via Gateway
+            const response = await generateText(prompt, SYSTEM_ROLES.BRAND_GUARDIAN);
             const jsonText = response.text.replace(/```json|```/g, '').trim();
             const result = JSON.parse(jsonText);
 
@@ -85,7 +85,6 @@ export const GeminiChampionService = {
         }
     },
 
-    // --- NEW: Visual Prompt Helpers ---
     // --- NEW: Visual Prompt Helpers (OPTIMIZED - NO AI CALL) ---
     async generateVisualCocktailPrompt(proposal: any): Promise<string> {
         // Deterministic Prompt Construction to save API Quota (Fixes 429 Error)
@@ -128,7 +127,7 @@ export const GeminiChampionService = {
         Dame 1 consejo táctico (máximo 20 palabras) para ganar.`;
 
         try {
-            const response = await callGeminiApi(prompt, SYSTEM_ROLES.TACTICIAN);
+            const response = await generateText(prompt, SYSTEM_ROLES.TACTICIAN);
             return response.text || "Enfócate en la simplicidad.";
         } catch (e) {
             return "Revisa las reglas con cuidado.";
@@ -148,15 +147,10 @@ export const GeminiChampionService = {
             .replace('{{palette}}', palette || "No especificada")
             .replace('{{visualRefs}}', visualRefs?.join(', ') || "Estilo Libre");
 
-        // FORCE GLASSWARE INTO THE CONCEPT IF NOT PRESENT
-        // This ensures the creative director considers it, but the prompt template might need it.
-        // Actually, the prompt *output* determines the glassware. We need to respect *that* output in the image.
-
-
         try {
-            console.log(">>> CALLING GEMINI CREATIVE: ", prompt.substring(0, 100) + "...");
-            const response = await callGeminiApi(prompt, SYSTEM_ROLES.CREATIVE_DIRECTOR, { responseMimeType: "application/json" });
-            console.log(">>> GEMINI RAW RESPONSE:", response.text);
+            console.log(">>> CALLING GATEWAY CREATIVE: ", prompt.substring(0, 100) + "...");
+            const response = await generateText(prompt, SYSTEM_ROLES.CREATIVE_DIRECTOR);
+            console.log(">>> GATEWAY RAW RESPONSE:", response.text);
 
             // ROBUST JSON CLEANING
             let jsonText = response.text || "";
@@ -180,7 +174,6 @@ export const GeminiChampionService = {
             }
 
             // OPTIMIZATION: Parallelize visual tasks
-            // We wrap visual generation in its own try/catch so it doesn't fail the whole proposal
             let imageUrl = null;
             let imagePrompt = null;
             let visualAnalysis = null;
@@ -188,7 +181,7 @@ export const GeminiChampionService = {
             try {
                 const [visualData, analysis] = await Promise.all([
                     (async () => {
-                        const prompt = await GeminiChampionService.generateVisualCocktailPrompt(proposal);
+                        const prompt = await GeminiChampionService.generateVisualCocktailPrompt(proposal) || `${proposal.title} cocktail`;
                         const url = await GeminiChampionService.generateCocktailImage(prompt);
                         return { prompt, url };
                     })(),
@@ -198,8 +191,13 @@ export const GeminiChampionService = {
                 imagePrompt = visualData.prompt;
                 visualAnalysis = analysis;
             } catch (visualError) {
-                console.warn("Visual Generation Failed (Non-critical):", visualError);
-                // Fallbacks are already handled in helper methods, but just in case
+                console.error("Visual Generation Service Failed:", visualError);
+                // CRITICAL FALLBACK: Ensure we ALWAYS have an image, even if Gateway fails
+                // Use Pollinations directly here as last line of defense
+                const promptForFallback = imagePrompt || `${proposal.title} cocktail award photography`;
+                const encoded = encodeURIComponent(promptForFallback);
+                imageUrl = `https://pollinations.ai/p/${encoded}?width=1024&height=1024&model=turbo&nologo=true&seed=${Date.now()}`;
+                console.warn("Used Critical Fallback Image:", imageUrl);
             }
 
             proposal.imageUrl = imageUrl;
@@ -208,8 +206,8 @@ export const GeminiChampionService = {
 
             return proposal;
         } catch (e) {
-            console.error("Gemini Creative Critical Error (DEBUG_001):", e);
-            throw new Error("GEMINI_CRITICAL_FAIL_DEBUG_001: " + (e as Error).message);
+            console.error("Creative Critical Error:", e);
+            throw new Error("Error en servicio de IA: " + (e as Error).message);
         }
     },
 
@@ -218,7 +216,6 @@ export const GeminiChampionService = {
         const { proposal, brief, userPlan, difficulty } = params;
         const systemRole = selectJuryPrompt(difficulty as JuryDifficulty);
 
-        // Enhanced Context for Jury with STRICT JSON ENFORCEMENT
         const prompt = `
         EVALÚA ESTA PROPUESTA DE CÓCTEL OFICIALMENTE.
         
@@ -239,38 +236,13 @@ export const GeminiChampionService = {
         MODO DE EVALUACIÓN: ${difficulty.toUpperCase()}
         TU ROL: Juez ${(userPlan === 'STUDIO' || userPlan === 'EXPERT') ? "Generalista" : "Especializado"}
 
-        IMPORTANTE: Debes devolver un JSON VÁLIDO con la siguiente estructura exacta para que el sistema lo procese:
-
-        {
-            "overallScore": (0-100),
-            "verdict": "COMPETITIVE / FINALIST / NOT COMPETITIVE",
-            "feedback": ["Feedback General", "Punto a favor", "Punto a mejorar"],
-            "categoryScores": {
-                "Sabor": 0-100,
-                "Técnica": 0-100,
-                "Storytelling": 0-100,
-                "Marca": 0-100
-            },
-            "juryBreakdown": {
-                "technical": { "score": 0-100, "comment": "Crítica técnica específica" },
-                "brand": { "score": 0-100, "comment": "Alineación con ${brief.brand}" },
-                "creative": { "score": 0-100, "comment": "Evaluación del concepto y ritual" }
-            }
-        }
+        IMPORTANTE: Debes devolver un JSON VÁLIDO.
         `;
 
         try {
-            const response = await callGeminiApi(prompt, systemRole, { responseMimeType: "application/json" });
+            const response = await generateText(prompt, systemRole);
             const jsonText = response.text.replace(/```json|```/g, '').trim();
             const juryResult = JSON.parse(jsonText);
-
-            // RUN BRAND GUARDIAN IN PARALLEL AND MERGE? 
-            // Or call it separately? For now, we will assume the hook calls it separately if needed, 
-            // OR we can embed it here. 
-            // The prompt says "Output: Brand Alignment Score...".
-            // Since the user wants "Avatar -> Brand Evaluation", it might be a separate UI step.
-            // But usually it's better to verify all at once.
-            // I will expose `evaluateBrandAlignment` to be called by the hook optionally.
 
             return juryResult;
         } catch (e) {
@@ -288,7 +260,7 @@ export const GeminiChampionService = {
             .replace('{{ritual}}', proposal.ritual || "Standard Service");
 
         try {
-            const response = await callGeminiApi(prompt, "Eres el Jefe de Logística de la competencia.", { responseMimeType: "application/json" });
+            const response = await generateText(prompt, "Eres el Jefe de Logística de la competencia. Responde SOLO en JSON.");
             const jsonText = response.text.replace(/```json|```/g, '').trim();
             const parsed = JSON.parse(jsonText);
             // Safeguard: Ensure we return { checklist: [...] } even if array is returned directly
@@ -311,7 +283,7 @@ export const GeminiChampionService = {
         `;
 
         try {
-            const response = await callGeminiApi(prompt, SYSTEM_ROLES.INTERVIEWER, { responseMimeType: "application/json" });
+            const response = await generateText(prompt, SYSTEM_ROLES.INTERVIEWER);
             const jsonText = response.text.replace(/```json|```/g, '').trim();
             return JSON.parse(jsonText);
         } catch (e) {
@@ -335,7 +307,7 @@ export const GeminiChampionService = {
         `;
 
         try {
-            const response = await callGeminiApi(prompt, SYSTEM_ROLES.COACH, { responseMimeType: "application/json" });
+            const response = await generateText(prompt, SYSTEM_ROLES.COACH);
             const jsonText = response.text.replace(/```json|```/g, '').trim();
             return JSON.parse(jsonText);
         } catch (e) {

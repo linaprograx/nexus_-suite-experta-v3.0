@@ -5,46 +5,13 @@ if (!GEMINI_API_KEY) {
     console.error("API Key de Gemini no encontrada. Asegúrate de que VITE_GEMINI_API_KEY está en tu archivo .env");
 }
 
+/**
+ * @deprecated Use src/services/ai/textService.ts (Gateway) instead.
+ * Direct browser calls to Google Identity/Gemini are discouraged.
+ */
 export const callGeminiApi = async (userQuery: string | { parts: any[], role?: string }, systemPrompt: string, generationConfig: any = null) => {
-    const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
-
-    // Retry Logic for 429 (Rate Limit)
-    let attempts = 0;
-    const maxAttempts = 3;
-
-    while (attempts < maxAttempts) {
-        try {
-            const response = await ai.models.generateContent({
-                model: 'gemini-2.5-flash',
-                contents: typeof userQuery === 'string' ? [{ parts: [{ text: userQuery }] }] : userQuery,
-                config: {
-                    systemInstruction: systemPrompt,
-                    ...(generationConfig && generationConfig)
-                }
-            });
-
-            // Standardize return to prevent access errors in views
-            const text = typeof response.text === 'function' ? response.text() : response.text;
-            return { text: text || "" };
-
-        } catch (error: any) {
-            // Check for 429 (Quota Exceeded) or 503 (Server Overload)
-            const isRateLimit = error.message?.includes('429') || error.status === 429 || error.message?.includes('Quota exceeded');
-
-            if (isRateLimit && attempts < maxAttempts - 1) {
-                console.warn(`Gemini 429 Rate Limit hit. Retrying in ${(attempts + 1) * 2}s...`);
-                await new Promise(resolve => setTimeout(resolve, (attempts + 1) * 2000));
-                attempts++;
-                continue;
-            }
-
-            console.error("Error calling Gemini API:", error);
-            throw new Error("Error en la llamada a la API de Gemini (Rate Limit o Red). Verifique la consola.");
-        }
-    }
-    // Fallback if loop finishes without return (should stay in try/catch usually)
-    throw new Error("Gemini API Failed after retries.");
-
+    console.error("CRITICAL: Legacy callGeminiApi invoked. This function is disabled.");
+    throw new Error("Legacy callGeminiApi is disabled. Please migrate to src/services/ai/textService.ts which uses the secure AI Gateway.");
 };
 
 export const generateImage = async (prompt: string) => {

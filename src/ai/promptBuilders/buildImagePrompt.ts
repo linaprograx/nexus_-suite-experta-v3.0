@@ -3,7 +3,7 @@
  * Phase 4A: Advanced Creative Control
  */
 
-import { ImagePreset, IMAGE_PRESETS } from '../presets/imagePresets';
+import { EditorialScenario } from '../presets/editorialScenarios';
 
 const QUALITY_GUARDRAILS = [
     "no illustration",
@@ -25,38 +25,33 @@ const QUALITY_GUARDRAILS = [
 ];
 
 /**
- * Builds a strictly controlled prompt for the AI generator.
+ * Builds a strictly controlled prompt for the AI generator using Editorial Scenarios.
  * @param userPrompt The raw input from the user (e.g., "A mojito with mint")
- * @param presetKey The preset to apply (defaults to NEXUS_COCKTAIL_EDITORIAL)
+ * @param scenario The selected editorial scenario
  * @returns The final engineered prompt string
  */
 export const buildImagePrompt = (
     userPrompt: string,
-    presetKey: keyof typeof IMAGE_PRESETS = 'NEXUS_COCKTAIL_EDITORIAL'
+    scenario: EditorialScenario
 ): string => {
-    const preset = IMAGE_PRESETS[presetKey];
-
     // Construct the positive prompt with strict ordering
     const positivePrompt = [
         // 1. Subject & Action (The core request)
         `Subject: ${userPrompt}.`,
 
-        // 2. Artistic Direction from Preset
-        `Style: ${preset.description}.`,
-        `Glassware: ${preset.glassware}.`,
-        `Background: ${preset.background}.`,
-        `Lighting: ${preset.lighting}.`,
+        // 2. Artistic Direction from Scenario
+        `Style: ${scenario.promptFragment.mood}.`,
+        `Environment: ${scenario.promptFragment.environment}.`,
+        `Lighting: ${scenario.promptFragment.lighting}.`,
 
         // 3. Technical Specs
-        `Camera: ${preset.camera}.`,
-        `Color: ${preset.colorGrading}.`,
-        `Quality: ${preset.qualityConstraints}.`,
+        `Camera: ${scenario.promptFragment.camera}.`,
+        "Quality: 8k resolution, photorealistic, cinematic depth of field, award-winning photography."
     ].join(' ');
 
-    // Construct the negative prompt (Guardrails)
-    // Note: Some models accept a separate negative_prompt param, 
-    // but for simple text-to-image prompts we often append it as exclusions.
-    const negativePrompt = `Avoid: ${QUALITY_GUARDRAILS.join(", ")}.`;
+    // Construct the negative prompt (Guardrails + Scenario Specifics)
+    const constraints = [...QUALITY_GUARDRAILS, ...(scenario.negativeConstraints || [])];
+    const negativePrompt = `Avoid: ${constraints.join(", ")}.`;
 
     // Combine
     return `${positivePrompt} ${negativePrompt}`;

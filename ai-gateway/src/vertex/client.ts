@@ -8,7 +8,7 @@ console.log("[Vertex DEBUG] GOOGLE_CLOUD_PROJECT_ID =", PROJECT_ID);
 const LOCATION = process.env.GOOGLE_CLOUD_LOCATION || 'us-central1';
 
 // Models
-const TEXT_MODEL = process.env.GOOGLE_VERTEX_MODEL_TEXT || 'gemini-1.5-flash-001';
+const TEXT_MODEL = process.env.GOOGLE_VERTEX_MODEL_TEXT || 'gemini-1.5-pro';
 const IMAGE_MODEL = process.env.GOOGLE_VERTEX_MODEL_IMAGE || 'imagen-3.0-generate-001';
 
 const API_ENDPOINT = `https://${LOCATION}-aiplatform.googleapis.com/v1`;
