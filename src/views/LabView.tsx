@@ -10,8 +10,8 @@ import { ICONS } from '../components/ui/icons';
 import { Combobox } from '../components/ui/Combobox';
 import { PieChart, Pie, Cell, Tooltip } from 'recharts';
 import { ChartContainer } from '../components/ui/ChartContainer';
-import { callGeminiApi } from '../utils/gemini';
-import { Type } from "@google/genai";
+// import { callGeminiApi } from '../utils/gemini'; // REMOVED: Legacy
+// import { Type } from "@google/genai"; // REMOVED: Legacy
 import { useCerebrityOrchestrator } from '../hooks/useCerebrityOrchestrator';
 
 interface LabViewProps {
@@ -50,21 +50,24 @@ const LabView: React.FC<LabViewProps> = ({ db, userId, appId, allIngredients, al
         setLabResult(null);
 
         const promptData = labInputs.map(item => item.nombre).join(', ');
-        const systemPrompt = "Eres un científico de alimentos experto en Flavor Pairing...";
-        const userQuery = `Analiza la combinación: ${promptData}. Devuelve un JSON con: 'perfil', 'clasicos' (array), 'moleculares' (array), 'tecnica' (string), y 'perfilSabor' (objeto).`;
 
         try {
-            const response = await callGeminiApi(userQuery, systemPrompt, {
-                responseMimeType: "application/json",
-                responseSchema: { type: Type.OBJECT, properties: { perfil: { type: Type.STRING }, clasicos: { type: Type.ARRAY, items: { type: Type.STRING } }, moleculares: { type: Type.ARRAY, items: { type: Type.STRING } }, tecnica: { type: Type.STRING }, perfilSabor: { type: Type.OBJECT, properties: { dulce: { type: Type.NUMBER }, acido: { type: Type.NUMBER }, amargo: { type: Type.NUMBER }, salado: { type: Type.NUMBER }, umami: { type: Type.NUMBER }, herbal: { type: Type.NUMBER }, especiado: { type: Type.NUMBER } } } } }
-            });
+            // Dynamic import for secure Architecture
+            const { generateText } = await import('../services/ai/textService');
+            const { buildSystemPrompt, FLAVOR_SCIENTIST } = await import('../services/ai/systemPersonas');
 
-            let parsedResult;
-            try {
-                parsedResult = JSON.parse(response.text);
-            } catch (parseError) {
-                throw new Error("Error al interpretar la respuesta de la IA.");
-            }
+            const systemPrompt = buildSystemPrompt(
+                'Molecular Flavor Scientist',
+                `${FLAVOR_SCIENTIST}\n\nOUTPUT FORMAT: Strictly return a JSON Object.`
+            );
+
+            const userQuery = `Analyze this combination: ${promptData}. Return JSON with: 'perfil' (string description), 'clasicos' (string array), 'moleculares' (string array), 'tecnica' (string), and 'perfilSabor' (object with distinct number values 0-100 for: dulce, acido, amargo, salado, umami, herbal, especiado).`;
+
+            const response = await generateText(userQuery, systemPrompt);
+
+            // Clean Markdown
+            const cleanJson = response.text.replace(/```json/g, '').replace(/```/g, '').trim();
+            const parsedResult = JSON.parse(cleanJson);
 
             setLabResult(parsedResult);
             await addDoc(collection(db, `users/${userId}/the-lab-history`), { combination: promptData, result: parsedResult, createdAt: serverTimestamp() });

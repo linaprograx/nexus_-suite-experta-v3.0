@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Type } from "@google/genai";
-import { callGeminiApi } from '../../utils/gemini';
+// import { Type } from "@google/genai"; // REMOVED
+// import { callGeminiApi } from '../../utils/gemini'; // REMOVED
 import { blobToBase64 } from '../../utils/blobToBase64';
 import CriticControls from '../../components/make-menu/CriticControls';
 import CriticDashboard, { CriticResultType } from '../../components/make-menu/CriticDashboard';
@@ -45,34 +45,34 @@ const CriticView: React.FC = () => {
         const systemPrompt = `Actúa como un ${criticPersona}. Analiza el menú. ${focusText} Sé DIRECTO y BREVE. JSON estricto: puntosFuertes, debilidades, oportunidades (max 3 items cada uno), feedback (1 frase).`;
 
         const parts = [];
+        // Text Context
+        if (criticMenuText.trim()) {
+            parts.push({ text: `Analiza este TEXTO de menú:\n\n${criticMenuText}` });
+        } else {
+            parts.push({ text: "Analiza la IMAGEN proporcionada." });
+        }
+
+        // Image Context
         if (criticMenuImage) {
             const base64Data = await blobToBase64(criticMenuImage);
-            parts.push({ text: "Analiza la IMAGEN de este menú de cócteles. Si hay texto, analízalo. Si no, analiza el diseño, estilo y concepto." });
-            parts.push({ inlineData: { mimeType: criticMenuImage.type, data: base64Data } });
+            parts.push({
+                inlineData: {
+                    mimeType: criticMenuImage.type,
+                    data: base64Data
+                }
+            });
         }
-        if (criticMenuText.trim()) {
-            parts.push({ text: `Analiza también (o en su lugar) este TEXTO de menú:\n\n${criticMenuText}` });
-        }
-
-        const userQueryPayload = { parts };
-        const generationConfig = {
-            responseMimeType: "application/json",
-            responseSchema: {
-                type: Type.OBJECT,
-                properties: {
-                    puntosFuertes: { type: Type.ARRAY, items: { type: Type.STRING } },
-                    debilidades: { type: Type.ARRAY, items: { type: Type.STRING } },
-                    oportunidades: { type: Type.ARRAY, items: { type: Type.STRING } },
-                    feedback: { type: Type.STRING },
-                },
-            }
-        };
 
         try {
-            const response = await callGeminiApi(userQueryPayload, systemPrompt, generationConfig);
+            // Dynamic Import
+            const { generateMultimodal } = await import('../../services/ai/textService');
+
+            // We pass systemPrompt as the second argument to generateMultimodal
+            const response = await generateMultimodal(parts, systemPrompt);
+
             if (!response.text) throw new Error("La IA no devolvió una crítica válida.");
 
-            // Allow for markdown code block wrapping
+            // Clean Markdown
             const cleanText = response.text.replace(/```json/g, '').replace(/```/g, '').trim();
             const parsedResult = JSON.parse(cleanText);
 

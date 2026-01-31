@@ -1,6 +1,6 @@
-import { Type } from "@google/genai";
+// import { Type } from "@google/genai"; // REMOVED
 import { collection, addDoc, serverTimestamp, Firestore } from "firebase/firestore";
-import { callGeminiApi } from "../utils/gemini";
+// import { callGeminiApi } from "../utils/gemini"; // REMOVED
 import { Recipe, PizarronTask, MenuLayout } from "../types";
 import { safeParseJson } from "../utils/json";
 
@@ -29,84 +29,41 @@ export const makeMenuService = {
     ): Promise<MenuDesignProposal[]> {
 
         const contextPrompt = recipes.map(r => r.nombre).join(', ');
-        // Support PizarronTask[] (legacy) or string[]
         const taskTexts = tasks.map(t => typeof t === 'string' ? t : t.texto || '');
-        let contextInstructions = "";
 
+        let contextInstructions = "";
         if (menuContext === 'cocktails') {
-            contextInstructions = `
-            STRICT CONTEXT: COCKTAIL / DRINKS MENU. 
-            FORBIDDEN TERMS: "Platos", "Entrantes", "Comida", "Postres". 
-            USE SECTIONS LIKE: "Signatures", "Classics", "Highballs", "Experimental", "Zero Proof".
-            `;
+            contextInstructions = `STRICT CONTEXT: COCKTAIL / DRINKS MENU. FORBIDDEN: "Platos", "Entrantes", "Comida". SECTIONS: "Signatures", "Classics", "Highballs", etc.`;
         } else {
             contextInstructions = `CONTEXT: RESTAURANT / FOOD MENU.`;
         }
 
-        const systemPrompt = `
-        You are an expert Menu Graphic Designer. 
-        ${contextInstructions}
-        
-        USER PREFERENCES:
-        - Style: ${style}
-        - Main Color Accent: ${color} (Use this color for titles, lines, or highlights in the HTML).
-
-        Generate exactly 3 DISTINCT design proposals. They must be structurally and conceptually unique.
-        
-        1. Variant A (Narrative/Editorial): Story, philosophy, complex descriptions, grouped by mood or origin.
-        2. Variant B (Minimal/Industrial): Clean, list-based, functional, grouped by technique or main spirit.
-        3. Variant C (Experimental/Avant-Garde): Scientific classification, lab-style, grouped by flavor profile or molecular structure.
-        
-        CRITICAL: For each proposal, you MUST generate a 'htmlContent' field containing a complete, beautiful, responsive HTML/CSS representation of the menu. 
-        - Use TailwindCSS classes or inline styles.
-        - The visual design must match the Variant's intent perfectly.
-        - Do not include <html> or <body> tags, just the inner content.
-        - Also provide 'suggestedTypography' with @import Google Fonts links.
-        - LAYOUT RULE: Use p-6 or p-8 for padding. Avoid >2 columns unless necessary. Content must breathe.
-        - TYPOGRAPHY: Ensure high contrast and readability. Use uppercase for headers.
-
-        Distribute items (recipes) into logical sections for EACH variant. 
-        Use 0-based indices to refer to items.
-        Return strictly a JSON array.
-        `;
-
-        const userQuery = `Create 3 layouts for: ${contextPrompt}. Style: ${style}. Accent Color: ${color}. Total Items: ${recipes.length}.`;
-
-        const generationConfig = {
-            responseMimeType: "application/json",
-            responseSchema: {
-                type: Type.ARRAY,
-                items: {
-                    type: Type.OBJECT,
-                    properties: {
-                        themeName: { type: Type.STRING },
-                        description: { type: Type.STRING },
-                        suggestedTypography: { type: Type.STRING },
-                        htmlContent: { type: Type.STRING },
-                        // ADDED: Sections with item indices
-                        structure: {
-                            type: Type.ARRAY,
-                            items: {
-                                type: Type.OBJECT,
-                                properties: {
-                                    title: { type: Type.STRING },
-                                    itemIndices: { type: Type.ARRAY, items: { type: Type.INTEGER } }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        };
-
         try {
-            const response = await callGeminiApi(userQuery, systemPrompt, generationConfig);
-            if (!response.text) throw new Error("La IA no devolvió texto válido.");
+            // Dynamic import for secure Architecture
+            const { generateText } = await import('./ai/textService');
+            const { buildSystemPrompt, MENU_DESIGN_SPECIALIST } = await import('./ai/systemPersonas');
 
-            const results = safeParseJson(response.text);
+            const systemPrompt = buildSystemPrompt(
+                'Menu Design Architect',
+                `${MENU_DESIGN_SPECIALIST}
+                ${contextInstructions}
+                USER PREFERENCES: Style: ${style}, Accent Color: ${color}.
+                OUTPUT FORMAT: Strictly return a JSON Array of 3 objects.`
+            );
+
+            const userQuery = `Create 3 layouts for items: ${contextPrompt}. Return JSON Array with objects having: 'themeName', 'description', 'suggestedTypography', 'htmlContent' (HTML string), and 'structure' (array of {title: string, itemIndices: number[]}).`;
+
+            const response = await generateText(userQuery, systemPrompt);
+
+            if (!response.text) throw new Error("AI returned empty response.");
+
+            // Clean Markdown
+            const cleanJson = response.text.replace(/```json/g, '').replace(/```/g, '').trim();
+            const results = safeParseJson(cleanJson);
+
             if (!results || !Array.isArray(results)) {
-                console.error("[MakeMenuService] Invalid response format:", response.text);
-                throw new Error("La IA no devolvió un formato válido.");
+                console.error("[MakeMenuService] Invalid response format:", cleanJson);
+                throw new Error("Invalid AI Response Format.");
             }
 
             return results.map((r, i) => {
@@ -122,10 +79,11 @@ export const makeMenuService = {
                 return {
                     ...r,
                     id: `proposal_${Date.now()}_${i}`,
-                    items: sections.length > 0 ? undefined : flatItems, // If sections exist, items are inside them
+                    items: sections.length > 0 ? undefined : flatItems,
                     sections: sections.length > 0 ? sections : (sections.length === 0 && contextPrompt.includes('Estructura') ? sections : [{ title: 'Menú', items: flatItems }])
                 };
             });
+
         } catch (e: any) {
             console.error("[MakeMenuService] Generation Error:", e);
             throw e;

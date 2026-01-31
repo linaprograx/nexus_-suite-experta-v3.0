@@ -30,7 +30,7 @@ const gradients: Record<GradientTheme, string> = {
     indigo: "bg-[linear-gradient(to_bottom,#4f46e5_0%,rgba(79,70,229,0.8)_20%,transparent_45%)] dark:bg-[linear-gradient(to_bottom,rgba(79,70,229,0.7)_0%,rgba(79,70,229,0.5)_20%,transparent_40%)]", // Indigo-600
     slate: "bg-[linear-gradient(to_bottom,#475569_0%,rgba(71,85,105,0.8)_20%,transparent_45%)] dark:bg-[linear-gradient(to_bottom,rgba(71,85,105,0.7)_0%,rgba(71,85,105,0.5)_20%,transparent_40%)]", // Slate-600
     blue: "bg-[linear-gradient(to_bottom,#2563eb_0%,rgba(37,99,235,0.8)_20%,transparent_45%)] dark:bg-[linear-gradient(to_bottom,rgba(37,99,235,0.7)_0%,rgba(37,99,235,0.5)_20%,transparent_40%)]", // Blue-600
-    colegium: "bg-[linear-gradient(to_bottom,#9333ea_0%,rgba(147,51,234,0.8)_20%,transparent_45%)] dark:bg-[linear-gradient(to_bottom,rgba(147,51,234,0.7)_0%,rgba(147,51,234,0.5)_20%,transparent_40%)]",
+    colegium: "bg-[linear-gradient(to_bottom,#1e3a8a_0%,rgba(30,58,138,0.8)_20%,transparent_45%)] dark:bg-[linear-gradient(to_bottom,rgba(30,58,138,0.7)_0%,rgba(30,58,138,0.5)_20%,transparent_40%)]", // Blue-900 (Mobile Match)
     red: "bg-[linear-gradient(to_bottom,#dc2626_0%,rgba(220,38,38,0.8)_20%,transparent_45%)] dark:bg-[linear-gradient(to_bottom,rgba(220,38,38,0.7)_0%,rgba(220,38,38,0.5)_20%,transparent_40%)]", // Red-600
     yellow: "bg-[linear-gradient(to_bottom,#ca8a04_0%,rgba(202,138,4,0.8)_20%,transparent_45%)] dark:bg-[linear-gradient(to_bottom,rgba(202,138,4,0.7)_0%,rgba(202,138,4,0.5)_20%,transparent_40%)]", // Yellow-600
     ice: "bg-[linear-gradient(to_bottom,#0284c7_0%,rgba(2,132,199,0.8)_20%,transparent_45%)] dark:bg-[linear-gradient(to_bottom,rgba(2,132,199,0.7)_0%,rgba(2,132,199,0.5)_20%,transparent_40%)]", // Sky-600 (Darker Ice)

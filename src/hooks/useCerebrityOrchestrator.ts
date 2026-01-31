@@ -88,13 +88,19 @@ export const useCerebrityOrchestrator = () => {
         }
 
         try {
-            const systemPrompt = `Actúa como un genio de la coctelería con estas características:
-- Tono: ${profile.tone}
-- Ejes de Investigación: ${profile.researchAxis.join(', ')}
-- Tolerancia al Riesgo: ${profile.riskTolerance}
-${!canGenerateWorldClass ? '\nNOTA: Genera una respuesta estándar, no World Class, ya que el usuario no tiene nivel Platinum.' : ''}
+            const { buildSystemPrompt } = await import('../services/ai/systemPersonas');
 
-JSON estrictamente con este esquema:
+            const systemPrompt = buildSystemPrompt(
+                "Genio de la Coctelería Conceptual",
+                `
+Generate JSON strictly.
+Tone: ${profile.tone}
+Research Axis: ${profile.researchAxis.join(', ')}
+Risk Tolerance: ${profile.riskTolerance}
+${!canGenerateWorldClass ? '\nNOTE: User is not Platinum. Generate Standard output, not World Class.' : ''}
+
+CRITICAL: Return ONLY valid JSON. No markdown formatting, no code blocks.
+Response JSON Schema:
 {
   "titulo": "Nombre creativo",
   "intencion_cognitiva": "Explicación del porqué conceptual",
@@ -102,15 +108,16 @@ JSON estrictamente con este esquema:
   "ejecucion_tecnica": "Detalles de preparación",
   "firma_world_class": "Una frase de autoría",
   "is_world_class": ${canGenerateWorldClass}
-}`;
+}`
+            );
 
-            const { callGeminiApi } = await import('../utils/gemini');
+            // Use the new AI Gateway Service
+            const { generateText } = await import('../services/ai/textService');
             const { safeParseJson } = await import('../utils/json');
 
-            const response = await callGeminiApi(
+            const response = await generateText(
                 `Contexto: ${prompt_context}`,
-                systemPrompt,
-                { responseMimeType: "application/json" }
+                systemPrompt
             );
 
             const result = safeParseJson(response.text);
@@ -120,16 +127,18 @@ JSON estrictamente con este esquema:
                     is_world_class: canGenerateWorldClass && (result.is_world_class !== false)
                 };
                 setState(prev => ({ ...prev, isGenerating: false, lastGeneration: output }));
+                console.log("[Orchestrator] World Class Generation Successful");
                 return output;
             } else {
+                console.error("[Orchestrator] Invalid JSON", response.text);
                 throw new Error("Invalid AI response format");
             }
         } catch (error) {
             console.error("Synthesis Error:", error);
             const errorFallback: WorldClassOutput = {
                 titulo: "Error de Generación",
-                intencion_cognitiva: "La IA no pudo procesar la solicitud en este momento.",
-                decisiones_clave: ["Verificar conexión", "Intentar de nuevo"],
+                intencion_cognitiva: "La IA no pudo procesar la solicitud en este momento. (Gateway Error)",
+                decisiones_clave: ["Verificar conexión con AI Gateway", "Intentar de nuevo"],
                 ejecucion_tecnica: "N/A",
                 firma_world_class: "Soporte Nexus",
                 is_world_class: false

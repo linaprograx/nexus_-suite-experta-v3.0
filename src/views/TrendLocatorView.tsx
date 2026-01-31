@@ -10,7 +10,7 @@ import { Alert } from '../components/ui/Alert';
 import { Spinner } from '../components/ui/Spinner';
 import { Icon } from '../components/ui/Icon';
 import { ICONS } from '../components/ui/icons';
-import { callGeminiApiWithSearch } from '../utils/gemini';
+// import { callGeminiApiWithSearch } from '../utils/gemini'; // REMOVED: Legacy
 import { TrendResultCard } from '../components/trend-locator/TrendResultCard';
 import { TrendHistorySidebar } from '../components/trend-locator/TrendHistorySidebar';
 
@@ -44,32 +44,29 @@ const TrendLocatorView: React.FC<TrendLocatorViewProps> = ({ db, userId, appId }
         const userQuery = `Busca tendencias sobre ${topicFilter} y ${keyword} inspiradas en ${sourceFilter}. Devuelve un array JSON de 3 a 5 tendencias clave. Cada objeto debe tener 'titulo', 'resumen' (un snippet de 2-3 líneas) y 'fuente' (el título del sitio web). Devuelve NADA MÁS que el array JSON. No incluyas '\`\`\`json' o cualquier otro texto introductorio.`;
 
         try {
-            const response = await callGeminiApiWithSearch(userQuery, systemPrompt);
-            setTrendSources(response.sources);
+            // Secure Dynamic Import
+            const { generateWithSearch } = await import('../services/ai/textService');
 
-            let jsonText = '';
-            const jsonMatch = response.text.match(/\[\s*\{[\s\S]*\}\s*\]/);
+            const systemPrompt = "Eres un analista de tendencias de coctelería de élite. Tu respuesta debe ser estrictamente un array JSON.";
+            const userQuery = `Busca tendencias sobre ${topicFilter} y ${keyword} inspiradas en ${sourceFilter}. Devuelve un array JSON de 3 a 5 tendencias clave. Cada objeto debe tener 'titulo', 'resumen' (snipped 2-3 líneas) y 'fuente' (string). NADA MÁS que JSON.`;
 
-            if (jsonMatch && jsonMatch[0]) {
-                jsonText = jsonMatch[0];
-            } else {
-                const objectMatch = response.text.match(/\{\s*"titulo"[\s\S]*\}/);
-                if (objectMatch && objectMatch[0]) {
-                    jsonText = `[${objectMatch[0]}]`;
-                } else {
-                    throw new Error("La respuesta de la API no contenía un JSON de tendencias válido.");
-                }
-            }
+            const response = await generateWithSearch(userQuery, systemPrompt);
+            setTrendSources(response.sources || []);
 
-            const results = JSON.parse(jsonText);
+            // Robust JSON extraction
+            const jsonMatch = response.text.match(/\[\s*\{[\s\S]*\}\s*\]/) || response.text.match(/\{\s*"titulo"[\s\S]*\}/);
+            let jsonText = jsonMatch ? jsonMatch[0] : response.text;
+            if (jsonMatch && !jsonMatch[0].startsWith('[')) jsonText = `[${jsonMatch[0]}]`;
+
+            const results = JSON.parse(jsonText.replace(/```json/g, '').replace(/```/g, ''));
             setTrendResults(results);
         } catch (e: any) {
+            console.error("Trend Analysis Error:", e);
             if (e instanceof Error) {
                 setError(e.message);
             } else {
-                setError(String(e));
+                setError(String(e) || "Error analizando tendencias. Intenta de nuevo.");
             }
-            console.error(e);
         } finally {
             setLoading(false);
         }

@@ -68,6 +68,98 @@ export const generateText = async (prompt: string): Promise<TextResponse> => {
 };
 
 /**
+ * Generates text with Google Search Grounding.
+ */
+export const generateWithSearch = async (prompt: string): Promise<TextResponse & { sources?: any[] }> => {
+    if (!PROJECT_ID) throw new Error("GOOGLE_CLOUD_PROJECT_ID not set");
+
+    const { token } = await getAccessToken();
+    const url = `${API_ENDPOINT}/projects/${PROJECT_ID}/locations/${LOCATION}/publishers/google/models/${TEXT_MODEL}:generateContent`;
+
+    const payload = {
+        contents: [{
+            role: "user",
+            parts: [{ text: prompt }]
+        }],
+        tools: [{
+            googleSearchRetrieval: {} // Enable Google Search Grounding
+        }],
+        generationConfig: {
+            maxOutputTokens: 2048,
+            temperature: 0.7,
+            topP: 0.95,
+        }
+    };
+
+    const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(payload)
+    });
+
+    if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Vertex AI Search API Error (${response.status}): ${errorText}`);
+    }
+
+    const data = await response.json() as any;
+
+    const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+    if (!text) throw new Error("No text content in Gemini response");
+
+    // Extract Grounding Metadata (Sources)
+    const groundingMetadata = data.candidates?.[0]?.groundingMetadata;
+    const sources = groundingMetadata?.groundingChunks?.map((chunk: any) => chunk.web) || [];
+
+    return { text, sources };
+};
+
+/**
+ * Generates content from Multimodal input (Text + Images).
+ */
+export const generateMultimodal = async (parts: any[]): Promise<TextResponse> => {
+    if (!PROJECT_ID) throw new Error("GOOGLE_CLOUD_PROJECT_ID not set");
+
+    const { token } = await getAccessToken();
+    const url = `${API_ENDPOINT}/projects/${PROJECT_ID}/locations/${LOCATION}/publishers/google/models/${TEXT_MODEL}:generateContent`;
+
+    const payload = {
+        contents: [{
+            role: "user",
+            parts: parts
+        }],
+        generationConfig: {
+            maxOutputTokens: 2048,
+            temperature: 0.4, // Lower temp for analysis
+            topP: 0.95,
+        }
+    };
+
+    const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(payload)
+    });
+
+    if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Vertex AI Multimodal API Error (${response.status}): ${errorText}`);
+    }
+
+    const data = await response.json() as any;
+    const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+    if (!text) throw new Error("No text content in Gemini response");
+
+    return { text };
+};
+
+/**
  * Generates image using Imagen 3 on Vertex AI.
  */
 export const generateImage = async (prompt: string): Promise<ImageResponse> => {

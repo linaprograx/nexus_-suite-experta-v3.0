@@ -1,27 +1,34 @@
-/**
- * Nexus Suite - Prompt Builder System
- * Phase 4A: Advanced Creative Control
- */
-
 import { EditorialScenario } from '../presets/editorialScenarios';
 
+const MASTER_VISUAL_IDENTITY = `
+CORE VISUAL IDENTITY:
+• Ultra-realistic professional beverage photography (Hasselblad/Phase One style).
+• Real optical physics (refraction, caustics, correct meniscus).
+• High-end cocktail glassware with thin rims.
+• Edible, intentional garnishes.
+• Liquid translucency and natural gradients.
+• NO CGI, NO 3D render look, NO illustration.
+`;
+
 const QUALITY_GUARDRAILS = [
-    "no illustration",
-    "no cartoon",
-    "no digital art",
-    "no 3D render style",
-    "no painting",
-    "no drawing",
-    "no anime",
-    "no surrealism",
-    "no unrealistic colors",
-    "no distorted glass",
-    "no floating objects",
-    "no text",
-    "no watermark",
-    "no logos",
-    "no people",
-    "no hands"
+    "illustration",
+    "cartoon",
+    "digital art",
+    "3D render",
+    "CGI",
+    "painting",
+    "drawing",
+    "anime",
+    "surrealism",
+    "floating objects",
+    "impossible physics",
+    "fake reflections",
+    "distorted glass",
+    "text",
+    "watermark",
+    "logo",
+    "people",
+    "hands"
 ];
 
 /**
@@ -36,6 +43,9 @@ export const buildImagePrompt = (
 ): string => {
     // Construct the positive prompt with strict ordering
     const positivePrompt = [
+        // 0. Master Identity (Global Override)
+        MASTER_VISUAL_IDENTITY,
+
         // 1. Subject & Action (The core request)
         `Subject: ${userPrompt}.`,
 
@@ -44,9 +54,9 @@ export const buildImagePrompt = (
         `Environment: ${scenario.promptFragment.environment}.`,
         `Lighting: ${scenario.promptFragment.lighting}.`,
 
-        // 3. Technical Specs
+        // 3. Technical Specs (Enforcing Camera & Realism)
         `Camera: ${scenario.promptFragment.camera}.`,
-        "Quality: 8k resolution, photorealistic, cinematic depth of field, award-winning photography."
+        "Quality: 8k resolution, raw photo, cinematic lighting, sharp focus, beverage photography award winner."
     ].join(' ');
 
     // Construct the negative prompt (Guardrails + Scenario Specifics)

@@ -1,16 +1,15 @@
 import * as React from 'react';
 import { collection, doc, addDoc, deleteDoc, writeBatch, Firestore, serverTimestamp } from 'firebase/firestore';
 import { ImportRecipeModal } from '../components/grimorium/ImportRecipeModal';
-import { parseCsvRecipes } from '../utils/csvRecipeImporter';
-
+import { GrimoriumImportModals } from '../components/grimorium/GrimoriumImportModals';
 import { useQueryClient } from '@tanstack/react-query';
 import { useSuppliers } from '../features/suppliers/hooks/useSuppliers';
 import { useOrders, Order } from '../hooks/useOrders';
 import { Ingredient, Recipe, ViewName, ZeroWasteResult } from '../types';
-import { parseMultipleRecipes } from '../utils/recipeImporter';
-import { importPdfRecipes } from '../lib/pdf/importPdfRecipes';
+// import { parseMultipleRecipes } from '../utils/recipeImporter'; // REMOVED
+// import { importPdfRecipes } from '../lib/pdf/importPdfRecipes'; // REMOVED
 import { useApp } from '../context/AppContext';
-import { parseEuroNumber } from "../utils/parseEuroNumber";
+// import { parseEuroNumber } from "../utils/parseEuroNumber"; // REMOVED
 import { useGrimorium } from '../features/grimorium/useGrimorium';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
@@ -35,14 +34,16 @@ import { RecipeToolbar } from '../components/grimorium/RecipeToolbar';
 import { IngredientToolbar } from '../components/grimorium/IngredientToolbar';
 import { exportToCSV } from '../utils/exportToCSV';
 import { Card, CardContent } from '../components/ui/Card';
-import { callGeminiApi } from '../utils/gemini';
-import { Type } from "@google/genai";
+// import { callGeminiApi } from '../utils/gemini'; // REMOVED: Legacy
+// import { Type } from "@google/genai"; // REMOVED: Legacy
 import { Alert } from '../components/ui/Alert';
 import { Spinner } from '../components/ui/Spinner';
 import { usePurchaseIngredient } from '../hooks/usePurchaseIngredient';
 
 import { buildStockFromPurchases } from '../utils/stockUtils';
 import { calculateEscandallo } from '../core/finance/cost.engine';
+import { useEscandallator } from '../hooks/useEscandallator';
+import { useGrimoriumHandlers } from '../hooks/useGrimoriumHandlers';
 
 
 
@@ -157,13 +158,35 @@ const GrimoriumInner: React.FC<GrimoriumViewProps> = ({ onOpenRecipeModal, onDra
     const [showTxtImportModal, setShowTxtImportModal] = React.useState(false);
     const [showPdfImportModal, setShowPdfImportModal] = React.useState(false);
     const [showImportChoiceModal, setShowImportChoiceModal] = React.useState(false); // NEW
-    const [useOcr, setUseOcr] = React.useState(false);
     const [showSuppliersModal, setShowSuppliersModal] = React.useState(false);
     const [isToolOpen, setIsToolOpen] = React.useState(false);
 
-    // --- Escandallator & Batcher State ---
-    const [selectedEscandalloRecipe, setSelectedEscandalloRecipe] = React.useState<Recipe | null>(null);
-    const [precioVenta, setPrecioVenta] = React.useState<number>(0);
+    // --- Escandallator Logic ---
+    const {
+        selectedRecipe: selectedEscandalloRecipe,
+        setSelectedRecipe: setSelectedEscandalloRecipe,
+        precioVenta,
+        setPrecioVenta,
+        escandalloData,
+        saveToHistory: saveEscandalloHistory,
+        loadFromHistory: loadEscandalloHistory
+    } = useEscandallator({ db, userId, allIngredients });
+
+    const handleSaveToHistory = async (reportData: any) => {
+        try {
+            await saveEscandalloHistory(reportData);
+            showToast('Escandallo guardado en el historial.', 'success');
+        } catch (e) {
+            console.error(e);
+            showToast('Error guardando escandallo.', 'error');
+        }
+    };
+
+    const handleLoadHistory = (item: any) => {
+        loadEscandalloHistory(item, allRecipes);
+    };
+
+    // --- Batcher State ---
     const [batchSelectedRecipeId, setBatchSelectedRecipeId] = React.useState('');
     const [batchTargetQty, setBatchTargetQty] = React.useState('1');
     const [batchTargetUnit, setBatchTargetUnit] = React.useState<'Litros' | 'Botellas'>('Litros');
@@ -320,7 +343,6 @@ const GrimoriumInner: React.FC<GrimoriumViewProps> = ({ onOpenRecipeModal, onDra
             showToast("Error lanzando pedido", 'error');
         }
     };
-
     const handleDeletePurchase = async (purchaseId: string) => {
         if (!userId) return;
         try {
@@ -357,392 +379,31 @@ const GrimoriumInner: React.FC<GrimoriumViewProps> = ({ onOpenRecipeModal, onDra
         }
     };
 
-    const handleDeleteSelectedIngredients = async () => {
-        if (window.confirm(`¿Seguro que quieres eliminar ${selectedIngredients.length} ingredientes?`)) {
-            try {
-                const batch = writeBatch(db);
-                selectedIngredients.forEach(id => batch.delete(doc(db, ingredientsColPath, id)));
-                await batch.commit();
-                queryClient.invalidateQueries({ queryKey: ['ingredients'] });
-                setSelectedIngredients([]);
-                setSelectedIngredientId(null);
-                showToast(`${selectedIngredients.length} ingredientes eliminados.`, 'success');
-            } catch (error) {
-                console.error("Error eliminando ingredientes:", error);
-                showToast("Error al eliminar los ingredientes seleccionados.", 'error');
-            }
-        }
-    };
-
     const [selectedRecipes, setSelectedRecipes] = React.useState<string[]>([]);
-    const handleDeleteSelectedRecipes = async () => {
-        if (window.confirm(`¿Seguro que quieres eliminar ${selectedRecipes.length} recetas?`)) {
-            try {
-                const batch = writeBatch(db);
-                selectedRecipes.forEach(id => batch.delete(doc(db, `users/${userId}/grimorio`, id)));
-                await batch.commit();
-                queryClient.invalidateQueries({ queryKey: ['recipes'] });
-                setSelectedRecipes([]);
-                setSelectedRecipeId(null);
-                showToast(`${selectedRecipes.length} recetas eliminadas.`, 'success');
-            } catch (error) {
-                console.error("Error deleting recipes:", error);
-                showToast("Error al eliminar las recetas seleccionadas.", 'error');
-            }
-        }
-    };
 
-    // --- Imports ---
-    const handleTxtImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
-        const file = event.target.files?.[0];
-        if (!file || !db || !userId) return;
-        setLoading(true);
-        try {
-            const text = await file.text();
-            const newRecipes = parseMultipleRecipes(text, allIngredients);
-            if (newRecipes.length === 0) {
-                showToast("No se encontraron recetas válidas.", 'error');
-                return;
-            }
-            const batch = writeBatch(db);
-            const recipesCollection = collection(db, `users/${userId}/grimorio`);
-            newRecipes.forEach(recipe => batch.set(doc(recipesCollection), recipe));
-            await batch.commit();
-            queryClient.invalidateQueries({ queryKey: ['recipes'] });
-            showToast(`${newRecipes.length} recetas importadas.`, 'success');
-        } catch (error) {
-            console.error(error);
-            showToast("Error importando TXT.", 'error');
-        } finally {
-            setLoading(false);
-            setShowTxtImportModal(false);
-        }
-    };
+    // --- HANDLERS HOOK (Extracted) ---
+    const {
+        csvSupplierId, setCsvSupplierId, useOcr, setUseOcr,
+        handleDeleteSelectedRecipes, handleDeleteSelectedIngredients,
+        handleTxtImport, handlePdfImport, handleCsvImport,
+        handleRecipeCsvImport, handleRecipePdfImportDirect,
+        handleSelectRecipeCard, handleAddRecipeClick, handleDragStartWrapper
+    } = useGrimoriumHandlers({
+        db, userId, appId, storage, allIngredients, allRecipes,
+        selectedRecipes, selectedRecipeId, selectedIngredients,
+        queryClient, setSelectedRecipes, setSelectedRecipeId, setSelectedIngredients,
+        setLoading, showToast,
+        setShowTxtImportModal, setShowPdfImportModal, setShowCsvImportModal, setShowImportChoiceModal,
+        onOpenRecipeModal, onDragRecipeStart
+    });
 
-    const handlePdfImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
-        const file = event.target.files?.[0];
-        if (!file || !db || !userId || !storage) return;
-        setLoading(true);
-        try {
-            const newRecipes = await importPdfRecipes(file, db, storage, userId, allIngredients, useOcr);
-            if (newRecipes.length === 0) {
-                showToast("No se encontraron recetas.", 'error');
-                return;
-            }
-            const batch = writeBatch(db);
-            const recipesCollection = collection(db, `users/${userId}/grimorio`);
-            newRecipes.forEach(recipe => batch.set(doc(recipesCollection), recipe));
-            await batch.commit();
-            queryClient.invalidateQueries({ queryKey: ['recipes'] });
-            showToast(`${newRecipes.length} recetas importadas.`, 'success');
-        } catch (error) {
-            console.error(error);
-            showToast("Error importando PDF.", 'error');
-        } finally {
-            setLoading(false);
-            setShowPdfImportModal(false);
-        }
-    };
-
-    const [csvSupplierId, setCsvSupplierId] = React.useState<string>("");
     const { suppliers } = useSuppliers({ db, userId });
-
-    const handleCsvImport = (event: React.ChangeEvent<HTMLInputElement>) => {
-        const file = event.target.files?.[0];
-        if (!file || !db || !userId) return;
-        setLoading(true);
-        const reader = new FileReader();
-        reader.onload = async (e) => {
-            const text = e.target?.result as string;
-            if (!text) return;
-            const rows = text.split('\n').slice(1);
-            const batch = writeBatch(db);
-            let count = 0;
-            let updatedCount = 0;
-            const existingMap = new Map(allIngredients.map(i => [i.nombre.toLowerCase().trim(), i]));
-            for (const row of rows) {
-                if (!row.trim()) continue;
-                const cols = row.split(text.includes(';') ? ';' : ',');
-                if (!cols[0]) continue;
-                const name = cols[0].trim();
-                const normalizedName = name.toLowerCase();
-                const price = parseEuroNumber(cols[2]);
-                const unit = cols[3]?.trim() || 'und';
-                const category = cols[1]?.trim() || 'General';
-                const existingIngredient = existingMap.get(normalizedName);
-                if (existingIngredient) {
-                    const ingredientRef = doc(db, ingredientsColPath, existingIngredient.id);
-                    const updates: any = {};
-                    let needsUpdate = false;
-                    if (csvSupplierId && !existingIngredient.proveedores?.includes(csvSupplierId)) {
-                        const currentSuppliers = existingIngredient.proveedores || [];
-                        updates.proveedores = [...currentSuppliers, csvSupplierId];
-                        needsUpdate = true;
-                    }
-                    if (csvSupplierId) {
-                        const currentSupplierData = existingIngredient.supplierData || {};
-                        updates.supplierData = { ...currentSupplierData, [csvSupplierId]: { price: price, unit: unit, lastUpdated: serverTimestamp() } };
-                        if (!existingIngredient.precioCompra || existingIngredient.precioCompra === 0) updates.precioCompra = price;
-                        needsUpdate = true;
-                    }
-                    if (needsUpdate) {
-                        batch.update(ingredientRef, updates);
-                        updatedCount++;
-                    }
-                } else {
-                    const newDocRef = doc(collection(db, ingredientsColPath));
-                    const dataToSave: any = {
-                        nombre: name, categoria: category, precioCompra: price, unidadCompra: unit, proveedores: csvSupplierId ? [csvSupplierId] : [],
-                        supplierData: csvSupplierId ? { [csvSupplierId]: { price: price, unit: unit, lastUpdated: serverTimestamp() } } : {}
-                    };
-                    batch.set(newDocRef, dataToSave);
-                    count++;
-                }
-            }
-            await batch.commit();
-            queryClient.invalidateQueries({ queryKey: ['ingredients'] });
-            showToast(`Importación completada: ${count} nuevos, ${updatedCount} actualizados.`, 'success');
-            setLoading(false);
-            setShowCsvImportModal(false);
-            setCsvSupplierId("");
-        };
-        reader.readAsText(file);
-    };
-
-
-
-    // --- Memos ---
-    const filteredIngredients = React.useMemo(() => {
-        return allIngredients.filter(ing => {
-            const matchesSearch = ing.nombre.toLowerCase().includes(debouncedIngredientSearch.toLowerCase());
-            const matchesCategory = ingredientFilters.category === 'all' || ing.categoria === ingredientFilters.category;
-            const stock = (ing as any).stockActual || 0;
-            let matchesStatus = true;
-            if (ingredientFilters.status === 'low') matchesStatus = stock > 0 && stock < 3;
-            else if (ingredientFilters.status === 'out') matchesStatus = stock <= 0;
-            return matchesSearch && matchesCategory && matchesStatus;
-        });
-    }, [allIngredients, debouncedIngredientSearch, ingredientFilters]);
-
-    const filteredRecipes = hookFilteredRecipes;
-    const selectedRecipe = React.useMemo(() => allRecipes.find(r => r.id === selectedRecipeId) || null, [allRecipes, selectedRecipeId]);
-    const selectedIngredient = React.useMemo(() => allIngredients.find(i => i.id === selectedIngredientId) || null, [allIngredients, selectedIngredientId]);
-    const handleDuplicateRecipe = hookDuplicateRecipe;
-
-    // --- Escandallator Logic ---
-    // --- Escandallator Logic ---
-    const escandalloData = React.useMemo(() => {
-        return calculateEscandallo(selectedEscandalloRecipe, precioVenta, allIngredients);
-    }, [selectedEscandalloRecipe, precioVenta, allIngredients]);
-
-    const handleSaveToHistory = async (reportData: any) => {
-        if (!selectedEscandalloRecipe) return;
-        const { baseImponible, ...dataToSave } = reportData;
-        await addDoc(collection(db, escandallosColPath), {
-            recipeId: selectedEscandalloRecipe.id, recipeName: selectedEscandalloRecipe.nombre, ...dataToSave, createdAt: serverTimestamp()
-        });
-        showToast('Escandallo guardado en el historial.', 'success');
-    };
-
-    const handleLoadHistory = (item: any) => {
-        const recipe = allRecipes.find(r => r.id === item.recipeId) || null;
-        if (recipe) {
-            setSelectedEscandalloRecipe(recipe);
-            setPrecioVenta(item.precioVenta);
-            // setLayer('cost'); // Optional: could auto-switch
-        }
-    };
-
-    const handleSaveBatchToPizarron = async () => {
-        if (!batchResult) return;
-        const { meta } = batchResult;
-        await addDoc(collection(db, `artifacts/${appId}/public/data/pizarron-tasks`), {
-            content: `[Batch] Producir ${meta.targetQuantity} ${meta.targetUnit} de ${meta.recipeName}. Dilución: ${meta.includeDilution ? 'Sí' : 'No'}`,
-            status: 'Ideas', category: 'Desarrollo', createdAt: serverTimestamp(), boardId: 'general'
-        });
-        showToast("Tarea de batch guardada en el Pizarrón.", 'success');
-    };
-
-    // --- Zero Waste State ---
-    const [zwSelectedIngredients, setZwSelectedIngredients] = React.useState<string[]>([]);
-    const [zwRawIngredients, setZwRawIngredients] = React.useState("");
-    const [zwLoading, setZwLoading] = React.useState(false);
-    const [zwError, setZwError] = React.useState<string | null>(null);
-    const [zwRecipeResults, setZwRecipeResults] = React.useState<ZeroWasteResult[]>([]);
-    const [zwHistory, setZwHistory] = React.useState<ZeroWasteResult[]>([]);
-
-    const handleZwIngredientToggle = (ingredientName: string) => {
-        setZwSelectedIngredients(prev => prev.includes(ingredientName) ? prev.filter(name => name !== ingredientName) : [...prev, ingredientName]);
-    };
-
-    const handleSendToZeroWaste = (ing: Ingredient) => {
-        setZwSelectedIngredients(prev => prev.includes(ing.nombre) ? prev : [...prev, ing.nombre]);
-        setLayer('optimization');
-    };
-
-    const handleGenerateZeroWasteRecipes = async () => {
-        setZwLoading(true);
-        setZwError(null);
-        setZwRecipeResults([]);
-        const promptIngredients = [...zwSelectedIngredients, zwRawIngredients].filter(Boolean).join(', ');
-        if (!promptIngredients) {
-            setZwError("Por favor, seleccione o introduzca al menos un ingrediente.");
-            setZwLoading(false);
-            return;
-        }
-        const systemPrompt = "Eres un chef de I+D 'zero waste' de élite. NO eres un bartender. Tu foco es crear *elaboraciones complejas* (cordiales, siropes, polvos, aceites, shrubs) a partir de desperdicios, para que *luego* un bartender las use. NO generes un cóctel completo. Tu respuesta debe ser estrictamente un array JSON.";
-        const userQuery = `Usando estos ingredientes: ${promptIngredients}. Genera de 3 a 5 elaboraciones 'zero waste'. Devuelve un array JSON. Cada objeto debe tener: 'nombre' (string), 'ingredientes' (string con markdown para una lista de viñetas), 'preparacion' (string con markdown para una lista numerada).`;
-        const generationConfig = {
-            responseMimeType: "application/json",
-            responseSchema: {
-                type: Type.ARRAY,
-                items: {
-                    type: Type.OBJECT,
-                    properties: { nombre: { type: Type.STRING }, ingredientes: { type: Type.STRING }, preparacion: { type: Type.STRING }, },
-                },
-            },
-        };
-        try {
-            const response = await callGeminiApi(userQuery, systemPrompt, generationConfig);
-            const results = JSON.parse(response.text) as ZeroWasteResult[];
-            setZwRecipeResults(results);
-            setZwHistory(prev => [...results, ...prev]);
-        } catch (e: any) {
-            setZwError(e.message || 'An unknown error occurred');
-            console.error(e);
-        } finally {
-            setZwLoading(false);
-        }
-    };
-
-    const handleZwHistorySelect = (result: ZeroWasteResult) => {
-        setZwRecipeResults([result]);
-        setLayer('optimization');
-    };
-
-    // Calculate colors
-    const currentGradient = activeLayer === 'optimization' ? 'lime' :
-        activeLayer === 'cost' ? 'red' :
-            viewMode === 'stock' ? 'ice' :
-                viewMode === 'recipes' ? 'violet' : 'emerald'; // Market
-
-    // --- RECIPE IMPORT HANDLERS ---
-    const handleRecipeCsvImport = async (file: File) => {
-        if (!db || !userId) return;
-        setLoading(true);
-        try {
-            const text = await file.text();
-
-            // 1. Parse
-            const { recipes, newIngredients } = parseCsvRecipes(text, allIngredients);
-
-            if (recipes.length === 0) {
-                showToast("No se encontraron recetas válidas en el CSV.", 'error');
-                return;
-            }
-
-            const batch = writeBatch(db);
-
-            // 2. Create Missing Ingredients
-            const createdIngredientIds = new Map<string, string>(); // name -> id
-
-            if (newIngredients.length > 0) {
-                for (const name of newIngredients) {
-                    const newDocRef = doc(collection(db, ingredientsColPath));
-                    batch.set(newDocRef, {
-                        nombre: name,
-                        categoria: 'Importado',
-                        precioCompra: 0,
-                        unidadCompra: 'und',
-                        stockActual: 0,
-                        proveedores: []
-                    });
-                    createdIngredientIds.set(name.toLowerCase(), newDocRef.id);
-                }
-            }
-
-            // 3. Create Recipes (linking to existing or new ingredients)
-            const recipesCollection = collection(db, `users/${userId}/grimorio`);
-
-            recipes.forEach(recipe => {
-                const newRecipeRef = doc(recipesCollection);
-
-                // Fix ingredient IDs for newly created ones
-                const fixedIngredients = recipe.ingredientes?.map(line => {
-                    if (!line.ingredientId && line.nombre) {
-                        const newId = createdIngredientIds.get(line.nombre.toLowerCase());
-                        if (newId) return { ...line, ingredientId: newId };
-                    }
-                    return line;
-                });
-
-                batch.set(newRecipeRef, {
-                    ...recipe,
-                    ingredientes: fixedIngredients,
-                    createdAt: serverTimestamp(),
-                    updatedAt: serverTimestamp()
-                });
-            });
-
-            await batch.commit();
-            queryClient.invalidateQueries({ queryKey: ['recipes'] });
-            queryClient.invalidateQueries({ queryKey: ['ingredients'] });
-
-            showToast(`Importación exitosa: ${recipes.length} recetas, ${newIngredients.length} ingredientes nuevos.`, 'success');
-
-        } catch (error) {
-            console.error("Error CSV Import:", error);
-            showToast("Error al importar el archivo CSV.", 'error');
-        } finally {
-            setLoading(false);
-            setShowImportChoiceModal(false);
-        }
-    };
-
-    const handleRecipePdfImportDirect = (file: File) => {
-        if (!db || !userId || !storage) return;
-        setLoading(true);
-        importPdfRecipes(file, db, storage, userId, allIngredients, useOcr)
-            .then(async (newRecipes) => {
-                if (newRecipes.length === 0) {
-                    showToast("No se encontraron recetas.", 'error');
-                    return;
-                }
-                const batch = writeBatch(db);
-                const recipesCollection = collection(db, `users/${userId}/grimorio`);
-                newRecipes.forEach(recipe => batch.set(doc(recipesCollection), recipe));
-                await batch.commit();
-                queryClient.invalidateQueries({ queryKey: ['recipes'] });
-                showToast(`${newRecipes.length} recetas importadas.`, 'success');
-            })
-            .catch(err => {
-                console.error(err);
-                showToast("Error importando PDF.", 'error');
-            })
-            .finally(() => {
-                setLoading(false);
-                setShowImportChoiceModal(false);
-            });
-    };
 
     const handleConfigureBatch = (amount: number, unit: 'Litros' | 'Botellas') => {
         setBatchTargetQty(amount.toString());
         setBatchTargetUnit(unit);
         setEscandallatorSubTab('production');
     };
-
-    // --- Stable Callbacks for RecipeList Optimization ---
-    const handleSelectRecipeCard = React.useCallback((r: Recipe) => {
-        setSelectedRecipeId(r.id);
-    }, []);
-
-    const handleAddRecipeClick = React.useCallback(() => {
-        onOpenRecipeModal(null);
-    }, [onOpenRecipeModal]);
-
-    const handleDragStartWrapper = React.useCallback((e: React.DragEvent, r: Recipe) => {
-        if (onDragRecipeStart) onDragRecipeStart(r);
-    }, [onDragRecipeStart]);
 
     const handleToggleRecipeSelection = React.useCallback((id: string) => {
         setSelectedRecipes(prev => prev.includes(id) ? prev.filter(r => r !== id) : [...prev, id]);
@@ -1137,30 +798,22 @@ const GrimoriumInner: React.FC<GrimoriumViewProps> = ({ onOpenRecipeModal, onDra
                 />
             )}
 
-            <Modal isOpen={showCsvImportModal} onClose={() => setShowCsvImportModal(false)} title="Importar Ingredientes CSV">
-                <div className="space-y-4 p-4">
-                    <p className="text-sm text-slate-500">Formato: Nombre;Categoria;Precio;Unidad.</p>
-                    <div className="space-y-2">
-                        <Label>Proveedor (Opcional)</Label>
-                        <select
-                            className="w-full h-10 pl-3 pr-8 bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-xl text-sm"
-                            value={csvSupplierId}
-                            onChange={(e) => setCsvSupplierId(e.target.value)}
-                        >
-                            <option value="">-- Sin asignar --</option>
-                            {suppliers.map(s => (
-                                <option key={s.id} value={s.id}>{s.name}</option>
-                            ))}
-                        </select>
-                        <p className="text-[10px] text-slate-400">Todos los ingredientes importados se vincularán a este proveedor.</p>
-                    </div>
-                    <Input type="file" accept=".csv" onChange={handleCsvImport} />
-                </div>
-                <div className="p-4 border-t border-slate-100 flex justify-end gap-2">
-                    <Button variant="ghost" onClick={() => setShowCsvImportModal(false)}>Cancelar</Button>
-                    <Button onClick={() => setShowCsvImportModal(false)}>Cerrar</Button>
-                </div>
-            </Modal>
+            <GrimoriumImportModals
+                showCsvImport={showCsvImportModal}
+                onCloseCsv={() => setShowCsvImportModal(false)}
+                onCsvImport={handleCsvImport}
+                csvSupplierId={csvSupplierId}
+                setCsvSupplierId={setCsvSupplierId}
+                suppliers={suppliers}
+                showTxtImport={showTxtImportModal}
+                onCloseTxt={() => setShowTxtImportModal(false)}
+                onTxtImport={handleTxtImport}
+                showPdfImport={showPdfImportModal}
+                onClosePdf={() => setShowPdfImportModal(false)}
+                onPdfImport={handlePdfImport}
+                useOcr={useOcr}
+                setUseOcr={setUseOcr}
+            />
 
             <Toast
                 message={toast.message}
@@ -1168,8 +821,6 @@ const GrimoriumInner: React.FC<GrimoriumViewProps> = ({ onOpenRecipeModal, onDra
                 isVisible={toast.isVisible}
                 onClose={() => setToast(prev => ({ ...prev, isVisible: false }))}
             />
-            <Modal isOpen={showTxtImportModal} onClose={() => setShowTxtImportModal(false)} title="Importar Recetas TXT"><div className="space-y-4 p-4"><p className="text-sm text-slate-500">Formato Nexus TXT.</p><Input type="file" accept=".txt" onChange={handleTxtImport} /></div></Modal>
-            <Modal isOpen={showPdfImportModal} onClose={() => setShowPdfImportModal(false)} title="Importar Recetas PDF PRO"><div className="space-y-4 p-4"><div className="flex items-center gap-2 mb-2"><input type="checkbox" checked={useOcr} onChange={() => setUseOcr(!useOcr)} id="ocr" /><label htmlFor="ocr">Usar OCR</label></div><Input type="file" accept=".pdf" onChange={handlePdfImport} /></div></Modal>
 
             <ImportRecipeModal
                 isOpen={showImportChoiceModal}

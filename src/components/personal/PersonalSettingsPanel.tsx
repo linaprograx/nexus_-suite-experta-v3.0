@@ -85,8 +85,8 @@ export const PersonalSettingsPanel: React.FC<PersonalSettingsPanelProps> = ({
                 <h3 className="text-lg font-bold text-slate-900 dark:text-white px-2">Configuración</h3>
 
                 {/* Appearance */}
-                <Card className="p-4 bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm">
-                    <div className="flex items-center gap-2 mb-4 text-xs font-bold text-slate-400 uppercase tracking-wider">
+                <Card className="p-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm">
+                    <div className="flex items-center gap-2 mb-6 text-xs font-bold text-slate-400 uppercase tracking-wider">
                         <Icon svg={ICONS.moon} className="w-4 h-4" />
                         Apariencia
                     </div>
@@ -95,13 +95,13 @@ export const PersonalSettingsPanel: React.FC<PersonalSettingsPanelProps> = ({
                 </Card>
 
                 {/* Security */}
-                <Card className="p-4 bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm">
-                    <div className="flex items-center gap-2 mb-4 text-xs font-bold text-slate-400 uppercase tracking-wider">
+                <Card className="p-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm">
+                    <div className="flex items-center gap-2 mb-6 text-xs font-bold text-slate-400 uppercase tracking-wider">
                         <Icon svg={ICONS.lock} className="w-4 h-4" />
                         Seguridad
                     </div>
-                    <Button variant="outline" size="sm" className="w-full justify-start mb-2 group hover:border-pink-500/50 hover:text-pink-500 transition-all" onClick={handlePasswordChangeClick}>
-                        <Icon svg={ICONS.key} className="w-4 h-4 mr-2 group-hover:text-pink-500" />
+                    <Button variant="outline" size="sm" className="w-full justify-center mb-6 py-4 border-slate-200 text-slate-600 hover:text-slate-900 font-bold" onClick={handlePasswordChangeClick}>
+                        <Icon svg={ICONS.key} className="w-4 h-4 mr-2" />
                         Cambiar Contraseña
                     </Button>
                     <Switch label="Autenticación 2FA" checked={twoFactor} onChange={toggleTwoFactor} />
@@ -109,8 +109,8 @@ export const PersonalSettingsPanel: React.FC<PersonalSettingsPanelProps> = ({
                 </Card>
 
                 {/* App Config */}
-                <Card className="p-4 bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm">
-                    <div className="flex items-center gap-2 mb-4 text-xs font-bold text-slate-400 uppercase tracking-wider">
+                <Card className="p-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm">
+                    <div className="flex items-center gap-2 mb-6 text-xs font-bold text-slate-400 uppercase tracking-wider">
                         <Icon svg={ICONS.settings} className="w-4 h-4" />
                         Aplicación
                     </div>

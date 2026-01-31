@@ -8,7 +8,8 @@ import { CerebrityHistorySidebar } from '../components/cerebrity/CerebrityHistor
 import { TheLabHistorySidebar } from '../components/cerebrity/TheLabHistorySidebar';
 import PowerTreeColumn from '../components/cerebrity/PowerTreeColumn';
 import LabView from './LabView';
-import { callGeminiApi, generateImage } from '../utils/gemini';
+import { generateText } from '../services/ai/textService';
+import { ImageGenerator } from '../lib/ai/image/imageGenerator';
 import { Type } from "@google/genai";
 import { Modal } from '../components/ui/Modal';
 import { Button } from '../components/ui/Button';
@@ -130,21 +131,13 @@ const CerebrityView: React.FC<CerebrityViewProps> = ({ db, userId, storage, appI
     return orchestratorActions.filterTrendsByAvatar(trendResults);
   }, [trendResults, orchestratorActions]);
 
+  /* Safe JSON Parse Helper */
   const safeJsonParse = (raw: string): any => {
     try {
-      return JSON.parse(raw);
+      const cleaned = raw.replace(/```json/g, "").replace(/```/g, "").trim();
+      return JSON.parse(cleaned);
     } catch {
-      try {
-        const cleaned = raw.replace(/```json/g, "").replace(/```/g, "").trim();
-        return JSON.parse(cleaned);
-      } catch {
-        try {
-          // Fallback for more complex cases, not implemented yet.
-          return { summary: raw };
-        } catch {
-          return { summary: "Error irrecuperable al parsear la respuesta." };
-        }
-      }
+      return { summary: "Error al parsear respuesta IA: " + raw.substring(0, 50) + "..." };
     }
   };
 
@@ -171,10 +164,20 @@ const CerebrityView: React.FC<CerebrityViewProps> = ({ db, userId, storage, appI
       const powerPrompt = getPowerPrompt('Mejora de Storytelling', storytellingSource, storytellingTheme);
       if (!powerPrompt) throw new Error("Poder no implementado.");
 
-      const response = await callGeminiApi(
+      const { CORE_CREATIVE_DIRECTOR } = await import('../services/ai/systemPersonas');
+
+      // Prompt Engineering for JSON
+      const systemInstruction = `
+      ${CORE_CREATIVE_DIRECTOR}
+      
+      SPECIFIC EXPERTISE: Eres un copywriter experto en storytelling para coctelería.
+      
+      CRITICAL: Return ONLY valid JSON matching the schema below.
+      ${JSON.stringify(powerPrompt.responseSchema, null, 2)}`;
+
+      const response = await generateText(
         powerPrompt.prompt,
-        powerPrompt.systemInstruction,
-        { responseMimeType: "application/json", responseSchema: powerPrompt.responseSchema }
+        systemInstruction
       );
 
       const data = safeJsonParse(response.text);
@@ -219,8 +222,19 @@ const CerebrityView: React.FC<CerebrityViewProps> = ({ db, userId, storage, appI
     };
 
     try {
-      const response = await callGeminiApi(fullPrompt, "Eres un experto mixólogo y cazador de tendencias.", generationConfig);
-      const data: TrendResult[] = JSON.parse(response.text);
+      // JSON enforcement via prompt since Gateway is text-only
+      const fullPromptWithSchema = `${fullPrompt}\n\nIMPORTANT: Return ONLY valid JSON matching the schema.`;
+
+      const response = await generateText(fullPromptWithSchema, "Eres un experto mixólogo y cazador de tendencias.");
+
+      let data: TrendResult[] = [];
+      try {
+        data = safeJsonParse(response.text);
+        if (!Array.isArray(data)) throw new Error("Format invalid");
+      } catch (e) {
+        // Fallback or retry logic could go here
+        throw new Error("Failed to parse Trends JSON");
+      }
 
       try {
         const trendDoc = {
@@ -388,10 +402,25 @@ const CerebrityView: React.FC<CerebrityViewProps> = ({ db, userId, storage, appI
       const powerPrompt = getPowerPrompt(powerName, contextText);
       if (!powerPrompt) throw new Error("Poder no implementado.");
 
-      const response = await callGeminiApi(
+      // Build Prompt with explicit Schema instruction
+      // Dynamic import to avoid cycles or load delay
+      const { CORE_CREATIVE_DIRECTOR } = await import('../services/ai/systemPersonas');
+
+      const schemaString = JSON.stringify(powerPrompt.responseSchema, null, 2);
+
+      // Merge Core Persona + Specific System Instruction + JSON Enforcement
+      const systemInstruction = `
+      ${CORE_CREATIVE_DIRECTOR}
+      
+      SPECIFIC EXPERTISE: ${powerPrompt.systemInstruction || "Experto en mixología."}
+      
+      CRITICAL: Return ONLY valid JSON.
+      Expected Schema:
+      ${schemaString}`;
+
+      const response = await generateText(
         powerPrompt.prompt,
-        powerPrompt.systemInstruction || "Eres un experto en mixología y creatividad.",
-        { responseMimeType: "application/json", responseSchema: powerPrompt.responseSchema }
+        systemInstruction
       );
 
       const data = safeJsonParse(response.text);
@@ -470,8 +499,20 @@ const CerebrityView: React.FC<CerebrityViewProps> = ({ db, userId, storage, appI
         };
       case 'Optimización del Garnish':
         return {
-          prompt: `Basado en ${context}, genera 3 propuestas de garnish: simple (60-90 palabras), avanzado (80-120 palabras) y experto (100-140 palabras). Experto debe ser multisensorial. Devuelve JSON con simple, avanzado, experto.`,
-          systemInstruction: 'Eres un experto en garnish creativo.',
+          prompt: `Basado en ${context}, genera 3 propuestas de garnish con ESTRICTA PRECISIÓN TÉCNICA:
+          
+          1. Opción Minimalista (Elegancia pura)
+          2. Opción Avanzada (Técnica moderna)
+          3. Opción Conceptual (Multisensorial/Experiencial)
+
+          PARA CADA OPCIÓN DETALLA:
+          - Herramientas exactas (ej. "Tijeras de precisión", "Pelador Y en juliana").
+          - Técnica de corte o preparación (ej. "Corte al bies 45º", "Deshidratado 6h a 50ºC").
+          - Posicionamiento exacto en el vaso.
+          - Justificación olfativa/gustativa (Por qué funciona).
+          
+          Devuelve JSON con claves: 'simple', 'avanzado', 'experto'.`,
+          systemInstruction: 'Eres un experto en garnish de alta cocina y diseño industrial. No uses términos vagos como "cortar". Usa términos técnicos.',
           responseSchema: genericSchema
         };
       case 'Mejora de Storytelling': {
@@ -565,11 +606,30 @@ const CerebrityView: React.FC<CerebrityViewProps> = ({ db, userId, storage, appI
 
       // Map Orchestrator Output to CerebrityResult structure
       // Note: We map 'ejecucion_tecnica' to 'mejora' approx, or combine fields.
+      // Dynamic Visual Prompt Construction
+      // We extract key visual elements to prevent "generic cup" syndrome
+      const techDetails = worldClassResult.ejecucion_tecnica || "";
+      const visualCues = [
+        worldClassResult.titulo,
+        techDetails.includes("hielo") ? "clear ice block" : "",
+        techDetails.includes("espuma") ? "velvet foam" : "",
+        techDetails.includes("rojo") ? "ruby red liquid" : "",
+        techDetails.includes("azul") ? "deep blue liquid" : "",
+        techDetails.includes("verde") ? "vibrant green liquid" : "",
+        techDetails.includes("oro") ? "gold flakes" : "",
+        techDetails.includes("humo") ? "subtle smoke" : "",
+        // Add random variaiton hints
+        Math.random() > 0.5 ? "minimalist concrete bar" : "dark moody marble bar",
+        Math.random() > 0.5 ? "top down angle" : "45 degree angle macro"
+      ].filter(Boolean).join(", ");
+
       const textResult: CerebrityResult & { isWorldClass?: boolean } = {
         mejora: `[${worldClassResult.titulo}] ${worldClassResult.intencion_cognitiva}\n\nDECISIONES CLAVE:\n${worldClassResult.decisiones_clave.join('\n- ')}\n\nEJECUCIÓN TÉCNICA:\n${worldClassResult.ejecucion_tecnica}`,
         garnishComplejo: "Garnish alineado con " + worldClassResult.firma_world_class,
         storytelling: worldClassResult.is_world_class ? `NARRATIVA WORLD CLASS: ${worldClassResult.firma_world_class} - ${worldClassResult.intencion_cognitiva}` : worldClassResult.intencion_cognitiva,
-        promptImagen: `Professional cocktail photography, ${worldClassResult.titulo}, ${worldClassResult.ejecucion_tecnica}, cinematic lighting, 8k, highly detailed`,
+        // The raw input to the Image Generator.
+        // We rely on ImageGenerator to handle the "Style" but we provide the "Subject" specifics here.
+        promptImagen: `Cocktail: ${worldClassResult.titulo}. Visual cues: ${visualCues}. Garnish details from: ${techDetails.slice(0, 100)}.`,
         imageUrl: null,
         isWorldClass: worldClassResult.is_world_class
       };
@@ -578,14 +638,10 @@ const CerebrityView: React.FC<CerebrityViewProps> = ({ db, userId, storage, appI
 
       setResult(textResult);
 
-      // 2. Image Generation (Unified Engine -> "Nano Banana")
+      // 2. Image Generation (Unified Engine)
       setImageLoading(true);
 
-      // Use the unified ImageGenerator (Pollinations/Gemini hybrid)
-      // Import it first! (Adding import in next step if missing, or assuming global available in replacements)
-      // We need to fetch the helper
-      const { ImageGenerator } = await import('../lib/ai/image/imageGenerator'); // Dynamic import to avoid top-level issues if not ready
-
+      // We use the imported ImageGenerator directly (no dynamic import needed if top-level works)
       const imageUrlOrBase64 = await ImageGenerator.generateImageUrl(textResult.promptImagen);
       let downloadURL = imageUrlOrBase64;
 

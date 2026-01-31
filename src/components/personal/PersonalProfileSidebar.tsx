@@ -25,9 +25,9 @@ export const PersonalProfileSidebar: React.FC<PersonalProfileSidebarProps> = ({
 
     return (
         <div className="h-full flex flex-col gap-6 overflow-y-auto custom-scrollbar p-1">
-            <Card className="flex flex-col items-center p-8 bg-transparent border-0 flex-shrink-0">
+            <Card className="flex flex-col items-center p-8 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm flex-shrink-0">
                 <div className="relative group">
-                    <div className="absolute -inset-0.5 bg-gradient-to-r from-pink-500 to-violet-500 rounded-full blur opacity-75 group-hover:opacity-100 transition duration-1000 group-hover:duration-200 animate-tilt"></div>
+                    <div className="absolute -inset-0.5 bg-gradient-to-r from-emerald-400 to-cyan-500 rounded-full blur opacity-75 group-hover:opacity-100 transition duration-1000 group-hover:duration-200 animate-tilt"></div>
                     <img
                         src={newAvatarPreview || profile.photoURL || `https://ui-avatars.com/api/?name=${profile.displayName || 'U'}&background=random`}
                         alt="Profile"
@@ -44,24 +44,24 @@ export const PersonalProfileSidebar: React.FC<PersonalProfileSidebarProps> = ({
                 <h2 className="mt-4 text-2xl font-bold text-slate-900 dark:text-white text-center">
                     {profile.displayName || 'Usuario Nexus'}
                 </h2>
-                <p className="text-indigo-500 font-medium text-sm text-center">
+                <p className="text-cyan-600 dark:text-cyan-400 font-bold text-sm text-center uppercase tracking-wider">
                     {profile.jobTitle || 'Mixólogo'}
                 </p>
 
                 <div className="mt-6 w-full flex justify-center gap-2">
                     {profile.instagramHandle && (
-                        <div className="flex items-center text-slate-400 text-sm bg-slate-100 dark:bg-slate-800 px-3 py-1 rounded-full">
+                        <div className="flex items-center text-slate-500 text-xs font-medium bg-slate-100 dark:bg-slate-800 px-3 py-1 rounded-full border border-slate-200 dark:border-slate-700">
                             <Icon svg={ICONS.tag} className="w-3 h-3 mr-1" />
                             {profile.instagramHandle}
                         </div>
                     )}
                 </div>
 
-                <div className="mt-8 w-full">
-                    <Button variant="outline" className="w-full" onClick={onEditProfile}>
+                <div className="mt-8 w-full space-y-3">
+                    <Button variant="outline" className="w-full text-xs uppercase font-bold tracking-widest" onClick={onEditProfile}>
                         Editar Perfil
                     </Button>
-                    <Button variant="default" className="w-full mt-2" onClick={onSaveProfile}>
+                    <Button variant="default" className="w-full bg-slate-900 text-white hover:bg-slate-800 text-xs uppercase font-bold tracking-widest" onClick={onSaveProfile}>
                         Guardar Cambios
                     </Button>
                 </div>

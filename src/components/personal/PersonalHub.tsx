@@ -23,7 +23,7 @@ export const PersonalHub: React.FC<PersonalHubProps> = ({ stats }) => {
             {/* Nexus ID Card (Epicenter) - Dynamic Styling */}
             <div className={`relative overflow-hidden rounded-3xl text-white p-8 min-h-[300px] flex flex-col justify-between group transition-all duration-500
                 ${(currentPlan?.name && (currentPlan.name.toUpperCase().includes('EXPERT') || currentPlan.name.toUpperCase().includes('JUPITER')))
-                    ? 'bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-slate-900 via-fuchsia-900 to-slate-900 shadow-[0_0_40px_rgba(192,38,211,0.6)] ring-1 ring-fuchsia-500'
+                    ? 'bg-gradient-to-br from-[#2e1065] via-[#4c1d95] to-[#581c87] shadow-[0_20px_50px_rgba(76,29,149,0.5)] ring-1 ring-white/10'
                     : 'bg-[linear-gradient(135deg,#C1005B_0%,#E83A8A_50%,#FF9BCB_100%)] shadow-[0_20px_50px_rgba(232,58,138,0.3),inset_0_2px_4px_rgba(255,255,255,0.3)]'
                 }`}>
 
@@ -56,16 +56,16 @@ export const PersonalHub: React.FC<PersonalHubProps> = ({ stats }) => {
 
                 <div className="relative z-10 mt-8 grid grid-cols-3 gap-8">
                     <div>
-                        <span className="block text-[10px] font-bold text-white/70 uppercase tracking-widest mb-1">Recipes</span>
+                        <span className="block text-[10px] font-bold text-purple-200 uppercase tracking-widest mb-1">Recipes</span>
                         <span className="text-3xl font-bold tracking-tight text-white">{stats.recipes}</span>
                     </div>
                     <div>
-                        <span className="block text-[10px] font-bold text-white/70 uppercase tracking-widest mb-1">Avg. Score</span>
-                        <span className="text-3xl font-bold text-emerald-200 drop-shadow-[0_0_10px_rgba(110,231,183,0.5)]">{stats.avgScore}%</span>
+                        <span className="block text-[10px] font-bold text-purple-200 uppercase tracking-widest mb-1">Avg. Score</span>
+                        <span className="text-3xl font-bold text-emerald-400 drop-shadow-[0_0_15px_rgba(52,211,153,0.5)]">{stats.avgScore}%</span>
                     </div>
                     <div>
-                        <span className="block text-[10px] font-bold text-white/70 uppercase tracking-widest mb-1">Contribution</span>
-                        <span className="text-3xl font-bold text-purple-200 drop-shadow-[0_0_10px_rgba(167,139,250,0.5)]">{stats.ideas}</span>
+                        <span className="block text-[10px] font-bold text-purple-200 uppercase tracking-widest mb-1">Contribution</span>
+                        <span className="text-3xl font-bold text-white drop-shadow-[0_0_15px_rgba(255,255,255,0.3)]">{stats.ideas}</span>
                     </div>
                 </div>
 

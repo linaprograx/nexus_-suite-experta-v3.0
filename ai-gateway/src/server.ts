@@ -52,6 +52,43 @@ app.post('/vertex/text', async (req: Request, res: Response) => {
         console.error("Vertex Text Error:", error.message);
         res.status(502).json({ error: error.message });
     }
+}
+});
+
+app.post('/vertex/search', async (req: Request, res: Response) => {
+    try {
+        const { prompt } = req.body;
+        if (!prompt) {
+            res.status(400).json({ error: "Missing 'prompt' in body" });
+            return;
+        }
+
+        const { generateWithSearch } = await import('./vertex/client.js');
+        const result = await generateWithSearch(prompt);
+        res.json(result);
+
+    } catch (error: any) {
+        console.error("Vertex Search Error:", error.message);
+        res.status(502).json({ error: error.message });
+    }
+});
+
+app.post('/vertex/multimodal', async (req: Request, res: Response) => {
+    try {
+        const { parts } = req.body;
+        if (!parts || !Array.isArray(parts)) {
+            res.status(400).json({ error: "Missing 'parts' array in body" });
+            return;
+        }
+
+        const { generateMultimodal } = await import('./vertex/client.js');
+        const result = await generateMultimodal(parts);
+        res.json(result);
+
+    } catch (error: any) {
+        console.error("Vertex Multimodal Error:", error.message);
+        res.status(502).json({ error: error.message });
+    }
 });
 
 app.post('/vertex/image', async (req: Request, res: Response) => {

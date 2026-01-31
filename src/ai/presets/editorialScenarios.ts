@@ -30,53 +30,53 @@ export const EDITORIAL_SCENARIOS: Record<ScenarioId, EditorialScenario> = {
     TABLETOP_LUXE: {
         id: 'TABLETOP_LUXE',
         label: 'Michelin Dining',
-        internalDescription: 'Daytime luxury restaurant ambience, window light, natural organic textures.',
+        internalDescription: 'Luxury tabletop surface (stone, wood, mineral), Natural light from side or back, Soft shadows, Michelin restaurant aesthetic.',
         promptFragment: {
-            environment: "Premium stone or fine wood tabletop surface with real projected shadows, blurred upscale restaurant interior background (bokeh depth).",
-            lighting: "Natural lateral window light, soft directional shadows, no harsh flash, organic daylight feel.",
-            camera: "Full-frame DSLR, 85mm portrait lens, shallow depth of field, sharp focus on subject.",
-            mood: "Michelin-star culinary excellence, sophisticated, organic luxury."
+            environment: "Luxury tabletop surface (stone, marble, fine wood), michelin star restaurant background, organic textures",
+            lighting: "Natural soft window light from side or back, soft realistic shadows, no harsh flash",
+            camera: "Full-frame Hasselblad style, 85mm lens, natural compression, elegant depth of field",
+            mood: "Michelin-level culinary excellence, sophisticated, organic luxury"
         },
-        negativeConstraints: [...COMMON_NEGATIVE_CONSTRAINTS, "studio background", "flat lighting", "night"]
+        negativeConstraints: [...COMMON_NEGATIVE_CONSTRAINTS, "studio background", "flat lighting", "night", "neon"]
     },
 
     BAR_AT_NIGHT: {
         id: 'BAR_AT_NIGHT',
         label: 'Luxury Bar Night',
-        internalDescription: 'Evening service, dark ambience, warm practical lights, cinematic contrast.',
+        internalDescription: 'Dark, moody bar environment, Subtle bokeh lights, Controlled highlights, Night-time elegance.',
         promptFragment: {
-            environment: "Dark polish bar counter surface, dim luxury speakeasy environment, warm bokeh lights in background.",
-            lighting: "Low-key cinematic lighting, controlled highlights, deep shadows, moody contrast.",
-            camera: "35mm or 50mm f/1.4 lens, cinematic wide aperture, rich low-light performance.",
-            mood: "Exclusive night service, cinematic, intimate, premium nightlife."
+            environment: "Dark moody luxury bar environment, subtle bokeh lights in background, polish bar counter",
+            lighting: "Low-key cinematic lighting, controlled highlights, deep shadows, moody contrast, warm practical lights",
+            camera: "Full-frame camera, 50mm f/1.2 lens, cinematic aperture, rich low-light performance",
+            mood: "Exclusive night service, cinematic, intimate, premium nightlife elegance"
         },
-        negativeConstraints: [...COMMON_NEGATIVE_CONSTRAINTS, "daylight", "bright window", "white background"]
+        negativeConstraints: [...COMMON_NEGATIVE_CONSTRAINTS, "daylight", "bright window", "white background", "sunlight"]
     },
 
     STUDIO_EDITORIAL: {
         id: 'STUDIO_EDITORIAL',
         label: 'Studio Clean',
-        internalDescription: 'Neutral professional studio, magazine look, focus purely on product.',
+        internalDescription: 'Clean background (not pure white unless requested), Commercial product photography, Even, precise lighting.',
         promptFragment: {
-            environment: "Neutral professional studio setting, smooth gradient or high-quality solid texture background, no distracted environment.",
-            lighting: "controlled softbox lighting, perfect rim light, even illumination, commercial photography standard.",
-            camera: "100mm macro lens, f/8 for sharpness front-to-back, crisp details.",
-            mood: "Clean, commercial perfection, high-end magazine editorial."
+            environment: "Clean high-end studio setting, smooth neutral background (grey/beige/soft textured), commercial aesthetic",
+            lighting: "Even precise studio lighting, controlled softbox, perfect rim light, commercial standard",
+            camera: "100mm macro lens, f/8 sharpness, crisp details, commercial product photography",
+            mood: "Clean, commercial perfection, high-end magazine editorial, masterclass"
         },
-        negativeConstraints: [...COMMON_NEGATIVE_CONSTRAINTS, "restaurant", "bar", "complex background", "messy"]
+        negativeConstraints: [...COMMON_NEGATIVE_CONSTRAINTS, "restaurant", "bar", "messy", "dark shadows"]
     },
 
     CONCEPTUAL_MINIMAL: {
         id: 'CONCEPTUAL_MINIMAL',
         label: 'Artistic Minimal',
-        internalDescription: 'Abstract, harsh shadows, geometric composition, gallery style.',
+        internalDescription: 'Minimalist composition, Strong geometry, Artistic shadows, Still realistic, never abstract fantasy.',
         promptFragment: {
-            environment: "Minimalist concrete or monolithic surface, stark composition, architectural background.",
-            lighting: "Strong directional sunlight (hard light), crisp distinct shadows, high contrast.",
-            camera: "50mm lens, sharp focus, geometric framing.",
-            mood: "Avant-garde, artistic, modern gallery aesthetic, experimental."
+            environment: "Minimalist geometric composition, stark architectural surface, monolithic background",
+            lighting: "Strong directional hard light, crisp distinct artistic shadows, high contrast",
+            camera: "50mm lens, sharp focus, geometric framing, architectural photography style",
+            mood: "Avant-garde, artistic, modern gallery aesthetic, experimental but realistic"
         },
-        negativeConstraints: [...COMMON_NEGATIVE_CONSTRAINTS, "clutter", "bokeh", "warm cozy"]
+        negativeConstraints: [...COMMON_NEGATIVE_CONSTRAINTS, "clutter", "bokeh", "warm cozy", "vintage"]
     }
 };
 

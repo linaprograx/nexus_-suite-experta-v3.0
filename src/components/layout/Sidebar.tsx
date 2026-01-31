@@ -29,16 +29,16 @@ const NavLink: React.FC<NavLinkProps> = ({ view, label, icon, currentPath, onNav
   const path = view === 'dashboard' ? '/' : `/${view}`;
   const isActive = currentPath === path || (path !== '/' && currentPath.startsWith(path));
 
-  // Tech Futurista Styles
+  // Tech Futurista Styles (Ultra Premium)
   const baseClasses = "group flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium transition-all duration-300 relative overflow-hidden";
 
   const activeClasses =
-    "bg-slate-200 text-slate-900 dark:bg-gradient-to-r dark:from-indigo-500 dark:via-fuchsia-500 dark:to-emerald-400 " +
-    "dark:text-slate-50 dark:shadow-[0_0_25px_rgba(129,140,248,0.45)] border border-white/60 dark:border-white/10";
+    "text-white bg-gradient-to-r from-blue-500 via-fuchsia-500 to-orange-500 shadow-lg shadow-orange-500/30 " +
+    "border border-white/20 dark:border-white/30";
 
   const inactiveClasses =
-    "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/60 hover:text-slate-900 dark:hover:text-white " +
-    "dark:hover:shadow-[0_0_20px_rgba(15,23,42,0.6)]";
+    "text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 " +
+    "hover:bg-slate-100/50 dark:hover:bg-white/5 transition-colors";
 
   return (
     <button
@@ -88,12 +88,27 @@ export const Sidebar: React.FC<SidebarProps> = ({
       <div className={`h-20 flex items-center px-4 ${isSidebarCollapsed ? 'justify-center' : 'justify-between'}`}>
         <div className={`flex items-center gap-3 ${isSidebarCollapsed ? 'justify-center w-full' : ''}`}>
           {/* Logo Circular */}
-          <div className="w-9 h-9 rounded-2xl bg-[linear-gradient(135deg,#ef4444,#f97316,#eab308,#22c55e,#06b6d4,#3b82f6,#8b5cf6,#ec4899)] shadow-lg flex-shrink-0 animate-pulse" />
+          {/* Logo Circular - Living Energy Sphere (Mini) */}
+          <div className="w-10 h-10 rounded-full relative flex-shrink-0 group-hover:scale-110 transition-transform duration-500">
+            {/* Outer Glow */}
+            <div className="absolute inset-0 rounded-full blur-[10px] bg-orange-500/20 group-hover:bg-orange-500/40 transition-colors duration-500" />
+
+            <div className="w-full h-full rounded-full relative z-10 overflow-hidden shadow-[inset_0_-4px_8px_rgba(0,0,0,0.6),inset_0_2px_6px_rgba(255,255,255,0.4)]">
+              {/* Conic Gradient Core */}
+              <div className="absolute inset-[-50%] w-[200%] h-[200%] animate-[spin_20s_linear_infinite]"
+                style={{ background: 'conic-gradient(from 0deg, #3b82f6, #8b5cf6, #ec4899, #f97316, #fbbf24, #3b82f6)' }} />
+              {/* Surface Gloss */}
+              <div className="absolute top-1.5 left-2 w-3 h-1.5 bg-white/50 blur-[2px] rounded-full -rotate-45" />
+              <div className="absolute inset-0 backdrop-blur-[1px]" />
+            </div>
+          </div>
 
           {!isSidebarCollapsed && (
-            <div className="flex flex-col overflow-hidden">
-              <span className="font-bold text-slate-800 dark:text-slate-100 whitespace-nowrap">Nexus Suite</span>
-              <span className="text-[10px] text-slate-500 dark:text-slate-400 uppercase tracking-wider">AI Bar OS</span>
+            <div className="flex flex-col">
+              <span className="font-bold text-slate-900 dark:text-white leading-tight tracking-tight">Nexus Suite</span>
+              <span className="text-[10px] font-bold text-transparent bg-clip-text bg-gradient-to-r from-amber-500 to-yellow-400 uppercase tracking-wider">
+                Suite Experta v3.0
+              </span>
             </div>
           )}
         </div>
@@ -184,8 +199,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
       <aside
         className={`
             hidden md:flex flex-col fixed left-0 top-0 h-screen z-40
-            bg-gradient-to-br from-indigo-100 via-fuchsia-100 via-amber-100 to-emerald-100 backdrop-blur-xl border-r border-indigo-200/50 shadow-[0_4px_20px_rgba(0,0,0,0.04)]
-            dark:bg-gradient-to-br dark:from-[#1a1b3a] dark:via-[#4a1232] dark:via-[#4a2d12] dark:to-[#092e21] dark:backdrop-blur-xl dark:border-white/5 dark:shadow-[0_0_40px_rgba(15,23,42,0.85)]
+            bg-[#f8fafc]/80 backdrop-blur-2xl border-r border-slate-200/60
+            dark:bg-[#0f172a]/80 dark:backdrop-blur-2xl dark:border-slate-800/60
             transition-all duration-300 ease-in-out
             ${isSidebarCollapsed ? 'w-20' : 'w-64'}
         `}
@@ -206,8 +221,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
       <div
         className={`
             md:hidden fixed inset-y-0 left-0 z-50 w-64
-            bg-gradient-to-br from-indigo-100 via-fuchsia-100 via-amber-100 to-emerald-100 backdrop-blur-xl border-r border-indigo-200/50 shadow-[0_4px_20px_rgba(0,0,0,0.04)]
-            dark:bg-gradient-to-br dark:from-[#1a1b3a] dark:via-[#4a1232] dark:via-[#4a2d12] dark:to-[#092e21] dark:backdrop-blur-xl dark:border-white/5 dark:shadow-[0_0_40px_rgba(15,23,42,0.85)]
+            bg-[#f8fafc]/90 backdrop-blur-2xl border-r border-slate-200/60
+            dark:bg-[#0f172a]/90 dark:backdrop-blur-2xl dark:border-slate-800/60
             transform transition-transform duration-300 ease-in-out
             ${isMobileOpen ? 'translate-x-0' : '-translate-x-full'}
         `}

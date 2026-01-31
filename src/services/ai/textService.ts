@@ -77,3 +77,48 @@ export const generateText = async (userPrompt: string, systemInstruction?: strin
 
     throw new Error("Text Service failed after max retries");
 };
+
+/**
+ * Generates text using Google Search Grounding via Gateway.
+ */
+export const generateWithSearch = async (userPrompt: string, systemInstruction?: string): Promise<TextResponse & { sources?: any[] }> => {
+    const finalPrompt = systemInstruction ? `${systemInstruction}\n\n----------------\n\n${userPrompt}` : userPrompt;
+
+    try {
+        const response = await fetch(`${AI_GATEWAY_URL}/vertex/search`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ prompt: finalPrompt }),
+        });
+
+        if (!response.ok) throw new Error(`Gateway Error: ${response.statusText}`);
+        return await response.json();
+    } catch (error: any) {
+        console.error("Search Service Error:", error);
+        throw error;
+    }
+};
+
+/**
+ * Generates text from Multimodal inputs (Text + Images) via Gateway.
+ */
+export const generateMultimodal = async (parts: any[], systemInstruction?: string): Promise<TextResponse> => {
+    // If systemInstruction exists, prepend it as a text part
+    const finalParts = systemInstruction
+        ? [{ text: systemInstruction }, ...parts]
+        : parts;
+
+    try {
+        const response = await fetch(`${AI_GATEWAY_URL}/vertex/multimodal`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ parts: finalParts }),
+        });
+
+        if (!response.ok) throw new Error(`Gateway Error: ${response.statusText}`);
+        return await response.json();
+    } catch (error: any) {
+        console.error("Multimodal Service Error:", error);
+        throw error;
+    }
+};
