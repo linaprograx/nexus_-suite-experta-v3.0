@@ -3,6 +3,8 @@ import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'fire
 import { useApp } from '../../context/AppContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AuthBackground } from './AuthBackground';
+import { OAuthButtons } from './OAuthButtons';
+import { handleOAuthRedirectResult } from '../../config/oauth';
 
 export const AuthComponent = () => {
   const { auth } = useApp();
@@ -25,6 +27,24 @@ export const AuthComponent = () => {
     window.addEventListener('mousemove', handleMouseMove);
     return () => window.removeEventListener('mousemove', handleMouseMove);
   }, []);
+
+  // Handle OAuth redirect result (for mobile flow)
+  useEffect(() => {
+    const handleRedirect = async () => {
+      if (!auth) return;
+      try {
+        const result = await handleOAuthRedirectResult(auth);
+        if (result) {
+          console.log('OAuth redirect successful:', result.user.email);
+          setSuccess(true);
+        }
+      } catch (error: any) {
+        console.error('OAuth redirect error:', error);
+        setError(error.message || 'Error al procesar inicio de sesión');
+      }
+    };
+    handleRedirect();
+  }, [auth]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -142,10 +162,23 @@ export const AuthComponent = () => {
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 0.6 }}
                     transition={{ delay: 0.7 }}
-                    className="text-[10px] uppercase tracking-[0.25em] font-medium text-slate-300 mb-10"
+                    className="text-[10px] uppercase tracking-[0.25em] font-medium text-slate-300 mb-8"
                   >
                     Suite Experta
                   </motion.p>
+
+                  {/* OAuth Buttons */}
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.75 }}
+                    className="w-full mb-2"
+                  >
+                    <OAuthButtons
+                      onSuccess={() => setSuccess(true)}
+                      onError={(err) => setError(err)}
+                    />
+                  </motion.div>
 
                   <form onSubmit={handleSubmit} className="w-full space-y-5">
                     <motion.div

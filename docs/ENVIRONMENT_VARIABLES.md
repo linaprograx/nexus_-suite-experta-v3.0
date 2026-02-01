@@ -78,6 +78,23 @@ Set environment variables in Vercel Dashboard:
 2. Add each variable with appropriate scope (Production/Preview/Development)
 3. Redeploy to apply changes
 
+## Google OAuth (Optional)
+
+Google OAuth is configured through Firebase Console and Google Cloud Console. No environment variables are required in `.env` files.
+
+### Configuration Steps:
+1. See `docs/GOOGLE_OAUTH_SETUP.md` for detailed setup instructions
+2. Configure OAuth Client ID in Google Cloud Console
+3. Enable Google provider in Firebase Console
+4. No code changes or environment variables needed
+
+### Notes:
+- OAuth Client ID is public and safe to expose in client code
+- Firebase handles all token validation server-side
+- Works automatically once configured in Firebase Console
+
+---
+
 ## Security Notes
 
 ⚠️ **NEVER commit `.env.local` to git**
