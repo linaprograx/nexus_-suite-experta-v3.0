@@ -3,6 +3,7 @@ import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'fire
 import { useApp } from '../../context/AppContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AuthBackground } from './AuthBackground';
+import { OAuthButtons } from './OAuthButtons';
 
 export const AuthComponent = () => {
   const { auth } = useApp();
@@ -212,10 +213,22 @@ export const AuthComponent = () => {
                     </motion.button>
                   </form>
 
+                  {/* OAuth Buttons */}
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 1.1 }}
+                  >
+                    <OAuthButtons
+                      onError={(err) => setError(err)}
+                      onLoading={(isLoading) => setLoading(isLoading)}
+                    />
+                  </motion.div>
+
                   <motion.button
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
-                    transition={{ delay: 1.2 }}
+                    transition={{ delay: 1.3 }}
                     onClick={() => setIsLogin(!isLogin)}
                     className="mt-8 text-[10px] text-slate-500 hover:text-white transition-colors tracking-widest uppercase font-medium"
                   >

@@ -26,3 +26,11 @@ dist-ssr
 
 # Secrets / credentials
 ai-gateway/credentials/**
+
+# Environment variables (NEVER commit these!)
+.env.local
+.env.*.local
+
+# Sentry
+.sentryclirc
+sentry.properties

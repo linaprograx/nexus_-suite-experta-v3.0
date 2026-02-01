@@ -9,8 +9,31 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-// Middleware
-app.use(cors());
+// CORS Configuration - Secure for production
+const allowedOrigins = [
+    'http://localhost:5173',  // Vite dev server
+    'http://localhost:3000',  // Alternative dev port
+    'https://nexus-suite.vercel.app',  // Production domain (update with your actual domain)
+    process.env.FRONTEND_URL  // Dynamic origin from env
+].filter(Boolean);  // Remove undefined values
+
+app.use(cors({
+    origin: (origin, callback) => {
+        // Allow requests with no origin (mobile apps, Postman, etc.)
+        if (!origin) return callback(null, true);
+
+        if (allowedOrigins.includes(origin)) {
+            callback(null, true);
+        } else {
+            console.warn(`⚠️ Blocked CORS request from origin: ${origin}`);
+            callback(new Error('Not allowed by CORS'));
+        }
+    },
+    credentials: true,
+    methods: ['GET', 'POST', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization']
+}));
+
 app.use(express.json());
 
 // Routes
@@ -52,7 +75,6 @@ app.post('/vertex/text', async (req: Request, res: Response) => {
         console.error("Vertex Text Error:", error.message);
         res.status(502).json({ error: error.message });
     }
-}
 });
 
 app.post('/vertex/search', async (req: Request, res: Response) => {
