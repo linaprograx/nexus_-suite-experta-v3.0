@@ -118,6 +118,7 @@ const GrimoriumInner: React.FC<GrimoriumViewProps> = ({ onOpenRecipeModal, onDra
 
     const [escandallatorSubTab, setEscandallatorSubTab] = React.useState<'calculator' | 'production'>('calculator');
 
+
     const {
         searchQuery, setSearchQuery,
         selectedCategory, setSelectedCategory,
@@ -128,6 +129,13 @@ const GrimoriumInner: React.FC<GrimoriumViewProps> = ({ onOpenRecipeModal, onDra
         handleDuplicateRecipe: hookDuplicateRecipe
     } = useGrimorium({ db, userId, allRecipes, allIngredients });
 
+    // Create aliases for backward compatibility
+    const filteredRecipes = hookFilteredRecipes;
+    const handleDuplicateRecipe = hookDuplicateRecipe;
+
+    // Gradient theme for Grimorio
+    const currentGradient = 'emerald' as const;
+
     // Grimorium State
     const [ingredientSearch, setIngredientSearch] = React.useState("");
     const [selectedRecipeId, setSelectedRecipeId] = React.useState<string | null>(null);
@@ -135,6 +143,25 @@ const GrimoriumInner: React.FC<GrimoriumViewProps> = ({ onOpenRecipeModal, onDra
     const [selectedIngredients, setSelectedIngredients] = React.useState<string[]>([]);
     const [selectedIngredientId, setSelectedIngredientId] = React.useState<string | null>(null);
     const [selectedStockItemId, setSelectedStockItemId] = React.useState<string | null>(null); // New state for Stock Selection
+
+    // Filtered ingredients (simple filter by search) - MUST be after ingredientSearch declaration
+    const filteredIngredients = React.useMemo(() => {
+        if (!ingredientSearch) return allIngredients;
+        const search = ingredientSearch.toLowerCase();
+        return allIngredients.filter(ing =>
+            ing.nombre.toLowerCase().includes(search) ||
+            ing.categoria?.toLowerCase().includes(search)
+        );
+    }, [allIngredients, ingredientSearch]);
+
+    // Compute selected items from IDs
+    const selectedRecipe = React.useMemo(() => {
+        return selectedRecipeId ? allRecipes.find(r => r.id === selectedRecipeId) || null : null;
+    }, [selectedRecipeId, allRecipes]);
+
+    const selectedIngredient = React.useMemo(() => {
+        return selectedIngredientId ? allIngredients.find(i => i.id === selectedIngredientId) || null : null;
+    }, [selectedIngredientId, allIngredients]);
 
     // --- Sync Selection with Context ---
     React.useEffect(() => {
