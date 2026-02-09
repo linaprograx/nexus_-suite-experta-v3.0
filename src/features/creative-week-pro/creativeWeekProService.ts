@@ -76,8 +76,30 @@ export const getCreativeWeekInsights = async (tasks: PizarronTask[], userName: s
         }
 
         // Preprocess tasks (last 14 days)
+        // Safe date creation helper
+        const safeDate = (timestamp: any) => {
+            if (!timestamp) return null;
+            let d: Date;
+            if (timestamp.toDate) { // Firebase Timestamp
+                d = timestamp.toDate();
+            } else { // Date string or object
+                d = new Date(timestamp);
+            }
+            return isNaN(d.getTime()) ? null : d;
+        };
+
         const recentTasks = tasks.filter(t => {
-            const dateStr = t.createdAt?.toDate ? t.createdAt.toDate().toISOString() : (t.createdAt ? new Date(t.createdAt).toISOString() : null);
+            const date = safeDate(t.createdAt);
+            if (!date) return false; // Invalid or null date
+
+            let dateStr: string | null = null;
+            try {
+                dateStr = date.toISOString();
+            } catch (e) {
+                console.warn("Error converting date to ISO string:", e);
+                return false; // Date object was invalid, toISOString failed
+            }
+
             return dateStr && isWithinLastDays(dateStr, 14);
         });
 

@@ -21,21 +21,12 @@ import { PrintStyles } from './components/ui/PrintStyles';
 import { AddTaskModal } from './components/pizarron/AddTaskModal';
 import { aiPrefetcher } from './features/prefetch/aiPrefetchEngine';
 
-import { useNexusProfile } from './hooks/useNexusProfile';
 import { useIngredients } from './hooks/useIngredients';
+import { queryClient } from './config/queryClient';
+import { ConnectionStatus } from './components/ui/ConnectionStatus';
+import { useNexusProfile } from './hooks/useNexusProfile';
 
 // ... (other imports remain, but useFirebaseData is gone)
-
-const queryClient = new QueryClient({
-    defaultOptions: {
-        queries: {
-            staleTime: 1000 * 60 * 5, // 5 minutes
-            gcTime: 1000 * 60 * 30, // 30 minutes (formerly cacheTime)
-            refetchOnWindowFocus: false,
-            retry: 1,
-        },
-    },
-});
 
 const MainAppContent: React.FC = () => {
     const { db, userId, auth, storage, appId } = useApp();
@@ -177,6 +168,7 @@ const AppContent: React.FC = () => {
 
     return (
         <>
+            <ConnectionStatus />
             <PrintStyles />
             <MainAppContent />
         </>

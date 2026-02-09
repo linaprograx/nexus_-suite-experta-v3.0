@@ -3,7 +3,7 @@
  * Replaces direct calls to Google Generative AI within the browser.
  */
 
-const AI_GATEWAY_URL = 'http://localhost:3001';
+const AI_GATEWAY_URL = import.meta.env.VITE_AI_GATEWAY_URL || 'http://localhost:3001';
 
 interface TextResponse {
     text: string;

@@ -1,9 +1,8 @@
 import React from 'react';
 import { AppContextType, UserProfile } from '../types';
-import { initializeApp, FirebaseApp, getApps, getApp } from 'firebase/app';
-import { getAuth, onAuthStateChanged, Auth, signInWithCustomToken, User } from 'firebase/auth';
-import { getFirestore, Firestore, doc, onSnapshot } from 'firebase/firestore';
-import { getStorage, FirebaseStorage } from 'firebase/storage';
+import { app, auth, db, storage } from '../config/firebaseApp'; // Use Singletons!
+import { onAuthStateChanged, signInWithCustomToken, User } from 'firebase/auth';
+import { doc, onSnapshot } from 'firebase/firestore';
 import { firebaseConfig } from '../config/firebaseConfig';
 import { PlanTier } from '../core/product/plans.types';
 import { DEFAULT_PLAN_TIER } from '../core/product/plans.config';
@@ -31,44 +30,32 @@ export const useCapabilities = () => {
 };
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-    const [app, setApp] = React.useState<FirebaseApp | null>(null);
-    const [db, setDb] = React.useState<Firestore | null>(null);
-    const [auth, setAuth] = React.useState<Auth | null>(null);
-    const [storage, setStorage] = React.useState<FirebaseStorage | null>(null);
     const [user, setUser] = React.useState<User | null>(null);
     const [isAuthReady, setIsAuthReady] = React.useState(false);
     const [userProfile, setUserProfile] = React.useState<Partial<UserProfile>>({});
 
     React.useEffect(() => {
-        let appInstance: FirebaseApp;
-        let authInstance: Auth;
-        let dbInstance: Firestore;
-        let storageInstance: FirebaseStorage;
+        console.log('🔌 AppContext: Initializing Auth Listener...');
 
-        // Verificar si ya existe una instancia (evita crashes en StrictMode/Dev)
-        if (getApps().length === 0) {
-            appInstance = initializeApp(firebaseConfig);
-        } else {
-            appInstance = getApp();
-        }
+        // Timeout safety: Force ready state if Firebase takes too long (5s)
+        const safetyTimeout = setTimeout(() => {
+            if (!isAuthReady) {
+                console.warn('⚠️ Firebase Auth timed out. Forcing UI to render.');
+                setIsAuthReady(true);
+            }
+        }, 5000);
 
-        authInstance = getAuth(appInstance);
-        dbInstance = getFirestore(appInstance);
-        storageInstance = getStorage(appInstance);
+        const unsubscribe = onAuthStateChanged(auth, async (user) => {
+            console.log('👤 Auth State Changed:', user ? 'User Logged In' : 'No User');
+            clearTimeout(safetyTimeout); // Clear timeout on success
 
-        setApp(appInstance);
-        setAuth(authInstance);
-        setDb(dbInstance);
-        setStorage(storageInstance);
-
-        const unsubscribe = onAuthStateChanged(authInstance, async (user) => {
             if (user) {
                 setUser(user);
             } else {
                 const initialToken = (window as any).__initial_auth_token as string;
                 if (initialToken) {
                     try {
-                        const userCredential = await signInWithCustomToken(authInstance, initialToken);
+                        const userCredential = await signInWithCustomToken(auth, initialToken);
                         setUser(userCredential.user);
                     } catch (error) {
                         console.error("Error al iniciar sesión con token personalizado:", error);
@@ -81,7 +68,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             setIsAuthReady(true);
         });
 
-        return () => unsubscribe();
+        return () => {
+            clearTimeout(safetyTimeout);
+            unsubscribe();
+        };
     }, []);
 
     const userId = user ? user.uid : null;
@@ -99,12 +89,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             });
             return () => unsubscribe();
         }
-    }, [db, userId]);
+    }, [userId]); // Removed db from dep array as it's static
 
-    const [userPlan, setUserPlan] = React.useState<PlanTier>(DEFAULT_PLAN_TIER);
-
-    // In a real app, we would fetch the plan from Stripe/User Doc here.
-    // React.useEffect(() => { if (userProfile.plan) setUserPlan(userProfile.plan); }, [userProfile]);
+    const [userPlan, _setUserPlan] = React.useState<PlanTier>(DEFAULT_PLAN_TIER);
 
     return (
         <AppContext.Provider value={{ app, db, auth, storage, user, userId, isAuthReady, appId, userProfile, userPlan }}>

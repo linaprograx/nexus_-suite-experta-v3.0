@@ -1,5 +1,5 @@
 import { Recipe, PizarronTask } from '../../../types';
-import { callGeminiApi } from '../../utils/gemini';
+import { generateText } from '../../services/ai/textService';
 
 export interface NextBestActionData {
   action: string;
@@ -21,7 +21,7 @@ function isValidNBA(data: any) {
     data &&
     typeof data.action === 'string' &&
     typeof data.reason === 'string' &&
-    ['low','medium','high'].includes(data.impact) &&
+    ['low', 'medium', 'high'].includes(data.impact) &&
     typeof data.time === 'number'
   );
 }
@@ -110,14 +110,16 @@ Formato JSON Requerido:
 `;
 
   try {
-    const result = await callGeminiApi(userQuery, systemPrompt);
-    
+    // 🔹 Call AI Gateway (Text Service)
+    const response = await generateText(userQuery, systemPrompt);
+    const textResponse = response.text;
+
     // Limpieza mejorada de JSON
-    const cleanText = result.text
+    const cleanText = textResponse
       .replace(/```json/g, '')
       .replace(/```/g, '')
       .trim();
-    
+
     let parsedData: any;
     try {
       parsedData = JSON.parse(cleanText);

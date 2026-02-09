@@ -3,7 +3,7 @@
  * This acts as a bridge between the frontend and the secure backend gateway.
  */
 
-const AI_GATEWAY_URL = 'http://localhost:3001';
+const AI_GATEWAY_URL = import.meta.env.VITE_AI_GATEWAY_URL || 'http://localhost:3001';
 
 interface ImageResponse {
     imageBase64: string;
