@@ -1,3 +1,5 @@
+import { logger } from "../../../../utils/logger";
+
 import { usePizarronStore, pizarronStore } from '../../state/store';
 
 export const CollapsedDock: React.FC = () => {

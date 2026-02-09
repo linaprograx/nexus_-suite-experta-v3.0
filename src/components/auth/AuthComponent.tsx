@@ -193,6 +193,7 @@ export const AuthComponent = () => {
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         disabled={loading}
+                        autoComplete="email"
                         className="w-full rounded-xl px-5 py-4 bg-[#0a0f1c]/40 border border-white/5 text-[12px] font-medium tracking-wide text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-orange-500/30 focus:border-orange-500/30 transition-all duration-300 shadow-[inset_0_2px_8px_rgba(0,0,0,0.2)] group-hover:bg-[#0a0f1c]/60"
                       />
                     </motion.div>
@@ -209,6 +210,7 @@ export const AuthComponent = () => {
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         disabled={loading}
+                        autoComplete="current-password"
                         className="w-full rounded-xl px-5 py-4 bg-[#0a0f1c]/40 border border-white/5 text-[12px] font-medium tracking-wide text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-orange-500/30 focus:border-orange-500/30 transition-all duration-300 shadow-[inset_0_2px_8px_rgba(0,0,0,0.2)] group-hover:bg-[#0a0f1c]/60"
                       />
                     </motion.div>

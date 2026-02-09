@@ -1,3 +1,5 @@
+import { logger } from "../../../../utils/logger";
+
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 

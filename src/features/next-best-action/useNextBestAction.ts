@@ -1,3 +1,4 @@
+import { logger } from '../../utils/logger';
 import { useState, useEffect } from 'react';
 import { useCreativeWeek } from '../creative-week';
 import { getNextBestAction, NextBestActionData } from './nextBestActionService';
@@ -72,7 +73,7 @@ export function useNextBestAction(recipes: Recipe[], tasks: PizarronTask[], user
 
       setData(newData);
     } catch (error) {
-      console.error('Error fetching Next Best Action:', error);
+      logger.debug('[NBA] Error fetching Next Best Action:', error);
       setData(FALLBACK_ACTION);
     } finally {
       setIsLoading(false);
@@ -80,8 +81,31 @@ export function useNextBestAction(recipes: Recipe[], tasks: PizarronTask[], user
   };
 
   useEffect(() => {
-    fetchNBA();
-  }, [recipes.length, tasks.length]); // Recargar si cambian datos clave
+    // IMPORTANTE: NO llamar API automáticamente para evitar errores en consola
+    // Solo cargar desde caché si existe y es válido
+    const cached = localStorage.getItem(CACHE_KEY);
+    const timestamp = localStorage.getItem(CACHE_TIMESTAMP);
+
+    if (cached && timestamp) {
+      const age = Date.now() - parseInt(timestamp, 10);
+      if (age < CACHE_DURATION) {
+        try {
+          const obj = JSON.parse(cached);
+          if (isValidNBA(obj)) {
+            setData(obj);
+            setIsLoading(false);
+            return;
+          }
+        } catch (e) {
+          // Cache corrupto, silenciosamente ignorar
+        }
+      }
+    }
+
+    // Sin caché válido: mostrar fallback sin llamar API
+    setData(FALLBACK_ACTION);
+    setIsLoading(false);
+  }, []); // NO depender de recipes/tasks para evitar llamadas en cada render
 
   return {
     data,

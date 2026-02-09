@@ -33,11 +33,12 @@ const MAIN_NAV_ITEMS = [
         page: PageName.AvatarCore,
         groupKey: 'avatar',
         icon: 'person',
-        label: 'Personal',
+        label: 'Avatar',
         subPages: [PageName.AvatarCore, PageName.AvatarIntelligence, PageName.AvatarCompetition]
     },
     { page: PageName.Colegium, icon: 'school', label: 'Colegium' },
-    { page: PageName.Personal, icon: 'dvr', label: 'Personal' }, // Keeping standard Personal page if needed separate from Avatar
+    // ❌ Removed duplicate: { page: PageName.Personal, icon: 'dvr', label: 'Personal' }
+    // Avatar section above already handles personal/avatar pages
 ];
 
 const FloatingBottomNav: React.FC<FloatingBottomNavProps> = ({ currentPage, onNavigate }) => {

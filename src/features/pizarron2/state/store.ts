@@ -1,3 +1,5 @@
+import { logger } from "../../../utils/logger";
+
 
 import { useSyncExternalStore } from 'react';
 import { BoardState, BoardNode, Viewport, PizarraMetadata, BoardStructure, BoardResource, InteractionMode } from '../engine/types';
@@ -796,21 +798,21 @@ class PizarronStore {
         });
 
         const path = candidates.map(b => b.id);
-        console.log("[PizarronStore] Calculated Story Path:", path.length, "slides");
+        logger.debug("[PizarronStore] Calculated Story Path:", path.length, "slides");
         return path;
     }
 
     setPresentationMode(active: boolean) {
         this.setState(s => {
             s.presentationState.isActive = active;
-            console.log("[Presentation] Set Active:", active);
+            logger.debug("[Presentation] Set Active:", active);
             if (active) {
                 // Pass 's' to use the specific state slice being updated/current
                 s.presentationState.storyPath = this.calculateStoryPath(s as BoardState);
                 s.presentationState.currentIndex = 0;
 
                 const pathLen = s.presentationState.storyPath.length;
-                console.log("[Presentation] Path Length:", pathLen);
+                logger.debug("[Presentation] Path Length:", pathLen);
 
                 // Jump to first
                 if (pathLen > 0) {
@@ -819,7 +821,7 @@ class PizarronStore {
                     const firstId = s.presentationState.storyPath[0];
                     const node = s.nodes[firstId];
                     if (node) {
-                        console.log("[Presentation] Jump to First Slide:", firstId, node);
+                        logger.debug("[Presentation] Jump to First Slide:", firstId, node);
                         // Copy-paste navigate logic for atomic update
                         s.uiFlags.focusMode = true;
                         s.interactionState.focusTargetId = firstId;
@@ -839,7 +841,7 @@ class PizarronStore {
                             y: (containerH / 2) - (centerY * zoom),
                             zoom
                         };
-                        console.log("[Presentation] Target Viewport:", tv);
+                        logger.debug("[Presentation] Target Viewport:", tv);
                         s.interactionState.targetViewport = tv;
                     } else {
                         console.warn("[Presentation] Node not found for ID:", firstId);
@@ -863,7 +865,7 @@ class PizarronStore {
             return;
         }
 
-        console.log("[Presentation] Navigate To:", nodeId, node);
+        logger.debug("[Presentation] Navigate To:", nodeId, node);
 
         // 2. Focus Highlighting
         this.setFocus(nodeId);
@@ -888,7 +890,7 @@ class PizarronStore {
             zoom
         };
 
-        console.log("[Presentation] Valid Target Viewport:", targetViewport);
+        logger.debug("[Presentation] Valid Target Viewport:", targetViewport);
         // Trigger smooth move
         this.animateViewport(targetViewport);
     }
@@ -947,7 +949,7 @@ class PizarronStore {
             }
         });
 
-        console.log('[Store] Copied', this.clipboard.length, 'nodes to clipboard');
+        logger.debug('[Store] Copied', this.clipboard.length, 'nodes to clipboard');
     }
 
     paste() {
@@ -1020,7 +1022,7 @@ class PizarronStore {
             });
 
             state.selection = new Set(newIds);
-            console.log('[Store] Pasted', this.clipboard.length, 'nodes');
+            logger.debug('[Store] Pasted', this.clipboard.length, 'nodes');
         }, true); // Save to history
 
         // Update clipboard positions for next paste (cascade effect)
@@ -1448,20 +1450,20 @@ class PizarronStore {
     // --- Phase 6.2: Make Menu Integration ---
 
     async exportMenuToMakeMenu() {
-        console.log("[PizarronStore] exportMenuToMakeMenu starting...");
+        logger.debug("[PizarronStore] exportMenuToMakeMenu starting...");
         const state = this.getState();
         const nodes = Object.values(state.nodes);
-        console.log("[PizarronStore] Total nodes in state:", nodes.length);
+        logger.debug("[PizarronStore] Total nodes in state:", nodes.length);
 
         // 1. Gather Sections
         const sectionNodes = nodes.filter(n => n.type === 'menu-section')
             .sort((a, b) => (a.content.order || 0) - (b.content.order || 0));
 
-        console.log("[PizarronStore] Sections found:", sectionNodes.length);
+        logger.debug("[PizarronStore] Sections found:", sectionNodes.length);
 
         // 2. Gather All Menu Items (for fallback)
         const allMenuItems = nodes.filter(n => n.type === 'menu-item');
-        console.log("[PizarronStore] Menu Items found:", allMenuItems.length);
+        logger.debug("[PizarronStore] Menu Items found:", allMenuItems.length);
 
         // 3. Gather Items and Group by Section
         const nodeData: Record<string, any> = {};
@@ -1550,7 +1552,7 @@ class PizarronStore {
         // 5. Persistence for Make Menu
         localStorage.setItem('pizarron_menu_draft', JSON.stringify(draft));
 
-        console.log("[PizarronStore] Exported Menu Draft successfully:", draft);
+        logger.debug("[PizarronStore] Exported Menu Draft successfully:", draft);
         return draft;
     }
 

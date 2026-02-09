@@ -1,3 +1,5 @@
+import { logger } from "../../../../utils/logger";
+
 import React, { useMemo } from 'react'; // Added useMemo
 import { pizarronStore } from '../../state/store';
 import { FontLoader } from '../../engine/FontLoader';
@@ -1147,11 +1149,11 @@ export const Inspector: React.FC = () => {
                                         );
                                         if (costingData) {
                                             externalDataMap.set(firstNode.id, costingData);
-                                            console.log('[Inspector] ✅ Updated externalDataMap:', firstNode.id, costingData.recipeName);
+                                            logger.debug('[Inspector] ✅ Updated externalDataMap:', firstNode.id, costingData.recipeName);
 
                                             // FORCE immediate canvas redraw
                                             forceCanvasRender();
-                                            console.log('[Inspector] 🎨 Forced canvas render');
+                                            logger.debug('[Inspector] 🎨 Forced canvas render');
 
                                             // FORCE canvas re-render by nudging viewport
                                             const currentVP = pizarronStore.getState().viewport;

@@ -1,3 +1,5 @@
+import { logger } from "../../../utils/logger";
+
 import { collection, onSnapshot, doc, setDoc, deleteDoc, writeBatch, getDocs, query, where, orderBy } from 'firebase/firestore';
 import { db } from '../../../config/firebaseApp';
 import { pizarronStore } from '../state/store';
@@ -260,7 +262,7 @@ class FirestoreAdapter {
 
         try {
             await batch.commit();
-            console.log(`[Sync] Flushed batch to Firestore`);
+            logger.debug(`[Sync] Flushed batch to Firestore`);
         } catch (err) {
             console.error("[Sync] Write Failed", err);
         }

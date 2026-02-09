@@ -7,7 +7,8 @@
     "dev": "vite",
     "gateway": "cd ai-gateway && npm run dev",
     "setup:gateway": "cd ai-gateway && npm install",
-    "build": "vite build",
+    "prebuild": "node scripts/prebuild.js",
+    "build": "npm run prebuild && vite build",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit"
   },

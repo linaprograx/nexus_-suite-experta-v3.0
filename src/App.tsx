@@ -184,9 +184,27 @@ import MobileShell from './ui/mobile/MobileShell';
 
 const App: React.FC = () => {
     const isMobile = useIsMobile();
+    const [prevIsMobile, setPrevIsMobile] = React.useState<boolean | null>(null);
 
     // Safety check: specific query params could bypass this if needed in dev
     // const forceDesktop = new URLSearchParams(window.location.search).get('desktop') === 'true';
+
+    // 🔄 Handle responsive viewport changes to prevent 404 errors
+    React.useEffect(() => {
+        // Skip initial mount
+        if (prevIsMobile === null) {
+            setPrevIsMobile(isMobile);
+            return;
+        }
+
+        // When viewport changes between mobile <-> desktop, redirect to home
+        if (prevIsMobile !== isMobile) {
+            setPrevIsMobile(isMobile);
+
+            // Smooth redirect to home to avoid 404s from incompatible routes
+            window.location.href = '/';
+        }
+    }, [isMobile, prevIsMobile]);
 
     return (
         <AppProvider>

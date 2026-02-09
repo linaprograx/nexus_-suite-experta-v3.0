@@ -1,3 +1,5 @@
+import { logger } from "../../../../utils/logger";
+
 import React, { useEffect, useState } from 'react';
 import { pizarronStore } from '../../state/store';
 import { useNavigate } from 'react-router-dom';
@@ -40,11 +42,11 @@ export const TopBar: React.FC = () => {
     const [exportSuccess, setExportSuccess] = useState(false);
 
     const handleExportDraft = async () => {
-        console.log("[TopBar] Starting Export...");
+        logger.debug("[TopBar] Starting Export...");
         setIsExporting(true);
         try {
             const draft = await pizarronStore.exportMenuToMakeMenu();
-            console.log("[TopBar] Export Success:", draft);
+            logger.debug("[TopBar] Export Success:", draft);
             setExportSuccess(true);
 
             // Phase 6.2.B: Active Trigger

@@ -1,3 +1,5 @@
+import { logger } from "../../../../utils/logger";
+
 import React, { useState, useEffect } from 'react';
 
 import { ErrorBoundary } from './ErrorBoundary';
@@ -119,7 +121,7 @@ export const PizarraManager: React.FC<{ onClose: () => void; appId: string }> = 
 
             // CANONICAL FLOW A: ADD PAGE (BOARD) TO EXISTING NOTEBOOK
             if (activePizarra) {
-                console.log("[PizarraManager] Adding Board to existing Notebook:", activePizarra.id);
+                logger.debug("[PizarraManager] Adding Board to existing Notebook:", activePizarra.id);
 
                 // 1. Generate Metadata for the new BOARD (Page)
                 // We fake a mini-metadata just to get the board structure from the engine
@@ -165,7 +167,7 @@ export const PizarraManager: React.FC<{ onClose: () => void; appId: string }> = 
             }
             // CANONICAL FLOW B: CREATE NEW NOTEBOOK (Project)
             else {
-                console.log("[PizarraManager] Creating NEW Notebook");
+                logger.debug("[PizarraManager] Creating NEW Notebook");
                 // Safe Stop: Prevent wiping previous board (if any context existed)
                 firestoreAdapter.stop();
 

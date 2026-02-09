@@ -1,4 +1,5 @@
 import { pizarronStore } from '../state/store';
+import { logger } from '../../../utils/logger';
 
 /**
  * KeyboardShortcutsManager
@@ -17,7 +18,7 @@ export class KeyboardShortcutsManager {
         window.addEventListener('keydown', this.handleKeyDown);
         window.addEventListener('keyup', this.handleKeyUp);
         this.isAttached = true;
-        console.log('[KeyboardShortcuts] Attached');
+        logger.debug('[KeyboardShortcuts] Attached');
     }
 
     /**
@@ -28,7 +29,7 @@ export class KeyboardShortcutsManager {
         window.removeEventListener('keydown', this.handleKeyDown);
         window.removeEventListener('keyup', this.handleKeyUp);
         this.isAttached = false;
-        console.log('[KeyboardShortcuts] Detached');
+        logger.debug('[KeyboardShortcuts] Detached');
     }
 
     /**
@@ -221,12 +222,12 @@ export class KeyboardShortcutsManager {
 
     private handleCopy() {
         pizarronStore.copySelection();
-        console.log('[Shortcuts] Copy');
+        logger.debug('[Shortcuts] Copy');
     }
 
     private handlePaste() {
         pizarronStore.paste();
-        console.log('[Shortcuts] Paste');
+        logger.debug('[Shortcuts] Paste');
     }
 
     private handleDuplicate() {
@@ -234,7 +235,7 @@ export class KeyboardShortcutsManager {
         if (selected.length > 0) {
             pizarronStore.copySelection();
             pizarronStore.paste();
-            console.log('[Shortcuts] Duplicate');
+            logger.debug('[Shortcuts] Duplicate');
         }
     }
 
@@ -245,14 +246,14 @@ export class KeyboardShortcutsManager {
             .filter(n => !n.parentId && !n.collapsed)
             .map(n => n.id);
         pizarronStore.setSelection(allTopLevel);
-        console.log('[Shortcuts] Select All:', allTopLevel.length, 'nodes');
+        logger.debug('[Shortcuts] Select All:', allTopLevel.length, 'nodes');
     }
 
     private handleGroup() {
         const state = pizarronStore.getState();
         if (state.selection.size >= 2) {
             pizarronStore.groupSelection();
-            console.log('[Shortcuts] Group');
+            logger.debug('[Shortcuts] Group');
         }
     }
 
@@ -261,18 +262,18 @@ export class KeyboardShortcutsManager {
         const hasGroups = selected.some(n => n.type === 'group');
         if (hasGroups) {
             pizarronStore.ungroupSelection();
-            console.log('[Shortcuts] Ungroup');
+            logger.debug('[Shortcuts] Ungroup');
         }
     }
 
     private handleUndo() {
         pizarronStore.undo();
-        console.log('[Shortcuts] Undo');
+        logger.debug('[Shortcuts] Undo');
     }
 
     private handleRedo() {
         pizarronStore.redo();
-        console.log('[Shortcuts] Redo');
+        logger.debug('[Shortcuts] Redo');
     }
 
     private handleDelete() {
@@ -281,7 +282,7 @@ export class KeyboardShortcutsManager {
             const ids = Array.from(state.selection);
             pizarronStore.deleteNodes(ids);
             pizarronStore.setSelection([]);
-            console.log('[Shortcuts] Delete:', ids.length, 'nodes');
+            logger.debug('[Shortcuts] Delete:', ids.length, 'nodes');
         }
     }
 
@@ -303,7 +304,7 @@ export class KeyboardShortcutsManager {
             }, true); // saveHistory = true
         });
 
-        console.log('[Shortcuts] Nudge', direction, distance + 'px');
+        logger.debug('[Shortcuts] Nudge', direction, distance + 'px');
     }
 
     private handleEscape() {
@@ -312,7 +313,7 @@ export class KeyboardShortcutsManager {
         // Priority 1: Text editing
         if (state.interactionState.editingTextId) {
             pizarronStore.updateInteractionState({ editingTextId: undefined });
-            console.log('[Shortcuts] Escape: Closed text editor');
+            logger.debug('[Shortcuts] Escape: Closed text editor');
             return;
         }
 
@@ -322,74 +323,74 @@ export class KeyboardShortcutsManager {
                 editingNodeId: undefined,
                 editingSubId: undefined
             });
-            console.log('[Shortcuts] Escape: Closed node editor');
+            logger.debug('[Shortcuts] Escape: Closed node editor');
             return;
         }
 
         // Priority 3: Modals/Panels
         if (state.uiFlags.showLibrary) {
             pizarronStore.setUIFlag('showLibrary', false);
-            console.log('[Shortcuts] Escape: Closed library');
+            logger.debug('[Shortcuts] Escape: Closed library');
             return;
         }
 
         if (state.uiFlags.showProjectManager) {
             pizarronStore.setUIFlag('showProjectManager', false);
-            console.log('[Shortcuts] Escape: Closed project manager');
+            logger.debug('[Shortcuts] Escape: Closed project manager');
             return;
         }
 
         if (state.uiFlags.showOverview) {
             pizarronStore.setState(s => { s.uiFlags.showOverview = false });
-            console.log('[Shortcuts] Escape: Closed overview');
+            logger.debug('[Shortcuts] Escape: Closed overview');
             return;
         }
 
         if (state.uiFlags.grimorioPickerOpen) {
             pizarronStore.setUIFlag('grimorioPickerOpen', null);
-            console.log('[Shortcuts] Escape: Closed grimorio picker');
+            logger.debug('[Shortcuts] Escape: Closed grimorio picker');
             return;
         }
 
         if (state.uiFlags.showMenuGenerator) {
             pizarronStore.setUIFlag('showMenuGenerator', false);
-            console.log('[Shortcuts] Escape: Closed menu generator');
+            logger.debug('[Shortcuts] Escape: Closed menu generator');
             return;
         }
 
         // Priority 4: Creation draft
         if (state.interactionState.creationDraft) {
             pizarronStore.updateInteractionState({ creationDraft: undefined });
-            console.log('[Shortcuts] Escape: Cancelled creation');
+            logger.debug('[Shortcuts] Escape: Cancelled creation');
             return;
         }
 
         // Priority 5: Selection
         if (state.selection.size > 0) {
             pizarronStore.clearSelection();
-            console.log('[Shortcuts] Escape: Cleared selection');
+            logger.debug('[Shortcuts] Escape: Cleared selection');
             return;
         }
 
-        console.log('[Shortcuts] Escape: Nothing to cancel');
+        logger.debug('[Shortcuts] Escape: Nothing to cancel');
     }
 
     private handleZoomIn() {
         const state = pizarronStore.getState();
         const newZoom = Math.min(state.viewport.zoom + 0.1, 5);
         pizarronStore.updateViewport({ zoom: newZoom });
-        console.log('[Shortcuts] Zoom In:', Math.round(newZoom * 100) + '%');
+        logger.debug('[Shortcuts] Zoom In:', Math.round(newZoom * 100) + '%');
     }
 
     private handleZoomOut() {
         const state = pizarronStore.getState();
         const newZoom = Math.max(state.viewport.zoom - 0.1, 0.1);
         pizarronStore.updateViewport({ zoom: newZoom });
-        console.log('[Shortcuts] Zoom Out:', Math.round(newZoom * 100) + '%');
+        logger.debug('[Shortcuts] Zoom Out:', Math.round(newZoom * 100) + '%');
     }
 
     private handleFitView() {
         pizarronStore.fitContent();
-        console.log('[Shortcuts] Fit View');
+        logger.debug('[Shortcuts] Fit View');
     }
 }

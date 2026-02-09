@@ -1,3 +1,5 @@
+import { logger } from "../../../utils/logger";
+
 import { pizarronStore } from '../state/store';
 import { BoardNode, Viewport } from './types';
 import { snapEngine } from './SnapEngine';
@@ -530,7 +532,7 @@ export class InteractionManager {
         this.lastClickTime = clickTime;
 
         if (isDoubleClick) {
-            console.log("Double Click Detected!");
+            logger.debug("Double Click Detected!");
 
             // 1. If Locked Node, ignore
             if (hitId && nodes[hitId] && nodes[hitId].locked) return;
@@ -554,7 +556,7 @@ export class InteractionManager {
             const clickedNode = hitId ? nodes[hitId] : undefined;
 
             if (!clickedNode || (clickedNode.type === 'board' && !clickedNode.structure?.zones && !clickedNode.structure?.cells)) {
-                console.log("Creating Quick Text Node at", worldPos);
+                logger.debug("Creating Quick Text Node at", worldPos);
 
                 const newTextId = crypto.randomUUID();
                 const newTextNode: any = {

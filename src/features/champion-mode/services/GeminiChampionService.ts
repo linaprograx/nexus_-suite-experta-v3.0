@@ -1,4 +1,5 @@
 import { generateText } from '../../../services/ai/textService';
+import { logger } from '../../../utils/logger';
 import { PlanTier } from '../../../core/product/plans.types';
 import { brandGuardianBasePrompt } from '../../../lib/ai/prompts/brandGuardian/base';
 import { genericProfile } from '../../../lib/ai/prompts/brandGuardian/profiles/generic';
@@ -80,7 +81,7 @@ export const GeminiChampionService = {
 
             return result;
         } catch (e) {
-            console.error("Brand Guardian Error", e);
+            logger.error("Brand Guardian Error", e);
             return { brandAlignmentScore: 0, verdict: "WEAK", risks: ["Analysis Failed"], strategicRecommendation: "Review manually.", imageUrl: null };
         }
     },
@@ -110,7 +111,7 @@ export const GeminiChampionService = {
         try {
             return await ImageGenerator.generateImageUrl(imagePrompt);
         } catch (e) {
-            console.error("Image Gen Error", e);
+            logger.error("Image Gen Error", e);
             // DYNAMIC FALLBACK: Pollinations with the actual prompt
             const encoded = encodeURIComponent(imagePrompt + ", 8k, photorealistic");
             // Switched to Turbo due to Flux maintenance
@@ -148,9 +149,9 @@ export const GeminiChampionService = {
             .replace('{{visualRefs}}', visualRefs?.join(', ') || "Estilo Libre");
 
         try {
-            console.log(">>> CALLING GATEWAY CREATIVE: ", prompt.substring(0, 100) + "...");
+            logger.debug(">>> CALLING GATEWAY CREATIVE:", prompt.substring(0, 100) + "...");
             const response = await generateText(prompt, SYSTEM_ROLES.CREATIVE_DIRECTOR);
-            console.log(">>> GATEWAY RAW RESPONSE:", response.text);
+            logger.debug(">>> GATEWAY RAW RESPONSE:", response.text);
 
             // ROBUST JSON CLEANING
             let jsonText = response.text || "";
@@ -169,7 +170,7 @@ export const GeminiChampionService = {
             try {
                 proposal = JSON.parse(jsonText);
             } catch (parseError) {
-                console.error("JSON Parse Error. Raw Text:", response.text);
+                logger.error("JSON Parse Error. Raw Text:", response.text);
                 throw new Error("La IA generó una respuesta inválida. Intenta de nuevo.");
             }
 
@@ -191,13 +192,13 @@ export const GeminiChampionService = {
                 imagePrompt = visualData.prompt;
                 visualAnalysis = analysis;
             } catch (visualError) {
-                console.error("Visual Generation Service Failed:", visualError);
+                logger.error("Visual Generation Service Failed:", visualError);
                 // CRITICAL FALLBACK: Ensure we ALWAYS have an image, even if Gateway fails
                 // Use Pollinations directly here as last line of defense
                 const promptForFallback = imagePrompt || `${proposal.title} cocktail award photography`;
                 const encoded = encodeURIComponent(promptForFallback);
                 imageUrl = `https://pollinations.ai/p/${encoded}?width=1024&height=1024&model=turbo&nologo=true&seed=${Date.now()}`;
-                console.warn("Used Critical Fallback Image:", imageUrl);
+                logger.warn("Used Critical Fallback Image:", imageUrl);
             }
 
             proposal.imageUrl = imageUrl;
@@ -206,7 +207,7 @@ export const GeminiChampionService = {
 
             return proposal;
         } catch (e) {
-            console.error("Creative Critical Error:", e);
+            logger.error("Creative Critical Error:", e);
             throw new Error("Error en servicio de IA: " + (e as Error).message);
         }
     },
@@ -246,7 +247,7 @@ export const GeminiChampionService = {
 
             return juryResult;
         } catch (e) {
-            console.error("Gemini Jury Error", e);
+            logger.error("Gemini Jury Error", e);
             throw e;
         }
     },
@@ -268,7 +269,7 @@ export const GeminiChampionService = {
             if (parsed.checklist) return parsed;
             return { checklist: [] };
         } catch (e) {
-            console.error("Gemini Checklist Error", e);
+            logger.error("Gemini Checklist Error", e);
             return { checklist: [] };
         }
     },

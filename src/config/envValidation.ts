@@ -13,11 +13,11 @@ const requiredEnvVars = [
 ] as const;
 
 const optionalEnvVars = [
-    'VITE_GEMINI_API_KEY', // For legacy image generation
-    'VITE_SENTRY_DSN', // Error tracking
+    // 'VITE_GEMINI_API_KEY', // ❌ REMOVED: Legacy, no longer used (migrated to AI Gateway)
+    // 'VITE_SENTRY_DSN', // ❌ REMOVED: Optional error tracking - no need to warn
 ] as const;
 
-export const validateEnvironment = () => {
+export const validateEnvironment = async () => {
     const missing = requiredEnvVars.filter(key => !import.meta.env[key]);
 
     if (missing.length > 0) {
@@ -44,7 +44,8 @@ For production, set these in your hosting platform's environment settings.
     // Warn about optional but recommended vars
     const missingOptional = optionalEnvVars.filter(key => !import.meta.env[key]);
     if (missingOptional.length > 0 && import.meta.env.DEV) {
-        console.warn(
+        const { logger } = await import('../utils/logger');
+        logger.warn(
             '⚠️ Optional environment variables missing:\n' +
             missingOptional.map(v => `  - ${v}`).join('\n')
         );
@@ -52,6 +53,7 @@ For production, set these in your hosting platform's environment settings.
 
     // Success
     if (import.meta.env.DEV) {
-        console.log('✅ Environment validation passed');
+        const { logger } = await import('../utils/logger');
+        logger.info('✅ Environment validation passed');
     }
 };

@@ -1,3 +1,5 @@
+import { logger } from "../../../../utils/logger";
+
 import React from 'react';
 import { useSyncExternalStore } from 'react';
 import { pizarronStore } from '../../state/store';

@@ -77,10 +77,17 @@ if (SENTRY_DSN) {
         },
     });
 
-    console.log('✅ Sentry initialized for error tracking');
+    import('../utils/logger').then(({ logger }) => {
+        logger.info('✅ Sentry initialized for error tracking');
+    });
 } else {
-    console.warn('⚠️ Sentry DSN not configured. Error tracking disabled.');
-    console.warn('Set VITE_SENTRY_DSN in your .env.local file to enable Sentry.');
+    // Sentry DSN not configured - this is OPTIONAL, no need to warn users
+    // Error tracking is disabled but app functionality is 100% normal
+    // Uncomment below if you want to show warnings:
+    // import('../utils/logger').then(({ logger }) => {
+    //     logger.warn('⚠️ Sentry DSN not configured. Error tracking disabled.');
+    //     logger.warn('Set VITE_SENTRY_DSN in your .env.local file to enable Sentry.');
+    // });
 }
 
 export { Sentry };

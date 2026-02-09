@@ -1,3 +1,5 @@
+import { logger } from "../../../../utils/logger";
+
 import React, { useEffect, useRef, useState } from 'react';
 import { usePizarronStore, pizarronStore } from '../../state/store';
 import { BoardNode } from '../../engine/types';

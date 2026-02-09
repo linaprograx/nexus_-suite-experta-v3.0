@@ -1,3 +1,5 @@
+import { logger } from "../../../utils/logger";
+
 import React, { useEffect } from 'react';
 import { CanvasStage } from './CanvasStage';
 import { pizarronStore } from '../state/store';
@@ -73,7 +75,7 @@ export const PizarronRoot: React.FC<PizarronRootProps> = ({ appId, boardId, user
         if (!pizarronStore.getState().activePizarra) {
             const restored = pizarronStore.restoreLastSession();
             if (restored) {
-                console.log("[PizarronRoot] Restored Session:", restored.id);
+                logger.debug("[PizarronRoot] Restored Session:", restored.id);
             }
         }
     }, [appId]);
@@ -85,7 +87,7 @@ export const PizarronRoot: React.FC<PizarronRootProps> = ({ appId, boardId, user
 
     // Debug Board Switching
     React.useEffect(() => {
-        console.log(`[PizarronRoot] Effective Board ID Changed: ${effectiveBoardId} (AppID: ${appId})`);
+        logger.debug(`[PizarronRoot] Effective Board ID Changed: ${effectiveBoardId} (AppID: ${appId})`);
     }, [effectiveBoardId, appId]);
 
     React.useEffect(() => {
@@ -96,10 +98,10 @@ export const PizarronRoot: React.FC<PizarronRootProps> = ({ appId, boardId, user
 
     React.useEffect(() => {
         if (appId && effectiveBoardId) {
-            console.log("[PizarronRoot] Initializing Sync", { appId, boardId: effectiveBoardId });
+            logger.debug("[PizarronRoot] Initializing Sync", { appId, boardId: effectiveBoardId });
             firestoreAdapter.init(appId, effectiveBoardId);
             return () => {
-                console.log("[PizarronRoot] Stopping Sync for", effectiveBoardId);
+                logger.debug("[PizarronRoot] Stopping Sync for", effectiveBoardId);
                 firestoreAdapter.stop();
                 // Critical Fix: Clear board context to prevent overlap when switching
                 pizarronStore.resetBoard();

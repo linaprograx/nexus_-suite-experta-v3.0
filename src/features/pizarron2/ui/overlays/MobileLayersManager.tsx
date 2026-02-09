@@ -1,3 +1,5 @@
+import { logger } from "../../../../utils/logger";
+
 import React, { useState } from 'react';
 import { pizarronStore } from '../../state/store';
 import { LuEye, LuEyeOff, LuLock, LuLockOpen, LuX, LuGripVertical, LuMenu } from 'react-icons/lu';

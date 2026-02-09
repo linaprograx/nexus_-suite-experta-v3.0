@@ -1,3 +1,5 @@
+import { logger } from "../../../../utils/logger";
+
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { pizarronStore } from '../../state/store';

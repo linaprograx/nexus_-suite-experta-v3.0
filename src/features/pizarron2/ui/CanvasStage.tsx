@@ -1,3 +1,5 @@
+import { logger } from "../../../utils/logger";
+
 import React, { useEffect, useRef, useMemo } from 'react';
 import { renderer } from '../engine/renderer';
 import { pizarronStore, usePizarronStore } from '../state/store';
@@ -144,7 +146,7 @@ export const CanvasStage: React.FC<{ children?: React.ReactNode }> = ({ children
         const map = externalDataRef.current;
         const state = pizarronStore.getState();
 
-        console.log('[CanvasStage] Updating costing data...');
+        logger.debug('[CanvasStage] Updating costing data...');
 
         // Grimorio data
         ingredients.forEach(i => map.set(i.id, {
@@ -208,7 +210,7 @@ export const CanvasStage: React.FC<{ children?: React.ReactNode }> = ({ children
 
     useEffect(() => {
         if (requestCapture && canvasRef.current) {
-            console.log("[CanvasStage] Capturing Thumbnail...");
+            logger.debug("[CanvasStage] Capturing Thumbnail...");
             // Use requestAnimationFrame to ensure we capture a fully rendered frame?
             // Or just next tick.
             requestAnimationFrame(() => {

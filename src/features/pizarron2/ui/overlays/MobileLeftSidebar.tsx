@@ -1,3 +1,5 @@
+import { logger } from "../../../../utils/logger";
+
 import React from 'react';
 import { pizarronStore } from '../../state/store';
 import {
@@ -33,9 +35,9 @@ export const MobileLeftSidebar: React.FC = () => {
             label: 'Library',
             action: () => {
                 const current = showLibrary;
-                console.log('[MobileSidebar] Library clicked, current:', current);
+                logger.debug('[MobileSidebar] Library clicked, current:', current);
                 pizarronStore.setUIFlag('showLibrary', !current);
-                console.log('[MobileSidebar] Library after setUIFlag:', pizarronStore.getState().uiFlags.showLibrary);
+                logger.debug('[MobileSidebar] Library after setUIFlag:', pizarronStore.getState().uiFlags.showLibrary);
             }
         },
         {
@@ -82,9 +84,9 @@ export const MobileLeftSidebar: React.FC = () => {
             label: 'Pizarras',
             action: () => {
                 const current = showProjectManager;
-                console.log('[MobileSidebar] Project clicked, current:', current);
+                logger.debug('[MobileSidebar] Project clicked, current:', current);
                 pizarronStore.setUIFlag('showProjectManager', !current);
-                console.log('[MobileSidebar] Project after setUIFlag:', pizarronStore.getState().uiFlags.showProjectManager);
+                logger.debug('[MobileSidebar] Project after setUIFlag:', pizarronStore.getState().uiFlags.showProjectManager);
             }
         },
         {

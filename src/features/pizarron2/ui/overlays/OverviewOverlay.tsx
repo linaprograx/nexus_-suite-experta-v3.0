@@ -1,3 +1,5 @@
+import { logger } from "../../../../utils/logger";
+
 import React, { useEffect, useState } from 'react';
 import { pizarronStore } from '../../state/store';
 import { LuLayoutTemplate, LuPlus, LuX, LuLayoutDashboard } from 'react-icons/lu';

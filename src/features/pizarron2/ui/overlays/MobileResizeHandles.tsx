@@ -1,3 +1,5 @@
+import { logger } from "../../../../utils/logger";
+
 import React, { useState, useEffect } from 'react';
 import { pizarronStore } from '../../state/store';
 import { TbArrowsMove } from 'react-icons/tb';

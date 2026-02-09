@@ -58,7 +58,50 @@ app.get('/auth/check', async (req: Request, res: Response) => {
     }
 });
 
-// Vertex AI Endpoints
+// ============================================
+// API Routes (Frontend Compatibility)
+// ============================================
+
+app.post('/api/text', async (req: Request, res: Response) => {
+    try {
+        const { prompt, role = 'assistant' } = req.body;
+        if (!prompt) {
+            res.status(400).json({ error: "Missing 'prompt' in body" });
+            return;
+        }
+
+        const { generateText } = await import('./vertex/client.js');
+        const result = await generateText(prompt);
+        res.json(result);
+
+    } catch (error: any) {
+        console.error("API Text Error:", error.message);
+        res.status(502).json({ error: error.message });
+    }
+});
+
+app.post('/api/image', async (req: Request, res: Response) => {
+    try {
+        const { prompt } = req.body;
+        if (!prompt) {
+            res.status(400).json({ error: "Missing 'prompt' in body" });
+            return;
+        }
+
+        const { generateImage } = await import('./vertex/client.js');
+        const result = await generateImage(prompt);
+        res.json(result);
+
+    } catch (error: any) {
+        console.error("API Image Error:", error.message);
+        res.status(502).json({ error: error.message });
+    }
+});
+
+// ============================================
+// Vertex AI Endpoints (Direct Access)
+// ============================================
+
 app.post('/vertex/text', async (req: Request, res: Response) => {
     try {
         const { prompt } = req.body;
@@ -136,6 +179,12 @@ app.listen(PORT, () => {
     console.log(`\n🚀 AI Gateway running locally at http://localhost:${PORT}`);
     console.log(`👉 Health Check: http://localhost:${PORT}/health`);
     console.log(`👉 Auth Check:   http://localhost:${PORT}/auth/check`);
-    console.log(`👉 Text Gen:     POST http://localhost:${PORT}/vertex/text`);
-    console.log(`👉 Image Gen:    POST http://localhost:${PORT}/vertex/image\n`);
+    console.log(`\n📡 Frontend Routes:`);
+    console.log(`   POST http://localhost:${PORT}/api/text`);
+    console.log(`   POST http://localhost:${PORT}/api/image`);
+    console.log(`\n🔧 Direct Vertex Routes:`);
+    console.log(`   POST http://localhost:${PORT}/vertex/text`);
+    console.log(`   POST http://localhost:${PORT}/vertex/search`);
+    console.log(`   POST http://localhost:${PORT}/vertex/multimodal`);
+    console.log(`   POST http://localhost:${PORT}/vertex/image\n`);
 });
