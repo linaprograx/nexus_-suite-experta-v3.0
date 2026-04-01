@@ -12,14 +12,6 @@ interface PizarronViewProps {
   appId: string;
   auth: Auth | null;
   storage: FirebaseStorage | null;
-  taskToOpen: string | null;
-  onTaskOpened: () => void;
-  draggingRecipe: Recipe | null;
-  draggingTask: string | null;
-  onDropEnd: () => void;
-  onDragTaskStart: (taskId: string) => void;
-  onAnalyze: (text: string) => void;
-  userProfile: Partial<UserProfile>;
 }
 
 export default function PizarronView(props: PizarronViewProps) {

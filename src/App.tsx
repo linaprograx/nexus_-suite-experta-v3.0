@@ -1,8 +1,7 @@
 import * as React from 'react';
 import { ErrorBoundary } from './components/system/ErrorBoundary';
-import { Recipe, Ingredient, PizarronTask, AppNotification } from './types';
 import { BrowserRouter, useNavigate, useLocation } from 'react-router-dom';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { QueryClientProvider } from '@tanstack/react-query';
 
 
 import { AppProvider, useApp } from './context/AppContext';
@@ -27,6 +26,7 @@ import { ConnectionStatus } from './components/ui/ConnectionStatus';
 import { useNexusProfile } from './hooks/useNexusProfile';
 
 // ... (other imports remain, but useFirebaseData is gone)
+import { useUIStore } from './store/uiStore';
 
 const MainAppContent: React.FC = () => {
     const { db, userId, auth, storage, appId } = useApp();
@@ -35,18 +35,6 @@ const MainAppContent: React.FC = () => {
     // Modular Hooks
     const { notifications } = useNexusProfile(db, userId, appId);
     const { ingredients: allIngredients } = useIngredients();
-
-    const [showNotificationsDrawer, setShowNotificationsDrawer] = React.useState(false);
-    const [isMobileSidebarOpen, setIsMobileSidebarOpen] = React.useState(false);
-
-    const [showRecipeModal, setShowRecipeModal] = React.useState(false);
-    const [recipeToEdit, setRecipeToEdit] = React.useState<Partial<Recipe> | null>(null);
-    const [showAddTaskModal, setShowAddTaskModal] = React.useState(false);
-
-    const [taskToOpen, setTaskToOpen] = React.useState<string | null>(null);
-    const [draggingRecipe, setDraggingRecipe] = React.useState<Recipe | null>(null);
-    const [draggingTask, setDraggingTask] = React.useState<string | null>(null);
-    const [textToAnalyze, setTextToAnalyze] = React.useState<string | null>('');
 
     if (!db || !userId || !auth || !storage || !appId) {
         return <div className='flex h-screen items-center justify-center'><Spinner className='w-12 h-12' /></div>;
@@ -58,22 +46,6 @@ const MainAppContent: React.FC = () => {
                 db={db} userId={userId} auth={auth} storage={storage} appId={appId}
                 allIngredients={allIngredients} notifications={notifications}
                 isSidebarCollapsed={isSidebarCollapsed}
-                showNotificationsDrawer={showNotificationsDrawer}
-                setShowNotificationsDrawer={setShowNotificationsDrawer}
-                isMobileSidebarOpen={isMobileSidebarOpen}
-                setIsMobileSidebarOpen={setIsMobileSidebarOpen}
-                recipeToEdit={recipeToEdit}
-                setRecipeToEdit={setRecipeToEdit}
-                setShowRecipeModal={setShowRecipeModal}
-                showRecipeModal={showRecipeModal}
-                taskToOpen={taskToOpen}
-                setTaskToOpen={setTaskToOpen}
-                draggingRecipe={draggingRecipe}
-                setDraggingRecipe={setDraggingRecipe}
-                draggingTask={draggingTask}
-                setDraggingTask={setDraggingTask}
-                textToAnalyze={textToAnalyze}
-                setTextToAnalyze={setTextToAnalyze}
             />
         </BrowserRouter>
     );
@@ -83,15 +55,14 @@ const MainAppContent: React.FC = () => {
 const AppLayout: React.FC<any> = ({
     db, userId, auth, storage, appId,
     allIngredients, notifications,
-    isSidebarCollapsed,
-    showNotificationsDrawer, setShowNotificationsDrawer,
-    isMobileSidebarOpen, setIsMobileSidebarOpen,
-    recipeToEdit, setRecipeToEdit, setShowRecipeModal, showRecipeModal,
-    taskToOpen, setTaskToOpen,
-    draggingRecipe, setDraggingRecipe,
-    draggingTask, setDraggingTask,
-    textToAnalyze, setTextToAnalyze
+    isSidebarCollapsed
 }) => {
+    const { 
+        showRecipeModal, recipeToEdit, setShowRecipeModal,
+        setTaskToOpen,
+        showNotificationsDrawer, setShowNotificationsDrawer,
+        isMobileSidebarOpen, setIsMobileSidebarOpen
+    } = useUIStore();
 
     // We can't use currentView state anymore, passing navigate logic down to sidebar requires changes in Sidebar
     // For now, let's just render the router.
@@ -117,41 +88,59 @@ const AppLayout: React.FC<any> = ({
 
     }, [location.pathname, userId, appId, db]);
 
+    // Derive current section name from route for mobile header
+    const sectionName = React.useMemo(() => {
+        const path = location.pathname;
+        const map: Record<string, string> = {
+            '/': 'Dashboard',
+            '/grimorium': 'Grimorium',
+            '/pizarron': 'Pizarrón',
+            '/cerebrity': 'CerebrIty',
+            '/trend-locator': 'Trend Locator',
+            '/avatar': 'Avatar',
+            '/make-menu': 'Make Menu',
+            '/colegium': 'Colegium',
+            '/collegium': 'Colegium',
+            '/personal': 'Mi Perfil',
+        };
+        return map[path] || Object.entries(map).find(([k]) => k !== '/' && path.startsWith(k))?.[1] || 'Nexus Suite';
+    }, [location.pathname]);
+
     return (
-        <div className='min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-50 font-sans antialiased'>
+        <div className='min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-50 font-sans antialiased flex'>
             <Sidebar
-                // Passing a fake setCurrentView that uses navigate
-                currentView={"" as any} // Requires Sidebar update to read from URL
-                setCurrentView={(view: string) => {
-                    // Simple mapping for now, ideally Sidebar links should be <Link>
-                    if (view === 'dashboard') navigate('/');
-                    else navigate('/' + view);
-                }}
                 onShowNotifications={() => setShowNotificationsDrawer(true)}
-                unreadNotifications={notifications && notifications.some ? notifications.some((n: any) => !n.read) : false}
+                unreadNotifications={notifications && (notifications as any).some ? (notifications as any).some((n: any) => !n.read) : false}
                 isMobileOpen={isMobileSidebarOpen}
                 onCloseMobile={() => setIsMobileSidebarOpen(false)}
             />
 
-            <div className={`flex-1 flex flex-col transition-all duration-300 h-screen ${isSidebarCollapsed ? 'md:ml-20' : 'md:ml-64'}`}>
+            <div className={`flex-1 flex flex-col transition-all duration-300 h-screen ${isSidebarCollapsed ? 'md:ml-20' : 'md:ml-64'} w-full`}>
+                
+                {/* Mobile Header — Shows current section name */}
+                <div className="md:hidden flex items-center justify-between p-4 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 z-30 sticky top-0">
+                    <div className="flex items-center gap-3">
+                        <button 
+                            onClick={() => setIsMobileSidebarOpen(true)}
+                            className="p-2 -ml-2 text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white focus:outline-none"
+                        >
+                            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" /></svg>
+                        </button>
+                        <div className="flex flex-col">
+                            <span className="font-bold text-sm text-slate-900 dark:text-white leading-tight">{sectionName}</span>
+                            <span className="text-[9px] text-slate-400 dark:text-slate-500 uppercase tracking-widest">Nexus Suite</span>
+                        </div>
+                    </div>
+                </div>
 
-                <main className={`flex-1 overflow-y-auto p-4`}>
+                <main className="flex-1 overflow-y-auto p-2 sm:p-4">
                     <AppRoutes
                         db={db} userId={userId} appId={appId} auth={auth} storage={storage}
-                        // allRecipes, allPizarronTasks, userProfile removed as they are fetched internally by views
-                        onOpenRecipeModal={(r: any) => { setRecipeToEdit(r); setShowRecipeModal(true); }}
-                        taskToOpen={taskToOpen} onTaskOpened={() => setTaskToOpen(null)}
-                        draggingRecipe={draggingRecipe} onDragRecipeStart={setDraggingRecipe}
-                        draggingTask={draggingTask} onDragTaskStart={setDraggingTask}
-                        onDropEnd={() => { setDraggingRecipe(null); setDraggingTask(null); }}
-                        onAnalyze={(t: any) => { setTextToAnalyze(t); navigate('/cerebrity'); }}
-                        initialText={textToAnalyze} onAnalysisDone={() => setTextToAnalyze('')}
-
                     />
                 </main>
             </div>
 
-            {showRecipeModal && <RecipeFormModal isOpen={showRecipeModal} onClose={() => setShowRecipeModal(false)} db={db} userId={userId} initialData={recipeToEdit} allIngredients={allIngredients} />}
+            {showRecipeModal && <RecipeFormModal isOpen={showRecipeModal} onClose={() => setShowRecipeModal(false)} db={db} userId={userId} initialData={recipeToEdit ?? null} allIngredients={allIngredients} />}
             {showNotificationsDrawer && <NotificationsDrawer isOpen={showNotificationsDrawer} onClose={() => setShowNotificationsDrawer(false)} notifications={notifications} db={db} userId={userId} appId={appId} onTaskClick={(id) => { navigate('/pizarron'); setTaskToOpen(id); }} />}
             <ChatbotWidget />
         </div>
@@ -176,42 +165,13 @@ const AppContent: React.FC = () => {
 };
 
 
-// ... (imports remain)
-import { useIsMobile } from './hooks/useIsMobile';
-import MobileShell from './ui/mobile/MobileShell';
-
-// ... (other components remain)
-
 const App: React.FC = () => {
-    const isMobile = useIsMobile();
-    const [prevIsMobile, setPrevIsMobile] = React.useState<boolean | null>(null);
-
-    // Safety check: specific query params could bypass this if needed in dev
-    // const forceDesktop = new URLSearchParams(window.location.search).get('desktop') === 'true';
-
-    // 🔄 Handle responsive viewport changes to prevent 404 errors
-    React.useEffect(() => {
-        // Skip initial mount
-        if (prevIsMobile === null) {
-            setPrevIsMobile(isMobile);
-            return;
-        }
-
-        // When viewport changes between mobile <-> desktop, redirect to home
-        if (prevIsMobile !== isMobile) {
-            setPrevIsMobile(isMobile);
-
-            // Smooth redirect to home to avoid 404s from incompatible routes
-            window.location.href = '/';
-        }
-    }, [isMobile, prevIsMobile]);
-
     return (
         <AppProvider>
             <UIProvider>
                 <ErrorBoundary>
                     <QueryClientProvider client={queryClient}>
-                        {isMobile ? <MobileShell /> : <AppContent />}
+                        <AppContent />
                     </QueryClientProvider>
                 </ErrorBoundary>
             </UIProvider>

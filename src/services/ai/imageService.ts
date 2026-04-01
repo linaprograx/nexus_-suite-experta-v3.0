@@ -5,6 +5,32 @@
 
 const AI_GATEWAY_URL = import.meta.env.VITE_AI_GATEWAY_URL || 'http://localhost:3001';
 
+// ── Circuit Breaker (shared pattern with textService) ────────────
+// Re-uses the same gateway availability concept.
+import { resetGatewayCircuit } from './textService';
+
+const CIRCUIT_COOLDOWN_MS = 60_000;
+let imgCircuitOpen = false;
+let imgCircuitOpenedAt = 0;
+
+function isImageCircuitOpen(): boolean {
+    if (!imgCircuitOpen) return false;
+    if (Date.now() - imgCircuitOpenedAt > CIRCUIT_COOLDOWN_MS) {
+        imgCircuitOpen = false;
+        return false;
+    }
+    return true;
+}
+
+function openImageCircuit(): void {
+    if (!imgCircuitOpen) {
+        imgCircuitOpen = true;
+        imgCircuitOpenedAt = Date.now();
+        console.warn(`[AI Gateway] Image service unreachable. Will retry in ${CIRCUIT_COOLDOWN_MS / 1000}s.`);
+    }
+}
+// ─────────────────────────────────────────────────────────────────
+
 interface ImageResponse {
     imageBase64: string;
     mimeType: string;
@@ -13,6 +39,11 @@ interface ImageResponse {
 
 export const generateImage = async (prompt: string): Promise<string> => {
     if (!prompt) throw new Error("Prompt is required");
+
+    // Circuit breaker: fail fast when gateway is known to be down
+    if (isImageCircuitOpen()) {
+        throw new Error("AI Gateway is temporarily unavailable for image generation.");
+    }
 
     try {
         const response = await fetch(`${AI_GATEWAY_URL}/vertex/image`, {
@@ -44,7 +75,18 @@ export const generateImage = async (prompt: string): Promise<string> => {
         return `data:${data.mimeType || 'image/png'};base64,${data.imageBase64}`;
 
     } catch (error: any) {
-        console.error("AI Service Error:", error);
+        // Detect connection-level failures
+        const isConnectionError = error.message?.includes('Load failed') ||
+            error.message?.includes('fetch') ||
+            error.message?.includes('NetworkError') ||
+            error.message?.includes('Failed to fetch');
+
+        if (isConnectionError) {
+            openImageCircuit();
+            throw new Error("AI Gateway is temporarily unavailable for image generation.");
+        }
+
+        console.error("AI Image Service Error:", error);
         throw new Error(error.message || "Failed to generate image");
     }
 };

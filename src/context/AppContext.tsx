@@ -34,8 +34,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const [isAuthReady, setIsAuthReady] = React.useState(false);
     const [userProfile, setUserProfile] = React.useState<Partial<UserProfile>>({});
 
+    const authInitialized = React.useRef(false);
+
     React.useEffect(() => {
-        console.log('🔌 AppContext: Initializing Auth Listener...');
+        if (!authInitialized.current) {
+            console.log('🔌 AppContext: Initializing Auth Listener...');
+            authInitialized.current = true;
+        }
 
         // Timeout safety: Force ready state if Firebase takes too long (5s)
         const safetyTimeout = setTimeout(() => {

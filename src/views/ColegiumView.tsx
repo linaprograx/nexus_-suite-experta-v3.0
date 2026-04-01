@@ -333,7 +333,7 @@ const ColegiumView: React.FC<ColegiumViewProps> = () => {
                                             </div>
                                         </div>
                                         <div className="w-48 h-24 opacity-60 min-h-[96px] min-w-[192px]">
-                                            <ResponsiveContainer width="100%" height="100%">
+                                            <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
                                                 <AreaChart data={[{ v: 30 }, { v: 45 }, { v: 35 }, { v: 60 }, { v: 55 }, { v: 80 }, { v: 75 }]}>
                                                     <defs>
                                                         <linearGradient id="chartDesktop" x1="0" y1="0" x2="0" y2="1">

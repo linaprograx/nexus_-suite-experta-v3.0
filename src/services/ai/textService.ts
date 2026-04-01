@@ -5,6 +5,44 @@
 
 const AI_GATEWAY_URL = import.meta.env.VITE_AI_GATEWAY_URL || 'http://localhost:3001';
 
+// ── Circuit Breaker ──────────────────────────────────────────────
+// Prevents flooding the console with errors when the gateway is down.
+// After a connection failure, it stops trying for CIRCUIT_COOLDOWN_MS.
+const CIRCUIT_COOLDOWN_MS = 60_000; // 1 minute
+let circuitOpen = false;
+let circuitOpenedAt = 0;
+
+function isCircuitOpen(): boolean {
+    if (!circuitOpen) return false;
+    // Auto-reset after cooldown
+    if (Date.now() - circuitOpenedAt > CIRCUIT_COOLDOWN_MS) {
+        circuitOpen = false;
+        console.info('[AI Gateway] Circuit breaker reset — will retry on next call.');
+        return false;
+    }
+    return true;
+}
+
+function openCircuit(): void {
+    if (!circuitOpen) {
+        circuitOpen = true;
+        circuitOpenedAt = Date.now();
+        console.warn(
+            `[AI Gateway] Unreachable at ${AI_GATEWAY_URL}. ` +
+            `AI features will use fallbacks. ` +
+            `Will retry automatically in ${CIRCUIT_COOLDOWN_MS / 1000}s or on page refresh.`
+        );
+    }
+}
+
+/** Manually reset the circuit breaker (e.g. after starting the gateway). */
+export function resetGatewayCircuit(): void {
+    circuitOpen = false;
+    circuitOpenedAt = 0;
+    console.info('[AI Gateway] Circuit breaker manually reset.');
+}
+// ─────────────────────────────────────────────────────────────────
+
 interface TextResponse {
     text: string;
 }
@@ -19,6 +57,11 @@ interface TextResponse {
  */
 export const generateText = async (userPrompt: string, systemInstruction?: string): Promise<TextResponse> => {
     if (!userPrompt) throw new Error("Prompt is required");
+
+    // Circuit breaker: fail fast when gateway is known to be down
+    if (isCircuitOpen()) {
+        throw new Error("AI Gateway is temporarily unavailable. Using fallback data.");
+    }
 
     // Polyfill for System Instruction: Prepend to prompt if provided
     const finalPrompt = systemInstruction
@@ -61,7 +104,19 @@ export const generateText = async (userPrompt: string, systemInstruction?: strin
 
         } catch (error: any) {
             attempts++;
-            const isRetryable = error.message.includes('429') || error.message.includes('50') || error.message.includes('fetch');
+
+            // Detect connection-level failures (gateway not running)
+            const isConnectionError = error.message?.includes('Load failed') ||
+                error.message?.includes('fetch') ||
+                error.message?.includes('NetworkError') ||
+                error.message?.includes('Failed to fetch');
+
+            if (isConnectionError) {
+                openCircuit();
+                throw new Error("AI Gateway is temporarily unavailable. Using fallback data.");
+            }
+
+            const isRetryable = error.message.includes('429') || error.message.includes('50');
 
             if (isRetryable && attempts < maxAttempts) {
                 console.warn(`Text Service Attempt ${attempts} failed. Retrying...`, error.message);

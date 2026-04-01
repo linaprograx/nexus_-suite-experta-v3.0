@@ -334,7 +334,7 @@ const Colegium: React.FC<Props> = ({ onNavigate }) => {
                                     </div>
 
                                     <div className="w-24 h-16 opacity-60">
-                                        <ResponsiveContainer width="100%" height="100%">
+                                        <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
                                             <AreaChart data={[{ v: 30 }, { v: 40 }, { v: 35 }, { v: 50 }, { v: 70 }, { v: 65 }, { v: 80 }]}>
                                                 <defs>
                                                     <linearGradient id="chartStat" x1="0" y1="0" x2="0" y2="1">
