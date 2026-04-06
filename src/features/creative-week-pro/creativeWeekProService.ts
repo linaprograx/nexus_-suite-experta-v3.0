@@ -169,6 +169,12 @@ export const getCreativeWeekInsights = async (tasks: PizarronTask[], userName: s
         const text = response.text || "";
         let data: CreativeWeekData;
         try {
+            // Defensive Check: If the gateway returned a Mock or Error string, use fallback immediately
+            if (text.includes("[NEXUS AI MOCK MODE ACTIVE]") || text.includes("[API ERROR]")) {
+                console.info("CreativeWeekPro: AI Gateway is in Mock/Error mode. Using fallback data.");
+                return FALLBACK_DATA;
+            }
+
             // Clean potentially markdown wrapped response
             const cleanText = text.replace(/```json/g, '').replace(/```/g, '').trim();
             // Try to find JSON object if wrapped in other text

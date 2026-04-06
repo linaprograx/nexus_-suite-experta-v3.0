@@ -51,7 +51,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         }, 5000);
 
         const unsubscribe = onAuthStateChanged(auth, async (user) => {
-            console.log('👤 Auth State Changed:', user ? 'User Logged In' : 'No User');
+            if (authInitialized.current && isAuthReady) {
+                // Skip logging after first initialization to reduce noise
+            } else {
+                console.log('👤 Auth State Changed:', user ? 'User Logged In' : 'No User');
+            }
+            
             clearTimeout(safetyTimeout); // Clear timeout on success
 
             if (user) {
@@ -75,7 +80,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
         return () => {
             clearTimeout(safetyTimeout);
-            unsubscribe();
+            if (unsubscribe) unsubscribe();
         };
     }, []);
 

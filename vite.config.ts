@@ -7,5 +7,11 @@ export default defineConfig({
     host: true,          // 🔑 CLAVE
     port: 3000,
     strictPort: true
+  },
+  build: {
+    sourcemap: false     // 🚫 Silencia errores .map en consola
+  },
+  css: {
+    devSourcemap: false  // 🚫 Silencia errores .css.map
   }
 })

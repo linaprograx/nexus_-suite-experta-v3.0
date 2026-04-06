@@ -24,6 +24,8 @@ import { useIngredients } from './hooks/useIngredients';
 import { queryClient } from './config/queryClient';
 import { ConnectionStatus } from './components/ui/ConnectionStatus';
 import { useNexusProfile } from './hooks/useNexusProfile';
+import FloatingBottomNav from './ui/mobile/components/FloatingBottomNav';
+import { PageName } from './ui/mobile/types';
 
 // ... (other imports remain, but useFirebaseData is gone)
 import { useUIStore } from './store/uiStore';
@@ -140,8 +142,28 @@ const AppLayout: React.FC<any> = ({
                 </main>
             </div>
 
-            {showRecipeModal && <RecipeFormModal isOpen={showRecipeModal} onClose={() => setShowRecipeModal(false)} db={db} userId={userId} initialData={recipeToEdit ?? null} allIngredients={allIngredients} />}
             {showNotificationsDrawer && <NotificationsDrawer isOpen={showNotificationsDrawer} onClose={() => setShowNotificationsDrawer(false)} notifications={notifications} db={db} userId={userId} appId={appId} onTaskClick={(id) => { navigate('/pizarron'); setTaskToOpen(id); }} />}
+            
+            {/* Unified Bottom Nav for Mobile viewports - Solves the Shell Split/Redirect issue */}
+            <div className="md:hidden">
+                <FloatingBottomNav 
+                    currentPage={sectionName.toLowerCase() as any} 
+                    onNavigate={(page) => {
+                        // Bridge PageName to Route
+                        const routeMap: Record<string, string> = {
+                            [PageName.Dashboard]: '/',
+                            [PageName.GrimorioRecipes]: '/grimorium',
+                            [PageName.CerebritySynthesis]: '/cerebrity',
+                            [PageName.Pizarron]: '/pizarron',
+                            [PageName.AvatarCore]: '/avatar',
+                            [PageName.Colegium]: '/colegium',
+                            [PageName.Personal]: '/personal',
+                        };
+                        navigate(routeMap[page] || '/');
+                    }} 
+                />
+            </div>
+
             <ChatbotWidget />
         </div>
     );

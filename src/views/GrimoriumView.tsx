@@ -44,6 +44,8 @@ import { buildStockFromPurchases } from '../utils/stockUtils';
 import { calculateEscandallo } from '../core/finance/cost.engine';
 import { useEscandallator } from '../hooks/useEscandallator';
 import { useGrimoriumHandlers } from '../hooks/useGrimoriumHandlers';
+import { useUIStore } from '../store/uiStore';
+import { generateText } from '../services/ai/textService';
 
 
 
@@ -75,12 +77,16 @@ import { LayerPanel } from './grimorium/shell/LayerPanel';
 
 
 interface GrimoriumViewProps {
-    onOpenRecipeModal: (recipe: Partial<Recipe> | null) => void;
-    onDragRecipeStart: (recipe: Recipe) => void;
-    setCurrentView: (view: ViewName) => void;
+    // Props are now consumed via useUIStore to avoid prop drilling
 }
 
-const GrimoriumInner: React.FC<GrimoriumViewProps> = ({ onOpenRecipeModal, onDragRecipeStart, setCurrentView }) => {
+const GrimoriumInner: React.FC<GrimoriumViewProps> = () => {
+    const { setShowRecipeModal, setDraggingRecipe } = useUIStore();
+    
+    // Create adapters for the old prop names to minimize logic changes
+    const onOpenRecipeModal = (recipe: Partial<Recipe> | null) => setShowRecipeModal(true, recipe);
+    const onDragRecipeStart = (recipe: Recipe) => setDraggingRecipe(recipe);
+    const setCurrentView = (view: ViewName) => { /* Navigation is now handled by the router */ console.log("Routing to:", view); };
     const { db, userId, appId } = useApp();
     const { recipes: allRecipes, isLoading: recipesLoading } = useRecipes();
     const { ingredients: allIngredients } = useIngredients();
@@ -95,23 +101,21 @@ const GrimoriumInner: React.FC<GrimoriumViewProps> = ({ onOpenRecipeModal, onDra
         setLayer
     } = useItemContext();
 
-    // [PERF_BASELINE] Logging
+    // [PERF_BASELINE] Logging (Only in dev if specifically needed)
     React.useEffect(() => {
-        console.log('[PERF_BASELINE] GrimoriumView MOUNTED');
+        if (import.meta.env.DEV) {
+            // console.log('[PERF_DEBUG] GrimoriumView MOUNTED');
+        }
     }, []);
 
     React.useEffect(() => {
-        console.time(`[PERF_BASELINE] Tab Switch to ${viewMode}`);
-        // We can't easily console.timeEnd here because this effect runs AFTER the painting.
-        // But logging the event helps correlate with Profiler.
-        console.log(`[PERF_BASELINE] ViewMode changed to: ${viewMode}`);
-        return () => console.timeEnd(`[PERF_BASELINE] Tab Switch to ${viewMode}`);
+        if (import.meta.env.DEV && viewMode) {
+            // console.log(`[PERF_DEBUG] ViewMode: ${viewMode}`);
+        }
     }, [viewMode]);
 
-    // Track renders
-    if (process.env.NODE_ENV === 'development') {
-        console.log('[PERF_BASELINE] GrimoriumView RENDER');
-    }
+    // Render tracking - hidden by default
+    // if (process.env.NODE_ENV === 'development') { }
 
     const { storage } = useApp();
     const [loading, setLoading] = React.useState(false);
@@ -127,11 +131,45 @@ const GrimoriumInner: React.FC<GrimoriumViewProps> = ({ onOpenRecipeModal, onDra
         stats,
         handleDeleteRecipe: hookDeleteRecipe,
         handleDuplicateRecipe: hookDuplicateRecipe
-    } = useGrimorium({ db, userId, allRecipes, allIngredients });
+    } = useGrimorium({ db: db!, userId: userId!, allRecipes, allIngredients });
 
     // Create aliases for backward compatibility
     const filteredRecipes = hookFilteredRecipes;
     const handleDuplicateRecipe = hookDuplicateRecipe;
+
+    // Zero Waste State (Restored)
+    const [zwSelectedIngredients, setZwSelectedIngredients] = React.useState<string[]>([]);
+    const [zwRawIngredients, setZwRawIngredients] = React.useState("");
+    const [zwLoading, setZwLoading] = React.useState(false);
+    const [zwHistory, setZwHistory] = React.useState<ZeroWasteResult[]>([]);
+    const [zwResults, setZwResults] = React.useState<ZeroWasteResult[]>([]);
+
+    const handleZwIngredientToggle = (ingredientName: string) => {
+        setZwSelectedIngredients(prev =>
+            prev.includes(ingredientName) ? prev.filter(n => n !== ingredientName) : [...prev, ingredientName]
+        );
+    };
+
+    const handleGenerateZeroWasteRecipes = async () => {
+        if (!db || !userId) return;
+        setZwLoading(true);
+        try {
+            const promptIngredients = [...zwSelectedIngredients, zwRawIngredients].filter(Boolean).join(', ');
+            const systemPrompt = "Eres un chef de I+D 'zero waste' de élite. NO eres un bartender. Tu foco es crear *elaboraciones complejas* (cordiales, siropes, polvos, aceites, shrubs) a partir de desperdicios. Tu respuesta debe ser estrictamente un array JSON.";
+            const userQuery = `Usando estos ingredientes: ${promptIngredients}. Genera de 3 a 5 elaboraciones 'zero waste'.`;
+            const response = await generateText(userQuery, systemPrompt);
+            const results = JSON.parse(response.text) as ZeroWasteResult[];
+            setZwResults(results);
+            setZwHistory(prev => [...results, ...prev]);
+        } catch (e) {
+            console.error(e);
+            showToast('Error generando Zero Waste', 'error');
+        } finally {
+            setZwLoading(false);
+        }
+    };
+
+    const handleZwHistorySelect = (result: ZeroWasteResult) => setZwResults([result]);
 
     // Gradient theme for Grimorio
     const currentGradient = 'emerald' as const;
@@ -197,7 +235,7 @@ const GrimoriumInner: React.FC<GrimoriumViewProps> = ({ onOpenRecipeModal, onDra
         escandalloData,
         saveToHistory: saveEscandalloHistory,
         loadFromHistory: loadEscandalloHistory
-    } = useEscandallator({ db, userId, allIngredients });
+    } = useEscandallator({ db: db!, userId: userId!, allIngredients });
 
     const handleSaveToHistory = async (reportData: any) => {
         try {
@@ -371,7 +409,7 @@ const GrimoriumInner: React.FC<GrimoriumViewProps> = ({ onOpenRecipeModal, onDra
         }
     };
     const handleDeletePurchase = async (purchaseId: string) => {
-        if (!userId) return;
+        if (!userId || !db) return;
         try {
             await deleteDoc(doc(db, `users/${userId}/purchases`, purchaseId));
             showToast("Registro eliminado del historial", 'info');
@@ -394,7 +432,7 @@ const GrimoriumInner: React.FC<GrimoriumViewProps> = ({ onOpenRecipeModal, onDra
     const handleDeleteIngredient = async (ing: Ingredient) => {
         if (window.confirm(`¿Seguro que quieres eliminar ${ing.nombre}?`)) {
             try {
-                await deleteDoc(doc(db, ingredientsColPath, ing.id));
+                await deleteDoc(doc(db!, ingredientsColPath, ing.id));
                 queryClient.invalidateQueries({ queryKey: ['ingredients'] });
                 if (selectedIngredients.includes(ing.id)) handleSelectIngredient(ing.id);
                 if (selectedIngredientId === ing.id) setSelectedIngredientId(null);
@@ -416,7 +454,7 @@ const GrimoriumInner: React.FC<GrimoriumViewProps> = ({ onOpenRecipeModal, onDra
         handleRecipeCsvImport, handleRecipePdfImportDirect,
         handleSelectRecipeCard, handleAddRecipeClick, handleDragStartWrapper
     } = useGrimoriumHandlers({
-        db, userId, appId, storage, allIngredients, allRecipes,
+        db: db!, userId: userId!, appId: appId!, storage: storage!, allIngredients, allRecipes,
         selectedRecipes, selectedRecipeId, selectedIngredients,
         queryClient, setSelectedRecipes, setSelectedRecipeId, setSelectedIngredients,
         setLoading, showToast,
@@ -424,7 +462,7 @@ const GrimoriumInner: React.FC<GrimoriumViewProps> = ({ onOpenRecipeModal, onDra
         onOpenRecipeModal, onDragRecipeStart
     });
 
-    const { suppliers } = useSuppliers({ db, userId });
+    const { suppliers } = useSuppliers({ db: db!, userId: userId! });
 
     const handleConfigureBatch = (amount: number, unit: 'Litros' | 'Botellas') => {
         setBatchTargetQty(amount.toString());
@@ -488,7 +526,7 @@ const GrimoriumInner: React.FC<GrimoriumViewProps> = ({ onOpenRecipeModal, onDra
                     {viewMode !== 'stock' && activeLayer === 'cost' && (
                         <div className="mt-4 pt-4 border-t border-slate-200 dark:border-slate-800">
                             <EscandallatorSidebar
-                                db={db}
+                                db={db!}
                                 escandallosColPath={escandallosColPath}
                                 onLoadHistory={handleLoadHistory}
                                 onNewEscandallo={() => { setSelectedEscandalloRecipe(null); setPrecioVenta(0); }}
@@ -519,7 +557,7 @@ const GrimoriumInner: React.FC<GrimoriumViewProps> = ({ onOpenRecipeModal, onDra
                                 </div>
 
                                 <div className="flex-1 overflow-y-auto custom-scrollbar py-2 pr-1">
-                                    <SuppliersList db={db} userId={userId} onSelect={() => setShowSuppliersModal(true)} />
+                                    <SuppliersList db={db!} userId={userId!} onSelect={() => setShowSuppliersModal(true)} />
                                 </div>
                             </div>
 
@@ -575,12 +613,12 @@ const GrimoriumInner: React.FC<GrimoriumViewProps> = ({ onOpenRecipeModal, onDra
                                 selectedRecipeId={selectedRecipeId}
                                 onSelectRecipe={handleSelectRecipeCard}
                                 onAddRecipe={handleAddRecipeClick}
-                                onDragStart={onDragRecipeStart ? handleDragStartWrapper : undefined}
+                                onDragStart={handleDragStartWrapper}
                                 searchTerm={searchQuery}
                                 onSearchChange={setSearchQuery}
                                 selectedCategory={selectedCategory}
                                 onCategoryChange={(cat) => setSelectedCategory(cat)}
-                                availableCategories={['Coctel', 'Mocktail', 'Preparacion', 'Otro', ...new Set(allRecipes.flatMap(r => r.categorias || []))]}
+                                availableCategories={['Coctel', 'Mocktail', 'Preparacion', 'Otro', ...Array.from(new Set(allRecipes.flatMap(r => r.categorias || [])))]}
                                 selectedStatus={selectedStatus}
                                 onStatusChange={(stat) => setSelectedStatus(stat)}
                                 onDelete={() => selectedRecipeId && handleDeleteRecipe(selectedRecipeId)}
@@ -593,6 +631,21 @@ const GrimoriumInner: React.FC<GrimoriumViewProps> = ({ onOpenRecipeModal, onDra
                             />
                         )}
 
+                        {/* ZERO WASTE RESULTS VIEW */}
+                        {activeLayer === 'optimization' && (
+                            <div className="grid grid-cols-1 gap-6 pb-6 px-4">
+                                {zwResults.map((recipe, index) => (
+                                    <ZeroWasteResultCard
+                                        key={index}
+                                        recipe={recipe}
+                                        db={db!}
+                                        userId={userId!}
+                                        appId={appId!}
+                                    />
+                                ))}
+                            </div>
+                        )}
+
                         {/* MARKET VIEW (formerly Ingredients) */}
                         {viewMode === 'market' && (
                             <IngredientListPanel
@@ -603,13 +656,13 @@ const GrimoriumInner: React.FC<GrimoriumViewProps> = ({ onOpenRecipeModal, onDra
                                 onSelectAll={(selected) => setSelectedIngredients(selected ? filteredIngredients.map(i => i.id) : [])}
                                 onDeleteSelected={handleDeleteSelectedIngredients}
                                 onImportCSV={() => setShowCsvImportModal(true)}
-                                onEditIngredient={(ing) => setSelectedIngredientId(ing.id)}
+                                onEditIngredient={(ing) => ing && setSelectedIngredientId(ing.id)}
                                 onNewIngredient={() => { setEditingIngredient(null); setShowIngredientModal(true); }}
                                 ingredientSearchTerm={ingredientSearch}
                                 onIngredientSearchChange={setIngredientSearch}
                                 ingredientFilters={ingredientFilters}
                                 onIngredientFilterChange={(k, v) => setIngredientFilters(prev => ({ ...prev, [k]: v }))}
-                                availableCategories={['General', ...new Set(allIngredients.map(i => i.categoria))]}
+                                availableCategories={['General', ...Array.from(new Set(allIngredients.map(i => i.categoria || 'General').filter(Boolean)))]}
                                 onBuy={startPurchase}
                                 onBulkBuy={startBulkPurchase}
                                 disableStockAlerts={true}
@@ -735,8 +788,8 @@ const GrimoriumInner: React.FC<GrimoriumViewProps> = ({ onOpenRecipeModal, onDra
                             </div>
 
                             <EscandallatorPanel
-                                db={db}
-                                appId={appId}
+                                db={db!}
+                                appId={appId!}
                                 allRecipes={allRecipes}
                                 activeSubTab={escandallatorSubTab}
                                 onSubTabChange={setEscandallatorSubTab}
@@ -792,23 +845,13 @@ const GrimoriumInner: React.FC<GrimoriumViewProps> = ({ onOpenRecipeModal, onDra
                 suppliers={suppliers}
             />
 
-            {/* Bulk Purchase Modals - Updated condition logic implicitly by ViewMode */}
             <BulkPurchaseModal
-                isOpen={isBulkPurchaseModalOpen && viewMode !== 'stock'}
+                isOpen={isBulkPurchaseModalOpen}
                 onClose={() => setIsBulkPurchaseModalOpen(false)}
                 selectedIngredients={bulkPurchaseTargets}
                 onConfirm={confirmBulkPurchase}
                 suppliers={suppliers}
-                theme="emerald"
-            />
-
-            <BulkPurchaseModal
-                isOpen={isBulkPurchaseModalOpen && viewMode === 'stock'}
-                onClose={() => setIsBulkPurchaseModalOpen(false)}
-                selectedIngredients={bulkPurchaseTargets}
-                onConfirm={confirmBulkPurchase}
-                suppliers={suppliers}
-                theme="blue"
+                theme={viewMode === 'stock' ? 'blue' : 'emerald'}
             />
 
             {showSuppliersModal && <SuppliersManagerModal isOpen={showSuppliersModal} onClose={() => setShowSuppliersModal(false)} />}
@@ -817,9 +860,9 @@ const GrimoriumInner: React.FC<GrimoriumViewProps> = ({ onOpenRecipeModal, onDra
                 <IngredientFormModal
                     isOpen={showIngredientModal}
                     onClose={() => setShowIngredientModal(false)}
-                    db={db}
-                    userId={userId}
-                    appId={appId}
+                    db={db!}
+                    userId={userId!}
+                    appId={appId!}
                     editingIngredient={editingIngredient}
                     theme={viewMode === 'stock' ? 'blue' : 'emerald'}
                 />

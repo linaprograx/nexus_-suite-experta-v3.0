@@ -86,7 +86,9 @@ export const generateImage = async (prompt: string): Promise<string> => {
             throw new Error("AI Gateway is temporarily unavailable for image generation.");
         }
 
-        console.error("AI Image Service Error:", error);
+        if (!imgCircuitOpen) {
+            console.error("AI Image Service Error:", error);
+        }
         throw new Error(error.message || "Failed to generate image");
     }
 };

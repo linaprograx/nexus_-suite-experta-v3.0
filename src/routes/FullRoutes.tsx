@@ -22,22 +22,19 @@ export const FullRoutes = ({
     return (
         <Routes>
             <Route path="/" element={<DashboardView />} />
-            <Route path="/grimorium" element={
-                <GrimoriumView />
-            } />
-            <Route path="/pizarron" element={
-                <PizarronView
-                    db={db} userId={userId} appId={appId} auth={auth} storage={storage}
-                />
-            } />
-            <Route path="/cerebrity" element={
-                <CerebrityView
-                    db={db} userId={userId} storage={storage} appId={appId}
-                />
-            } />
+            <Route path="/grimorium" element={<GrimoriumView />} />
+            <Route path="/grimorio/*" element={<Navigate to="/grimorium" replace />} />
+            
+            <Route path="/pizarron" element={<PizarronView db={db} userId={userId} appId={appId} auth={auth} storage={storage} />} />
+            <Route path="/cerebrity" element={<CerebrityView />} />
+            <Route path="/cerebrity/*" element={<Navigate to="/cerebrity" replace />} />
+            
             <Route path="/trend-locator" element={<TrendLocatorView db={db} userId={userId} appId={appId} />} />
             <Route path="/unleash" element={<Navigate to="/cerebrity" replace />} />
+            
             <Route path="/avatar" element={<AvatarView />} />
+            <Route path="/avatar/*" element={<Navigate to="/avatar" replace />} />
+            
             <Route path="/make-menu" element={<MakeMenuView db={db} userId={userId} appId={appId} />} />
             <Route path="/collegium" element={<ColegiumView />} />
             <Route path="/colegium" element={<ColegiumView />} />

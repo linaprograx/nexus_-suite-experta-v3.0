@@ -100,6 +100,10 @@ export const generateText = async (userPrompt: string, systemInstruction?: strin
                 throw new Error("Invalid response from AI Gateway: Missing text data");
             }
 
+            if (data.text.includes("[NEXUS AI MOCK MODE ACTIVE]")) {
+                console.info("⚠️ AI Gateway is running in Mock Mode - Real AI generation is disabled until credentials are provided.");
+            }
+
             return { text: data.text };
 
         } catch (error: any) {
@@ -125,7 +129,9 @@ export const generateText = async (userPrompt: string, systemInstruction?: strin
                 continue;
             }
 
-            console.error("Text Service Error:", error);
+            if (!circuitOpen) {
+                console.error("Text Service Error:", error);
+            }
             throw new Error(error.message || "Failed to generate text via Gateway");
         }
     }

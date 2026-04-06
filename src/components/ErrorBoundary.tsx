@@ -113,10 +113,10 @@ export class ErrorBoundary extends Component<Props, State> {
                                 Intentar de nuevo
                             </button>
                             <button
-                                onClick={() => window.location.href = '/'}
+                                onClick={() => window.location.reload()}
                                 className="flex-1 px-6 py-3 bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-900 dark:text-white font-medium rounded-xl transition-colors"
                             >
-                                Ir al inicio
+                                Recargar página
                             </button>
                         </div>
 

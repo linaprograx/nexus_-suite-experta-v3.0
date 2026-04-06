@@ -21,6 +21,8 @@ import { TrendResult } from '../types';
 import MakeMenuView from './MakeMenuView';
 import CriticView from './unleash/CriticView';
 import { motion } from 'framer-motion';
+import { useUIStore } from '../store/uiStore';
+import { useApp } from '../context/AppContext';
 
 // Define SaveModal before it is used or move to separate file. 
 // Ideally it should be at top or hoisted.
@@ -85,18 +87,15 @@ import { useIngredients } from '../hooks/useIngredients';
 import { useCerebrityOrchestrator } from '../hooks/useCerebrityOrchestrator';
 
 interface CerebrityViewProps {
-  db: Firestore;
-  userId: string;
-  storage: FirebaseStorage | null;
-  appId: string;
-  // allRecipes: Recipe[]; // Removed
-  // allIngredients: Ingredient[]; // Removed
-  onOpenRecipeModal: (recipe: Partial<Recipe> | null) => void;
-  initialText: string | null;
-  onAnalysisDone: () => void;
+  // No persistent props needed as they are stored in Zustand or Auth context
 }
 
-const CerebrityView: React.FC<CerebrityViewProps> = ({ db, userId, storage, appId, onOpenRecipeModal, initialText, onAnalysisDone }) => {
+const CerebrityView: React.FC<CerebrityViewProps> = () => {
+  const { db, userId, storage, appId } = useApp();
+  const setShowRecipeModal = useUIStore(state => state.setShowRecipeModal);
+  const initialText = useUIStore(state => state.textToAnalyze);
+  const setTextToAnalyze = useUIStore(state => state.setTextToAnalyze);
+
   const { recipes: allRecipes } = useRecipes();
   const { ingredients: allIngredients } = useIngredients();
   const { actions: orchestratorActions, state: orchestratorState } = useCerebrityOrchestrator();
@@ -244,7 +243,7 @@ const CerebrityView: React.FC<CerebrityViewProps> = ({ db, userId, storage, appI
           results: data,
           createdAt: serverTimestamp()
         };
-        await addDoc(collection(db, `users/${userId}/trend-history`), trendDoc);
+        await addDoc(collection(db!, `users/${userId}/trend-history`), trendDoc);
       } catch (e) { console.warn("Failed to save history", e) }
 
       setTrendResults(data);
@@ -562,11 +561,11 @@ const CerebrityView: React.FC<CerebrityViewProps> = ({ db, userId, storage, appI
     if (initialText) {
       setRawInput(initialText);
       setActiveTab('creativity');
-      onAnalysisDone();
+      setTextToAnalyze(null); // Mark as processed
     } else if (location.state?.tab) {
       setActiveTab(location.state.tab);
     }
-  }, [initialText, onAnalysisDone, location.state]);
+  }, [initialText, setTextToAnalyze, location.state]);
 
   // Automatic Test for Phase 6
   React.useEffect(() => {
@@ -668,7 +667,7 @@ const CerebrityView: React.FC<CerebrityViewProps> = ({ db, userId, storage, appI
 
       setResult(prev => prev ? ({ ...prev, imageUrl: downloadURL }) : null);
 
-      await addDoc(collection(db, `users/${userId}/cerebrity-history`), {
+      await addDoc(collection(db!, `users/${userId}/cerebrity-history`), {
         ...textResult,
         imageUrl: downloadURL,
         createdAt: serverTimestamp(),
@@ -692,7 +691,7 @@ const CerebrityView: React.FC<CerebrityViewProps> = ({ db, userId, storage, appI
     const combination = labInputs.map(i => i.nombre).join(', ');
     const taskContent = `[The Lab: ${combination}] ${title} - ${content}`.substring(0, 500);
     try {
-      await addDoc(collection(db, `users/${userId}/pizarron/tasks`), {
+      await addDoc(collection(db!, `users/${userId}/pizarron/tasks`), {
         content: taskContent, status: 'Ideas', category: 'Ideas', createdAt: serverTimestamp(), boardId: 'general'
       });
       alert("Idea guardada en el Pizarrón.");
@@ -704,12 +703,12 @@ const CerebrityView: React.FC<CerebrityViewProps> = ({ db, userId, storage, appI
   const confirmSave = async (content: string, destination: 'pizarron' | 'recetas', powerName: string) => {
     try {
       if (destination === 'pizarron') {
-        await addDoc(collection(db, `artifacts/${appId}/public/data/pizarron-tasks`), {
+        await addDoc(collection(db!, `artifacts/${appId}/public/data/pizarron-tasks`), {
           content: `[Cerebrity: ${powerName}] ${content}`.substring(0, 500), status: 'Ideas', category: 'Ideas', createdAt: serverTimestamp(), boardId: 'general'
         });
         alert("Guardado en Pizarrón.");
       } else {
-        onOpenRecipeModal({ nombre: `[${powerName}] Idea`, storytelling: content });
+        setShowRecipeModal(true, { nombre: `[${powerName}] Idea`, storytelling: content });
       }
       setSaveModalState({ isOpen: false, options: [], powerName: '' });
     } catch (err) {
@@ -813,7 +812,7 @@ const CerebrityView: React.FC<CerebrityViewProps> = ({ db, userId, storage, appI
         {(activeTab === 'makeMenu' || activeTab === 'critic') ? (
           <div className="h-full w-full min-h-0 flex flex-col relative overflow-y-auto">
             {activeTab === 'makeMenu' ? (
-              <MakeMenuView db={db} userId={userId} appId={appId} />
+              <MakeMenuView db={db!} userId={userId!} appId={appId!} />
             ) : (
               <CriticView />
             )}
@@ -822,20 +821,20 @@ const CerebrityView: React.FC<CerebrityViewProps> = ({ db, userId, storage, appI
           <>
             <div className="h-full min-h-0 flex flex-col relative">
               {activeTab === 'creativity' ? (
-                <CerebrityHistorySidebar db={db} userId={userId} onLoadHistory={(item) => setResult(item)} />
+                <CerebrityHistorySidebar db={db!} userId={userId!} onLoadHistory={(item) => setResult(item)} />
               ) : activeTab === 'lab' ? (
-                <TheLabHistorySidebar db={db} historyPath={`users/${userId}/the-lab-history`} onLoadHistory={(item) => setLabResult(item.result)} />
+                <TheLabHistorySidebar db={db!} historyPath={`users/${userId}/the-lab-history`} onLoadHistory={(item) => setLabResult(item.result)} />
               ) : (
-                <TrendHistorySidebar db={db} trendHistoryPath={`users/${userId}/trend-history`} onLoadHistory={(item) => setTrendResults((item as any).results || [])} />
+                <TrendHistorySidebar db={db!} trendHistoryPath={`users/${userId}/trend-history`} onLoadHistory={(item) => setTrendResults((item as any).results || [])} />
               )}
             </div>
             <div className="h-full min-h-0 flex flex-col relative">
               {activeTab === 'creativity' ? (
-                <CreativityTab db={db} userId={userId} appId={appId} allRecipes={allRecipes} selectedRecipe={selectedRecipe} setSelectedRecipe={setSelectedRecipe} rawInput={rawInput} setRawInput={setRawInput} handleGenerate={handleGenerate} loading={loading} imageLoading={imageLoading} error={error} result={result} setResult={setResult} onOpenRecipeModal={onOpenRecipeModal} />
+                <CreativityTab db={db!} userId={userId!} appId={appId!} allRecipes={allRecipes} selectedRecipe={selectedRecipe} setSelectedRecipe={setSelectedRecipe} rawInput={rawInput} setRawInput={setRawInput} handleGenerate={handleGenerate} loading={loading} imageLoading={imageLoading} error={error} result={result} setResult={setResult} onOpenRecipeModal={(r) => setShowRecipeModal(true, r)} />
               ) : activeTab === 'lab' ? (
-                <LabView db={db} userId={userId} appId={appId} allIngredients={allIngredients} allRecipes={allRecipes} labResult={labResult} setLabResult={setLabResult} labInputs={labInputs} setLabInputs={setLabInputs} />
+                <LabView db={db!} userId={userId!} appId={appId!} allIngredients={allIngredients} allRecipes={allRecipes} labResult={labResult} setLabResult={setLabResult} labInputs={labInputs} setLabInputs={setLabInputs} />
               ) : (
-                <TrendLocatorTab loading={trendLoading} error={trendError} trendResults={filteredTrendResults} trendSources={[]} db={db} userId={userId} appId={appId} trendHistoryPath={`users/${userId}/trend-history`} />
+                <TrendLocatorTab loading={trendLoading} error={trendError} trendResults={filteredTrendResults} trendSources={[]} db={db!} userId={userId!} appId={appId!} trendHistoryPath={`users/${userId}/trend-history`} />
               )}
             </div>
             <div className="h-full min-h-0 flex flex-col relative">

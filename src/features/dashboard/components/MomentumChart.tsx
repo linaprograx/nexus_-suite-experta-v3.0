@@ -27,35 +27,43 @@ export const MomentumChart: React.FC<MomentumChartProps> = ({ data }) => {
 
             <div className="w-full h-[220px]">
                 {data && data.length > 0 ? (
-                    <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
-                        <AreaChart data={data} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-                            <defs>
-                                <linearGradient id="colorSlope" x1="0" y1="0" x2="0" y2="1">
-                                    <stop offset="5%" stopColor="#6366f1" stopOpacity={0.3} />
-                                    <stop offset="95%" stopColor="#6366f1" stopOpacity={0} />
-                                </linearGradient>
-                            </defs>
-                            <XAxis
-                                dataKey="date"
-                                axisLine={false}
-                                tickLine={false}
-                                tick={{ fill: '#94a3b8', fontSize: 10 }}
-                                tickFormatter={(val) => new Date(val).toLocaleDateString('es-ES', { weekday: 'narrow' })}
-                            />
-                            <Tooltip
-                                contentStyle={{ backgroundColor: '#1e293b', border: 'none', borderRadius: '12px', color: '#fff', fontSize: '12px' }}
-                                labelStyle={{ color: '#94a3b8', marginBottom: '4px' }}
-                            />
-                            <Area
-                                type="monotone"
-                                dataKey="tasks"
-                                stroke="#6366f1"
-                                strokeWidth={3}
-                                fillOpacity={1}
-                                fill="url(#colorSlope)"
-                            />
-                        </AreaChart>
-                    </ResponsiveContainer>
+                    <div className="w-full h-full min-h-[50px]">
+                        <ResponsiveContainer width="100%" height="100%">
+                            <AreaChart data={data} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                                <defs>
+                                    <linearGradient id="colorSlope" x1="0" y1="0" x2="0" y2="1">
+                                        <stop offset="5%" stopColor="#6366f1" stopOpacity={0.3} />
+                                        <stop offset="95%" stopColor="#6366f1" stopOpacity={0} />
+                                    </linearGradient>
+                                </defs>
+                                <XAxis
+                                    dataKey="date"
+                                    axisLine={false}
+                                    tickLine={false}
+                                    tick={{ fill: '#94a3b8', fontSize: 10 }}
+                                    tickFormatter={(val) => {
+                                        try {
+                                            return new Date(val).toLocaleDateString('es-ES', { weekday: 'narrow' });
+                                        } catch (e) {
+                                            return '';
+                                        }
+                                    }}
+                                />
+                                <Tooltip
+                                    contentStyle={{ backgroundColor: '#1e293b', border: 'none', borderRadius: '12px', color: '#fff', fontSize: '12px' }}
+                                    labelStyle={{ color: '#94a3b8', marginBottom: '4px' }}
+                                />
+                                <Area
+                                    type="monotone"
+                                    dataKey="tasks"
+                                    stroke="#6366f1"
+                                    strokeWidth={3}
+                                    fillOpacity={1}
+                                    fill="url(#colorSlope)"
+                                />
+                            </AreaChart>
+                        </ResponsiveContainer>
+                    </div>
                 ) : (
                     <div className="h-full flex items-center justify-center text-gray-400 text-xs">
                         Recopilando datos de actividad...

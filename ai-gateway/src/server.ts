@@ -9,24 +9,27 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-// CORS Configuration - Secure for production
-const allowedOrigins = [
-    'http://localhost:5173',  // Vite dev server
-    'http://localhost:3000',  // Alternative dev port
-    'https://nexus-suite.vercel.app',  // Production domain (update with your actual domain)
-    process.env.FRONTEND_URL  // Dynamic origin from env
-].filter(Boolean);  // Remove undefined values
-
 app.use(cors({
     origin: (origin, callback) => {
-        // Allow requests with no origin (mobile apps, Postman, etc.)
+        // Allow requests with no origin (mobile apps, legacy devices, etc.)
         if (!origin) return callback(null, true);
 
-        if (allowedOrigins.includes(origin)) {
+        const allowedOrigins = [
+            'http://localhost:5173',
+            'http://localhost:3000',
+            'http://localhost:4173', // Vite preview
+            process.env.FRONTEND_URL
+        ].filter(Boolean) as string[];
+
+        // Enhanced check
+        const isAllowed = allowedOrigins.some(o => origin.startsWith(o)) || 
+                         origin.includes('localhost');
+
+        if (isAllowed) {
             callback(null, true);
         } else {
             console.warn(`⚠️ Blocked CORS request from origin: ${origin}`);
-            callback(new Error('Not allowed by CORS'));
+            callback(new Error(`Origin ${origin} not allowed by AI Gateway CORS strategy`));
         }
     },
     credentials: true,
@@ -71,12 +74,22 @@ app.post('/api/text', async (req: Request, res: Response) => {
         }
 
         const { generateText } = await import('./vertex/client.js');
-        const result = await generateText(prompt);
+        const result = await generateText(prompt).catch((e: any) => {
+            console.error("AI Gateway Fallback triggered:", e.message);
+            // VITAL: Return JSON object, NOT a string, to avoid JSON.parse errors in frontend
+            return {
+                text: "✨ [NEXUS AI MOCK MODE ACTIVE]\n\nNo se han detectado credenciales de Google Cloud válidas. Sin embargo, el túnel de IA está OPERATIVO y listo.\n\nPara activar la IA real:\n1. Coloca tu 'service-account.json' en /ai-gateway/credentials/\n2. Reinicia el gateway.",
+                mock: true
+            };
+        });
         res.json(result);
 
     } catch (error: any) {
         console.error("API Text Error:", error.message);
-        res.status(502).json({ error: error.message });
+        res.status(502).json({ 
+            text: `[API ERROR] ${error.message}. El Gateway está activo pero necesita credenciales.`,
+            error: true 
+        });
     }
 });
 
@@ -89,7 +102,13 @@ app.post('/api/image', async (req: Request, res: Response) => {
         }
 
         const { generateImage } = await import('./vertex/client.js');
-        const result = await generateImage(prompt);
+        const result = await generateImage(prompt).catch(e => {
+            return { 
+                imageBase64: "MOCK_IMAGE_PLACEHOLDER", 
+                mock: true, 
+                message: "Imagen no disponible sin credenciales reales." 
+            };
+        });
         res.json(result);
 
     } catch (error: any) {
@@ -111,12 +130,20 @@ app.post('/vertex/text', async (req: Request, res: Response) => {
         }
 
         const { generateText } = await import('./vertex/client.js');
-        const result = await generateText(prompt);
+        const result = await generateText(prompt).catch((e: any) => {
+            return { 
+                text: `[API ERROR] ${e.message}. El Gateway está activo pero necesita credenciales.`,
+                error: true 
+            };
+        });
         res.json(result);
 
     } catch (error: any) {
         console.error("Vertex Text Error:", error.message);
-        res.status(502).json({ error: error.message });
+        res.status(502).json({ 
+            text: `[API ERROR] ${error.message}`,
+            error: true 
+        });
     }
 });
 

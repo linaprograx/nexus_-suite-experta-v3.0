@@ -14,7 +14,7 @@ import ColegiumProfileSidebar from '../components/colegium/ColegiumProfileSideba
 import ColegiumContextSidebar from '../components/colegium/ColegiumContextSidebar';
 import { ICONS } from '../components/ui/icons';
 import { Icon } from '../components/ui/Icon';
-import { AreaChart, Area, XAxis, Tooltip, ResponsiveContainer } from 'recharts';
+import { AreaChart, Area, XAxis, Tooltip } from 'recharts';
 import { ChartContainer } from '../components/ui/ChartContainer';
 import { useApp } from '../context/AppContext';
 import { useRecipes } from '../hooks/useRecipes';
@@ -333,7 +333,7 @@ const ColegiumView: React.FC<ColegiumViewProps> = () => {
                                             </div>
                                         </div>
                                         <div className="w-48 h-24 opacity-60 min-h-[96px] min-w-[192px]">
-                                            <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
+                                            <ChartContainer height="100%" minHeight="50px">
                                                 <AreaChart data={[{ v: 30 }, { v: 45 }, { v: 35 }, { v: 60 }, { v: 55 }, { v: 80 }, { v: 75 }]}>
                                                     <defs>
                                                         <linearGradient id="chartDesktop" x1="0" y1="0" x2="0" y2="1">
@@ -343,7 +343,7 @@ const ColegiumView: React.FC<ColegiumViewProps> = () => {
                                                     </defs>
                                                     <Area type="monotone" dataKey="v" stroke="#818cf8" strokeWidth={2} fill="url(#chartDesktop)" />
                                                 </AreaChart>
-                                            </ResponsiveContainer>
+                                            </ChartContainer>
                                         </div>
                                     </div>
                                 </div>

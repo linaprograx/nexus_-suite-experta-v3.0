@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { Firestore } from 'firebase/firestore';
-import { Ingredient, Recipe, ZeroWasteResult } from '../../types';
+import { Ingredient, Recipe, ZeroWasteResult } from '../types';
 import { Type } from "@google/genai";
-import { callGeminiApi } from '../utils/gemini';
+import { generateText } from '../services/ai/textService';
 import ZeroWasteResultCard from '../components/zero-waste/ZeroWasteResultCard';
 import ZeroWasteControls from '../components/zero-waste/ZeroWasteControls';
 import ZeroWasteHistorySidebar from '../components/zero-waste/ZeroWasteHistorySidebar';
@@ -67,7 +67,7 @@ const ZeroWasteView: React.FC<ZeroWasteViewProps> = ({ db, userId, appId, allIng
         };
 
         try {
-            const response = await callGeminiApi(userQuery, systemPrompt, generationConfig);
+            const response = await generateText(userQuery, systemPrompt);
             const results = JSON.parse(response.text) as ZeroWasteResult[];
             setRecipeResults(results);
             setHistory(prev => [...results, ...prev]);
@@ -141,9 +141,9 @@ const ZeroWasteView: React.FC<ZeroWasteViewProps> = ({ db, userId, appId, allIng
                                     <ZeroWasteResultCard
                                         key={index}
                                         recipe={recipe}
-                                        db={db}
-                                        userId={userId}
-                                        appId={appId}
+                                        db={db!}
+                                        userId={userId!}
+                                        appId={appId!}
                                     />
                                 ))}
                             </div>

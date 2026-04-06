@@ -7,7 +7,8 @@ import { usePizarronData } from '../../../hooks/usePizarronData';
 import { generateText } from '../../../services/ai/textService';
 import { doc, onSnapshot, addDoc, collection, serverTimestamp } from 'firebase/firestore';
 import { motion, AnimatePresence } from 'framer-motion';
-import { AreaChart, Area, ResponsiveContainer } from 'recharts';
+import { AreaChart, Area } from 'recharts';
+import { ChartContainer } from '../../../components/ui/ChartContainer';
 import { ICONS } from '../../../components/ui/icons';
 import { addXP, calculateLevelInfo, XP_SOURCES } from '../../../services/progression/xpService';
 
@@ -334,7 +335,7 @@ const Colegium: React.FC<Props> = ({ onNavigate }) => {
                                     </div>
 
                                     <div className="w-24 h-16 opacity-60">
-                                        <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
+                                        <ChartContainer height="64px" minHeight="64px">
                                             <AreaChart data={[{ v: 30 }, { v: 40 }, { v: 35 }, { v: 50 }, { v: 70 }, { v: 65 }, { v: 80 }]}>
                                                 <defs>
                                                     <linearGradient id="chartStat" x1="0" y1="0" x2="0" y2="1">
@@ -344,7 +345,7 @@ const Colegium: React.FC<Props> = ({ onNavigate }) => {
                                                 </defs>
                                                 <Area type="monotone" dataKey="v" stroke="#818cf8" strokeWidth={2} fill="url(#chartStat)" />
                                             </AreaChart>
-                                        </ResponsiveContainer>
+                                        </ChartContainer>
                                     </div>
                                 </div>
                             </div>
