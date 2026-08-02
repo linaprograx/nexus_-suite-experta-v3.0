@@ -6,9 +6,10 @@
 
 ---
 
-**Última actualización:** 2026-08-02
-**Sesión anterior:** Claude Code
-**Estado:** árbol limpio, TypeScript 0 errores, build correcto
+**Última actualización:** 2026-08-03
+**Sesión anterior:** Codex — creación del relevo unificado
+**Estado:** árbol limpio. No se ha modificado código de la aplicación en esta
+sesión; se ha creado y verificado el worktree único de relevo.
 
 ## 🚀 Hay despliegue en producción
 
@@ -19,13 +20,15 @@ Esto es nuevo desde el último relevo y **cambia cómo se trabaja**:
 | **URL en producción** | `nexus-suite-experta-v3-0.vercel.app` |
 | **Proyecto de Vercel** | `nexus-suite-experta-v3-0` (id `prj_GIIJu8AZfrDJtXW3Ydfd64zrU6R7`) |
 | **Rama de producción** | `deploy/mobile-v1` |
-| **Rama de desarrollo** | `feat/mobile-v1` ← **trabaja aquí** |
+| **Rama de desarrollo activa** | `feat/mobile-v1-unified` ← **trabaja aquí** |
+| **Worktree único de relevo** | `/Users/lianalviz/nexus-suite-mobile-v1` |
+| **Rama anterior** | `feat/mobile-v1` — conserva el trabajo histórico de Claude; no usarla para trabajo nuevo |
 
 **Cada push a `deploy/mobile-v1` despliega a producción automáticamente.**
 
 ### El flujo de despliegue, y por qué es así
 
-`deploy/mobile-v1` es un **espejo aplanado** de `feat/mobile-v1`, no una rama
+`deploy/mobile-v1` es un **espejo aplanado** de la rama de desarrollo, no una rama
 normal. Motivo: el historial de `feat/mobile-v1` arrastra `ai-gateway/.env` con
 una clave de Stripe, y la protección de secretos de GitHub bloquea el push.
 
@@ -33,10 +36,10 @@ Para desplegar:
 
 ```bash
 git checkout deploy/mobile-v1
-git checkout feat/mobile-v1 -- .     # trae el árbol, no el historial
+git checkout feat/mobile-v1-unified -- . # trae el árbol, no el historial
 git add -A && git commit -m "..."
 git push origin deploy/mobile-v1
-git checkout feat/mobile-v1          # vuelve a desarrollo
+git checkout feat/mobile-v1-unified  # vuelve a desarrollo
 ```
 
 > ⚠️ **No uses `git merge` entre ambas.** Genera conflictos porque la rama de
@@ -57,7 +60,15 @@ separados. `VITE_AI_GATEWAY_URL` **no puede ir vacía** — el validador usa
 
 Fase **M3 — adaptación vista por vista**. Ver `ROADMAP.md`.
 
-## ⏸️ Lo que quedó a medias — EMPIEZA POR AQUÍ
+## Estado comprobado por Git
+
+`deploy/mobile-v1` y el worktree unificado parten del commit
+`5cdf911 feat(pizarron): modo consulta y gestos nativos en móvil (P3 y P4)`.
+Por tanto, P0, P1, P2, P3 y P4 de la adaptación móvil de Pizarrón **ya están
+implementados**. Este hecho corrige las referencias antiguas de este documento
+y de `ROADMAP.md` que aún marcaban P3/P4 como pendientes.
+
+## ⏸️ Lo que queda por hacer — EMPIEZA POR AQUÍ
 
 **Hay una auditoría completa de Pizarrón en `docs/agents/AUDIT-PIZARRON.md`.**
 Léela antes de tocar ese módulo: lleva archivo:línea de cada hallazgo,
@@ -74,8 +85,8 @@ Lo más rentable ahora, por orden:
    (`StockInventoryPanel`, no `IngredientListPanel`, que fue un error de
    diagnóstico previo). Empieza por `viewMode === 'market'` en
    `GrimoriumView.tsx`.
-3. **P1 de Pizarrón** — herramientas a tira horizontal inferior. Libera los
-   464px que hoy ocupa el rail lateral.
+3. **Verificación real de Pizarrón móvil** — P0–P4 compilan y están desplegados,
+   pero falta comprobarlos con sesión iniciada en un teléfono real.
 
 ## ⚠️ Verificación pendiente
 

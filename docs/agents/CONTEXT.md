@@ -49,6 +49,18 @@ lista de secciones.**
 
 ## Decisiones de arquitectura
 
+### Un único worktree de relevo para la adaptación móvil
+
+El trabajo compartido entre Claude Code y Codex vive en
+`/Users/lianalviz/nexus-suite-mobile-v1`, rama `feat/mobile-v1-unified`.
+Esta rama parte de `deploy/mobile-v1` en `5cdf911`, por lo que al iniciar cada
+relevo contiene exactamente el árbol que está desplegado en Vercel.
+
+La rama `deploy/mobile-v1` continúa siendo únicamente el espejo de producción;
+no se programa directamente en ella. Los worktrees históricos bajo `.claude`
+y `.codex` se conservan, pero no se usan para trabajo nuevo. Motivo: evitar
+que cada agente vea un árbol distinto o mezcle cambios sin relevo documentado.
+
 ### El umbral móvil es `lg` (1024px), no `md` (768px)
 
 Tres columnas necesitan ~1024px para ser usables. A 800px la rejilla de recetas

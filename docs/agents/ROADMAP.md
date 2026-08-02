@@ -101,8 +101,9 @@ Por orden de gravedad:
    **Auditoría hecha:** ver `docs/agents/AUDIT-PIZARRON.md`. 3 graves, 4 medios
    y 5 bajos, con archivo:línea. Corregidos G1, M1, B1 y B2.
 
-   **Fases pendientes:** P1 herramientas a tira inferior · P2 barra superior
-   mínima · P3 modo consulta · P4 gestos nativos.
+   **P1–P4 cerradas en Git:** tira inferior de herramientas, barra superior
+   mínima, modo consulta y gestos nativos. Falta verificación con sesión
+   iniciada en un teléfono real.
 
 ### ⬜ M4 — Rendimiento en móvil
 

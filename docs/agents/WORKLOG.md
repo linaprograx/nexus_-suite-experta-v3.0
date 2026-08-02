@@ -7,6 +7,38 @@ El "por qué" es lo que más vale dentro de tres semanas.
 
 ---
 
+## 2026-08-03 · Codex · Worktree único de relevo
+
+**Qué**
+
+- Se creó `/Users/lianalviz/nexus-suite-mobile-v1` en la rama nueva
+  `feat/mobile-v1-unified`, desde `deploy/mobile-v1` en `5cdf911`.
+- Se verificó que el árbol está limpio y que el punto de partida coincide
+  exactamente con el commit desplegado por Vercel.
+- Se corrigió el relevo: Git confirma que P1–P4 de Pizarrón móvil están
+  implementadas, aunque `HANDOFF.md` y `ROADMAP.md` aún marcaban P3/P4 como
+  pendientes.
+
+**Por qué**
+
+Los worktrees de Claude y Codex existentes están marcados como obsoletos por
+`AGENTS.md`; el repositorio raíz estaba en una rama distinta. Un único
+worktree limpio evita que los relevos trabajen sobre árboles diferentes y
+mantiene la aplicación local alineada con la versión desplegada.
+
+**No se tocó**
+
+- Código de la aplicación.
+- El worktree anterior de Claude, la rama raíz ni la rama de producción.
+
+**Siguiente**
+
+Trabajar únicamente desde `feat/mobile-v1-unified` en este worktree. Antes de
+cualquier tarea de código, revisar de nuevo `git status`, este `HANDOFF.md` y
+la fase correspondiente del roadmap.
+
+---
+
 ## 2026-08-02 (noche) · Claude Code · Despliegue en producción y auditoría de Pizarrón
 
 **Qué**
