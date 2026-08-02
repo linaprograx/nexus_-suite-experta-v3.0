@@ -127,9 +127,15 @@ export const MiniToolbar: React.FC = () => {
 
         // Clamp for Toolbar Width approx 560px => 280px half width
         // Ensure it never goes off screen
-        const halfWidth = 280;
-        const clampedX = Math.max(halfWidth + 20, Math.min(window.innerWidth - halfWidth - 20, centerX));
-        const clampedY = Math.max(80, Math.min(window.innerHeight - 80, topY));
+        // El ancho real de la barra nunca cabe en un móvil, así que allí no se
+        // intenta seguir a la selección: se ancla abajo, encima de la navegación.
+        // Antes, con halfWidth fijo en 280, el clamp devolvía siempre 300 en una
+        // pantalla de 390 y la barra se salía hasta los 580px.
+        const halfWidth = Math.min(280, window.innerWidth / 2 - 12);
+        const limiteIzq = halfWidth + 8;
+        const limiteDer = Math.max(limiteIzq, window.innerWidth - halfWidth - 8);
+        const clampedX = Math.max(limiteIzq, Math.min(limiteDer, centerX));
+        const clampedY = Math.max(72, Math.min(window.innerHeight - 120, topY));
 
         return { top: clampedY, left: clampedX };
     }, [selectedNodes, viewport]);
@@ -191,7 +197,7 @@ export const MiniToolbar: React.FC = () => {
 
     return (
         <div
-            className="fixed z-[110] flex items-center gap-1 p-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 shadow-xl rounded-lg pointer-events-auto transition-all duration-75 ease-out"
+            className="fixed z-[110] flex items-center gap-1 p-1 max-w-[calc(100vw-1rem)] overflow-x-auto no-scrollbar bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 shadow-xl rounded-lg pointer-events-auto transition-all duration-75 ease-out"
             style={{ top: toolbarPos.top, left: toolbarPos.left, transform: 'translateX(-50%)' }}
             onPointerDown={e => e.stopPropagation()}
         >

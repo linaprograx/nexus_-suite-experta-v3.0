@@ -127,6 +127,28 @@ absolute inset-x-0 top-0 h-[100dvh] lg:h-full
 
 Aplica a `PremiumLayout`, `CerebrityView` y `AvatarView`.
 
+### Nada flotante por debajo de 60px + área segura
+
+Ahí vive la barra de navegación. Cualquier elemento `fixed`/`absolute` anclado
+abajo debe usar:
+
+```
+bottom-[calc(60px+env(safe-area-inset-bottom)+0.5rem)] lg:bottom-0
+```
+
+Ya mordió a la píldora de Avatar (`bottom-12` = 48px, por debajo de la barra) y
+al dock de colapsados de Pizarrón (`h-24` sobre los 96px inferiores).
+
+### Los overlays posicionados por JS necesitan clamp con el ancho REAL
+
+En Pizarrón, el Inspector usaba `left:50%` + `marginLeft:220px`: en 390px eso
+es x=415, entero fuera de pantalla. Y el clamp de MiniToolbar asumía 560px de
+ancho fijo, con lo que en un móvil devolvía siempre el mismo valor y la barra
+se salía igualmente.
+
+En móvil estos paneles se anclan abajo a ancho completo en vez de seguir a la
+selección; el espacio no da para otra cosa.
+
 ### `100dvh`, no `100vh`, en pantallas completas
 
 En iOS Safari, `vh` incluye las barras que se colapsan: `100vh` mide más de lo

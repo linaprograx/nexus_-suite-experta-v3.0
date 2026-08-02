@@ -126,7 +126,7 @@ export const MiniMap: React.FC = () => {
     };
 
     return (
-        <div className="absolute bottom-4 right-4 bg-white dark:bg-slate-900 rounded-lg shadow-lg border border-slate-200 dark:border-slate-700 overflow-hidden z-50 select-none">
+        <div className="hidden lg:block absolute bottom-4 right-4 bg-white dark:bg-slate-900 rounded-lg shadow-lg border border-slate-200 dark:border-slate-700 overflow-hidden z-50 select-none">
             <canvas
                 ref={canvasRef}
                 width={MAP_W}
