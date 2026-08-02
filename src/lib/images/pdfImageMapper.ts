@@ -1,6 +1,6 @@
 import { extractTextFromImage } from './ocrClient';
 import { createImageMap } from './imageNameResolver';
-import { Recipe } from '../../../types';
+import { Recipe } from '../../types';
 
 interface PageImage {
     pageNumber: number;

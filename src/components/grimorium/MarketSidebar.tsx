@@ -1,21 +1,45 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { Ingredient } from '../../types';
 import { useSuppliers } from '../../features/suppliers/hooks/useSuppliers';
 import { useApp } from '../../context/AppContext';
 import { Icon } from '../ui/Icon';
 import { ICONS } from '../ui/icons';
+import { normalizeIngredientPacks } from '../../services/migrations/normalizeIngredientPacks';
 
 interface MarketSidebarProps {
     allIngredients: Ingredient[];
     selectedIngredient: Ingredient | null;
+    onNewSupplier?: () => void;
 }
 
 export const MarketSidebar: React.FC<MarketSidebarProps> = ({
     allIngredients,
-    selectedIngredient
+    selectedIngredient,
+    onNewSupplier
 }) => {
-    const { db, userId } = useApp();
+    const { db, userId, appId } = useApp();
     const { suppliers } = useSuppliers({ db, userId });
+    const queryClient = useQueryClient();
+    const [normalizing, setNormalizing] = useState(false);
+    const [normalizeMsg, setNormalizeMsg] = useState<string | null>(null);
+
+    const handleNormalizeCatalog = async () => {
+        if (!db || !userId || !appId || normalizing) return;
+        if (!window.confirm('Normalizar el formato de TODO el catálogo (700ml en vez de 0,7, etc.). Es seguro y reversible al reimportar. ¿Continuar?')) return;
+        setNormalizing(true);
+        setNormalizeMsg(null);
+        try {
+            const r = await normalizeIngredientPacks(db, appId, userId);
+            await queryClient.invalidateQueries({ queryKey: ['ingredients'] });
+            setNormalizeMsg(`✓ ${r.updated} normalizados · ${r.skipped} ya correctos${r.errors ? ` · ${r.errors} errores` : ''}`);
+        } catch (e) {
+            console.error('[MIGRATION] fallo', e);
+            setNormalizeMsg('✗ Error al normalizar (ver consola)');
+        } finally {
+            setNormalizing(false);
+        }
+    };
 
     // --- STATS ---
     const stats = useMemo(() => {
@@ -146,53 +170,61 @@ export const MarketSidebar: React.FC<MarketSidebarProps> = ({
 
 
     return (
-        <div className="h-full flex flex-col p-4 gap-4">
+        <div className="h-full flex flex-col p-3 gap-4">
 
-            {/* 1. MARKET OVERVIEW (Compact Fixed Header) */}
-            <div className="shrink-0 bg-white/40 dark:bg-slate-800/40 border border-white/20 dark:border-white/5 rounded-2xl p-4 backdrop-blur-md shadow-sm flex flex-col justify-center relative overflow-hidden group">
-                {/* Decorative */}
-                <div className="absolute -right-6 -top-6 opacity-5 group-hover:opacity-10 transition-opacity">
-                    <Icon svg={ICONS.layout} className="w-24 h-24" />
-                </div>
-
-                <div className="grid grid-cols-2 gap-2 relative z-10 w-full">
-
-                    {/* Entry 1: Proveedores */}
-                    <div className="flex flex-col items-center justify-center p-1 border-r border-slate-200 dark:border-slate-700/50">
-                        <div className="flex items-center gap-1.5 mb-1">
-                            <div className="p-1.5 rounded-full bg-indigo-50 dark:bg-indigo-900/30 text-indigo-500">
-                                <Icon svg={ICONS.users} className="w-3.5 h-3.5" />
-                            </div>
-                            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">PROV.</span>
-                        </div>
-                        <span className="text-2xl font-black text-slate-800 dark:text-slate-100 tabular-nums leading-none">
-                            {stats.totalSuppliers}
-                        </span>
+            {/* 1. MARKET OVERVIEW — premium stat header */}
+            <div className="shrink-0 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-3xl p-0.5 shadow-premium">
+                <div className="bg-white/85 dark:bg-slate-900/85 rounded-[22px] p-4 backdrop-blur-xl relative overflow-hidden group">
+                    {/* Decorative */}
+                    <div className="absolute -right-8 -top-8 opacity-[0.06] group-hover:opacity-10 transition-opacity">
+                        <Icon svg={ICONS.layout} className="w-28 h-28" />
                     </div>
 
-                    {/* Entry 2: Productos */}
-                    <div className="flex flex-col items-center justify-center p-1">
-                        <div className="flex items-center gap-1.5 mb-1">
-                            <div className="p-1.5 rounded-full bg-emerald-50 dark:bg-emerald-900/30 text-emerald-500">
-                                <Icon svg={ICONS.box} className="w-3.5 h-3.5" />
+                    <div className="grid grid-cols-2 gap-2 relative z-10 w-full">
+                        {/* Entry 1: Proveedores */}
+                        <div className="flex flex-col items-center justify-center py-1 min-w-0 border-r border-slate-200/70 dark:border-slate-700/50">
+                            <div className="flex items-center gap-1.5 mb-1.5 min-w-0 max-w-full">
+                                <div className="p-1.5 rounded-xl bg-gradient-to-br from-indigo-400 to-indigo-600 text-white shadow-sm shadow-indigo-500/30">
+                                    <Icon svg={ICONS.users} className="w-3.5 h-3.5" />
+                                </div>
+                                <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest truncate">Prov.</span>
                             </div>
-                            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">ITMS.</span>
+                            <span className="text-2xl xl:text-3xl font-black text-slate-800 dark:text-slate-100 tabular-nums leading-none truncate max-w-full">
+                                {stats.totalSuppliers}
+                            </span>
                         </div>
-                        <span className="text-2xl font-black text-slate-800 dark:text-slate-100 tabular-nums leading-none">
-                            {stats.totalProducts}
-                        </span>
+
+                        {/* Entry 2: Productos */}
+                        <div className="flex flex-col items-center justify-center py-1 min-w-0">
+                            <div className="flex items-center gap-1.5 mb-1.5 min-w-0 max-w-full">
+                                <div className="p-1.5 rounded-xl bg-gradient-to-br from-emerald-400 to-teal-600 text-white shadow-sm shadow-emerald-500/30">
+                                    <Icon svg={ICONS.box} className="w-3.5 h-3.5" />
+                                </div>
+                                <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest truncate">Items</span>
+                            </div>
+                            <span className="text-2xl xl:text-3xl font-black text-slate-800 dark:text-slate-100 tabular-nums leading-none truncate max-w-full">
+                                {stats.totalProducts}
+                            </span>
+                        </div>
                     </div>
                 </div>
             </div>
 
             {/* 2. MAIN CONTENT AREA (Scrollable) */}
-            <div className="flex-1 min-h-0 bg-white/30 dark:bg-slate-800/30 border border-white/20 dark:border-white/5 rounded-2xl overflow-hidden backdrop-blur-md shadow-sm flex flex-col">
+            <div className="flex-1 min-h-0 bg-white/55 dark:bg-slate-900/50 border border-white/40 dark:border-white/5 rounded-3xl overflow-hidden backdrop-blur-xl shadow-premium flex flex-col">
 
                 {/* Header for Comparison */}
-                <div className="p-3 border-b border-white/10 bg-white/20 dark:bg-slate-800/40 shrink-0">
-                    <h3 className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider flex items-center gap-2">
-                        <Icon svg={ICONS.trendingUp} className="w-4 h-4 text-emerald-500" />
-                        Comparativa de Precios {comparisons.length > 0 && `(${comparisons.length})`}
+                <div className="px-4 py-3 border-b border-slate-200/50 dark:border-white/5 shrink-0 bg-gradient-to-r from-emerald-50/60 to-transparent dark:from-emerald-900/10">
+                    <h3 className="text-xs font-black text-slate-700 dark:text-slate-200 tracking-tight flex items-center gap-2.5">
+                        <span className="p-1.5 rounded-xl bg-gradient-to-br from-emerald-400 to-teal-500 text-white shadow-sm shadow-emerald-500/30">
+                            <Icon svg={ICONS.trendingUp} className="w-3.5 h-3.5" />
+                        </span>
+                        Comparativa de Precios
+                        {comparisons.length > 0 && (
+                            <span className="text-[10px] font-black text-emerald-600 dark:text-emerald-400 bg-emerald-100/80 dark:bg-emerald-900/30 px-2 py-0.5 rounded-full tabular-nums ml-auto">
+                                {comparisons.length}
+                            </span>
+                        )}
                     </h3>
                 </div>
 
@@ -293,19 +325,32 @@ export const MarketSidebar: React.FC<MarketSidebarProps> = ({
                     <div className="pt-4 pb-2 mt-2 border-t border-dashed border-slate-200 dark:border-slate-700">
                         <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3 text-center">Acciones Rápidas</p>
                         <div className="grid grid-cols-1 gap-2">
-                            <button className="flex items-center justify-center gap-2 p-2.5 rounded-xl bg-white/50 hover:bg-indigo-50 dark:bg-slate-700/50 dark:hover:bg-slate-700 hover:border-indigo-200 border border-white/10 transition-all group">
+                            <button
+                                onClick={onNewSupplier}
+                                className="flex items-center justify-center gap-2 p-2.5 rounded-xl bg-white/50 hover:bg-indigo-50 dark:bg-slate-700/50 dark:hover:bg-slate-700 hover:border-indigo-200 border border-white/10 transition-all group"
+                            >
                                 <div className="w-6 h-6 rounded-full bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400 flex items-center justify-center group-hover:scale-110 transition-transform">
                                     <Icon svg={ICONS.plus} className="w-3 h-3" />
                                 </div>
                                 <span className="text-xs font-bold text-slate-600 dark:text-slate-300">Nuevo Proveedor</span>
                             </button>
 
-                            <button className="flex items-center justify-center gap-2 p-2.5 rounded-xl bg-white/50 hover:bg-emerald-50 dark:bg-slate-700/50 dark:hover:bg-slate-700 hover:border-emerald-200 border border-white/10 transition-all group">
-                                <div className="w-6 h-6 rounded-full bg-emerald-100 dark:bg-emerald-900/50 text-emerald-600 dark:text-emerald-400 flex items-center justify-center group-hover:rotate-180 transition-transform duration-500">
+                            <button
+                                onClick={handleNormalizeCatalog}
+                                disabled={normalizing}
+                                title="Recalcula el formato canónico (ml/g/und) de todos los productos para que el costeo sea exacto"
+                                className="flex items-center justify-center gap-2 p-2.5 rounded-xl bg-white/50 hover:bg-emerald-50 dark:bg-slate-700/50 dark:hover:bg-slate-700 hover:border-emerald-200 border border-white/10 transition-all group disabled:opacity-60 disabled:cursor-wait"
+                            >
+                                <div className={`w-6 h-6 rounded-full bg-emerald-100 dark:bg-emerald-900/50 text-emerald-600 dark:text-emerald-400 flex items-center justify-center transition-transform duration-500 ${normalizing ? 'animate-spin' : 'group-hover:rotate-180'}`}>
                                     <Icon svg={ICONS.refreshCw} className="w-3 h-3" />
                                 </div>
-                                <span className="text-xs font-bold text-slate-600 dark:text-slate-300">Actualizar Catálogos</span>
+                                <span className="text-xs font-bold text-slate-600 dark:text-slate-300">
+                                    {normalizing ? 'Normalizando…' : 'Normalizar Catálogo'}
+                                </span>
                             </button>
+                            {normalizeMsg && (
+                                <p className="text-[10px] text-center text-slate-500 dark:text-slate-400 mt-1">{normalizeMsg}</p>
+                            )}
                         </div>
                     </div>
                 </div>

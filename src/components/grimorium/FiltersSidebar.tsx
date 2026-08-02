@@ -4,6 +4,9 @@ import { Icon } from '../ui/Icon';
 import { ICONS } from '../ui/icons';
 import { RecipeFinancialDashboard } from './RecipeFinancialDashboard';
 import { IngredientFinancialDashboard } from './IngredientFinancialDashboard';
+import { BusinessCogsPanel } from './BusinessCogsPanel';
+import { SupplierRiskPanel } from './SupplierRiskPanel';
+import { RecipeAlertsPanel } from './RecipeAlertsPanel';
 import { Recipe, Ingredient } from '../../types';
 import { useApp } from '../../context/AppContext';
 
@@ -13,6 +16,7 @@ interface FiltersSidebarProps {
   selectedRecipe: Recipe | null;
   allIngredients?: Ingredient[];
   selectedIngredient: Ingredient | null;
+  onSelectRecipe?: (r: Recipe) => void;
 
   // Actions
   onImportRecipes: () => void;
@@ -35,6 +39,7 @@ export const FiltersSidebar: React.FC<FiltersSidebarProps> = ({
   selectedRecipe,
   allIngredients = [],
   selectedIngredient,
+  onSelectRecipe,
   onImportRecipes,
   onImportPdf,
   onImportIngredients,
@@ -79,31 +84,47 @@ export const FiltersSidebar: React.FC<FiltersSidebarProps> = ({
       <div className={`flex-1 flex flex-col min-h-0 ${activeTab === 'ingredients' ? 'h-1/2' : 'h-full'}`}>
         <div className="flex-1 overflow-y-auto custom-scrollbar p-2 w-full max-w-full mx-auto">
           {activeTab === 'recipes' ? (
-            <RecipeFinancialDashboard selectedRecipe={selectedRecipe} allRecipes={allRecipes} />
+            <>
+              {/* #16 · Business COGS + #13 · Recipe alerts (only in global mode) */}
+              {!selectedRecipe && <BusinessCogsPanel allRecipes={allRecipes} allIngredients={allIngredients} />}
+              {!selectedRecipe && <RecipeAlertsPanel allRecipes={allRecipes} allIngredients={allIngredients} onSelectRecipe={onSelectRecipe} />}
+              <RecipeFinancialDashboard selectedRecipe={selectedRecipe} allRecipes={allRecipes} allIngredients={allIngredients} onSelectRecipe={onSelectRecipe} />
+            </>
           ) : (
-            <IngredientFinancialDashboard
-              selectedIngredient={selectedIngredient}
-              allIngredients={allIngredients}
-              onFilterByStatus={(status) => onIngredientFilterChange && onIngredientFilterChange('status', status)}
-            />
+            <>
+              {/* #17 · Single-supplier risk map (only in global mode) */}
+              {!selectedIngredient && <SupplierRiskPanel allIngredients={allIngredients} />}
+              <IngredientFinancialDashboard
+                selectedIngredient={selectedIngredient}
+                allIngredients={allIngredients}
+                onFilterByStatus={(status) => onIngredientFilterChange && onIngredientFilterChange('status', status)}
+              />
+            </>
           )}
         </div>
 
-        {/* Legacy Actions */}
-        <div className="p-4 space-y-2">
-          {activeTab === 'recipes' && (
-            <>
-              <Button variant="outline" className="w-full justify-start text-xs h-9" onClick={onImportPdf}>
-                <Icon svg={ICONS.fileText} className="mr-2 h-3 w-3" />
-                Importar PDF PRO
-              </Button>
-              <Button variant="ghost" size="sm" className="w-full justify-start text-xs h-8 bg-white/40 dark:bg-slate-800/40" onClick={onImportRecipes}>
-                <Icon svg={ICONS.upload} className="mr-2 h-3 w-3" /> Imp. TXT
-              </Button>
-            </>
-          )}
-          {/* Floating Action Button removed as per request */}
-        </div>
+        {/* Import actions */}
+        {activeTab === 'recipes' && (
+          <div className="p-4 pt-2">
+            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2 px-1">Importar Recetas</p>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                onClick={onImportPdf}
+                className="flex flex-col items-center justify-center gap-1.5 py-3 rounded-xl bg-gradient-to-br from-teal-500 to-emerald-600 hover:from-teal-400 hover:to-emerald-500 text-white shadow-lg shadow-teal-500/20 transition-all hover:-translate-y-0.5"
+              >
+                <Icon svg={ICONS.fileText} className="w-5 h-5" />
+                <span className="text-[10px] font-bold uppercase tracking-wide">PDF Pro</span>
+              </button>
+              <button
+                onClick={onImportRecipes}
+                className="flex flex-col items-center justify-center gap-1.5 py-3 rounded-xl bg-white/60 dark:bg-slate-800/60 border border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-300 hover:border-teal-400 hover:text-teal-600 dark:hover:text-teal-400 transition-all hover:-translate-y-0.5"
+              >
+                <Icon svg={ICONS.upload} className="w-5 h-5" />
+                <span className="text-[10px] font-bold uppercase tracking-wide">Texto / TXT</span>
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

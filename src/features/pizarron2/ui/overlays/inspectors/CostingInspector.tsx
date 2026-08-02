@@ -6,6 +6,10 @@ import { VisualEffectsController } from '../../components/VisualEffectsControlle
 import { Icon } from '../../../../../components/ui/Icon';
 import { ICONS } from '../../../../../components/ui/icons';
 import { FontLoader } from '../../../engine/FontLoader';
+// Extracted from Inspector.tsx — these helpers must come along or the recipe picker throws
+import { externalDataMap, forceCanvasRender } from '../../CanvasStage';
+import { resolveCostingData } from '../../../services/costingResolver';
+import { logger } from '../../../../../utils/logger';
 export const CostingInspector = ({ 
     firstNode, 
     primaryTarget, 
@@ -37,7 +41,7 @@ export const CostingInspector = ({
                         <div>
                             <label className="text-xs font-medium text-slate-600 block mb-1">Recipe</label>
                             <select
-                                className="w-full border rounded text-sm px-2 py-1.5 bg-white"
+                                className="w-full border border-slate-300 dark:border-slate-600 rounded text-sm px-2 py-1.5 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200"
                                 value={firstNode.content.recipeIdForCosting || ''}
                                 onChange={(e) => {
                                     const recipeId = e.target.value;
@@ -71,7 +75,7 @@ export const CostingInspector = ({
                                 }}
                             >
                                 <option value="">Select a recipe...</option>
-                                {recipes?.map(r => (
+                                {recipes?.map((r: any) => (
                                     <option key={r.id} value={r.id}>{r.nombre}</option>
                                 ))}
                             </select>
@@ -86,7 +90,7 @@ export const CostingInspector = ({
                                 type="number"
                                 step="0.01"
                                 placeholder="Use recipe's default price"
-                                className="w-full border rounded text-sm px-2 py-1.5"
+                                className="w-full border border-slate-300 dark:border-slate-600 rounded text-sm px-2 py-1.5 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200"
                                 value={firstNode.content.salePriceOverride || ''}
                                 onChange={(e) => updateNode({ salePriceOverride: e.target.value ? Number(e.target.value) : undefined })}
                             />
@@ -97,7 +101,7 @@ export const CostingInspector = ({
                         <div>
                             <label className="text-xs font-medium text-slate-600 block mb-1">Card Title</label>
                             <input
-                                className="w-full border rounded text-sm px-2 py-1"
+                                className="w-full border border-slate-300 dark:border-slate-600 rounded text-sm px-2 py-1 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200"
                                 placeholder="Auto: Recipe name"
                                 value={firstNode.content.title || ''}
                                 onChange={(e) => updateNode({ title: e.target.value })}
@@ -106,8 +110,8 @@ export const CostingInspector = ({
 
                         {/* Calculated Data Display (READ-ONLY) */}
                         {externalData && 'profitability' in externalData && (
-                            <div className="bg-slate-50 border border-slate-200 rounded p-3 space-y-2">
-                                <div className="text-xs font-bold text-slate-700 uppercase tracking-wide mb-2">
+                            <div className="bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded p-3 space-y-2">
+                                <div className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wide mb-2">
                                     Calculated Costing
                                 </div>
                                 <div className="grid grid-cols-2 gap-2 text-sm">

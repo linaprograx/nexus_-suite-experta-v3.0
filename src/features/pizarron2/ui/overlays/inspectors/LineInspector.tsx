@@ -22,7 +22,7 @@ export const LineInspector = ({
                 return (
                     <div className="space-y-4">
                         <div>
-                            <label className="text-xs font-medium text-slate-600 block mb-1">Stroke Style</label>
+                            <label className="text-xs font-medium text-slate-600 dark:text-slate-400 block mb-1">Stroke Style</label>
                             <div className="flex gap-2 mb-2">
                                 <button onClick={() => updateNode({ strokeStyle: 'solid' })} className={`flex-1 text-xs py-1 border rounded ${firstNode.content.strokeStyle === 'solid' ? 'bg-indigo-50 border-indigo-500 text-indigo-700' : ''}`}>Solid</button>
                                 <button onClick={() => updateNode({ strokeStyle: 'dashed' })} className={`flex-1 text-xs py-1 border rounded ${firstNode.content.strokeStyle === 'dashed' ? 'bg-indigo-50 border-indigo-500 text-indigo-700' : ''}`}>Dashed</button>
@@ -35,7 +35,7 @@ export const LineInspector = ({
                             />
                         </div>
                         <div>
-                            <label className="text-xs font-medium text-slate-600 block mb-1">Arrows</label>
+                            <label className="text-xs font-medium text-slate-600 dark:text-slate-400 block mb-1">Arrows</label>
                             <div className="flex gap-2">
                                 <button onClick={() => updateNode({ startArrow: !firstNode.content.startArrow })} className={`flex-1 text-xs py-1 border rounded ${firstNode.content.startArrow ? 'bg-indigo-50 border-indigo-500 text-indigo-700' : ''}`}>Start</button>
                                 <button onClick={() => updateNode({ endArrow: !firstNode.content.endArrow })} className={`flex-1 text-xs py-1 border rounded ${firstNode.content.endArrow ? 'bg-indigo-50 border-indigo-500 text-indigo-700' : ''}`}>End</button>
@@ -44,7 +44,7 @@ export const LineInspector = ({
                         <div>
                             <ColorPicker
                                 label="Line Color"
-                                value={firstNode.content.color || '#64748b'}
+                                color={firstNode.content.color || '#64748b'}
                                 onChange={(c) => updateNode({ color: typeof c === 'string' ? c : c.start })}
                             />
                         </div>

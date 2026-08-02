@@ -41,7 +41,7 @@ export const Toast: React.FC<ToastProps> = ({ message, type = 'success', isVisib
     const getIcon = () => {
         switch (type) {
             case 'success': return <Icon svg={ICONS.check} className="w-5 h-5 text-emerald-500" />;
-            case 'error': return <Icon svg={ICONS.alertTriangle} className="w-5 h-5 text-red-500" />;
+            case 'error': return <Icon svg={ICONS.alertCircle} className="w-5 h-5 text-red-500" />;
             case 'info': return <Icon svg={ICONS.info} className="w-5 h-5 text-indigo-500" />;
         }
     };

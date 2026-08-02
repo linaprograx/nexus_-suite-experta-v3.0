@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
-import { signInWithGoogle, isMobileDevice, signInWithGoogleRedirect } from '../../config/oauth';
+import { signInWithGoogle, signInWithGoogleRedirect } from '../../config/oauth';
 import { motion } from 'framer-motion';
 
 interface OAuthButtonsProps {
@@ -21,16 +21,33 @@ export const OAuthButtons: React.FC<OAuthButtonsProps> = ({ onSuccess, onError }
         setLoading(true);
 
         try {
-            // Use redirect flow on mobile, popup on desktop
-            if (isMobileDevice()) {
-                await signInWithGoogleRedirect(auth);
-                // Redirect will happen, no need to call onSuccess
-            } else {
+            // Popup everywhere, including mobile.
+            //
+            // The old code used signInWithRedirect on mobile, which no longer works:
+            // the redirect bounces through <project>.firebaseapp.com, and Safari's (and
+            // Chrome's) third-party storage partitioning stops the returning page from
+            // reading the pending auth state. getRedirectResult() then resolves to null
+            // and the user lands back on the login screen having "logged in" twice.
+            // Firebase documents this and recommends popup unless you proxy auth through
+            // your own domain. Mobile Safari has supported popup for years.
+            try {
                 const result = await signInWithGoogle(auth);
                 console.log('Google sign-in successful:', result.user.email);
                 onSuccess?.();
+            } catch (popupError: any) {
+                // Popup blocked by the browser is the one case redirect still beats it.
+                if (popupError?.code === 'auth/popup-blocked' || popupError?.code === 'auth/operation-not-supported-in-this-environment') {
+                    await signInWithGoogleRedirect(auth);
+                    return; // navigating away
+                }
+                throw popupError;
             }
         } catch (error: any) {
+            // Closing the popup is a deliberate "no thanks", not an error to shout about.
+            if (error?.code === 'auth/popup-closed-by-user' || error?.code === 'auth/cancelled-popup-request') {
+                setLoading(false);
+                return;
+            }
             console.error('Google sign-in error:', error);
             const errorMessage = error.message || 'Error al iniciar sesión con Google';
             onError?.(errorMessage);
@@ -96,13 +113,13 @@ export const OAuthButtons: React.FC<OAuthButtonsProps> = ({ onSuccess, onError }
                 )}
             </motion.button>
 
-            {/* Divider */}
+            {/* Divider — blends with the glass card */}
             <div className="relative flex items-center justify-center py-2">
                 <div className="absolute inset-0 flex items-center">
-                    <div className="w-full border-t border-white/10"></div>
+                    <div className="w-full h-px bg-gradient-to-r from-transparent via-white/15 to-transparent"></div>
                 </div>
-                <div className="relative bg-[#03050a] px-4">
-                    <span className="text-xs text-slate-500 uppercase tracking-wider">o continúa con email</span>
+                <div className="relative px-4 backdrop-blur-md">
+                    <span className="text-[10px] text-slate-500 uppercase tracking-[0.2em]">o continúa con email</span>
                 </div>
             </div>
         </div>

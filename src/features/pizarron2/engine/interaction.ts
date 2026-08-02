@@ -31,6 +31,17 @@ export class InteractionManager {
     private lastClickTime: number = 0;
     private lastClickId: string | null = null;
 
+    /** Returns true if any ancestor (via parentId) has collapsed === true. */
+    private isHiddenByCollapsedAncestor(node: BoardNode, nodes: Record<string, BoardNode>, depth = 0): boolean {
+        if (depth > 20) return false;
+        const parentId = node.parentId;
+        if (!parentId) return false;
+        const parent = nodes[parentId];
+        if (!parent) return false;
+        if (parent.collapsed) return true;
+        return this.isHiddenByCollapsedAncestor(parent, nodes, depth + 1);
+    }
+
     // Configurable keys
     private panKey = 'Space';
 
@@ -340,8 +351,8 @@ export class InteractionManager {
         for (let i = order.length - 1; i >= 0; i--) {
             const id = order[i];
             const node = nodes[id];
-            // Ignore collapsed nodes
-            if (node && !node.collapsed && this.isPointInNode(worldPoint, node)) {
+            // Ignore collapsed nodes (direct or via ancestor)
+            if (node && !node.collapsed && !this.isHiddenByCollapsedAncestor(node, nodes) && this.isPointInNode(worldPoint, node)) {
                 hitId = id;
                 break;
             }
@@ -380,8 +391,8 @@ export class InteractionManager {
                         const idx = updatedStructure.zones.findIndex((z: any) => z.id === hitZone.id);
                         if (idx >= 0) {
                             updatedStructure.zones[idx].content = {
-                                text: hitZone.placeholderText || hitZone.label || 'Text',
-                                style: { fontSize: 16, color: '#1e293b' }
+                                text: '',
+                                style: { fontSize: 13, color: hitZone.style?.titleColor || '#f1f5f9' }
                             };
                             pizarronStore.updateNode(node.id, { structure: updatedStructure });
                         }
@@ -714,9 +725,13 @@ export class InteractionManager {
                             }
                         }
 
+                        const isImageZoneWithoutUrl =
+                            hitZone.defaultType === 'image' && !hitZone.content?.imageUrl;
+
                         pizarronStore.updateInteractionState({
                             activeZoneId: hitZone.id,
-                            activeZoneSection: section
+                            activeZoneSection: section,
+                            ...(isImageZoneWithoutUrl ? { pendingImageZoneId: hitZone.id } : {})
                         });
                     } else {
                         pizarronStore.updateInteractionState({
@@ -732,9 +747,12 @@ export class InteractionManager {
                 let targetId = hitId;
                 const node = state.nodes[hitId];
                 if (node?.parentId) {
-                    if (state.interactionState.editingGroupId !== node.parentId) {
+                    const parentNode = state.nodes[node.parentId];
+                    const isParentGroup = parentNode?.type === 'group';
+                    if (isParentGroup && state.interactionState.editingGroupId !== node.parentId) {
                         targetId = node.parentId;
                     }
+                    // If parent is a board, the child is directly selectable — no redirect
                 }
                 this.interactionTargetId = targetId;
 
@@ -1453,7 +1471,7 @@ export class InteractionManager {
         for (let i = state.order.length - 1; i >= 0; i--) {
             const id = state.order[i];
             const n = state.nodes[id];
-            if (n && !n.collapsed && this.isPointInNode(worldPoint, n)) {
+            if (n && !n.collapsed && !this.isHiddenByCollapsedAncestor(n, state.nodes) && this.isPointInNode(worldPoint, n)) {
                 hitId = id;
                 break;
             }

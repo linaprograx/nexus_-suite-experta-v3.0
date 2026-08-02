@@ -1,4 +1,4 @@
-import { Ingredient } from '../../../types';
+import { Ingredient } from '../../types';
 import { normalizeText as normalize } from './ingredientNormalizer';
 import { classifyIngredient, AromaticFamily } from './families';
 import { resolveAlias } from './aliases';

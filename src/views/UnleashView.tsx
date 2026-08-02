@@ -98,8 +98,8 @@ const UnleashView: React.FC<UnleashViewProps> = () => {
         {activeTab === 'econos' && <EconosView allRecipes={allRecipes} />}
         {activeTab === 'makemenu' && (
           <MakeMenuView
-            db={db}
-            userId={userId}
+            db={db!}
+            userId={userId!}
             appId="nexus-suite"
           />
         )}

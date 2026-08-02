@@ -1,6 +1,6 @@
 import { logger } from "../../../../utils/logger";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 
 import { ErrorBoundary } from './ErrorBoundary';
 import { pizarronStore } from '../../state/store';
@@ -8,7 +8,8 @@ import { BOARD_TEMPLATES } from '../../data/BoardTemplates';
 import { PizarraMetadata } from '../../engine/types';
 import { firestoreAdapter } from '../../sync/firestoreAdapter';
 import { TemplateEngine } from '../../engine/TemplateEngine';
-import { LuLayoutDashboard, LuPlus, LuFolder, LuDownload, LuLayoutTemplate, LuSearch, LuX, LuClock } from 'react-icons/lu';
+import { analyzeDesignImage } from '../../engine/importVision';
+import { LuLayoutDashboard, LuPlus, LuFolder, LuDownload, LuLayoutTemplate, LuSearch, LuX, LuClock, LuUpload, LuCheck, LuLoader } from 'react-icons/lu';
 
 // Mock function to simulate creating a Pizarra in backend
 const createPizarraInBackend = async (templateId: string, title: string): Promise<PizarraMetadata> => {
@@ -82,10 +83,59 @@ export const PizarraManager: React.FC<{ onClose: () => void; appId: string }> = 
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedHistoryId, setSelectedHistoryId] = useState<string | null>(null);
 
+    // Import State
+    type ImportStatus = 'idle' | 'analyzing' | 'success' | 'error';
+    const [importStatus, setImportStatus] = useState<ImportStatus>('idle');
+    const [importError, setImportError] = useState('');
+    const [importSource, setImportSource] = useState<'canva' | 'miro' | null>(null);
+    const canvaInputRef = useRef<HTMLInputElement>(null);
+    const miroInputRef = useRef<HTMLInputElement>(null);
+
+    const handleImport = async (file: File, source: 'canva' | 'miro') => {
+        setImportSource(source);
+        setImportStatus('analyzing');
+        setImportError('');
+        try {
+            const result = await analyzeDesignImage(file);
+
+            // Create a new pizarra with the imported nodes
+            const now = Date.now();
+            const pizarraId = crypto.randomUUID();
+            const boardId = crypto.randomUUID();
+
+            const metadata: PizarraMetadata = {
+                id: pizarraId,
+                title: result.title,
+                ownerId: 'current-user-id',
+                createdAt: now,
+                updatedAt: now,
+                lastOpenedAt: now,
+                boards: [{ id: boardId, title: result.title, type: 'board', order: 0 }],
+                canvasState: { viewport: { x: 0, y: 0, zoom: 1 } },
+            };
+
+            const nodes = result.nodes.map((n, i) => ({
+                ...n,
+                id: crypto.randomUUID(),
+                zIndex: i + 1,
+            }));
+
+            await firestoreAdapter.createPizarraFromTemplate(appId, metadata, nodes);
+            // The store exposes setActivePizarra + addNode (there is no loadPizarra)
+            pizarronStore.setActivePizarra(metadata);
+            nodes.forEach((n: any) => pizarronStore.addNode(n));
+            setImportStatus('success');
+            setTimeout(() => onClose(), 1200);
+        } catch (e: any) {
+            setImportStatus('error');
+            setImportError(e.message || 'Error al analizar la imagen.');
+        }
+    };
+
     // Handle Escape Key
     useEffect(() => {
         const handleEsc = (e: KeyboardEvent) => {
-            if (e.key === 'Escape') { console.warn("Closing via ESC"); onClose(); }
+            if (e.key === 'Escape') { onClose(); }
         };
         window.addEventListener('keydown', handleEsc);
         return () => window.removeEventListener('keydown', handleEsc);
@@ -109,6 +159,19 @@ export const PizarraManager: React.FC<{ onClose: () => void; appId: string }> = 
         } finally {
             setLoading(false);
         }
+    };
+
+    /**
+     * Un toque selecciona; un segundo toque sobre la ya seleccionada la crea.
+     *
+     * Sustituye al antiguo `onDoubleClick`, que en táctil no llegaba: el
+     * navegador se reserva el doble toque para el zoom y el evento `dblclick`
+     * no se dispara de forma fiable. Con esto el atajo funciona igual con
+     * ratón (dos clics seguidos) que con el dedo.
+     */
+    const selectOrCreate = (templateId: string) => {
+        if (selectedTemplate === templateId) handleCreate(templateId);
+        else setSelectedTemplate(templateId);
     };
 
     const handleCreate = async (templateIdOverride?: string) => {
@@ -319,8 +382,13 @@ export const PizarraManager: React.FC<{ onClose: () => void; appId: string }> = 
                                         {recentPizarras.map(p => (
                                             <div
                                                 key={p.id}
-                                                onClick={() => setSelectedHistoryId(p.id)}
-                                                onDoubleClick={() => handleOpen(p)}
+                                                // Mismo criterio que en las plantillas: el segundo toque
+                                                // sobre la ya seleccionada la abre, porque `dblclick` no
+                                                // llega en táctil.
+                                                onClick={() => {
+                                                    if (selectedHistoryId === p.id) handleOpen(p);
+                                                    else setSelectedHistoryId(p.id);
+                                                }}
                                                 className={`group relative flex rounded-xl border hover:shadow-lg cursor-pointer transition-all overflow-hidden bg-white dark:bg-slate-800 h-40 ${selectedHistoryId === p.id ? 'border-blue-500 ring-1 ring-blue-500' : 'border-slate-200 dark:border-slate-700 hover:border-blue-400 dark:hover:border-blue-500'}`}
                                             >
                                                 {/* Thumbnail (Left) */}
@@ -469,13 +537,7 @@ export const PizarraManager: React.FC<{ onClose: () => void; appId: string }> = 
                                             e.preventDefault();
                                             e.stopPropagation();
                                             e.nativeEvent.stopImmediatePropagation();
-                                            setSelectedTemplate('t-empty');
-                                        }}
-                                        onDoubleClick={(e) => {
-                                            e.preventDefault();
-                                            e.stopPropagation();
-                                            e.nativeEvent.stopImmediatePropagation();
-                                            handleCreate('t-empty');
+                                            selectOrCreate('t-empty');
                                         }}
                                         className={`w-full p-6 round-xl border-2 cursor-pointer transition-all hover:shadow-lg active:scale-95 flex flex-col items-center text-center group appearance-none text-left ${selectedTemplate === 't-empty' ? 'border-blue-500 bg-blue-50/30 dark:bg-blue-900/10 ring-1 ring-blue-500' : 'border-slate-200 dark:border-slate-700 hover:border-blue-400 dark:hover:border-blue-500 bg-white dark:bg-slate-800'}`}
                                     >
@@ -495,13 +557,7 @@ export const PizarraManager: React.FC<{ onClose: () => void; appId: string }> = 
                                                 e.preventDefault();
                                                 e.stopPropagation();
                                                 e.nativeEvent.stopImmediatePropagation();
-                                                setSelectedTemplate(t.id);
-                                            }}
-                                            onDoubleClick={(e) => {
-                                                e.preventDefault();
-                                                e.stopPropagation();
-                                                e.nativeEvent.stopImmediatePropagation();
-                                                handleCreate(t.id);
+                                                selectOrCreate(t.id);
                                             }}
                                             className={`w-full p-6 rounded-xl border-2 cursor-pointer transition-all hover:shadow-lg active:scale-95 flex flex-col items-center text-center group appearance-none text-left ${selectedTemplate === t.id ? 'border-blue-500 bg-blue-50/30 dark:bg-blue-900/10 ring-1 ring-blue-500' : 'border-slate-200 dark:border-slate-700 hover:border-blue-400 dark:hover:border-blue-500 bg-white dark:bg-slate-800'}`}
                                         >
@@ -517,7 +573,9 @@ export const PizarraManager: React.FC<{ onClose: () => void; appId: string }> = 
                                     ))}
                                 </div>
 
-                                <div className="mt-8 flex justify-end pt-4 border-t border-slate-100 dark:border-slate-800">
+                                {/* Fijo abajo: en móvil la rejilla de plantillas es larga y este
+                                    botón quedaba fuera de alcance al final del recorrido. */}
+                                <div className="sticky bottom-0 mt-8 flex justify-end pt-4 pb-2 border-t border-slate-100 dark:border-slate-800 bg-white/90 dark:bg-slate-900/90 backdrop-blur-sm">
                                     <button
                                         className="px-6 py-2.5 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-blue-500/20 active:scale-95 transition-all flex items-center gap-2"
                                         disabled={!selectedTemplate}
@@ -553,24 +611,88 @@ export const PizarraManager: React.FC<{ onClose: () => void; appId: string }> = 
                             <div>
                                 <div className="mb-6">
                                     <h3 className="text-2xl font-bold text-slate-800 dark:text-white">Importaciones</h3>
-                                    <p className="text-slate-500 dark:text-slate-400 text-sm">Trae tus diseños de otras plataformas.</p>
+                                    <p className="text-slate-500 dark:text-slate-400 text-sm">Sube una captura de pantalla de tu diseño. La IA lo analizará y creará una pizarra con todos los elementos.</p>
                                 </div>
+
+                                {/* Status feedback */}
+                                {importStatus === 'analyzing' && (
+                                    <div className="mb-6 flex items-center gap-3 p-4 bg-indigo-50 dark:bg-indigo-900/20 rounded-xl border border-indigo-200 dark:border-indigo-700 animate-pulse">
+                                        <LuLoader className="w-5 h-5 text-indigo-500 animate-spin" />
+                                        <div>
+                                            <p className="font-semibold text-indigo-700 dark:text-indigo-300 text-sm">Analizando diseño...</p>
+                                            <p className="text-indigo-500 dark:text-indigo-400 text-xs">La IA está leyendo los elementos del diseño. Esto puede tomar unos segundos.</p>
+                                        </div>
+                                    </div>
+                                )}
+                                {importStatus === 'success' && (
+                                    <div className="mb-6 flex items-center gap-3 p-4 bg-green-50 dark:bg-green-900/20 rounded-xl border border-green-200 dark:border-green-700">
+                                        <LuCheck className="w-5 h-5 text-green-500" />
+                                        <p className="font-semibold text-green-700 dark:text-green-300 text-sm">¡Pizarra creada! Abriendo...</p>
+                                    </div>
+                                )}
+                                {importStatus === 'error' && (
+                                    <div className="mb-6 flex items-center gap-3 p-4 bg-red-50 dark:bg-red-900/20 rounded-xl border border-red-200 dark:border-red-700">
+                                        <span className="text-red-500 text-lg">⚠</span>
+                                        <div>
+                                            <p className="font-semibold text-red-700 dark:text-red-300 text-sm">Error al importar</p>
+                                            <p className="text-red-500 text-xs">{importError}</p>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Hidden file inputs */}
+                                <input ref={canvaInputRef} type="file" accept="image/*" className="hidden"
+                                    onChange={e => { const f = e.target.files?.[0]; if (f) handleImport(f, 'canva'); e.target.value = ''; }} />
+                                <input ref={miroInputRef} type="file" accept="image/*" className="hidden"
+                                    onChange={e => { const f = e.target.files?.[0]; if (f) handleImport(f, 'miro'); e.target.value = ''; }} />
 
                                 <div className="grid grid-cols-2 gap-6 mb-8">
-                                    <button className="p-8 border border-slate-200 dark:border-slate-700 rounded-2xl hover:border-purple-300 hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-all flex flex-col items-center gap-4 group bg-white dark:bg-slate-800">
+                                    <button
+                                        disabled={importStatus === 'analyzing'}
+                                        onClick={() => canvaInputRef.current?.click()}
+                                        className="p-8 border border-slate-200 dark:border-slate-700 rounded-2xl hover:border-purple-300 hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-all flex flex-col items-center gap-4 group bg-white dark:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    >
                                         <div className="w-14 h-14 rounded-full bg-purple-100 dark:bg-purple-900/50 text-purple-600 dark:text-purple-300 flex items-center justify-center text-2xl font-bold">C</div>
-                                        <span className="font-semibold text-slate-700 dark:text-slate-200 group-hover:text-purple-700 dark:group-hover:text-purple-300">Importar de Canva</span>
+                                        <div className="text-center">
+                                            <span className="font-semibold text-slate-700 dark:text-slate-200 group-hover:text-purple-700 dark:group-hover:text-purple-300 block">Importar de Canva</span>
+                                            <span className="text-xs text-slate-400 dark:text-slate-500 mt-1 block">Sube screenshot o export PNG</span>
+                                        </div>
+                                        <LuUpload className="w-4 h-4 text-slate-300 group-hover:text-purple-400 transition-colors" />
                                     </button>
-                                    <button className="p-8 border border-slate-200 dark:border-slate-700 rounded-2xl hover:border-yellow-300 hover:bg-yellow-50 dark:hover:bg-yellow-900/20 transition-all flex flex-col items-center gap-4 group bg-white dark:bg-slate-800">
+                                    <button
+                                        disabled={importStatus === 'analyzing'}
+                                        onClick={() => miroInputRef.current?.click()}
+                                        className="p-8 border border-slate-200 dark:border-slate-700 rounded-2xl hover:border-yellow-300 hover:bg-yellow-50 dark:hover:bg-yellow-900/20 transition-all flex flex-col items-center gap-4 group bg-white dark:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    >
                                         <div className="w-14 h-14 rounded-full bg-yellow-100 dark:bg-yellow-900/50 text-yellow-600 dark:text-yellow-300 flex items-center justify-center text-2xl font-bold">M</div>
-                                        <span className="font-semibold text-slate-700 dark:text-slate-200 group-hover:text-yellow-700 dark:group-hover:text-yellow-300">Importar de Miro</span>
+                                        <div className="text-center">
+                                            <span className="font-semibold text-slate-700 dark:text-slate-200 group-hover:text-yellow-700 dark:group-hover:text-yellow-300 block">Importar de Miro</span>
+                                            <span className="text-xs text-slate-400 dark:text-slate-500 mt-1 block">Sube screenshot o export PNG</span>
+                                        </div>
+                                        <LuUpload className="w-4 h-4 text-slate-300 group-hover:text-yellow-400 transition-colors" />
                                     </button>
                                 </div>
 
-                                <div className="bg-blue-50 dark:bg-blue-900/20 p-5 rounded-xl border border-blue-100 dark:border-blue-800 text-sm text-blue-800 dark:text-blue-300 flex gap-3">
-                                    <div className="mt-1"><LuDownload size={16} /></div>
+                                {/* Also allow generic drag/drop */}
+                                <div
+                                    className="border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-2xl p-8 text-center hover:border-indigo-300 dark:hover:border-indigo-600 hover:bg-indigo-50/50 dark:hover:bg-indigo-900/10 transition-all cursor-pointer group"
+                                    onClick={() => canvaInputRef.current?.click()}
+                                    onDragOver={e => e.preventDefault()}
+                                    onDrop={e => {
+                                        e.preventDefault();
+                                        const f = e.dataTransfer.files?.[0];
+                                        if (f && f.type.startsWith('image/')) handleImport(f, 'canva');
+                                    }}
+                                >
+                                    <LuUpload className="w-8 h-8 text-slate-300 dark:text-slate-600 group-hover:text-indigo-400 mx-auto mb-3 transition-colors" />
+                                    <p className="font-medium text-slate-500 dark:text-slate-400 text-sm group-hover:text-indigo-600 dark:group-hover:text-indigo-400">O arrastra cualquier imagen aquí</p>
+                                    <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">PNG, JPG, WEBP — funciona con cualquier plataforma de diseño</p>
+                                </div>
+
+                                <div className="mt-6 bg-blue-50 dark:bg-blue-900/20 p-4 rounded-xl border border-blue-100 dark:border-blue-800 text-xs text-blue-700 dark:text-blue-300 flex gap-3">
+                                    <LuDownload className="w-4 h-4 mt-0.5 flex-shrink-0" />
                                     <div>
-                                        <strong>Importación Inteligente:</strong> Al importar, Pizarrón creará una pizarra gemela e identificará automáticamente formas, gráficos y estructuras para guardarlas en tu biblioteca.
+                                        <strong>Importación Inteligente por IA:</strong> La IA analiza el diseño visualmente, detecta textos, formas, imágenes y su disposición, y recrea la estructura en Pizarrón. Los elementos se guardan como nodes editables.
                                     </div>
                                 </div>
                             </div>

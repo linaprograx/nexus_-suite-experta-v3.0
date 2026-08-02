@@ -23,9 +23,9 @@ export const IngredientRecipeInspector = ({
                     <div className="space-y-4">
                         {/* Title */}
                         <div>
-                            <label className="text-xs font-medium text-slate-600 block mb-1">Title</label>
+                            <label className="text-xs font-medium text-slate-600 dark:text-slate-400 block mb-1">Title</label>
                             <input
-                                className="w-full border rounded text-sm px-2 py-1"
+                                className="w-full border border-slate-300 dark:border-slate-600 rounded text-sm px-2 py-1 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200"
                                 value={firstNode.content.title || ''}
                                 onChange={(e) => updateNode({ title: e.target.value })}
                             />
@@ -75,18 +75,18 @@ export const IngredientRecipeInspector = ({
                         />
 
                         {/* Node Info (Read-only) */}
-                        <div className="pt-3 border-t border-slate-200">
+                        <div className="pt-3 border-t border-slate-200 dark:border-slate-700">
                             <div className="text-xs font-medium text-slate-400 mb-2">NODE INFO</div>
                             <div className="grid grid-cols-2 gap-2 text-xs">
                                 <div>
-                                    <span className="text-slate-500">Type:</span>
-                                    <div className="bg-slate-50 px-2 py-1 rounded mt-1">
+                                    <span className="text-slate-500 dark:text-slate-400">Type:</span>
+                                    <div className="bg-slate-50 dark:bg-slate-800 px-2 py-1 rounded mt-1 text-slate-700 dark:text-slate-300">
                                         {firstNode.type === 'ingredient' ? '🥬 Ingredient' : '🍽️ Recipe'}
                                     </div>
                                 </div>
                                 <div>
-                                    <span className="text-slate-500">ID:</span>
-                                    <div className="bg-slate-50 px-2 py-1 rounded mt-1 truncate" title={firstNode.ingredientId || firstNode.recipeId}>
+                                    <span className="text-slate-500 dark:text-slate-400">ID:</span>
+                                    <div className="bg-slate-50 dark:bg-slate-800 px-2 py-1 rounded mt-1 truncate text-slate-700 dark:text-slate-300" title={firstNode.ingredientId || firstNode.recipeId}>
                                         {(firstNode.ingredientId || firstNode.recipeId || 'N/A').slice(-8)}
                                     </div>
                                 </div>

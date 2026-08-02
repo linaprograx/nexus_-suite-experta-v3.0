@@ -37,7 +37,7 @@ export const CostingScenarioInspector = ({
                         <div>
                             <label className="text-xs font-medium text-slate-600 block mb-1">Scenario Name</label>
                             <input
-                                className="w-full border rounded text-sm px-2 py-1.5"
+                                className="w-full border border-slate-300 dark:border-slate-600 rounded text-sm px-2 py-1.5 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200"
                                 placeholder="Scenario title"
                                 value={firstNode.content.title || ''}
                                 onChange={(e) => updateNode({ title: e.target.value })}
@@ -51,14 +51,14 @@ export const CostingScenarioInspector = ({
                             </label>
                             <select
                                 multiple
-                                className="w-full border rounded text-sm px-2 py-2 bg-white h-32"
+                                className="w-full border border-slate-300 dark:border-slate-600 rounded text-sm px-2 py-2 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 h-32"
                                 value={firstNode.content.recipeIdsInScenario || []}
                                 onChange={(e) => {
                                     const selected = Array.from(e.target.selectedOptions, option => option.value);
                                     updateNode({ recipeIdsInScenario: selected });
                                 }}
                             >
-                                {recipes?.map(r => (
+                                {recipes?.map((r: any) => (
                                     <option key={r.id} value={r.id}>{r.nombre}</option>
                                 ))}
                             </select>

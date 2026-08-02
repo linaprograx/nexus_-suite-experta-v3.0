@@ -5,7 +5,7 @@ import { WeekChart } from './WeekChart';
 import { WeeklySummary } from './WeeklySummary';
 import { KeyInsights } from './KeyInsights';
 import { RecommendedAction } from './RecommendedAction';
-import { PizarronTask } from '../../../../types';
+import { PizarronTask } from '../../../types';
 import { Spinner } from '../../../components/ui/Spinner';
 import { Alert } from '../../../components/ui/Alert';
 import { useUI } from '../../../context/UIContext';

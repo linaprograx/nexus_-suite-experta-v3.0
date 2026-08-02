@@ -201,6 +201,9 @@ class PizarronStore {
 
             state.nodes[node.id] = node;
             state.order.push(node.id);
+
+            // Auto-link to containing board (if any)
+            this.syncNodeBoardParent(state, node.id);
         }, true);
     }
 
@@ -269,6 +272,28 @@ class PizarronStore {
 
                 Object.assign(node, patch);
                 node.updatedAt = Date.now();
+
+                // Auto-grow text node height to fit content
+                const textChanged = (patch as any).title !== undefined
+                    || (patch as any).fontSize !== undefined
+                    || (patch as any).lineHeight !== undefined
+                    || (patch as any).fontFamily !== undefined
+                    || (patch as any).fontWeight !== undefined;
+                if (node.type === 'text' && textChanged) {
+                    const measuredH = this.measureTextHeight(node);
+                    if (measuredH > node.h) {
+                        node.h = measuredH;
+                    }
+                }
+
+                // Re-evaluate board membership when a non-board node moves
+                const movedX = (patch as any).x !== undefined;
+                const movedY = (patch as any).y !== undefined;
+                if (node.type !== 'board' && (movedX || movedY)) {
+                    this.syncNodeBoardParent(state, id);
+                    // Clamp position inside parent board if one exists
+                    this.clampNodeInsideBoard(state, id);
+                }
             }
         }, saveHistory);
     }
@@ -1109,6 +1134,130 @@ class PizarronStore {
                 });
             }
         });
+    }
+
+    /**
+     * Finds the topmost board node (by zIndex) that contains the given point.
+     * Returns null if no board contains the point.
+     * excludeId: skip this node (used to prevent a board from being its own child).
+     */
+    private findBoardAtPosition(x: number, y: number, excludeId?: string): BoardNode | null {
+        const state = this.state;
+        let best: BoardNode | null = null;
+        let bestZ = -Infinity;
+        for (const id of state.order) {
+            const node = state.nodes[id];
+            if (!node || node.type !== 'board' || node.id === excludeId) continue;
+            if (x >= node.x && x <= node.x + node.w && y >= node.y && y <= node.y + node.h) {
+                const z = node.zIndex ?? 0;
+                if (z > bestZ) { best = node; bestZ = z; }
+            }
+        }
+        return best;
+    }
+
+    /**
+     * Re-evaluates the board membership of a node based on its current position.
+     * Called inside setState to mutate draft state directly.
+     * Boards never become children of other boards.
+     */
+    private syncNodeBoardParent(state: BoardState, nodeId: string) {
+        const node = state.nodes[nodeId];
+        if (!node || node.type === 'board') return;
+
+        // Center-point of the node for containment test
+        const cx = node.x + node.w / 2;
+        const cy = node.y + node.h / 2;
+
+        // Find which board (if any) contains this node's center
+        let newBoardId: string | null = null;
+        let bestZ = -Infinity;
+        for (const id of state.order) {
+            const board = state.nodes[id];
+            if (!board || board.type !== 'board') continue;
+            if (cx >= board.x && cx <= board.x + board.w && cy >= board.y && cy <= board.y + board.h) {
+                const z = board.zIndex ?? 0;
+                if (z > bestZ) { newBoardId = board.id; bestZ = z; }
+            }
+        }
+
+        const oldBoardId = node.parentId;
+
+        // Nothing changed
+        if (newBoardId === (oldBoardId ?? null)) return;
+
+        // Remove from old board's childrenIds
+        if (oldBoardId) {
+            const oldBoard = state.nodes[oldBoardId];
+            if (oldBoard?.childrenIds) {
+                oldBoard.childrenIds = oldBoard.childrenIds.filter(id => id !== nodeId);
+            }
+        }
+
+        // Add to new board's childrenIds
+        if (newBoardId) {
+            const newBoard = state.nodes[newBoardId];
+            if (newBoard) {
+                if (!newBoard.childrenIds) newBoard.childrenIds = [];
+                if (!newBoard.childrenIds.includes(nodeId)) newBoard.childrenIds.push(nodeId);
+                node.parentId = newBoardId;
+            }
+        } else {
+            node.parentId = undefined;
+        }
+    }
+
+    /**
+     * If the node has a parentId pointing to a board, clamp its (x, y) so the
+     * entire node rectangle stays inside the board rectangle, with PADDING px margin.
+     * Called after syncNodeBoardParent so parentId is already up to date.
+     */
+    private measureTextHeight(node: any): number {
+        const { title = '', fontSize = 20, fontWeight = 'normal', fontStyle = 'normal',
+            fontFamily = 'Inter', lineHeight = 1.2, padding = 0 } = node.content || {};
+        try {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            if (!ctx) return node.h;
+            ctx.font = `${fontStyle} ${fontWeight} ${fontSize}px "${fontFamily}", sans-serif`;
+            const availW = node.w - padding * 2;
+            const lineSpacing = fontSize * lineHeight;
+            let lineCount = 0;
+            for (const para of (title || '').split('\n')) {
+                const words = para.split(' ');
+                let line = '';
+                for (const word of words) {
+                    const test = line + word + ' ';
+                    if (ctx.measureText(test).width > availW && line) {
+                        lineCount++;
+                        line = word + ' ';
+                    } else {
+                        line = test;
+                    }
+                }
+                lineCount++;
+            }
+            return Math.max(lineCount * lineSpacing + padding * 2, fontSize + padding * 2);
+        } catch {
+            return node.h;
+        }
+    }
+
+    private clampNodeInsideBoard(state: BoardState, nodeId: string) {
+        const PADDING = 8;
+        const node = state.nodes[nodeId];
+        if (!node || !node.parentId) return;
+        const board = state.nodes[node.parentId];
+        if (!board || board.type !== 'board') return;
+
+        const minX = board.x + PADDING;
+        const minY = board.y + PADDING;
+        const maxX = board.x + board.w - node.w - PADDING;
+        const maxY = board.y + board.h - node.h - PADDING;
+
+        // Only clamp if the board is large enough to contain the node
+        if (maxX >= minX) node.x = Math.max(minX, Math.min(node.x, maxX));
+        if (maxY >= minY) node.y = Math.max(minY, Math.min(node.y, maxY));
     }
 
     groupSelection() {

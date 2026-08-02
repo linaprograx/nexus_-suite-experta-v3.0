@@ -17,10 +17,10 @@ export const ChampionCreativePanel: React.FC = () => {
     }, [state.proposal]);
 
     return (
-        <div className="flex flex-col gap-6 relative font-sans text-slate-800 max-w-2xl mx-auto w-full pb-8">
+        <div className="flex flex-col gap-6 relative font-sans max-w-2xl mx-auto w-full pb-8">
 
             {/* Inspiration Input Card */}
-            <div className="relative bg-white p-8 rounded-[30px] border border-white shadow-[0px_4px_30px_rgba(0,0,0,0.03)] shrink-0 transition-all hover:shadow-[0px_10px_40px_rgba(0,0,0,0.06)] hover:-translate-y-1 duration-500">
+            <div className="relative bg-white/[0.04] p-6 rounded-[24px] border border-white/10 shrink-0 transition-all hover:border-violet-500/30 duration-300">
                 <div className="flex items-center justify-between mb-6">
                     <h2 className="text-xs font-black text-violet-500 uppercase tracking-[0.2em] flex items-center gap-2">
                         <Icon svg={ICONS.sparkles} className="w-4 h-4" />
@@ -35,7 +35,7 @@ export const ChampionCreativePanel: React.FC = () => {
                             value={state.concept}
                             onChange={(e) => actions.setConcept(e.target.value)}
                             placeholder="Describe tu visión (ej: Un martini inspirado en la lluvia de Tokio...)"
-                            className="w-full h-32 bg-slate-50 border border-slate-200 rounded-[20px] p-5 text-sm font-medium text-slate-700 placeholder-slate-400 focus:ring-4 focus:ring-violet-500/10 focus:border-violet-500 outline-none resize-none transition-all shadow-inner focus:shadow-md"
+                            className="w-full h-32 bg-white/5 border border-white/10 rounded-[16px] p-4 text-sm font-medium text-slate-200 placeholder-slate-600 focus:ring-2 focus:ring-violet-500/30 focus:border-violet-500/50 outline-none resize-none transition-all"
                         />
                     </div>
 
@@ -172,7 +172,7 @@ export const ChampionCreativePanel: React.FC = () => {
                                     />
                                     <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-6 pointer-events-none">
                                         <p className="text-white text-xs font-medium italic">
-                                            "{state.proposal.imagePrompt.slice(0, 100)}..."
+                                            "{(state.proposal.imagePrompt || '').slice(0, 100)}..."
                                         </p>
                                     </div>
                                 </div>

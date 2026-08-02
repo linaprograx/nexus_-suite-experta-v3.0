@@ -1,145 +1,178 @@
-import React, { useEffect, useRef, useMemo } from 'react';
-import { PageName, PAGE_THEMES } from '../types';
-import { MOBILE_BACKGROUNDS, MOBILE_BLUR, MOBILE_SHADOWS, MOBILE_BORDERS } from '../design-tokens';
-import { CLASS_NAMES } from '../../../theme/motion';
+import React from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { APP_SECTIONS, AppSection } from '../../../config/appSections';
+import { useSectionsStore } from '../../../store/sectionsStore';
+import { Icon } from '../../../components/ui/Icon';
+import { ICONS } from '../../../components/ui/icons';
+import { BottomSheet } from '../../../components/ui/BottomSheet';
 
-interface FloatingBottomNavProps {
-    currentPage: PageName;
-    onNavigate: (page: PageName) => void;
+/** Height of the bar itself, excluding the safe-area inset. */
+export const BOTTOM_NAV_HEIGHT = 60;
+
+/**
+ * How many destinations fit before we spill into a "Más" sheet.
+ * At 390px a comfortable touch target is ~64px wide, so five is the honest
+ * maximum. Beyond that the bar either shrinks below the 44px guideline or
+ * starts scrolling horizontally — and a nav bar you have to scroll to find
+ * things in is worse than one extra tap.
+ */
+const MAX_SLOTS = 5;
+
+/** Per-section accent, so the active tab tells you where you are by colour. */
+const SECTION_ACCENT: Record<string, string> = {
+    dashboard: '#0ea5e9',
+    grimorium: '#10b981',
+    cerebrIty: '#ec4899',
+    pizarron: '#6366f1',
+    avatar: '#8b5cf6',
+    colegium: '#f59e0b',
+    personal: '#64748b',
+};
+
+const PERSONAL: AppSection = {
+    id: 'personal', label: 'Perfil', icon: ICONS.user, path: '/personal', locked: true,
+};
+
+interface NavButtonProps {
+    section: AppSection;
+    active: boolean;
+    onClick: () => void;
 }
 
-// 1. Definition of Main Navigation Items
-const MAIN_NAV_ITEMS = [
-    { page: PageName.Dashboard, icon: 'dashboard', label: 'Inicio' },
-    {
-        // Grimorio acts as a Section. Default click goes to Recipes.
-        page: PageName.GrimorioRecipes,
-        groupKey: 'grimorio',
-        icon: 'menu_book',
-        label: 'Grimorio',
-        subPages: [PageName.GrimorioRecipes, PageName.GrimorioStock, PageName.GrimorioMarket]
-    },
-    {
-        // Cerebrity Section
-        page: PageName.CerebritySynthesis,
-        groupKey: 'cerebrity',
-        icon: 'neurology',
-        label: 'Cerebrity',
-        subPages: [PageName.CerebritySynthesis, PageName.CerebrityMakeMenu, PageName.CerebrityCritic, PageName.CerebrityLab, PageName.CerebrityTrend]
-    },
-    { page: PageName.Pizarron, icon: 'layers', label: 'Pizarrón' },
-    {
-        // Avatar/Personal Section
-        page: PageName.AvatarCore,
-        groupKey: 'avatar',
-        icon: 'person',
-        label: 'Avatar',
-        subPages: [PageName.AvatarCore, PageName.AvatarIntelligence, PageName.AvatarCompetition]
-    },
-    { page: PageName.Colegium, icon: 'school', label: 'Colegium' },
-    // ❌ Removed duplicate: { page: PageName.Personal, icon: 'dvr', label: 'Personal' }
-    // Avatar section above already handles personal/avatar pages
-];
+const NavButton: React.FC<NavButtonProps> = ({ section, active, onClick }) => {
+    const accent = SECTION_ACCENT[section.id] || '#64748b';
+    return (
+        <button
+            onClick={onClick}
+            aria-label={section.label}
+            aria-current={active ? 'page' : undefined}
+            // Colour lives here: Icon renders currentColor, so the whole button
+            // (icon + label) tints from one place.
+            className={`relative flex-1 min-w-0 h-full flex flex-col items-center justify-center gap-0.5 active:scale-90 transition-transform duration-150 ${active ? '' : 'text-slate-400 dark:text-slate-500'}`}
+            style={active ? { color: accent } : undefined}
+        >
+            {/* Active pill sits behind the icon rather than resizing the button,
+                so tapping never makes the row reflow under the thumb. */}
+            {active && (
+                <span
+                    className="absolute inset-x-1 inset-y-1 rounded-2xl transition-opacity"
+                    style={{ backgroundColor: `${accent}1f` }}
+                />
+            )}
+            <span className="relative">
+                <Icon svg={section.icon} className="w-[22px] h-[22px]" />
+            </span>
+            <span className="relative text-[9px] font-semibold tracking-wide truncate max-w-full px-0.5">
+                {section.label}
+            </span>
+        </button>
+    );
+};
 
-const FloatingBottomNav: React.FC<FloatingBottomNavProps> = ({ currentPage, onNavigate }) => {
-    const scrollContainerRef = useRef<HTMLDivElement>(null);
+/**
+ * Mobile bottom navigation.
+ *
+ * Drives off APP_SECTIONS + the sections store, so it shows exactly what the
+ * user enabled in Personal → Configuración; there is no second list to keep in
+ * sync with the desktop sidebar.
+ *
+ * Replaces the old top header (logo + hamburger), which spent ~64px of a phone
+ * screen on a title each view already renders itself, and hid navigation behind
+ * an extra tap.
+ */
+const FloatingBottomNav: React.FC = () => {
+    const location = useLocation();
+    const navigate = useNavigate();
+    const hiddenSections = useSectionsStore(s => s.hiddenSections);
+    const [moreOpen, setMoreOpen] = React.useState(false);
 
-    // 2. Identify Active Item/Group
-    const activeItem = useMemo(() => {
-        return MAIN_NAV_ITEMS.find(item => {
-            if (item.page === currentPage) return true;
-            if (item.subPages && item.subPages.includes(currentPage)) return true;
-            return false;
-        });
-    }, [currentPage]);
+    const visible = React.useMemo(
+        () => APP_SECTIONS.filter(s => s.locked || !hiddenSections.includes(s.id)),
+        [hiddenSections]
+    );
 
-    // 3. Dynamic Color Logic
-    // We want the icon to take the color of the CURRENT PAGE (even if deep inside a section)
-    const activeThemeColor = (PAGE_THEMES[currentPage] || PAGE_THEMES['default']).accent;
+    // Everything that doesn't fit, plus the profile, lives behind "Más".
+    const { primary, overflow } = React.useMemo(() => {
+        const all = [...visible, PERSONAL];
+        if (all.length <= MAX_SLOTS) return { primary: all, overflow: [] as AppSection[] };
+        return { primary: all.slice(0, MAX_SLOTS - 1), overflow: all.slice(MAX_SLOTS - 1) };
+    }, [visible]);
 
-    // Auto-scroll logic (Simplified)
-    useEffect(() => {
-        if (!scrollContainerRef.current || !activeItem) return;
-        const index = MAIN_NAV_ITEMS.indexOf(activeItem);
-        if (index !== -1) {
-            const container = scrollContainerRef.current;
-            const itemWidth = 72;
-            const gap = 8;
-            const centerPos = (index * (itemWidth + gap)) - 150; // Approx center
-            container.scrollTo({ left: Math.max(0, centerPos), behavior: 'smooth' });
+    /**
+     * Longest matching path wins, so /grimorium doesn't lose to the "/" of
+     * Dashboard — which is a prefix of literally every route.
+     */
+    const activeId = React.useMemo(() => {
+        const path = location.pathname;
+        let best: AppSection | undefined;
+        for (const s of [...visible, PERSONAL]) {
+            const match = s.path === '/' ? path === '/' : path.toLowerCase().startsWith(s.path.toLowerCase());
+            if (match && (!best || s.path.length > best.path.length)) best = s;
         }
-    }, [activeItem]);
+        return best?.id;
+    }, [location.pathname, visible]);
+
+    const overflowActive = overflow.some(s => s.id === activeId);
+
+    const go = (section: AppSection) => {
+        navigate(section.path);
+        setMoreOpen(false);
+    };
 
     return (
-        <div
-            className="absolute bottom-6 left-5 right-5 z-50 mb-[env(safe-area-inset-bottom)]"
-            style={{ pointerEvents: 'auto' }}
-        >
-            <div
-                ref={scrollContainerRef}
-                className="h-[4.5rem] rounded-[2rem] overflow-x-auto overflow-y-hidden no-scrollbar px-2 dark:!bg-black/90 dark:!border-white/10 dark:!shadow-2xl transition-all duration-500 ease-out"
+        <>
+            <nav
+                className="fixed inset-x-0 bottom-0 z-50 lg:hidden border-t border-slate-200/70 dark:border-white/10 bg-white/75 dark:bg-slate-950/75 backdrop-blur-xl"
                 style={{
-                    backgroundColor: MOBILE_BACKGROUNDS.navBlur,
-                    backdropFilter: MOBILE_BLUR.navigation,
-                    WebkitBackdropFilter: MOBILE_BLUR.navigation,
-                    border: MOBILE_BORDERS.glassSubtle,
-                    boxShadow: MOBILE_SHADOWS.navBlur,
-                    maxWidth: '100%',
-                    margin: '0 auto',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'flex-start' // Changed from center to avoid clipping left-side items on overflow
+                    height: `calc(${BOTTOM_NAV_HEIGHT}px + env(safe-area-inset-bottom))`,
+                    paddingBottom: 'env(safe-area-inset-bottom)',
                 }}
             >
-                <nav className="flex items-center gap-2 min-w-max px-2 h-full w-fit mx-auto">
-                    {MAIN_NAV_ITEMS.map((item) => {
-                        // Check if this item is the "Active" one (either direct match or group match)
-                        const isActive = activeItem === item;
+                <div className="flex items-stretch h-full px-1">
+                    {primary.map(s => (
+                        <NavButton key={s.id} section={s} active={activeId === s.id} onClick={() => go(s)} />
+                    ))}
 
-                        // Use activeThemeColor if this item is active, otherwise gray
-                        const iconColor = isActive ? activeThemeColor : '#a1a1aa';
+                    {overflow.length > 0 && (
+                        <NavButton
+                            section={{ id: 'more', label: 'Más', icon: ICONS.menu, path: '#' }}
+                            active={overflowActive}
+                            onClick={() => setMoreOpen(true)}
+                        />
+                    )}
+                </div>
+            </nav>
 
+            <BottomSheet
+                open={moreOpen}
+                onClose={() => setMoreOpen(false)}
+                title="Más"
+                snaps={['peek', 'half']}
+                initialSnap="peek"
+            >
+                <div className="grid grid-cols-3 gap-3 p-4">
+                    {overflow.map(s => {
+                        const accent = SECTION_ACCENT[s.id] || '#64748b';
+                        const active = activeId === s.id;
                         return (
                             <button
-                                key={item.label}
-                                onClick={() => onNavigate(item.page)}
-                                className={`
-                                    flex flex-col items-center justify-center
-                                    w-[64px] h-14
-                                    rounded-[1.5rem]
-                                    transition-all duration-300
-                                    flex-shrink-0
-                                    ${isActive
-                                        ? 'bg-white dark:bg-zinc-800 shadow-xl scale-110'
-                                        : 'bg-transparent hover:bg-white/10 hover:scale-105'
-                                    }
-                                    ${CLASS_NAMES.pressEffect}
-                                `}
-                                style={isActive ? {
-                                    boxShadow: `0 4px 20px ${activeThemeColor}40, 0 0 0 2px ${activeThemeColor}20`
-                                } : {}}
+                                key={s.id}
+                                onClick={() => go(s)}
+                                className="flex flex-col items-center justify-center gap-2 py-4 rounded-2xl border transition-colors active:scale-95"
+                                style={{
+                                    borderColor: active ? accent : 'transparent',
+                                    backgroundColor: `${accent}14`,
+                                    color: accent,
+                                }}
                             >
-                                <span
-                                    className={`
-                                        material-symbols-outlined !text-[26px] transition-colors duration-300
-                                        ${isActive ? 'fill-1' : ''}
-                                    `}
-                                    style={{ color: iconColor }}
-                                >
-                                    {item.icon}
-                                </span>
-                                {isActive && (
-                                    <div
-                                        className="w-1 h-1 rounded-full mt-1.5"
-                                        style={{ backgroundColor: activeThemeColor }}
-                                    />
-                                )}
+                                <Icon svg={s.icon} className="w-6 h-6" />
+                                <span className="text-[11px] font-semibold text-slate-700 dark:text-slate-200">{s.label}</span>
                             </button>
                         );
                     })}
-                </nav>
-            </div>
-        </div>
+                </div>
+            </BottomSheet>
+        </>
     );
 };
 

@@ -1,6 +1,30 @@
 import React from 'react';
+import { useResponsive } from '../../hooks/useResponsive';
+import { BottomSheet } from '../ui/BottomSheet';
+import { StackedMobileShell } from './StackedMobileShell';
 
 type GradientTheme = 'violet' | 'cyan' | 'emerald' | 'amber' | 'rose' | 'indigo' | 'slate' | 'blue' | 'colegium' | 'red' | 'yellow' | 'ice' | 'lime';
+
+/**
+ * Mobile behaviour for the three-column layout. On phones the columns are not stacked
+ * (that produced endless scrolling and lost the hierarchy) — they become three states:
+ * the main column owns the screen, and the side panels open as bottom sheets.
+ *
+ * Entirely opt-in: a view that passes nothing still works, it just gets manual
+ * buttons to reveal the side panels instead of an automatic detail sheet.
+ */
+export interface MobileLayoutOptions {
+    /** Controlled: open the detail sheet when the view has a selection. */
+    detailOpen?: boolean;
+    onDetailClose?: () => void;
+    detailTitle?: string;
+    detailSubtitle?: string;
+    /** Labels for the floating panel switchers. */
+    insightsLabel?: string;
+    detailLabel?: string;
+    /** Tailwind bg-* class used for the sheet grabber, to keep the module's identity. */
+    accentClass?: string;
+}
 
 interface PremiumLayoutProps {
     children?: React.ReactNode; // Fallback for flexibility
@@ -13,6 +37,12 @@ interface PremiumLayoutProps {
     layoutMode?: 'standard' | 'compact' | 'colegium' | 'zen';
     backgroundMode?: 'card' | 'screen';
     transparentColumns?: boolean;
+    /** Optional per-instance grid override (e.g. Grimorio wants a wider left column). Only affects the caller that passes it. */
+    gridColsOverride?: string;
+    /** Optional scroll handler on the main content column (e.g. Grimorio collapsing header). Only fires for the caller that passes it. */
+    onMainScroll?: (e: React.UIEvent<HTMLDivElement>) => void;
+    /** Opt-in mobile behaviour. Omitted → sensible defaults, nothing breaks. */
+    mobile?: MobileLayoutOptions;
     id?: string;
 }
 
@@ -48,18 +78,52 @@ export const PremiumLayout: React.FC<PremiumLayoutProps> = ({
     layoutMode = 'standard',
     backgroundMode = 'card',
     transparentColumns = false,
+    gridColsOverride,
+    onMainScroll,
+    mobile,
     id
 }) => {
-
+    // Below lg, not below md. Three columns need ~1024px to be usable: at 800px the
+    // recipes grid resolves to 240 / 352 / 208 px, which is a desktop layout squeezed
+    // rather than a tablet layout. So tablets get the same three-states treatment as
+    // phones, and the grid classes below are gated on `lg:` to match.
+    const { isMobile, isTablet } = useResponsive();
+    const useStackedLayout = isMobile || isTablet;
     const activeGradient = gradients[gradientTheme];
 
+    // ─────────────────────────────────────────────────────────────────────────
+    // MOBILE / TABLET: three columns become three states.
+    // La implementación vive en StackedMobileShell, compartida con las vistas
+    // que pintan su propio fondo (Cerebrity, Avatar), para que el gesto, las
+    // hojas y las pestañas de borde se comporten igual en toda la app.
+    // ─────────────────────────────────────────────────────────────────────────
+    if (useStackedLayout && layoutMode !== 'zen') {
+        return (
+            <StackedMobileShell
+                id={id}
+                header={header}
+                main={<>{mainContent}{children}</>}
+                left={leftSidebar}
+                right={layoutMode === 'colegium' ? undefined : rightSidebar}
+                leftLabel={mobile?.insightsLabel || 'Análisis'}
+                rightLabel={mobile?.detailLabel || 'Detalle'}
+                rightTitle={mobile?.detailTitle}
+                rightSubtitle={mobile?.detailSubtitle}
+                rightOpen={mobile?.detailOpen}
+                onRightClose={mobile?.onDetailClose}
+                accentClass={mobile?.accentClass || 'bg-teal-500'}
+                background={<div className={`absolute inset-x-0 top-0 h-[100dvh] pointer-events-none z-0 rounded-3xl ${activeGradient}`} />}
+            />
+        );
+    }
+
     // Grid Column Logic ... (Keep existing)
-    let gridCols = 'grid-cols-1 md:grid-cols-[2fr_5.5fr_2.5fr]';
+    let gridCols = gridColsOverride || 'grid-cols-1 lg:grid-cols-[2fr_5.5fr_2.5fr]';
 
     if (layoutMode === 'compact') {
-        gridCols = 'grid-cols-1 md:grid-cols-[1fr_8fr_1fr]';
+        gridCols = 'grid-cols-1 lg:grid-cols-[1fr_8fr_1fr]';
     } else if (layoutMode === 'colegium') {
-        gridCols = 'grid-cols-1 md:grid-cols-[2.5fr_7.5fr]';
+        gridCols = 'grid-cols-1 lg:grid-cols-[2.5fr_7.5fr]';
     } else if (layoutMode === 'zen') {
         gridCols = 'grid-cols-1';
     }
@@ -87,18 +151,18 @@ export const PremiumLayout: React.FC<PremiumLayoutProps> = ({
             <div className={`flex-1 grid ${gridCols} gap-4 overflow-hidden ${isZen ? 'rounded-none border-0 bg-slate-50 dark:bg-slate-900' : backgroundMode === 'screen' ? 'p-4' : `rounded-3xl p-4 shadow-sm ring-1 ring-black/5 dark:ring-white/5 ${activeGradient}`} ${className}`}>
 
                 {/* Left Sidebar Column */}
-                <div className={columnClass}>
+                <div className={columnClass} onScroll={onMainScroll}>
                     {leftSidebar}
                 </div>
 
                 {/* Main Content Column */}
-                <div className={columnClass}>
+                <div className={columnClass} onScroll={onMainScroll}>
                     {mainContent}
                 </div>
 
                 {/* Right Sidebar Column */}
                 {layoutMode !== 'colegium' && (
-                    <div className={columnClass}>
+                    <div className={columnClass} onScroll={onMainScroll}>
                         {rightSidebar}
                     </div>
                 )}

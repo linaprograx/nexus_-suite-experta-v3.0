@@ -40,7 +40,7 @@ export const TextEditor: React.FC = () => {
 
     const handleCommit = () => {
         if (editingId) {
-            pizarronStore.updateInteractionState({ editingNodeId: null, editingSubId: null });
+            pizarronStore.updateInteractionState({ editingNodeId: undefined, editingSubId: undefined });
             setEditingId(null);
             setNode(null);
         }
@@ -224,8 +224,21 @@ export const TextEditor: React.FC = () => {
         targetPadding = '10px 20px';
     }
 
-    // Font Sizing
-    const fontSize = (node.content.fontSize || 14) * viewport.zoom;
+    // Font size and text color: for zone editing derive from zone style; fallback to node defaults
+    const isDarkMode = document.documentElement.classList.contains('dark');
+    let fontSize = (node.content.fontSize || 14) * viewport.zoom;
+    let textColor = node.content?.titleColor || (isDarkMode ? '#f1f5f9' : '#0f172a');
+    if (node.type === 'board' && node.structure?.zones && subId) {
+        const activeZone = (node.structure as any).zones?.find((z: any) => z.id === subId);
+        if (activeZone) {
+            // In dark mode use zone palette color; in light mode always use dark text for readability
+            textColor = isDarkMode
+                ? (activeZone.content?.style?.color || activeZone.style?.titleColor || '#f1f5f9')
+                : '#1e293b';
+            const zoneFontSize = activeZone.content?.style?.fontSize;
+            if (zoneFontSize) fontSize = zoneFontSize * viewport.zoom;
+        }
+    }
 
     return (
         <div
@@ -264,7 +277,7 @@ export const TextEditor: React.FC = () => {
                     className="w-full h-full bg-transparent resize-none outline-none overflow-hidden"
                     style={{
                         fontSize: `${fontSize}px`,
-                        color: node.content?.titleColor || '#ffffff',  // Use titleColor for visibility
+                        color: textColor,
                         fontFamily: node.content.fontFamily || 'Inter',
                         fontWeight: node.content.fontWeight || 'normal',
                         textAlign: textAlign,

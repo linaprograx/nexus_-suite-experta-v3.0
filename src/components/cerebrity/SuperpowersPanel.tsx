@@ -1,5 +1,5 @@
 import React from 'react';
-import { CerebrityResult } from '../../../types';
+import { CerebrityResult } from '../../types';
 import { Icon } from '../ui/Icon';
 import { ICONS } from '../ui/icons';
 

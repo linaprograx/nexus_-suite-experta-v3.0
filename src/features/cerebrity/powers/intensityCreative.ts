@@ -31,7 +31,7 @@ export const powerIntensityCreative = async (ingredients: string[]) => {
 
   try {
     const result = await callGeminiApi(prompt, "Eres un jurado de concursos de coctelería de élite, conocido por tu agudo ojo para la innovación.", { responseMimeType: 'application/json', responseSchema: schema });
-    const cleanedJson = cleanJSON(result.text);
+    const cleanedJson = cleanJSON((result as any).text);
 
     if (!cleanedJson.sections || cleanedJson.sections.length === 0) {
       throw new Error("La respuesta de la API no es válida.");

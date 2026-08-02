@@ -32,18 +32,15 @@ export const createDraftRecipeFromTask = async (
         // However, I will add 'Borrador' to categories to be helpful.
         
         await recipeService.addRecipe(db, userId, {
-            nombre: task.texto,
+            nombre: task.texto || 'Sin título',
             categorias: ['General', 'Borrador'],
             imageUrl: null,
             // Initialize other required fields
             ingredientes: [],
             preparacion: '',
             storytelling: '',
-            elementoCreativo: '',
-            ingredientesTexto: '',
             garnish: '',
-            elaboracionesComplejas: ''
-        });
+        } as any);
 
         console.log(`Automation: Created draft recipe for task "${task.texto}"`);
 

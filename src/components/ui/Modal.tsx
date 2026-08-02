@@ -18,8 +18,22 @@ export const Modal: React.FC<{ isOpen: boolean, onClose: () => void, title?: Rea
     };
 
     return ReactDOM.createPortal(
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 backdrop-blur-md" onClick={onClose}>
-            <div className={`relative w-full ${sizes[size]} ${className} animate-in fade-in zoom-in-95 duration-200`} onClick={e => e.stopPropagation()}>
+        <div
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/50 backdrop-blur-md"
+            onClick={onClose}
+            // Promote the backdrop to its own compositing layer so Safari doesn't
+            // drop/repaint the backdrop-filter while the child card animates.
+            style={{
+                WebkitBackdropFilter: 'blur(12px)',
+                backdropFilter: 'blur(12px)',
+                transform: 'translateZ(0)',
+                isolation: 'isolate',
+            }}
+        >
+            <div
+                className={`relative w-full ${sizes[size]} ${className} animate-in fade-in duration-200`}
+                onClick={e => e.stopPropagation()}
+            >
                 <Card className="m-4 border-white/20 dark:border-white/10 shadow-premium bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl">
                     <CardHeader className="flex flex-row items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
                         {title && <CardTitle className="text-lg font-semibold text-slate-800 dark:text-slate-100">{title}</CardTitle>}

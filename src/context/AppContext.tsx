@@ -101,7 +101,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         }
     }, [userId]); // Removed db from dep array as it's static
 
-    const [userPlan, _setUserPlan] = React.useState<PlanTier>(DEFAULT_PLAN_TIER);
+    // Plan is authoritative from the user's profile (updated by the Stripe webhook
+    // after a successful subscription). Falls back to the default tier.
+    const VALID_TIERS: PlanTier[] = ['FREE', 'PRO', 'EXPERT', 'STUDIO'];
+    const profilePlan = (userProfile as any)?.plan;
+    const userPlan: PlanTier = VALID_TIERS.includes(profilePlan) ? profilePlan : DEFAULT_PLAN_TIER;
 
     return (
         <AppContext.Provider value={{ app, db, auth, storage, user, userId, isAuthReady, appId, userProfile, userPlan }}>

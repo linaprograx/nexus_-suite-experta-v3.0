@@ -87,6 +87,8 @@ export const LibrarySidePanel: React.FC = () => {
                     id,
                     x: cx + (n.x - minX) - w / 2, // Center precisely
                     y: cy + (n.y - minY) - h / 2,
+                    // Deep-clone structure so each inserted board owns its zones
+                    ...(n.structure ? { structure: JSON.parse(JSON.stringify(n.structure)) } : {}),
                     zIndex: Object.keys(state.nodes).length + 10,
                     createdAt: Date.now(),
                     updatedAt: Date.now()
@@ -310,12 +312,18 @@ export const LibrarySidePanel: React.FC = () => {
                                                         </span>
                                                         {/* Preview of actual style */}
                                                         <div style={{
+                                                            fontFamily: item.data?.nodes?.[0]?.content?.fontFamily || 'Inter',
                                                             fontSize: '20px',
                                                             fontWeight: item.data?.nodes?.[0]?.content?.fontWeight,
                                                             fontStyle: item.data?.nodes?.[0]?.content?.fontStyle,
-                                                            marginTop: '4px'
+                                                            color: item.data?.nodes?.[0]?.content?.color || undefined,
+                                                            marginTop: '4px',
+                                                            whiteSpace: 'nowrap',
+                                                            overflow: 'hidden',
+                                                            textOverflow: 'ellipsis',
+                                                            maxWidth: '100%'
                                                         }}>
-                                                            Agiliza tu mente
+                                                            {item.data?.nodes?.[0]?.content?.title || 'Agiliza tu mente'}
                                                         </div>
                                                     </div>
                                                 ) : item.data?.path ? (
@@ -365,13 +373,73 @@ export const LibrarySidePanel: React.FC = () => {
                         );
                     })}
 
+                    {/* Recursos Tab */}
+                    {activeTab === 'uploads' && (
+                        <div className="flex flex-col items-center justify-center py-12 text-center gap-4">
+                            <div className="w-16 h-16 rounded-2xl bg-orange-50 dark:bg-orange-900/20 flex items-center justify-center">
+                                <LuCloudUpload size={32} className="text-orange-400" />
+                            </div>
+                            <div>
+                                <p className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Sube tus recursos</p>
+                                <p className="text-xs text-slate-400 dark:text-slate-500 max-w-[180px]">Imágenes, logos y archivos que uses frecuentemente</p>
+                            </div>
+                            <label className="cursor-pointer px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white text-xs font-bold rounded-xl transition-colors shadow-sm">
+                                <input type="file" className="hidden" accept="image/*" multiple onChange={(e) => {
+                                    const files = Array.from(e.target.files || []);
+                                    files.forEach(file => {
+                                        const url = URL.createObjectURL(file);
+                                        const state = pizarronStore.getState();
+                                        const vp = state.viewport;
+                                        const cx = (window.innerWidth / 2 - vp.x) / vp.zoom;
+                                        const cy = (window.innerHeight / 2 - vp.y) / vp.zoom;
+                                        pizarronStore.addNode({
+                                            id: crypto.randomUUID(),
+                                            type: 'image',
+                                            x: cx - 100, y: cy - 100, w: 200, h: 200,
+                                            zIndex: Object.keys(state.nodes).length + 1,
+                                            content: { src: url, opacity: 1, borderRadius: 0 },
+                                            createdAt: Date.now(), updatedAt: Date.now()
+                                        } as any);
+                                    });
+                                    e.target.value = '';
+                                }} />
+                                + Subir imagen
+                            </label>
+                        </div>
+                    )}
+
+                    {/* Ajustes Tab */}
+                    {activeTab === 'settings' && (
+                        <div className="flex flex-col gap-4">
+                            <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-4 space-y-3">
+                                <h4 className="text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Canvas</h4>
+                                <label className="flex items-center justify-between cursor-pointer">
+                                    <span className="text-sm text-slate-700 dark:text-slate-300">Cuadrícula</span>
+                                    <input type="checkbox" className="w-4 h-4 accent-orange-500 rounded" />
+                                </label>
+                                <label className="flex items-center justify-between cursor-pointer">
+                                    <span className="text-sm text-slate-700 dark:text-slate-300">Ajuste a rejilla</span>
+                                    <input type="checkbox" className="w-4 h-4 accent-orange-500 rounded" />
+                                </label>
+                            </div>
+                            <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-4 space-y-3">
+                                <h4 className="text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Sincronización</h4>
+                                <p className="text-xs text-slate-500 dark:text-slate-400">Los cambios se guardan automáticamente en la nube.</p>
+                                <div className="flex items-center gap-2 text-xs text-green-600 dark:text-green-400 font-medium">
+                                    <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                                    Sincronizado
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
                     {/* Fallback Empty State */}
-                    {libraries.every(cat => cat.items.filter(i =>
+                    {!['uploads', 'settings'].includes(activeTab) && libraries.every(cat => cat.items.filter(i =>
                         i.label.toLowerCase().includes(search.toLowerCase()) ||
                         (i.tags && i.tags.some(t => t.toLowerCase().includes(search.toLowerCase())))
                     ).length === 0) && (
-                            <div className="text-center text-slate-400 mt-10">
-                                <p>No results found</p>
+                            <div className="text-center text-slate-400 dark:text-slate-500 mt-10">
+                                <p className="text-sm">Sin resultados</p>
                             </div>
                         )}
                 </div>

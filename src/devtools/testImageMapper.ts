@@ -1,5 +1,5 @@
 import { createImageMap } from '../lib/images/imageNameResolver';
-import { Recipe } from '../../types';
+import { Recipe } from '../types';
 
 const mockRecipes: Partial<Recipe>[] = [
     { nombre: 'Cacao – Milk Punch de Maracuyá' },

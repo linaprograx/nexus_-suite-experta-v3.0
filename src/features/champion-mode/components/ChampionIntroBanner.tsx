@@ -16,7 +16,7 @@ export const ChampionIntroBanner: React.FC = () => {
 
                 <div className="bg-slate-900/50 backdrop-blur-sm rounded-xl p-4 flex items-start md:items-center gap-5 relative z-10">
                     <div className="w-10 h-10 rounded-full bg-gradient-to-br from-cyan-500 to-violet-500 flex items-center justify-center shrink-0 shadow-lg shadow-violet-500/20">
-                        <Icon svg={ICONS.trophy} className="w-5 h-5 text-white" />
+                        <Icon svg={ICONS.star} className="w-5 h-5 text-white" />
                     </div>
 
                     <div className="flex-1">

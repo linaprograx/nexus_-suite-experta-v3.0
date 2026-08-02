@@ -103,7 +103,7 @@ export const IngredientListPanel: React.FC<IngredientListPanelProps> = ({
       const lowerCaseSearchTerm = ingredientSearchTerm.toLowerCase();
       result = result.filter(ing =>
         ing.nombre.toLowerCase().includes(lowerCaseSearchTerm) ||
-        ing.categoria.toLowerCase().includes(lowerCaseSearchTerm)
+        (ing.categoria || '').toLowerCase().includes(lowerCaseSearchTerm)
       );
     }
 
@@ -224,7 +224,7 @@ export const IngredientListPanel: React.FC<IngredientListPanelProps> = ({
 
 
   return (
-    <div className="h-full flex flex-col bg-transparent border-0 shadow-none w-full max-w-[97%] px-8">
+    <div className="lg:h-full flex flex-col bg-transparent border-0 shadow-none w-full max-w-full lg:max-w-[97%] px-1 lg:px-8">
       {/* Unique Integrated Header */}
       <div className="py-4 flex flex-col gap-4 w-full justify-start">
         {/* 1. Search Bar - Expands */}
@@ -354,14 +354,19 @@ export const IngredientListPanel: React.FC<IngredientListPanelProps> = ({
       </div>
 
       {/* List Body */}
-      <div className="flex-1 overflow-y-auto custom-scrollbar p-0 w-full z-0">
+      <div className="lg:flex-1 lg:overflow-y-auto custom-scrollbar p-0 w-full z-0">
         {aggregatedProducts.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-40 text-center opacity-60">
             <Icon svg={ICONS.flask} className="w-8 h-8 text-slate-400 mb-2" />
             <p className="text-sm text-slate-500">No hay ingredientes</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-2 2xl:grid-cols-3 gap-6 pb-20">
+          // Container-width aware grid: cards never squeeze below 250px, so opening the
+          // sidebar reflows the columns instead of truncating the product names.
+          <div
+            className="grid gap-2 lg:gap-4 pb-20"
+            style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))' }}
+          >
             {aggregatedProducts.map((group) => {
               // Find "best" or primary entry to display
               // Prioritize entries WITH price, then by price ascending
@@ -375,7 +380,7 @@ export const IngredientListPanel: React.FC<IngredientListPanelProps> = ({
 
               const isSelected = selectedIngredientIds.includes(ing.id);
               const isViewing = viewingIngredientId === ing.id;
-              const categoryColor = getCategoryColor(ing.categoria);
+              const categoryColor = getCategoryColor(ing.categoria || 'General');
 
               return (
                 <div
@@ -388,7 +393,7 @@ export const IngredientListPanel: React.FC<IngredientListPanelProps> = ({
                     }
                   `}
                 >
-                  <div className="flex items-start p-4 relative z-10 gap-3 h-full">
+                  <div className="flex items-start p-2.5 lg:p-4 relative z-10 gap-2 lg:gap-3 h-full">
                     {/* Selection Checkbox - Centered Vertically */}
                     <div className="w-6 shrink-0 flex items-center justify-center pt-1" onClick={(e) => e.stopPropagation()}>
                       <input
@@ -451,7 +456,7 @@ export const IngredientListPanel: React.FC<IngredientListPanelProps> = ({
                           .slice(0, 2);
 
                         return (
-                          <div className="flex flex-wrap gap-1 mt-1">
+                          <div className="hidden lg:flex flex-wrap gap-1 mt-1">
                             {visibleSignals.map((sig, sIdx) => (
                               <div
                                 key={`${sig.id}-${sIdx}`}
@@ -479,16 +484,20 @@ export const IngredientListPanel: React.FC<IngredientListPanelProps> = ({
                     </div>
 
                     {/* Price Column + Buy Action */}
-                    <div className="w-auto flex flex-col items-end justify-between h-full gap-2 shrink-0 pl-2 border-l border-slate-100 dark:border-slate-800/50 min-h-[60px]">
-                      <div className="text-right">
-                        <div className={`font-bold font-mono text-lg leading-none mb-1 ${isViewing ? 'text-white' : 'text-slate-700 dark:text-slate-300'}`}>
+                    {/* Capped width so a long format label can never squeeze the product name */}
+                    <div className="w-auto max-w-[80px] lg:max-w-[92px] flex flex-col items-end justify-between h-full gap-1 lg:gap-2 shrink-0 pl-2 border-l border-slate-100 dark:border-slate-800/50 min-h-[60px]">
+                      <div className="text-right w-full">
+                        <div className={`font-bold font-mono text-base lg:text-lg leading-none mb-1 ${isViewing ? 'text-white' : 'text-slate-700 dark:text-slate-300'}`}>
                           {ing.precioCompra && ing.precioCompra > 0 ? (
                             <>€{ing.precioCompra.toFixed(2)}</>
                           ) : (
                             <span className="text-slate-300 dark:text-slate-600">--</span>
                           )}
                         </div>
-                        <div className={`text-[9px] uppercase tracking-wider font-medium text-right w-full ${isViewing ? 'text-emerald-200' : 'text-slate-400'}`}>
+                        <div
+                          className={`text-[9px] uppercase tracking-wider font-medium text-right w-full truncate ${isViewing ? 'text-emerald-200' : 'text-slate-400'}`}
+                          title={ing.unidadCompra || ing.unidad || 'Und'}
+                        >
                           {ing.unidadCompra || ing.unidad || 'Und'}
                         </div>
                       </div>

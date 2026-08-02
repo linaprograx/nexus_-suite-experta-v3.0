@@ -17,8 +17,8 @@ export const evaluateMarketToRecipes: CrossLayerRule = (input) => {
         const selectedName = normalize(selectedIng.nombre);
 
         const affectedRecipes = input.recipes.filter(r =>
-            r.ingredientes?.some(ing =>
-                ing.id === selectedIngredientId ||
+            r.ingredientes?.some((ing: any) =>
+                (ing.id || ing.ingredientId) === selectedIngredientId ||
                 normalize(ing.nombre) === selectedName ||
                 normalize(ing.nombre).includes(selectedName) || // Looser match for "Gin" in "Gin Tonic"
                 selectedName.includes(normalize(ing.nombre))

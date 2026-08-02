@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect } from 'react';
 import { Ingredient, PurchaseEvent } from '../types';
+export type { PurchaseEvent };
 import { useApp } from '../context/AppContext';
 import { collection, addDoc, query, orderBy, onSnapshot, serverTimestamp } from 'firebase/firestore';
 

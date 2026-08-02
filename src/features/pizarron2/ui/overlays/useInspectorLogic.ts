@@ -1,7 +1,6 @@
 import { useMemo } from 'react';
 import { pizarronStore } from '../../state/store';
 import { BoardNode } from '../../engine/types';
-import { useApp } from '../../../../context/AppContext';
 import { evaluateMarketSignals } from '../../../../core/signals/signal.engine';
 import { useIngredients } from '../../../../hooks/useIngredients';
 import { useRecipes } from '../../../../hooks/useRecipes';
@@ -10,7 +9,6 @@ import { resolveCostingData, resolveScenarioData } from '../../services/costingR
 export const useInspectorLogic = () => {
     const { selection, nodes, viewport, boardResources, interactionState } = pizarronStore.useState();
     const selectionIds = Array.from(selection);
-    const { allIngredients } = useApp();
     const { ingredients } = useIngredients();
     const { recipes } = useRecipes();
 
@@ -52,25 +50,25 @@ export const useInspectorLogic = () => {
     const primaryTarget = getTargets()[0] || firstNode;
 
     const passiveSignals = useMemo(() => {
-        if (!firstNode || !allIngredients) return [];
+        if (!firstNode || !ingredients) return [];
         const ingredientId = (firstNode.content as any).ingredientId;
         if (!ingredientId) return [];
 
-        const marketItem = allIngredients.find(i => i.id === ingredientId);
+        const marketItem = ingredients.find((i: any) => i.id === ingredientId);
         if (!marketItem) return [];
 
         return evaluateMarketSignals({
             product: {
                 id: marketItem.id,
                 name: marketItem.nombre,
-                category: marketItem.categoria,
+                category: marketItem.categoria ?? null,
                 supplierData: {},
                 referencePrice: (firstNode.content as any).cost || 0,
                 referenceSupplierId: null,
                 unitBase: (firstNode.content as any).unit || 'ud'
             }
         });
-    }, [firstNode, allIngredients]);
+    }, [firstNode, ingredients]);
 
     const externalData = useMemo(() => {
         if (!firstNode) return null;

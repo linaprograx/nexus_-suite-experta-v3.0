@@ -1,4 +1,4 @@
-import { Ingredient, IngredientLineItem } from '../../../types';
+import { Ingredient, IngredientLineItem } from '../../types';
 
 /**
  * Normalizes a string for fuzzy matching (lowercase, no accents, trimmed).
@@ -78,6 +78,8 @@ export const matchIngredients = (
       
       if (!createdCache.has(normalizedName)) {
         ingredientsToCreate.push({
+          costo: 0,
+          unidad: parsedLine.unidad,
           nombre: parsedLine.nombre,
           categoria: 'Importado', // Default category
           precioCompra: 0,

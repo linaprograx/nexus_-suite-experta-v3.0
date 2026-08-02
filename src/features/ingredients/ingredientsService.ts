@@ -39,8 +39,8 @@ export const ingredientsService = {
 
       // Calculate standardPrice before saving
       const standardPrice = calculateIngredientPrice(
-        ingredientData.precioCompra,
-        ingredientData.standardQuantity,
+        ingredientData.precioCompra || 0,
+        ingredientData.standardQuantity || 0,
         ingredientData.wastePercentage || 0
       );
 

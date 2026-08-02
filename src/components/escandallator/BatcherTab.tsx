@@ -47,7 +47,7 @@ const BatcherTab: React.FC<BatcherTabProps> = ({
         // Calculate original volume (approx)
         const originalVolume = recipe.ingredientes.reduce((acc, ing) => {
             if (ing.unidad === 'ml' || ing.unidad === 'g' || ing.unidad === 'cl' || ing.unidad === 'oz') {
-                let qty = typeof ing.cantidad === 'string' ? parseFloat(ing.cantidad) : ing.cantidad;
+                let qty = (typeof ing.cantidad === 'string' ? parseFloat(ing.cantidad) : ing.cantidad) || 0;
                 if (ing.unidad === 'cl') qty *= 10;
                 if (ing.unidad === 'oz') qty *= 30; // Approx
                 return acc + qty;
@@ -65,7 +65,7 @@ const BatcherTab: React.FC<BatcherTabProps> = ({
         const scalingFactor = targetVolumeMl / originalVolume;
 
         const finalBatchData = recipe.ingredientes.map(ing => {
-            let amount = typeof ing.cantidad === 'string' ? parseFloat(ing.cantidad) : ing.cantidad;
+            let amount = (typeof ing.cantidad === 'string' ? parseFloat(ing.cantidad) : ing.cantidad) || 0;
             if (ing.unidad === 'cl') amount *= 10;
             if (ing.unidad === 'oz') amount *= 30;
 
@@ -74,7 +74,7 @@ const BatcherTab: React.FC<BatcherTabProps> = ({
                 originalQty: `${ing.cantidad} ${ing.unidad}`,
                 batchQty: (ing.unidad === 'ml' || ing.unidad === 'cl' || ing.unidad === 'oz' || ing.unidad === 'g')
                     ? `${(amount * scalingFactor).toFixed(0)} ml`
-                    : `${(ing.cantidad * scalingFactor).toFixed(1)} ${ing.unidad}`
+                    : `${((ing.cantidad || 0) * scalingFactor).toFixed(1)} ${ing.unidad}`
             };
         });
 

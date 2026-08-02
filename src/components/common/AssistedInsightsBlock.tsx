@@ -84,7 +84,7 @@ export const AssistedInsightsBlock: React.FC<AssistedInsightsBlockProps> = ({ in
 
                     {/* Evidence Grid */}
                     <div className="grid grid-cols-2 gap-2 mt-3">
-                        {insight.evidence.map((ev, idx) => (
+                        {(insight.evidence || []).map((ev, idx) => (
                             <div key={idx} className="bg-white/60 dark:bg-black/20 p-2 rounded-lg border border-black/5 dark:border-white/5 flex flex-col">
                                 <span className="text-[10px] uppercase tracking-wider opacity-60 font-bold mb-0.5">{ev.label}</span>
                                 <span className="text-sm font-semibold">{ev.value}</span>

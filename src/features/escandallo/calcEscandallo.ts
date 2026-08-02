@@ -1,5 +1,5 @@
-import { Recipe, Ingredient } from '../../../types';
-import { calculateRecipeCost } from '../../utils/costCalculator';
+import { Recipe, Ingredient } from '../../types';
+import { calculateRecipeCost } from '../../core/costing/costCalculator';
 
 export interface EscandalloResult {
   recipeName: string;
@@ -20,34 +20,18 @@ export function calcEscandallo(
   batchSize: number, 
   allIngredients: Ingredient[]
 ): EscandalloResult {
-  const ingredientMap = allIngredients.reduce((acc, ing) => {
-    acc[ing.id] = ing;
-    return acc;
-  }, {} as Record<string, Ingredient>);
-
-  const singleRecipeCost = calculateRecipeCost(recipe.ingredientes || [], ingredientMap);
+  // Unified costing engine (core/costing): returns total + per-line breakdown, aligned by index
+  const costResult = calculateRecipeCost(recipe, allIngredients);
+  const singleRecipeCost = costResult.costoTotal;
   const totalCost = singleRecipeCost * batchSize;
-  
-  const ingredientRequirements = (recipe.ingredientes || []).map(item => {
-    // If we have the ingredient, we can try to normalize units or just multiply quantity
-    const totalQty = item.cantidad * batchSize;
-    const ing = item.ingredientId ? ingredientMap[item.ingredientId] : null;
-    
-    // Cost for this specific ingredient in the batch
-    // We reuse calculateRecipeCost logic but for single item
-    let itemCost = 0;
-    if (ing && ing.standardPrice) {
-       // Ideally we reuse the conversion logic from costCalculator
-       // But calculateRecipeCost takes an array.
-       // Let's just use it for single item array
-       itemCost = calculateRecipeCost([item], ingredientMap) * batchSize;
-    }
 
+  const ingredientRequirements = (recipe.ingredientes || []).map((item: any, idx: number) => {
+    const lineCost = costResult.costoPorIngrediente[idx]?.costo ?? 0;
     return {
-      name: item.nombre,
-      totalQuantity: totalQty,
-      unit: item.unidad,
-      cost: itemCost
+      name: (item as any).nombre,
+      totalQuantity: ((item as any).cantidad || 0) * batchSize,
+      unit: (item as any).unidad,
+      cost: lineCost * batchSize
     };
   });
 

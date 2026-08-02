@@ -32,7 +32,7 @@ const AvatarView: React.FC<AvatarViewProps> = () => {
             case 'intelligence': return { background: 'linear-gradient(180deg, #e11d48 0%, rgba(225, 29, 72, 0.8) 20%, rgba(225, 29, 72, 0) 40%)' };
             case 'insights': return { background: 'linear-gradient(180deg, #FB923C 0%, rgba(251, 146, 60, 0.8) 20%, rgba(0,0,0,0) 40%)' };
             case 'digital-bar': return { background: 'linear-gradient(180deg, #22D3EE 0%, rgba(34, 211, 238, 0.8) 20%, rgba(0,0,0,0) 40%)' };
-            case 'champion': return { background: 'linear-gradient(180deg, #84CC16 0%, rgba(132, 204, 22, 0.8) 20%, rgba(0,0,0,0) 40%)' };
+            case 'champion': return { background: 'linear-gradient(180deg, #6d28d9 0%, rgba(109, 40, 217, 0.7) 20%, rgba(0,0,0,0) 45%)' };
             default: return { background: 'none' };
         }
     };
@@ -42,7 +42,7 @@ const AvatarView: React.FC<AvatarViewProps> = () => {
         switch (activeTab) {
             case 'core': return { subtitle: 'Identidad Digital', themeColor: 'text-[#6366F1]' };
             case 'intelligence': return { subtitle: 'Cognición Activa', themeColor: 'text-rose-500' };
-            case 'champion': return { subtitle: 'Global Rank', themeColor: 'text-[#84CC16]' };
+            case 'champion': return { subtitle: 'Modo Competición', themeColor: 'text-violet-400' };
             case 'insights': return { subtitle: 'Performance Insights', themeColor: 'text-[#FB923C]' };
             case 'digital-bar': return { subtitle: 'Gestión Operativa', themeColor: 'text-[#22D3EE]' };
             default: return { subtitle: 'System', themeColor: 'text-slate-400' };
@@ -52,38 +52,38 @@ const AvatarView: React.FC<AvatarViewProps> = () => {
     const headerInfo = getPageHeaderInfo();
 
     return (
-        <div className="h-full w-full flex flex-col relative">
+        <div className="min-h-full w-full flex flex-col relative">
             {/* VIBRANT GRADIENT BACKGROUND (Full Screen with Floating feel via internal padding) */}
             <div
-                className="absolute inset-0 pointer-events-none transition-all duration-700 ease-in-out z-0 rounded-3xl"
+                className="absolute inset-x-0 top-0 h-[100dvh] lg:h-full pointer-events-none transition-all duration-700 ease-in-out z-0 rounded-3xl"
                 style={getGradientStyle()}
             />
 
             {/* Background Glows/Noise */}
-            <div className="absolute inset-0 overflow-hidden z-0 pointer-events-none rounded-3xl">
+            <div className="absolute inset-x-0 top-0 h-[100dvh] lg:h-full overflow-hidden z-0 pointer-events-none rounded-3xl">
                 <div className="absolute top-0 left-0 w-full h-full bg-noise opacity-[0.02]"></div>
                 <div className="absolute -top-[20%] -right-[10%] w-[50%] h-[50%] bg-white/5 blur-[100px] rounded-full mix-blend-overlay"></div>
             </div>
 
             {/* PERSISTENT HEADER SECTION */}
-            <div className="flex-shrink-0 pt-8 pb-4 z-10 relative px-12">
+            <div className="flex-shrink-0 pt-4 lg:pt-8 pb-3 lg:pb-4 z-10 relative px-4 lg:px-12">
 
                 {/* Titles */}
-                <div className="flex flex-col items-start gap-1 mb-6">
-                    <h1 className="text-8xl font-black italic text-white tracking-tighter drop-shadow-2xl leading-none opacity-90 pl-1"
+                <div className="flex flex-col items-start gap-1 mb-4 lg:mb-6">
+                    <h1 className="text-6xl lg:text-8xl font-black italic text-white tracking-tighter drop-shadow-2xl leading-none opacity-90 pl-1"
                         style={{ fontFamily: 'Georgia, serif' }}>
                         Avatar
                     </h1>
-                    <span className="text-2xl font-bold text-white/80 tracking-wide drop-shadow-md flex items-center gap-2 font-sans ml-2">
+                    <span className="text-base lg:text-2xl font-bold text-white/80 tracking-wide drop-shadow-md flex items-center gap-2 font-sans ml-2">
                         {headerInfo.subtitle}
                     </span>
                 </div>
 
                 {/* Navigation Pills - Standard Nexus Style (Pills) */}
-                <div className="flex flex-wrap justify-start gap-3 animate-in fade-in slide-in-from-left-4 duration-1000 delay-200">
+                <div className="flex lg:flex-wrap justify-start gap-2 lg:gap-3 overflow-x-auto lg:overflow-visible no-scrollbar snap-x snap-mandatory -mx-1 px-1 animate-in fade-in slide-in-from-left-4 duration-1000 delay-200">
                     <button
                         onClick={() => setActiveTab('core')}
-                        className={`rounded-full transition-all duration-300 px-8 py-3 text-xs font-black uppercase tracking-widest border ${activeTab === 'core'
+                        className={`shrink-0 snap-start rounded-full transition-all duration-300 px-4 lg:px-8 h-10 lg:py-3 text-[10px] lg:text-xs font-black uppercase tracking-wider lg:tracking-widest border ${activeTab === 'core'
                             ? 'bg-indigo-600 border-indigo-500 text-white shadow-lg shadow-indigo-900/40 scale-105'
                             : 'bg-white/10 border-white/20 text-white/70 hover:bg-white/20'
                             }`}
@@ -93,7 +93,7 @@ const AvatarView: React.FC<AvatarViewProps> = () => {
 
                     <button
                         onClick={() => setActiveTab('intelligence')}
-                        className={`rounded-full transition-all duration-300 px-8 py-3 text-xs font-black uppercase tracking-widest border ${activeTab === 'intelligence'
+                        className={`shrink-0 snap-start rounded-full transition-all duration-300 px-4 lg:px-8 h-10 lg:py-3 text-[10px] lg:text-xs font-black uppercase tracking-wider lg:tracking-widest border ${activeTab === 'intelligence'
                             ? 'bg-rose-600 border-rose-500 text-white shadow-lg shadow-rose-900/40 scale-105'
                             : 'bg-white/10 border-white/20 text-white/70 hover:bg-white/20'
                             }`}
@@ -103,8 +103,8 @@ const AvatarView: React.FC<AvatarViewProps> = () => {
 
                     <button
                         onClick={() => setActiveTab('champion')}
-                        className={`rounded-full transition-all duration-300 px-8 py-3 text-xs font-black uppercase tracking-widest border ${activeTab === 'champion'
-                            ? 'bg-[#84CC16] border-[#bef264] text-white shadow-lg shadow-lime-900/40 scale-105'
+                        className={`shrink-0 snap-start rounded-full transition-all duration-300 px-4 lg:px-8 h-10 lg:py-3 text-[10px] lg:text-xs font-black uppercase tracking-wider lg:tracking-widest border ${activeTab === 'champion'
+                            ? 'bg-violet-600 border-violet-500 text-white shadow-lg shadow-violet-900/40 scale-105'
                             : 'bg-white/10 border-white/20 text-white/70 hover:bg-white/20'
                             }`}
                     >
@@ -116,7 +116,7 @@ const AvatarView: React.FC<AvatarViewProps> = () => {
                             <div className="w-px h-8 bg-white/20 mx-2 self-center" />
                             <button
                                 onClick={() => setActiveTab('insights')}
-                                className={`rounded-full transition-all duration-300 px-8 py-3 text-xs font-black uppercase tracking-widest border ${activeTab === 'insights'
+                                className={`shrink-0 snap-start rounded-full transition-all duration-300 px-4 lg:px-8 h-10 lg:py-3 text-[10px] lg:text-xs font-black uppercase tracking-wider lg:tracking-widest border ${activeTab === 'insights'
                                     ? 'bg-orange-500 border-orange-400 text-white shadow-lg shadow-orange-900/40 scale-105'
                                     : 'bg-white/10 border-white/20 text-white/70 hover:bg-white/20'
                                     }`}
@@ -125,7 +125,7 @@ const AvatarView: React.FC<AvatarViewProps> = () => {
                             </button>
                             <button
                                 onClick={() => setActiveTab('digital-bar')}
-                                className={`rounded-full transition-all duration-300 px-8 py-3 text-xs font-black uppercase tracking-widest border ${activeTab === 'digital-bar'
+                                className={`shrink-0 snap-start rounded-full transition-all duration-300 px-4 lg:px-8 h-10 lg:py-3 text-[10px] lg:text-xs font-black uppercase tracking-wider lg:tracking-widest border ${activeTab === 'digital-bar'
                                     ? 'bg-cyan-500 border-cyan-400 text-white shadow-lg shadow-cyan-900/40 scale-105'
                                     : 'bg-white/10 border-white/20 text-white/70 hover:bg-white/20'
                                     }`}
@@ -138,8 +138,8 @@ const AvatarView: React.FC<AvatarViewProps> = () => {
             </div>
 
             {/* MAIN CONTENT AREA - Maximize Space */}
-            <div className="flex-1 w-full overflow-hidden relative z-10 flex flex-col">
-                <div className="flex-1 w-full h-full relative overflow-y-auto no-scrollbar bg-transparent px-12 pb-12">
+            <div className="flex-1 w-full lg:overflow-hidden relative z-10 flex flex-col min-h-0">
+                <div className="flex-1 w-full lg:h-full relative lg:overflow-y-auto no-scrollbar bg-transparent px-4 md:px-12 pb-24 lg:pb-12">
                     {activeTab === 'core' && <AvatarCoreView />}
                     {activeTab === 'intelligence' && <AvatarIntelligenceView />}
                     {activeTab === 'champion' && <ChampionModeView />}

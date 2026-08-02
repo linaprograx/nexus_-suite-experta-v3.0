@@ -41,20 +41,14 @@ interface RecipeListProps {
 
 // Skeleton Component
 const RecipeCardSkeleton = () => (
-  <div className="w-full relative h-[140px] rounded-2xl p-4 bg-white/20 dark:bg-slate-900/20 border border-white/10 overflow-hidden animate-pulse">
-    <div className="flex items-start gap-3">
-      <div className="h-16 w-16 rounded-xl bg-slate-300 dark:bg-slate-700/50" />
-      <div className="flex-1 space-y-2 py-1">
-        <div className="h-4 bg-slate-300 dark:bg-slate-700/50 rounded w-3/4" />
-        <div className="flex gap-1">
-          <div className="h-3 w-12 bg-slate-300 dark:bg-slate-700/50 rounded-full" />
-          <div className="h-3 w-10 bg-slate-300 dark:bg-slate-700/50 rounded-full" />
-        </div>
+  <div className="w-full relative aspect-[4/5] rounded-2xl bg-slate-200 dark:bg-slate-800/60 overflow-hidden animate-pulse">
+    <div className="absolute inset-x-0 bottom-0 p-3.5 space-y-2">
+      <div className="h-3 w-16 bg-slate-300 dark:bg-slate-700/50 rounded-full" />
+      <div className="h-4 w-3/4 bg-slate-300 dark:bg-slate-700/50 rounded" />
+      <div className="flex justify-between pt-2">
+        <div className="h-5 w-12 bg-slate-300 dark:bg-slate-700/50 rounded" />
+        <div className="h-5 w-12 bg-slate-300 dark:bg-slate-700/50 rounded" />
       </div>
-    </div>
-    <div className="flex items-center justify-between pt-3 border-t border-slate-200 dark:border-slate-800 mt-3">
-      <div className="h-8 w-12 bg-slate-300 dark:bg-slate-700/50 rounded" />
-      <div className="h-8 w-12 bg-slate-300 dark:bg-slate-700/50 rounded" />
     </div>
   </div>
 );
@@ -67,7 +61,8 @@ const RecipeCard = React.memo(({
   onSelect,
   onToggleSelection,
   onDragStart,
-  allIngredients
+  allIngredients,
+  allRecipes = []
 }: {
   recipe: Recipe,
   isViewing: boolean,
@@ -75,15 +70,16 @@ const RecipeCard = React.memo(({
   onSelect: (r: Recipe) => void,
   onToggleSelection: (id: string) => void,
   onDragStart?: (e: React.DragEvent, recipe: Recipe) => void,
-  allIngredients: Ingredient[]
+  allIngredients: Ingredient[],
+  allRecipes?: Recipe[]
 }) => {
   const mainCategory = recipe.categorias?.[0] || 'General';
   const isDone = recipe.categorias?.includes('Carta') || recipe.categorias?.includes('Terminado');
 
-  // Calculate cost dynamically to ensure consistency with Detail Panel
+  // Calculate cost dynamically to ensure consistency with Detail Panel (incl. sub-recipes)
   const costData = React.useMemo(() => {
-    return calculateRecipeCost(recipe, allIngredients);
-  }, [recipe, allIngredients]);
+    return calculateRecipeCost(recipe, allIngredients, undefined, allRecipes);
+  }, [recipe, allIngredients, allRecipes]);
 
   const displayCost = costData?.costoTotal || recipe.costoTotal || recipe.costoReceta || 0;
 
@@ -94,15 +90,32 @@ const RecipeCard = React.memo(({
         draggable={!!onDragStart}
         onDragStart={(e) => onDragStart && onDragStart(e, recipe)}
         className={cn(
-          "relative flex flex-col gap-3 rounded-2xl p-4 cursor-pointer transition-all duration-300 overflow-hidden h-full",
+          "relative aspect-[4/5] rounded-2xl cursor-pointer transition-all duration-300 overflow-hidden",
+          "hover:-translate-y-1 hover:shadow-xl",
           isViewing
-            ? "bg-indigo-600 shadow-xl shadow-indigo-900/20 scale-[1.02] ring-0 z-10"
-            : "bg-white/30 dark:bg-slate-900/30 border border-white/10 hover:bg-white/50 dark:hover:bg-slate-800/50 hover:shadow-lg hover:-translate-y-1 backdrop-blur-md"
+            ? "ring-2 ring-teal-400 shadow-xl shadow-teal-900/30 z-10"
+            : "shadow-md ring-1 ring-black/5 dark:ring-white/5"
         )}
       >
-        {/* Checkbox Overlay */}
+        {/* Full-bleed image or gradient placeholder */}
+        {recipe.imageUrl ? (
+          <img
+            src={recipe.imageUrl}
+            alt={recipe.nombre}
+            className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+          />
+        ) : (
+          <div className="absolute inset-0 bg-gradient-to-br from-emerald-500 via-teal-500 to-cyan-600 flex items-center justify-center">
+            <span className="text-white font-black text-5xl opacity-40 tracking-tight">{recipe.nombre.substring(0, 2).toUpperCase()}</span>
+          </div>
+        )}
+
+        {/* Readability gradient over the photo */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/35 to-transparent" />
+
+        {/* Checkbox */}
         <div
-          className="absolute top-3 right-3 z-20"
+          className="absolute top-2.5 right-2.5 z-20"
           onClick={(e) => { e.stopPropagation(); onToggleSelection(recipe.id); }}
         >
           <input
@@ -110,65 +123,33 @@ const RecipeCard = React.memo(({
             checked={isSelected}
             readOnly
             className={cn(
-              "w-5 h-5 rounded border-2 transition-all cursor-pointer",
-              isViewing ? "border-white/50 text-indigo-600" : "border-slate-300 text-indigo-600",
+              "w-5 h-5 rounded border-2 border-white/70 bg-black/20 backdrop-blur-sm text-teal-500 transition-all cursor-pointer",
               isSelected ? "opacity-100" : "opacity-0 group-hover:opacity-100"
             )}
           />
         </div>
 
-        {/* Header: Thumb + Title */}
-        <div className="flex items-start gap-3">
-          <div className="relative shrink-0">
-            {recipe.imageUrl ? (
-              <img
-                src={recipe.imageUrl}
-                alt={recipe.nombre}
-                className="h-16 w-16 rounded-xl object-cover shadow-sm bg-slate-100 dark:bg-slate-800"
-              />
-            ) : (
-              <div className="h-16 w-16 rounded-xl bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 flex items-center justify-center shadow-sm text-white font-bold text-xl">
-                {recipe.nombre.substring(0, 2).toUpperCase()}
-              </div>
+        {/* Content overlaid at the bottom */}
+        <div className="absolute inset-x-0 bottom-0 p-3.5 text-white">
+          <div className="flex flex-wrap gap-1 mb-1.5">
+            <span className="text-[9px] px-2 py-0.5 rounded-full uppercase font-black tracking-wide bg-white/20 backdrop-blur-sm border border-white/10">
+              {mainCategory}
+            </span>
+            {isDone && (
+              <span className="text-[9px] px-2 py-0.5 rounded-full uppercase font-black tracking-wide bg-emerald-500/40 text-emerald-50 border border-emerald-300/20">Carta</span>
             )}
           </div>
+          <p className="font-black text-lg leading-tight tracking-tight line-clamp-2 drop-shadow-md">{recipe.nombre}</p>
 
-          <div className="min-w-0 flex-1 pr-6"> {/* pr-6 for checkbox space */}
-            <p className={cn("font-bold text-lg truncate leading-tight mb-1",
-              isViewing ? "text-white" : "text-slate-900 dark:text-white"
-            )}>
-              {recipe.nombre}
-            </p>
-            <div className="flex flex-wrap gap-1">
-              <span className={cn("text-[10px] px-2 py-0.5 rounded-full uppercase font-bold tracking-wide",
-                isViewing ? "bg-white/20 text-indigo-100" : "bg-slate-100 dark:bg-slate-800 text-slate-500"
-              )}>
-                {mainCategory}
-              </span>
-              {isDone && (
-                <span className={cn("text-[10px] px-2 py-0.5 rounded-full uppercase font-bold tracking-wide",
-                  isViewing ? "bg-emerald-500/30 text-emerald-100" : "bg-emerald-100 text-emerald-700"
-                )}>Carta</span>
-              )}
+          <div className="flex items-end justify-between mt-2.5 pt-2.5 border-t border-white/15">
+            <div>
+              <span className="text-[9px] uppercase tracking-wider text-white/60 block leading-none mb-0.5">Costo</span>
+              <span className="font-bold font-mono text-sm">€{displayCost.toFixed(2)}</span>
             </div>
-          </div>
-        </div>
-
-        {/* Footer: Financials (Compact) */}
-        <div className={cn("flex items-center justify-between pt-3 border-t mt-1",
-          isViewing ? "border-white/20" : "border-slate-100 dark:border-slate-800"
-        )}>
-          <div className="flex flex-col">
-            <span className={cn("text-[10px] uppercase tracking-wider", isViewing ? "text-indigo-200" : "text-slate-400")}>Costo</span>
-            <span className={cn("font-bold font-mono", isViewing ? "text-white" : "text-slate-700 dark:text-slate-300")}>
-              €{displayCost.toFixed(2)}
-            </span>
-          </div>
-          <div className="flex flex-col text-right">
-            <span className={cn("text-[10px] uppercase tracking-wider", isViewing ? "text-indigo-200" : "text-slate-400")}>Venta</span>
-            <span className={cn("font-bold font-mono", isViewing ? "text-white" : "text-slate-900 dark:text-white")}>
-              {recipe.precioVenta ? `€${recipe.precioVenta.toFixed(2)}` : '-'}
-            </span>
+            <div className="text-right">
+              <span className="text-[9px] uppercase tracking-wider text-white/60 block leading-none mb-0.5">Venta</span>
+              <span className="font-bold font-mono text-sm text-emerald-300">{recipe.precioVenta ? `€${recipe.precioVenta.toFixed(2)}` : '—'}</span>
+            </div>
           </div>
         </div>
       </div>
@@ -213,7 +194,7 @@ export const RecipeList: React.FC<RecipeListProps> = ({
   }, [recipes]);
 
   return (
-    <div className="h-full flex flex-col w-full max-w-full">
+    <div className="lg:h-full flex flex-col w-full max-w-full">
       {/* Toolbar Header */}
       <div className="py-4 flex flex-col gap-4 w-full">
         {/* Search Bar - Full Width */}
@@ -223,7 +204,7 @@ export const RecipeList: React.FC<RecipeListProps> = ({
             type="text"
             value={searchTerm}
             onChange={(e) => onSearchChange(e.target.value)}
-            placeholder="Buscar receta..."
+            placeholder="Buscar por nombre o ingrediente..."
             className="w-full pl-9 pr-4 py-2 rounded-xl bg-white/40 dark:bg-slate-800/40 border border-white/20 dark:border-white/5 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 hover:bg-white/60 dark:hover:bg-slate-800/60 transition-all text-sm font-medium text-slate-700 dark:text-slate-200 placeholder:text-slate-400"
           />
         </div>
@@ -269,20 +250,21 @@ export const RecipeList: React.FC<RecipeListProps> = ({
             variant="ghost"
             size="icon"
             onClick={onImport}
-            className="h-10 w-10 text-slate-400 hover:text-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-900/20"
+            className="h-10 w-10 text-slate-400 hover:text-teal-500 hover:bg-teal-50 dark:hover:bg-teal-900/20"
             title="Importar Receta"
           >
             <Icon svg={ICONS.upload} className="w-4 h-4" />
           </Button>
 
-          {/* NEW RECIPE BUTTON */}
-          <Button
+          {/* NEW RECIPE BUTTON — brand gradient, prominent */}
+          <button
             onClick={onAddRecipe}
-            className="bg-slate-900 hover:bg-slate-800 text-white shadow-lg shadow-slate-900/20 h-10 w-10 p-0 rounded-xl transition-all hover:scale-105 active:scale-95 ml-1"
+            className="group flex items-center gap-2 h-10 pl-3 pr-4 ml-1 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 text-white font-bold text-sm shadow-lg shadow-emerald-500/30 hover:shadow-emerald-500/50 hover:-translate-y-0.5 active:scale-95 transition-all whitespace-nowrap"
             title="Nueva Receta"
           >
-            <Icon svg={ICONS.plus} className="w-5 h-5" />
-          </Button>
+            <Icon svg={ICONS.plus} className="w-5 h-5 group-hover:rotate-90 transition-transform duration-300" />
+            <span className="hidden sm:inline">Nueva</span>
+          </button>
         </div>
       </div>
 
@@ -302,7 +284,7 @@ export const RecipeList: React.FC<RecipeListProps> = ({
 
       <div className="flex-1 overflow-y-auto custom-scrollbar p-0 w-full">
         {isLoading ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-2 2xl:grid-cols-3 gap-6 pb-20">
+          <div className="grid grid-cols-2 gap-4 px-0.5 pb-20">
             {Array.from({ length: 6 }).map((_, i) => (
               <RecipeCardSkeleton key={i} />
             ))}
@@ -316,7 +298,7 @@ export const RecipeList: React.FC<RecipeListProps> = ({
             <p className="text-sm text-slate-400 mt-1">Intenta con otros filtros o crea una nueva</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-2 2xl:grid-cols-3 gap-6 pb-20">
+          <div className="grid grid-cols-2 gap-4 px-0.5 pb-20">
             {uniqueRecipes.map((recipe) => (
               <RecipeCard
                 key={recipe.id}
@@ -327,6 +309,7 @@ export const RecipeList: React.FC<RecipeListProps> = ({
                 onToggleSelection={onToggleSelection}
                 onDragStart={onDragStart}
                 allIngredients={allIngredients} // Pass it down
+                allRecipes={recipes}
               />
             ))}
           </div>

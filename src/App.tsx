@@ -17,15 +17,17 @@ import { NotificationsDrawer } from './components/dashboard/NotificationsDrawer'
 import { ChatbotWidget } from './components/ui/ChatbotWidget';
 import { AuthComponent } from './components/auth/AuthComponent';
 import { PrintStyles } from './components/ui/PrintStyles';
-import { AddTaskModal } from './components/pizarron/AddTaskModal';
 import { aiPrefetcher } from './features/prefetch/aiPrefetchEngine';
 
 import { useIngredients } from './hooks/useIngredients';
+import { useRecipes } from './hooks/useRecipes';
+import { computeGrimorioAlerts } from './utils/grimorioAlerts';
+import { useGrimorioAlertSync } from './hooks/useGrimorioAlertSync';
+import { useActiveMenu } from './hooks/useActiveMenu';
 import { queryClient } from './config/queryClient';
 import { ConnectionStatus } from './components/ui/ConnectionStatus';
 import { useNexusProfile } from './hooks/useNexusProfile';
 import FloatingBottomNav from './ui/mobile/components/FloatingBottomNav';
-import { PageName } from './ui/mobile/types';
 
 // ... (other imports remain, but useFirebaseData is gone)
 import { useUIStore } from './store/uiStore';
@@ -37,6 +39,7 @@ const MainAppContent: React.FC = () => {
     // Modular Hooks
     const { notifications } = useNexusProfile(db, userId, appId);
     const { ingredients: allIngredients } = useIngredients();
+    const { recipes: allRecipes } = useRecipes();
 
     if (!db || !userId || !auth || !storage || !appId) {
         return <div className='flex h-screen items-center justify-center'><Spinner className='w-12 h-12' /></div>;
@@ -46,7 +49,7 @@ const MainAppContent: React.FC = () => {
         <BrowserRouter>
             <AppLayout
                 db={db} userId={userId} auth={auth} storage={storage} appId={appId}
-                allIngredients={allIngredients} notifications={notifications}
+                allIngredients={allIngredients} allRecipes={allRecipes} notifications={notifications}
                 isSidebarCollapsed={isSidebarCollapsed}
             />
         </BrowserRouter>
@@ -56,7 +59,7 @@ const MainAppContent: React.FC = () => {
 // Internal component to use router hooks
 const AppLayout: React.FC<any> = ({
     db, userId, auth, storage, appId,
-    allIngredients, notifications,
+    allIngredients, allRecipes, notifications,
     isSidebarCollapsed
 }) => {
     const { 
@@ -71,6 +74,14 @@ const AppLayout: React.FC<any> = ({
 
     const navigate = useNavigate();
     const location = useLocation();
+
+    // #18 · Push Grimorio business alerts into the app-wide notification tray
+    const { menu: activeMenu } = useActiveMenu();
+    const grimorioAlerts = React.useMemo(
+        () => computeGrimorioAlerts(allRecipes || [], allIngredients || [], activeMenu),
+        [allRecipes, allIngredients, activeMenu]
+    );
+    useGrimorioAlertSync(grimorioAlerts, notifications || [], db, userId, appId);
 
     // AI Prefetch Integration
     React.useEffect(() => {
@@ -90,23 +101,6 @@ const AppLayout: React.FC<any> = ({
 
     }, [location.pathname, userId, appId, db]);
 
-    // Derive current section name from route for mobile header
-    const sectionName = React.useMemo(() => {
-        const path = location.pathname;
-        const map: Record<string, string> = {
-            '/': 'Dashboard',
-            '/grimorium': 'Grimorium',
-            '/pizarron': 'Pizarrón',
-            '/cerebrity': 'CerebrIty',
-            '/trend-locator': 'Trend Locator',
-            '/avatar': 'Avatar',
-            '/make-menu': 'Make Menu',
-            '/colegium': 'Colegium',
-            '/collegium': 'Colegium',
-            '/personal': 'Mi Perfil',
-        };
-        return map[path] || Object.entries(map).find(([k]) => k !== '/' && path.startsWith(k))?.[1] || 'Nexus Suite';
-    }, [location.pathname]);
 
     return (
         <div className='min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-50 font-sans antialiased flex'>
@@ -117,52 +111,41 @@ const AppLayout: React.FC<any> = ({
                 onCloseMobile={() => setIsMobileSidebarOpen(false)}
             />
 
-            <div className={`flex-1 flex flex-col transition-all duration-300 h-screen ${isSidebarCollapsed ? 'md:ml-20' : 'md:ml-64'} w-full`}>
+            <div className={`flex-1 flex flex-col transition-all duration-300 h-screen ${isSidebarCollapsed ? "lg:ml-20" : "lg:ml-64"} w-full`}>
                 
-                {/* Mobile Header — Shows current section name */}
-                <div className="md:hidden flex items-center justify-between p-4 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 z-30 sticky top-0">
-                    <div className="flex items-center gap-3">
-                        <button 
-                            onClick={() => setIsMobileSidebarOpen(true)}
-                            className="p-2 -ml-2 text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white focus:outline-none"
-                        >
-                            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" /></svg>
-                        </button>
-                        <div className="flex flex-col">
-                            <span className="font-bold text-sm text-slate-900 dark:text-white leading-tight">{sectionName}</span>
-                            <span className="text-[9px] text-slate-400 dark:text-slate-500 uppercase tracking-widest">Nexus Suite</span>
-                        </div>
-                    </div>
-                </div>
+                {/* No mobile header: it spent ~64px on a title every view already
+                    renders itself, and hid navigation behind a hamburger. Navigation
+                    now lives in the bottom bar, which is reachable by thumb. */}
 
-                <main className="flex-1 overflow-y-auto p-2 sm:p-4">
+                {/* The pb-[…] reserves the bottom bar's footprint so the last row of
+                    any list stays tappable instead of sitting under the glass. Dropped
+                    at lg, where the bar is hidden and the sidebar takes over. */}
+                <main className="flex-1 overflow-y-auto p-2 sm:p-4 pb-[calc(60px_+_env(safe-area-inset-bottom)_+_0.5rem)] lg:pb-4">
                     <AppRoutes
                         db={db} userId={userId} appId={appId} auth={auth} storage={storage}
                     />
                 </main>
             </div>
 
-            {showNotificationsDrawer && <NotificationsDrawer isOpen={showNotificationsDrawer} onClose={() => setShowNotificationsDrawer(false)} notifications={notifications} db={db} userId={userId} appId={appId} onTaskClick={(id) => { navigate('/pizarron'); setTaskToOpen(id); }} />}
-            
-            {/* Unified Bottom Nav for Mobile viewports - Solves the Shell Split/Redirect issue */}
-            <div className="md:hidden">
-                <FloatingBottomNav 
-                    currentPage={sectionName.toLowerCase() as any} 
-                    onNavigate={(page) => {
-                        // Bridge PageName to Route
-                        const routeMap: Record<string, string> = {
-                            [PageName.Dashboard]: '/',
-                            [PageName.GrimorioRecipes]: '/grimorium',
-                            [PageName.CerebritySynthesis]: '/cerebrity',
-                            [PageName.Pizarron]: '/pizarron',
-                            [PageName.AvatarCore]: '/avatar',
-                            [PageName.Colegium]: '/colegium',
-                            [PageName.Personal]: '/personal',
-                        };
-                        navigate(routeMap[page] || '/');
-                    }} 
+            {showNotificationsDrawer && <NotificationsDrawer isOpen={showNotificationsDrawer} onClose={() => setShowNotificationsDrawer(false)} notifications={notifications} db={db} userId={userId} appId={appId} onTaskClick={(id) => { if (id && id.startsWith('/')) { navigate(id); } else { navigate('/pizarron'); setTaskToOpen(id); } }} />}
+
+            {/* Global Recipe form modal (create/edit) — driven by the UI store */}
+            {showRecipeModal && (
+                <RecipeFormModal
+                    isOpen={showRecipeModal}
+                    onClose={() => setShowRecipeModal(false)}
+                    db={db}
+                    userId={userId}
+                    initialData={recipeToEdit}
+                    allIngredients={allIngredients}
+                    allRecipes={allRecipes}
                 />
-            </div>
+            )}
+            
+            {/* Mobile navigation. Reads its destinations from APP_SECTIONS + the
+                sections store, so it mirrors the desktop sidebar and honours the
+                on/off toggles in Personal → Configuración with no second list. */}
+            <FloatingBottomNav />
 
             <ChatbotWidget />
         </div>

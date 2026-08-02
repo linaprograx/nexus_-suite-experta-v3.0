@@ -56,20 +56,22 @@ export const evaluateMarketRules = (input: MarketSignalInput): Signal[] => {
         });
     }
 
-    // Prepare unit prices
-    const unitPrices: number[] = [];
+    // Prepare unit prices — track which supplier yields each price so we can name the best one
+    const priced: { supplierId: string; up: number }[] = [];
     supplierIds.forEach(id => {
         const data = p.supplierData[id];
-        // Only calculate if compatible format. 
+        // Only calculate if compatible format.
         // We assume formatUnit matches p.unitBase family (mass/vol)
         // For this phase, simplified:
         const up = calculateUnitPrice(data.price, data.formatQty, data.formatUnit, p.unitBase || 'units');
-        if (up !== null) unitPrices.push(up);
+        if (up !== null) priced.push({ supplierId: id, up });
     });
+    const unitPrices = priced.map(x => x.up);
 
     if (unitPrices.length > 0) {
         const minPrice = Math.min(...unitPrices);
         const maxPrice = Math.max(...unitPrices);
+        const bestSupplierId = priced.reduce((best, x) => x.up < best.up ? x : best, priced[0]).supplierId;
 
         // 1. Price Variance
         if (supplierCount >= 2) {
@@ -123,11 +125,18 @@ export const evaluateMarketRules = (input: MarketSignalInput): Signal[] => {
                     message: `Oportunidad de ahorro: ${savingsPct.toFixed(0)}%`,
                     explanation: `Estás pagando un ${savingsPct.toFixed(0)}% más que el proveedor más barato disponible.`,
                     context: {
+                        deltaAbs: savingsDelta,
                         deltaPct: savingsPct,
                         comparedSuppliers: supplierCount
                     },
                     meta: {
+                        // Real entity references so the suggestion/action can act on the actual ingredient
+                        ingredientId: p.id,
+                        bestSupplierId,
                         bestUnitPrice: minPrice,
+                        bestPrice: minPrice,
+                        deltaAbs: savingsDelta,
+                        deltaPct: savingsPct,
                         savingsPotentialPercent: savingsPct
                     },
                     visible: true

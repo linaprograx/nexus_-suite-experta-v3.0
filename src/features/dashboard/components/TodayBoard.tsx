@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { PizarronTask } from '../../../types';
 import { Icon } from '../../../components/ui/Icon';
 import { ICONS } from '../../../components/ui/icons';
+import { dashboardPanel, panelHighlight } from '../cardStyles';
 
 interface TodayBoardProps {
     ideas: any[];
@@ -21,14 +22,16 @@ export const TodayBoard: React.FC<TodayBoardProps> = ({ ideas, inProgress, urgen
     ].slice(0, 4);
 
     return (
-        <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl rounded-[24px] p-6 border border-indigo-500/50 shadow-[0_0_15px_-3px_rgba(99,102,241,0.25),_0_20px_40px_-5px_rgba(0,0,0,0.1)] dark:shadow-[0_0_25px_-5px_rgba(99,102,241,0.4),_0_20px_50px_-12px_rgba(0,0,0,0.6)] hover:shadow-[0_0_30px_-5px_rgba(99,102,241,0.4),_0_25px_60px_-12px_rgba(0,0,0,0.2)] dark:hover:shadow-[0_0_40px_-5px_rgba(99,102,241,0.6),_0_25px_60px_-12px_rgba(0,0,0,0.7)] transition-all duration-500 min-h-[200px] relative overflow-hidden group">
-            {/* Glass Highlight */}
-            <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
+        <div className={`${dashboardPanel} min-h-[200px]`}>
+            <div className={panelHighlight} />
             <div className="flex justify-between items-center mb-4">
                 <h3 className="text-xs font-bold text-gray-400 dark:text-slate-500 uppercase tracking-widest">
                     Pizarrón Hoy
                 </h3>
-                <button className="text-[10px] text-indigo-500 hover:text-indigo-400 font-bold uppercase tracking-wider transition-colors">
+                <button
+                    onClick={() => navigate('/pizarron')}
+                    className="text-[10px] text-indigo-500 hover:text-indigo-400 font-bold uppercase tracking-wider transition-colors"
+                >
                     Ver Todo
                 </button>
             </div>

@@ -82,7 +82,7 @@ export const parseCsvRecipes = (csvText: string, allIngredients: Ingredient[]): 
             preparacion: '',
             garnish: '',
             ingredientesTexto: lines.map(l => `${l.cantidad} ${l.unidad} ${l.nombre}`).join('\n')
-        };
+        } as any;
 
         // Cost calculation
         // Note: Can only calculate correctly if ingredients match existing ones with prices.

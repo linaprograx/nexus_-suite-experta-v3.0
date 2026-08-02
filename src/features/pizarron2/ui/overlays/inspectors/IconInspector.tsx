@@ -24,14 +24,14 @@ export const IconInspector = ({
                         {/* Icon Color */}
                         <ColorPicker
                             label="Color del Icono"
-                            value={firstNode.content.color || '#000000'}
+                            color={firstNode.content.color || '#000000'}
                             onChange={(c) => updateNode({ color: typeof c === 'string' ? c : c.start })}
                         />
 
                         {/* Visual Effects */}
                         <VisualEffectsController
                             opacity={firstNode.content.opacity ?? 1}
-                            shadow={!!firstNode.content.filters?.shadow}
+                            shadow={firstNode.content.filters?.shadow ?? null}
                             borderRadius={0}
                             borderWidth={0}
                             onChange={(eff) => {

@@ -1,14 +1,14 @@
 import { parseMultipleRecipes, RecipeFirestore } from '../utils/recipeImporter';
-import { Ingredient } from '../../types';
+import { Ingredient } from '../types';
 
 // Hardcode de ingredientes existentes para simular la base de datos
-const mockAllIngredients: Ingredient[] = [
+const mockAllIngredients: Ingredient[] = ([
   { id: '1', nombre: 'Mezcla base', categoria: 'Preparaciones', precioCompra: 10, unidadCompra: 'Botella (1L)', standardUnit: 'ml', standardQuantity: 1000, standardPrice: 0.01 },
   { id: '2', nombre: 'Lima', categoria: 'Frutas', precioCompra: 2, unidadCompra: 'Malla (1kg)', standardUnit: 'und', standardQuantity: 10, standardPrice: 0.2 },
   { id: '3', nombre: 'Azúcar Invertido', categoria: 'Endulzantes', precioCompra: 5, unidadCompra: 'Bote (500g)', standardUnit: 'g', standardQuantity: 500, standardPrice: 0.01 },
   { id: '4', nombre: 'Ron Blanco', categoria: 'Destilados', precioCompra: 15, unidadCompra: 'Botella (700ml)', standardUnit: 'ml', standardQuantity: 700, standardPrice: 0.0214 },
   { id: '5', nombre: 'Maracuyá', categoria: 'Frutas', precioCompra: 3, unidadCompra: 'Caja (6 und)', standardUnit: 'und', standardQuantity: 6, standardPrice: 0.5 },
-];
+] as any);
 
 // Contenido del archivo TXT de ejemplo
 const mockTxtContent = `

@@ -1,4 +1,4 @@
-import { PurchaseEvent } from '../types';
+import { PurchaseEvent, StockMovement } from '../types';
 
 export interface StockItem {
     ingredientId: string;
@@ -66,6 +66,35 @@ export const buildStockFromPurchases = (purchases: PurchaseEvent[]): StockItem[]
     });
 
     return Object.values(stockMap);
+};
+
+/**
+ * Subtracts consumption/waste/adjustment movements from the purchase-built stock.
+ * INVARIANT: with an empty `movements` array this returns the input unchanged, so
+ * behaviour is identical to today until the first movement is recorded.
+ * Quantities and value are clamped at 0 (a movement can't push stock below empty).
+ */
+export const applyMovementsToStock = (stock: StockItem[], movements: StockMovement[]): StockItem[] => {
+    if (!movements || movements.length === 0) return stock;
+
+    // Sum removed quantity per ingredient.
+    // consumption/waste are always removals (>= 0). 'adjustment' (physical count) is signed:
+    // positive delta removes (digital > counted), negative delta adds back (counted > digital).
+    const consumedByIng: Record<string, number> = {};
+    for (const m of movements) {
+        if (!m.ingredientId || !m.quantity) continue;
+        const q = m.type === 'adjustment' ? m.quantity : Math.max(0, m.quantity);
+        consumedByIng[m.ingredientId] = (consumedByIng[m.ingredientId] || 0) + q;
+    }
+
+    return stock.map(item => {
+        const consumed = consumedByIng[item.ingredientId];
+        if (!consumed) return item;
+        const newQty = Math.max(0, item.quantityAvailable - consumed);
+        // Reduce value at the item's weighted average cost (keeps averageUnitCost stable)
+        const newValue = Math.max(0, newQty * item.averageUnitCost);
+        return { ...item, quantityAvailable: newQty, totalValue: newValue };
+    });
 };
 
 export const calculateInventoryMetrics = (stock: StockItem[]) => {

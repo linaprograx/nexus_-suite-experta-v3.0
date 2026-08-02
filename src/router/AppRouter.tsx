@@ -36,29 +36,14 @@ export const AppRouter = ({
         <Routes>
             <Route path="/" element={<DashboardView />} />
             <Route path="/grimorium" element={
-                <GrimoriumView
-                    onOpenRecipeModal={onOpenRecipeModal}
-                    onDragRecipeStart={onDragRecipeStart}
-                    setCurrentView={() => { }}
-                />
+                <GrimoriumView />
             } />
             <Route path="/pizarron" element={
                 <PizarronView
                     db={db} userId={userId} appId={appId} auth={auth} storage={storage}
-                    taskToOpen={taskToOpen} onTaskOpened={onTaskOpened}
-                    draggingRecipe={draggingRecipe} draggingTask={draggingTask} onDropEnd={onDropEnd}
-                    onDragTaskStart={onDragTaskStart} onAnalyze={onAnalyze}
-                    userProfile={{}} // View uses hook now
                 />
             } />
-            <Route path="/cerebrity" element={
-                <CerebrityView
-                    db={db} userId={userId} storage={storage} appId={appId}
-                    onOpenRecipeModal={onOpenRecipeModal}
-                    initialText={initialText}
-                    onAnalysisDone={onAnalysisDone}
-                />
-            } />
+            <Route path="/cerebrity" element={<CerebrityView />} />
             <Route path="/trend-locator" element={<TrendLocatorView db={db} userId={userId} appId={appId} />} />
             <Route path="/unleash" element={<UnleashView />} />
             <Route path="/avatar" element={<AvatarView />} />

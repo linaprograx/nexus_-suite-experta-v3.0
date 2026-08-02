@@ -1,9 +1,10 @@
 import React from 'react';
-import { Firestore, addDoc, collection, serverTimestamp } from 'firebase/firestore';
+import { addDoc, collection, serverTimestamp, Firestore } from 'firebase/firestore';
 import { MenuLayout } from '../../types';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '../ui/Card';
 import { Button } from '../ui/Button';
 import { MenuDesignRendererCore } from '../shared/MenuDesignRendererCore';
+import { usePizarronData } from '../../hooks/usePizarronData';
 
 interface MenuResultCardProps {
     item: MenuLayout;
@@ -12,17 +13,39 @@ interface MenuResultCardProps {
     appId: string;
 }
 
-export const MenuResultCard: React.FC<MenuResultCardProps> = ({ item, db, userId, appId }) => {
+export const MenuResultCard: React.FC<MenuResultCardProps> = ({ item, db, appId }) => {
+    const { activeBoardId } = usePizarronData();
+    const [saved, setSaved] = React.useState(false);
+    const [saving, setSaving] = React.useState(false);
+
     const handleSaveToPizarron = async () => {
-        const taskContent = `[Diseño Menú] Adaptar el concepto '${item.themeName}'. Descripción: ${item.description}`.substring(0, 500);
-        await addDoc(collection(db, `artifacts/${appId}/public/data/pizarron-tasks`), {
-            content: taskContent,
-            status: 'ideas',
-            category: 'Marketing',
-            createdAt: serverTimestamp(),
-            boardId: 'general'
-        });
-        alert("Concepto de menú guardado en Pizarrón.");
+        setSaving(true);
+        try {
+            // Proper Pizarrón card shape: the board reader needs title/texto + type +
+            // position; htmlContent/suggestedTypography let it render the actual design.
+            await addDoc(collection(db, `artifacts/${appId}/public/data/pizarron-tasks`), {
+                type: 'card',
+                title: `🍸 Menú · ${item.themeName}`,
+                texto: `🍸 Menú · ${item.themeName}`,
+                body: item.description,
+                htmlContent: item.htmlContent,
+                suggestedTypography: item.suggestedTypography,
+                position: { x: 80 + Math.round(Math.random() * 200), y: 80 + Math.round(Math.random() * 160) },
+                width: 320,
+                height: 420,
+                zIndex: 1,
+                boardId: activeBoardId,
+                style: { backgroundColor: '#fff7ed' },
+                createdAt: serverTimestamp(),
+                updatedAt: Date.now(),
+            });
+            setSaved(true);
+            setTimeout(() => setSaved(false), 2500);
+        } catch (e) {
+            console.error('Error guardando menú en Pizarrón:', e);
+        } finally {
+            setSaving(false);
+        }
     };
 
     return (
@@ -40,7 +63,9 @@ export const MenuResultCard: React.FC<MenuResultCardProps> = ({ item, db, userId
                 />
             </CardContent>
             <CardFooter>
-                <Button onClick={handleSaveToPizarron}>Guardar en Pizarrón</Button>
+                <Button onClick={handleSaveToPizarron} disabled={saving || saved}>
+                    {saved ? '✓ Guardado en Pizarrón' : saving ? 'Guardando…' : 'Guardar en Pizarrón'}
+                </Button>
             </CardFooter>
         </Card>
     );

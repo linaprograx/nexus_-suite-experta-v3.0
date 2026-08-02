@@ -1,4 +1,4 @@
-import { PizarronTask, UserProfile } from '../../../types';
+import { PizarronTask, UserProfile } from '../../types';
 import * as todayService from './todayService';
 
 export const useToday = (allTasks: PizarronTask[], userProfile?: Partial<UserProfile>) => {

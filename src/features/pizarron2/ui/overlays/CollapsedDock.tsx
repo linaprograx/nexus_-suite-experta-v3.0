@@ -63,32 +63,32 @@ export const CollapsedDock: React.FC = () => {
     return (
         <div className="absolute bottom-0 left-0 w-full h-24 px-4 pb-2 flex gap-4 items-end pointer-events-none z-50">
             {/* Zone 1: Operational (25%) */}
-            <div className="flex-1 bg-slate-50/50 backdrop-blur-md border-t border-r border-slate-200 rounded-tr-2xl h-full p-2 overflow-y-auto pointer-events-auto flex flex-col-reverse relative group/zone">
-                <div className="absolute top-0 right-2 text-[9px] font-bold text-slate-400 uppercase tracking-widest opacity-0 group-hover/zone:opacity-100 transition-opacity">Operational</div>
+            <div className="flex-1 bg-slate-50/50 dark:bg-slate-800/50 backdrop-blur-md border-t border-r border-slate-200 dark:border-slate-700 rounded-tr-2xl h-full p-2 overflow-y-auto pointer-events-auto flex flex-col-reverse relative group/zone">
+                <div className="absolute top-0 right-2 text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest opacity-0 group-hover/zone:opacity-100 transition-opacity">Operational</div>
                 <div className="w-full flex flex-col-reverse">
                     {zones.operational.map(renderThumbnail)}
                 </div>
             </div>
 
             {/* Zone 2: Strategic (25%) */}
-            <div className="flex-1 bg-white/40 backdrop-blur-md border-t border-r border-slate-200 rounded-tr-2xl h-full p-2 overflow-y-auto pointer-events-auto flex flex-col-reverse relative group/zone">
-                <div className="absolute top-0 right-2 text-[9px] font-bold text-slate-400 uppercase tracking-widest opacity-0 group-hover/zone:opacity-100 transition-opacity">Strategic</div>
+            <div className="flex-1 bg-white/40 dark:bg-slate-900/40 backdrop-blur-md border-t border-r border-slate-200 dark:border-slate-700 rounded-tr-2xl h-full p-2 overflow-y-auto pointer-events-auto flex flex-col-reverse relative group/zone">
+                <div className="absolute top-0 right-2 text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest opacity-0 group-hover/zone:opacity-100 transition-opacity">Strategic</div>
                 <div className="w-full flex flex-col-reverse">
                     {zones.strategic.map(renderThumbnail)}
                 </div>
             </div>
 
             {/* Zone 3: Creative (25%) */}
-            <div className="flex-1 bg-white/40 backdrop-blur-md border-t border-r border-slate-200 rounded-tr-2xl h-full p-2 overflow-y-auto pointer-events-auto flex flex-col-reverse relative group/zone">
-                <div className="absolute top-0 right-2 text-[9px] font-bold text-slate-400 uppercase tracking-widest opacity-0 group-hover/zone:opacity-100 transition-opacity">Creative</div>
+            <div className="flex-1 bg-white/40 dark:bg-slate-900/40 backdrop-blur-md border-t border-r border-slate-200 dark:border-slate-700 rounded-tr-2xl h-full p-2 overflow-y-auto pointer-events-auto flex flex-col-reverse relative group/zone">
+                <div className="absolute top-0 right-2 text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest opacity-0 group-hover/zone:opacity-100 transition-opacity">Creative</div>
                 <div className="w-full flex flex-col-reverse">
                     {zones.creative.map(renderThumbnail)}
                 </div>
             </div>
 
             {/* Zone 4: Archive (25%) */}
-            <div className="flex-1 bg-slate-100/80 backdrop-blur-md border-t border-slate-200 rounded-tr-2xl h-full p-2 overflow-y-auto pointer-events-auto flex flex-col-reverse relative group/zone grayscale opacity-80 hover:opacity-100 transition-all">
-                <div className="absolute top-0 right-2 text-[9px] font-bold text-slate-400 uppercase tracking-widest opacity-0 group-hover/zone:opacity-100 transition-opacity">Archive</div>
+            <div className="flex-1 bg-slate-100/80 dark:bg-slate-800/80 backdrop-blur-md border-t border-slate-200 dark:border-slate-700 rounded-tr-2xl h-full p-2 overflow-y-auto pointer-events-auto flex flex-col-reverse relative group/zone grayscale opacity-80 hover:opacity-100 transition-all">
+                <div className="absolute top-0 right-2 text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest opacity-0 group-hover/zone:opacity-100 transition-opacity">Archive</div>
                 <div className="w-full flex flex-col-reverse">
                     {zones.archive.map(renderThumbnail)}
                 </div>

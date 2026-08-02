@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { doc, onSnapshot, setDoc } from 'firebase/firestore';
 import { useApp } from '../context/AppContext';
 
 // --- Types ---
@@ -71,52 +72,98 @@ const DEFAULT_CONFIG: AvatarConfig = {
     activeProfileId: ''
 };
 
-// --- Hook Implementation ---
+// --- Default configs (used as fallback for new users) ---
+
+const INITIAL_CONFIGS: Record<AvatarType, AvatarConfig> = {
+    'Mixologist': {
+        ...DEFAULT_CONFIG,
+        name: 'Mixólogo Profesional',
+        emoji: '🍸',
+        profiles: INITIAL_PROFILES['Mixologist'],
+        activeProfileId: 'mix_default',
+        tone: 'Eficiente',
+        researchAxis: ['Coste'],
+        activePrinciples: ['p3', 'p1']
+    },
+    'Chef': {
+        ...DEFAULT_CONFIG,
+        name: 'Chef Profesional',
+        emoji: '👨‍🍳',
+        profiles: INITIAL_PROFILES['Chef'],
+        activeProfileId: 'chef_default',
+        tone: 'Técnico',
+        researchAxis: ['Precisión'],
+        activePrinciples: ['p1']
+    },
+    'Patissier': { ...DEFAULT_CONFIG, name: 'Repostero Michelin', emoji: '🍰' },
+    'Sommelier': { ...DEFAULT_CONFIG, name: 'Sommelier', emoji: '🍷' },
+    'Barista': { ...DEFAULT_CONFIG, name: 'Barista', emoji: '☕' },
+    'Concierge': { ...DEFAULT_CONFIG, name: 'Concierge', emoji: '🛎️' },
+    'Manager': { ...DEFAULT_CONFIG, name: 'Gerente', emoji: '💼' },
+    'Owner': { ...DEFAULT_CONFIG, name: 'Owner', emoji: '👑' },
+};
 
 // --- Hook Implementation ---
 
 export const useAvatarCognition = () => {
-    const { userPlan } = useApp();
-    // Initialize from LocalStorage or default to Mixologist
-    const [activeAvatarType, setActiveAvatarType] = useState<AvatarType>(() => {
-        const saved = localStorage.getItem('nexus_active_avatar');
-        return (saved as AvatarType) || 'Mixologist';
-    });
+    const { userPlan, db, userId } = useApp();
 
-    // Persist active avatar changes
+    const [activeAvatarType, setActiveAvatarTypeState] = useState<AvatarType>('Mixologist');
+    const [avatarConfigs, setAvatarConfigs] = useState<Record<AvatarType, AvatarConfig>>(INITIAL_CONFIGS);
+    const [isLoaded, setIsLoaded] = useState(false);
+
+    // Ref to avoid saving back to Firestore the data we just loaded from it
+    const loadingFromFirestore = useRef(false);
+
+    // ── Firestore path ──────────────────────────────────────────────────────
+    const getDocRef = useCallback(() => {
+        if (!db || !userId) return null;
+        return doc(db, `users/${userId}/avatar`, 'config');
+    }, [db, userId]);
+
+    // ── Load from Firestore on mount / userId change ────────────────────────
     useEffect(() => {
-        localStorage.setItem('nexus_active_avatar', activeAvatarType);
-    }, [activeAvatarType]);
+        const ref = getDocRef();
+        if (!ref) return;
 
-    // We store a map of configs per avatar type
-    const [avatarConfigs, setAvatarConfigs] = useState<Record<AvatarType, AvatarConfig>>({
-        'Mixologist': {
-            ...DEFAULT_CONFIG,
-            name: 'Mixólogo Profesional',
-            emoji: '🍸',
-            profiles: INITIAL_PROFILES['Mixologist'],
-            activeProfileId: 'mix_default',
-            tone: 'Eficiente',
-            researchAxis: ['Coste'],
-            activePrinciples: ['p3', 'p1']
+        const unsub = onSnapshot(ref, (snap) => {
+            loadingFromFirestore.current = true;
+            if (snap.exists()) {
+                const data = snap.data();
+                if (data.activeAvatarType) setActiveAvatarTypeState(data.activeAvatarType as AvatarType);
+                if (data.avatarConfigs) {
+                    // Merge saved configs with INITIAL_CONFIGS so new avatar types always have defaults
+                    setAvatarConfigs(prev => ({ ...prev, ...data.avatarConfigs }));
+                }
+            }
+            setIsLoaded(true);
+            // Allow writes again on next tick
+            setTimeout(() => { loadingFromFirestore.current = false; }, 0);
+        });
+
+        return () => unsub();
+    }, [getDocRef]);
+
+    // ── Save to Firestore whenever state changes (after initial load) ────────
+    const saveToFirestore = useCallback(
+        async (newType: AvatarType, newConfigs: Record<AvatarType, AvatarConfig>) => {
+            if (loadingFromFirestore.current || !isLoaded) return;
+            const ref = getDocRef();
+            if (!ref) return;
+            try {
+                await setDoc(ref, { activeAvatarType: newType, avatarConfigs: newConfigs }, { merge: true });
+            } catch (e) {
+                console.error('[Avatar] Firestore save error:', e);
+            }
         },
-        'Chef': {
-            ...DEFAULT_CONFIG,
-            name: 'Chef Profesional',
-            emoji: '👨‍🍳',
-            profiles: INITIAL_PROFILES['Chef'],
-            activeProfileId: 'chef_default',
-            tone: 'Técnico',
-            researchAxis: ['Precisión'],
-            activePrinciples: ['p1']
-        },
-        'Patissier': { ...DEFAULT_CONFIG, name: 'Repostero Michelin', emoji: '🍰' },
-        'Sommelier': { ...DEFAULT_CONFIG, name: 'Sommelier', emoji: '🍷' },
-        'Barista': { ...DEFAULT_CONFIG, name: 'Barista', emoji: '☕' },
-        'Concierge': { ...DEFAULT_CONFIG, name: 'Concierge', emoji: '🛎️' },
-        'Manager': { ...DEFAULT_CONFIG, name: 'Gerente', emoji: '💼' },
-        'Owner': { ...DEFAULT_CONFIG, name: 'Owner', emoji: '👑' },
-    });
+        [getDocRef, isLoaded]
+    );
+
+    // ── Wrapper for setActiveAvatarType that also persists ──────────────────
+    const setActiveAvatarType = useCallback((type: AvatarType) => {
+        setActiveAvatarTypeState(type);
+        saveToFirestore(type, avatarConfigs);
+    }, [saveToFirestore, avatarConfigs]);
 
     // --- Actions ---
 
@@ -129,12 +176,13 @@ export const useAvatarCognition = () => {
         return config.profiles.find(p => p.id === config.activeProfileId);
     };
 
-    const updateConfig = (avatar: AvatarType, updates: Partial<AvatarConfig>) => {
-        setAvatarConfigs(prev => ({
-            ...prev,
-            [avatar]: { ...prev[avatar], ...updates }
-        }));
-    };
+    const updateConfig = useCallback((avatar: AvatarType, updates: Partial<AvatarConfig>) => {
+        setAvatarConfigs(prev => {
+            const next = { ...prev, [avatar]: { ...prev[avatar], ...updates } };
+            saveToFirestore(activeAvatarType, next);
+            return next;
+        });
+    }, [activeAvatarType, saveToFirestore]);
 
     const updateActiveProfile = (updates: Partial<CognitiveProfile>) => {
         const config = getActiveConfig();
@@ -346,7 +394,7 @@ export const useAvatarCognition = () => {
     const isManagerActive = () => activeAvatarType === 'Manager' || activeAvatarType === 'Owner';
 
     // Create new avatar with membership limits
-    const createNewAvatar = (type: AvatarType, customName?: string, customEmoji?: string): { success: boolean; error?: string } => {
+    const createNewAvatar = useCallback((type: AvatarType, customName?: string, customEmoji?: string): { success: boolean; error?: string } => {
         // Get membership limits
         const avatarLimit = {
             'FREE': 1,
@@ -397,16 +445,16 @@ export const useAvatarCognition = () => {
             activePrinciples: []
         };
 
-        setAvatarConfigs(prev => ({
-            ...prev,
-            [type]: newConfig
-        }));
+        setAvatarConfigs(prev => {
+            const next = { ...prev, [type]: newConfig };
+            saveToFirestore(type, next);
+            return next;
+        });
 
-        // Auto-select the new avatar
-        setActiveAvatarType(type);
+        setActiveAvatarTypeState(type);
 
         return { success: true };
-    };
+    }, [avatarConfigs, userPlan, saveToFirestore]);
 
     // Helper to get default emoji
     const getDefaultEmoji = (type: AvatarType): string => {
@@ -426,6 +474,7 @@ export const useAvatarCognition = () => {
     return {
         activeAvatarType,
         avatarConfigs,
+        isLoaded,
         setActiveAvatarType,
         getActiveConfig,
         getActiveProfile,

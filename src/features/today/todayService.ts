@@ -1,4 +1,4 @@
-import { PizarronTask } from '../../../types';
+import { PizarronTask } from '../../types';
 
 export const getIdeas = (tasks: PizarronTask[]): PizarronTask[] => {
   return tasks.filter(t => t.status === 'ideas' || t.category === 'Ideas');
@@ -37,7 +37,7 @@ export interface FormattedTask {
 export const formatTaskForUI = (task: PizarronTask): FormattedTask => {
   return {
     id: task.id,
-    title: task.texto,
+    title: task.texto || '',
     category: task.category,
     progress: computeProgress(task),
     author: task.authorName || 'Desconocido',

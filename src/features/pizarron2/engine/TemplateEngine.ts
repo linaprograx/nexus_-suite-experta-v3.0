@@ -1,5 +1,6 @@
 import { BoardNode } from './types';
 import { PizarraMetadata } from './types';
+import { STRUCTURE_TEMPLATES } from './structures';
 
 export const TemplateEngine = {
     generateLayout(templateId: string, metadata: PizarraMetadata): BoardNode[] {
@@ -40,34 +41,25 @@ const createBoard = (title: string, x: number, y: number, w: number, h: number, 
     }
 });
 
-const createComposite = (type: 'swot' | 'grid', x: number, y: number, w: number, h: number, t: number): BoardNode => {
-    let compositeContent: any = {};
-    if (type === 'swot') {
-        compositeContent = {
-            layout: 'swot',
-            structure: { rows: 2, cols: 2, gap: 10, padding: 20 },
-            cells: [
-                { id: crypto.randomUUID(), row: 0, col: 0, text: 'FORTALEZAS', color: '#dcfce7' },
-                { id: crypto.randomUUID(), row: 0, col: 1, text: 'DEBILIDADES', color: '#fee2e2' },
-                { id: crypto.randomUUID(), row: 1, col: 0, text: 'OPORTUNIDADES', color: '#e0f2fe' },
-                { id: crypto.randomUUID(), row: 1, col: 1, text: 'AMENAZAS', color: '#fef9c3' }
-            ]
-        };
-    }
-
-    return {
-        id: crypto.randomUUID(),
-        type: 'composite',
-        x, y, w, h,
-        zIndex: 5,
-        createdAt: t, updatedAt: t,
-        content: {
-            title: type.toUpperCase(),
-            composite: compositeContent
-        }
-    };
-}
-
+// Board carrying one of the new zone-based layouts (structures.ts).
+// Follows dark mode + inline zone editing automatically.
+const createStructuredBoard = (title: string, x: number, y: number, w: number, h: number, structureId: string, t: number): BoardNode => ({
+    id: crypto.randomUUID(),
+    type: 'board',
+    x, y, w, h,
+    zIndex: 0,
+    createdAt: t, updatedAt: t,
+    content: {
+        title,
+        body: '',
+        color: '#ffffff',
+        borderColor: '#e2e8f0',
+        borderWidth: 2,
+        borderRadius: 16
+    },
+    structureId,
+    structure: JSON.parse(JSON.stringify(STRUCTURE_TEMPLATES[structureId])),
+});
 
 const createNote = (text: string, x: number, y: number, color: string, t: number): BoardNode => ({
     id: crypto.randomUUID(),
@@ -101,38 +93,36 @@ const generateCreative = (nodes: BoardNode[], t: number) => {
 
 // 2. MIXÓLOGO
 const generateMixologist = (nodes: BoardNode[], t: number) => {
-    nodes.push(createBoard("Receta Base", -600, -400, 500, 400, '#ffffff', t));
-    nodes.push(createBoard("Ingredientes", -50, -400, 500, 400, '#ecfdf5', t));
-    nodes.push(createBoard("Técnicas", -600, 50, 500, 400, '#eff6ff', t));
-    nodes.push(createBoard("Pruebas y Ajustes", -50, 50, 500, 400, '#fff1f2', t));
+    // Receta Base → full Ficha de Cóctel layout
+    nodes.push(createStructuredBoard("Ficha de Cóctel", -640, -440, 560, 860, 'cocktail-recipe-structure', t));
+    nodes.push(createBoard("Técnicas", 0, -440, 500, 410, '#eff6ff', t));
+    nodes.push(createBoard("Pruebas y Ajustes", 0, 10, 500, 410, '#fff1f2', t));
     return nodes;
 };
 
 // 3. PRODUCTIVA
 const generateProductive = (nodes: BoardNode[], t: number) => {
-    const kW = 300;
-    nodes.push(createBoard("To Do", -500, -400, kW, 600, '#f1f5f9', t));
-    nodes.push(createBoard("Doing", -150, -400, kW, 600, '#e0f2fe', t));
-    nodes.push(createBoard("Done", 200, -400, kW, 600, '#dcfce7', t));
-    nodes.push(createBoard("Planificación Semanal", -500, 250, 650, 300, '#fffbeb', t));
-    nodes.push(createBoard("Notas Operativas", 200, 250, 300, 300, '#ffffff', t));
+    // Three manual columns → single Kanban layout
+    nodes.push(createStructuredBoard("Tablero Kanban", -540, -460, 1040, 560, 'kanban-structure', t));
+    // Weekly planning → Planificación Semanal layout
+    nodes.push(createStructuredBoard("Planificación Semanal", -540, 140, 1040, 420, 'planning-structure', t));
     return nodes;
 };
 
 // 4. NEXUS
 const generateNexus = (nodes: BoardNode[], t: number) => {
-    nodes.push(createBoard("Estructura Menú", -800, -400, 400, 800, '#f8fafc', t));
-    nodes.push(createBoard("Cócteles", -350, -400, 600, 500, '#ffffff', t));
-    nodes.push(createBoard("Storytelling", -350, 150, 600, 250, '#fff7ed', t));
-    nodes.push(createBoard("Visual & Layout", 300, -400, 400, 800, '#f3f4f6', t));
+    nodes.push(createStructuredBoard("Estructura Menú", -860, -440, 460, 860, 'menu-layout-structure', t));
+    nodes.push(createStructuredBoard("Ficha de Cóctel", -360, -440, 560, 860, 'cocktail-recipe-structure', t));
+    nodes.push(createStructuredBoard("Storytelling", 240, -440, 620, 540, 'storytelling-structure', t));
+    nodes.push(createBoard("Visual & Layout", 240, 140, 620, 280, '#f3f4f6', t));
     return nodes;
 };
 
 // 5. ANALÍTICA
 const generateAnalytical = (nodes: BoardNode[], t: number) => {
-    nodes.push(createComposite('swot', -600, -300, 600, 500, t));
-    nodes.push(createBoard("Pros / Contras", 50, -300, 400, 500, '#ffffff', t));
-    nodes.push(createBoard("Conclusión Estratégica", 50, 250, 400, 200, '#f0fdf4', t));
+    // SWOT → real DAFO zone layout (replaces legacy composite cells)
+    nodes.push(createStructuredBoard("Análisis DAFO", -640, -340, 640, 560, 'technical-grid-structure', t));
+    nodes.push(createStructuredBoard("Comparación", 40, -340, 500, 560, 'comparison-structure', t));
     return nodes;
 };
 
@@ -147,17 +137,14 @@ const generateAdvanced = (nodes: BoardNode[], t: number) => {
 
 // 7. INGENIERÍA DE MENÚ
 const generateMenuEngineering = (nodes: BoardNode[], t: number) => {
-    // Top Left: BCG Matrix (Simulated via grid for now)
-    nodes.push(createBoard("Matriz BCG", -600, -400, 600, 600, '#ffffff', t));
+    // Top Left: BCG Matrix → real Ingeniería de Menú layout (Estrellas/Caballos/Enigmas/Perros)
+    nodes.push(createStructuredBoard("Matriz BCG", -640, -440, 720, 640, 'menu-design-structure', t));
 
-    // Top Right: Candidate Dishes
-    nodes.push(createBoard("Nuevos Platos", 50, -400, 400, 600, '#fff7ed', t));
+    // Top Right: Candidate Dishes → Carta de Menú layout
+    nodes.push(createStructuredBoard("Nuevos Platos", 120, -440, 460, 700, 'menu-layout-structure', t));
 
-    // Bottom: Cost Analysis
-    nodes.push(createBoard("Análisis de Costos", -600, 250, 1050, 300, '#f0fdf4', t));
-
-    // Initial Notes
-    nodes.push(createNote("Definir Estrellas y Vacas", -550, -350, '#fee2e2', t));
+    // Bottom: Cost Analysis → Kanban for cost workflow
+    nodes.push(createStructuredBoard("Análisis de Costos", -640, 240, 720, 360, 'kanban-structure', t));
     return nodes;
 };
 

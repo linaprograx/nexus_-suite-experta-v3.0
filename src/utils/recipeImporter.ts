@@ -1,4 +1,4 @@
-import { Ingredient, Recipe } from '../../types';
+import { Ingredient, Recipe } from '../types';
 import { parseIngredient } from '../features/ingredients/ingredientParser';
 import { findBestMatch } from '../features/ingredients/ingredientMatcher';
 import { calculateRecipeCost } from '../core/costing/costCalculator';

@@ -1,10 +1,32 @@
 import { PlanTier, IntelligenceLayer } from './plans.types';
 import { PLANS, DEFAULT_PLAN_TIER } from './plans.config';
 
+/** App sections that can be gated by plan (mirror of the backend access rules). */
+export type Feature = 'grimorium' | 'cerebrity' | 'pizarron' | 'avatar' | 'colegium' | 'controlCenter';
+
+const TIER_RANK: Record<PlanTier, number> = { FREE: 0, PRO: 1, EXPERT: 2, STUDIO: 3 };
+
+// Minimum plan required per feature — single source of truth for UI gating.
+export const FEATURE_MIN_TIER: Record<Feature, PlanTier> = {
+    grimorium: 'FREE',
+    colegium: 'FREE',
+    pizarron: 'PRO',
+    cerebrity: 'EXPERT',
+    avatar: 'EXPERT',
+    controlCenter: 'EXPERT',
+};
+
 /**
  * Engine to check user capabilities based on their assigned plan.
  */
 export const CapabilitiesEngine = {
+
+    /** Whether the plan grants access to a given app section/feature. */
+    canAccessSection: (planTier: PlanTier, feature: Feature): boolean => {
+        const tier = planTier in TIER_RANK ? planTier : DEFAULT_PLAN_TIER;
+        return TIER_RANK[tier] >= TIER_RANK[FEATURE_MIN_TIER[feature]];
+    },
+
     /**
      * Check if a specific Intelligence Layer is enabled for the plan.
      */

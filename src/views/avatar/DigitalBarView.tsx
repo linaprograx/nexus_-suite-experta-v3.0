@@ -11,7 +11,7 @@ const DigitalBarView: React.FC = () => {
     const { sceneState, actions, selectedArea } = useDigitalBarScene();
 
     return (
-        <div className="h-full flex flex-col gap-4 p-4 text-slate-900 dark:text-slate-100 bg-gradient-to-b from-blue-500/90 via-blue-500/40 to-white/10 dark:from-blue-500/40 dark:via-blue-500/20 dark:to-slate-950/20 rounded-3xl">
+        <div className="min-h-full lg:h-full flex flex-col gap-4 p-3 lg:p-4 text-slate-900 dark:text-slate-100 bg-gradient-to-b from-blue-500/90 via-blue-500/40 to-white/10 dark:from-blue-500/40 dark:via-blue-500/20 dark:to-slate-950/20 rounded-3xl">
             {/* Header / Tabs */}
             <div className="flex justify-between items-center bg-white/40 dark:bg-slate-900/40 p-2 rounded-xl border border-white/20 backdrop-blur-sm shadow-sm shrink-0">
                 <div className="flex gap-2">
@@ -50,7 +50,7 @@ const DigitalBarView: React.FC = () => {
             </div>
 
             {/* Content Area */}
-            <div className="flex-1 min-h-0 relative overflow-hidden rounded-2xl border border-white/20 shadow-xl bg-white/30 dark:bg-slate-900/30 backdrop-blur-md">
+            <div className="lg:flex-1 lg:min-h-0 relative overflow-hidden rounded-2xl border border-white/20 shadow-xl bg-white/30 dark:bg-slate-900/30 backdrop-blur-md">
                 {viewMode === 'holographic' ? (
                     <div className="h-full grid grid-cols-1 lg:grid-cols-3">
                         {/* Scene Canvas (2/3 width) */}

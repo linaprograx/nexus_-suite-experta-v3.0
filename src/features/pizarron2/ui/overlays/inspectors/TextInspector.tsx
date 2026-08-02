@@ -23,16 +23,16 @@ export const TextInspector = ({
                     <div className="space-y-4">
                         {/* Content Edit */}
                         <div>
-                            <label className="text-xs font-medium text-slate-600 block mb-1">Content</label>
+                            <label className="text-xs font-medium text-slate-600 dark:text-slate-400 block mb-1">Content</label>
                             <textarea
-                                className="w-full p-2 border rounded text-sm text-slate-700 font-sans"
+                                className="w-full p-2 border border-slate-300 dark:border-slate-600 rounded text-sm text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-800 font-sans"
                                 rows={3}
                                 value={firstNode.content.title || ''}
                                 onChange={(e) => updateNode({ title: e.target.value })}
                             />
                         </div>
                         {/* Typography */}
-                        <div className="bg-slate-50 p-2 rounded border border-slate-200">
+                        <div className="bg-slate-50 dark:bg-slate-800/50 p-2 rounded border border-slate-200 dark:border-slate-700">
                             <FontSelector
                                 currentFont={firstNode.content.fontFamily || 'Inter'}
                                 onChange={(f) => updateNode({ fontFamily: f })}
@@ -56,7 +56,7 @@ export const TextInspector = ({
                         {/* Color */}
                         <ColorPicker
                             label="Text Color"
-                            value={firstNode.content.color || '#000000'}
+                            color={firstNode.content.color || '#000000'}
                             onChange={(c) => updateNode({ color: typeof c === 'string' ? c : c.start })}
                         />
                     </div>

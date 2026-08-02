@@ -8,7 +8,7 @@ import { useUserIntelProfile } from '../../features/learning/hooks/useUserIntelP
 import { LearningEngine } from '../../core/learning/learning.engine';
 import { useApp, useCapabilities } from '../../context/AppContext';
 import { generateActiveSuggestions } from '../../core/active/active.engine'; // Assume this import exists or similar
-import { AssignedInsight } from '../../core/assisted/assisted.types'; // Or ActiveSuggestion types
+import { AssistedInsight } from '../../core/assisted/assisted.types'; // Or ActiveSuggestion types
 
 interface ReportData {
     costo: number;
@@ -187,7 +187,7 @@ const EscandalloSummaryCard: React.FC<EscandalloSummaryCardProps> = ({
                                         {pieData.map((entry, index) => <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />)}
                                     </Pie>
                                     <Tooltip
-                                        formatter={(value: number) => `€${value.toFixed(2)}`}
+                                        formatter={((value: any) => `€${Number(value || 0).toFixed(2)}`) as any}
                                         contentStyle={{ backgroundColor: 'rgba(255, 255, 255, 0.8)', backdropFilter: 'blur(10px)', borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
                                     />
                                     <Legend verticalAlign="bottom" height={36} iconType="circle" />

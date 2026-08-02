@@ -37,10 +37,46 @@ app.use(cors({
     allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
+// Stripe webhook MUST receive the raw body to verify the signature — register
+// it BEFORE express.json() parses everything else.
+import { createCheckoutSession, createPortalSession, handleWebhook } from './stripe/stripe.js';
+app.post('/stripe/webhook', express.raw({ type: 'application/json' }), handleWebhook);
+
 app.use(express.json());
 
 // Routes
 app.get('/health', healthCheck);
+
+// --- Agents (n8n / automation) ---
+// Machine-to-machine: authenticated with a shared secret, never a user session.
+const agentAuth = (req: Request, res: Response, next: Function) => {
+    const secret = process.env.AGENT_API_SECRET;
+    if (!secret) return res.status(503).json({ error: 'AGENT_API_SECRET not configured' });
+    const provided = req.header('x-agent-secret');
+    if (provided !== secret) return res.status(401).json({ error: 'Unauthorized' });
+    next();
+};
+
+/** El Vigía — nightly briefing. GET /agent/briefing?userId=...&appId=... */
+app.get('/agent/briefing', agentAuth, async (req: Request, res: Response) => {
+    try {
+        const userId = String(req.query.userId || '');
+        const appId = String(req.query.appId || process.env.DEFAULT_APP_ID || '');
+        if (!userId || !appId) {
+            return res.status(400).json({ error: 'userId and appId are required' });
+        }
+        const { buildBriefing } = await import('./agent/briefing.js');
+        const briefing = await buildBriefing(userId, appId);
+        res.json(briefing);
+    } catch (e: any) {
+        console.error('[Agent] briefing failed:', e);
+        res.status(500).json({ error: e.message || 'Briefing failed' });
+    }
+});
+
+// Stripe (subscriptions)
+app.post('/stripe/create-checkout-session', createCheckoutSession);
+app.post('/stripe/create-portal-session', createPortalSession);
 
 app.get('/auth/check', async (req: Request, res: Response) => {
     try {

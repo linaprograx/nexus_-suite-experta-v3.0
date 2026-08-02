@@ -1,6 +1,6 @@
 import React from 'react';
 import { Firestore } from 'firebase/firestore';
-import { MenuLayout } from '../../../types';
+import { MenuLayout } from '../../types';
 import { MenuResultCard } from './MenuResultCard';
 import { Alert } from '../ui/Alert';
 import { Spinner } from '../ui/Spinner';

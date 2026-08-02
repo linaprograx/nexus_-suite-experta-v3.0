@@ -65,54 +65,51 @@ export const FontSelector: React.FC<FontSelectorProps> = ({ currentFont, onChang
         <div className={`relative ${className || ''}`} ref={wrapperRef}>
             <button
                 onClick={() => setIsOpen(!isOpen)}
-                className="flex items-center justify-between w-40 px-3 py-1.5 text-xs bg-white/50 backdrop-blur border border-slate-200 rounded-lg hover:bg-white/80 transition-all text-slate-700 shadow-sm"
-                title="Font Family"
+                className="flex items-center justify-between w-40 px-3 py-1.5 text-xs bg-white/50 dark:bg-slate-800/50 backdrop-blur border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-white/80 dark:hover:bg-slate-800/80 transition-all text-slate-700 dark:text-slate-200 shadow-sm"
+                title="Fuente"
             >
                 <span className="truncate mr-2" style={{ fontFamily: currentFont }}>{currentFont}</span>
                 <svg className="w-3 h-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
             </button>
 
             {isOpen && (
-                <div className="absolute top-full left-0 mt-2 w-64 max-h-96 flex flex-col bg-white/90 backdrop-blur-xl border border-slate-200 shadow-2xl rounded-xl z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-                    {/* Search Component */}
-                    <div className="p-3 border-b border-slate-100 bg-white/50">
+                <div className="absolute top-full left-0 mt-2 w-64 max-h-96 flex flex-col bg-white dark:bg-slate-900 backdrop-blur-xl border border-slate-200 dark:border-slate-700 shadow-2xl rounded-xl z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+                    <div className="p-3 border-b border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900">
                         <input
                             type="text"
-                            placeholder="Search fonts..."
+                            placeholder="Buscar fuentes..."
                             value={search}
                             onChange={e => setSearch(e.target.value)}
-                            className="w-full px-3 py-2 text-xs bg-slate-100 border-none rounded-md focus:ring-2 focus:ring-orange-500 outline-none"
+                            className="w-full px-3 py-2 text-xs bg-slate-100 dark:bg-slate-800 border-none rounded-md focus:ring-2 focus:ring-orange-500 outline-none text-slate-700 dark:text-slate-200 placeholder-slate-400 dark:placeholder-slate-500"
                             autoFocus
                         />
                     </div>
 
                     <div className="flex-1 overflow-y-auto custom-scrollbar p-1">
-                        {/* Recents Section */}
                         {!search && recents.length > 0 && (
                             <div className="mb-2">
-                                <div className="px-3 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider">Recent</div>
+                                <div className="px-3 py-1 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Recientes</div>
                                 {recents.map(family => (
                                     <button
                                         key={`rec-${family}`}
                                         onClick={() => handleSelect(family)}
-                                        className={`w-full text-left px-3 py-2 text-sm hover:bg-orange-50 rounded-lg flex items-center justify-between group ${currentFont === family ? 'bg-orange-50 text-orange-600' : 'text-slate-700'}`}
+                                        className={`w-full text-left px-3 py-2 text-sm hover:bg-orange-50 dark:hover:bg-orange-900/20 rounded-lg flex items-center justify-between group ${currentFont === family ? 'bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400' : 'text-slate-700 dark:text-slate-200'}`}
                                         title={family}
                                     >
                                         <span style={{ fontFamily: family }}>{family}</span>
-                                        {currentFont === family && <span className="text-orange-500">✓</span>}
+                                        {currentFont === family && <span className="text-orange-500 dark:text-orange-400">✓</span>}
                                     </button>
                                 ))}
-                                <div className="my-2 border-t border-slate-100 mx-3"></div>
+                                <div className="my-2 border-t border-slate-100 dark:border-slate-800 mx-3"></div>
                             </div>
                         )}
 
-                        {/* All Fonts List */}
-                        <div className="px-3 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider">All Fonts</div>
+                        <div className="px-3 py-1 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Todas las fuentes</div>
                         {filteredFonts.map(font => (
                             <button
                                 key={font.family}
                                 onClick={() => handleSelect(font.family)}
-                                className={`w-full text-left px-3 py-2 text-lg hover:bg-orange-50 rounded-lg flex items-center justify-between group ${currentFont === font.family ? 'bg-orange-50 text-orange-600' : 'text-slate-700'}`}
+                                className={`w-full text-left px-3 py-2 text-lg hover:bg-orange-50 dark:hover:bg-orange-900/20 rounded-lg flex items-center justify-between group ${currentFont === font.family ? 'bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400' : 'text-slate-700 dark:text-slate-200'}`}
                                 title={font.family}
                             >
                                 <span style={{ fontFamily: font.family }}>{font.family}</span>
@@ -120,8 +117,8 @@ export const FontSelector: React.FC<FontSelectorProps> = ({ currentFont, onChang
                         ))}
 
                         {filteredFonts.length === 0 && (
-                            <div className="p-4 text-center text-xs text-slate-400">
-                                No fonts found
+                            <div className="p-4 text-center text-xs text-slate-400 dark:text-slate-500">
+                                Sin resultados
                             </div>
                         )}
                     </div>

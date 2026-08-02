@@ -162,7 +162,7 @@ export const IngredientDetailPanel: React.FC<IngredientDetailPanelProps> = ({
             product: {
                 id: ingredient.id,
                 name: ingredient.nombre,
-                category: ingredient.categoria,
+                category: ingredient.categoria ?? null,
                 supplierData: supplierMap,
                 referencePrice: ingredient.costo || null,
                 referenceSupplierId: null, // We act as observer

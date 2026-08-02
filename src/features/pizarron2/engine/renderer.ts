@@ -32,6 +32,67 @@ export class PizarronRenderer {
 
     private animStates = new Map<string, { lift: number, selectionOpacity: number, hoverOpacity: number }>();
     private focusOverlayOpacity: number = 0; // Global overlay alpha
+    private isDark: boolean = false; // Dark mode flag — set once per render(), read by all draw methods
+
+    // Returns light or dark color depending on current dark mode state.
+    // Use ONLY for fallback/default colors — never override explicit user-set colors.
+    private dk(light: string, dark: string): string {
+        return this.isDark ? dark : light;
+    }
+
+    // Dark mode "layer": if dark mode is active and the color is a light background,
+    // return a dark slate equivalent. Passes dark/vivid colors through unchanged.
+    private applyTheme(color: string): string {
+        if (!this.isDark || !color || color === 'transparent') return color;
+
+        // Normalize 'white' keyword
+        const c = color.trim().toLowerCase() === 'white' ? '#ffffff' : color.trim();
+
+        if (!c.startsWith('#') || c.length !== 7) return color;
+
+        const r = parseInt(c.slice(1, 3), 16);
+        const g = parseInt(c.slice(3, 5), 16);
+        const b = parseInt(c.slice(5, 7), 16);
+
+        if (isNaN(r) || isNaN(g) || isNaN(b)) return color;
+
+        // Perceived luminance (0–1). Values > 0.45 are considered "light backgrounds"
+        const lum = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+
+        return lum > 0.45 ? '#1e293b' : color; // slate-800 as universal dark bg
+    }
+
+    // Zone bg/titleBg: in light mode, lerp dark colors toward white so zones look clean
+    private adaptZoneBg(color: string, lerpAmount = 0.84): string {
+        if (this.isDark || !color || !color.startsWith('#') || color.length !== 7) return color;
+        const r = parseInt(color.slice(1, 3), 16);
+        const g = parseInt(color.slice(3, 5), 16);
+        const b = parseInt(color.slice(5, 7), 16);
+        if (isNaN(r) || isNaN(g) || isNaN(b)) return color;
+        const lum = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+        if (lum > 0.55) return color; // already light, keep as-is
+        const nr = Math.round(r + (255 - r) * lerpAmount);
+        const ng = Math.round(g + (255 - g) * lerpAmount);
+        const nb = Math.round(b + (255 - b) * lerpAmount);
+        return `#${nr.toString(16).padStart(2,'0')}${ng.toString(16).padStart(2,'0')}${nb.toString(16).padStart(2,'0')}`;
+    }
+
+    // Zone title text: in light mode, darken bright/light-colored labels for readability
+    private adaptZoneTitleColor(color: string): string {
+        if (this.isDark || !color || !color.startsWith('#') || color.length !== 7) return color;
+        const r = parseInt(color.slice(1, 3), 16);
+        const g = parseInt(color.slice(3, 5), 16);
+        const b = parseInt(color.slice(5, 7), 16);
+        if (isNaN(r) || isNaN(g) || isNaN(b)) return color;
+        const lum = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+        if (lum < 0.35) return color; // already dark
+        // Lerp toward black 55% to ensure contrast
+        const t = 0.55;
+        const nr = Math.round(r * (1 - t));
+        const ng = Math.round(g * (1 - t));
+        const nb = Math.round(b * (1 - t));
+        return `#${nr.toString(16).padStart(2,'0')}${ng.toString(16).padStart(2,'0')}${nb.toString(16).padStart(2,'0')}`;
+    }
 
     render(state: BoardState, externalData?: Map<string, any>) {
         if (!this.ctx) return;
@@ -39,8 +100,9 @@ export class PizarronRenderer {
         const { viewport, nodes, order, selection, uiFlags, interactionState } = state;
 
         // 1. Clear & Background
-        // Detect Dark Mode (Simple DOM check as Renderer is outside React context usually)
-        const isDark = document.documentElement.classList.contains('dark');
+        // Detect Dark Mode once per frame and store as class property so all draw methods can use it
+        this.isDark = document.documentElement.classList.contains('dark');
+        const isDark = this.isDark;
 
         ctx.fillStyle = isDark ? '#020617' : '#f8fafc'; // slate-950 or slate-50
         ctx.fillRect(0, 0, this.width, this.height);
@@ -587,10 +649,10 @@ export class PizarronRenderer {
                     ctx.fillStyle = grd;
                 } catch (e) {
                     // Fallback on error
-                    ctx.fillStyle = node.content.color || '#cbd5e1';
+                    ctx.fillStyle = this.applyTheme(node.content.color || '#cbd5e1');
                 }
             } else {
-                ctx.fillStyle = node.content.color || '#cbd5e1';
+                ctx.fillStyle = this.applyTheme(node.content.color || '#cbd5e1');
             }
             ctx.strokeStyle = borderColor;
             ctx.lineWidth = borderWidth;
@@ -966,15 +1028,15 @@ export class PizarronRenderer {
                     ctx.restore();
                 } else {
                     // Loading state
-                    ctx.fillStyle = '#eff6ff';
+                    ctx.fillStyle = this.dk('#eff6ff', '#1e293b');
                     ctx.fillRect(0, 0, node.w, node.h);
                     // Optional: draw loading indicator
                 }
             } else {
                 // No Source / Placeholder
-                ctx.fillStyle = '#cbd5e1';
+                ctx.fillStyle = this.dk('#cbd5e1', '#334155');
                 ctx.fillRect(0, 0, node.w, node.h);
-                ctx.fillStyle = '#64748b';
+                ctx.fillStyle = this.dk('#64748b', '#94a3b8');
                 ctx.font = '12px sans-serif';
                 ctx.fillText("IMG", node.w / 2 - 10, node.h / 2);
             }
@@ -991,10 +1053,10 @@ export class PizarronRenderer {
                 grd.addColorStop(1, g.end);
                 ctx.fillStyle = grd;
             } else {
-                ctx.fillStyle = node.content.color || '#f8fafc';
+                ctx.fillStyle = this.applyTheme(node.content.color || this.dk('#f8fafc', '#1e293b')); // board bg
             }
             const borderWidth = node.content.borderWidth || 2;
-            const borderColor = node.content.borderColor || '#e2e8f0';
+            const borderColor = node.content.borderColor || this.dk('#e2e8f0', '#334155');
 
             ctx.beginPath();
             if (ctx.roundRect) ctx.roundRect(0, 0, node.w, node.h, 16);
@@ -1008,7 +1070,7 @@ export class PizarronRenderer {
                 ctx.strokeStyle = borderColor;
                 if (borderWidth > 0) ctx.stroke();
                 // Draw simplified title bar
-                ctx.fillStyle = '#94a3b8';
+                ctx.fillStyle = this.dk('#94a3b8', '#64748b');
                 ctx.fillRect(20, 20, node.w - 40, 10);
                 return;
             }
@@ -1054,57 +1116,58 @@ export class PizarronRenderer {
             ctx.strokeStyle = borderColor;
             if (borderWidth > 0) ctx.stroke();
 
-            // Title
-            ctx.fillStyle = node.content.titleColor || '#94a3b8';
-            ctx.font = `bold ${node.content.fontSize || 14}px "${node.content.fontFamily || 'Inter'}", sans-serif`;
-            ctx.textBaseline = 'top';
-            ctx.fillText((node.content.title || 'BOARD').toUpperCase(), 20, 20);
+            // When a zone structure is active, zones define all content — skip title/body
+            if (!node.structure) {
+                // Title
+                ctx.fillStyle = node.content.titleColor || this.dk('#94a3b8', '#64748b');
+                ctx.font = `bold ${node.content.fontSize || 14}px "${node.content.fontFamily || 'Inter'}", sans-serif`;
+                ctx.textBaseline = 'top';
+                ctx.fillText((node.content.title || 'BOARD').toUpperCase(), 20, 20);
 
-            // Body (Lists)
-            if (node.content.body) {
-                const startY = 50;
-                let cursorY = startY;
-                ctx.fillStyle = '#334155';
-                ctx.font = `14px "${node.content.fontFamily || 'Inter'}", sans-serif`;
-                const lineHeight = 20;
+                // Body (Lists)
+                if (node.content.body) {
+                    const startY = 50;
+                    let cursorY = startY;
+                    ctx.fillStyle = this.dk('#334155', '#94a3b8');
+                    ctx.font = `14px "${node.content.fontFamily || 'Inter'}", sans-serif`;
+                    const lineHeight = 20;
 
-                const lines = node.content.body.split('\n');
-                lines.forEach(line => {
-                    if (cursorY > node.h - 20) return; // Clip
+                    const lines = node.content.body.split('\n');
+                    lines.forEach(line => {
+                        if (cursorY > node.h - 20) return;
 
-                    if (line.trim() === '---') {
-                        ctx.beginPath();
-                        ctx.moveTo(20, cursorY + 10);
-                        ctx.lineTo(node.w - 20, cursorY + 10);
-                        ctx.strokeStyle = '#cbd5e1';
-                        ctx.lineWidth = 1;
-                        ctx.stroke();
-                        cursorY += 20;
-                        return;
-                    }
+                        if (line.trim() === '---') {
+                            ctx.beginPath();
+                            ctx.moveTo(20, cursorY + 10);
+                            ctx.lineTo(node.w - 20, cursorY + 10);
+                            ctx.strokeStyle = this.dk('#cbd5e1', '#475569');
+                            ctx.lineWidth = 1;
+                            ctx.stroke();
+                            cursorY += 20;
+                            return;
+                        }
 
-                    let text = line;
-                    let offsetX = 20;
+                        let text = line;
+                        let offsetX = 20;
 
-                    if (line.trim().startsWith('- ')) {
-                        // Bullet
-                        ctx.beginPath();
-                        ctx.arc(28, cursorY + 8, 3, 0, Math.PI * 2);
-                        ctx.fill();
-                        text = line.replace('- ', '');
-                        offsetX = 38;
-                    } else if (/^\d+\.\s/.test(line.trim())) {
-                        // Number
-                        const match = line.trim().match(/^(\d+\.)\s/);
-                        const prefix = match ? match[1] : '';
-                        ctx.fillText(prefix, 20, cursorY);
-                        text = line.replace(/^\d+\.\s/, '');
-                        offsetX = 38;
-                    }
+                        if (line.trim().startsWith('- ')) {
+                            ctx.beginPath();
+                            ctx.arc(28, cursorY + 8, 3, 0, Math.PI * 2);
+                            ctx.fill();
+                            text = line.replace('- ', '');
+                            offsetX = 38;
+                        } else if (/^\d+\.\s/.test(line.trim())) {
+                            const match = line.trim().match(/^(\d+\.)\s/);
+                            const prefix = match ? match[1] : '';
+                            ctx.fillText(prefix, 20, cursorY);
+                            text = line.replace(/^\d+\.\s/, '');
+                            offsetX = 38;
+                        }
 
-                    ctx.fillText(text, offsetX, cursorY);
-                    cursorY += lineHeight;
-                });
+                        ctx.fillText(text, offsetX, cursorY);
+                        cursorY += lineHeight;
+                    });
+                }
             }
         }
         else if (node.type === 'group') {
@@ -1113,11 +1176,11 @@ export class PizarronRenderer {
         }
         else {
             // Card / Generic
-            ctx.fillStyle = node.content.color || '#ffffff';
+            ctx.fillStyle = this.applyTheme(node.content.color || this.dk('#ffffff', '#1e293b'));
             ctx.fillRect(0, 0, node.w, node.h);
-            ctx.strokeStyle = '#e2e8f0';
+            ctx.strokeStyle = this.dk('#e2e8f0', '#334155');
             ctx.strokeRect(0, 0, node.w, node.h);
-            ctx.fillStyle = '#0f172a';
+            ctx.fillStyle = this.dk('#0f172a', '#f1f5f9');
             const fontSize = node.content.fontSize || 14;
             ctx.font = `bold ${fontSize}px "${node.content.fontFamily || 'Inter'}", sans-serif`;
             ctx.textBaseline = 'top';
@@ -1127,7 +1190,9 @@ export class PizarronRenderer {
             if (node.content.status) {
                 const s = node.content.status;
                 const statusColor = s === 'done' ? '#22c55e' : s === 'in-progress' ? '#3b82f6' : '#94a3b8';
-                const statusBg = s === 'done' ? '#dcfce7' : s === 'in-progress' ? '#dbeafe' : '#f1f5f9';
+                const statusBg = this.isDark
+                    ? (s === 'done' ? '#14532d' : s === 'in-progress' ? '#1e3a5f' : '#1e293b')
+                    : (s === 'done' ? '#dcfce7' : s === 'in-progress' ? '#dbeafe' : '#f1f5f9');
 
                 // Draw pill at bottom right
                 const pillW = 60, pillH = 20;
@@ -1152,7 +1217,7 @@ export class PizarronRenderer {
         if (anim.hoverOpacity > 0.01) {
             ctx.save();
             ctx.globalAlpha = anim.hoverOpacity;
-            ctx.strokeStyle = '#94a3b8'; // Slate-400
+            ctx.strokeStyle = this.dk('#94a3b8', '#64748b'); // Slate-400/500
             ctx.lineWidth = 2; // Fixed 2px border? Or 2/zoom? Let's use 2px visual.
             // But we are in node space (w, h).
             // Context scale is applied? 
@@ -1190,8 +1255,9 @@ export class PizarronRenderer {
             ctx.font = `500 ${Math.max(10, 12 / zoom)}px Inter, sans-serif`;
             ctx.textBaseline = 'top';
 
-            node.structure.zones.forEach(zone => {
-                const gap = node.structure.gap || 0;
+            const structure = node.structure;
+            structure.zones.forEach(zone => {
+                const gap = structure.gap || 0;
                 // Calculate percentages to pixels
                 const baseZx = zone.x * w;
                 const baseZy = zone.y * h;
@@ -1228,7 +1294,7 @@ export class PizarronRenderer {
                     else ctx.rect(zx, zy, zw, zh);
                     ctx.fill();
                 } else if (zone.style?.backgroundColor || zone.style?.shading) {
-                    ctx.fillStyle = zone.style.backgroundColor || zone.style.shading!;
+                    ctx.fillStyle = this.adaptZoneBg(zone.style.backgroundColor || zone.style.shading!);
                     if (ctx.roundRect) ctx.roundRect(zx, zy, zw, zh, zone.style?.borderRadius || 0);
                     else ctx.rect(zx, zy, zw, zh);
                     ctx.fill();
@@ -1240,7 +1306,7 @@ export class PizarronRenderer {
                 // Border
                 if (zone.style?.borderWidth || zone.style?.dashed) {
                     ctx.beginPath();
-                    ctx.strokeStyle = zone.style.borderColor || (zone.style.dashed ? '#94a3b8' : 'transparent');
+                    ctx.strokeStyle = this.adaptZoneTitleColor(zone.style.borderColor || (zone.style.dashed ? '#94a3b8' : 'transparent'));
                     ctx.lineWidth = (zone.style.borderWidth || 1) / zoom; // Scale border correctly? Usually we want screen pixels or world pixels? If resizing, world is better.
                     // Wait, renderer scale is applied at top level. 
                     // But here we are drawing in world coords?
@@ -1268,26 +1334,26 @@ export class PizarronRenderer {
                     // Draw Dashed Border if enabled
                     if (zone.style?.dashed) {
                         ctx.save();
-                        ctx.strokeStyle = '#94a3b8';
+                        ctx.strokeStyle = this.dk('#94a3b8', '#475569');
                         ctx.setLineDash([4, 4]);
                         ctx.strokeRect(zx, zy, zw, zh);
                         ctx.restore();
                     }
 
-                    // 3. Label (Title Section)
-                    const showTitle = zone.style?.showLabel !== false;
-                    const titleHeightBase = showTitle ? 24 : 0;
+                    // 3. Label (Title Section) — hidden when showLabel:false or label is empty
+                    const showTitle = zone.style?.showLabel !== false && !!zone.label;
+                    const titleHeightBase = showTitle ? 22 : 0;
                     const titleGap = zone.style?.titleGap ?? 2;
                     const contentOffsetY = titleHeightBase + titleGap;
 
                     // Draw Title Background
                     if (showTitle && zone.style?.titleBackgroundColor && zone.style.titleBackgroundColor !== 'transparent') {
-                        ctx.fillStyle = zone.style.titleBackgroundColor;
+                        ctx.fillStyle = this.adaptZoneBg(zone.style.titleBackgroundColor, 0.68);
                         ctx.fillRect(zx, zy, zw, titleHeightBase);
                     }
 
                     if (showTitle && zoom > 0.4) {
-                        ctx.fillStyle = zone.style?.titleColor || '#64748b';
+                        ctx.fillStyle = this.adaptZoneTitleColor(zone.style?.titleColor || this.dk('#64748b', '#94a3b8'));
                         const tSize = zone.style?.titleFontSize || 12;
                         ctx.font = `700 ${Math.max(10, tSize / zoom)}px Inter, sans-serif`;
                         ctx.textBaseline = 'middle'; // Center vertically in title bar
@@ -1332,20 +1398,30 @@ export class PizarronRenderer {
                         ctx.fillStyle = zone.content.style.backgroundColor;
                         ctx.fillRect(0, 0, zw, itemH);
                     }
-                    // Text
+                    // Text (user content or placeholder hint) — adapt color for light mode
+                    const rawZoneTextColor = zone.content?.style?.color || zone.style?.titleColor || (this.isDark ? '#cbd5e1' : '#334155');
+                    const zoneTextColor = this.isDark ? rawZoneTextColor : this.adaptZoneTitleColor(rawZoneTextColor);
                     if (zone.content && zone.content.text) {
                         const proxyNode: any = {
                             w: zw,
                             h: itemH,
                             content: {
                                 title: zone.content.text,
-                                fontSize: 14,
-                                color: '#334155',
+                                fontSize: 13,
+                                color: zoneTextColor,
                                 ...zone.content.style,
                                 padding: 4
                             }
                         };
                         this.drawText(ctx, proxyNode, zoom);
+                    } else if (zoom > 0.5 && zone.placeholderText) {
+                        // Placeholder hint — dimmed
+                        ctx.save();
+                        ctx.fillStyle = zoneTextColor + '55';
+                        ctx.font = `400 ${Math.max(9, 11 / zoom)}px Inter, sans-serif`;
+                        ctx.textBaseline = 'top';
+                        ctx.fillText(zone.placeholderText, 6, 6, zw - 12);
+                        ctx.restore();
                     }
 
                     // --- DRAW EXTRA SECTIONS ---
@@ -1366,7 +1442,7 @@ export class PizarronRenderer {
                                 content: {
                                     title: sec.content.text,
                                     fontSize: 14,
-                                    color: '#334155',
+                                    color: this.dk('#334155', '#cbd5e1'),
                                     ...sec.content.style,
                                     padding: 4
                                 }
@@ -1573,7 +1649,7 @@ export class PizarronRenderer {
             { x: 0, y: node.h }     // SW
         ];
 
-        ctx.fillStyle = '#ffffff';
+        ctx.fillStyle = this.dk('#ffffff', '#1e293b');
         ctx.strokeStyle = color;
         ctx.lineWidth = 2 / zoom; // Thicker handle border
 
@@ -1600,7 +1676,7 @@ export class PizarronRenderer {
         // Handle Circle
         ctx.beginPath();
         ctx.arc(rotX, rotY, rotRad, 0, Math.PI * 2);
-        ctx.fillStyle = '#ffffff';
+        ctx.fillStyle = this.dk('#ffffff', '#1e293b');
         ctx.fill();
         ctx.stroke();
     }
@@ -1643,8 +1719,8 @@ export class PizarronRenderer {
 
     private drawIngredientNode(ctx: CanvasRenderingContext2D, node: BoardNode, zoom: number, data?: any) {
         const r = node.content.borderRadius || 8;
-        const color = '#ffffff';
-        const borderColor = '#e2e8f0';
+        const color = this.dk('#ffffff', '#1e293b');
+        const borderColor = this.dk('#e2e8f0', '#334155');
         const accentColor = '#22c55e';
 
         ctx.fillStyle = color;
@@ -1669,7 +1745,7 @@ export class PizarronRenderer {
         const itemData = data || node.content.snapshotData;
         const name = itemData?.name || itemData?.nombre || node.content.title || 'Unknown Ingredient';
 
-        ctx.fillStyle = '#0f172a';
+        ctx.fillStyle = this.dk('#0f172a', '#f1f5f9');
         ctx.font = '600 16px Inter, sans-serif';
         ctx.textAlign = 'left';
         ctx.textBaseline = 'top';
@@ -1682,7 +1758,7 @@ export class PizarronRenderer {
         const price = `$${costVal.toFixed(2)}`;
         const unit = itemData?.format || itemData?.unidad || node.content.unit || 'unit';
 
-        ctx.fillStyle = '#64748b';
+        ctx.fillStyle = this.dk('#64748b', '#94a3b8');
         ctx.font = '500 13px Inter, sans-serif';
         ctx.fillText(`${price} / ${unit}`, 16, 45);
 
@@ -1704,12 +1780,12 @@ export class PizarronRenderer {
         // ING Pill
         const px = node.w - 35;
         const py = node.h - 22;
-        ctx.fillStyle = '#f0fdf4';
+        ctx.fillStyle = this.dk('#f0fdf4', '#14532d');
         ctx.beginPath();
         if (ctx.roundRect) ctx.roundRect(px, py, 28, 16, 4);
         else ctx.fillRect(px, py, 28, 16);
         ctx.fill();
-        ctx.fillStyle = '#166534';
+        ctx.fillStyle = this.dk('#166534', '#4ade80');
         ctx.font = 'bold 10px Inter, sans-serif';
         ctx.textAlign = 'center';
         ctx.fillText("ING", px + 14, py + 3);
@@ -1717,8 +1793,8 @@ export class PizarronRenderer {
 
     private drawRecipeNode(ctx: CanvasRenderingContext2D, node: BoardNode, zoom: number, data?: any) {
         const r = node.content.borderRadius || 8;
-        const color = '#ffffff';
-        const borderColor = '#e2e8f0';
+        const color = this.dk('#ffffff', '#1e293b');
+        const borderColor = this.dk('#e2e8f0', '#334155');
         const accentColor = '#3b82f6';
 
         ctx.fillStyle = color;
@@ -1743,7 +1819,7 @@ export class PizarronRenderer {
         const itemData = data || node.content.snapshotData;
         const name = itemData?.name || itemData?.nombre || node.content.title || 'Unknown Recipe';
 
-        ctx.fillStyle = '#0f172a';
+        ctx.fillStyle = this.dk('#0f172a', '#f1f5f9');
         ctx.font = '600 16px Inter, sans-serif';
         ctx.textAlign = 'left';
         ctx.textBaseline = 'top';
@@ -1754,7 +1830,7 @@ export class PizarronRenderer {
         // Cost & Margin
         const costVal = itemData?.cost || itemData?.costoTotal || node.content.cost || 0;
         const cost = `$${costVal.toFixed(2)}`;
-        ctx.fillStyle = '#64748b';
+        ctx.fillStyle = this.dk('#64748b', '#94a3b8');
         ctx.font = '500 13px Inter, sans-serif';
         ctx.fillText(`Costo Total: ${cost}`, 16, 45);
 
@@ -1769,14 +1845,14 @@ export class PizarronRenderer {
         // Ingredients List
         const ingredients = itemData?.ingredientes || [];
         if (ingredients.length > 0) {
-            ctx.fillStyle = '#e2e8f0';
+            ctx.fillStyle = this.dk('#e2e8f0', '#334155');
             ctx.fillRect(16, 95, node.w - 32, 1);
 
-            ctx.fillStyle = '#94a3b8';
+            ctx.fillStyle = this.dk('#94a3b8', '#64748b');
             ctx.font = '600 11px Inter, sans-serif';
             ctx.fillText('INGREDIENTES:', 16, 105);
 
-            ctx.fillStyle = '#475569';
+            ctx.fillStyle = this.dk('#475569', '#94a3b8');
             ctx.font = '500 11px Inter, sans-serif';
             let y = 120;
             ingredients.slice(0, 10).forEach((ing: any) => {
@@ -1789,7 +1865,7 @@ export class PizarronRenderer {
                 y += 16;
             });
             if (ingredients.length > 10) {
-                ctx.fillStyle = '#94a3b8';
+                ctx.fillStyle = this.dk('#94a3b8', '#64748b');
                 ctx.font = '400 10px Inter, sans-serif';
                 ctx.fillText(`+ ${ingredients.length - 10} más...`, 20, y);
             }
@@ -1798,12 +1874,12 @@ export class PizarronRenderer {
         // REC Pill
         const px = node.w - 35;
         const py = node.h - 22;
-        ctx.fillStyle = '#eff6ff';
+        ctx.fillStyle = this.dk('#eff6ff', '#1e3a5f');
         ctx.beginPath();
         if (ctx.roundRect) ctx.roundRect(px, py, 28, 16, 4);
         else ctx.fillRect(px, py, 28, 16);
         ctx.fill();
-        ctx.fillStyle = '#1e40af';
+        ctx.fillStyle = this.dk('#1e40af', '#60a5fa');
         ctx.font = 'bold 10px Inter, sans-serif';
         ctx.textAlign = 'center';
         ctx.fillText("REC", px + 14, py + 3);
@@ -1813,8 +1889,8 @@ export class PizarronRenderer {
 
     private drawCostingNode(ctx: CanvasRenderingContext2D, node: BoardNode, zoom: number, data?: any) {
         const r = node.content.borderRadius || 12;
-        const color = '#fefce8';
-        const borderColor = '#fbbf24';
+        const color = this.dk('#fefce8', '#292524');
+        const borderColor = this.dk('#fbbf24', '#78350f');
         const accentColor = '#f59e0b';
 
         ctx.fillStyle = color;
@@ -1841,7 +1917,7 @@ export class PizarronRenderer {
         if (zoom < 0.2) return;
 
         const title = data?.recipeName || node.content.title || 'Select Recipe';
-        ctx.fillStyle = '#78350f';
+        ctx.fillStyle = this.dk('#78350f', '#fcd34d');
         ctx.font = '600 15px Inter, sans-serif';
         ctx.textAlign = 'left';
         ctx.textBaseline = 'top';
@@ -1850,7 +1926,7 @@ export class PizarronRenderer {
         if (zoom < 0.4) return;
 
         if (data) {
-            ctx.fillStyle = '#92400e';
+            ctx.fillStyle = this.dk('#92400e', '#d97706');
             ctx.font = '500 13px Inter, sans-serif';
             ctx.fillText(`Cost: $${data.totalCost.toFixed(2)}`, 16, 45);
             ctx.fillText(`Price: $${data.recommendedPrice.toFixed(2)}`, 16, 65);
@@ -1976,8 +2052,8 @@ export class PizarronRenderer {
 
     private drawMenuSectionNode(ctx: CanvasRenderingContext2D, node: BoardNode, zoom: number) {
         const r = node.content.borderRadius || 8;
-        const color = '#f8fafc';
-        const borderColor = '#e2e8f0';
+        const color = this.dk('#f8fafc', '#1e293b');
+        const borderColor = this.dk('#e2e8f0', '#334155');
 
         ctx.fillStyle = color;
         ctx.beginPath();
@@ -1989,7 +2065,7 @@ export class PizarronRenderer {
         ctx.lineWidth = 1 / zoom;
         ctx.stroke();
 
-        ctx.fillStyle = '#1e293b';
+        ctx.fillStyle = this.dk('#1e293b', '#f1f5f9');
         ctx.font = 'bold 18px Inter, sans-serif';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
@@ -1998,8 +2074,8 @@ export class PizarronRenderer {
 
     private drawMenuItemNode(ctx: CanvasRenderingContext2D, node: BoardNode, zoom: number, data?: any) {
         const r = node.content.borderRadius || 12;
-        const color = '#ffffff';
-        const borderColor = '#cbd5e1';
+        const color = this.dk('#ffffff', '#1e293b');
+        const borderColor = this.dk('#cbd5e1', '#334155');
         const accentColor = '#3b82f6'; // Blue accent for menu items
 
         ctx.fillStyle = color;
@@ -2025,7 +2101,7 @@ export class PizarronRenderer {
         if (zoom < 0.2) return;
 
         const title = data?.name || node.content.title || 'Menu Item';
-        ctx.fillStyle = '#1e293b';
+        ctx.fillStyle = this.dk('#1e293b', '#f1f5f9');
         ctx.font = '600 15px Inter, sans-serif';
         ctx.textAlign = 'left';
         ctx.textBaseline = 'top';

@@ -151,12 +151,6 @@ export const PizarronRoot: React.FC<PizarronRootProps> = ({ appId, boardId, user
                         {/* MiniToolbar - appears above selected elements */}
                         <MiniToolbar />
 
-                        {/* Bottom Status */}
-                        <div className="absolute bottom-6 right-6 pointer-events-none">
-                            <div className="bg-white/90 backdrop-blur shadow-sm border border-slate-200 rounded-full px-3 py-1.5 pointer-events-auto text-xs font-mono text-slate-600">
-                                Pizarrón 2.0 Beta
-                            </div>
-                        </div>
                     </>
                 )}
             </div>

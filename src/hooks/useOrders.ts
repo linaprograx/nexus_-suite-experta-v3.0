@@ -18,8 +18,10 @@ export interface Order {
     // The previous mockup had "Order Sheet" which seemed mixed.
     items: OrderItem[];
     totalEstimatedCost: number;
-    status: 'draft' | 'completed' | 'cancelled';
+    // draft → sent (enviado al proveedor, sin tocar stock) → completed (recibido: crea compras y suma stock)
+    status: 'draft' | 'sent' | 'completed' | 'cancelled';
     createdAt: Date;
+    sentAt?: Date;
     name?: string; // e.g. "Pedido Semanal"
 }
 
@@ -76,9 +78,10 @@ export const useOrders = () => {
         await deleteDoc(doc(db, `users/${userId}/orders`, orderId));
     };
 
-    const updateOrderStatus = async (orderId: string, status: 'completed' | 'cancelled') => {
+    const updateOrderStatus = async (orderId: string, status: 'sent' | 'completed' | 'cancelled') => {
         if (!userId || !db) return;
-        await updateDoc(doc(db, `users/${userId}/orders`, orderId), { status });
+        const extra = status === 'sent' ? { sentAt: serverTimestamp() } : {};
+        await updateDoc(doc(db, `users/${userId}/orders`, orderId), { status, ...extra });
     };
 
     return {

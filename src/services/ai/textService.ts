@@ -35,6 +35,32 @@ function openCircuit(): void {
     }
 }
 
+/** Public read of the circuit-breaker state (true = gateway known to be down). */
+export function isGatewayDown(): boolean {
+    return isCircuitOpen();
+}
+
+/**
+ * Proactive health check — actively pings the gateway and returns whether the
+ * AI is reachable. Any HTTP response (even 404) means the server is UP; only a
+ * network/connection failure means it's down. Used to drive the "IA-off"
+ * indicator reliably (independent of the circuit-breaker cooldown).
+ */
+export async function checkGatewayReachable(timeoutMs = 3500): Promise<boolean> {
+    try {
+        const controller = new AbortController();
+        const t = setTimeout(() => controller.abort(), timeoutMs);
+        // no-cors: we only care if the TCP connection succeeds, not the response
+        // body. This avoids CORS false-positives (opaque response still resolves;
+        // only a real connection failure throws).
+        await fetch(AI_GATEWAY_URL, { method: 'GET', mode: 'no-cors', signal: controller.signal });
+        clearTimeout(t);
+        return true; // server reachable
+    } catch {
+        return false; // connection-level failure → gateway is down
+    }
+}
+
 /** Manually reset the circuit breaker (e.g. after starting the gateway). */
 export function resetGatewayCircuit(): void {
     circuitOpen = false;

@@ -10,6 +10,8 @@ export const XP_SOURCES = {
     CORRECT_ANSWER: 10,
     PERFECT_SCORE_BONUS: 100,
     SPEED_RUN_BONUS: 2, // Multiplier per second remaining? Or flat bonus?
+    STREAK_BONUS_PER_DAY: 10, // XP per day of active streak
+    STREAK_BONUS_CAP: 100,    // max streak bonus
     DIFFICULTY_MULTIPLIER: {
         'Fácil': 1,
         'Normal': 1.5,

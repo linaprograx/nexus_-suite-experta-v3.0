@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { getCreativeWeekInsights, CreativeWeekData } from './creativeWeekProService';
-import { PizarronTask } from '../../../types';
+import { PizarronTask } from '../../types';
 
 export const useCreativeWeekPro = (tasks: PizarronTask[], userName: string) => {
   const [data, setData] = useState<CreativeWeekData | null>(null);

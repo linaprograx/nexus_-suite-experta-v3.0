@@ -1,6 +1,6 @@
 import React from 'react';
 import { Firestore } from 'firebase/firestore';
-import { TrendResult } from '../../types';
+import { TrendResult } from '../types';
 import { PremiumLayout } from '../components/layout/PremiumLayout';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';

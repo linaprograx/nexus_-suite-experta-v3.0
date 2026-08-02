@@ -31,7 +31,7 @@ export const powerTechCoherence = async (ingredients: string[]) => {
 
   try {
     const result = await callGeminiApi(prompt, "Eres un director de I+D en un laboratorio de coctelería de vanguardia, experto en procesos y técnicas.", { responseMimeType: 'application/json', responseSchema: schema });
-    const cleanedJson = cleanJSON(result.text);
+    const cleanedJson = cleanJSON((result as any).text);
 
     if (!cleanedJson.sections || cleanedJson.sections.length < 2) {
       throw new Error("La respuesta de la API no es válida.");

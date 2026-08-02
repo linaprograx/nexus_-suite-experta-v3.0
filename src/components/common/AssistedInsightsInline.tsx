@@ -94,7 +94,7 @@ export const AssistedInsightsInline: React.FC<AssistedInsightsInlineProps> = ({ 
 
                                     {/* Evidence */}
                                     <div className="grid grid-cols-2 gap-2">
-                                        {insight.evidence.map((ev, idx) => (
+                                        {(insight.evidence || []).map((ev, idx) => (
                                             <div key={idx} className="bg-white/50 dark:bg-black/20 p-2 rounded border border-slate-100 dark:border-slate-800">
                                                 <div className="text-[10px] text-slate-500 uppercase tracking-wider">{ev.label}</div>
                                                 <div className="text-xs font-medium text-slate-800 dark:text-slate-200">{ev.value}</div>

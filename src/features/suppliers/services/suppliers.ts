@@ -45,8 +45,12 @@ export const suppliersService = {
 
         try {
             const suppliersRef = collection(db, `users/${userId}/${COLLECTION_NAME}`);
+            // Strip undefined fields (Firestore rejects them) — optional fields may be unset
+            const clean = Object.fromEntries(
+                Object.entries(supplier).filter(([, v]) => v !== undefined)
+            );
             const docRef = await addDoc(suppliersRef, {
-                ...supplier,
+                ...clean,
                 createdAt: serverTimestamp(),
                 updatedAt: serverTimestamp(),
                 productList: [] // Initialize empty

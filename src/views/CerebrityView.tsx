@@ -1,4 +1,6 @@
 import React from 'react';
+import { useResponsive } from '../hooks/useResponsive';
+import { StackedMobileShell } from '../components/layout/StackedMobileShell';
 import { Firestore, collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { FirebaseStorage, ref, uploadString, getDownloadURL } from 'firebase/storage';
 import { useLocation } from 'react-router-dom';
@@ -8,7 +10,7 @@ import { CerebrityHistorySidebar } from '../components/cerebrity/CerebrityHistor
 import { TheLabHistorySidebar } from '../components/cerebrity/TheLabHistorySidebar';
 import PowerTreeColumn from '../components/cerebrity/PowerTreeColumn';
 import LabView from './LabView';
-import { generateText } from '../services/ai/textService';
+import { generateText, isGatewayDown, checkGatewayReachable } from '../services/ai/textService';
 import { ImageGenerator } from '../lib/ai/image/imageGenerator';
 import { Type } from "@google/genai";
 import { Modal } from '../components/ui/Modal';
@@ -85,6 +87,7 @@ const SaveModal = ({ isOpen, onClose, options, powerName, onConfirm }: { isOpen:
 import { useRecipes } from '../hooks/useRecipes';
 import { useIngredients } from '../hooks/useIngredients';
 import { useCerebrityOrchestrator } from '../hooks/useCerebrityOrchestrator';
+import { usePizarronData } from '../hooks/usePizarronData';
 
 interface CerebrityViewProps {
   // No persistent props needed as they are stored in Zustand or Auth context
@@ -99,9 +102,37 @@ const CerebrityView: React.FC<CerebrityViewProps> = () => {
   const { recipes: allRecipes } = useRecipes();
   const { ingredients: allIngredients } = useIngredients();
   const { actions: orchestratorActions, state: orchestratorState } = useCerebrityOrchestrator();
+  const { activeBoardId } = usePizarronData();
   const location = useLocation();
+  const [saveToast, setSaveToast] = React.useState<string | null>(null);
+  const [aiOffline, setAiOffline] = React.useState(isGatewayDown());
 
-  const [activeTab, setActiveTab] = React.useState<'creativity' | 'makeMenu' | 'critic' | 'lab' | 'trendLocator'>('creativity');
+  // Reliable AI-off indicator via proactive health check (independent of the
+  // circuit-breaker cooldown, so the badge stays accurate while the gateway is down).
+  React.useEffect(() => {
+    let alive = true;
+    const probe = async () => {
+      const reachable = await checkGatewayReachable();
+      if (alive) setAiOffline(!reachable);
+    };
+    probe(); // immediate on mount
+    const id = setInterval(probe, 15000);
+    return () => { alive = false; clearInterval(id); };
+  }, []);
+
+  const [activeTab, setActiveTab] = React.useState<'creativity' | 'makeMenu' | 'critic' | 'lab' | 'trendLocator'>(() => {
+    // Honor a tab requested from another module (e.g. Grimorio recipe tools)
+    try {
+      const requested = sessionStorage.getItem('cerebrity_tab');
+      if (requested) {
+        sessionStorage.removeItem('cerebrity_tab');
+        if (['creativity', 'makeMenu', 'critic', 'lab', 'trendLocator'].includes(requested)) {
+          return requested as any;
+        }
+      }
+    } catch { /* ignore */ }
+    return 'creativity';
+  });
   const [selectedRecipe, setSelectedRecipe] = React.useState<Recipe | null>(null);
   const [rawInput, setRawInput] = React.useState("");
   const [loading, setLoading] = React.useState(false);
@@ -567,25 +598,6 @@ const CerebrityView: React.FC<CerebrityViewProps> = () => {
     }
   }, [initialText, setTextToAnalyze, location.state]);
 
-  // Automatic Test for Phase 6
-  React.useEffect(() => {
-    const testPower = async () => {
-      console.log("--- STARTING AUTOMATED TEST ---");
-      // Set mock ingredients
-      setRawInput("pomelo, canela");
-
-      // Allow state to update before calling the handler
-      await new Promise(resolve => setTimeout(resolve, 100));
-
-      // Call the power click handler
-      await handlePowerClick("Creative Booster Avanzado");
-      console.log("--- AUTOMATED TEST COMPLETE ---");
-    };
-
-    // Run the test once on mount
-    // testPower(); // Temporarily disabled to avoid unwanted side effects on every load.
-  }, []);
-
   const handleGenerate = async () => {
     setLoading(true);
     setError(null);
@@ -635,8 +647,6 @@ const CerebrityView: React.FC<CerebrityViewProps> = () => {
 
       setResult(textResult);
 
-      setResult(textResult);
-
       // 2. Image Generation (Unified Engine)
       setImageLoading(true);
 
@@ -683,30 +693,33 @@ const CerebrityView: React.FC<CerebrityViewProps> = () => {
     } finally {
       setLoading(false);
       setImageLoading(false);
-    }
-  };
-
-  const handleSaveLabResultToPizarron = async (title: string, content: string) => {
-    if (!labResult) return;
-    const combination = labInputs.map(i => i.nombre).join(', ');
-    const taskContent = `[The Lab: ${combination}] ${title} - ${content}`.substring(0, 500);
-    try {
-      await addDoc(collection(db!, `users/${userId}/pizarron/tasks`), {
-        content: taskContent, status: 'Ideas', category: 'Ideas', createdAt: serverTimestamp(), boardId: 'general'
-      });
-      alert("Idea guardada en el Pizarrón.");
-    } catch (e) {
-      console.error("Error guardando en Pizarrón: ", e);
+      setAiOffline(isGatewayDown());
     }
   };
 
   const confirmSave = async (content: string, destination: 'pizarron' | 'recetas', powerName: string) => {
     try {
       if (destination === 'pizarron') {
+        // Write a proper Pizarrón card shape so it renders correctly on the
+        // user's active board (title/texto + type + position are required by
+        // the board reader; boardId must match a real board).
+        const title = `💡 ${powerName}`;
         await addDoc(collection(db!, `artifacts/${appId}/public/data/pizarron-tasks`), {
-          content: `[Cerebrity: ${powerName}] ${content}`.substring(0, 500), status: 'Ideas', category: 'Ideas', createdAt: serverTimestamp(), boardId: 'general'
+          type: 'card',
+          title,
+          texto: title,
+          body: content.substring(0, 1000),
+          position: { x: 80 + Math.round(Math.random() * 200), y: 80 + Math.round(Math.random() * 160) },
+          width: 240,
+          height: 140,
+          zIndex: 1,
+          boardId: activeBoardId,
+          style: { backgroundColor: '#ede9fe' },
+          createdAt: serverTimestamp(),
+          updatedAt: Date.now(),
         });
-        alert("Guardado en Pizarrón.");
+        setSaveToast('Idea guardada en el Pizarrón');
+        setTimeout(() => setSaveToast(null), 2500);
       } else {
         setShowRecipeModal(true, { nombre: `[${powerName}] Idea`, storytelling: content });
       }
@@ -735,18 +748,68 @@ const CerebrityView: React.FC<CerebrityViewProps> = () => {
     if (options.length > 0) {
       setSaveModalState({ isOpen: true, options, powerName });
     } else {
-      const contentToSave = JSON.stringify(output, null, 2);
-      // For single result, we could ask with a simpler modal or save directly.
-      // For now, let's just use Pizarron as default for single complex objects.
-      confirmSave(contentToSave, 'pizarron', powerName);
+      // Single-result powers (analysis, mapping...) → flatten to readable text
+      // instead of dumping raw JSON into the Pizarrón card.
+      confirmSave(flattenPowerOutput(output), 'pizarron', powerName);
     }
   };
 
+  /** Turns a structured power result into clean, human-readable text. */
+  const flattenPowerOutput = (output: any): string => {
+    if (!output || typeof output !== 'object') return String(output ?? '');
+    const parts: string[] = [];
+    if (output.summary) parts.push(output.summary);
+    if (typeof output.score === 'number') parts.push(`Puntuación: ${output.score}/100`);
+    if (output.explanation) parts.push(output.explanation);
+    (output.sections || []).forEach((s: any) => parts.push(`${s.heading}: ${s.content}`));
+    (output.lists || []).forEach((l: any) => parts.push(`${l.heading}:\n- ${(l.items || []).join('\n- ')}`));
+    (output.tables || []).forEach((t: any) => {
+      parts.push(t.heading);
+      (t.rows || []).forEach((row: string[]) => parts.push(`• ${row.join(' · ')}`));
+    });
+    return parts.filter(Boolean).join('\n\n') || 'Resultado generado por Cerebrity.';
+  };
+
+  // ── Columnas declaradas una vez, consumidas por escritorio y por móvil ──
+  const { isMobile, isTablet } = useResponsive();
+  const useStackedLayout = isMobile || isTablet;
+  const isSingleColumn = activeTab === 'makeMenu' || activeTab === 'critic';
+
+  // El color del módulo tiñe el agarre de las hojas y las pestañas de borde.
+  const accentClass = activeTab === 'creativity' ? 'bg-fuchsia-500'
+    : activeTab === 'lab' ? 'bg-violet-500'
+      : 'bg-cyan-500';
+
+  const historyColumn = activeTab === 'creativity'
+    ? <CerebrityHistorySidebar db={db!} userId={userId!} onLoadHistory={(item) => setResult(item)} />
+    : activeTab === 'lab'
+      ? <TheLabHistorySidebar db={db!} historyPath={`users/${userId}/the-lab-history`} onLoadHistory={(item) => setLabResult(item.result)} />
+      : <TrendHistorySidebar db={db!} trendHistoryPath={`users/${userId}/trend-history`} onLoadHistory={(item) => setTrendResults((item as any).results || [])} />;
+
+  const mainColumn = isSingleColumn
+    ? (activeTab === 'makeMenu' ? <MakeMenuView db={db!} userId={userId!} appId={appId!} /> : <CriticView />)
+    : activeTab === 'creativity'
+      ? <CreativityTab db={db!} userId={userId!} appId={appId!} allRecipes={allRecipes} selectedRecipe={selectedRecipe} setSelectedRecipe={setSelectedRecipe} rawInput={rawInput} setRawInput={setRawInput} handleGenerate={handleGenerate} loading={loading} imageLoading={imageLoading} error={error} result={result} setResult={setResult} onOpenRecipeModal={(r) => setShowRecipeModal(true, r)} />
+      : activeTab === 'lab'
+        ? <LabView db={db!} userId={userId!} appId={appId!} allIngredients={allIngredients} allRecipes={allRecipes} labResult={labResult} setLabResult={setLabResult} labInputs={labInputs} setLabInputs={setLabInputs} />
+        : <TrendLocatorTab loading={trendLoading} error={trendError} trendResults={filteredTrendResults} trendSources={[]} db={db!} userId={userId!} appId={appId!} trendHistoryPath={`users/${userId}/trend-history`} />;
+
+  const toolsColumn = activeTab === 'trendLocator'
+    ? <TrendLocatorControls sourceFilter={sourceFilter} setSourceFilter={setSourceFilter} topicFilter={topicFilter} setTopicFilter={setTopicFilter} keyword={keyword} setKeyword={setKeyword} loading={trendLoading} onSearch={handleTrendSearch} />
+    : <PowerTreeColumn mode={activeTab === 'creativity' ? 'cerebrity' : 'lab'} powers={allPowers} onClickPower={handlePowerClick} />;
+
   return (
-    <div className="h-[calc(100vh-80px)] w-full flex flex-col px-4 lg:px-8 py-6 relative">
+    <div className="min-h-full lg:h-[calc(100dvh-2rem)] w-full flex flex-col px-3 lg:px-8 py-3 lg:py-6 relative">
+      {/* Save toast */}
+      {saveToast && (
+        <div className="fixed top-6 right-6 z-[60] px-4 py-2.5 bg-emerald-500/90 text-white rounded-full text-xs font-bold uppercase tracking-widest shadow-lg backdrop-blur-md animate-in fade-in slide-in-from-top-2 duration-300 flex items-center gap-2">
+          <span>✓</span> {saveToast}
+        </div>
+      )}
+
       {/* Vibrant Gradient Background (Mobile Style) - First Child = Behind */}
       <div
-        className="absolute inset-0 pointer-events-none transition-all duration-700 ease-in-out rounded-3xl z-0"
+        className="absolute inset-x-0 top-0 h-[100dvh] lg:h-full pointer-events-none transition-all duration-700 ease-in-out rounded-3xl z-0"
         style={{
           background: activeTab === 'creativity'
             ? 'linear-gradient(180deg, #FF00CC 0%, rgba(255, 0, 204, 0.4) 30%, rgba(255, 0, 204, 0) 45%)'
@@ -761,12 +824,23 @@ const CerebrityView: React.FC<CerebrityViewProps> = () => {
       />
 
       {/* Mobile-Style Header (Desktop Adapted) - z-10 to stay on top */}
-      <div className="flex-shrink-0 mb-6 z-10 text-white relative">
+      <div className="flex-shrink-0 mb-3 lg:mb-6 z-10 text-white relative">
         <div className="mb-4 pl-2">
-          <h1 className="text-7xl font-black italic tracking-tighter leading-[0.8] mb-1 drop-shadow-xl"
-            style={{ fontFamily: 'Georgia, serif', textShadow: '0 4px 30px rgba(0,0,0,0.3)' }}>
-            Cerebrity
-          </h1>
+          <div className="flex items-center gap-3 flex-wrap">
+            <h1 className="text-5xl lg:text-7xl font-black italic tracking-tighter leading-[0.8] mb-1 drop-shadow-xl"
+              style={{ fontFamily: 'Georgia, serif', textShadow: '0 4px 30px rgba(0,0,0,0.3)' }}>
+              Cerebrity
+            </h1>
+            {aiOffline && (
+              <span
+                title="La IA no está disponible — el motor creativo necesita el AI Gateway activo"
+                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-400/20 border border-amber-300/40 text-amber-50 text-[10px] font-bold uppercase tracking-widest backdrop-blur-sm self-start mt-2"
+              >
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-300 animate-pulse" />
+                Modo IA-off
+              </span>
+            )}
+          </div>
           <p className="text-xl font-bold tracking-widest uppercase opacity-90 pl-1">
             {activeTab === 'creativity' ? 'SYNTHESIS' :
               activeTab === 'makeMenu' ? 'MAKE MENU' :
@@ -775,7 +849,7 @@ const CerebrityView: React.FC<CerebrityViewProps> = () => {
           </p>
         </div>
 
-        <div className="flex gap-3 overflow-x-auto py-4 px-6 scrollbar-hide">
+        <div className="flex gap-2 lg:gap-3 overflow-x-auto snap-x snap-mandatory py-2 lg:py-4 px-2 lg:px-6 scrollbar-hide">
           {[
             { id: 'creativity', label: 'SYNTHESIS', icon: 'auto_awesome', color: '#FF00CC' },
             { id: 'makeMenu', label: 'MAKE MENU', icon: 'edit_note', color: '#84CC16' },
@@ -808,49 +882,28 @@ const CerebrityView: React.FC<CerebrityViewProps> = () => {
           })}
         </div>
       </div>
-      <div className={`flex-1 ${(activeTab === 'makeMenu' || activeTab === 'critic') ? 'flex' : 'grid grid-cols-1 lg:grid-cols-[310px,minmax(0,1fr),320px] gap-6'} overflow-hidden rounded-3xl relative p-6`}>
-        {(activeTab === 'makeMenu' || activeTab === 'critic') ? (
-          <div className="h-full w-full min-h-0 flex flex-col relative overflow-y-auto">
-            {activeTab === 'makeMenu' ? (
-              <MakeMenuView db={db!} userId={userId!} appId={appId!} />
-            ) : (
-              <CriticView />
-            )}
-          </div>
-        ) : (
-          <>
-            <div className="h-full min-h-0 flex flex-col relative">
-              {activeTab === 'creativity' ? (
-                <CerebrityHistorySidebar db={db!} userId={userId!} onLoadHistory={(item) => setResult(item)} />
-              ) : activeTab === 'lab' ? (
-                <TheLabHistorySidebar db={db!} historyPath={`users/${userId}/the-lab-history`} onLoadHistory={(item) => setLabResult(item.result)} />
-              ) : (
-                <TrendHistorySidebar db={db!} trendHistoryPath={`users/${userId}/trend-history`} onLoadHistory={(item) => setTrendResults((item as any).results || [])} />
-              )}
-            </div>
-            <div className="h-full min-h-0 flex flex-col relative">
-              {activeTab === 'creativity' ? (
-                <CreativityTab db={db!} userId={userId!} appId={appId!} allRecipes={allRecipes} selectedRecipe={selectedRecipe} setSelectedRecipe={setSelectedRecipe} rawInput={rawInput} setRawInput={setRawInput} handleGenerate={handleGenerate} loading={loading} imageLoading={imageLoading} error={error} result={result} setResult={setResult} onOpenRecipeModal={(r) => setShowRecipeModal(true, r)} />
-              ) : activeTab === 'lab' ? (
-                <LabView db={db!} userId={userId!} appId={appId!} allIngredients={allIngredients} allRecipes={allRecipes} labResult={labResult} setLabResult={setLabResult} labInputs={labInputs} setLabInputs={setLabInputs} />
-              ) : (
-                <TrendLocatorTab loading={trendLoading} error={trendError} trendResults={filteredTrendResults} trendSources={[]} db={db!} userId={userId!} appId={appId!} trendHistoryPath={`users/${userId}/trend-history`} />
-              )}
-            </div>
-            <div className="h-full min-h-0 flex flex-col relative">
-              {activeTab === 'trendLocator' ? (
-                <TrendLocatorControls sourceFilter={sourceFilter} setSourceFilter={setSourceFilter} topicFilter={topicFilter} setTopicFilter={setTopicFilter} keyword={keyword} setKeyword={setKeyword} loading={trendLoading} onSearch={handleTrendSearch} />
-              ) : (
-                <PowerTreeColumn
-                  mode={activeTab === 'creativity' ? 'cerebrity' : 'lab'}
-                  powers={allPowers}
-                  onClickPower={handlePowerClick}
-                />
-              )}
-            </div>
-          </>
-        )}
-      </div>
+      {/* Las tres columnas se declaran una sola vez y las consumen ambos
+          modelos: la rejilla de escritorio y la pila móvil. */}
+      {isSingleColumn ? (
+        <div className="grow lg:h-full w-full lg:min-h-0 flex flex-col relative lg:overflow-y-auto rounded-3xl p-0 lg:p-6">
+          {mainColumn}
+        </div>
+      ) : useStackedLayout ? (
+        <StackedMobileShell
+          main={mainColumn}
+          left={historyColumn}
+          right={toolsColumn}
+          leftLabel="Historial"
+          rightLabel={activeTab === 'trendLocator' ? 'Filtros' : 'Poderes'}
+          accentClass={accentClass}
+        />
+      ) : (
+        <div className="flex-1 grid grid-cols-1 lg:grid-cols-[310px,minmax(0,1fr),320px] gap-4 lg:gap-6 lg:overflow-hidden rounded-3xl relative p-3 lg:p-6">
+          <div className="lg:h-full lg:min-h-0 flex flex-col relative">{historyColumn}</div>
+          <div className="lg:h-full lg:min-h-0 flex flex-col relative">{mainColumn}</div>
+          <div className="lg:h-full lg:min-h-0 flex flex-col relative">{toolsColumn}</div>
+        </div>
+      )}
       {
         isPowerModalOpen && (
           <Modal title={powerModalState?.title || ''} isOpen={isPowerModalOpen} onClose={() => { setIsPowerModalOpen(false); setStorytellingTheme(''); }}>

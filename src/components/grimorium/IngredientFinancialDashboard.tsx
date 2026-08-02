@@ -1,5 +1,5 @@
 import React from 'react';
-import { Ingredient } from '../../../types';
+import { Ingredient } from '../../types';
 import { Card } from '../ui/Card';
 import { Icon } from '../ui/Icon';
 import { ICONS } from '../ui/icons';
@@ -7,7 +7,6 @@ import { AreaChart, Area, XAxis, YAxis, Tooltip, BarChart, Bar, Cell } from 'rec
 import { ChartContainer } from '../ui/ChartContainer';
 
 interface IngredientFinancialDashboardProps {
-    selectedIngredient: Ingredient | null;
     selectedIngredient: Ingredient | null;
     allIngredients: Ingredient[];
     onFilterByStatus?: (status: string) => void;
@@ -25,7 +24,7 @@ export const IngredientFinancialDashboard: React.FC<IngredientFinancialDashboard
 
     // --- Render: SELECTED INGREDIENT MODE ---
     if (selectedIngredient) {
-        const priceHistory = generateTrendData(selectedIngredient.precioCompra, selectedIngredient.precioCompra * 0.1);
+        const priceHistory = generateTrendData(selectedIngredient.precioCompra || 0, (selectedIngredient.precioCompra || 0) * 0.1);
         const lastPrice = priceHistory[priceHistory.length - 1].value;
         const trend = ((lastPrice - priceHistory[0].value) / priceHistory[0].value) * 100;
 
@@ -49,7 +48,7 @@ export const IngredientFinancialDashboard: React.FC<IngredientFinancialDashboard
                         <div className="flex justify-between items-center mb-1 flex-wrap gap-1">
                             <span className="text-[10px] font-semibold uppercase tracking-wider opacity-70">Precio Actual</span>
                         </div>
-                        <div className="text-lg font-bold text-slate-800 dark:text-slate-100">€{selectedIngredient.precioCompra.toFixed(2)}</div>
+                        <div className="text-lg font-bold text-slate-800 dark:text-slate-100">€{(selectedIngredient.precioCompra || 0).toFixed(2)}</div>
                         <div className={`text-[10px] font-bold ${trend >= 0 ? 'text-red-500' : 'text-emerald-500'}`}>
                             {trend >= 0 ? '+' : ''}{trend.toFixed(1)}% vs 6m
                         </div>
@@ -58,7 +57,7 @@ export const IngredientFinancialDashboard: React.FC<IngredientFinancialDashboard
                         <div className="text-[10px] text-slate-500 uppercase font-bold mb-1">Stock (Est.)</div>
                         <div className="text-lg font-bold text-slate-800 dark:text-slate-100">{(selectedIngredient as any).stockActual || 0} u.</div>
                         <div className="text-[10px] text-slate-400 font-medium">
-                            Valor: €{(((selectedIngredient as any).stockActual || 0) * selectedIngredient.precioCompra).toFixed(0)}
+                            Valor: €{(((selectedIngredient as any).stockActual || 0) * (selectedIngredient.precioCompra || 0)).toFixed(0)}
                         </div>
                     </Card>
                 </div>
@@ -82,7 +81,7 @@ export const IngredientFinancialDashboard: React.FC<IngredientFinancialDashboard
                                 <Tooltip
                                     contentStyle={{ background: 'rgba(255, 255, 255, 0.8)', borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
                                     itemStyle={{ color: '#10b981', fontWeight: 'bold' }}
-                                    formatter={(val: number) => [`€${val.toFixed(2)}`, 'Precio']}
+                                    formatter={((val: any) => [`€${Number(val || 0).toFixed(2)}`, 'Precio']) as any}
                                 />
                                 <Area type="monotone" dataKey="value" stroke="#10b981" strokeWidth={3} fillOpacity={1} fill="url(#colorPrice)" />
                             </AreaChart>
@@ -94,7 +93,7 @@ export const IngredientFinancialDashboard: React.FC<IngredientFinancialDashboard
     }
 
     // --- Render: GLOBAL INVENTORY MODE ---
-    const totalValue = allIngredients.reduce((acc, ing) => acc + (ing.precioCompra * ((ing as any).stockActual || 0)), 0);
+    const totalValue = allIngredients.reduce((acc, ing) => acc + ((ing.precioCompra || 0) * ((ing as any).stockActual || 0)), 0);
     const lowStockCount = allIngredients.filter(ing => ((ing as any).stockActual || 0) < 2).length;
 
     // Mock Historical Valuation
@@ -102,7 +101,7 @@ export const IngredientFinancialDashboard: React.FC<IngredientFinancialDashboard
 
     // Top Cost Items (Mock currently, but logic ready for real stock)
     const topCostItems = [...allIngredients]
-        .sort((a, b) => b.precioCompra - a.precioCompra)
+        .sort((a, b) => (b.precioCompra || 0) - (a.precioCompra || 0))
         .slice(0, 5)
         .map(ing => ({
             name: ing.nombre,
@@ -148,7 +147,7 @@ export const IngredientFinancialDashboard: React.FC<IngredientFinancialDashboard
                             </defs>
                             <Tooltip
                                 contentStyle={{ background: 'rgba(255, 255, 255, 0.9)', borderRadius: '8px', border: 'none', fontSize: '12px' }}
-                                formatter={(val: number) => [`€${val.toFixed(0)}`, 'Valor']}
+                                formatter={((val: any) => [`€${Number(val || 0).toFixed(0)}`, 'Valor']) as any}
                             />
                             <Area type="monotone" dataKey="value" stroke="#059669" strokeWidth={2} fill="url(#colorInv)" />
                         </AreaChart>
@@ -166,7 +165,7 @@ export const IngredientFinancialDashboard: React.FC<IngredientFinancialDashboard
                                 <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0" />
                                 <span className="truncate text-slate-600 dark:text-slate-300 font-medium">{item.name}</span>
                             </div>
-                            <span className="font-bold text-slate-800 dark:text-slate-100">€{item.value.toFixed(2)}</span>
+                            <span className="font-bold text-slate-800 dark:text-slate-100">€{(item.value || 0).toFixed(2)}</span>
                         </div>
                     ))}
                 </div>

@@ -1,5 +1,5 @@
 import React from 'react';
-import { UIContextType } from '../../types';
+import { UIContextType } from '../types';
 
 const UIContext = React.createContext<UIContextType | undefined>(undefined);
 

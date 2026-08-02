@@ -26,18 +26,66 @@ export const MiniToolbar: React.FC = () => {
     // Global Shortcuts
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
+            // Skip shortcuts when typing in an input, textarea, or contenteditable
+            const tag = (e.target as HTMLElement)?.tagName;
+            const isEditing = tag === 'INPUT' || tag === 'TEXTAREA' || (e.target as HTMLElement)?.isContentEditable;
+
+            // Undo / Redo
             if ((e.metaKey || e.ctrlKey) && e.key === 'z') {
                 e.preventDefault();
-                if (e.shiftKey) {
-                    pizarronStore.redo();
-                } else {
-                    pizarronStore.undo();
-                }
+                if (e.shiftKey) pizarronStore.redo();
+                else pizarronStore.undo();
             }
-            // Support Ctrl+Y for Redo on Windows
             if ((e.metaKey || e.ctrlKey) && e.key === 'y') {
                 e.preventDefault();
                 pizarronStore.redo();
+            }
+
+            // Delete / Backspace — delete selected nodes (skip when editing text)
+            if ((e.key === 'Delete' || e.key === 'Backspace') && !isEditing) {
+                const sel = pizarronStore.getState().selection;
+                if (sel.size > 0) {
+                    e.preventDefault();
+                    pizarronStore.deleteNodes(Array.from(sel));
+                }
+            }
+
+            // Escape — deselect all
+            if (e.key === 'Escape' && !isEditing) {
+                const sel = pizarronStore.getState().selection;
+                if (sel.size > 0) {
+                    e.preventDefault();
+                    pizarronStore.clearSelection();
+                }
+            }
+
+            // Ctrl+D — duplicate selected nodes (guard e.repeat to prevent holding key = N copies)
+            if ((e.metaKey || e.ctrlKey) && e.key === 'd' && !isEditing && !e.repeat) {
+                const sel = pizarronStore.getState().selection;
+                if (sel.size > 0) {
+                    e.preventDefault();
+                    // Snapshot IDs before any duplicateNode call mutates selection
+                    const idsToClone = Array.from(sel);
+                    idsToClone.forEach(id => pizarronStore.duplicateNode(id));
+                }
+            }
+
+            // Ctrl+G — group selection
+            if ((e.metaKey || e.ctrlKey) && !e.shiftKey && e.key.toLowerCase() === 'g' && !isEditing && !e.repeat) {
+                const sel = pizarronStore.getState().selection;
+                if (sel.size > 1) {
+                    e.preventDefault();
+                    pizarronStore.groupSelection();
+                }
+            }
+
+            // Ctrl+Shift+G — ungroup selection
+            if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key.toLowerCase() === 'g' && !isEditing && !e.repeat) {
+                const sel = pizarronStore.getState().selection;
+                if (sel.size > 0) {
+                    e.preventDefault();
+                    pizarronStore.ungroupSelection();
+                }
             }
         };
         window.addEventListener('keydown', handleKeyDown);
@@ -148,7 +196,7 @@ export const MiniToolbar: React.FC = () => {
             onPointerDown={e => e.stopPropagation()}
         >
             {/* Drag Handle */}
-            <div className="cursor-grab text-slate-300 px-1">
+            <div className="cursor-grab text-slate-300 dark:text-slate-600 px-1">
                 <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24"><path d="M8 6h8M8 12h8M8 18h8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" /></svg>
             </div>
 
@@ -158,8 +206,8 @@ export const MiniToolbar: React.FC = () => {
                     <button
                         onClick={() => togglePopover('text')}
                         className={`flex items-center gap-2 px-2 py-1.5 rounded transition-colors border ${activePopover === 'text'
-                            ? 'bg-orange-50 border-orange-200 text-orange-700'
-                            : 'bg-slate-50 border-slate-200 text-slate-700 hover:border-orange-300 hover:text-orange-600'}`}
+                            ? 'bg-orange-50 dark:bg-orange-900/20 border-orange-200 dark:border-orange-700 text-orange-700 dark:text-orange-400'
+                            : 'bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:border-orange-300 dark:hover:border-orange-700 hover:text-orange-600 dark:hover:text-orange-400'}`}
                         title="Font Family"
                     >
                         <LuType size={14} className="opacity-70" />
@@ -167,13 +215,13 @@ export const MiniToolbar: React.FC = () => {
                         <LuArrowDown size={10} className="opacity-50 ml-1" />
                     </button>
                     {activePopover === 'text' && (
-                        <div className="absolute top-full left-0 mt-2 bg-white border border-slate-200 shadow-xl rounded-lg p-3 min-w-[240px] z-[120] flex flex-col gap-2">
+                        <div className="absolute top-full left-0 mt-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-xl rounded-lg p-3 min-w-[240px] z-[120] flex flex-col gap-2">
                             <input
                                 type="text"
                                 placeholder="Search fonts..."
                                 value={fontSearch}
                                 onChange={e => setFontSearch(e.target.value)}
-                                className="w-full px-2 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-md focus:ring-2 focus:ring-orange-500 outline-none"
+                                className="w-full px-2 py-1.5 text-xs bg-slate-100 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-md focus:ring-2 focus:ring-orange-500 outline-none text-slate-700 dark:text-slate-200 placeholder-slate-400"
                                 autoFocus
                             />
                             <div className="max-h-[200px] overflow-y-auto custom-scrollbar flex flex-col gap-1">
@@ -185,7 +233,7 @@ export const MiniToolbar: React.FC = () => {
                                             FontLoader.loadFont(font);
                                             setActivePopover('none');
                                         }}
-                                        className={`w-full text-left px-2 py-1.5 text-sm hover:bg-orange-50 rounded flex items-center justify-between group ${firstNode.content.fontFamily === font.family ? 'bg-orange-50 text-orange-600' : 'text-slate-700'}`}
+                                        className={`w-full text-left px-2 py-1.5 text-sm hover:bg-orange-50 dark:hover:bg-orange-900/20 rounded flex items-center justify-between group ${firstNode.content.fontFamily === font.family ? 'bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400' : 'text-slate-700 dark:text-slate-200'}`}
                                         title={font.family}
                                         onMouseEnter={() => FontLoader.loadFont(font)}
                                     >
@@ -199,7 +247,7 @@ export const MiniToolbar: React.FC = () => {
                 </div>
             ) : null}
 
-            <div className="w-px h-4 bg-slate-200 mx-1"></div>
+            <div className="w-px h-4 bg-slate-200 dark:bg-slate-700 mx-1"></div>
 
             {/* --- 2. Size --- */}
             <div className="relative">
@@ -207,10 +255,10 @@ export const MiniToolbar: React.FC = () => {
                     <LuScaling size={18} />
                 </button>
                 {activePopover === 'size' && (
-                    <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 bg-white border border-slate-200 shadow-xl rounded-lg p-3 min-w-[150px] z-[120] flex flex-col gap-2">
+                    <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-xl rounded-lg p-3 min-w-[150px] z-[120] flex flex-col gap-2">
                         <div className="flex justify-between text-xs text-slate-500">
-                            <span>Size</span>
-                            <span>{firstNode.content.fontSize || 16}px</span>
+                            <span className="text-slate-600 dark:text-slate-400">Tamaño</span>
+                            <span className="text-slate-700 dark:text-slate-200">{firstNode.content.fontSize || 16}px</span>
                         </div>
                         <input
                             type="range" min="8" max="128"
@@ -228,12 +276,12 @@ export const MiniToolbar: React.FC = () => {
                     <LuPalette size={18} />
                 </button>
                 {activePopover === 'color' && (
-                    <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 bg-white border border-slate-200 shadow-xl rounded-lg p-2 min-w-[220px] z-[120]">
+                    <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-xl rounded-lg p-2 min-w-[220px] z-[120]">
                         <div className="grid grid-cols-6 gap-1.5">
                             {/* Transparent Option (First) */}
                             <button
                                 onClick={() => updateNode({ color: 'transparent' })}
-                                className="w-6 h-6 rounded-full border border-slate-200 hover:scale-110 transition-transform flex items-center justify-center bg-white relative overflow-hidden"
+                                className="w-6 h-6 rounded-full border border-slate-200 dark:border-slate-600 hover:scale-110 transition-transform flex items-center justify-center bg-white dark:bg-slate-700 relative overflow-hidden"
                                 title="Transparent"
                             >
                                 <div className="absolute inset-0 bg-red-500 w-[1px] h-[30px] rotate-45 top-[-3px] left-[11px]"></div>
@@ -243,7 +291,7 @@ export const MiniToolbar: React.FC = () => {
                                 <button
                                     key={c}
                                     onClick={() => updateNode({ color: c })}
-                                    className="w-6 h-6 rounded-full border border-slate-200 hover:scale-110 transition-transform"
+                                    className="w-6 h-6 rounded-full border border-slate-200 dark:border-slate-600 hover:scale-110 transition-transform"
                                     style={{ backgroundColor: c }}
                                 />
                             ))}
@@ -259,11 +307,11 @@ export const MiniToolbar: React.FC = () => {
                         <LuBold size={18} />
                     </button>
                     {activePopover === 'style' && (
-                        <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 bg-white border border-slate-200 shadow-xl rounded-lg p-2 z-[120] flex gap-1">
-                            <button onClick={() => updateStyle('fontWeight', firstNode.content.fontWeight === 'bold' ? 'normal' : 'bold')} className={`p-2 rounded hover:bg-orange-50 ${firstNode.content.fontWeight === 'bold' ? 'bg-orange-100 text-orange-600' : 'text-slate-600'}`}><LuBold size={16} /></button>
-                            <button onClick={() => updateStyle('fontStyle', firstNode.content.fontStyle === 'italic' ? 'normal' : 'italic')} className={`p-2 rounded hover:bg-orange-50 ${firstNode.content.fontStyle === 'italic' ? 'bg-orange-100 text-orange-600' : 'text-slate-600'}`}><LuItalic size={16} /></button>
-                            <button onClick={() => updateStyle('textDecoration', firstNode.content.textDecoration === 'underline' ? 'none' : 'underline')} className={`p-2 rounded hover:bg-orange-50 ${firstNode.content.textDecoration === 'underline' ? 'bg-orange-100 text-orange-600' : 'text-slate-600'}`}><LuUnderline size={16} /></button>
-                            <button onClick={() => updateStyle('textDecoration', firstNode.content.textDecoration === 'line-through' ? 'none' : 'line-through')} className={`p-2 rounded hover:bg-orange-50 ${firstNode.content.textDecoration === 'line-through' ? 'bg-orange-100 text-orange-600' : 'text-slate-600'}`}><LuStrikethrough size={16} /></button>
+                        <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-xl rounded-lg p-2 z-[120] flex gap-1">
+                            <button onClick={() => updateStyle('fontWeight', firstNode.content.fontWeight === 'bold' ? 'normal' : 'bold')} className={`p-2 rounded hover:bg-orange-50 dark:hover:bg-orange-900/20 ${firstNode.content.fontWeight === 'bold' ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400' : 'text-slate-600 dark:text-slate-300'}`}><LuBold size={16} /></button>
+                            <button onClick={() => updateStyle('fontStyle', firstNode.content.fontStyle === 'italic' ? 'normal' : 'italic')} className={`p-2 rounded hover:bg-orange-50 dark:hover:bg-orange-900/20 ${firstNode.content.fontStyle === 'italic' ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400' : 'text-slate-600 dark:text-slate-300'}`}><LuItalic size={16} /></button>
+                            <button onClick={() => updateStyle('textDecoration', firstNode.content.textDecoration === 'underline' ? 'none' : 'underline')} className={`p-2 rounded hover:bg-orange-50 dark:hover:bg-orange-900/20 ${firstNode.content.textDecoration === 'underline' ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400' : 'text-slate-600 dark:text-slate-300'}`}><LuUnderline size={16} /></button>
+                            <button onClick={() => updateStyle('textDecoration', firstNode.content.textDecoration === 'line-through' ? 'none' : 'line-through')} className={`p-2 rounded hover:bg-orange-50 dark:hover:bg-orange-900/20 ${firstNode.content.textDecoration === 'line-through' ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400' : 'text-slate-600 dark:text-slate-300'}`}><LuStrikethrough size={16} /></button>
                         </div>
                     )}
                 </div>
@@ -276,9 +324,9 @@ export const MiniToolbar: React.FC = () => {
                         <LuMoveVertical size={18} />
                     </button>
                     {activePopover === 'spacing' && (
-                        <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 bg-white border border-slate-200 shadow-xl rounded-lg p-3 min-w-[200px] z-[120] flex flex-col gap-3">
+                        <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-xl rounded-lg p-3 min-w-[200px] z-[120] flex flex-col gap-3">
                             <div>
-                                <div className="flex justify-between text-[10px] text-slate-500 mb-1">LINE HEIGHT</div>
+                                <div className="flex justify-between text-[10px] text-slate-500 dark:text-slate-400 mb-1">LINE HEIGHT</div>
                                 <input
                                     type="range" min="0.8" max="2.5" step="0.1"
                                     value={firstNode.content.lineHeight || 1.2}
@@ -287,7 +335,7 @@ export const MiniToolbar: React.FC = () => {
                                 />
                             </div>
                             <div>
-                                <div className="flex justify-between text-[10px] text-slate-500 mb-1">LETTER SPACING</div>
+                                <div className="flex justify-between text-[10px] text-slate-500 dark:text-slate-400 mb-1">LETTER SPACING</div>
                                 <input
                                     type="range" min="-2" max="10" step="0.5"
                                     value={parseInt(firstNode.content.letterSpacing as string || '0')}
@@ -306,10 +354,10 @@ export const MiniToolbar: React.FC = () => {
                     <LuWand size={18} />
                 </button>
                 {activePopover === 'effects' && (
-                    <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 bg-white border border-slate-200 shadow-xl rounded-lg p-3 min-w-[200px] z-[120] space-y-3">
+                    <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-xl rounded-lg p-3 min-w-[200px] z-[120] space-y-3">
                         {/* Opacity */}
                         <div>
-                            <div className="flex justify-between text-[10px] text-slate-500 mb-1">OPACITY</div>
+                            <div className="flex justify-between text-[10px] text-slate-500 dark:text-slate-400 mb-1">OPACITY</div>
                             <input
                                 type="range" min="0" max="100"
                                 value={(firstNode.content.opacity ?? 1) * 100}
@@ -318,11 +366,11 @@ export const MiniToolbar: React.FC = () => {
                             />
                         </div>
 
-                        <div className="h-px bg-slate-100"></div>
+                        <div className="h-px bg-slate-100 dark:bg-slate-700"></div>
 
                         {/* Shadows / Blur toggles (Simplified for now) */}
                         <div className="flex flex-col gap-1">
-                            <label className="flex items-center gap-2 text-xs text-slate-600 cursor-pointer hover:text-orange-600">
+                            <label className="flex items-center gap-2 text-xs text-slate-600 dark:text-slate-400 cursor-pointer hover:text-orange-600 dark:hover:text-orange-400">
                                 <input
                                     type="checkbox"
                                     className="rounded text-orange-500 focus:ring-orange-500"
@@ -331,7 +379,7 @@ export const MiniToolbar: React.FC = () => {
                                 />
                                 Drop Shadow
                             </label>
-                            <label className="flex items-center gap-2 text-xs text-slate-600 cursor-pointer hover:text-orange-600">
+                            <label className="flex items-center gap-2 text-xs text-slate-600 dark:text-slate-400 cursor-pointer hover:text-orange-600 dark:hover:text-orange-400">
                                 <input
                                     type="checkbox"
                                     className="rounded text-orange-500 focus:ring-orange-500"
@@ -345,7 +393,7 @@ export const MiniToolbar: React.FC = () => {
                 )}
             </div>
 
-            <div className="w-px h-4 bg-slate-200 mx-1"></div>
+            <div className="w-px h-4 bg-slate-200 dark:bg-slate-700 mx-1"></div>
 
             {/* --- Position --- */}
             <div className="relative">
@@ -353,11 +401,11 @@ export const MiniToolbar: React.FC = () => {
                     <LuLayers size={18} />
                 </button>
                 {activePopover === 'position' && (
-                    <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 bg-white border border-slate-200 shadow-xl rounded-lg p-2 z-[120] flex flex-col gap-1 min-w-[140px]">
-                        <button onClick={() => pizarronStore.bringToFront()} className="text-xs flex items-center justify-between px-2 py-1.5 hover:bg-orange-50 hover:text-orange-600 rounded text-slate-600"><span className="flex items-center gap-2"><LuArrowUp /> Al frente</span></button>
-                        <button onClick={() => pizarronStore.bringForward()} className="text-xs flex items-center justify-between px-2 py-1.5 hover:bg-orange-50 hover:text-orange-600 rounded text-slate-600"><span className="flex items-center gap-2 text-slate-400"><LuArrowUp size={14} /> Delante</span></button>
-                        <button onClick={() => pizarronStore.sendBackward()} className="text-xs flex items-center justify-between px-2 py-1.5 hover:bg-orange-50 hover:text-orange-600 rounded text-slate-600"><span className="flex items-center gap-2 text-slate-400"><LuArrowDown size={14} /> Atras</span></button>
-                        <button onClick={() => pizarronStore.sendToBack()} className="text-xs flex items-center justify-between px-2 py-1.5 hover:bg-orange-50 hover:text-orange-600 rounded text-slate-600"><span className="flex items-center gap-2"><LuArrowDown /> A fondo</span></button>
+                    <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-xl rounded-lg p-2 z-[120] flex flex-col gap-1 min-w-[140px]">
+                        <button onClick={() => pizarronStore.bringToFront()} className="text-xs flex items-center justify-between px-2 py-1.5 hover:bg-orange-50 dark:hover:bg-orange-900/20 hover:text-orange-600 dark:hover:text-orange-400 rounded text-slate-600 dark:text-slate-300"><span className="flex items-center gap-2"><LuArrowUp /> Al frente</span></button>
+                        <button onClick={() => pizarronStore.bringForward()} className="text-xs flex items-center justify-between px-2 py-1.5 hover:bg-orange-50 dark:hover:bg-orange-900/20 hover:text-orange-600 dark:hover:text-orange-400 rounded text-slate-600 dark:text-slate-300"><span className="flex items-center gap-2 text-slate-400 dark:text-slate-500"><LuArrowUp size={14} /> Delante</span></button>
+                        <button onClick={() => pizarronStore.sendBackward()} className="text-xs flex items-center justify-between px-2 py-1.5 hover:bg-orange-50 dark:hover:bg-orange-900/20 hover:text-orange-600 dark:hover:text-orange-400 rounded text-slate-600 dark:text-slate-300"><span className="flex items-center gap-2 text-slate-400 dark:text-slate-500"><LuArrowDown size={14} /> Atras</span></button>
+                        <button onClick={() => pizarronStore.sendToBack()} className="text-xs flex items-center justify-between px-2 py-1.5 hover:bg-orange-50 dark:hover:bg-orange-900/20 hover:text-orange-600 dark:hover:text-orange-400 rounded text-slate-600 dark:text-slate-300"><span className="flex items-center gap-2"><LuArrowDown /> A fondo</span></button>
                     </div>
                 )}
             </div>
@@ -369,16 +417,16 @@ export const MiniToolbar: React.FC = () => {
                         <LuCaseSensitive size={18} />
                     </button>
                     {activePopover === 'casing' && (
-                        <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 bg-white border border-slate-200 shadow-xl rounded-lg p-2 z-[120] flex flex-col gap-1 min-w-[120px]">
-                            <button onClick={() => updateStyle('textTransform', 'uppercase')} className="text-xs text-left px-2 py-1.5 hover:bg-orange-50 hover:text-orange-600 rounded">UPPERCASE</button>
-                            <button onClick={() => updateStyle('textTransform', 'lowercase')} className="text-xs text-left px-2 py-1.5 hover:bg-orange-50 hover:text-orange-600 rounded">lowercase</button>
-                            <button onClick={() => updateStyle('textTransform', 'capitalize')} className="text-xs text-left px-2 py-1.5 hover:bg-orange-50 hover:text-orange-600 rounded">Capitalize</button>
+                        <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-xl rounded-lg p-2 z-[120] flex flex-col gap-1 min-w-[120px]">
+                            <button onClick={() => updateStyle('textTransform', 'uppercase')} className="text-xs text-left px-2 py-1.5 hover:bg-orange-50 dark:hover:bg-orange-900/20 hover:text-orange-600 dark:hover:text-orange-400 rounded text-slate-700 dark:text-slate-200">UPPERCASE</button>
+                            <button onClick={() => updateStyle('textTransform', 'lowercase')} className="text-xs text-left px-2 py-1.5 hover:bg-orange-50 dark:hover:bg-orange-900/20 hover:text-orange-600 dark:hover:text-orange-400 rounded text-slate-700 dark:text-slate-200">lowercase</button>
+                            <button onClick={() => updateStyle('textTransform', 'capitalize')} className="text-xs text-left px-2 py-1.5 hover:bg-orange-50 dark:hover:bg-orange-900/20 hover:text-orange-600 dark:hover:text-orange-400 rounded text-slate-700 dark:text-slate-200">Capitalize</button>
                         </div>
                     )}
                 </div>
             )}
 
-            <div className="w-px h-4 bg-slate-200 mx-1"></div>
+            <div className="w-px h-4 bg-slate-200 dark:bg-slate-700 mx-1"></div>
 
             {/* --- Copy --- */}
             <button
@@ -390,7 +438,7 @@ export const MiniToolbar: React.FC = () => {
 
             {/* --- Lock / Group / Delete --- */}
 
-            <button onClick={() => pizarronStore.updateNode(firstNode.id, { locked: !firstNode.locked })} className={`p-1.5 rounded transition-colors ${firstNode.locked ? 'bg-red-50 text-red-500' : 'text-slate-600 hover:text-orange-500 hover:bg-orange-50'}`}>
+            <button onClick={() => pizarronStore.updateNode(firstNode.id, { locked: !firstNode.locked })} className={`p-1.5 rounded transition-colors ${firstNode.locked ? 'bg-red-50 dark:bg-red-900/20 text-red-500 dark:text-red-400' : 'text-slate-600 dark:text-slate-300 hover:text-orange-500 dark:hover:text-orange-400 hover:bg-orange-50 dark:hover:bg-orange-900/20'}`}>
                 {firstNode.locked ? <LuLock size={18} /> : <LuLockOpen size={18} />}
             </button>
 
@@ -405,19 +453,19 @@ export const MiniToolbar: React.FC = () => {
                 </button>
             ) : null}
 
-            <button onClick={() => pizarronStore.deleteNodes(selectedNodes.map(n => n.id))} className="p-1.5 hover:bg-red-50 rounded text-red-500 transition-colors" title="Delete">
+            <button onClick={() => pizarronStore.deleteNodes(selectedNodes.map(n => n.id))} className="p-1.5 hover:bg-red-50 dark:hover:bg-red-900/20 rounded text-red-500 dark:text-red-400 transition-colors" title="Eliminar">
                 <LuTrash2 size={18} />
             </button>
 
             {isMenuDesign && (
                 <>
-                    <div className="w-px h-4 bg-slate-200 mx-1"></div>
+                    <div className="w-px h-4 bg-slate-200 dark:bg-slate-700 mx-1"></div>
                     <button
                         onClick={handleSaveToMakeMenu}
                         disabled={isSaving}
                         className={`p-1.5 rounded transition-all flex items-center gap-1.5 px-2.5 ${saveDone
-                            ? 'bg-green-100 text-green-600'
-                            : 'bg-rose-50 text-rose-600 hover:bg-rose-100'
+                            ? 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400'
+                            : 'bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400 hover:bg-orange-100 dark:hover:bg-orange-900/30'
                             }`}
                         title="Guardar en Make Menu"
                     >
@@ -427,14 +475,14 @@ export const MiniToolbar: React.FC = () => {
                 </>
             )}
 
-            <div className="w-px h-4 bg-slate-200 mx-1"></div>
+            <div className="w-px h-4 bg-slate-200 dark:bg-slate-700 mx-1"></div>
 
             {/* Undo/Redo (Moved to end) */}
             <div className="flex items-center gap-0.5">
-                <button onClick={() => pizarronStore.undo()} className="p-1.5 hover:bg-orange-50 hover:text-orange-600 rounded text-slate-500" title="Undo (Ctrl+Z)">
+                <button onClick={() => pizarronStore.undo()} className="p-1.5 hover:bg-orange-50 dark:hover:bg-orange-900/20 hover:text-orange-600 dark:hover:text-orange-400 rounded text-slate-500 dark:text-slate-400" title="Undo (Ctrl+Z)">
                     <LuUndo size={16} />
                 </button>
-                <button onClick={() => pizarronStore.redo()} className="p-1.5 hover:bg-orange-50 hover:text-orange-600 rounded text-slate-500" title="Redo (Ctrl+Shift+Z)">
+                <button onClick={() => pizarronStore.redo()} className="p-1.5 hover:bg-orange-50 dark:hover:bg-orange-900/20 hover:text-orange-600 dark:hover:text-orange-400 rounded text-slate-500 dark:text-slate-400" title="Redo (Ctrl+Shift+Z)">
                     <LuRedo size={16} />
                 </button>
             </div>

@@ -93,12 +93,12 @@ class FirestoreAdapter {
 
                 // Track state with BoardID
                 this.lastKnownState[id] = {
-                    updatedAt: remoteNode.updatedAt,
+                    updatedAt: remoteNode.updatedAt ?? 0,
                     boardId: boardId // Tag it!
                 };
 
                 const localNode = pizarronStore.getState().nodes[id];
-                if (!localNode || remoteNode.updatedAt > localNode.updatedAt) {
+                if (!localNode || (remoteNode.updatedAt ?? 0) > (localNode.updatedAt ?? 0)) {
                     pizarronStore.addNode(remoteNode);
                 }
             });
@@ -116,11 +116,11 @@ class FirestoreAdapter {
             Object.values(nodes).forEach(node => {
                 const lastKnown = this.lastKnownState[node.id];
                 // Check timestamp AND ensure we are not overwriting a ghost
-                if (!lastKnown || node.updatedAt > lastKnown.updatedAt) {
+                if (!lastKnown || (node.updatedAt ?? 0) > lastKnown.updatedAt) {
                     this.pendingWrites.set(node.id, node);
                     // Update state immediately to avoid loop
                     this.lastKnownState[node.id] = {
-                        updatedAt: node.updatedAt,
+                        updatedAt: node.updatedAt ?? 0,
                         boardId: boardId
                     };
                 }
@@ -285,7 +285,7 @@ class FirestoreAdapter {
 
         nodes.forEach(node => {
             const nodeRef = doc(nodesCol, node.id);
-            const data = {
+            const data = JSON.parse(JSON.stringify({
                 type: node.type,
                 x: node.x, y: node.y,
                 width: node.w, height: node.h,
@@ -297,8 +297,12 @@ class FirestoreAdapter {
                 shapeType: node.content.shapeType || 'rectangle',
                 boardId: firstBoardId,
                 updatedAt: node.updatedAt,
-                createdAt: node.createdAt
-            };
+                createdAt: node.createdAt,
+                // Persist zone layout so structured boards survive the round-trip
+                structureId: node.structureId,
+                structure: node.structure,
+                childrenIds: node.childrenIds
+            })); // JSON clean strips undefined (Firestore rejects undefined)
             batch.set(nodeRef, data);
         });
 
@@ -339,7 +343,7 @@ class FirestoreAdapter {
         nodes.forEach(node => {
             // Ensure node has correct boardId
             const nodeRef = doc(nodesCol, node.id);
-            const data = {
+            const data = JSON.parse(JSON.stringify({
                 type: node.type,
                 x: node.x, y: node.y,
                 width: node.w, height: node.h,
@@ -351,8 +355,12 @@ class FirestoreAdapter {
                 shapeType: node.content.shapeType || 'rectangle',
                 boardId: board.id, // CRITICAL: Link to the specific board
                 updatedAt: node.updatedAt,
-                createdAt: node.createdAt
-            };
+                createdAt: node.createdAt,
+                // Persist zone layout so structured boards survive the round-trip
+                structureId: node.structureId,
+                structure: node.structure,
+                childrenIds: node.childrenIds
+            })); // JSON clean strips undefined (Firestore rejects undefined)
             batch.set(nodeRef, data);
         });
 

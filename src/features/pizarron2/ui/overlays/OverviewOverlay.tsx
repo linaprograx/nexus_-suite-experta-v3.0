@@ -85,8 +85,8 @@ export const OverviewOverlay: React.FC = () => {
                                         {board.title}
                                     </h3>
                                     <div className="flex items-center gap-2 mt-1">
-                                        <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${board.type === 'kanban' ? 'bg-orange-100 text-orange-700' :
-                                            board.type === 'calendar' ? 'bg-green-100 text-green-700' :
+                                        <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${(board.type as string) === 'kanban' ? 'bg-orange-100 text-orange-700' :
+                                            (board.type as string) === 'calendar' ? 'bg-green-100 text-green-700' :
                                                 'bg-indigo-100 text-indigo-700'
                                             }`}>
                                             {board.type === 'board' ? 'Pizarra Libre' : board.type}

@@ -34,3 +34,11 @@ ai-gateway/credentials/**
 # Sentry
 .sentryclirc
 sentry.properties
+
+# Secrets — never commit real env files
+.env
+ai-gateway/.env
+
+# Claude Code local session state (launch.json is shared, see below)
+.claude/settings.local.json
+.claude/worktrees/

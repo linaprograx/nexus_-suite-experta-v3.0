@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { PizarronTask } from '../../../types';
+import { PizarronTask } from '../../types';
 import { computeCreativeWeek, CreativeWeekResult } from './creativeWeekService';
 
 /**

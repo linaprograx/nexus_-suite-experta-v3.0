@@ -1,6 +1,6 @@
 import { Firestore, collection, doc, addDoc } from 'firebase/firestore';
 import { FirebaseStorage, ref, uploadString, getDownloadURL } from 'firebase/storage';
-import { Ingredient, Recipe, IngredientLineItem } from '../../../types';
+import { Ingredient, Recipe, IngredientLineItem } from '../../types';
 import { extractTextFromPdf } from './pdfTextExtractor';
 import { extractImagesFromPdf } from './pdfImageExtractor';
 import { parsePdfRecipeBlocks } from './parsePdfRecipeBlocks';
@@ -86,7 +86,7 @@ export const importPdfRecipes = async (
             }
         }
 
-        const finalRecipe: Partial<Recipe> = {
+        const finalRecipe: Partial<Recipe> & Record<string, any> = {
             nombre: block.nombre,
             categorias: block.categorias,
             ingredientes: lineItems,

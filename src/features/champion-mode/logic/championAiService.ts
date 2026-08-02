@@ -162,7 +162,7 @@ export const ChampionAiService = {
         };
 
         // ELITE/JUPITER: Multi-Jury
-        if (userPlan === 'ELITE' || userPlan === 'JUPITER') {
+        if ((userPlan as string) === 'ELITE' || (userPlan as string) === 'JUPITER') {
             result.juryBreakdown = {
                 technical: {
                     score: categories.balance,
@@ -184,7 +184,7 @@ export const ChampionAiService = {
         }
 
         // JUPITER: Debug Mode
-        if (userPlan === 'JUPITER') {
+        if ((userPlan as string) === 'JUPITER') {
             result.debugAnalysis = {
                 detectedIngredients: context.ingredients,
                 ruleBreaches: brief.constraints.filter(c =>

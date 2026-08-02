@@ -5,33 +5,39 @@ import { pizarronStore } from '../../state/store';
 import {
     LuMousePointer2,
     LuHand,
-    LuLayoutGrid, // Pizarras (Grid view)
-    LuShapes, // Library
-    LuImage, // Image
-    LuMonitorPlay, // Presentation
-    LuTrash2,
-    LuApple,
-    LuScrollText
+    LuType,        // Texto
+    LuSquare,      // Forma
+    LuMinus,       // Línea
+    LuImage,       // Imagen
+    LuLibraryBig,  // Biblioteca (plantillas / formas / texto)
+    LuLayoutGrid,  // Pizarras (Grid view)
+    LuMonitorPlay, // Presentar
+    LuCarrot,      // Ingrediente
+    LuChefHat      // Receta
 } from 'react-icons/lu';
 
+// Tool groups — logically ordered: navegar → crear → biblioteca → grimorio → tablero
 const TOOLS = [
-    { id: 'pointer', icon: <LuMousePointer2 size={20} />, label: 'Pointer' },
-    { id: 'hand', icon: <LuHand size={20} />, label: 'Pan' },
-    // Separator
+    // Navegación
+    { id: 'pointer', icon: <LuMousePointer2 size={20} />, label: 'Seleccionar', hint: 'V' },
+    { id: 'hand', icon: <LuHand size={20} />, label: 'Mover lienzo', hint: 'Espacio' },
     { id: 'sep1', type: 'separator' },
-    { id: 'library', icon: <LuShapes size={20} />, label: 'Library', isAction: true },
-    { id: 'image', icon: <LuImage size={20} />, label: 'Image', isAction: true },
-    // Separator
+    // Crear
+    { id: 'text', icon: <LuType size={20} />, label: 'Texto', hint: 'T' },
+    { id: 'shape', icon: <LuSquare size={20} />, label: 'Forma', hint: 'R' },
+    { id: 'line', icon: <LuMinus size={20} />, label: 'Línea', hint: 'L' },
+    { id: 'image', icon: <LuImage size={20} />, label: 'Imagen', isAction: true },
     { id: 'sep2', type: 'separator' },
-    { id: 'project', icon: <LuLayoutGrid size={20} />, label: 'Pizarras', isAction: true },
-    { id: 'presentation', icon: <LuMonitorPlay size={20} />, label: 'Present (P)', isAction: true },
-    // Separator
+    // Biblioteca
+    { id: 'library', icon: <LuLibraryBig size={20} />, label: 'Biblioteca', isAction: true },
     { id: 'sep_grimorio', type: 'separator' },
-    { id: 'ingredient', icon: <LuApple size={20} />, label: 'Ingredient', isAction: true },
-    { id: 'recipe', icon: <LuScrollText size={20} />, label: 'Recipe', isAction: true },
-    // Bottom
+    // Grimorio
+    { id: 'ingredient', icon: <LuCarrot size={20} />, label: 'Ingrediente', isAction: true },
+    { id: 'recipe', icon: <LuChefHat size={20} />, label: 'Receta', isAction: true },
     { id: 'sep3', type: 'separator' },
-    { id: 'delete', icon: <LuTrash2 size={20} />, label: 'Delete', isAction: true },
+    // Tablero
+    { id: 'project', icon: <LuLayoutGrid size={20} />, label: 'Mis pizarras', isAction: true },
+    { id: 'presentation', icon: <LuMonitorPlay size={20} />, label: 'Presentar', hint: 'P', isAction: true },
 ] as const;
 
 export const LeftRail: React.FC = () => {
@@ -103,6 +109,11 @@ export const LeftRail: React.FC = () => {
                 pizarronStore.setSelection([]);
             }
         } else {
+            // Creation / navigation tools (pointer, hand, text, shape, line)
+            if (tool.id === 'shape') {
+                // Ensure a default shape so the draw tool produces a rectangle
+                pizarronStore.setUIFlag('activeShapeType', 'rectangle');
+            }
             pizarronStore.setActiveTool(tool.id);
         }
     };
@@ -120,7 +131,7 @@ export const LeftRail: React.FC = () => {
                 {TOOLS.map((tool: any, i) => {
                     // Phase 5: Interaction Mode Filtering
                     if (mode !== 'creative' && mode !== undefined) {
-                        const allowed = ['pointer', 'hand', 'project', 'presentation', 'ingredient', 'recipe'];
+                        const allowed = ['pointer', 'hand', 'project', 'presentation', 'ingredient', 'recipe', 'sep1', 'sep_grimorio', 'sep3'];
                         if (!allowed.includes(tool.id)) return null;
                     }
 
@@ -140,7 +151,7 @@ export const LeftRail: React.FC = () => {
                                 ? 'bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400 border border-orange-200 dark:border-orange-700 scale-105 shadow-sm' // Active Pop (Orange)
                                 : 'hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 border border-transparent hover:scale-110' // Hover Lift
                                 }`}
-                            title={tool.label}
+                            title={tool.hint ? `${tool.label} (${tool.hint})` : tool.label}
                         >
                             {tool.icon}
                         </button>

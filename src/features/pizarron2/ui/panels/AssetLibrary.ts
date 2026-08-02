@@ -1,5 +1,6 @@
 import { BoardNode } from "../../engine/types";
 import { FontDefinition } from "../../engine/FontLoader";
+import { STRUCTURE_TEMPLATES } from "../../engine/structures";
 
 // --- Types ---
 export interface AssetCategory {
@@ -70,43 +71,55 @@ export const AVAILABLE_FONTS: FontDefinition[] = [
 ];
 
 // --- Shapes Catalog ---
+// Default shape fill: light surface that applyTheme() remaps to dark slate in dark mode.
+const SHAPE_FILL = '#f1f5f9';
+const SHAPE_STROKE = '#94a3b8';
+const shapeData = (shapeType: string, w: number, h: number, extra: any = {}) => ({
+    type: 'shape', shapeType, w, h,
+    content: { color: SHAPE_FILL, borderColor: SHAPE_STROKE, borderWidth: 2, ...extra },
+});
+
 const BASIC_SHAPES: AssetDefinition[] = [
-    { id: 'rect', label: 'Square', icon: '◻️', type: 'shape', data: { type: 'shape', shapeType: 'rectangle', w: 100, h: 100 }, tags: ['box', 'square'] },
-    { id: 'circle', label: 'Circle', icon: '○', type: 'shape', data: { type: 'shape', shapeType: 'circle', w: 100, h: 100 }, tags: ['round', 'circle'] },
-    { id: 'triangle', label: 'Triangle', icon: '△', type: 'shape', data: { type: 'shape', shapeType: 'triangle', w: 100, h: 100 }, tags: ['poly', 'pyramid'] },
-    { id: 'line_basic', label: 'Line', icon: '╱', type: 'line', data: { type: 'line', w: 100, h: 0, content: { strokeStyle: 'solid', color: '#64748b' } }, tags: ['line'] },
-    { id: 'arrow_basic', label: 'Arrow', icon: '➔', type: 'shape', data: { type: 'shape', shapeType: 'arrow_right', w: 100, h: 60 }, tags: ['dir'] },
+    { id: 'rect', label: 'Cuadrado', icon: '◻️', type: 'shape', data: shapeData('rectangle', 120, 100), tags: ['box', 'square', 'cuadrado'] },
+    { id: 'rect_round', label: 'Redondeado', icon: '▢', type: 'shape', data: shapeData('rectangle', 120, 100, { borderRadius: 16 }), tags: ['box', 'rounded', 'card'] },
+    { id: 'circle', label: 'Círculo', icon: '○', type: 'shape', data: shapeData('circle', 100, 100), tags: ['round', 'circle', 'circulo'] },
+    { id: 'pill', label: 'Píldora', icon: '⬭', type: 'shape', data: shapeData('pill', 160, 64), tags: ['pill', 'tag', 'badge', 'boton'] },
+    { id: 'triangle', label: 'Triángulo', icon: '△', type: 'shape', data: shapeData('triangle', 100, 100), tags: ['poly', 'pyramid', 'triangulo'] },
+    { id: 'diamond', label: 'Rombo', icon: '◇', type: 'shape', data: shapeData('diamond', 100, 100), tags: ['poly', 'decision', 'rombo'] },
+    { id: 'star', label: 'Estrella', icon: '★', type: 'shape', data: shapeData('star', 110, 110), tags: ['fav', 'rating', 'estrella'] },
+    { id: 'line_basic', label: 'Línea', icon: '╱', type: 'line', data: { type: 'line', w: 160, h: 0, content: { strokeStyle: 'solid', color: SHAPE_STROKE, strokeWidth: 3 } }, tags: ['line', 'linea'] },
+    { id: 'arrow_basic', label: 'Flecha', icon: '➔', type: 'shape', data: shapeData('arrow_right', 120, 64), tags: ['dir', 'flecha'] },
 ];
 
 const FLOW_SHAPES: AssetDefinition[] = [
-    // { id: 'process', label: 'Process', icon: '▭', type: 'shape', data: { type: 'shape', shapeType: 'rectangle', w: 120, h: 80 }, tags: ['process'] },
-    // { id: 'decision', label: 'Decision', icon: '◇', type: 'shape', data: { type: 'shape', shapeType: 'diamond', w: 100, h: 100 }, tags: ['decision'] },
-    // { id: 'start_end', label: 'Terminator', icon: '0', type: 'shape', data: { type: 'shape', shapeType: 'pill', w: 120, h: 60 }, tags: ['start', 'end'] },
-    { id: 'data', label: 'Data', icon: '▱', type: 'shape', data: { type: 'shape', shapeType: 'parallelogram', w: 120, h: 80 }, tags: ['io', 'input'] },
-    { id: 'document', label: 'Document', icon: '📄', type: 'shape', data: { type: 'shape', shapeType: 'file', w: 100, h: 120 }, tags: ['file'] },
-    { id: 'arrow_box', label: 'Direction', icon: '➜', type: 'shape', data: { type: 'shape', shapeType: 'arrow_right', w: 100, h: 60 }, tags: ['dir'] },
+    { id: 'process', label: 'Proceso', icon: '▭', type: 'shape', data: shapeData('rectangle', 140, 80, { borderRadius: 6 }), tags: ['process', 'proceso'] },
+    { id: 'decision', label: 'Decisión', icon: '◇', type: 'shape', data: shapeData('diamond', 120, 100), tags: ['decision', 'decision'] },
+    { id: 'terminator', label: 'Inicio/Fin', icon: '⬭', type: 'shape', data: shapeData('pill', 140, 64), tags: ['start', 'end', 'inicio'] },
+    { id: 'data', label: 'Datos', icon: '▱', type: 'shape', data: shapeData('parallelogram', 120, 80), tags: ['io', 'input', 'datos'] },
+    { id: 'arrow_box', label: 'Conector', icon: '➜', type: 'shape', data: shapeData('arrow_right', 120, 56), tags: ['dir', 'conector'] },
 ];
 
 const CONTAINER_SHAPES: AssetDefinition[] = [
-    { id: 'cloud', label: 'Cloud', icon: '☁️', type: 'shape', data: { type: 'shape', shapeType: 'cloud', w: 120, h: 80 }, tags: ['cloud'] },
-    { id: 'speech', label: 'Speech', icon: '💬', type: 'shape', data: { type: 'shape', shapeType: 'speech_bubble', w: 120, h: 80 }, tags: ['chat'] },
-    { id: 'frame_simple', label: 'Frame', icon: '🖼️', type: 'shape', data: { type: 'shape', shapeType: 'rectangle', w: 300, h: 300, content: { color: 'transparent', borderColor: '#94a3b8', borderWidth: 2, borderStyle: 'dashed' } }, tags: ['group'] },
+    { id: 'cloud', label: 'Nube', icon: '☁️', type: 'shape', data: shapeData('cloud', 140, 90), tags: ['cloud', 'nube'] },
+    { id: 'speech', label: 'Diálogo', icon: '💬', type: 'shape', data: shapeData('speech_bubble', 140, 90), tags: ['chat', 'dialogo', 'bocadillo'] },
+    { id: 'frame_simple', label: 'Marco', icon: '🖼️', type: 'shape', data: { type: 'shape', shapeType: 'rectangle', w: 320, h: 320, content: { color: 'transparent', borderColor: SHAPE_STROKE, borderWidth: 2, borderStyle: 'dashed', borderRadius: 8 } }, tags: ['group', 'marco', 'frame'] },
 ];
 
 const GEOMETRIC_SHAPES: AssetDefinition[] = [
-    { id: 'pentagon', label: 'Pentagon', icon: '⬠', type: 'shape', data: { type: 'shape', shapeType: 'pentagon', w: 100, h: 100 }, tags: ['poly', '5'] },
-    { id: 'octagon', label: 'Octagon', icon: '🛑', type: 'shape', data: { type: 'shape', shapeType: 'octagon', w: 100, h: 100 }, tags: ['poly', 'stop'] },
-    { id: 'trapezoid', label: 'Trapezoid', icon: '⏢', type: 'shape', data: { type: 'shape', shapeType: 'trapezoid', w: 120, h: 80 }, tags: ['poly'] },
-    { id: 'parallelogram', label: 'Parallel', icon: '▱', type: 'shape', data: { type: 'shape', shapeType: 'parallelogram', w: 120, h: 80 }, tags: ['poly'] },
-    { id: 'triangle_right', label: 'Right Tri', icon: '⊿', type: 'shape', data: { type: 'shape', shapeType: 'triangle_right', w: 100, h: 100 }, tags: ['poly'] },
-    { id: 'cross', label: 'Plus', icon: '✚', type: 'shape', data: { type: 'shape', shapeType: 'cross', w: 100, h: 100 }, tags: ['math'] },
+    { id: 'hexagon', label: 'Hexágono', icon: '⬡', type: 'shape', data: shapeData('hexagon', 110, 100), tags: ['poly', '6', 'hexagono'] },
+    { id: 'pentagon', label: 'Pentágono', icon: '⬠', type: 'shape', data: shapeData('pentagon', 100, 100), tags: ['poly', '5', 'pentagono'] },
+    { id: 'octagon', label: 'Octágono', icon: '⯃', type: 'shape', data: shapeData('octagon', 100, 100), tags: ['poly', 'stop', 'octagono'] },
+    { id: 'trapezoid', label: 'Trapecio', icon: '⏢', type: 'shape', data: shapeData('trapezoid', 120, 80), tags: ['poly', 'trapecio'] },
+    { id: 'parallelogram', label: 'Paralelo.', icon: '▱', type: 'shape', data: shapeData('parallelogram', 120, 80), tags: ['poly', 'paralelogramo'] },
+    { id: 'triangle_right', label: 'Tri. Recto', icon: '◢', type: 'shape', data: shapeData('triangle_right', 100, 100), tags: ['poly'] },
+    { id: 'cross', label: 'Cruz', icon: '✚', type: 'shape', data: shapeData('cross', 100, 100), tags: ['math', 'plus', 'cruz'] },
 ];
 
 const ARROW_SHAPES: AssetDefinition[] = [
-    { id: 'arrow_left', label: 'Left', icon: '⬅️', type: 'shape', data: { type: 'shape', shapeType: 'arrow_left', w: 100, h: 60 }, tags: ['dir'] },
-    { id: 'arrow_up', label: 'Up', icon: '⬆️', type: 'shape', data: { type: 'shape', shapeType: 'arrow_up', w: 60, h: 100 }, tags: ['dir'] },
-    { id: 'arrow_down', label: 'Down', icon: '⬇️', type: 'shape', data: { type: 'shape', shapeType: 'arrow_down', w: 60, h: 100 }, tags: ['dir'] },
-    { id: 'chevron', label: 'Chevron', icon: '›', type: 'shape', data: { type: 'shape', shapeType: 'chevron_right', w: 60, h: 100 }, tags: ['dir'] },
+    { id: 'arrow_left', label: 'Izquierda', icon: '⬅', type: 'shape', data: shapeData('arrow_left', 120, 64), tags: ['dir', 'izquierda'] },
+    { id: 'arrow_up', label: 'Arriba', icon: '⬆', type: 'shape', data: shapeData('arrow_up', 64, 120), tags: ['dir', 'arriba'] },
+    { id: 'arrow_down', label: 'Abajo', icon: '⬇', type: 'shape', data: shapeData('arrow_down', 64, 120), tags: ['dir', 'abajo'] },
+    { id: 'chevron', label: 'Chevron', icon: '›', type: 'shape', data: shapeData('chevron_right', 64, 100), tags: ['dir'] },
 ];
 
 // --- Flattened Shape Lists for cleaner export ---
@@ -189,47 +202,11 @@ const createNode = (type: string, x: number, y: number, w: number, h: number, co
     content: { color: '#ffffff', ...content } // Default white bg
 });
 
-const createText = (x: number, y: number, w: number, h: number, text: string, fontSize: number = 14, fontWeight: string = 'normal', color: string = '#1e293b') =>
-    createNode('text', x, y, w, h, { title: text, fontSize, fontWeight, color, textAlign: 'center', backgroundColor: 'transparent' });
+const createText = (x: number, y: number, w: number, h: number, text: string, fontSize: number = 14, fontWeight: string = 'normal', color: string = '#1e293b', textAlign: string = 'center') =>
+    createNode('text', x, y, w, h, { title: text, fontSize, fontWeight, color, textAlign, backgroundColor: 'transparent' });
 
 // 1. Frameworks
-const T_DAFO = {
-    nodes: [
-        // Header
-        createText(0, 0, 800, 50, 'DAFO / SWOT ANALYSIS', 24, 'bold'),
-        // Matrix
-        createNode('shape', 0, 60, 390, 250, { color: '#dcfce7', borderRadius: 8 }), // Strengths
-        createText(10, 70, 200, 30, 'STRENGTHS', 16, 'bold', '#166534'),
 
-        createNode('shape', 410, 60, 390, 250, { color: '#fee2e2', borderRadius: 8 }), // Weaknesses
-        createText(420, 70, 200, 30, 'WEAKNESSES', 16, 'bold', '#991b1b'),
-
-        createNode('shape', 0, 320, 390, 250, { color: '#dbeafe', borderRadius: 8 }), // Opportunities
-        createText(10, 330, 200, 30, 'OPPORTUNITIES', 16, 'bold', '#1e40af'),
-
-        createNode('shape', 410, 320, 390, 250, { color: '#ffedd5', borderRadius: 8 }), // Threats
-        createText(420, 330, 200, 30, 'THREATS', 16, 'bold', '#9a3412'),
-    ]
-};
-
-const T_MATRIX_2X2 = {
-    nodes: [
-        // Axes
-        createNode('shape', 0, 0, 600, 600, { color: 'transparent', borderColor: '#94a3b8', borderWidth: 2 }),
-        createNode('line', 300, 0, 0, 600, { color: '#cbd5e1', strokeWidth: 2 }),
-        createNode('line', 0, 300, 600, 0, { color: '#cbd5e1', strokeWidth: 2 }),
-        // Labels
-        createText(250, 10, 100, 30, 'HIGH IMPACT', 12, 'bold'),
-        createText(250, 560, 100, 30, 'LOW IMPACT', 12, 'bold'),
-        createText(10, 285, 100, 30, 'LOW EFFORT', 12, 'bold'),
-        createText(500, 285, 100, 30, 'HIGH EFFORT', 12, 'bold'),
-        // Quadrants
-        createText(100, 100, 100, 30, 'Quick Wins', 16, 'bold', '#166534'),
-        createText(400, 100, 100, 30, 'Major Projects', 16, 'bold', '#1e40af'),
-        createText(100, 400, 100, 30, 'Fill Ins', 16, 'bold', '#94a3b8'),
-        createText(400, 400, 100, 30, 'Thankless Tasks', 16, 'bold', '#ef4444'),
-    ]
-};
 
 const T_BMC = {
     nodes: [
@@ -268,31 +245,7 @@ const T_BMC = {
 };
 
 // 2. Grids & Layouts
-const T_GRID_3COL = {
-    nodes: [
-        createNode('shape', 0, 0, 250, 500, { color: '#f1f5f9', borderRadius: 8 }),
-        createText(10, 10, 230, 30, 'Column 1', 14, 'bold'),
-        createNode('shape', 270, 0, 250, 500, { color: '#f1f5f9', borderRadius: 8 }),
-        createText(280, 10, 230, 30, 'Column 2', 14, 'bold'),
-        createNode('shape', 540, 0, 250, 500, { color: '#f1f5f9', borderRadius: 8 }),
-        createText(550, 10, 230, 30, 'Column 3', 14, 'bold'),
-    ]
-};
 
-const T_MENU_LAYOUT = {
-    nodes: [
-        createText(0, 0, 400, 40, 'Menu Section', 20, 'bold', '#d97706'),
-        // Item 1
-        createText(0, 50, 300, 30, 'Signature Dish', 16, 'bold'),
-        createText(320, 50, 80, 30, '$18', 16, 'bold', '#166534'),
-        createText(0, 80, 400, 40, 'Description of the dish goes here. Tasty and fresh.', 12, 'normal', '#64748b'),
-        createNode('line', 0, 130, 400, 0, { color: '#e2e8f0', strokeWidth: 1 }),
-        // Item 2
-        createText(0, 150, 300, 30, 'Another Delight', 16, 'bold'),
-        createText(320, 150, 80, 30, '$24', 16, 'bold', '#166534'),
-        createText(0, 180, 400, 40, 'Another description. Premium ingredients only.', 12, 'normal', '#64748b'),
-    ]
-};
 
 // 3. Cards & Blocks
 const T_KPI_CARD = {
@@ -304,16 +257,6 @@ const T_KPI_CARD = {
     ]
 };
 
-const T_COCKTAIL_CARD = {
-    nodes: [
-        createNode('shape', 0, 0, 300, 400, { color: '#1e293b', borderRadius: 16 }),
-        createNode('shape', 0, 0, 300, 200, { color: '#334155', borderRadius: 16 }), // Image placeholder
-        createText(100, 80, 100, 40, 'PHOTO', 20, 'bold', '#94a3b8'),
-        createText(20, 220, 260, 40, 'Negroni Sbagliato', 20, 'bold', '#ffffff'),
-        createText(20, 260, 260, 100, '• 1oz Campari\n• 1oz Sweet Vermouth\n• 1oz Prosecco', 14, 'normal', '#cbd5e1'),
-        createText(20, 360, 100, 30, 'Stir / Rocks', 12, 'italic', '#94a3b8'),
-    ]
-};
 
 // 4. Diagrams
 const T_FLOW_3STEP = {
@@ -354,21 +297,6 @@ const T_TABLE_SIMPLE = {
     ]
 };
 
-const T_KANBAN_SIMPLE = {
-    nodes: [
-        createText(0, 0, 800, 40, 'Project Kanban', 24, 'bold'),
-        // Columns
-        createNode('shape', 0, 50, 250, 400, { color: '#f1f5f9', borderRadius: 8 }),
-        createText(10, 60, 200, 20, 'To Do', 14, 'bold'),
-        createNode('shape', 270, 50, 250, 400, { color: '#f1f5f9', borderRadius: 8 }),
-        createText(280, 60, 200, 20, 'In Progress', 14, 'bold', '#eab308'),
-        createNode('shape', 540, 50, 250, 400, { color: '#f1f5f9', borderRadius: 8 }),
-        createText(550, 60, 200, 20, 'Done', 14, 'bold', '#22c55e'),
-        // Cards
-        createNode('shape', 10, 100, 230, 80, { color: 'white', borderRadius: 4, shadow: { color: '#000000', blur: 4, offsetX: 0, offsetY: 2, opacity: 0.1 } }),
-        createText(20, 110, 210, 60, 'Task 1: Analysis', 12, 'normal'),
-    ]
-};
 
 const T_TIMELINE_H = {
     nodes: [
@@ -383,17 +311,6 @@ const T_TIMELINE_H = {
     ]
 };
 
-const T_BRAINSTORM = {
-    nodes: [
-        createText(0, 0, 400, 40, 'Brainstorming Session', 24, 'bold'),
-        createNode('shape', 0, 60, 150, 150, { color: '#fef3c7', shadow: { color: '#000000', blur: 2, offsetX: 2, offsetY: 2, opacity: 0.1 } }), // Yellow
-        createText(10, 70, 130, 130, 'Idea 1', 16, 'normal'),
-        createNode('shape', 170, 60, 150, 150, { color: '#dcfce7', shadow: { color: '#000000', blur: 2, offsetX: 2, offsetY: 2, opacity: 0.1 } }), // Green
-        createText(180, 70, 130, 130, 'Idea 2', 16, 'normal'),
-        createNode('shape', 340, 60, 150, 150, { color: '#dbeafe', shadow: { color: '#000000', blur: 2, offsetX: 2, offsetY: 2, opacity: 0.1 } }), // Blue
-        createText(350, 70, 130, 130, 'Idea 3', 16, 'normal'),
-    ]
-};
 
 
 
@@ -408,96 +325,66 @@ const T_APP_FLOW = {
 };
 
 
+// Board template built on the new zone-based structure system.
+// Each produces a single `board` node carrying structureId + a deep copy of the
+// matching STRUCTURE_TEMPLATE so it follows dark mode and inline zone editing.
+const boardTemplate = (
+    structureId: string, label: string, icon: string, w: number, h: number, tags: string[] = [],
+): AssetDefinition => ({
+    id: `tpl-${structureId}`,
+    label, icon, type: 'template', tags,
+    data: {
+        nodes: [{
+            id: `n-${structureId}`, type: 'board', x: 0, y: 0, w, h,
+            content: { title: label, color: '#ffffff' },
+            structureId,
+            structure: JSON.parse(JSON.stringify(STRUCTURE_TEMPLATES[structureId])),
+        }],
+    },
+});
+
 export const TEMPLATE_LIBRARIES: AssetCategory[] = [
     {
-        id: 'frameworks',
-        label: 'Estructuras', // Renamed from Marcos de Trabajo
+        id: 'pizarras',
+        label: 'Pizarras',
         items: [
             {
-                id: 't-empty', label: 'Pizarra Vacía', icon: '⬜', type: 'template', tags: ['empty', 'blank'],
+                id: 't-empty', label: 'Pizarra Vacía', icon: '⬜', type: 'template', tags: ['empty', 'blank', 'vacia'],
                 data: { nodes: [{ id: 'board-empty', type: 'board', x: 0, y: 0, w: 800, h: 600, content: { title: 'Nueva Pizarra', color: '#ffffff' } }] }
             },
-            { id: 't-dafo', label: 'Análisis DAFO', icon: '⊞', type: 'template', data: T_DAFO, tags: ['swot', 'strategy'] },
-            { id: 't-matrix', label: 'Matriz 2x2', icon: '田', type: 'template', data: T_MATRIX_2X2, tags: ['priority', 'grid'] },
-            { id: 't-bmc', label: 'Business Canvas', icon: '📰', type: 'template', data: T_BMC, tags: ['business', 'model'] },
-            { id: 't-kanban', label: 'Tablero Kanban', icon: '📋', type: 'template', data: T_KANBAN_SIMPLE, tags: ['agile', 'task'] },
-            // COMPOSITES MERGED HERE
-            {
-                id: 'comp-swot', label: 'Smart SWOT', icon: '⊞', type: 'template',
-                data: {
-                    nodes: [{
-                        id: 'swot-1', type: 'composite', x: 0, y: 0, w: 600, h: 400,
-                        content: {
-                            composite: {
-                                layout: 'swot',
-                                structure: { rows: 2, cols: 2, gap: 10, padding: 20 },
-                                cells: [
-                                    { id: 'c1', row: 0, col: 0, text: 'STRENGTHS', color: '#dcfce7' },
-                                    { id: 'c2', row: 0, col: 1, text: 'WEAKNESSES', color: '#fee2e2' },
-                                    { id: 'c3', row: 1, col: 0, text: 'OPPORTUNITIES', color: '#dbeafe' },
-                                    { id: 'c4', row: 1, col: 1, text: 'THREATS', color: '#ffedd5' },
-                                ]
-                            }
-                        }
-                    }]
-                }
-            },
-            {
-                id: 'comp-grid-2x2', label: 'Smart Grid 2x2', icon: '田', type: 'template',
-                data: {
-                    nodes: [{
-                        id: 'grid-2x2', type: 'composite', x: 0, y: 0, w: 400, h: 400,
-                        content: {
-                            composite: {
-                                layout: 'grid',
-                                structure: { rows: 2, cols: 2, gap: 10, padding: 0 },
-                                cells: Array.from({ length: 4 }, (_, i) => ({
-                                    id: `c-${i}`, row: Math.floor(i / 2), col: i % 2, text: '', color: '#ffffff'
-                                }))
-                            }
-                        }
-                    }]
-                }
-            }
+            boardTemplate('technical-grid-structure', 'Análisis DAFO', '⚡', 900, 700, ['swot', 'dafo', 'estrategia']),
+            boardTemplate('menu-design-structure', 'Ingeniería de Menú', '📊', 900, 720, ['bcg', 'matriz', 'rentabilidad']),
+            boardTemplate('kanban-structure', 'Kanban', '📋', 1000, 620, ['agile', 'tareas', 'kanban']),
+            boardTemplate('comparison-structure', 'Comparación', '⚖️', 1000, 620, ['comparar', 'opciones']),
+            boardTemplate('planning-structure', 'Planificación Semanal', '📅', 1100, 600, ['semana', 'agenda', 'plan']),
         ]
     },
     {
-        id: 'layouts',
-        label: 'Grillas y Diseños',
+        id: 'fyb',
+        label: 'F&B / Carta',
         items: [
-            { id: 't-3col', label: '3 Columnas', icon: '|||', type: 'template', data: T_GRID_3COL, tags: ['structure', 'layout'] },
-            { id: 't-menu', label: 'Diseño Menú', icon: '📜', type: 'template', data: T_MENU_LAYOUT, tags: ['food', 'list'] },
-            { id: 't-brainstorm', label: 'Lluvia de Ideas', icon: '🧠', type: 'template', data: T_BRAINSTORM, tags: ['ideas', 'sticky'] },
+            boardTemplate('cocktail-recipe-structure', 'Ficha de Cóctel', '🍸', 760, 880, ['coctel', 'receta', 'drink']),
+            boardTemplate('menu-layout-structure', 'Carta de Menú', '📜', 620, 820, ['menu', 'carta', 'food']),
         ]
     },
     {
-        id: 'cards',
-        label: 'Tarjetas y Bloques',
+        id: 'creativo',
+        label: 'Creativo',
         items: [
-            { id: 't-kpi', label: 'Tarjeta KPI', icon: '📊', type: 'template', data: T_KPI_CARD, tags: ['metric', 'data'] },
-            { id: 't-cocktail', label: 'Tarjeta Cóctel', icon: '🍸', type: 'template', data: T_COCKTAIL_CARD, tags: ['drink', 'recipe'] },
+            boardTemplate('storytelling-structure', 'Storytelling', '✨', 1000, 620, ['historia', 'marca', 'concepto']),
+            boardTemplate('visual-moodboard-structure', 'Moodboard', '🖼️', 900, 680, ['inspiracion', 'imagenes', 'mood']),
         ]
     },
     {
-        id: 'diagrams',
-        label: 'Diagramas',
+        id: 'componentes',
+        label: 'Componentes',
         items: [
-            { id: 't-flow', label: 'Proceso de Flujo', icon: '↔', type: 'template', data: T_FLOW_3STEP, tags: ['flow', 'steps'] },
-            { id: 't-timeline', label: 'Línea de Tiempo', icon: '⟷', type: 'template', data: T_TIMELINE_H, tags: ['time', 'roadmap'] },
-        ]
-    },
-    {
-        id: 'tables',
-        label: 'Tablas',
-        items: [
-            { id: 't-table', label: 'Tabla Simple', icon: '▦', type: 'template', data: T_TABLE_SIMPLE, tags: ['data', 'rows'] },
-        ]
-    },
-    {
-        id: 'systems',
-        label: 'Móvil / App',
-        items: [
-            { id: 't-app', label: 'Vista Móvil', icon: '📱', type: 'template', data: T_APP_FLOW, tags: ['wireframe', 'mobile'] },
+            { id: 't-kpi', label: 'Tarjeta KPI', icon: '📊', type: 'template', data: T_KPI_CARD, tags: ['metric', 'data', 'kpi'] },
+            { id: 't-flow', label: 'Proceso de Flujo', icon: '↔', type: 'template', data: T_FLOW_3STEP, tags: ['flow', 'steps', 'flujo'] },
+            { id: 't-timeline', label: 'Línea de Tiempo', icon: '⟷', type: 'template', data: T_TIMELINE_H, tags: ['time', 'roadmap', 'tiempo'] },
+            { id: 't-table', label: 'Tabla Simple', icon: '▦', type: 'template', data: T_TABLE_SIMPLE, tags: ['data', 'rows', 'tabla'] },
+            { id: 't-bmc', label: 'Business Canvas', icon: '📰', type: 'template', data: T_BMC, tags: ['business', 'model', 'canvas'] },
+            { id: 't-app', label: 'Vista Móvil', icon: '📱', type: 'template', data: T_APP_FLOW, tags: ['wireframe', 'mobile', 'movil'] },
         ]
     },
     {
@@ -576,20 +463,69 @@ export const GRAPHIC_LIBRARIES: AssetCategory[] = [
 
 
 // --- Text Presets ---
+// Text preset helper — builds a single-node text template
+const textPreset = (
+    id: string, label: string, sample: string,
+    content: { fontFamily?: string; fontSize?: number; fontWeight?: string | number; fontStyle?: string; color?: string; textAlign?: string; letterSpacing?: number; lineHeight?: number; backgroundColor?: string; borderRadius?: number; padding?: number },
+    w = 320, h = 60,
+): AssetDefinition => ({
+    id, label, icon: 'T', type: 'template',
+    data: { nodes: [{ id: `n-${id}`, type: 'text', x: 0, y: 0, w, h, content: { title: sample, fontFamily: 'Inter', fontSize: 16, ...content } }] },
+});
+
 export const TEXT_PRESETS: AssetCategory[] = [
     {
         id: 'headings',
-        label: 'Encabezados',
+        label: 'Jerarquía',
         items: [
-            { id: 'text-basic', label: 'Texto Simple', icon: 'T', type: 'template', data: { nodes: [{ id: 'n-txt', type: 'text', x: 0, y: 0, w: 200, h: 40, content: { title: 'Tu texto aquí', fontSize: 16, fontFamily: 'Inter' } }] } },
-            { id: 'h1', label: 'H1 Title', icon: 'H1', type: 'template', data: { nodes: [{ id: 'n1', type: 'text', x: 0, y: 0, w: 400, h: 60, content: { title: 'Big Heading', fontSize: 48, fontWeight: 'bold', fontFamily: 'Inter' } }] } },
-            { id: 'h2', label: 'H2 Sub', icon: 'H2', type: 'template', data: { nodes: [{ id: 'n2', type: 'text', x: 0, y: 0, w: 300, h: 40, content: { title: 'Sub Heading', fontSize: 32, fontWeight: '600', fontFamily: 'Inter' } }] } },
-            { id: 'h3', label: 'H3 Small', icon: 'H3', type: 'template', data: { nodes: [{ id: 'n2b', type: 'text', x: 0, y: 0, w: 250, h: 30, content: { title: 'Small Heading', fontSize: 24, fontWeight: '600', fontFamily: 'Inter' } }] } },
-            { id: 'p', label: 'Paragraph', icon: '¶', type: 'template', data: { nodes: [{ id: 'n3', type: 'text', x: 0, y: 0, w: 300, h: 100, content: { title: 'Start typing here...', fontSize: 16, fontFamily: 'Inter' } }] } },
-            { id: 'code', label: 'Code', icon: '</>', type: 'template', data: { nodes: [{ id: 'n4', type: 'text', x: 0, y: 0, w: 300, h: 100, content: { title: 'const foo = "bar";', fontSize: 14, fontFamily: 'Fira Code', backgroundColor: '#f1f5f9', color: '#0f172a' } }] } },
-            { id: 'quote', label: 'Quote', icon: '“', type: 'template', data: { nodes: [{ id: 'n5', type: 'text', x: 0, y: 0, w: 300, h: 80, content: { title: '“To be or not to be...”', fontSize: 20, fontFamily: 'Playfair Display', fontStyle: 'italic', color: '#475569' } }] } },
+            textPreset('text-basic', 'Texto Simple', 'Tu texto aquí', { fontSize: 16 }, 220, 40),
+            textPreset('h1', 'H1 · Título', 'Título Principal', { fontSize: 48, fontWeight: 700, letterSpacing: -1 }, 460, 64),
+            textPreset('h2', 'H2 · Subtítulo', 'Subtítulo de Sección', { fontSize: 32, fontWeight: 600, letterSpacing: -0.5 }, 380, 48),
+            textPreset('h3', 'H3 · Apartado', 'Apartado Menor', { fontSize: 24, fontWeight: 600 }, 300, 36),
+            textPreset('p', 'Párrafo', 'Escribe aquí tu contenido. Ideal para descripciones y bloques de texto largos.', { fontSize: 16, lineHeight: 1.5 }, 360, 110),
+            textPreset('caption', 'Pie / Caption', 'Texto pequeño de apoyo', { fontSize: 12, color: '#94a3b8', letterSpacing: 0.3 }, 260, 28),
         ]
-    }
+    },
+    {
+        id: 'display',
+        label: 'Impacto / Display',
+        items: [
+            textPreset('d-bebas', 'Condensada', 'TÍTULO CON FUERZA', { fontFamily: 'Bebas Neue', fontSize: 52, letterSpacing: 1 }, 460, 70),
+            textPreset('d-anton', 'Editorial', 'Gran Titular', { fontFamily: 'Abril Fatface', fontSize: 48, fontWeight: 400 }, 440, 66),
+            textPreset('d-montserrat', 'Moderna', 'DISEÑO LIMPIO', { fontFamily: 'Montserrat', fontSize: 38, fontWeight: 700, letterSpacing: 2 }, 440, 56),
+            textPreset('d-poppins', 'Geométrica', 'Estilo Geométrico', { fontFamily: 'Poppins', fontSize: 40, fontWeight: 600 }, 440, 58),
+        ]
+    },
+    {
+        id: 'elegant',
+        label: 'Elegante / Serif',
+        items: [
+            textPreset('e-playfair', 'Lujo', 'Elegancia Atemporal', { fontFamily: 'Playfair Display', fontSize: 40, fontWeight: 600 }, 440, 60),
+            textPreset('e-lora', 'Editorial Serif', 'Lectura Refinada', { fontFamily: 'Lora', fontSize: 30, fontWeight: 500 }, 380, 48),
+            textPreset('e-merri', 'Clásica', 'Tradición y Detalle', { fontFamily: 'Merriweather', fontSize: 28, fontWeight: 400 }, 380, 46),
+            textPreset('quote', 'Cita', '"La simplicidad es la máxima sofisticación."', { fontFamily: 'Playfair Display', fontSize: 22, fontStyle: 'italic', color: '#64748b', lineHeight: 1.4 }, 360, 90),
+        ]
+    },
+    {
+        id: 'handwriting',
+        label: 'Manuscrita',
+        items: [
+            textPreset('h-pacifico', 'Casual', 'Hecho a mano', { fontFamily: 'Pacifico', fontSize: 38, fontWeight: 400 }, 380, 60),
+            textPreset('h-dancing', 'Cursiva', 'Con estilo propio', { fontFamily: 'Dancing Script', fontSize: 40, fontWeight: 700 }, 380, 58),
+            textPreset('h-indie', 'Informal', 'Nota rápida', { fontFamily: 'Indie Flower', fontSize: 34, fontWeight: 400 }, 320, 50),
+            textPreset('h-marker', 'Rotulador', 'DESTACADO!', { fontFamily: 'Permanent Marker', fontSize: 34, fontWeight: 400, color: '#f97316' }, 340, 52),
+        ]
+    },
+    {
+        id: 'mono',
+        label: 'Técnico / Etiquetas',
+        items: [
+            textPreset('code', 'Código', 'const sabor = "premium";', { fontFamily: 'Fira Code', fontSize: 15, color: '#e2e8f0', backgroundColor: '#1e293b', borderRadius: 8, padding: 12 }, 320, 80),
+            textPreset('m-space', 'Monoespaciada', 'DATA · 2026', { fontFamily: 'Space Mono', fontSize: 22, fontWeight: 700, letterSpacing: 1 }, 300, 40),
+            textPreset('badge', 'Etiqueta', 'NUEVO', { fontFamily: 'Inter', fontSize: 13, fontWeight: 700, color: '#ffffff', backgroundColor: '#f97316', borderRadius: 99, padding: 8, textAlign: 'center', letterSpacing: 1 }, 120, 34),
+            textPreset('label-up', 'Eyebrow', 'CATEGORÍA', { fontFamily: 'Inter', fontSize: 12, fontWeight: 600, color: '#0ea5e9', letterSpacing: 2 }, 200, 26),
+        ]
+    },
 ];
 
 // Keep other exports if necessary

@@ -9,7 +9,7 @@ export const evaluateCostActiveRules = (insights: AssistedInsight[]): ActiveSugg
     // Trigger: INSIGHT_COST_OVERRUN
     const overrunInsight = insights.find(i => i.id === 'INSIGHT_COST_OVERRUN');
 
-    if (overrunInsight && overrunInsight.priorityScore >= 75) {
+    if (overrunInsight && (overrunInsight.priorityScore ?? 0) >= 75) {
         suggestions.push({
             id: `SUGGEST_REVIEW_COST_${Date.now()}`,
             type: 'SUGGEST_REVIEW_RECIPE_COST',
@@ -17,7 +17,7 @@ export const evaluateCostActiveRules = (insights: AssistedInsight[]): ActiveSugg
             title: 'Revisión de Márgenes',
             proposal: 'Auditar composición para recuperar margen.',
             why: 'El desvío de coste supera el umbral de tolerancia.',
-            evidence: overrunInsight.evidence,
+            evidence: overrunInsight.evidence ?? [],
             expectedImpact: {
                 deltaCostAbs: 0, // Unknown without deeper analysis
                 recipesAffected: 1

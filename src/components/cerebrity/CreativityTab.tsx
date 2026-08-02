@@ -1,6 +1,6 @@
 import React from 'react';
 import { Firestore, updateDoc, doc, addDoc, collection, serverTimestamp } from 'firebase/firestore';
-import { Recipe, CerebrityResult } from '../../../types';
+import { Recipe, CerebrityResult } from '../../types';
 import { Card, CardHeader, CardTitle, CardContent } from '../ui/Card';
 import { Button } from '../ui/Button';
 import { Label } from '../ui/Label';

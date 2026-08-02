@@ -39,7 +39,7 @@ export const ChatbotWidget: React.FC = () => {
                 model: 'gemini-2.5-flash',
                 contents: [...messages, userMessage],
             });
-            const modelMessage: ChatMessage = { role: 'model', parts: [{ text: response.text }] };
+            const modelMessage: ChatMessage = { role: 'model', parts: [{ text: (response as any).text || '' }] };
             setMessages(prev => [...prev, modelMessage]);
         } catch (error) {
             console.error("Chatbot error:", error);

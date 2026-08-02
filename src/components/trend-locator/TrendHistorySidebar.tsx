@@ -1,13 +1,13 @@
 import React from 'react';
 import { Firestore, collection, query, orderBy, limit, onSnapshot } from 'firebase/firestore';
-import { TrendResult } from '../../../types';
+import { TrendResult } from '../../types';
 import { Card } from '../ui/Card';
 
 interface TrendHistorySidebarProps {
     db: Firestore;
     trendHistoryPath: string;
     onClose?: () => void;
-    onLoadHistory: (item: TrendResult) => void;
+    onLoadHistory?: (item: TrendResult) => void;
 }
 
 export const TrendHistorySidebar: React.FC<TrendHistorySidebarProps> = ({ db, trendHistoryPath, onLoadHistory }) => {
@@ -37,7 +37,7 @@ export const TrendHistorySidebar: React.FC<TrendHistorySidebarProps> = ({ db, tr
                 {loading && <p className="p-4 text-center text-sm text-muted-foreground">Cargando...</p>}
                 {!loading && history.length === 0 && <p className="p-4 text-center text-sm text-muted-foreground">No hay historial.</p>}
                 {history.map(item => (
-                    <div key={item.id} onClick={() => onLoadHistory(item)} className="cursor-pointer backdrop-blur-xl bg-white/40 dark:bg-slate-900/40 border border-white/20 shadow-lg hover:shadow-xl p-3 rounded-xl transition-all">
+                    <div key={item.id} onClick={() => onLoadHistory?.(item)} className="cursor-pointer backdrop-blur-xl bg-white/40 dark:bg-slate-900/40 border border-white/20 shadow-lg hover:shadow-xl p-3 rounded-xl transition-all">
                         <p className="font-semibold text-sm text-slate-900 dark:text-slate-100 line-clamp-2">{item.titulo}</p>
                         <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{item.fuente}</p>
                     </div>

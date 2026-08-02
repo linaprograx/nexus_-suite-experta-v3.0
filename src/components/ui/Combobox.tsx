@@ -1,6 +1,6 @@
 import React from 'react';
 import { Input } from './Input';
-import { Ingredient, Recipe } from '../../../types';
+import { Ingredient, Recipe } from '../../types';
 
 export const Combobox: React.FC<{
     items: (Ingredient | Recipe)[];

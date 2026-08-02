@@ -1,4 +1,4 @@
-import { Ingredient } from '../../../types';
+import { Ingredient } from '../../types';
 
 export type { Ingredient };
 

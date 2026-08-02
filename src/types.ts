@@ -18,6 +18,26 @@ export interface StockItem {
     lastPurchaseQuantity: number;
 }
 
+/**
+ * A stock OUT/adjustment movement. Complements PurchaseEvent (stock IN): stock available =
+ * purchases − movements. `quantity` is always the amount removed (positive number).
+ *  - 'consumption': used by producing/selling a recipe
+ *  - 'waste': breakage/spillage
+ *  - 'adjustment': physical count reconciliation (digital − counted)
+ */
+export interface StockMovement {
+    id: string;
+    ingredientId: string;
+    ingredientName: string;
+    quantity: number;   // amount removed, in `unit`
+    unit: string;
+    type: 'consumption' | 'waste' | 'adjustment';
+    reason?: string;
+    recipeId?: string;
+    recipeName?: string;
+    createdAt: Date | any;
+}
+
 export interface PurchaseEvent {
     id: string;
     ingredientId: string;
@@ -49,6 +69,7 @@ export interface Ingredient {
 
     standardUnit?: string;
     standardQuantity?: number;
+    standardPrice?: number; // Price per standard unit (waste-adjusted) — €/ml, €/g, etc.
     stock?: number;
     emoji?: string;
     recipe?: {
@@ -185,6 +206,16 @@ export interface IngredientLineItem {
     nombre: string;
     cantidad: number;
     unidad: string;
+    /** @deprecated Legacy reference to another Recipe used as a sub-recipe. */
+    subRecipeId?: string | null;
+    /** Marks this line as an inline SUB-RECIPE box. Its `subItems` define the batch;
+     *  cost is prorated: (batch total cost / batch total volume) × cantidad (ml used). */
+    isSubRecipe?: boolean;
+    /** Marks this line as a GARNISH. Same batch machinery as a sub-recipe, but solid-first
+     *  (measured in grams/units) and linked to the garnish catalog. */
+    isGarnish?: boolean;
+    /** The sub-recipe's / garnish's own components (only when isSubRecipe or isGarnish). */
+    subItems?: IngredientLineItem[];
 }
 
 export interface Recipe {
@@ -206,6 +237,8 @@ export interface Recipe {
     garnish?: string;
     technique?: string;
     abv?: number;
+    /** Nº de porciones/raciones/tragos que rinde la receta (para coste por porción). */
+    porciones?: number;
 }
 
 export interface CerebrityResult {
@@ -352,6 +385,11 @@ export interface UserProfile {
     role?: string;
     jobTitle?: string;
     bio?: string;
+    instagramHandle?: string;
+    mantra?: string;
+    mantraAuthor?: string;
+    experience?: number; // Total XP (progression system)
+    level?: number;      // Cached level derived from XP
 }
 
 export interface ZeroWasteResult {
@@ -378,6 +416,8 @@ export interface QuizQuestion {
     options: string[];
     correctAnswerIndex: number;
     type: 'multiple-choice' | 'true-false';
+    explanation?: string; // AI rationale shown after answering
+    visualGlass?: string; // glassware name → renders an SVG icon as a visual prompt
 }
 
 export interface ColegiumResult {
@@ -387,6 +427,7 @@ export interface ColegiumResult {
     topic: string;
     difficulty: string;
     createdAt: any;
+    xpEarned?: number;
 }
 
 export interface UIContextType {
@@ -398,6 +439,18 @@ export interface UIContextType {
     toggleCompactMode: () => void;
     focusMode: boolean;
     toggleFocusMode: () => void;
+}
+
+/** Legacy auth-only context (see context/AuthContext.tsx). AppContextType supersedes it. */
+export interface AuthContextType {
+    app: FirebaseApp | null;
+    userId: string | null;
+    db: Firestore | null;
+    auth: Auth | null;
+    storage: FirebaseStorage | null;
+    user: User | null;
+    isAuthReady: boolean;
+    appId?: string;
 }
 
 export interface AppContextType {

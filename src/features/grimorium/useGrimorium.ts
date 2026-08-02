@@ -24,8 +24,24 @@ export const useGrimorium = ({ db, userId, allRecipes, allIngredients }: UseGrim
         // Safe check for allRecipes being defined
         const recipes = allRecipes || [];
 
+        const q = searchQuery.trim().toLowerCase();
+
         return recipes.filter(recipe => {
-            const matchesSearch = recipe.nombre.toLowerCase().includes(searchQuery.toLowerCase());
+            let matchesSearch = true;
+            if (q) {
+                // Search across name, ingredients (incl. sub-recipe items), garnish and preparation
+                const haystack: string[] = [recipe.nombre || ''];
+                const lines: any[] = (recipe.ingredientes as any[]) || [];
+                for (const li of lines) {
+                    if (li?.nombre) haystack.push(li.nombre);
+                    for (const si of (li?.subItems || [])) {
+                        if (si?.nombre) haystack.push(si.nombre);
+                    }
+                }
+                if ((recipe as any).garnish) haystack.push((recipe as any).garnish);
+                if ((recipe as any).preparacion) haystack.push((recipe as any).preparacion);
+                matchesSearch = haystack.join(' ').toLowerCase().includes(q);
+            }
             const matchesCategory = selectedCategory === 'Todas' ||
                 (recipe.categorias && recipe.categorias.includes(selectedCategory));
             const matchesStatus = selectedStatus === 'Todas' ||

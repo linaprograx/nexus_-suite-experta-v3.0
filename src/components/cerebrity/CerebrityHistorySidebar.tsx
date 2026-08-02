@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { Firestore, collection, query, orderBy, limit, onSnapshot } from 'firebase/firestore';
-import { CerebrityResult } from '../../../types';
+import { CerebrityResult } from '../../types';
 
 interface CerebrityHistorySidebarProps {
     db: Firestore;

@@ -35,6 +35,8 @@ export interface AssistedInsight {
         ingredientIds?: string[];
         supplierIds?: string[];
     };
+    /** Structured data carried to the Active/Action layer so a suggestion can act on the real entity. */
+    payload?: Record<string, any>;
     checklist?: string[];
 }
 

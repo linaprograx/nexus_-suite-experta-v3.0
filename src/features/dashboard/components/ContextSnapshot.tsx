@@ -1,22 +1,24 @@
 import React from 'react';
 import { Icon } from '../../../components/ui/Icon';
 import { ICONS } from '../../../components/ui/icons';
+import { dashboardPanel, panelHighlight } from '../cardStyles';
 
 interface ContextSnapshotProps {
     stats: {
         totalRecipes: number;
         totalTasks: number;
-        tiempoAhorrado: number;
-        creativeRate: number;
+        inventoryValue: number;
+        avgMargin: number;
+        costedRate: number;
+        productsWithoutPrice: number;
     };
 }
 
 export const ContextSnapshot: React.FC<ContextSnapshotProps> = ({ stats }) => {
     return (
 
-        <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl rounded-[24px] p-6 border border-indigo-500/50 shadow-[0_0_15px_-3px_rgba(99,102,241,0.25),_0_20px_40px_-5px_rgba(0,0,0,0.1)] dark:shadow-[0_0_25px_-5px_rgba(99,102,241,0.4),_0_20px_50px_-12px_rgba(0,0,0,0.6)] hover:shadow-[0_0_30px_-5px_rgba(99,102,241,0.4),_0_25px_60px_-12px_rgba(0,0,0,0.2)] dark:hover:shadow-[0_0_40px_-5px_rgba(99,102,241,0.6),_0_25px_60px_-12px_rgba(0,0,0,0.7)] transition-all duration-500 relative overflow-hidden group">
-            {/* Glass Highlight */}
-            <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
+        <div className={dashboardPanel}>
+            <div className={panelHighlight} />
             <h3 className="text-xs font-bold text-gray-400 dark:text-slate-500 uppercase tracking-widest mb-4">
                 Snapshot Operativo
             </h3>
@@ -43,20 +45,20 @@ export const ContextSnapshot: React.FC<ContextSnapshotProps> = ({ stats }) => {
                     </div>
                 </div>
 
-                {/* 3. Eficiencia */}
+                {/* 3. Valor de inventario (real) */}
                 <div className="flex flex-col pt-2 border-t border-gray-100 dark:border-white/5">
-                    <span className="text-lg font-mono text-gray-800 dark:text-gray-200 leading-none mb-1">
-                        {stats.tiempoAhorrado.toFixed(0)}h
+                    <span className="text-lg font-bold text-emerald-600 dark:text-emerald-400 leading-none mb-1 tabular-nums">
+                        €{stats.inventoryValue.toLocaleString('es-ES', { maximumFractionDigits: 0 })}
                     </span>
-                    <span className="text-[10px] text-gray-400 uppercase tracking-wide">Ahorro Tiempo</span>
+                    <span className="text-[10px] text-gray-400 uppercase tracking-wide">Valor Almacén</span>
                 </div>
 
-                {/* 4. Ritmo */}
+                {/* 4. Margen medio (real, color-coded) */}
                 <div className="flex flex-col pt-2 border-t border-gray-100 dark:border-white/5">
-                    <span className="text-lg font-mono text-gray-800 dark:text-gray-200 leading-none mb-1">
-                        {stats.creativeRate}%
+                    <span className={`text-lg font-bold leading-none mb-1 tabular-nums ${stats.avgMargin <= 0 ? 'text-gray-400' : stats.avgMargin >= 70 ? 'text-emerald-600 dark:text-emerald-400' : stats.avgMargin >= 50 ? 'text-amber-500' : 'text-rose-500'}`}>
+                        {stats.avgMargin > 0 ? `${stats.avgMargin.toFixed(0)}%` : '—'}
                     </span>
-                    <span className="text-[10px] text-gray-400 uppercase tracking-wide">Ritmo Creativo</span>
+                    <span className="text-[10px] text-gray-400 uppercase tracking-wide">Margen Medio</span>
                 </div>
             </div>
         </div>

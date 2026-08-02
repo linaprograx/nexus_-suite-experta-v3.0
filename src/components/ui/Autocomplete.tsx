@@ -1,8 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Ingredient } from '../../../types';
+import { createPortal } from 'react-dom';
+import { Ingredient } from '../../types';
 import { Input } from './Input';
-import { Icon } from './Icon';
-import { ICONS } from './icons';
 
 interface AutocompleteProps {
   items: Ingredient[];
@@ -11,16 +10,11 @@ interface AutocompleteProps {
   placeholder?: string;
 }
 
-/**
- * Normalizes and cleans a string for fuzzy searching.
- * @param str The string to normalize.
- * @returns A lowercased, accent-free, and trimmed string.
- */
 const normalizeStr = (str: string) =>
   str
     .toLowerCase()
     .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[̀-ͯ]/g, '')
     .trim();
 
 export const Autocomplete: React.FC<AutocompleteProps> = ({
@@ -33,6 +27,7 @@ export const Autocomplete: React.FC<AutocompleteProps> = ({
   const [filteredItems, setFilteredItems] = useState<Ingredient[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
+  const [rect, setRect] = useState<{ top: number; left: number; width: number } | null>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -42,36 +37,47 @@ export const Autocomplete: React.FC<AutocompleteProps> = ({
     setSearchTerm(selectedItem ? selectedItem.nombre : '');
   }, [selectedId, items]);
 
-  // Debounced search logic
+  // Track input position for the portal dropdown
+  const updateRect = () => {
+    const el = wrapperRef.current;
+    if (el) {
+      const r = el.getBoundingClientRect();
+      setRect({ top: r.bottom + 4, left: r.left, width: r.width });
+    }
+  };
+
   useEffect(() => {
     if (!isOpen) return;
+    updateRect();
+    const handler = () => updateRect();
+    window.addEventListener('scroll', handler, true);
+    window.addEventListener('resize', handler);
+    return () => {
+      window.removeEventListener('scroll', handler, true);
+      window.removeEventListener('resize', handler);
+    };
+  }, [isOpen]);
 
+  // Search logic
+  useEffect(() => {
+    if (!isOpen) return;
     const handler = setTimeout(() => {
       if (searchTerm.length < 1) {
         setFilteredItems([]);
         return;
       }
-
       const normalizedSearch = normalizeStr(searchTerm);
-      const sorted = [...items]
-        .map(item => ({
-          ...item,
-          relevance: normalizeStr(item.nombre).includes(normalizedSearch) ? 1 : 0, // Simple relevance
-        }))
-        .filter(item => item.relevance > 0)
-        .sort((a, b) => b.relevance - a.relevance);
-
+      const sorted = items
+        .filter(item => normalizeStr(item.nombre).includes(normalizedSearch))
+        .slice(0, 50);
       setFilteredItems(sorted);
       setActiveIndex(0);
-    }, 120); // 120ms debounce
-
+    }, 100);
     return () => clearTimeout(handler);
   }, [searchTerm, items, isOpen]);
 
-  // Keyboard navigation
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (!isOpen) return;
-
     if (e.key === 'ArrowDown') {
       e.preventDefault();
       setActiveIndex(prev => (prev < filteredItems.length - 1 ? prev + 1 : prev));
@@ -80,9 +86,7 @@ export const Autocomplete: React.FC<AutocompleteProps> = ({
       setActiveIndex(prev => (prev > 0 ? prev - 1 : 0));
     } else if (e.key === 'Enter') {
       e.preventDefault();
-      if (activeIndex >= 0 && filteredItems[activeIndex]) {
-        handleSelect(filteredItems[activeIndex]);
-      }
+      if (activeIndex >= 0 && filteredItems[activeIndex]) handleSelect(filteredItems[activeIndex]);
     } else if (e.key === 'Escape') {
       setIsOpen(false);
     }
@@ -94,11 +98,12 @@ export const Autocomplete: React.FC<AutocompleteProps> = ({
     setIsOpen(false);
     setActiveIndex(-1);
   };
-  
-  // Close on outside click
+
+  // Close on outside click (accounts for the portalled list)
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (wrapperRef.current && !wrapperRef.current.contains(event.target as Node)) {
+      const target = event.target as Node;
+      if (wrapperRef.current && !wrapperRef.current.contains(target) && !(target as HTMLElement).closest?.('[data-autocomplete-portal]')) {
         setIsOpen(false);
       }
     };
@@ -113,34 +118,39 @@ export const Autocomplete: React.FC<AutocompleteProps> = ({
         type="text"
         value={searchTerm}
         onChange={e => {
-            setSearchTerm(e.target.value);
-            if (!isOpen) setIsOpen(true);
-            if(e.target.value === '') onSelect(null); // Clear selection if input is cleared
+          setSearchTerm(e.target.value);
+          if (!isOpen) setIsOpen(true);
+          if (e.target.value === '') onSelect(null);
         }}
-        onFocus={() => setIsOpen(true)}
+        onFocus={() => { setIsOpen(true); updateRect(); }}
         onKeyDown={handleKeyDown}
         placeholder={placeholder}
         className="h-10 rounded-xl bg-white/80 dark:bg-slate-800/80 w-full"
       />
-      {isOpen && (
-        <ul className="absolute z-10 w-full mt-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg overflow-y-auto max-h-60 animate-in fade-in-0 zoom-in-95">
+      {isOpen && rect && createPortal(
+        <ul
+          data-autocomplete-portal
+          style={{ position: 'fixed', top: rect.top, left: rect.left, width: rect.width, zIndex: 9999 }}
+          className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-2xl overflow-y-auto max-h-60 animate-in fade-in-0 zoom-in-95"
+        >
           {filteredItems.length > 0 ? (
             filteredItems.map((item, index) => (
               <li
                 key={item.id}
-                onClick={() => handleSelect(item)}
+                onMouseDown={(e) => { e.preventDefault(); handleSelect(item); }}
                 onMouseEnter={() => setActiveIndex(index)}
-                className={`px-4 py-2 cursor-pointer text-sm ${
-                  activeIndex === index ? 'bg-slate-100 dark:bg-slate-700' : ''
-                }`}
+                className={`px-4 py-2.5 cursor-pointer text-sm text-slate-700 dark:text-slate-200 ${activeIndex === index ? 'bg-teal-50 dark:bg-teal-900/30 text-teal-700 dark:text-teal-300' : ''}`}
               >
                 {item.nombre}
               </li>
             ))
           ) : searchTerm ? (
-            <li className="px-4 py-2 text-sm text-slate-500">Sin resultados</li>
-          ) : null}
-        </ul>
+            <li className="px-4 py-2.5 text-sm text-slate-400">Sin resultados en el inventario</li>
+          ) : (
+            <li className="px-4 py-2.5 text-xs text-slate-400 italic">Escribe para buscar en tu inventario…</li>
+          )}
+        </ul>,
+        document.body
       )}
     </div>
   );

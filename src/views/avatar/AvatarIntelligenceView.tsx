@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
-import { useAvatarCognition, Tone, ResearchAxis, RiskLevel, CognitiveProfile, SimulationContext, SimulationResult } from '../../hooks/useAvatarCognition';
+import React, { useState } from 'react';
+import { useAvatarCognition, AvatarConfig, Tone, ResearchAxis, RiskLevel, SimulationContext, SimulationResult } from '../../hooks/useAvatarCognition';
 import { Icon } from '../../components/ui/Icon';
 import { ICONS } from '../../components/ui/icons';
 import { useApp } from '../../context/AppContext';
+import { generateText } from '../../services/ai/textService';
 
 // --- VISUAL CONSTANTS (ROSE/GOLD/CHAMPAGNE) ---
 const THEME = {
@@ -34,7 +35,7 @@ const CognitiveConfigModal: React.FC<ConfigModalProps> = ({ title, onClose, chil
                 <div className="p-6 border-b border-slate-100 dark:border-rose-500/10 bg-rose-50/50 dark:bg-rose-500/5">
                     <h3 className="text-xl font-serif text-slate-900 dark:text-white tracking-wide">{title}</h3>
                 </div>
-                <div className="p-8 overflow-y-auto custom-scrollbar">
+                <div className="p-4 lg:p-8 lg:overflow-y-auto custom-scrollbar">
                     {children}
                 </div>
             </div>
@@ -42,8 +43,115 @@ const CognitiveConfigModal: React.FC<ConfigModalProps> = ({ title, onClose, chil
     );
 };
 
+// --- PROFILE MANAGER MODAL (standalone so it can have its own state) ---
+interface ProfileManagerProps {
+    config: AvatarConfig;
+    switchProfile: (id: string) => void;
+    createProfile: (name: string) => void;
+    updateActiveProfile: (partial: any) => void;
+    onClose: () => void;
+    onOpenCalibration: () => void;
+}
+
+const ProfileManagerModal: React.FC<ProfileManagerProps> = ({ config, switchProfile, createProfile, onClose, onOpenCalibration }) => {
+    const [editingId, setEditingId] = useState<string | null>(null);
+    const [editName, setEditName] = useState('');
+    const { updateActiveProfile } = useAvatarCognition();
+
+    const handleCreate = () => {
+        const name = `Perfil ${config.profiles.length + 1}`;
+        createProfile(name);
+        // After creation, state updates and the new profile is active — open calibration
+        setTimeout(onOpenCalibration, 100);
+    };
+
+    const handleRename = (id: string) => {
+        if (editName.trim()) {
+            // Switch to the profile first to make it active, then rename
+            switchProfile(id);
+            updateActiveProfile({ name: editName.trim() });
+        }
+        setEditingId(null);
+    };
+
+    return (
+        <CognitiveConfigModal title="Gestor de Perfiles" onClose={onClose}>
+            <div className="space-y-3">
+                {config.profiles.map(p => (
+                    <div key={p.id} className={`flex items-center justify-between p-4 rounded-xl border transition-all shadow-sm dark:shadow-none ${config.activeProfileId === p.id ? 'bg-rose-50 dark:bg-rose-500/10 border-rose-300 dark:border-rose-500/30' : 'bg-white/50 dark:bg-white/5 border-slate-200 dark:border-white/5 hover:border-rose-200 dark:hover:border-white/10'}`}>
+                        <div className="flex-1 min-w-0 mr-3">
+                            {editingId === p.id ? (
+                                <div className="flex gap-2">
+                                    <input
+                                        autoFocus
+                                        value={editName}
+                                        onChange={e => setEditName(e.target.value)}
+                                        onKeyDown={e => { if (e.key === 'Enter') handleRename(p.id); if (e.key === 'Escape') setEditingId(null); }}
+                                        className="flex-1 px-2 py-1 rounded-lg border border-rose-300 dark:border-rose-500/40 bg-white dark:bg-black/20 text-slate-900 dark:text-white text-sm focus:outline-none"
+                                    />
+                                    <button onClick={() => handleRename(p.id)} className="px-2 py-1 bg-rose-500 text-white rounded-lg text-xs font-bold">OK</button>
+                                    <button onClick={() => setEditingId(null)} className="px-2 py-1 text-slate-400 rounded-lg text-xs">✕</button>
+                                </div>
+                            ) : (
+                                <>
+                                    <h4 className="text-slate-900 dark:text-white font-serif truncate">{p.name}</h4>
+                                    <div className="flex gap-1.5 mt-1 flex-wrap">
+                                        <span className="text-[9px] uppercase tracking-widest text-slate-500 bg-slate-100 dark:bg-black/20 px-2 py-0.5 rounded">{p.tone}</span>
+                                        {p.researchAxis.slice(0, 2).map(a => (
+                                            <span key={a} className="text-[9px] uppercase tracking-widest text-slate-500 bg-slate-100 dark:bg-black/20 px-2 py-0.5 rounded">{a}</span>
+                                        ))}
+                                    </div>
+                                </>
+                            )}
+                        </div>
+                        <div className="flex items-center gap-1 flex-shrink-0">
+                            {config.activeProfileId === p.id && (
+                                <span className="px-2 py-0.5 bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-[9px] font-bold uppercase rounded-full">Activo</span>
+                            )}
+                            {/* Edit name */}
+                            <button
+                                onClick={() => { setEditingId(p.id); setEditName(p.name); }}
+                                className="p-1.5 hover:bg-slate-100 dark:hover:bg-white/10 rounded-lg transition-colors text-slate-400 hover:text-slate-700 dark:hover:text-white"
+                                title="Renombrar"
+                            >
+                                <Icon svg={ICONS.edit} className="w-3.5 h-3.5" />
+                            </button>
+                            {/* Activate + go configure */}
+                            <button
+                                onClick={() => { switchProfile(p.id); onOpenCalibration(); }}
+                                className="p-1.5 hover:bg-rose-100 dark:hover:bg-white/10 rounded-lg transition-colors text-slate-400 hover:text-rose-600 dark:hover:text-white"
+                                title="Activar y configurar"
+                            >
+                                <Icon svg={ICONS.settings} className="w-3.5 h-3.5" />
+                            </button>
+                            {/* Just activate */}
+                            <button
+                                onClick={() => switchProfile(p.id)}
+                                className="p-1.5 hover:bg-slate-100 dark:hover:bg-white/10 rounded-lg transition-colors text-slate-400 hover:text-rose-600 dark:hover:text-white"
+                                title="Activar"
+                            >
+                                <Icon svg={ICONS.play} className="w-3.5 h-3.5" />
+                            </button>
+                        </div>
+                    </div>
+                ))}
+
+                <button
+                    onClick={handleCreate}
+                    className="w-full py-4 border-2 border-dashed border-slate-300 dark:border-white/10 rounded-xl text-slate-500 hover:text-rose-600 dark:hover:text-white hover:border-rose-400/40 dark:hover:border-rose-500/40 hover:bg-rose-50 dark:hover:bg-rose-500/5 transition-all flex items-center justify-center gap-2 group"
+                >
+                    <Icon svg={ICONS.plus} className="w-4 h-4 group-hover:scale-110 transition-transform" />
+                    <span className="font-bold uppercase tracking-widest text-xs">Crear y configurar nuevo perfil</span>
+                </button>
+                <p className="text-center text-[10px] text-slate-400 dark:text-slate-600">Al crear, se abrirá automáticamente la Calibración Cognitiva.</p>
+            </div>
+        </CognitiveConfigModal>
+    );
+};
+
 export const AvatarIntelligenceView: React.FC = () => {
-    const { activeAvatarType, getActiveConfig, getActiveProfile, updateConfig, updateActiveProfile, switchProfile, createProfile, simulateDecision, togglePrinciple, toggleResearchAxis } = useAvatarCognition();
+    const { activeAvatarType, getActiveConfig, getActiveProfile, updateActiveProfile, switchProfile, createProfile, simulateDecision, togglePrinciple, toggleResearchAxis } = useAvatarCognition();
+    const { userProfile } = useApp();
     const config = getActiveConfig();
     const activeProfile = getActiveProfile();
 
@@ -52,23 +160,98 @@ export const AvatarIntelligenceView: React.FC = () => {
     const [simContext, setSimContext] = useState<SimulationContext>({ contextType: 'Service', constraints: [], pressureLevel: 50 });
     const [simResult, setSimResult] = useState<SimulationResult | null>(null);
     const [isSimulating, setIsSimulating] = useState(false);
+    const [aiOutput, setAiOutput] = useState<string | null>(null);
+    const [aiPending, setAiPending] = useState(false);
+    const [savedToast, setSavedToast] = useState(false);
 
-    // Run Simulation
-    const handleSimulation = () => {
-        setIsSimulating(true);
-        setTimeout(() => {
-            const result = simulateDecision(simContext);
-            setSimResult(result);
-            setIsSimulating(false);
-        }, 1500);
+    // Real metrics from profile
+    const recipesCount = (userProfile as any)?.recipesCount ?? 0;
+    const avgScore = (userProfile as any)?.avgQuizScore ?? 0;
+    // Derive "precision" from avgScore and "creativity" from principios activos + researchAxis
+    const precisionScore = activeProfile ? Math.min(100, Math.round(avgScore > 0 ? avgScore : 75)) : 0;
+    const creativityScore = activeProfile
+        ? Math.min(100, Math.round(
+            40
+            + (activeProfile.researchAxis.includes('Creatividad') ? 20 : 0)
+            + (activeProfile.researchAxis.includes('Alta cocina') ? 15 : 0)
+            + (activeProfile.activePrinciples.includes('p4') ? 15 : 0)
+            + (activeProfile.activePrinciples.includes('p2') ? 10 : 0)
+          ))
+        : 0;
+
+    const showSavedToast = () => {
+        setSavedToast(true);
+        setTimeout(() => setSavedToast(false), 2000);
     };
 
-    if (!activeProfile) return null;
+    // Run Simulation — local heuristic first, then IA enriches
+    const handleSimulation = async () => {
+        setIsSimulating(true);
+        setAiOutput(null);
+        setAiPending(false);
+
+        // Immediate heuristic result
+        const heuristicResult = simulateDecision(simContext);
+        setSimResult(heuristicResult);
+        setIsSimulating(false);
+
+        // IA enrichment in background
+        if (activeProfile) {
+            setAiPending(true);
+            const systemPrompt = `Eres el motor cognitivo del Avatar "${config.name}" (${activeAvatarType}).
+Perfil: Tono=${activeProfile.tone}, Ejes=${activeProfile.researchAxis.join(', ')}, Riesgo=${activeProfile.riskTolerance}.
+Principios activos: ${activeProfile.activePrinciples.length > 0 ? activeProfile.activePrinciples.join(', ') : 'ninguno'}.
+Responde SOLO en español, en 2-3 frases concisas, como si fuera una recomendación táctica real de un experto en hostelería.`;
+
+            const userPrompt = `Contexto: ${simContext.contextType}. Presión operativa: ${simContext.pressureLevel}%.
+Decisión base: "${heuristicResult.decision}"
+Enriquece esta decisión con una recomendación específica y accionable para este contexto.`;
+
+            try {
+                const res = await generateText(userPrompt, systemPrompt);
+                setAiOutput(res.text);
+            } catch {
+                // Si falla la IA, el resultado heurístico es suficiente
+            } finally {
+                setAiPending(false);
+            }
+        }
+    };
+
+    // Avatar activo sin perfiles cognitivos — onboarding directo
+    if (!activeProfile) return (
+        <div className="h-full w-full flex items-center justify-center">
+            <div className="text-center max-w-xs">
+                <div className="w-20 h-20 rounded-full bg-rose-500/10 border border-rose-500/20 flex items-center justify-center mx-auto mb-5">
+                    <span className="text-4xl">{config.emoji || '🤖'}</span>
+                </div>
+                <h3 className="text-xl font-serif text-white mb-2">{config.name || activeAvatarType}</h3>
+                <p className="text-sm text-slate-400 mb-6 leading-relaxed">
+                    Este avatar no tiene ningún perfil cognitivo.<br/>
+                    Crea uno para activar Inteligencia y el Simulador.
+                </p>
+                <button
+                    onClick={() => createProfile('Perfil Principal')}
+                    className="px-6 py-3 bg-rose-600 hover:bg-rose-500 text-white rounded-xl text-xs font-bold uppercase tracking-widest shadow-lg shadow-rose-900/40 transition-all hover:scale-[1.02] mb-3"
+                >
+                    + Crear Perfil Cognitivo
+                </button>
+                <p className="text-[10px] text-slate-600">Podrás configurarlo en Calibración Cognitiva</p>
+            </div>
+        </div>
+    );
 
     // --- RENDER ---
     return (
-        <div className="h-full w-full relative overflow-hidden flex flex-col">
+        <div className="min-h-full lg:h-full w-full relative lg:overflow-hidden flex flex-col">
 
+
+            {/* Saved toast */}
+            {savedToast && (
+                <div className="fixed top-6 right-6 z-50 px-4 py-2 bg-emerald-500/20 border border-emerald-500/40 rounded-full text-emerald-300 text-xs font-bold uppercase tracking-widest animate-in fade-in slide-in-from-top-2 duration-300 backdrop-blur-md shadow-lg">
+                    ✓ Guardado
+                </div>
+            )}
 
             {/* MAIN CONTENT GRID - Fixed height, no page scroll */}
             <div className="w-full max-w-[1600px] mx-auto h-full flex flex-col lg:flex-row items-center justify-between px-8 pt-24 pb-8 z-10 gap-12 lg:gap-0">
@@ -118,7 +301,7 @@ export const AvatarIntelligenceView: React.FC = () => {
                                 return (
                                     <button
                                         key={p.id}
-                                        onClick={() => togglePrinciple(p.id)}
+                                        onClick={() => { togglePrinciple(p.id); showSavedToast(); }}
                                         className={`
                                             group w-full text-left px-4 py-3 rounded-lg border transition-all duration-300 relative overflow-hidden
                                             ${isActive
@@ -179,15 +362,19 @@ export const AvatarIntelligenceView: React.FC = () => {
                         </div>
                     </div>
 
-                    {/* Traceability Metrics */}
-                    <div className="mt-16 grid grid-cols-2 gap-8 text-center opacity-90 dark:opacity-80">
+                    {/* Real Metrics */}
+                    <div className="mt-16 grid grid-cols-3 gap-6 text-center opacity-90 dark:opacity-80">
                         <div>
                             <span className="text-[10px] uppercase tracking-[0.2em] text-slate-400 dark:text-rose-200/40 block mb-1 font-bold">Precisión</span>
-                            <span className="text-lg font-mono text-slate-700 dark:text-rose-100">94.2%</span>
+                            <span className="text-lg font-mono text-slate-700 dark:text-rose-100">{precisionScore > 0 ? `${precisionScore}%` : '—'}</span>
                         </div>
                         <div>
                             <span className="text-[10px] uppercase tracking-[0.2em] text-slate-400 dark:text-rose-200/40 block mb-1 font-bold">Creatividad</span>
-                            <span className="text-lg font-mono text-slate-700 dark:text-rose-100">88.5%</span>
+                            <span className="text-lg font-mono text-slate-700 dark:text-rose-100">{creativityScore}%</span>
+                        </div>
+                        <div>
+                            <span className="text-[10px] uppercase tracking-[0.2em] text-slate-400 dark:text-rose-200/40 block mb-1 font-bold">Recetas</span>
+                            <span className="text-lg font-mono text-slate-700 dark:text-rose-100">{recipesCount}</span>
                         </div>
                     </div>
                 </div>
@@ -236,51 +423,62 @@ export const AvatarIntelligenceView: React.FC = () => {
                             </button>
                         </div>
 
-                        {/* Results Output - TERMINAL (Forced Dark Mode) */}
-                        <div className="min-h-[400px] bg-slate-950 rounded-xl p-4 font-mono text-[10px] text-rose-200/80 border border-slate-800 shadow-inner">
+                        {/* Terminal output */}
+                        <div className="flex-1 min-h-[300px] bg-slate-950 rounded-xl p-4 font-mono text-[10px] text-rose-200/80 border border-slate-800 shadow-inner overflow-y-auto">
                             {isSimulating ? (
                                 <div className="h-full flex flex-col items-center justify-center space-y-2 opacity-50">
                                     <div className="w-8 h-8 border-2 border-t-rose-500 border-r-transparent border-b-rose-500 border-l-transparent rounded-full animate-spin" />
-                                    <span className="text-slate-400">Analizando variables...</span>
+                                    <span className="text-slate-400">Procesando variables cognitivas...</span>
                                 </div>
                             ) : simResult ? (
                                 <div className="space-y-4 animate-in fade-in duration-500">
                                     <div>
-                                        <span className="text-emerald-400 block mb-1">&gt; DECISIÓN</span>
+                                        <span className="text-emerald-400 block mb-1">&gt; DECISIÓN BASE</span>
                                         <p className="text-white text-xs font-sans leading-relaxed">{simResult.decision}</p>
                                     </div>
                                     <div>
-                                        <span className="text-slate-500 block mb-1">&gt; RIESGO EVALUADO</span>
-                                        <span className={`text-xs px-2 py-0.5 rounded ${simResult.riskAssessment === 'Alto' ? 'bg-red-500/20 text-red-300' : 'bg-emerald-500/20 text-emerald-300'}`}>
+                                        <span className="text-slate-500 block mb-1">&gt; RIESGO</span>
+                                        <span className={`text-xs px-2 py-0.5 rounded font-bold ${
+                                            simResult.riskAssessment === 'Crítico' ? 'bg-red-500/30 text-red-300' :
+                                            simResult.riskAssessment === 'Alto' ? 'bg-orange-500/20 text-orange-300' :
+                                            simResult.riskAssessment === 'Medio' ? 'bg-amber-500/20 text-amber-300' :
+                                            'bg-emerald-500/20 text-emerald-300'}`}>
                                             {simResult.riskAssessment}
                                         </span>
                                     </div>
                                     <div>
                                         <span className="text-slate-500 block mb-1">&gt; RAZONAMIENTO</span>
-                                        <ul className="list-disc list-inside space-y-1 text-slate-400">
-                                            {simResult.reasoning.map((r, i) => <li key={i}>{r}</li>)}
+                                        <ul className="list-disc list-inside space-y-1 text-slate-400 font-sans">
+                                            {simResult.reasoning.map((r, i) => <li key={i} className="text-[10px]">{r}</li>)}
                                         </ul>
                                     </div>
-                                    {simResult.tradeoffs && (
+                                    {simResult.tradeoffs.length > 0 && (
                                         <div>
                                             <span className="text-slate-500 block mb-1">&gt; TRADE-OFFS</span>
-                                            <ul className="list-disc list-inside space-y-1 text-amber-500/80">
-                                                {simResult.tradeoffs.length > 0 ? simResult.tradeoffs.map((t, i) => <li key={i}>{t}</li>) : <li className="italic text-slate-600">Ninguno detectado</li>}
+                                            <ul className="list-disc list-inside space-y-1 text-amber-500/80 font-sans">
+                                                {simResult.tradeoffs.map((t, i) => <li key={i} className="text-[10px]">{t}</li>)}
                                             </ul>
                                         </div>
                                     )}
-                                    {simResult.expectedFeedback && (
-                                        <div>
-                                            <span className="text-slate-500 block mb-1">&gt; FEEDBACK ESPERADO</span>
-                                            <span className="text-xs text-rose-300 font-medium block bg-rose-500/10 p-2 rounded border border-rose-500/10">
-                                                {simResult.expectedFeedback}
-                                            </span>
+                                    {/* IA enrichment output */}
+                                    {aiOutput && (
+                                        <div className="border-t border-rose-500/20 pt-3 mt-3">
+                                            <span className="text-rose-400 block mb-1">&gt; RECOMENDACIÓN IA ✦</span>
+                                            <p className="text-rose-100 text-xs font-sans leading-relaxed bg-rose-500/5 p-2 rounded border border-rose-500/10">
+                                                {aiOutput}
+                                            </p>
+                                        </div>
+                                    )}
+                                    {aiPending && !aiOutput && (
+                                        <div className="border-t border-slate-800 pt-3 mt-3 flex items-center gap-2">
+                                            <div className="w-3 h-3 border border-t-rose-500 border-r-transparent border-b-rose-500 border-l-transparent rounded-full animate-spin flex-shrink-0" />
+                                            <span className="text-slate-600 text-[9px] italic">Enriqueciendo con IA...</span>
                                         </div>
                                     )}
                                 </div>
                             ) : (
-                                <div className="h-full flex items-center justify-center text-slate-600 italic">
-                                    Esperando parámetros de simulación...
+                                <div className="h-full flex items-center justify-center text-slate-600 italic text-xs">
+                                    Configura el contexto y ejecuta la simulación...
                                 </div>
                             )}
                         </div>
@@ -321,7 +519,7 @@ export const AvatarIntelligenceView: React.FC = () => {
                                 {['Precisión', 'Creatividad', 'Competición', 'Coste', 'Alta cocina', 'Sostenibilidad'].map(axis => (
                                     <button
                                         key={axis}
-                                        onClick={() => toggleResearchAxis(axis as ResearchAxis)}
+                                        onClick={() => { toggleResearchAxis(axis as ResearchAxis); showSavedToast(); }}
                                         className={`px-4 py-2 rounded-lg border text-[10px] font-bold uppercase transition-all
                                             ${activeProfile.researchAxis.includes(axis as ResearchAxis)
                                                 ? 'bg-amber-500/10 border-amber-500/40 text-amber-600 dark:text-amber-200'
@@ -371,7 +569,7 @@ export const AvatarIntelligenceView: React.FC = () => {
                                     return (
                                         <div
                                             key={p.id}
-                                            onClick={() => togglePrinciple(p.id)}
+                                            onClick={() => { togglePrinciple(p.id); showSavedToast(); }}
                                             className={`flex items-center justify-between p-3 rounded-lg border transition-all cursor-pointer
                                                 ${isActive ? 'bg-rose-500/10 border-rose-500/30' : 'bg-white dark:bg-white/5 border-slate-200 dark:border-transparent hover:bg-slate-50 dark:hover:bg-white/10'}
                                             `}
@@ -391,40 +589,14 @@ export const AvatarIntelligenceView: React.FC = () => {
 
             {/* MODAL: PROFILE MANAGER */}
             {activeModal === 'profiles' && (
-                <CognitiveConfigModal title="Gestor de Perfiles" onClose={() => setActiveModal(null)}>
-                    <div className="space-y-4">
-                        {config.profiles.map(p => (
-                            <div key={p.id} className="flex items-center justify-between p-4 bg-white/50 dark:bg-white/5 rounded-xl border border-slate-200 dark:border-white/5 hover:border-rose-300 dark:hover:border-white/10 transition-all shadow-sm dark:shadow-none">
-                                <div>
-                                    <h4 className="text-slate-900 dark:text-white font-serif">{p.name}</h4>
-                                    <div className="flex gap-2 mt-1">
-                                        <span className="text-[10px] uppercase tracking-widest text-slate-500 bg-slate-200 dark:bg-black/20 px-2 py-0.5 rounded">{p.tone}</span>
-                                        <span className="text-[10px] uppercase tracking-widest text-slate-500 bg-slate-200 dark:bg-black/20 px-2 py-0.5 rounded truncate max-w-[120px]">{p.researchAxis.join(', ')}</span>
-                                    </div>
-                                </div>
-                                <div className="flex gap-2">
-                                    {config.activeProfileId === p.id && (
-                                        <span className="px-3 py-1 bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-[10px] font-bold uppercase rounded-full">Activo</span>
-                                    )}
-                                    <button
-                                        onClick={() => switchProfile(p.id)}
-                                        className="p-2 hover:bg-slate-200 dark:hover:bg-white/10 rounded-full transition-colors text-slate-400 hover:text-rose-600 dark:hover:text-white"
-                                    >
-                                        <Icon svg={ICONS.play} className="w-4 h-4" />
-                                    </button>
-                                </div>
-                            </div>
-                        ))}
-
-                        <button
-                            onClick={() => createProfile(`Nuevo Perfil ${config.profiles.length + 1}`)}
-                            className="w-full py-4 border-2 border-dashed border-slate-300 dark:border-white/10 rounded-xl text-slate-500 hover:text-rose-600 dark:hover:text-white hover:border-rose-400/40 dark:hover:border-rose-500/40 hover:bg-rose-50 dark:hover:bg-rose-500/5 transition-all flex items-center justify-center gap-2 group"
-                        >
-                            <Icon svg={ICONS.plus} className="w-5 h-5 group-hover:scale-110 transition-transform" />
-                            <span className="font-bold uppercase tracking-widest text-xs">Crear Nuevo Perfil</span>
-                        </button>
-                    </div>
-                </CognitiveConfigModal>
+                <ProfileManagerModal
+                    config={config}
+                    switchProfile={switchProfile}
+                    createProfile={createProfile}
+                    updateActiveProfile={updateActiveProfile}
+                    onClose={() => setActiveModal(null)}
+                    onOpenCalibration={() => { setActiveModal(null); setTimeout(() => setActiveModal('calibration'), 50); }}
+                />
             )}
 
 

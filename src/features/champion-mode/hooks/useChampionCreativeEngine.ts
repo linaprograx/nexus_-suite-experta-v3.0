@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react';
+import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { useApp } from '../../../context/AppContext';
 import { GeminiChampionService } from '../services/GeminiChampionService'; // Real AI
 import { exportProposalToPdf } from '../logic/championPdfExporter';
@@ -242,15 +243,23 @@ export const useChampionCreativeEngine = () => {
             setStatusMessage('Guardando en Grimorium...');
             const { mapChampionProposalToRecipe } = await import('../services/championMapperService');
             const recipe = mapChampionProposalToRecipe(state.proposal, null);
-            console.log("Saving Recipe:", recipe);
-            await new Promise(r => setTimeout(r, 800));
+            // Real Firestore write — saves to the user's recipes collection
+            await addDoc(collection(db, `users/${userId}/recipes`), {
+                ...recipe,
+                createdAt: serverTimestamp(),
+                source: 'champion-mode',
+                competitionBrief: state.brief.brand
+                    ? `${state.brief.brand} – ${state.brief.competitionType}`
+                    : state.brief.competitionType,
+            });
             setStatusMessage('¡Receta guardada en Grimorium!');
             setTimeout(() => setStatusMessage(null), 3000);
         } catch (e) {
             console.error(e);
-            setStatusMessage('Error al guardar');
+            setStatusMessage('Error al guardar en Grimorium');
         }
     };
+
     const createTrainingPlan = async () => {
         if (!state.proposal || !db || !userId) return;
 
@@ -258,13 +267,20 @@ export const useChampionCreativeEngine = () => {
             setStatusMessage('Generando plan en Pizarrón...');
             const { mapChampionProposalToTasks } = await import('../services/championMapperService');
             const tasks = mapChampionProposalToTasks(state.proposal, appId, userId, user?.displayName || 'Chef');
-            console.log("Creating Tasks:", tasks);
-            await new Promise(r => setTimeout(r, 800));
+            // Real Firestore writes — batch into tasks collection
+            const tasksRef = collection(db, `users/${userId}/tasks`);
+            await Promise.all(
+                tasks.map((task: any) => addDoc(tasksRef, {
+                    ...task,
+                    createdAt: serverTimestamp(),
+                    source: 'champion-mode',
+                }))
+            );
             setStatusMessage(`¡${tasks.length} tareas creadas en Pizarrón!`);
             setTimeout(() => setStatusMessage(null), 3000);
         } catch (e) {
             console.error(e);
-            setStatusMessage('Error al crear plan');
+            setStatusMessage('Error al crear plan en Pizarrón');
         }
     };
 

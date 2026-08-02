@@ -23,7 +23,7 @@ export const BoardInspector = ({
                 // If group, we probably disable detailed zone editing?
                 const activeZoneId = interactionState?.activeZoneId;
                 const activeZoneSection = interactionState?.activeZoneSection || 'content'; // Default to content
-                const activeZone = (activeZoneId && firstNode.type === 'board') ? firstNode.structure?.zones?.find(z => z.id === activeZoneId) : undefined;
+                const activeZone = (activeZoneId && firstNode.type === 'board') ? firstNode.structure?.zones?.find((z: any) => z.id === activeZoneId) : undefined;
 
                 if (activeZone) {
                     // ... Zone Editor (keep existing logic uses 'firstNode' directly, which is correct for activeZoneId context)
@@ -33,12 +33,12 @@ export const BoardInspector = ({
                         <div className="space-y-4">
                             {/* ... Zone Editor Header ... */}
                             {/* Start of Zone Editor Block */}
-                            <div className="flex items-center justify-between pb-2 border-b border-slate-200 bg-indigo-50 -mx-3 -mt-3 px-3 py-2 rounded-t gap-2">
+                            <div className="flex items-center justify-between pb-2 border-b border-slate-200 bg-indigo-50 dark:bg-indigo-950/50 -mx-3 -mt-3 px-3 py-2 rounded-t gap-2">
                                 <div className="flex-1 flex items-center gap-1 min-w-0">
                                     <svg className="w-3 h-3 text-indigo-800 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16m-7 6h7" /></svg>
                                     <input
                                         type="text"
-                                        className="bg-transparent text-xs font-bold text-indigo-800 focus:bg-white focus:outline-none focus:ring-1 focus:ring-indigo-500 rounded px-1 w-full"
+                                        className="bg-transparent text-xs font-bold text-indigo-800 dark:text-indigo-300 focus:bg-white dark:focus:bg-slate-800 focus:outline-none focus:ring-1 focus:ring-indigo-500 rounded px-1 w-full"
                                         value={activeZone.label || ''}
                                         onPointerDown={(e) => e.stopPropagation()}
                                         onKeyDown={(e) => e.stopPropagation()}
@@ -55,7 +55,7 @@ export const BoardInspector = ({
                                 </div>
                                 <button
                                     onClick={() => pizarronStore.updateInteractionState({ activeZoneId: undefined })}
-                                    className="text-[10px] text-indigo-500 hover:text-indigo-800 font-medium px-2 py-1 rounded hover:bg-indigo-100 flex-shrink-0"
+                                    className="text-[10px] text-indigo-500 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-200 font-medium px-2 py-1 rounded hover:bg-indigo-100 dark:hover:bg-indigo-900/30 flex-shrink-0"
                                 >
                                     Done
                                 </button>
@@ -63,12 +63,12 @@ export const BoardInspector = ({
 
                             {/* ... Content ... */}
                             <div>
-                                <label className="text-xs font-medium text-slate-600 block mb-1">
+                                <label className="text-xs font-medium text-slate-600 dark:text-slate-400 block mb-1">
                                     {activeZoneSection === 'title' ? 'Title Label' :
                                         activeZoneSection === 'content' ? 'Content' : 'Section Content'}
                                 </label>
                                 <textarea
-                                    className="w-full text-xs border border-slate-300 rounded p-2 min-h-[100px] focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
+                                    className="w-full text-xs border border-slate-300 dark:border-slate-600 rounded p-2 min-h-[100px] focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 outline-none bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200"
                                     placeholder={activeZoneSection === 'title' ? "Enter zone title..." : "Type content..."}
                                     value={(() => {
                                         if (activeZoneSection === 'title') return activeZone.label || '';
@@ -102,7 +102,7 @@ export const BoardInspector = ({
                             {/* Zone Title Visibility (Issue 2) */}
                             {activeZoneSection === 'title' && (
                                 <div className="flex items-center gap-2 mt-2">
-                                    <label className="text-xs text-slate-600 flex items-center gap-1 cursor-pointer">
+                                    <label className="text-xs text-slate-600 dark:text-slate-400 flex items-center gap-1 cursor-pointer">
                                         <input
                                             type="checkbox"
                                             className="rounded text-indigo-600 focus:ring-indigo-500 h-3 w-3"
@@ -123,7 +123,7 @@ export const BoardInspector = ({
 
                             {/* Rich Text Styles */}
                             {/* Dynamic Section Header & Manager */}
-                            <div className="flex flex-col gap-2 mt-4 pt-4 border-t border-slate-200">
+                            <div className="flex flex-col gap-2 mt-4 pt-4 border-t border-slate-200 dark:border-slate-700">
                                 <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center justify-between">
                                     <div className="flex gap-2">
                                         <span className={activeZoneSection === 'title' ? 'text-indigo-600' : 'cursor-pointer hover:text-slate-600'} onClick={() => pizarronStore.updateInteractionState({ activeZoneSection: 'title' })}>TITLE</span>
@@ -159,7 +159,7 @@ export const BoardInspector = ({
                                     </button>
                                 </div>
                                 {(!['title', 'content'].includes(activeZoneSection)) && (
-                                    <div className="text-[10px] text-slate-500 bg-slate-50 px-2 py-1 rounded flex justify-between items-center">
+                                    <div className="text-[10px] text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-800 px-2 py-1 rounded flex justify-between items-center">
                                         <span>Editing Section</span>
                                         <button
                                             className="text-red-500 hover:text-red-700"
@@ -178,7 +178,7 @@ export const BoardInspector = ({
                             </div>
 
                             {/* Unified Text Style Controller */}
-                            <div className="bg-slate-50 p-2 rounded border border-slate-200">
+                            <div className="bg-slate-50 dark:bg-slate-800/50 p-2 rounded border border-slate-200 dark:border-slate-700">
                                 <TextStyleController
                                     fontSize={(() => {
                                         if (activeZoneSection === 'title') return activeZone.style?.titleFontSize || 14;
@@ -226,7 +226,7 @@ export const BoardInspector = ({
                             </div>
 
                             {/* --- Zone Styling (Unified) --- */}
-                            <div className="pt-4 mt-4 border-t border-slate-200 space-y-4">
+                            <div className="pt-4 mt-4 border-t border-slate-200 dark:border-slate-700 space-y-4">
 
                                 {/* Text Color */}
                                 <ColorPicker
@@ -293,8 +293,8 @@ export const BoardInspector = ({
                                 />
 
                                 {/* Divider */}
-                                <div className="border-t border-slate-100 my-2"></div>
-                                <label className="text-xs font-bold text-slate-800 block mb-3">Zone Container Appearance</label>
+                                <div className="border-t border-slate-100 dark:border-slate-700 my-2"></div>
+                                <label className="text-xs font-bold text-slate-800 dark:text-slate-200 block mb-3">Zone Container Appearance</label>
 
                                 {/* Background & Gradient (Zone Container) */}
                                 <ColorPicker
@@ -354,7 +354,7 @@ export const BoardInspector = ({
                                 {/* Title Gap specific control */}
                                 <div>
                                     <label className="text-[10px] text-slate-500 block mb-1">Title Spacing</label>
-                                    <input type="number" min="0" max="50" className="w-full text-xs border rounded p-1"
+                                    <input type="number" min="0" max="50" className="w-full text-xs border border-slate-300 dark:border-slate-600 rounded p-1 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200"
                                         value={activeZone.style?.titleGap ?? 2}
                                         onChange={(e) => {
                                             const val = parseInt(e.target.value);
@@ -369,9 +369,9 @@ export const BoardInspector = ({
                             </div>
 
                             {/* Mass Actions */}
-                            <div className="mt-4 pt-3 border-t border-slate-100">
+                            <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-700">
                                 <button
-                                    className="w-full py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 text-[10px] font-medium rounded flex items-center justify-center gap-2 transition-colors"
+                                    className="w-full py-1.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-400 text-[10px] font-medium rounded flex items-center justify-center gap-2 transition-colors"
                                     onClick={() => {
                                         const newStructure = JSON.parse(JSON.stringify(firstNode.structure));
                                         const sourceZone = newStructure.zones.find((z: any) => z.id === activeZoneId);
@@ -407,12 +407,12 @@ export const BoardInspector = ({
                 return (
                     <div className="space-y-4">
                         {/* Board Title Editor */}
-                        <div className="bg-slate-50 p-2 rounded border border-slate-200 space-y-3">
+                        <div className="bg-slate-50 dark:bg-slate-800/50 p-2 rounded border border-slate-200 dark:border-slate-700 space-y-3">
                             <div>
-                                <label className="text-xs font-bold text-slate-700 block mb-1">Board Title</label>
+                                <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">Board Title</label>
                                 <input
                                     type="text"
-                                    className="w-full text-xs border border-slate-300 rounded p-1 font-bold text-slate-700"
+                                    className="w-full text-xs border border-slate-300 dark:border-slate-600 rounded p-1 font-bold text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-800"
                                     value={primaryTarget.content.title || 'BOARD'}
                                     onChange={(e) => updateNode({ title: e.target.value })}
                                 />
@@ -440,19 +440,19 @@ export const BoardInspector = ({
                                 type="range" min="12" max="72"
                                 value={primaryTarget.content.fontSize || 20}
                                 onChange={(e) => updateNode({ fontSize: Number(e.target.value) })}
-                                className="w-full h-1 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-500"
+                                className="w-full h-1 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-orange-500"
                             />
                         </div>
 
                         {/* Collapse / Expand (Only valid for explicit board nodes, groups might not collapse same way) */}
                         <div>
-                            <label className="text-xs font-medium text-slate-600 block mb-1">Visibility</label>
+                            <label className="text-xs font-medium text-slate-600 dark:text-slate-400 block mb-1">Visibility</label>
                             <button
                                 onClick={() => {
                                     const targets = getTargets();
-                                    targets.forEach(t => pizarronStore.toggleCollapse(t.id));
+                                    targets.forEach((t: any) => pizarronStore.toggleCollapse(t.id));
                                 }}
-                                className="w-full py-2 bg-indigo-50 text-indigo-600 border border-indigo-200 rounded text-xs hover:bg-indigo-100 flex items-center justify-center gap-2"
+                                className="w-full py-2 bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400 border border-orange-200 dark:border-orange-700 rounded text-xs hover:bg-orange-100 dark:hover:bg-orange-900/30 flex items-center justify-center gap-2"
                             >
                                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
                                 Collapse to Dock
@@ -462,9 +462,9 @@ export const BoardInspector = ({
 
                         {/* Structure Selector */}
                         <div>
-                            <label className="text-xs font-medium text-slate-600 block mb-1">Layout Structure</label>
+                            <label className="text-xs font-medium text-slate-600 dark:text-slate-400 block mb-1">Layout Structure</label>
                             <select
-                                className="w-full text-xs border border-slate-300 rounded p-1 mb-2 bg-white"
+                                className="w-full text-xs border border-slate-300 dark:border-slate-600 rounded p-1 mb-2 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200"
                                 value={firstNode.structureId || ''}
                                 onChange={(e) => {
                                     const val = e.target.value;
@@ -472,7 +472,7 @@ export const BoardInspector = ({
                                         pizarronStore.updateNode(firstNode.id, { structureId: undefined, structure: undefined });
                                     } else {
                                         // 1. Try Standard Templates
-                                        import('../../engine/structures').then(({ STRUCTURE_TEMPLATES }) => {
+                                        import('../../../engine/structures').then(({ STRUCTURE_TEMPLATES }) => {
                                             let template = STRUCTURE_TEMPLATES[val];
 
                                             // 2. Try Saved Templates
@@ -493,13 +493,22 @@ export const BoardInspector = ({
                                     }
                                 }}
                             >
-                                <option value="">None (Empty)</option>
-                                <option value="cocktail-recipe-structure">Cocktail Recipe</option>
-                                <option value="menu-layout-structure">Menu Layout</option>
-                                <option value="storytelling-structure">Storytelling</option>
-                                <option value="comparison-structure">Comparison</option>
-                                <option value="technical-grid-structure">Technical Grid</option>
-                                <option value="visual-moodboard-structure">Moodboard</option>
+                                <option value="">— Sin layout —</option>
+                                <optgroup label="Estrategia">
+                                    <option value="technical-grid-structure">⚡ Análisis DAFO</option>
+                                    <option value="kanban-structure">📋 Kanban</option>
+                                    <option value="comparison-structure">⚖️ Comparación 3 opciones</option>
+                                    <option value="planning-structure">📅 Planificación Semanal</option>
+                                </optgroup>
+                                <optgroup label="F&B / Carta">
+                                    <option value="cocktail-recipe-structure">🍸 Ficha de Cóctel</option>
+                                    <option value="menu-layout-structure">📜 Carta de Menú</option>
+                                    <option value="menu-design-structure">📊 Ingeniería de Menú</option>
+                                </optgroup>
+                                <optgroup label="Creativo">
+                                    <option value="storytelling-structure">✨ Storytelling</option>
+                                    <option value="visual-moodboard-structure">🖼️ Moodboard</option>
+                                </optgroup>
                                 {pizarronStore.getState().savedTemplates?.map(t => (
                                     <option key={t.id} value={t.id}>{t.template || 'Custom Template'}</option>
                                 ))}
@@ -519,12 +528,12 @@ export const BoardInspector = ({
                                                 };
                                                 pizarronStore.saveTemplate(newTemplate);
                                                 // Persist to Cloud
-                                                import('../../sync/firestoreAdapter').then(({ firestoreAdapter }) => {
+                                                import('../../../sync/firestoreAdapter').then(({ firestoreAdapter }) => {
                                                     firestoreAdapter.persistTemplate(newTemplate);
                                                 });
                                             }
                                         }}
-                                        className="text-[10px] text-blue-600 hover:text-blue-800 font-medium"
+                                        className="text-[10px] text-orange-600 dark:text-orange-400 hover:text-orange-800 dark:hover:text-orange-200 font-medium"
                                     >
                                         + Save as Template
                                     </button>
@@ -535,8 +544,8 @@ export const BoardInspector = ({
                             {firstNode.structure && (
                                 <div className="mb-3">
                                     <div className="flex justify-between items-center mb-1">
-                                        <label className="text-xs font-medium text-slate-600">Spacing (Gap)</label>
-                                        <span className="text-[10px] text-slate-400">{firstNode.structure.gap || 0}px</span>
+                                        <label className="text-xs font-medium text-slate-600 dark:text-slate-400">Spacing (Gap)</label>
+                                        <span className="text-[10px] text-slate-400 dark:text-slate-500">{firstNode.structure.gap || 0}px</span>
                                     </div>
                                     <input
                                         type="range"
@@ -555,16 +564,16 @@ export const BoardInspector = ({
 
                             {/* Zone Editor */}
                             {firstNode.structure && firstNode.structure.zones && (
-                                <div className="mt-4 border-t border-slate-200 pt-2">
-                                    <label className="text-xs font-bold text-slate-700 block mb-2">Zone Styles</label>
+                                <div className="mt-4 border-t border-slate-200 dark:border-slate-700 pt-2">
+                                    <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-2">Zone Styles</label>
                                     <div className="space-y-2 max-h-40 overflow-y-auto pr-1 custom-scrollbar">
-                                        {firstNode.structure.zones.map((zone, idx) => (
-                                            <div key={zone.id} className="flex flex-col gap-1 p-2 bg-slate-50 rounded border border-slate-200">
-                                                <span className="text-xs font-medium text-slate-700 truncate">{zone.label}</span>
+                                        {firstNode.structure.zones.map((zone: any, idx: number) => (
+                                            <div key={zone.id} className="flex flex-col gap-1 p-2 bg-slate-50 dark:bg-slate-800 rounded border border-slate-200 dark:border-slate-700">
+                                                <span className="text-xs font-medium text-slate-700 dark:text-slate-300 truncate">{zone.label}</span>
                                                 <div className="flex items-center justify-between">
                                                     {/* Shading */}
                                                     <div className="flex items-center gap-1">
-                                                        <span className="text-[10px] text-slate-500">Bg:</span>
+                                                        <span className="text-[10px] text-slate-500 dark:text-slate-400">Bg:</span>
                                                         <input
                                                             type="color"
                                                             className="w-5 h-5 rounded cursor-pointer border-none p-0 bg-transparent"
@@ -594,7 +603,7 @@ export const BoardInspector = ({
                                                                 }
                                                             }}
                                                         />
-                                                        <span className="text-[10px] text-slate-500">Dashed</span>
+                                                        <span className="text-[10px] text-slate-500 dark:text-slate-400">Dashed</span>
                                                     </label>
                                                 </div>
                                             </div>
@@ -623,17 +632,17 @@ export const BoardInspector = ({
                         />
 
                         {/* --- Board Resources (Prefabs) --- */}
-                        <div className="mt-4 border-t border-slate-200 pt-2">
-                            <label className="text-xs font-bold text-slate-700 block mb-2">Saved Prefabs</label>
+                        <div className="mt-4 border-t border-slate-200 dark:border-slate-700 pt-2">
+                            <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-2">Saved Prefabs</label>
 
                             <div className="space-y-1 mb-2 max-h-32 overflow-y-auto custom-scrollbar">
-                                {boardResources?.map(r => (
-                                    <div key={r.id} className="flex items-center justify-between p-1.5 bg-slate-50 hover:bg-slate-100 rounded border border-slate-200 group">
+                                {boardResources?.map((r: any) => (
+                                    <div key={r.id} className="flex items-center justify-between p-1.5 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 rounded border border-slate-200 dark:border-slate-700 group">
                                         <div className="flex flex-col gap-0.5 mr-2 opacity-0 group-hover:opacity-100 transition-opacity">
                                             <button onClick={(e) => { e.stopPropagation(); pizarronStore.moveBoardResource(r.id, 'up'); }} className="text-slate-400 hover:text-indigo-600 leading-none text-[8px]">▲</button>
                                             <button onClick={(e) => { e.stopPropagation(); pizarronStore.moveBoardResource(r.id, 'down'); }} className="text-slate-400 hover:text-indigo-600 leading-none text-[8px]">▼</button>
                                         </div>
-                                        <span className="text-xs text-slate-700 truncate flex-1" title={r.name}>{r.name}</span>
+                                        <span className="text-xs text-slate-700 dark:text-slate-300 truncate flex-1" title={r.name}>{r.name}</span>
                                         <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                             <button
                                                 title="Delete Resource"
@@ -641,7 +650,7 @@ export const BoardInspector = ({
                                                     e.stopPropagation();
                                                     if (confirm("Delete this prefab?")) {
                                                         pizarronStore.deleteBoardResource(r.id);
-                                                        import('../../sync/firestoreAdapter').then(({ firestoreAdapter }) => firestoreAdapter.removeBoardResource(r.id));
+                                                        import('../../../sync/firestoreAdapter').then(({ firestoreAdapter }) => firestoreAdapter.removeBoardResource(r.id));
                                                     }
                                                 }}
                                                 className="text-red-500 hover:text-red-700 px-1 font-bold"
@@ -664,7 +673,7 @@ export const BoardInspector = ({
                                     </div>
                                 ))}
                                 {(!boardResources || boardResources.length === 0) && (
-                                    <div className="text-[10px] text-slate-400 italic text-center">No saved prefabs</div>
+                                    <div className="text-[10px] text-slate-400 dark:text-slate-500 italic text-center">No saved prefabs</div>
                                 )}
                             </div>
 
@@ -675,7 +684,7 @@ export const BoardInspector = ({
                                         const id = crypto.randomUUID();
                                         pizarronStore.saveBoardAsResource(firstNode.id, name, id);
                                         // Persist
-                                        import('../../sync/firestoreAdapter').then(({ firestoreAdapter }) => {
+                                        import('../../../sync/firestoreAdapter').then(({ firestoreAdapter }) => {
                                             // Ideally we pass the full resource object, but here we can only reconstruct it or fetch from state?
                                             // The state update is synchronous.
                                             const res = pizarronStore.getState().boardResources?.find(r => r.id === id);
@@ -683,7 +692,7 @@ export const BoardInspector = ({
                                         });
                                     }
                                 }}
-                                className="w-full py-1.5 bg-white border border-slate-300 text-slate-600 rounded text-xs hover:bg-slate-50 flex items-center justify-center gap-1 shadow-sm font-medium"
+                                className="w-full py-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-300 rounded text-xs hover:bg-slate-50 dark:hover:bg-slate-700 flex items-center justify-center gap-1 shadow-sm font-medium"
                             >
                                 <span className="text-lg leading-none">+</span> Save Board as Prefab
                             </button>

@@ -45,15 +45,14 @@ export const ShapeSelector: React.FC<ShapeSelectorProps> = ({ currentShapeType, 
             </button>
 
             {isOpen && (
-                <div className="absolute left-full top-0 ml-3 w-72 max-h-96 flex flex-col bg-white/90 backdrop-blur-xl border border-slate-200 shadow-2xl rounded-2xl z-50 overflow-hidden animate-in slide-in-from-left-2 duration-200">
-                    {/* Search */}
-                    <div className="p-3 border-b border-slate-100 bg-white/50">
+                <div className="absolute left-full top-0 ml-3 w-72 max-h-96 flex flex-col bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 shadow-2xl rounded-2xl z-50 overflow-hidden animate-in slide-in-from-left-2 duration-200">
+                    <div className="p-3 border-b border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900">
                         <input
                             type="text"
-                            placeholder="Search shapes..."
+                            placeholder="Buscar formas..."
                             value={search}
                             onChange={e => setSearch(e.target.value)}
-                            className="w-full px-3 py-2 text-xs bg-slate-100 border-none rounded-md focus:ring-2 focus:ring-orange-500 outline-none"
+                            className="w-full px-3 py-2 text-xs bg-slate-100 dark:bg-slate-800 border-none rounded-md focus:ring-2 focus:ring-orange-500 outline-none text-slate-700 dark:text-slate-200 placeholder-slate-400 dark:placeholder-slate-500"
                             autoFocus
                         />
                     </div>
@@ -69,13 +68,13 @@ export const ShapeSelector: React.FC<ShapeSelectorProps> = ({ currentShapeType, 
 
                             return (
                                 <div key={lib.id} className="mb-4 last:mb-0">
-                                    <h4 className="px-2 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">{lib.label}</h4>
+                                    <h4 className="px-2 py-1 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">{lib.label}</h4>
                                     <div className="grid grid-cols-4 gap-2">
                                         {filteredItems.map(item => (
                                             <button
                                                 key={item.id}
                                                 onClick={() => handleSelect(item)}
-                                                className={`aspect-square flex flex-col items-center justify-center rounded-lg border border-transparent hover:border-orange-200 hover:bg-orange-50 hover:shadow-sm transition-all group ${currentShapeType === item.data.shapeType ? 'bg-orange-50 border-orange-200' : 'bg-slate-50'}`}
+                                                className={`aspect-square flex flex-col items-center justify-center rounded-lg border border-transparent hover:border-orange-200 dark:hover:border-orange-700 hover:bg-orange-50 dark:hover:bg-orange-900/20 hover:shadow-sm transition-all group ${currentShapeType === item.data.shapeType ? 'bg-orange-50 dark:bg-orange-900/20 border-orange-200 dark:border-orange-700' : 'bg-slate-50 dark:bg-slate-800'}`}
                                                 title={item.label}
                                             >
                                                 <span className="text-xl opacity-80 group-hover:opacity-100 group-hover:scale-110 transition-transform">{item.icon}</span>
@@ -86,29 +85,27 @@ export const ShapeSelector: React.FC<ShapeSelectorProps> = ({ currentShapeType, 
                             );
                         })}
 
-                        {/* Quick access to frameworks? Optional - Hide if searching */}
                         {!search && (
-                            <div className="mt-2 pt-2 border-t border-slate-100">
-                                <h4 className="px-2 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Presets</h4>
+                            <div className="mt-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+                                <h4 className="px-2 py-1 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">Presets</h4>
                                 <div className="grid grid-cols-4 gap-2">
                                     {TEMPLATE_LIBRARIES[0].items.slice(0, 4).map(item => (
                                         <button
                                             key={item.id}
                                             onClick={() => handleSelect(item)}
-                                            className="aspect-square flex flex-col items-center justify-center rounded-lg bg-indigo-50 hover:bg-indigo-100 border border-transparent hover:border-indigo-200 transition-all"
+                                            className="aspect-square flex flex-col items-center justify-center rounded-lg bg-orange-50 dark:bg-orange-900/20 hover:bg-orange-100 dark:hover:bg-orange-900/30 border border-transparent hover:border-orange-200 dark:hover:border-orange-700 transition-all"
                                             title={item.label}
                                         >
-                                            <span className="text-sm font-medium text-indigo-600">{item.icon}</span>
+                                            <span className="text-sm font-medium text-orange-600 dark:text-orange-400">{item.icon}</span>
                                         </button>
                                     ))}
                                 </div>
                             </div>
                         )}
 
-                        {/* Empty State */}
                         {displayLibraries.every(l => l.items.filter(i => i.label.toLowerCase().includes(search.toLowerCase())).length === 0) && search && (
-                            <div className="p-4 text-center text-xs text-slate-400">
-                                No shapes found
+                            <div className="p-4 text-center text-xs text-slate-400 dark:text-slate-500">
+                                Sin resultados
                             </div>
                         )}
                     </div>

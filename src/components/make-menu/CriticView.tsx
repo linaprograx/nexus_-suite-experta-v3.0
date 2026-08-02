@@ -70,7 +70,7 @@ export const CriticView: React.FC<CriticViewProps> = ({ db, userId }) => {
 
         try {
             const response = await callGeminiApi(userQueryPayload, systemPrompt, generationConfig);
-            const parsedResult = JSON.parse(response.text);
+            const parsedResult = JSON.parse((response as any).text);
             setCriticResult(parsedResult);
             await addDoc(collection(db, criticHistoryPath), { ...parsedResult, createdAt: serverTimestamp() });
         } catch(e: any) {

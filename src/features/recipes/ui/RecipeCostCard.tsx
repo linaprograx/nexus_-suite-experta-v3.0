@@ -1,7 +1,8 @@
 import React, { useMemo } from 'react';
-import { Recipe, Ingredient } from '../../../../types';
+import { Recipe, Ingredient } from '../../../types';
 import { Card } from '../../../components/ui/Card';
-import { calculateRecipeCost, calculateMargin, calculateRecommendedPrice, calculateGrossProfit } from '../../../utils/costCalculator';
+import { calculateMargin, calculateRecommendedPrice, calculateGrossProfit } from '../../../utils/costCalculator';
+import { calculateRecipeCost } from '../../../core/costing/costCalculator';
 
 interface RecipeCostCardProps {
   recipe: Recipe;
@@ -9,19 +10,9 @@ interface RecipeCostCardProps {
 }
 
 export const RecipeCostCard: React.FC<RecipeCostCardProps> = ({ recipe, allIngredients }) => {
-  const ingredientMap = useMemo(() => {
-    return allIngredients.reduce((acc, ing) => {
-      acc[ing.id] = ing;
-      return acc;
-    }, {} as Record<string, Ingredient>);
-  }, [allIngredients]);
-
   const costData = useMemo(() => {
-    const cost = calculateRecipeCost(recipe.ingredientes || [], ingredientMap);
-    // If recipe has a manual cost override or cached cost, we might want to use it?
-    // But dynamic calculation is safer.
-    // However, if the recipe stores `costoReceta` and we want to respect it if ingredients are missing?
-    // Let's prefer calculated cost, fallback to stored cost.
+    const cost = calculateRecipeCost(recipe, allIngredients).costoTotal;
+    // Prefer the dynamically calculated cost; fall back to the stored cost if ingredients are missing.
     const finalCost = cost > 0 ? cost : (recipe.costoReceta || 0);
     
     // Assume sale price is stored in recipe
@@ -38,7 +29,7 @@ export const RecipeCostCard: React.FC<RecipeCostCardProps> = ({ recipe, allIngre
       grossProfit,
       salePrice
     };
-  }, [recipe, ingredientMap]);
+  }, [recipe, allIngredients]);
 
   return (
     <Card className="p-4 bg-white/60 dark:bg-slate-900/30 backdrop-blur-md border border-slate-200/70 dark:border-slate-800/70">

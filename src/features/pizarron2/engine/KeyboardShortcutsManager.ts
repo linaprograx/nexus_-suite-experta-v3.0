@@ -138,6 +138,25 @@ export class KeyboardShortcutsManager {
         }
 
         // --- DELETE ---
+        // --- TOOL SHORTCUTS (single key, no modifier) ---
+        if (!isMod && !isShift) {
+            const toolMap: Record<string, string> = {
+                v: 'pointer', h: 'hand', t: 'text', r: 'shape', l: 'line',
+            };
+            const k = e.key.toLowerCase();
+            if (toolMap[k]) {
+                e.preventDefault();
+                if (k === 'r') pizarronStore.setUIFlag('activeShapeType', 'rectangle');
+                pizarronStore.setActiveTool(toolMap[k] as any);
+                return;
+            }
+            if (k === 'p') {
+                e.preventDefault();
+                pizarronStore.setPresentationMode(true);
+                return;
+            }
+        }
+
         if (e.key === 'Delete' || e.key === 'Backspace') {
             // Only if not editing text
             const state = pizarronStore.getState();

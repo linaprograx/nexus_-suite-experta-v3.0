@@ -45,17 +45,23 @@ float fbm(vec2 p){
 /* ================= COLOR FIELD ================= */
 
 vec3 colorField(float x, vec2 p){
-  vec3 blue   = vec3(0.35,0.45,0.95);
-  vec3 violet = vec3(0.60,0.42,0.85);
-  vec3 green  = vec3(0.45,0.85,0.65);
-  vec3 amber  = vec3(1.00,0.75,0.40);
+  vec3 violet = vec3(0.42,0.34,0.78);
+  vec3 magenta= vec3(0.78,0.36,0.62);
+  vec3 amber  = vec3(1.00,0.66,0.28);
+  vec3 rose   = vec3(0.95,0.32,0.30);
   vec3 black  = vec3(0.0);
 
-  float n = fbm(p*1.6);
+  // Slowly drifting noise for a living aurora
+  float n = fbm(p*1.6 + vec2(uTime*0.03, uTime*0.015));
 
-  vec3 col = mix(blue, violet, smoothstep(-0.2,0.8,p.y));
-  col += green * smoothstep(0.45,0.8,n) * 0.25;
-  col += amber * smoothstep(0.65,0.9,n) * 0.22;
+  // Warm brand-aligned base that flows from violet → magenta vertically
+  vec3 col = mix(violet, magenta, smoothstep(-0.3,0.9,p.y));
+  col += rose  * smoothstep(0.50,0.85,n) * 0.30;
+  col += amber * smoothstep(0.60,0.92,n) * 0.40;
+
+  // Soft warm bloom behind the card (center-left)
+  float bloom = exp(-pow(length((p - vec2(-0.15,0.05))) / 0.55, 2.0));
+  col += amber * bloom * 0.18;
 
   /* COLOR FADES OUT LEFT → RIGHT (ENDS ~0.75) */
   float colorFade = 1.0 - smoothstep(0.55,0.75,x);
@@ -182,7 +188,7 @@ const CinematicPlane = () => {
 };
 
 export const AuthBackground = () => (
-  <div className="absolute inset-0 z-0 pointer-events-none bg-[#010205]">
+  <div className="absolute inset-0 z-0 pointer-events-none bg-[#010205] overflow-hidden">
     <Canvas
       key="auth-bg-nexus-final"
       camera={{ position: [0, 0, 1] }}
@@ -191,5 +197,31 @@ export const AuthBackground = () => (
     >
       <CinematicPlane />
     </Canvas>
+
+    {/* Drifting warm depth orbs */}
+    <div
+      className="absolute -left-[10%] top-[15%] w-[40vw] h-[40vw] rounded-full opacity-40 mix-blend-screen"
+      style={{ background: 'radial-gradient(circle, rgba(249,115,22,0.35), transparent 70%)', filter: 'blur(40px)', animation: 'nexusDrift 18s ease-in-out infinite' }}
+    />
+    <div
+      className="absolute right-[5%] bottom-[10%] w-[34vw] h-[34vw] rounded-full opacity-30 mix-blend-screen"
+      style={{ background: 'radial-gradient(circle, rgba(225,29,72,0.3), transparent 70%)', filter: 'blur(50px)', animation: 'nexusDrift 22s ease-in-out infinite reverse' }}
+    />
+
+    {/* Fine film grain */}
+    <div
+      className="absolute inset-0 opacity-[0.05] mix-blend-overlay"
+      style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E\")" }}
+    />
+
+    {/* Cinematic vignette */}
+    <div className="absolute inset-0" style={{ background: 'radial-gradient(ellipse at center, transparent 40%, rgba(1,2,5,0.55) 100%)' }} />
+
+    <style>{`
+      @keyframes nexusDrift {
+        0%, 100% { transform: translate(0, 0) scale(1); }
+        50% { transform: translate(6%, -4%) scale(1.12); }
+      }
+    `}</style>
   </div>
 );

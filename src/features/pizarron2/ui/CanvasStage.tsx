@@ -1,6 +1,6 @@
 import { logger } from "../../../utils/logger";
 
-import React, { useEffect, useRef, useMemo } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { renderer } from '../engine/renderer';
 import { pizarronStore, usePizarronStore } from '../state/store';
 import { interactionManager } from '../engine/interaction';
@@ -15,6 +15,9 @@ export const externalDataMap = new Map<string, any>();
 let renderTrigger: (() => void) | null = null;
 export const setRenderTrigger = (fn: () => void) => { renderTrigger = fn; };
 export const forceCanvasRender = () => { if (renderTrigger) renderTrigger(); };
+
+// Exported canvas size — updated on resize, consumed by MiniMap for accurate viewport rect
+export let canvasSize = { w: window.innerWidth, h: window.innerHeight };
 
 export const CanvasStage: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -52,6 +55,7 @@ export const CanvasStage: React.FC<{ children?: React.ReactNode }> = ({ children
         // 2. Handle Resize
         const resizeObserver = new ResizeObserver((entries) => {
             const { width, height } = entries[0].contentRect;
+            canvasSize = { w: width, h: height };
             renderer.resize(width, height);
             // Trigger a render immediately
             renderer.render(pizarronStore.getState(), externalDataRef.current);
@@ -205,6 +209,46 @@ export const CanvasStage: React.FC<{ children?: React.ReactNode }> = ({ children
         });
     }, [ingredients, recipes]); // ONLY these two dependencies - no loops!
 
+    // Image zone file picker — triggered by pendingImageZoneId signal from interaction engine
+    const imageZonePickerRef = useRef<HTMLInputElement>(null);
+    const pendingImageZoneId = usePizarronStore(s => s.interactionState.pendingImageZoneId);
+
+    useEffect(() => {
+        if (!pendingImageZoneId) return;
+        // Trigger native file picker
+        imageZonePickerRef.current?.click();
+        // Clear signal immediately so re-clicking works
+        pizarronStore.updateInteractionState({ pendingImageZoneId: undefined });
+    }, [pendingImageZoneId]);
+
+    const handleImageZonePick = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        // Resolve which zone to update — read fresh state at call time
+        const state = pizarronStore.getState();
+        const zoneId = state.interactionState.activeZoneId;
+        if (!file || !zoneId) return;
+
+        // Find the board that owns this zone
+        const board = Object.values(state.nodes).find(n =>
+            n.type === 'board' && n.structure?.zones?.some((z: any) => z.id === zoneId)
+        );
+        if (!board) return;
+
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+            const dataUrl = ev.target?.result as string;
+            const newStructure = JSON.parse(JSON.stringify(board.structure));
+            const z = newStructure.zones.find((z: any) => z.id === zoneId);
+            if (z) {
+                if (!z.content) z.content = {};
+                z.content.imageUrl = dataUrl;
+                pizarronStore.updateNode(board.id, { structure: newStructure });
+            }
+        };
+        reader.readAsDataURL(file);
+        e.target.value = ''; // reset so same file can be re-picked
+    };
+
     // 4. Thumbnail Capture Listener
     const requestCapture = usePizarronStore(s => s.interactionState.requestThumbnailCapture);
 
@@ -286,6 +330,14 @@ export const CanvasStage: React.FC<{ children?: React.ReactNode }> = ({ children
 
     return (
         <div ref={containerRef} className="w-full h-full bg-slate-50 dark:bg-slate-950 relative overflow-hidden touch-none">
+            {/* Hidden file input for image zone placeholder clicks */}
+            <input
+                ref={imageZonePickerRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleImageZonePick}
+            />
             <canvas
                 ref={canvasRef}
                 className="block absolute top-0 left-0 outline-none"

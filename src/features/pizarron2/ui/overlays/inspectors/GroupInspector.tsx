@@ -21,8 +21,8 @@ export const GroupInspector = ({
                 
                 return (
                     <div className="space-y-4">
-                        <div className="bg-slate-50 p-2 rounded border border-slate-200 text-center">
-                            <span className="text-xs font-medium text-slate-500">
+                        <div className="bg-slate-50 dark:bg-slate-800/50 p-2 rounded border border-slate-200 dark:border-slate-700 text-center">
+                            <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
                                 {getTargets().length} items selected
                             </span>
                         </div>
@@ -34,7 +34,7 @@ export const GroupInspector = ({
                             onChange={(c) => {
                                 const color = typeof c === 'string' ? c : c.start;
                                 const targets = getTargets();
-                                targets.forEach(n => {
+                                targets.forEach((n: any) => {
                                     const patch: any = {};
                                     // Intelligent patching based on type
                                     if (n.type === 'text' || n.type === 'shape' || n.type === 'line') {
@@ -57,7 +57,7 @@ export const GroupInspector = ({
                             onChange={(c) => {
                                 const color = typeof c === 'string' ? c : c.start;
                                 const targets = getTargets();
-                                targets.forEach(n => {
+                                targets.forEach((n: any) => {
                                     if (n.type === 'shape' || n.type === 'board') {
                                         pizarronStore.updateNode(n.id, { content: { ...n.content, color: color } });
                                     }
@@ -72,7 +72,7 @@ export const GroupInspector = ({
                             borderRadius={0}
                             onChange={(eff) => {
                                 const targets = getTargets();
-                                targets.forEach(n => {
+                                targets.forEach((n: any) => {
                                     const patch: any = {};
                                     if (eff.opacity !== undefined) patch.opacity = eff.opacity;
                                     if (eff.borderWidth !== undefined) patch.borderWidth = eff.borderWidth;

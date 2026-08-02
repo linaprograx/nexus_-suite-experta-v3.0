@@ -44,6 +44,8 @@ export interface LearningEvent {
         impactAbs?: number | null;
         impactPct?: number | null;
         recipesAffected?: number | null;
+        /** Days the user chose to snooze this suggestion for. */
+        snoozedDays?: number | null;
     };
 }
 

@@ -17,7 +17,7 @@ interface ActiveSuggestionInlineProps {
 }
 
 export const ActiveSuggestionInline: React.FC<ActiveSuggestionInlineProps> = ({ suggestion, onDismiss, onAction }) => {
-    const { db, userId } = useApp();
+    const { db, userId, appId } = useApp();
     const [isExpanded, setIsExpanded] = useState(false);
     // Modes: idle -> preview -> executing -> success
     const [mode, setMode] = useState<'idle' | 'preview' | 'executing' | 'success'>('idle');
@@ -38,9 +38,9 @@ export const ActiveSuggestionInline: React.FC<ActiveSuggestionInlineProps> = ({ 
     const handleConfirm = async () => {
         if (!action || !db || !userId) return;
         setMode('executing');
-        const success = await executeAction(action, { db, userId });
+        const success = await executeAction(action, { db, userId, appId });
         if (success) {
-            logActionExecution(action, userId);
+            logActionExecution(db, userId, action);
             setMode('success');
             onAction?.(suggestion.id);
         } else {

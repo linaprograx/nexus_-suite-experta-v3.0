@@ -10,6 +10,7 @@ import { doc, deleteDoc, writeBatch } from 'firebase/firestore';
 import { calculateInventoryMetrics } from '../../utils/stockUtils';
 import { StockResolverPanel } from '../../components/stock/StockResolverPanel';
 import { useStockResolver } from '../../features/stock/hooks/useStockResolver';
+import { PhysicalCountModal } from './PhysicalCountModal';
 
 interface StockInventoryPanelProps {
     stockItems: StockItem[];
@@ -18,6 +19,8 @@ interface StockInventoryPanelProps {
     onSelectIngredient?: (ingredientId: string) => void;
     externalSearchTerm?: string;
     externalCategory?: string; // Added for Mobile Unified Toolbar
+    onRecordMovement?: (item: StockItem, quantity: number, type: 'consumption' | 'waste' | 'adjustment', reason?: string) => void;
+    onPhysicalCount?: (adjustments: { item: StockItem; counted: number; delta: number }[]) => void;
 }
 
 export const StockInventoryPanel: React.FC<StockInventoryPanelProps> = ({
@@ -26,8 +29,15 @@ export const StockInventoryPanel: React.FC<StockInventoryPanelProps> = ({
     allIngredients,
     onSelectIngredient,
     externalSearchTerm,
-    externalCategory
+    externalCategory,
+    onRecordMovement,
+    onPhysicalCount
 }) => {
+    // Stock-out (consumption / waste / adjustment) mini-dialog — records in the item's own unit
+    const [mvItem, setMvItem] = useState<StockItem | null>(null);
+    const [mvQty, setMvQty] = useState('');
+    const [mvType, setMvType] = useState<'consumption' | 'waste' | 'adjustment'>('consumption');
+    const [showCount, setShowCount] = useState(false);
     const { db, userId } = useApp();
     const queryClient = useQueryClient();
     const [internalSearchQuery, setInternalSearchQuery] = useState('');
@@ -81,6 +91,30 @@ export const StockInventoryPanel: React.FC<StockInventoryPanelProps> = ({
 
     // Recalculate metrics based on FILTERED items
     const filteredMetrics = useMemo(() => calculateInventoryMetrics(filteredStockItems), [filteredStockItems]);
+
+    // Real month-over-month inventory change, derived from the purchase history
+    // (value added this calendar month vs. the accumulated value before it).
+    const inventoryTrend = useMemo(() => {
+        const toMillis = (v: any): number => {
+            if (!v) return 0;
+            if (typeof v === 'number') return v;
+            if (typeof v === 'string') return new Date(v).getTime();
+            if (v.seconds) return v.seconds * 1000;          // Firestore Timestamp
+            if (v instanceof Date) return v.getTime();
+            if (typeof v.toMillis === 'function') return v.toMillis();
+            return 0;
+        };
+        const now = new Date();
+        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
+        let thisMonth = 0, before = 0;
+        for (const p of (purchases || [])) {
+            const val = (p as any).totalCost ?? ((p as any).quantity || 0) * ((p as any).unitPrice || 0);
+            const t = toMillis((p as any).createdAt);
+            if (t >= startOfMonth) thisMonth += val; else before += val;
+        }
+        const pct = before > 0 ? (thisMonth / before) * 100 : (thisMonth > 0 ? 100 : 0);
+        return { pct, hasData: (purchases?.length || 0) > 0 && (thisMonth > 0 || before > 0) };
+    }, [purchases]);
 
 
     const toggleSelection = (id: string) => {
@@ -149,6 +183,18 @@ export const StockInventoryPanel: React.FC<StockInventoryPanelProps> = ({
                                 className="pl-10 h-10 text-sm bg-white/40 dark:bg-slate-800/40 backdrop-blur-md border border-white/20 dark:border-white/10 rounded-xl w-full shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 text-slate-800 dark:text-slate-100 placeholder:text-slate-400 transition-all hover:bg-white/60"
                             />
                         </div>
+
+                        {/* Physical count */}
+                        {onPhysicalCount && (
+                            <button
+                                onClick={() => setShowCount(true)}
+                                title="Conteo físico de inventario"
+                                className="h-10 px-3 shrink-0 bg-sky-500/10 text-sky-600 dark:text-sky-400 hover:bg-sky-500 hover:text-white border border-sky-500/20 rounded-xl flex items-center gap-2 text-sm font-bold transition-all"
+                            >
+                                <Icon svg={ICONS.list} className="w-4 h-4" />
+                                <span className="hidden sm:inline">Conteo</span>
+                            </button>
+                        )}
 
                         {/* Category Button */}
                         <div className="relative min-w-[140px]">
@@ -230,7 +276,9 @@ export const StockInventoryPanel: React.FC<StockInventoryPanelProps> = ({
                         </div>
                         <div className="mt-2 flex justify-center">
                             <span className="text-[10px] font-bold bg-white/40 dark:bg-black/20 text-emerald-700 dark:text-emerald-300 px-3 py-1 rounded-full backdrop-blur-md">
-                                +12% vs mes anterior
+                                {inventoryTrend.hasData
+                                    ? `${inventoryTrend.pct >= 0 ? '+' : ''}${inventoryTrend.pct.toFixed(0)}% vs mes anterior`
+                                    : 'Sin histórico'}
                             </span>
                         </div>
                     </div>
@@ -266,7 +314,7 @@ export const StockInventoryPanel: React.FC<StockInventoryPanelProps> = ({
                     </span>
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 pb-20">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-2 lg:gap-4 pb-20">
                     {filteredStockItems.map((item) => {
                         const isSelected = selectedIngIds.has(item.ingredientId);
                         return (
@@ -274,7 +322,7 @@ export const StockInventoryPanel: React.FC<StockInventoryPanelProps> = ({
                                 key={item.ingredientId}
                                 onClick={() => onSelectIngredient && onSelectIngredient(item.ingredientId)}
                                 className={`
-                                relative flex flex-col justify-between min-h-[160px] p-5 rounded-3xl transition-all duration-300 cursor-pointer group
+                                relative flex flex-col justify-between min-h-0 lg:min-h-[160px] p-3 lg:p-5 rounded-2xl lg:rounded-3xl transition-all duration-300 cursor-pointer group
                                 backdrop-blur-md border shadow-lg
                                 ${isSelected
                                         ? 'bg-emerald-500/10 border-emerald-500 shadow-emerald-500/20 scale-[1.02]'
@@ -300,7 +348,18 @@ export const StockInventoryPanel: React.FC<StockInventoryPanelProps> = ({
                                             <Icon svg={ICONS.box} className="w-5 h-5" />
                                         </div>
                                     </div>
-                                    <div className={`w-3 h-3 rounded-full ${item.quantityAvailable > 5 ? 'bg-emerald-400 shadow-[0_0_10px_rgba(52,211,153,0.6)]' : 'bg-red-400 shadow-[0_0_10px_rgba(248,113,113,0.6)]'}`} />
+                                    <div className="flex items-center gap-2">
+                                        {onRecordMovement && (
+                                            <button
+                                                onClick={(e) => { e.stopPropagation(); setMvItem(item); setMvQty(''); setMvType('consumption'); }}
+                                                title="Registrar salida (consumo / merma / ajuste)"
+                                                className="w-7 h-7 rounded-lg flex items-center justify-center bg-white/40 dark:bg-black/20 text-slate-500 dark:text-slate-400 hover:bg-rose-500 hover:text-white transition-colors opacity-0 group-hover:opacity-100"
+                                            >
+                                                <Icon svg={ICONS.minus} className="w-4 h-4" />
+                                            </button>
+                                        )}
+                                        <div className={`w-3 h-3 rounded-full ${item.quantityAvailable > 5 ? 'bg-emerald-400 shadow-[0_0_10px_rgba(52,211,153,0.6)]' : 'bg-red-400 shadow-[0_0_10px_rgba(248,113,113,0.6)]'}`} />
+                                    </div>
                                 </div>
 
                                 <div className="relative z-10 px-1">
@@ -332,6 +391,67 @@ export const StockInventoryPanel: React.FC<StockInventoryPanelProps> = ({
                     })}
                 </div>
             </div>
+
+            {/* Physical count (#4) */}
+            {showCount && onPhysicalCount && (
+                <PhysicalCountModal
+                    stockItems={filteredStockItems}
+                    onClose={() => setShowCount(false)}
+                    onConfirm={onPhysicalCount}
+                />
+            )}
+
+            {/* Stock-out mini dialog — records a movement in the item's own unit (unit-safe, no conversion) */}
+            {mvItem && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                    <div className="absolute inset-0 bg-slate-900/50 backdrop-blur-sm" onClick={() => setMvItem(null)} />
+                    <div className="relative w-full max-w-sm bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-white/10 p-5">
+                        <h3 className="text-sm font-black text-slate-900 dark:text-white mb-1">Registrar salida de stock</h3>
+                        <p className="text-xs text-slate-500 dark:text-slate-400 mb-4">{mvItem.ingredientName} · disponible {Number.isInteger(mvItem.quantityAvailable) ? mvItem.quantityAvailable : mvItem.quantityAvailable.toFixed(1)} {mvItem.unit}</p>
+
+                        <div className="grid grid-cols-3 gap-1.5 mb-3">
+                            {([['consumption', 'Consumo'], ['waste', 'Merma'], ['adjustment', 'Ajuste']] as const).map(([val, label]) => (
+                                <button
+                                    key={val}
+                                    type="button"
+                                    onClick={() => setMvType(val)}
+                                    className={`py-1.5 rounded-lg text-[11px] font-bold transition-colors ${mvType === val ? 'bg-rose-500 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400'}`}
+                                >
+                                    {label}
+                                </button>
+                            ))}
+                        </div>
+
+                        <div className="flex items-center gap-2 mb-4">
+                            <Input
+                                type="number"
+                                min="0"
+                                value={mvQty}
+                                onChange={e => setMvQty(e.target.value)}
+                                placeholder="Cantidad"
+                                className="flex-1 bg-slate-50 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-100"
+                                autoFocus
+                            />
+                            <span className="text-xs font-bold text-slate-400 uppercase w-10">{mvItem.unit}</span>
+                        </div>
+
+                        <div className="flex gap-2 justify-end">
+                            <button onClick={() => setMvItem(null)} className="px-4 py-2 rounded-lg text-xs font-bold text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">Cancelar</button>
+                            <button
+                                onClick={() => {
+                                    const q = parseFloat(mvQty);
+                                    if (!q || q <= 0) return;
+                                    onRecordMovement?.(mvItem, q, mvType);
+                                    setMvItem(null);
+                                }}
+                                className="px-4 py-2 rounded-lg text-xs font-bold bg-rose-500 hover:bg-rose-600 text-white transition-colors"
+                            >
+                                Descontar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
         </div>
     );

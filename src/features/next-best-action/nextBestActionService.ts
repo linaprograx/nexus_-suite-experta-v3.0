@@ -1,4 +1,4 @@
-import { Recipe, PizarronTask } from '../../../types';
+import { Recipe, PizarronTask } from '../../types';
 import { generateText } from '../../services/ai/textService';
 
 export interface NextBestActionData {
@@ -52,7 +52,7 @@ function preprocessData(
       difficulty: 'medium' // Recipe type doesn't have difficulty
     })),
     tasks: tasks.slice(-15).map(t => ({
-      content: t.texto,
+      content: t.texto || '',
       category: t.category,
       status: t.status,
       urgency: t.priority || 'normal',

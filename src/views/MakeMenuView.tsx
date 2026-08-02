@@ -35,6 +35,9 @@ const MakeMenuView: React.FC<MakeMenuViewProps> = ({ db, userId, appId }) => {
     const [errorDesigner, setErrorDesigner] = useState<string | null>(null);
     const [menuResults, setMenuResults] = useState<MenuLayout[]>([]);
     const [pizarronDraft, setPizarronDraft] = useState<any>(null);
+    // Left-column design preferences (feed the AI generation)
+    const [menuStyle, setMenuStyle] = useState<string>('Moderno');
+    const [accentColor, setAccentColor] = useState<string>('#0f172a');
     const [searchParams, setSearchParams] = useSearchParams();
 
     // Phase 6.2: Listen for Pizarrón drafts
@@ -144,7 +147,10 @@ const MakeMenuView: React.FC<MakeMenuViewProps> = ({ db, userId, appId }) => {
             const results = await makeMenuService.generateProposals(
                 selectedRecipes,
                 selectedTasks,
-                sectionTitles
+                sectionTitles,
+                'cocktails',
+                menuStyle,
+                accentColor
             );
 
             // Map service results to MenuLayout expected by DesignerResults
@@ -169,8 +175,10 @@ const MakeMenuView: React.FC<MakeMenuViewProps> = ({ db, userId, appId }) => {
             {/* Left Sidebar */}
             <div className="h-full min-h-0 flex flex-col relative z-20">
                 <MakeMenuSidebar
-                    activeMode={'designer'}
-                    onModeChange={() => { }}
+                    style={menuStyle}
+                    onStyleChange={setMenuStyle}
+                    accentColor={accentColor}
+                    onAccentChange={setAccentColor}
                 />
             </div>
 

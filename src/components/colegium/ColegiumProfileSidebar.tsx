@@ -6,11 +6,28 @@ interface ColegiumProfileSidebarProps {
     level: string;
     totalScore: number;
     gamesPlayed: number;
+    perfectGames?: number;
+    avgAccuracy?: number;
+    bestAccuracy?: number;
+    currentStreak?: number;
+    masteredTopics?: number;
     userName?: string;
     userPhoto?: string | null;
 }
 
-const ColegiumProfileSidebar: React.FC<ColegiumProfileSidebarProps> = ({ level, totalScore, gamesPlayed, userName = "Usuario Nexus", userPhoto }) => {
+const ColegiumProfileSidebar: React.FC<ColegiumProfileSidebarProps> = ({ level, totalScore, gamesPlayed, perfectGames = 0, avgAccuracy = 0, bestAccuracy = 0, currentStreak = 0, masteredTopics = 0, userName = "Usuario Nexus", userPhoto }) => {
+    // Real achievement logic — unlocked based on actual play history, with progress
+    const achievements = [
+        { id: 'first', label: 'Primera Partida', icon: ICONS.play, progress: Math.min(1, gamesPlayed / 1) },
+        { id: 'perfect', label: 'Puntaje Perfecto', icon: ICONS.star, progress: Math.min(1, perfectGames / 1) },
+        { id: 'sharp', label: 'Precisión 80%+', icon: ICONS.check, progress: gamesPlayed >= 3 ? Math.min(1, avgAccuracy / 80) : 0 },
+        { id: 'streak', label: 'Racha de 3 días', icon: ICONS.zap, progress: Math.min(1, currentStreak / 3) },
+        { id: 'veteran', label: 'Veterano · 10 juegos', icon: ICONS.award, progress: Math.min(1, gamesPlayed / 10) },
+        { id: 'scholar', label: 'Erudito · 50 aciertos', icon: ICONS.book, progress: Math.min(1, totalScore / 50) },
+        { id: 'master', label: 'Domina 3 categorías', icon: ICONS.trendingUp, progress: Math.min(1, masteredTopics / 3) },
+        { id: 'legend', label: 'Leyenda · 25 juegos', icon: ICONS.award, progress: Math.min(1, gamesPlayed / 25) },
+    ];
+    const unlockedCount = achievements.filter(a => a.progress >= 1).length;
     return (
         <div className="relative h-full flex flex-col overflow-hidden rounded-3xl transition-all duration-300">
             {/* Premium Glassmorphism Container */}
@@ -52,35 +69,45 @@ const ColegiumProfileSidebar: React.FC<ColegiumProfileSidebarProps> = ({ level, 
 
                 {/* Stats Grid - Enhanced Layout */}
                 <div className="p-8 space-y-8 flex-1 overflow-y-auto custom-scrollbar">
-                    <div className="space-y-6">
-                        <div className="flex items-center justify-between mb-2">
-                            <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest">Rendimiento</h4>
+                    <div className="space-y-4">
+                        <div className="flex items-center justify-between mb-1">
+                            <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest">Perfil de Habilidad</h4>
                             <Icon svg={ICONS.chart} className="w-4 h-4 text-slate-400 opacity-50" />
                         </div>
 
-                        {/* Stat Card 1 */}
-                        <div className="group relative p-4 rounded-2xl bg-white/50 dark:bg-slate-800/50 border border-white/40 dark:border-white/10 hover:bg-white/70 dark:hover:bg-slate-800/70 transition-all duration-300 shadow-sm hover:shadow-md">
-                            <div className="flex items-center gap-4">
-                                <div className="p-3 rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 text-white shadow-lg shadow-orange-500/20 group-hover:scale-110 transition-transform duration-300">
-                                    <Icon svg={ICONS.star} className="w-6 h-6" />
+                        {/* Hero: Precisión Media with bar */}
+                        <div className="p-5 rounded-2xl bg-gradient-to-br from-indigo-500/10 to-purple-500/5 border border-indigo-500/20 shadow-sm">
+                            <div className="flex items-end justify-between mb-3">
+                                <div>
+                                    <p className="text-[10px] font-bold text-indigo-500 dark:text-indigo-300 uppercase tracking-widest mb-1">Precisión Media</p>
+                                    <p className="text-4xl font-serif text-slate-800 dark:text-white leading-none">{avgAccuracy}<span className="text-lg text-slate-400">%</span></p>
                                 </div>
-                                <div className="flex-1">
-                                    <p className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wide">Puntaje Total</p>
-                                    <p className="text-2xl font-bold text-slate-800 dark:text-white tracking-tight">{totalScore.toLocaleString()}</p>
+                                <div className="text-right">
+                                    <p className="text-[9px] text-slate-400 uppercase tracking-wider">Mejor</p>
+                                    <p className="text-sm font-bold text-emerald-500 dark:text-emerald-400">{bestAccuracy}%</p>
                                 </div>
+                            </div>
+                            <div className="h-2 w-full bg-slate-200 dark:bg-white/10 rounded-full overflow-hidden">
+                                <div className={`h-full rounded-full transition-all duration-1000 ${avgAccuracy >= 80 ? 'bg-emerald-500' : avgAccuracy >= 50 ? 'bg-indigo-500' : 'bg-rose-500'}`} style={{ width: `${avgAccuracy}%` }} />
                             </div>
                         </div>
 
-                        {/* Stat Card 2 */}
-                        <div className="group relative p-4 rounded-2xl bg-white/50 dark:bg-slate-800/50 border border-white/40 dark:border-white/10 hover:bg-white/70 dark:hover:bg-slate-800/70 transition-all duration-300 shadow-sm hover:shadow-md">
-                            <div className="flex items-center gap-4">
-                                <div className="p-3 rounded-xl bg-gradient-to-br from-emerald-400 to-teal-500 text-white shadow-lg shadow-emerald-500/20 group-hover:scale-110 transition-transform duration-300">
-                                    <Icon svg={ICONS.check} className="w-6 h-6" />
-                                </div>
-                                <div className="flex-1">
-                                    <p className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wide">Juegos</p>
-                                    <p className="text-2xl font-bold text-slate-800 dark:text-white tracking-tight">{gamesPlayed}</p>
-                                </div>
+                        {/* Compact stat trio */}
+                        <div className="grid grid-cols-3 gap-2">
+                            <div className="p-3 rounded-xl bg-white/50 dark:bg-slate-800/50 border border-white/40 dark:border-white/10 text-center">
+                                <Icon svg={ICONS.check} className="w-4 h-4 text-emerald-500 mx-auto mb-1" />
+                                <p className="text-lg font-bold text-slate-800 dark:text-white leading-none">{totalScore.toLocaleString()}</p>
+                                <p className="text-[8px] text-slate-400 uppercase tracking-wider mt-1">Aciertos</p>
+                            </div>
+                            <div className="p-3 rounded-xl bg-white/50 dark:bg-slate-800/50 border border-white/40 dark:border-white/10 text-center">
+                                <Icon svg={ICONS.trendingUp} className="w-4 h-4 text-indigo-500 mx-auto mb-1" />
+                                <p className="text-lg font-bold text-slate-800 dark:text-white leading-none">{masteredTopics}</p>
+                                <p className="text-[8px] text-slate-400 uppercase tracking-wider mt-1">Dominadas</p>
+                            </div>
+                            <div className="p-3 rounded-xl bg-white/50 dark:bg-slate-800/50 border border-white/40 dark:border-white/10 text-center">
+                                <span className="text-sm leading-none block mb-1">{currentStreak > 0 ? '🔥' : '💤'}</span>
+                                <p className="text-lg font-bold text-slate-800 dark:text-white leading-none">{currentStreak}</p>
+                                <p className="text-[8px] text-slate-400 uppercase tracking-wider mt-1">Racha</p>
                             </div>
                         </div>
                     </div>
@@ -89,15 +116,29 @@ const ColegiumProfileSidebar: React.FC<ColegiumProfileSidebarProps> = ({ level, 
                     <div className="pt-6 border-t border-white/10 dark:border-white/5">
                         <div className="flex items-center justify-between mb-4">
                             <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest">Insignias</h4>
-                            <span className="text-[10px] font-semibold text-indigo-500 bg-indigo-50 dark:bg-indigo-900/20 px-2 py-0.5 rounded-full cursor-pointer hover:bg-indigo-100 transition-colors">Ver todas</span>
+                            <span className="text-[10px] font-bold text-indigo-500 bg-indigo-50 dark:bg-indigo-900/20 px-2 py-0.5 rounded-full">{unlockedCount}/{achievements.length}</span>
                         </div>
 
                         <div className="grid grid-cols-4 gap-3">
-                            {[1, 2, 3, 4].map((i) => (
-                                <div key={i} className="aspect-square rounded-xl flex items-center justify-center border border-white/20 dark:border-white/10 bg-gradient-to-br from-white/40 to-white/10 dark:from-white/5 dark:to-transparent hover:scale-105 transition-transform cursor-pointer shadow-sm group">
-                                    <Icon svg={ICONS.award} className={`w-6 h-6 ${i <= 2 ? 'text-amber-500 drop-shadow-sm' : 'text-slate-300 opacity-50'}`} />
-                                </div>
-                            ))}
+                            {achievements.map((a) => {
+                                const unlocked = a.progress >= 1;
+                                const pct = Math.round(a.progress * 100);
+                                return (
+                                    <div
+                                        key={a.id}
+                                        title={`${a.label} — ${unlocked ? 'Desbloqueado ✓' : `${pct}%`}`}
+                                        className={`relative aspect-square rounded-xl flex items-center justify-center border transition-transform cursor-help shadow-sm overflow-hidden ${unlocked
+                                            ? 'border-amber-400/40 bg-gradient-to-br from-amber-400/20 to-amber-500/5 hover:scale-105'
+                                            : 'border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/[0.03]'}`}
+                                    >
+                                        <Icon svg={a.icon} className={`w-6 h-6 relative z-10 ${unlocked ? 'text-amber-500 drop-shadow-sm' : 'text-slate-300 dark:text-slate-600'}`} />
+                                        {/* Progress fill for locked badges */}
+                                        {!unlocked && a.progress > 0 && (
+                                            <div className="absolute bottom-0 left-0 right-0 bg-indigo-500/20" style={{ height: `${pct}%` }} />
+                                        )}
+                                    </div>
+                                );
+                            })}
                         </div>
                     </div>
                 </div>

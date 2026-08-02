@@ -8,6 +8,7 @@ import { Input } from '../ui/Input';
 import { Select } from '../ui/Select';
 import { Label } from '../ui/Label';
 import { calculateIngredientPrice } from '../../utils/costCalculator';
+import { resolveStandardPack } from '../../utils/packNormalization';
 import { classifyIngredient } from '../../features/ingredients/families';
 
 import { useSuppliers } from '../../features/suppliers/hooks/useSuppliers'; // Updated import
@@ -138,14 +139,24 @@ export const IngredientFormModal: React.FC<{
     const ingredientsColPath = `artifacts/${appId}/users/${userId}/grimorio-ingredients`;
 
     const precioCompra = parseFloat(String(formData.precioCompra)) || 0;
-    const standardQuantity = parseFloat(String(formData.standardQuantity)) || 0;
     const wastePercentage = parseFloat(String(formData.wastePercentage)) || 0;
+
+    // Normalize the chosen unit + quantity to a canonical base (ml|g|und) so the
+    // costing engine never has to guess. Honors the explicit standardUnit/qty the
+    // user picked, falling back to parsing the "unidad de compra" text or the name.
+    const { standardUnit, standardQuantity } = resolveStandardPack({
+      name: formData.nombre,
+      unitText: formData.unidadCompra,
+      explicitQty: parseFloat(String(formData.standardQuantity)) || 0,
+      explicitUnit: formData.standardUnit,
+    });
 
     const standardPrice = calculateIngredientPrice(precioCompra, standardQuantity, wastePercentage);
 
     const dataToSave = {
       ...formData,
       precioCompra,
+      standardUnit,
       standardQuantity,
       wastePercentage,
       standardPrice

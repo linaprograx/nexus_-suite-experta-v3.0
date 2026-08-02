@@ -9,15 +9,20 @@ export const evaluateMarketActiveRules = (insights: AssistedInsight[]): ActiveSu
     // Trigger: INSIGHT_MARKET_SAVINGS_HIGH_IMPACT
     const savingsInsight = insights.find(i => i.id === 'INSIGHT_MARKET_SAVINGS_HIGH_IMPACT');
 
-    if (savingsInsight && savingsInsight.priorityScore >= 80) { // Higher threshold for Active
-        // Parse evidence for values (fragile but fast for now)
-        const bestPriceEv = savingsInsight.evidence.find(e => e.label === 'Mejor precio');
-        const bestPrice = bestPriceEv ? parseFloat(bestPriceEv.value) : 0;
+    if (savingsInsight && (savingsInsight.priorityScore ?? 0) >= 80) { // Higher threshold for Active
+        // Prefer the structured payload (real entity data); fall back to parsing evidence text.
+        const payload = savingsInsight.payload || {};
+        const bestPriceEv = savingsInsight.evidence?.find(e => e.label === 'Mejor precio');
+        const bestPrice = payload.newPrice ?? (bestPriceEv ? parseFloat(bestPriceEv.value) : 0);
 
-        // We assume we have access to "Current Price" via evidence or context.
-        // Actually, we need the delta. 
-        const deltaEv = savingsInsight.evidence.find(e => e.label === 'Diferencia');
-        const delta = deltaEv ? parseFloat(deltaEv.value) : 0;
+        const deltaEv = savingsInsight.evidence?.find(e => e.label === 'Diferencia');
+        const delta = payload.deltaAbs ?? (deltaEv ? parseFloat(deltaEv.value) : 0);
+
+        const ingredientId = payload.ingredientId ?? savingsInsight.related?.ingredientIds?.[0];
+        const bestSupplierId = payload.bestSupplierId ?? savingsInsight.related?.supplierIds?.[0];
+
+        // Without a real ingredient to act on, skip emitting an (unexecutable) suggestion.
+        if (!ingredientId) return suggestions;
 
         suggestions.push({
             id: `SUGGEST_SWITCH_${Date.now()}`,
@@ -46,12 +51,10 @@ export const evaluateMarketActiveRules = (insights: AssistedInsight[]): ActiveSu
                 secondary: 'Ignorar'
             },
             data: {
-                // In a real scenario, these would come from the Insight's context or metadata.
-                // For Phase 3.1 prototype, we might need to rely on the UI passing the ID, 
-                // or ensure the Insight carries the Entity ID.
-                ingredientId: 'UNKNOWN_ING_ID', // Placeholder, needs to be linked to actual context
+                // Real entity references carried from the signal → insight → suggestion chain
+                ingredientId,
+                supplierId: bestSupplierId,
                 newPrice: bestPrice,
-                supplierName: 'Nuevo Proveedor' // Should come from evidence
             }
         });
     }

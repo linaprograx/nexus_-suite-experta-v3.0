@@ -88,10 +88,13 @@ export interface BoardZone {
     verticalAlign?: 'top' | 'middle' | 'bottom';
     content?: {
         text?: string;
+        imageUrl?: string; // For defaultType: 'image' zones
         style?: {
             fontSize?: number;
             fontFamily?: string;
+            fontWeight?: string | number;
             align?: 'left' | 'center' | 'right';
+            textAlign?: 'left' | 'center' | 'right';
             color?: string;
             backgroundColor?: string;
             lineHeight?: number;
@@ -235,6 +238,7 @@ export interface BoardNode {
         // Phase 6: Grimorio Integration
         ingredientId?: string; // Reference to Grimorio Ingredient
         recipeId?: string;     // Reference to Grimorio Recipe
+        caption?: string;      // Pie de foto opcional (nodos de imagen)
         format?: string;       // Optional format override for Ingredients
 
         // Phase 6.6: Snapshot Fields (for immediate rendering without externalData)
@@ -363,6 +367,7 @@ export interface InteractionState {
     // Transient Signals
     requestThumbnailCapture?: boolean;
     temporaryPanMode?: boolean; // Spacebar-triggered pan mode
+    pendingImageZoneId?: string; // Triggers file picker for a specific image zone
 }
 
 export interface GuideLine {

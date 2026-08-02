@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Firestore, updateDoc, doc, writeBatch } from 'firebase/firestore';
-import { AppNotification } from '../../../types';
+import { AppNotification } from '../../types';
 import { Button } from '../ui/Button';
 import { Icon } from '../ui/Icon';
 import { ICONS } from '../ui/icons';
@@ -48,7 +48,7 @@ export const NotificationsDrawer: React.FC<NotificationsDrawerProps> = ({
 
   const filteredNotifications = notifications.filter(n => {
     if (activeTab === 'unread') return !n.read;
-    if (activeTab === 'important') return n.text.toLowerCase().includes('urgente') || n.text.includes('alert'); // Mock logic
+    if (activeTab === 'important') return n.title.toLowerCase().includes('urgente') || n.message.toLowerCase().includes('alert');
     return true;
   });
 
@@ -57,7 +57,7 @@ export const NotificationsDrawer: React.FC<NotificationsDrawerProps> = ({
   return (
     <>
       <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 transition-opacity" onClick={onClose} />
-      <div className="fixed top-0 right-0 h-full w-full max-w-sm bg-white dark:bg-slate-900 border-l border-slate-200 dark:border-slate-800 shadow-2xl z-50 flex flex-col transform transition-transform duration-300 ease-in-out">
+      <div className="fixed top-0 right-0 h-full w-full max-w-sm bg-white/70 dark:bg-slate-900/70 backdrop-blur-2xl border-l border-white/40 dark:border-white/10 shadow-2xl z-50 flex flex-col transform transition-transform duration-300 ease-in-out rounded-l-3xl overflow-hidden">
 
         {/* Header */}
         <div className="p-4 border-b border-slate-200 dark:border-white/10 flex justify-between items-center bg-gradient-to-r from-indigo-500/10 to-purple-500/10 dark:from-indigo-900/20 dark:to-purple-900/20">
@@ -94,7 +94,7 @@ export const NotificationsDrawer: React.FC<NotificationsDrawerProps> = ({
         </div>
 
         {/* List */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-slate-50 dark:bg-[#0f111a]">
+        <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-transparent">
           {filteredNotifications.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full text-slate-400 opacity-60">
               <Icon svg={ICONS.bell} className="w-12 h-12 mb-2 opacity-50" />
@@ -107,13 +107,13 @@ export const NotificationsDrawer: React.FC<NotificationsDrawerProps> = ({
                 className={`
                     group relative p-4 rounded-2xl border transition-all duration-300 cursor-pointer
                     ${!n.read
-                    ? 'bg-white dark:bg-slate-800 border-indigo-200 dark:border-indigo-500/30 shadow-lg shadow-indigo-500/5'
-                    : 'bg-slate-100/50 dark:bg-slate-900/50 border-slate-200 dark:border-white/5 opacity-70 hover:opacity-100'
+                    ? 'bg-white/70 dark:bg-white/[0.07] border-indigo-200/60 dark:border-indigo-400/25 shadow-lg shadow-indigo-500/5 backdrop-blur-sm'
+                    : 'bg-white/35 dark:bg-white/[0.03] border-white/40 dark:border-white/5 opacity-75 hover:opacity-100 backdrop-blur-sm'
                   }
                 `}
                 onClick={() => {
                   if (!n.read && n.id) handleMarkAsRead(n.id);
-                  onTaskClick(n.taskId);
+                  if (n.link) onTaskClick(n.link);
                   onClose();
                 }}
               >
@@ -126,15 +126,15 @@ export const NotificationsDrawer: React.FC<NotificationsDrawerProps> = ({
                         w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0
                         ${!n.read ? 'bg-indigo-100 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400' : 'bg-slate-200 dark:bg-slate-800 text-slate-500'}
                      `}>
-                    <Icon svg={n.text.includes('receta') ? ICONS.book : ICONS.messageCircle} className="w-5 h-5" />
+                    <Icon svg={n.message.includes('receta') ? ICONS.book : ICONS.messageCircle} className="w-5 h-5" />
                   </div>
 
                   <div className="flex-1">
                     <h4 className={`text-sm font-semibold mb-1 ${!n.read ? 'text-slate-900 dark:text-white' : 'text-slate-600 dark:text-slate-400'}`}>
-                      {n.text}
+                      {n.title}
                     </h4>
                     <p className="text-xs text-slate-500 dark:text-slate-500 line-clamp-2">
-                      {n.taskText || 'Actualización del sistema'}
+                      {n.message || 'Actualización del sistema'}
                     </p>
                     <div className="mt-2 flex items-center gap-2">
                       <span className="text-[10px] text-slate-400">Hace un momento</span>
@@ -160,7 +160,7 @@ export const NotificationsDrawer: React.FC<NotificationsDrawerProps> = ({
         </div>
 
         {/* Footer */}
-        <div className="p-4 border-t border-slate-200 dark:border-white/10 bg-white dark:bg-slate-900">
+        <div className="p-4 border-t border-white/30 dark:border-white/10 bg-white/40 dark:bg-white/[0.03]">
           <Button variant="outline" className="w-full" onClick={handleClearAll}>
             <Icon svg={ICONS.check} className="w-4 h-4 mr-2" />
             Marcar todas como leídas

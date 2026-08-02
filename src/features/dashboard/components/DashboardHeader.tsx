@@ -47,6 +47,9 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({ xp, level, nex
                 </div>
 
                 <div>
+                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-500/80 dark:text-indigo-400/80 block mb-1">
+                        Nexus · Centro de Mando
+                    </span>
                     <h1 className="text-3xl font-serif text-gray-900 dark:text-white leading-none mb-1">
                         {greeting}, <span className="text-indigo-600 dark:text-indigo-400">{name}</span>
                     </h1>

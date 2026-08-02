@@ -3,36 +3,21 @@ import { ChampionColumn } from '../shared/ChampionColumn';
 import { useChampionContext } from '../../context/ChampionContext';
 import { Icon } from '../../../../components/ui/Icon';
 import { ICONS } from '../../../../components/ui/icons';
-import { useCerebrityOrchestrator } from '../../../../hooks/useCerebrityOrchestrator';
 
 export const ChampionValidationView: React.FC = () => {
     const { state, actions } = useChampionContext();
-    const { actions: orchestratorActions, state: orchestratorState } = useCerebrityOrchestrator();
-    const { aiEvaluation, proposal } = state;
+    const { aiEvaluation, proposal, brandEvaluation, juryDifficulty } = state;
+    const [isRunning, setIsRunning] = React.useState(false);
 
     const handleRunJury = async () => {
-        if (!proposal) return;
+        if (!proposal || isRunning) return;
+        setIsRunning(true);
         actions.setAiEvaluation(null);
-        const evaluation = await orchestratorActions.evaluateCompetitionEntry(proposal.title);
-
-        const mappedResult = {
-            overallScore: evaluation.puntuacion_global,
-            verdict: evaluation.veredicto,
-            categoryScores: {
-                technique: Math.min(100, evaluation.puntuacion_global + (Math.random() * 10 - 5)),
-                creativity: Math.min(100, evaluation.puntuacion_global + (Math.random() * 10 - 5)),
-                storytelling: Math.min(100, evaluation.puntuacion_global + (Math.random() * 10 - 5)),
-                viability: Math.min(100, evaluation.puntuacion_global - 5)
-            },
-            juryBreakdown: {
-                technical: { score: Math.round(evaluation.puntuacion_global), comment: evaluation.fortalezas[0] || "Ejecución sólida." },
-                brand: { score: Math.round(evaluation.puntuacion_global - 5), comment: "Alineación consistente." },
-                creative: { score: Math.round(evaluation.puntuacion_global + 5), comment: evaluation.recomendacion || "Propuesta interesante." }
-            },
-            feedback: [evaluation.comentario_jurado, ...evaluation.debilidades]
-        };
-
-        actions.setAiEvaluation(mappedResult);
+        try {
+            await actions.runAiEvaluation();
+        } finally {
+            setIsRunning(false);
+        }
     };
 
     return (
@@ -155,26 +140,58 @@ export const ChampionValidationView: React.FC = () => {
                             )}
                         </>
                     ) : (
-                        /* EMPTY STATE */
-                        <div className="h-full flex flex-col items-center justify-center opacity-50 space-y-4">
-                            <Icon svg={ICONS.users} className="w-12 h-12 text-slate-500" />
-                            <p className="text-sm text-slate-400 px-8 text-center leading-relaxed">
-                                El panel de jueces está esperando tu propuesta final para emitir un veredicto oficial.
+                        /* EMPTY STATE — CTA prominente */
+                        <div className="h-full flex flex-col items-center justify-center space-y-6 px-6">
+                            {/* Dificultad selector */}
+                            <div className="w-full">
+                                <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest mb-2 text-center">Nivel del Jurado</p>
+                                <div className="flex gap-1 bg-white/5 p-1 rounded-xl border border-white/10">
+                                    {(['Easy', 'Medium', 'World Class'] as const).map(level => (
+                                        <button
+                                            key={level}
+                                            onClick={() => actions.setJuryDifficulty(level)}
+                                            className={`flex-1 py-2 rounded-lg text-[9px] font-bold uppercase tracking-wide transition-all ${
+                                                state.juryDifficulty === level
+                                                    ? level === 'World Class'
+                                                        ? 'bg-amber-500 text-white shadow-md'
+                                                        : 'bg-violet-600 text-white shadow-md'
+                                                    : 'text-slate-500 hover:text-slate-300'
+                                            }`}
+                                        >
+                                            {level}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            <Icon svg={ICONS.users} className="w-14 h-14 text-slate-600" />
+                            <p className="text-sm text-slate-400 text-center leading-relaxed max-w-[220px]">
+                                {proposal
+                                    ? 'Tu propuesta está lista para ser evaluada por el jurado.'
+                                    : 'Genera una propuesta en el Motor Creativo primero.'}
                             </p>
+
                             <button
                                 onClick={handleRunJury}
-                                disabled={!proposal || orchestratorState.isEvaluating}
-                                className="px-6 py-2 bg-slate-700 text-white rounded-full text-xs font-bold uppercase tracking-wider hover:bg-slate-600 transition-colors disabled:opacity-50 shadow-lg flex items-center gap-2 border border-white/10"
+                                disabled={!proposal || isRunning}
+                                className={`w-full py-4 rounded-2xl text-sm font-black uppercase tracking-widest transition-all flex items-center justify-center gap-3 ${
+                                    proposal && !isRunning
+                                        ? 'bg-violet-600 hover:bg-violet-500 text-white shadow-xl shadow-violet-900/50 hover:scale-[1.02] active:scale-[0.98]'
+                                        : 'bg-white/5 border border-white/10 text-slate-600 cursor-not-allowed'
+                                }`}
                             >
-                                {orchestratorState.isEvaluating ? (
+                                {isRunning ? (
                                     <>
-                                        <Icon svg={ICONS.refresh} className="w-3 h-3 animate-spin" />
+                                        <div className="w-4 h-4 border-2 border-t-white border-r-transparent border-b-white border-l-transparent rounded-full animate-spin" />
                                         Deliberando...
                                     </>
                                 ) : (
-                                    "Convocar Jurado"
+                                    <>⚖ Convocar Jurado</>
                                 )}
                             </button>
+                            {!proposal && (
+                                <p className="text-[10px] text-slate-600 text-center">Primero genera una propuesta en el paso 2</p>
+                            )}
                         </div>
                     )}
                 </div>
@@ -219,9 +236,45 @@ export const ChampionValidationView: React.FC = () => {
 
                     <div className="mt-6 p-4 bg-white/5 rounded-xl border border-white/10 shadow-sm w-full">
                         <h5 className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2">Análisis de Alineación</h5>
-                        <p className="text-[11px] text-slate-400 leading-relaxed">
-                            La propuesta se alinea en un <span className="text-emerald-400 font-bold">87%</span> con los valores de <span className="text-white font-bold">{state.brief.brand}</span>. Se recomienda potenciar el aspecto "Disruptivo" para asegurar la victoria.
-                        </p>
+                        {brandEvaluation ? (
+                            <div className="space-y-2">
+                                {/* verdict badge */}
+                                {brandEvaluation.verdict && (
+                                    <span className={`inline-block px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-widest ${
+                                        brandEvaluation.verdict === 'STRONG' ? 'bg-emerald-500/20 text-emerald-300' :
+                                        brandEvaluation.verdict === 'MEDIUM' ? 'bg-amber-500/20 text-amber-300' :
+                                        'bg-red-500/20 text-red-300'
+                                    }`}>{brandEvaluation.verdict}</span>
+                                )}
+                                {/* alignment score bar */}
+                                {brandEvaluation.brandAlignmentScore != null && (
+                                    <div className="flex items-center gap-2">
+                                        <div className="flex-1 h-1.5 bg-white/10 rounded-full overflow-hidden">
+                                            <div className="h-full bg-fuchsia-500 rounded-full transition-all duration-1000" style={{ width: `${brandEvaluation.brandAlignmentScore}%` }} />
+                                        </div>
+                                        <span className="text-fuchsia-300 font-bold text-xs">{brandEvaluation.brandAlignmentScore}%</span>
+                                    </div>
+                                )}
+                                {/* risks */}
+                                {brandEvaluation.risks?.length > 0 && (
+                                    <ul className="text-[10px] text-slate-500 space-y-0.5">
+                                        {brandEvaluation.risks.slice(0, 2).map((r: string, i: number) => (
+                                            <li key={i}>⚠ {r}</li>
+                                        ))}
+                                    </ul>
+                                )}
+                                {/* recommendation */}
+                                {brandEvaluation.strategicRecommendation && (
+                                    <p className="text-[10px] text-slate-400 italic mt-1">→ {brandEvaluation.strategicRecommendation}</p>
+                                )}
+                            </div>
+                        ) : isRunning ? (
+                            <p className="text-[11px] text-slate-500 italic">Analizando coherencia de marca...</p>
+                        ) : (
+                            <p className="text-[11px] text-slate-500 italic">
+                                Convoca al jurado para analizar la alineación con <span className="text-white">{state.brief.brand || 'la marca'}</span>.
+                            </p>
+                        )}
                     </div>
                 </div>
             </ChampionColumn>

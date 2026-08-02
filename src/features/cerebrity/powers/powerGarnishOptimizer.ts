@@ -57,7 +57,7 @@ Reglas:
       { responseMimeType: "application/json", responseSchema: schema }
     );
 
-    const cleaned = cleanJSON(result.text);
+    const cleaned = cleanJSON((result as any).text);
 
     if (
       !cleaned.sections ||

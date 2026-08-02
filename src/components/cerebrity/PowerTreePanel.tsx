@@ -1,5 +1,5 @@
 import React from 'react';
-import { CerebrityResult, Recipe } from '../../../types';
+import { CerebrityResult, Recipe } from '../../types';
 import { Icon } from '../ui/Icon';
 import { ICONS } from '../ui/icons';
 
@@ -61,7 +61,7 @@ export const PowerTreePanel: React.FC<PowerTreePanelProps> = ({ color, result, o
                         <Widget size="md-sq" colorClass={currentPalette.primary} interactive>
                             <p className="font-bold">Intensidad Creativa</p>
                             <div className="w-full bg-white/30 rounded-full h-2.5 my-auto">
-                                <div className="bg-gradient-to-r from-pink-500 to-yellow-500 h-2.5 rounded-full" style={{ width: `${(Object.values(result.perfilSabor || {}).reduce((a, b) => Number(a) + Number(b), 0) / 70) * 100}%` }}></div>
+                                <div className="bg-gradient-to-r from-pink-500 to-yellow-500 h-2.5 rounded-full" style={{ width: `${(Object.values(result.perfilSabor || {}).reduce((a: number, b: any) => a + Number(b || 0), 0) / 70) * 100}%` }}></div>
                             </div>
                         </Widget>
                          <Widget size="sm-sq" colorClass={currentPalette.secondary}>

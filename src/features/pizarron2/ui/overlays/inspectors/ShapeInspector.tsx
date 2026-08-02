@@ -46,43 +46,18 @@ export const ShapeInspector = ({
                         {/* Visual Effects */}
                         <VisualEffectsController
                             borderWidth={firstNode.content.borderWidth || 0}
-                            borderRadius={0} // shapes usually sharp? or maybe allow rounding? existing code only had border width
-                            opacity={1}
-                            shadow={null} // Shapes didn't have shadow in Inspector?
+                            borderRadius={firstNode.content.borderRadius || 0}
+                            opacity={firstNode.content.opacity ?? 1}
+                            shadow={null}
                             onChange={(eff) => {
-                                if (eff.borderWidth !== undefined) updateNode({ borderWidth: eff.borderWidth });
+                                const patch: any = {};
+                                if (eff.borderWidth !== undefined) patch.borderWidth = eff.borderWidth;
+                                if (eff.borderRadius !== undefined) patch.borderRadius = eff.borderRadius;
+                                if (eff.opacity !== undefined) patch.opacity = eff.opacity;
+                                updateNode(patch);
                             }}
                         />
 
-                        {/* DEBUG: Structure for Shapes (Preserved) */}
-                        <div>
-                            <label className="text-xs font-medium text-rose-600 block mb-1">Internal Structure</label>
-                            <button
-                                onClick={() => {
-                                    const struct = {
-                                        template: 'grid' as const,
-                                        rows: [
-                                            { id: 'r1', height: 1 },
-                                            { id: 'r2', height: 1 }
-                                        ],
-                                        cols: [
-                                            { id: 'c1', width: 1 },
-                                            { id: 'c2', width: 1 }
-                                        ],
-                                        cells: {
-                                            'r1_c1': { content: 'A' },
-                                            'r1_c2': { content: 'B' },
-                                            'r2_c1': { content: 'C' },
-                                            'r2_c2': { content: 'D' }
-                                        }
-                                    };
-                                    pizarronStore.updateStructure(firstNode.id, struct);
-                                }}
-                                className="w-full py-1 bg-rose-50 text-rose-600 border border-rose-200 rounded text-xs hover:bg-rose-100"
-                            >
-                                Inject 2x2 Grid
-                            </button>
-                        </div>
                     </div >
                 );
 

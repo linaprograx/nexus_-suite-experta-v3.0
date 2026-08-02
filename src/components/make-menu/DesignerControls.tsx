@@ -1,5 +1,5 @@
 import React from 'react';
-import { Recipe, PizarronTask } from '../../../types';
+import { Recipe, PizarronTask } from '../../types';
 import { Label } from '../ui/Label';
 import { Checkbox } from '../ui/Checkbox';
 import { Button } from '../ui/Button';

@@ -1,6 +1,6 @@
 import React from 'react';
 import { Firestore, addDoc, collection, serverTimestamp } from 'firebase/firestore';
-import { TrendResult } from '../../../types';
+import { TrendResult } from '../../types';
 import { Button } from '../ui/Button';
 
 interface TrendResultCardProps {
@@ -9,9 +9,10 @@ interface TrendResultCardProps {
     userId: string;
     appId: string;
     trendHistoryPath: string;
+    onCreateRecipe?: (trend: TrendResult) => void;
 }
 
-export const TrendResultCard: React.FC<TrendResultCardProps> = ({ item, db, userId, appId, trendHistoryPath }) => {
+export const TrendResultCard: React.FC<TrendResultCardProps> = ({ item, db, userId, appId, trendHistoryPath, onCreateRecipe }) => {
 
     const handleSaveToPizarron = async () => {
         if (!db || !userId) return;

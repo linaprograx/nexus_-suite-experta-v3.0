@@ -1,5 +1,5 @@
 import React from 'react';
-import { AuthContextType } from '../../types';
+import { AuthContextType } from '../types';
 import { initializeApp, FirebaseApp } from 'firebase/app';
 import { getAuth, onAuthStateChanged, Auth, signInWithCustomToken, User } from 'firebase/auth';
 import { getFirestore, Firestore } from 'firebase/firestore';

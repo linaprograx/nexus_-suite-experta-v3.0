@@ -1,73 +1,147 @@
 import { useMemo } from 'react';
-import { Recipe, PizarronTask, Ingredient, UserProfile } from '../../types';
+import { Recipe, PizarronTask, Ingredient, UserProfile, PurchaseEvent } from '../../types';
 import { useToday } from '../today';
 import { useCreativeWeekPro } from '../creative-week-pro';
 import { useNextBestAction } from '../next-best-action';
+import { calculateRecipeCost } from '../../core/costing/costCalculator';
+import { buildStockFromPurchases } from '../../utils/stockUtils';
+import { useStockRules } from '../../hooks/useStockRules';
 
 interface DashboardMetricsProps {
     allRecipes: Recipe[];
     allPizarronTasks: PizarronTask[];
     allIngredients: Ingredient[];
+    purchaseHistory?: PurchaseEvent[];
     userProfile?: Partial<UserProfile>;
 }
+
+// Normalize Firestore Timestamp | Date | number | string → Date | null
+const toDate = (v: any): Date | null => {
+    if (!v) return null;
+    if (v.toDate) return v.toDate();
+    if (v instanceof Date) return v;
+    const d = new Date(v);
+    return isNaN(d.getTime()) ? null : d;
+};
+
+const hasPrice = (ing: any): boolean =>
+    Number(ing?.standardPrice) > 0 || Number(ing?.precioCompra) > 0 || Number(ing?.costo) > 0;
 
 export const useDashboardMetrics = ({
     allRecipes,
     allPizarronTasks,
     allIngredients,
+    purchaseHistory = [],
     userProfile
 }: DashboardMetricsProps) => {
 
-    // 1. Basic KPIs
-    const kpis = useMemo(() => {
-        const totalRecipes = allRecipes.length;
-        const totalTasks = allPizarronTasks.length;
-        const tiempoAhorrado = (totalRecipes * 0.5) + (totalTasks * 0.25);
-        const creativeRate = 85; // Placeholder
-        return { totalRecipes, totalTasks, tiempoAhorrado, creativeRate };
-    }, [allRecipes, allPizarronTasks]);
+    const { rules: stockRules } = useStockRules();
 
-    // 2. Trend Data
-    const creativeTrendData = useMemo(() => {
-        const activityByDate: { [key: string]: { recipes: number, tasks: number } } = {};
+    // 1. Real inventory metrics (from purchase history + stock rules)
+    const inventory = useMemo(() => {
+        const stock = buildStockFromPurchases(purchaseHistory);
+        const inventoryValue = stock.reduce((sum, s) => sum + (s.totalValue || 0), 0);
+        const distinctItems = stock.length;
+        const productsWithoutPrice = allIngredients.filter(i => !hasPrice(i)).length;
 
-        allPizarronTasks.forEach(item => {
-            if (item.createdAt?.toDate) {
-                const date = item.createdAt.toDate().toISOString().split('T')[0];
-                if (!activityByDate[date]) {
-                    activityByDate[date] = { recipes: 0, tasks: 0 };
-                }
-                activityByDate[date].tasks++;
-            }
+        // Low-stock alerts: rules whose available quantity is below the minimum
+        const stockById = new Map(stock.map(s => [s.ingredientId, s]));
+        const lowStockCount = stockRules.filter(r => {
+            const qty = stockById.get(r.ingredientId)?.quantityAvailable ?? 0;
+            return r.active && qty < r.minStock;
+        }).length;
+
+        return { stock, inventoryValue, distinctItems, productsWithoutPrice, lowStockCount };
+    }, [purchaseHistory, allIngredients, stockRules]);
+
+    // 2. Real recipe costing & margins
+    const costing = useMemo(() => {
+        const rows = allRecipes.map(r => {
+            const cost = calculateRecipeCost(r, allIngredients, purchaseHistory).costoTotal || 0;
+            const price = Number((r as any).precioVenta) || 0;
+            const margin = price > 0 ? ((price - cost) / price) * 100 : null;
+            return { recipe: r, cost, price, margin };
         });
+        const costed = rows.filter(c => c.cost > 0);
+        const withMargin = rows.filter(c => c.margin !== null) as { recipe: Recipe; cost: number; price: number; margin: number }[];
+        const avgMargin = withMargin.length
+            ? withMargin.reduce((s, c) => s + c.margin, 0) / withMargin.length
+            : 0;
+        const costedRate = allRecipes.length ? (costed.length / allRecipes.length) * 100 : 0;
+        const best = withMargin.slice().sort((a, b) => b.margin - a.margin)[0] || null;
+        const worst = withMargin.slice().sort((a, b) => a.margin - b.margin)[0] || null;
+        return { rows, costedCount: costed.length, costedRate, avgMargin, withMarginCount: withMargin.length, best, worst };
+    }, [allRecipes, allIngredients, purchaseHistory]);
+
+    // 3. KPIs for the snapshot
+    const kpis = useMemo(() => ({
+        totalRecipes: allRecipes.length,
+        totalTasks: allPizarronTasks.length,
+        inventoryValue: inventory.inventoryValue,
+        avgMargin: costing.avgMargin,
+        costedRate: costing.costedRate,
+        productsWithoutPrice: inventory.productsWithoutPrice,
+    }), [allRecipes.length, allPizarronTasks.length, inventory, costing]);
+
+    // 4. Activity trend (last 7 days) — counts BOTH recipes and tasks
+    const creativeTrendData = useMemo(() => {
+        const activityByDate: { [key: string]: { recipes: number; tasks: number } } = {};
+        const bump = (v: any, key: 'recipes' | 'tasks') => {
+            const d = toDate(v?.createdAt);
+            if (!d) return;
+            const dateStr = d.toISOString().split('T')[0];
+            if (!activityByDate[dateStr]) activityByDate[dateStr] = { recipes: 0, tasks: 0 };
+            activityByDate[dateStr][key]++;
+        };
+        allPizarronTasks.forEach(t => bump(t, 'tasks'));
+        allRecipes.forEach(r => bump(r, 'recipes'));
 
         const today = new Date();
         for (let i = 6; i >= 0; i--) {
             const d = new Date(today);
             d.setDate(d.getDate() - i);
             const dateStr = d.toISOString().split('T')[0];
-            if (!activityByDate[dateStr]) {
-                activityByDate[dateStr] = { recipes: 0, tasks: 0 };
-            }
+            if (!activityByDate[dateStr]) activityByDate[dateStr] = { recipes: 0, tasks: 0 };
         }
-
         return Object.entries(activityByDate)
-            .map(([date, counts]) => ({ date, ...counts }))
+            .map(([date, counts]) => ({ date, ...counts, total: counts.recipes + counts.tasks }))
             .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
             .slice(-7);
-    }, [allPizarronTasks]);
+    }, [allPizarronTasks, allRecipes]);
 
-    // 3. Balance Data (Placeholder for now)
-    const balanceData = [
-        { subject: 'Dulce', A: 8, fullMark: 10 },
-        { subject: 'Cítrico', A: 9, fullMark: 10 },
-        { subject: 'Amargo', A: 6, fullMark: 10 },
-        { subject: 'Alcohol', A: 7, fullMark: 10 },
-        { subject: 'Herbal', A: 5, fullMark: 10 },
-        { subject: 'Especiado', A: 4, fullMark: 10 },
-    ];
+    // 5. Recent activity timeline (real, newest first)
+    const timeline = useMemo(() => {
+        const events: { label: string; date: Date; type: 'idea' | 'recipe' | 'system' }[] = [];
+        allRecipes.forEach(r => {
+            const d = toDate((r as any).createdAt);
+            if (d) events.push({ label: r.nombre || 'Receta', date: d, type: 'recipe' });
+        });
+        allPizarronTasks.forEach(t => {
+            const d = toDate((t as any).createdAt);
+            if (d) events.push({ label: t.title || t.texto || 'Tarea', date: d, type: 'idea' });
+        });
+        purchaseHistory.forEach(p => {
+            const d = toDate((p as any).createdAt);
+            if (d) events.push({ label: `Compra: ${p.ingredientName}`, date: d, type: 'system' });
+        });
+        return events.sort((a, b) => b.date.getTime() - a.date.getTime()).slice(0, 4);
+    }, [allRecipes, allPizarronTasks, purchaseHistory]);
 
-    // 4. Integrated Features
+    // 6. DeepOps consolidated real metrics
+    const deepOps = useMemo(() => ({
+        inventoryValue: inventory.inventoryValue,
+        distinctItems: inventory.distinctItems,
+        productsWithoutPrice: inventory.productsWithoutPrice,
+        avgMargin: costing.avgMargin,
+        costedCount: costing.costedCount,
+        costedRate: costing.costedRate,
+        totalRecipes: allRecipes.length,
+        bestRecipe: costing.best ? { name: costing.best.recipe.nombre, margin: costing.best.margin } : null,
+        worstRecipe: costing.worst ? { name: costing.worst.recipe.nombre, margin: costing.worst.margin } : null,
+        timeline,
+    }), [inventory, costing, allRecipes.length, timeline]);
+
+    // 7. Integrated AI features
     const { ideas, inProgress, urgent } = useToday(allPizarronTasks, userProfile);
 
     const { data: nbaData, isLoading: isNBALoading, refresh: refreshNBA } = useNextBestAction(
@@ -81,10 +155,21 @@ export const useDashboardMetrics = ({
         userProfile?.displayName || 'Usuario'
     );
 
+    // 6b. Business pulse (dedicated Grimorio widget)
+    const business = useMemo(() => ({
+        inventoryValue: inventory.inventoryValue,
+        lowStockCount: inventory.lowStockCount,
+        productsWithoutPrice: inventory.productsWithoutPrice,
+        avgMargin: costing.avgMargin,
+        bestRecipe: costing.best ? { name: costing.best.recipe.nombre, margin: costing.best.margin } : null,
+        worstRecipe: costing.worst ? { name: costing.worst.recipe.nombre, margin: costing.worst.margin } : null,
+    }), [inventory, costing]);
+
     return {
         kpis,
+        deepOps,
+        business,
         creativeTrendData,
-        balanceData,
         todayMetrics: { ideas, inProgress, urgent },
         nba: { data: nbaData, isLoading: isNBALoading, refresh: refreshNBA },
         creativeWeek: { summary, insights, recommendation, stats }

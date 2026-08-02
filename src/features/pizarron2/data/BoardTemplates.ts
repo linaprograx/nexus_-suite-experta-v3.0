@@ -5,23 +5,88 @@ interface ExtendedBoardTemplate extends BoardTemplate {
     defaultMode?: InteractionMode;
 }
 
+// Order leads with the F&B-focused, structure-based templates (updated to the new
+// zone layouts) and ends with the more generic / free-form ones.
 export const BOARD_TEMPLATES: ExtendedBoardTemplate[] = [
     {
-        id: 'menu_engineering', // Phase 5: New Template
+        id: 'mixologist',
+        name: 'Pizarra Mixólogo',
+        description: 'Ficha de cóctel completa con técnica, costes e ingredientes.',
+        icon: '🍸',
+        focus: 'Desarrollo de Recetas',
+        capabilities: ['variants'],
+        structure: [
+            { title: 'Ficha de Cóctel', type: 'board', description: 'Layout de receta por zonas' },
+            { title: 'Técnicas', type: 'board', description: 'Métodos de preparación' },
+            { title: 'Pruebas', type: 'board', description: 'Registro de intentos' }
+        ]
+    },
+    {
+        id: 'nexus',
+        name: 'Pizarra Nexus',
+        description: 'Diseño integral: carta, cócteles y narrativa de concepto.',
+        icon: '💠',
+        focus: 'Diseño de Menús',
+        capabilities: ['costing', 'layout'],
+        structure: [
+            { title: 'Estructura Menú', type: 'board', description: 'Carta por secciones' },
+            { title: 'Ficha de Cóctel', type: 'board', description: 'Desarrollo de tragos' },
+            { title: 'Storytelling', type: 'board', description: 'Narrativa del concepto' },
+            { title: 'Visual & Layout', type: 'board', description: 'Diseño gráfico' }
+        ]
+    },
+    {
+        id: 'menu_engineering',
         name: 'Ingeniería de Menú',
-        description: 'Análisis de rentabilidad y popularidad de platos.',
-        icon: '🥩',
+        description: 'Matriz BCG real de rentabilidad y popularidad de platos.',
+        icon: '📊',
         focus: 'Rentabilidad y Diseño',
         capabilities: ['costing', 'variants'],
         defaultMode: 'operational',
         structure: [
-            { title: 'Matriz BCG', type: 'grid', description: 'Vacas, Estrellas, Perros, Puzzles' },
-            { title: 'Nuevos Platos', type: 'board', description: 'Candidatos al menú' },
-            { title: 'Costos', type: 'board', description: 'Análisis detallado' }
+            { title: 'Matriz BCG', type: 'grid', description: 'Estrellas, Caballos, Enigmas, Perros' },
+            { title: 'Nuevos Platos', type: 'board', description: 'Carta de candidatos' },
+            { title: 'Análisis de Costos', type: 'board', description: 'Flujo Kanban de costeo' }
         ]
     },
     {
-        id: 'shift_briefing', // Phase 5: New Template
+        id: 'productive',
+        name: 'Pizarra Productiva',
+        description: 'Kanban de tareas y planificación semanal del equipo.',
+        icon: '⚡',
+        focus: 'Planificación Operativa',
+        capabilities: ['checklist', 'status_tracking'],
+        structure: [
+            { title: 'Tablero Kanban', type: 'board', description: 'Pendiente · En curso · Hecho' },
+            { title: 'Planificación Semanal', type: 'board', description: 'Lunes a Viernes' }
+        ]
+    },
+    {
+        id: 'analytical',
+        name: 'Pizarra Analítica',
+        description: 'Análisis DAFO por zonas y comparación de opciones.',
+        icon: '📈',
+        focus: 'Análisis y Decisión',
+        structure: [
+            { title: 'Análisis DAFO', type: 'board', description: 'Matriz estratégica' },
+            { title: 'Comparación', type: 'board', description: 'Balanza de opciones' }
+        ]
+    },
+    {
+        id: 'creative',
+        name: 'Pizarra Creativa',
+        description: 'Ideación, conceptos y exploración visual.',
+        icon: '🎨',
+        focus: 'Ideación y Concepto',
+        structure: [
+            { title: 'Concepto Principal', type: 'board', description: 'El núcleo de la idea' },
+            { title: 'Inspiración Visual', type: 'board', description: 'Moodboard de referencias' },
+            { title: 'Notas & Ideas', type: 'board', description: 'Brainstorming rápido' },
+            { title: 'Iteraciones', type: 'board', description: 'Variaciones del concepto' }
+        ]
+    },
+    {
+        id: 'shift_briefing',
         name: 'Briefing de Turno',
         description: 'Comunicación diaria para equipos de sala y cocina.',
         icon: '📢',
@@ -35,99 +100,32 @@ export const BOARD_TEMPLATES: ExtendedBoardTemplate[] = [
         ]
     },
     {
-        id: 'event_map', // Phase 5: New Template
+        id: 'event_map',
         name: 'Mapa de Evento',
         description: 'Logística de sala y cronograma de servicio.',
         icon: '📍',
         focus: 'Logística y Tiempos',
         capabilities: ['layout', 'time_tracking'],
-        defaultMode: 'creative', // Map layout needs drag
+        defaultMode: 'creative',
         structure: [
             { title: 'Plano de Sala', type: 'board', description: 'Distribución de mesas' },
-            { title: 'Timeline', type: 'board', description: 'Secuencia de servicio' },
+            { title: 'Cronograma', type: 'board', description: 'Secuencia de servicio' },
             { title: 'Personal', type: 'board', description: 'Asignaciones' }
         ]
     },
     {
-        id: 'strategic_roadmap', // Phase 5: New Template
+        id: 'strategic_roadmap',
         name: 'Roadmap Estratégico',
         description: 'Planificación trimestral de objetivos.',
         icon: '🚩',
         focus: 'Visión Trimestral',
         capabilities: ['status_tracking'],
-        defaultMode: 'executive', // Review focus
+        defaultMode: 'executive',
         structure: [
             { title: 'Q1', type: 'board', description: 'Objetivos Enero-Marzo' },
             { title: 'Q2', type: 'board', description: 'Objetivos Abril-Junio' },
             { title: 'Q3', type: 'board', description: 'Objetivos Julio-Septiembre' },
             { title: 'Q4', type: 'board', description: 'Objetivos Octubre-Diciembre' }
-        ]
-    },
-    {
-        id: 'creative',
-        name: 'Pizarra Creativa',
-        description: 'Ideación, conceptos y exploración visual.',
-        icon: '🎨',
-        focus: 'Ideación y Concepto',
-        // capabilities: undefined (Generic)
-        structure: [
-            { title: 'Concepto Principal', type: 'board', description: 'El núcleo de la idea' },
-            { title: 'Inspiración Visual', type: 'board', description: 'Moodboard de referencias' },
-            { title: 'Notas & Ideas', type: 'board', description: 'Brainstorming rápido' },
-            { title: 'Iteraciones', type: 'board', description: 'Variaciones del concepto' }
-        ]
-    },
-    {
-        id: 'mixologist',
-        name: 'Pizarra Mixólogo',
-        description: 'Desarrollo técnico y creativo de recetas.',
-        icon: '🍸',
-        focus: 'Desarrollo de Recetas',
-        capabilities: ['variants'],
-        structure: [
-            { title: 'Receta Base', type: 'board', description: 'La fórmula inicial' },
-            { title: 'Ingredientes', type: 'board', description: 'Componentes clave' },
-            { title: 'Técnicas', type: 'board', description: 'Métodos de preparación' },
-            { title: 'Pruebas', type: 'board', description: 'Registro de intentos' }
-        ]
-    },
-    {
-        id: 'productive',
-        name: 'Pizarra Productiva',
-        description: 'Organización de tareas, turnos y servicios.',
-        icon: '⚡',
-        focus: 'Planificación Operativa',
-        capabilities: ['checklist', 'status_tracking'],
-        structure: [
-            { title: 'Kanban', type: 'board', description: 'Flujo de trabajo' },
-            { title: 'Planificación Semanal', type: 'board', description: 'Vista calendario' },
-            { title: 'Operativa', type: 'board', description: 'Notas y protocolos' }
-        ]
-    },
-    {
-        id: 'nexus',
-        name: 'Pizarra Nexus',
-        description: 'Diseño integral de menús y experiencias.',
-        icon: '💠',
-        focus: 'Diseño de Menús',
-        capabilities: ['costing', 'layout'],
-        structure: [
-            { title: 'Estructura Menú', type: 'board', description: 'Arquitectura de venta' },
-            { title: 'Cócteles', type: 'board', description: 'Desarrollo de tragos' },
-            { title: 'Storytelling', type: 'board', description: 'Narrativa del concepto' },
-            { title: 'Visual & Layout', type: 'board', description: 'Diseño gráfico' }
-        ]
-    },
-    {
-        id: 'analytical',
-        name: 'Pizarra Analítica',
-        description: 'Evaluación estratégica y toma de decisiones.',
-        icon: '📊',
-        focus: 'Análisis y Decisión',
-        structure: [
-            { title: 'DAFO', type: 'swot', description: 'Análisis Estratégico' },
-            { title: 'Pros / Contras', type: 'board', description: 'Balanza de decisión' },
-            { title: 'Conclusión', type: 'board', description: 'Decisión final' }
         ]
     },
     {

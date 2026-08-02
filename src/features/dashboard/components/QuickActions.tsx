@@ -19,7 +19,7 @@ export const QuickActions: React.FC = () => {
                 <button
                     key={idx}
                     onClick={() => navigate(action.route)}
-                    className="group flex flex-col items-center justify-center p-3 bg-white/80 dark:bg-slate-800/80 hover:bg-white dark:hover:bg-slate-700 backdrop-blur-xl rounded-xl border border-indigo-500/50 shadow-[0_0_15px_-3px_rgba(99,102,241,0.25),_0_10px_30px_-5px_rgba(0,0,0,0.1)] dark:shadow-[0_0_20px_-3px_rgba(99,102,241,0.3),_0_10px_30px_-5px_rgba(0,0,0,0.5)] hover:shadow-[0_0_25px_-3px_rgba(99,102,241,0.4),_0_15px_35px_-5px_rgba(0,0,0,0.15)] transition-all duration-300 relative overflow-hidden"
+                    className="group flex flex-col items-center justify-center p-3 bg-white/70 dark:bg-slate-800/60 hover:bg-white dark:hover:bg-slate-700 backdrop-blur-xl rounded-xl border border-slate-200/70 dark:border-white/5 shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 relative overflow-hidden"
                 >
                     {/* Glass Highlight */}
                     <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />

@@ -45,7 +45,7 @@ const EscandallatorPanel: React.FC<EscandallatorPanelProps> = (props) => {
         let totalRealCost = 0;
         let isComplete = true;
 
-        props.selectedRecipe.ingredientes.forEach(ing => {
+        props.selectedRecipe.ingredientes.forEach((ing: any) => {
             const stockItem = props.stockItems.find(s => s.ingredientId === ing.id);
 
             if (stockItem && stockItem.averageUnitCost > 0) {
@@ -76,7 +76,7 @@ const EscandallatorPanel: React.FC<EscandallatorPanelProps> = (props) => {
                     metricPrice = stockItem.averageUnitCost / volume;
                 }
 
-                const recipeQty = typeof ing.cantidad === 'string' ? parseFloat(ing.cantidad) : ing.cantidad;
+                const recipeQty = (typeof ing.cantidad === 'string' ? parseFloat(ing.cantidad) : ing.cantidad) || 0;
                 const recipeMultiplier = getMultiplier(ing.unidad);
                 const recipeQtyBase = recipeQty * recipeMultiplier;
 

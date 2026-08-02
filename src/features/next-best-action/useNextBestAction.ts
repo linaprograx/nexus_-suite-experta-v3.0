@@ -2,7 +2,7 @@ import { logger } from '../../utils/logger';
 import { useState, useEffect } from 'react';
 import { useCreativeWeek } from '../creative-week';
 import { getNextBestAction, NextBestActionData } from './nextBestActionService';
-import { Recipe, PizarronTask } from '../../../types';
+import { Recipe, PizarronTask } from '../../types';
 
 const CACHE_KEY = 'nexus_nba_data';
 const CACHE_TIMESTAMP = 'nexus_nba_timestamp';

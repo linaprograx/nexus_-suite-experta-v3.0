@@ -8,7 +8,7 @@ export const generateActionSurfaces = (insights: AssistedInsight[]): ActionSurfa
 
     // Phase 2.4 Rule: Max 1 Surface per View
     // We take the highest priority insight that has a mapping.
-    const sorted = [...insights].sort((a, b) => b.priorityScore - a.priorityScore);
+    const sorted = [...insights].sort((a, b) => (b.priorityScore ?? 0) - (a.priorityScore ?? 0));
 
     for (const insight of sorted) {
         const mapping = ACTION_SURFACE_MAPPING[insight.id];

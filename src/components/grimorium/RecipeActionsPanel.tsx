@@ -1,5 +1,5 @@
 import React from 'react';
-import { Recipe, ViewName } from '../../../types';
+import { Recipe, ViewName } from '../../types';
 import { Button } from '../ui/Button';
 import { Icon } from '../ui/Icon';
 import { ICONS } from '../ui/icons';

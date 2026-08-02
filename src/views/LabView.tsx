@@ -1,6 +1,6 @@
 import React from 'react';
 import { Firestore, collection, addDoc, serverTimestamp } from 'firebase/firestore';
-import { Recipe, Ingredient } from '../../types';
+import { Recipe, Ingredient } from '../types';
 import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Spinner } from '../components/ui/Spinner';

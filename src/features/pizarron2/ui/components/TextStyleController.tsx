@@ -22,24 +22,24 @@ export const TextStyleController: React.FC<TextStyleControllerProps> = ({
             {/* Size & Line Height Row */}
             <div className="grid grid-cols-2 gap-2">
                 <div>
-                    <label className="text-[10px] text-slate-500 block mb-1">Size</label>
+                    <label className="text-[10px] text-slate-500 dark:text-slate-400 block mb-1">Size</label>
                     <input
                         type="number"
                         min="8"
                         max="200"
-                        className="w-full text-xs border border-slate-300 rounded p-1"
+                        className="w-full text-xs border border-slate-300 dark:border-slate-600 rounded p-1 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200"
                         value={fontSize}
                         onChange={(e) => onChange({ fontSize: parseInt(e.target.value) || 14 })}
                     />
                 </div>
                 <div>
-                    <label className="text-[10px] text-slate-500 block mb-1">Line Height</label>
+                    <label className="text-[10px] text-slate-500 dark:text-slate-400 block mb-1">Line Height</label>
                     <input
                         type="number"
                         step="0.1"
                         min="0.8"
                         max="3"
-                        className="w-full text-xs border border-slate-300 rounded p-1"
+                        className="w-full text-xs border border-slate-300 dark:border-slate-600 rounded p-1 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200"
                         value={lineHeight || 1.2}
                         onChange={(e) => onChange({ lineHeight: parseFloat(e.target.value) || 1.2 })}
                     />
@@ -48,11 +48,11 @@ export const TextStyleController: React.FC<TextStyleControllerProps> = ({
 
             {/* Alignment Row */}
             {showAlign && (
-                <div className="flex bg-slate-100 p-1 rounded justify-center gap-1">
+                <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded justify-center gap-1">
                     {['left', 'center', 'right', 'justify'].map((align) => (
                         <button
                             key={align}
-                            className={`p-1.5 rounded transition-all ${textAlign === align ? 'bg-white shadow text-indigo-600' : 'text-slate-400 hover:text-slate-600'}`}
+                            className={`p-1.5 rounded transition-all ${textAlign === align ? 'bg-white dark:bg-slate-700 shadow text-orange-600 dark:text-orange-400' : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'}`}
                             onClick={() => onChange({ textAlign: align })}
                             title={align.charAt(0).toUpperCase() + align.slice(1)}
                         >

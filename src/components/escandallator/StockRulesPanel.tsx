@@ -115,18 +115,18 @@ export const StockRulesPanel: React.FC<StockRulesPanelProps> = ({
 
     return (
         <div className="h-full flex flex-col bg-transparent">
-            <div className="pb-4 pt-1 px-1">
-                {/* NEW RULE BUTTON - Styled to match 'Nuevo Proveedor' but with Indigo theme for Rules */}
+            <div className="px-3 pt-3 pb-2">
+                {/* NEW RULE BUTTON — premium solid gradient */}
                 <button
                     onClick={() => setIsRuleModalOpen(true)}
-                    className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-white/40 dark:bg-slate-800/40 hover:bg-indigo-500 hover:text-white dark:hover:bg-indigo-500 text-slate-600 dark:text-slate-300 rounded-xl backdrop-blur-sm transition-all text-xs font-bold border-2 border-dashed border-indigo-200 dark:border-indigo-800/50 hover:border-indigo-500 shadow-sm group"
+                    className="w-full flex items-center justify-center gap-2 py-2.5 px-4 bg-gradient-to-r from-indigo-500 to-violet-600 hover:from-indigo-600 hover:to-violet-700 text-white rounded-xl transition-all text-xs font-bold shadow-md shadow-indigo-500/25 hover:shadow-indigo-500/40 hover:-translate-y-0.5 group"
                 >
-                    <Icon svg={ICONS.plus} className="w-4 h-4 group-hover:scale-110 transition-transform" />
+                    <Icon svg={ICONS.plus} className="w-4 h-4 group-hover:rotate-90 transition-transform" />
                     <span>Nueva Regla</span>
                 </button>
             </div>
 
-            <div className="flex-1 overflow-y-auto custom-scrollbar p-4 space-y-6">
+            <div className="flex-1 overflow-y-auto custom-scrollbar px-3 pb-3 space-y-4">
 
                 {/* 0. QUICK BUY SEARCH */}
                 <div className="relative">
@@ -135,7 +135,7 @@ export const StockRulesPanel: React.FC<StockRulesPanelProps> = ({
                         <Icon svg={ICONS.search} className="absolute left-3 top-2.5 w-4 h-4 text-slate-400" />
                         <Input
                             className="pl-9 bg-white/50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 h-9 text-xs"
-                            placeholder="Buscar para compra rápida..."
+                            placeholder="Compra rápida…"
                             value={quickSearchQuery}
                             onChange={(e) => setQuickSearchQuery(e.target.value)}
                         />

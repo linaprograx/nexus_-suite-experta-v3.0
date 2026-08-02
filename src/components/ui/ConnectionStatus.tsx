@@ -57,7 +57,7 @@ export const ConnectionStatus: React.FC = () => {
               text-white text-sm font-medium
               shadow-lg
             ">
-                            <Icon icon={ICONS.WIFI_OFF} className="w-4 h-4" />
+                            <Icon svg={ICONS.alertCircle} className="w-4 h-4" />
                             <span>Sin conexión - Trabajando offline</span>
                         </div>
                     </motion.div>
@@ -80,7 +80,7 @@ export const ConnectionStatus: React.FC = () => {
               text-white text-sm font-medium
               shadow-lg
             ">
-                            <Icon icon={ICONS.CHECK_CIRCLE} className="w-4 h-4" />
+                            <Icon svg={ICONS.check} className="w-4 h-4" />
                             <span>Conexión restaurada - Sincronizando...</span>
                         </div>
                     </motion.div>

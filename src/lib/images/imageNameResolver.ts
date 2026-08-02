@@ -1,4 +1,4 @@
-import { Recipe } from '../../../types';
+import { Recipe } from '../../types';
 
 /**
  * Normalizes a string for fuzzy matching.

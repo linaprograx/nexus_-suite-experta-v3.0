@@ -13,6 +13,9 @@ export const evaluateMarketRules: AssistedRule = (input) => {
     if (savingsSignal) {
         const deltaAbs = savingsSignal.meta?.deltaAbs || 0;
         const deltaPct = savingsSignal.meta?.deltaPct || 0;
+        const bestPrice = savingsSignal.meta?.bestPrice ?? savingsSignal.meta?.bestUnitPrice ?? 0;
+        const ingredientId = savingsSignal.meta?.ingredientId as string | undefined;
+        const bestSupplierId = savingsSignal.meta?.bestSupplierId as string | undefined;
         const recipeCount = recipeHint?.metadata?.recipeIds?.length || 0;
 
         const score = calculatePriorityScore({
@@ -36,13 +39,15 @@ export const evaluateMarketRules: AssistedRule = (input) => {
                     ? `Diferencia de precio en ingrediente usado en ${recipeCount} recetas.`
                     : `Diferencia significativa de precio en el mercado.`,
                 evidence: [
-                    { label: 'Mejor precio', value: `${savingsSignal.meta?.bestPrice?.toFixed(2)}€` },
+                    { label: 'Mejor precio', value: `${bestPrice.toFixed(2)}€` },
                     { label: 'Diferencia', value: `-${deltaAbs.toFixed(2)}€` },
                     { label: 'Recetas', value: String(recipeCount) }
                 ],
                 scope: 'market',
                 severity: severity,
                 priorityScore: score,
+                related: ingredientId ? { ingredientIds: [ingredientId], supplierIds: bestSupplierId ? [bestSupplierId] : [] } : undefined,
+                payload: { ingredientId, bestSupplierId, newPrice: bestPrice, deltaAbs, deltaPct },
                 checklist: [
                     "Verificar proveedor alternativo",
                     "Comprobar formato"

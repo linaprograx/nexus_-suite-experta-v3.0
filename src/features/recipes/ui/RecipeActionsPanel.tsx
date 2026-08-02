@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Recipe, Ingredient } from '../../../../types';
+import { Recipe, Ingredient } from '../../../types';
 import { Button } from '../../../components/ui/Button';
 import { Icon } from '../../../components/ui/Icon';
 import { ICONS } from '../../../components/ui/icons';
@@ -30,30 +30,30 @@ export const RecipeActionsPanel: React.FC<RecipeActionsPanelProps> = ({
   }
 
   const handleAction = (action: string) => {
-    console.log(`Action triggered: ${action}`);
     switch (action) {
-      case 'escandallo':
+      case 'escandallo': {
         const result = calcEscandallo(recipe, 1, allIngredients);
         setEscandalloResult(result);
         setEscandalloOpenState(true);
         break;
+      }
       case 'batch':
-        // Placeholder for Batch Tool
+        onNavigate?.('batcher', { recipe });
         break;
       case 'zerowaste':
-        // Placeholder
+        onNavigate?.('zerowaste', { recipe });
         break;
       case 'cerebrity':
-        // Placeholder
+        onNavigate?.('cerebrity', { recipe });
         break;
       case 'lab':
-        // Placeholder
+        onNavigate?.('lab', { recipe });
         break;
       case 'clone':
         if (onDuplicate) onDuplicate(recipe);
         break;
       case 'sync':
-        // Placeholder
+        onNavigate?.('menu', { recipe });
         break;
       default:
         break;

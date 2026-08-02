@@ -18,7 +18,7 @@ interface ActiveSuggestionCardProps {
 }
 
 export const ActiveSuggestionCard: React.FC<ActiveSuggestionCardProps> = ({ suggestion, onDismiss, onAction }) => {
-    const { db, userId } = useApp();
+    const { db, userId, appId } = useApp();
     const [isExpanded, setIsExpanded] = useState(false);
     const [mode, setMode] = useState<'idle' | 'preview' | 'executing' | 'success'>('idle');
     const [action, setAction] = useState<ExecutableAction | null>(null);
@@ -79,9 +79,9 @@ export const ActiveSuggestionCard: React.FC<ActiveSuggestionCardProps> = ({ sugg
         setMode('executing');
 
         // Execute with Real DB Context
-        const success = await executeAction(action, { db, userId });
+        const success = await executeAction(action, { db, userId, appId });
         if (success) {
-            logActionExecution(action, userId);
+            logActionExecution(db, userId, action);
             setMode('success');
             onAction?.(suggestion.id); // Parent callback
         } else {
@@ -135,7 +135,7 @@ export const ActiveSuggestionCard: React.FC<ActiveSuggestionCardProps> = ({ sugg
                                     Posponer 7 días
                                 </button>
                                 <button className="w-full text-left px-2 py-2 text-xs text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 rounded flex items-center gap-2" onClick={(e) => { e.stopPropagation(); handleSnooze(30); }}>
-                                    <Icon svg={ICONS.eyeOff || ICONS.x} className="w-3 h-3 opacity-50" />
+                                    <Icon svg={ICONS.x} className="w-3 h-3 opacity-50" />
                                     Ocultar 30 días
                                 </button>
                                 <button className="w-full text-left px-2 py-2 text-xs text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-900/20 rounded flex items-center gap-2 mt-1 border-t border-slate-100 dark:border-slate-800" onClick={(e) => { e.stopPropagation(); onDismiss?.(suggestion.id); }}>

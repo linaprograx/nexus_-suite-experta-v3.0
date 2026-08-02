@@ -5,16 +5,17 @@ import { Firestore, doc, updateDoc, collection, query, where, getDocs, writeBatc
 interface ExecutionContext {
     db: Firestore;
     userId: string;
+    appId: string;
 }
 
 export const executeAction = async (action: ExecutableAction, context: ExecutionContext): Promise<boolean> => {
-    const { db, userId } = context;
+    const { db, userId, appId } = context;
     console.log(`[EXECUTOR] Executing ${action.type} for user ${userId}...`);
 
     try {
         switch (action.type) {
             case 'ACTION_SET_REFERENCE_SUPPLIER':
-                return await executeSetReferenceSupplier(action, db, userId);
+                return await executeSetReferenceSupplier(action, db, userId, appId);
             case 'ACTION_SET_COST_SOURCE':
                 return await executeSetCostSource(action, db, userId);
             case 'ACTION_RESOLVE_STOCK_LINK':
@@ -31,28 +32,28 @@ export const executeAction = async (action: ExecutableAction, context: Execution
 
 // --- HANDLERS ---
 
-async function executeSetReferenceSupplier(action: ExecutableAction, db: Firestore, userId: string): Promise<boolean> {
-    // Expected Payload: { ingredientId: string, supplierId: string, price: number }
-    // If payload is missing, we might need to parse it from the suggestion or it should be enriched in creation.
-    // For now assuming 'data' field has necessary info or extracting from logic.
-    // In Phase 3.0 implementation, suggestion ID was 'SUGGEST_SWITCH_PROVIDER_PREVIEW'.
-    // We need the data. Let's assume action.data contains { ingredientId, newPrice, supplierName }.
+async function executeSetReferenceSupplier(action: ExecutableAction, db: Firestore, userId: string, appId: string): Promise<boolean> {
+    // Payload: { ingredientId: string, supplierId?: string, newPrice: number }
+    const { ingredientId, supplierId, newPrice, supplierName } = action.data || {};
 
-    const { ingredientId, newPrice, supplierName } = action.data || {};
-
-    if (!ingredientId || !newPrice) {
+    if (!ingredientId || newPrice == null) {
         console.error("Missing data for ACTION_SET_REFERENCE_SUPPLIER");
         return false;
     }
 
-    const ingredientRef = doc(db, `users/${userId}/ingredients`, ingredientId);
-    await updateDoc(ingredientRef, {
-        costo: newPrice,
-        proveedor: supplierName || 'Unknown',
-        lastUpdated: Date.now()
-    });
+    // Write to the SAME collection the rest of the app reads ingredients from, and set the
+    // canonical field the costing engine actually uses (standardPrice = price per base unit),
+    // so accepting the suggestion visibly changes the computed cost.
+    const ingredientRef = doc(db, `artifacts/${appId}/users/${userId}/grimorio-ingredients`, ingredientId);
+    const update: Record<string, any> = {
+        standardPrice: newPrice,
+        lastUpdated: Date.now(),
+    };
+    if (supplierId) update.referenceSupplierId = supplierId;
+    if (supplierName) update.proveedor = supplierName;
+    await updateDoc(ingredientRef, update);
 
-    console.log(`[EXECUTOR] Updated ingredient ${ingredientId} price to ${newPrice}`);
+    console.log(`[EXECUTOR] Set reference price of ingredient ${ingredientId} to ${newPrice} (supplier ${supplierId || 'n/a'})`);
     return true;
 }
 
@@ -65,9 +66,10 @@ async function executeSetCostSource(action: ExecutableAction, db: Firestore, use
         return false;
     }
 
-    const recipeRef = doc(db, `users/${userId}/recipes`, recipeId);
+    // Recipes live in users/{uid}/grimorio (same collection the app reads)
+    const recipeRef = doc(db, `users/${userId}/grimorio`, recipeId);
     await updateDoc(recipeRef, {
-        costCalculationMode: mode, // Assumed field name
+        costCalculationMode: mode,
         lastUpdated: Date.now()
     });
 
@@ -75,18 +77,19 @@ async function executeSetCostSource(action: ExecutableAction, db: Firestore, use
 }
 
 async function executeResolveStockLink(action: ExecutableAction, db: Firestore, userId: string): Promise<boolean> {
-    // Expected Payload: { stockItemId: string, ingredientId: string }
-    const { stockItemId, ingredientId } = action.data || {};
+    // Stock is derived from purchases; an "orphan" purchase is linked by setting its ingredientId
+    // on users/{uid}/purchases/{purchaseId} (same path useStockResolver uses).
+    const { purchaseId, stockItemId, ingredientId } = action.data || {};
+    const targetId = purchaseId || stockItemId; // stockItemId kept for backward compatibility
 
-    if (!stockItemId || !ingredientId) {
+    if (!targetId || !ingredientId) {
         console.error("Missing data for ACTION_RESOLVE_STOCK_LINK");
         return false;
     }
 
-    const stockItemRef = doc(db, `users/${userId}/stockItems`, stockItemId);
-    await updateDoc(stockItemRef, {
+    const purchaseRef = doc(db, `users/${userId}/purchases`, targetId);
+    await updateDoc(purchaseRef, {
         ingredientId: ingredientId,
-        status: 'linked',
         lastUpdated: Date.now()
     });
 

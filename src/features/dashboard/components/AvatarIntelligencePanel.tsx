@@ -3,6 +3,7 @@ import { Icon } from '../../../components/ui/Icon';
 import { ICONS } from '../../../components/ui/icons';
 import { useAvatarCognition } from '../../../hooks/useAvatarCognition';
 import { useNavigate } from 'react-router-dom';
+import { dashboardPanel, panelHighlight } from '../cardStyles';
 
 export const AvatarIntelligencePanel: React.FC = () => {
     const navigate = useNavigate();
@@ -24,9 +25,8 @@ export const AvatarIntelligencePanel: React.FC = () => {
     const riskInfo = getRiskInfo(profile.riskTolerance);
 
     return (
-        <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl rounded-[24px] p-6 border border-indigo-500/50 shadow-[0_0_15px_-3px_rgba(99,102,241,0.25),_0_20px_40px_-5px_rgba(0,0,0,0.1)] dark:shadow-[0_0_25px_-5px_rgba(99,102,241,0.4),_0_20px_50px_-12px_rgba(0,0,0,0.6)] hover:shadow-[0_0_30px_-5px_rgba(99,102,241,0.4),_0_25px_60px_-12px_rgba(0,0,0,0.2)] dark:hover:shadow-[0_0_40px_-5px_rgba(99,102,241,0.6),_0_25px_60px_-12px_rgba(0,0,0,0.7)] transition-all duration-500 relative overflow-hidden group">
-            {/* Glass Highlight */}
-            <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
+        <div className={dashboardPanel}>
+            <div className={panelHighlight} />
             {/* Subtle glow effect based on tone */}
             <div className="absolute -top-10 -right-10 w-24 h-24 bg-indigo-500/10 blur-3xl rounded-full group-hover:bg-indigo-500/20 transition-all duration-700"></div>
 

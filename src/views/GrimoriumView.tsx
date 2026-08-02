@@ -1,4 +1,5 @@
 import * as React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { collection, doc, addDoc, deleteDoc, writeBatch, Firestore, serverTimestamp } from 'firebase/firestore';
 import { ImportRecipeModal } from '../components/grimorium/ImportRecipeModal';
 import { GrimoriumImportModals } from '../components/grimorium/GrimoriumImportModals';
@@ -22,6 +23,7 @@ import { PurchaseModal } from '../components/grimorium/PurchaseModal';
 import { BulkPurchaseModal } from '../components/grimorium/BulkPurchaseModal';
 import { StockReplenishmentModal } from '../components/grimorium/StockReplenishmentModal';
 import { SuppliersManagerModal } from '../components/grimorium/SuppliersManagerModal';
+import { ProduceRecipeModal } from '../components/grimorium/ProduceRecipeModal';
 import { FiltersSidebar } from '../components/grimorium/FiltersSidebar';
 import { Toast } from '../components/ui/Toast';
 import { RecipeList } from '../components/grimorium/RecipeList';
@@ -39,8 +41,10 @@ import { Card, CardContent } from '../components/ui/Card';
 import { Alert } from '../components/ui/Alert';
 import { Spinner } from '../components/ui/Spinner';
 import { usePurchaseIngredient } from '../hooks/usePurchaseIngredient';
+import { useStockRules } from '../hooks/useStockRules';
 
-import { buildStockFromPurchases } from '../utils/stockUtils';
+import { buildStockFromPurchases, applyMovementsToStock } from '../utils/stockUtils';
+import { useStockMovements } from '../hooks/useStockMovements';
 import { calculateEscandallo } from '../core/finance/cost.engine';
 import { useEscandallator } from '../hooks/useEscandallator';
 import { useGrimoriumHandlers } from '../hooks/useGrimoriumHandlers';
@@ -86,7 +90,7 @@ const GrimoriumInner: React.FC<GrimoriumViewProps> = () => {
     // Create adapters for the old prop names to minimize logic changes
     const onOpenRecipeModal = (recipe: Partial<Recipe> | null) => setShowRecipeModal(true, recipe);
     const onDragRecipeStart = (recipe: Recipe) => setDraggingRecipe(recipe);
-    const setCurrentView = (view: ViewName) => { /* Navigation is now handled by the router */ console.log("Routing to:", view); };
+    const navigate = useNavigate();
     const { db, userId, appId } = useApp();
     const { recipes: allRecipes, isLoading: recipesLoading } = useRecipes();
     const { ingredients: allIngredients } = useIngredients();
@@ -119,6 +123,12 @@ const GrimoriumInner: React.FC<GrimoriumViewProps> = () => {
 
     const { storage } = useApp();
     const [loading, setLoading] = React.useState(false);
+    // Collapsing header on scroll (Grimorio only) — hysteresis to avoid flicker
+    const [headerCollapsed, setHeaderCollapsed] = React.useState(false);
+    const handleMainScroll = (e: React.UIEvent<HTMLDivElement>) => {
+        const t = (e.currentTarget as HTMLElement).scrollTop;
+        setHeaderCollapsed(prev => (t > 48 ? true : t < 16 ? false : prev));
+    };
 
     const [escandallatorSubTab, setEscandallatorSubTab] = React.useState<'calculator' | 'production'>('calculator');
 
@@ -158,12 +168,20 @@ const GrimoriumInner: React.FC<GrimoriumViewProps> = () => {
             const systemPrompt = "Eres un chef de I+D 'zero waste' de élite. NO eres un bartender. Tu foco es crear *elaboraciones complejas* (cordiales, siropes, polvos, aceites, shrubs) a partir de desperdicios. Tu respuesta debe ser estrictamente un array JSON.";
             const userQuery = `Usando estos ingredientes: ${promptIngredients}. Genera de 3 a 5 elaboraciones 'zero waste'.`;
             const response = await generateText(userQuery, systemPrompt);
-            const results = JSON.parse(response.text) as ZeroWasteResult[];
+            // Robust parse: strip markdown fences and handle object envelopes
+            const cleaned = response.text.replace(/```json/gi, '').replace(/```/g, '').trim();
+            let parsed: any = JSON.parse(cleaned);
+            if (!Array.isArray(parsed) && parsed && typeof parsed === 'object') {
+                const arr = Object.values(parsed).find(v => Array.isArray(v));
+                parsed = arr || [];
+            }
+            const results = parsed as ZeroWasteResult[];
+            if (!Array.isArray(results) || results.length === 0) throw new Error('Respuesta IA vacía');
             setZwResults(results);
             setZwHistory(prev => [...results, ...prev]);
         } catch (e) {
             console.error(e);
-            showToast('Error generando Zero Waste', 'error');
+            showToast('Error generando Zero Waste (¿IA disponible?)', 'error');
         } finally {
             setZwLoading(false);
         }
@@ -276,10 +294,80 @@ const GrimoriumInner: React.FC<GrimoriumViewProps> = () => {
     const { orders, createOrder, deleteOrder, updateOrderStatus } = useOrders();
 
     // --- Stock Logic Hoisted ---
+    // Stock = purchases IN − movements OUT (consumption/waste/adjustment).
+    // With no movements recorded, applyMovementsToStock returns the purchase-built stock unchanged.
+    const { movements: stockMovements, addMovements } = useStockMovements();
     const calculatedStockItems = React.useMemo(() => {
         if (!purchaseHistory) return [];
-        return buildStockFromPurchases(purchaseHistory);
-    }, [purchaseHistory]);
+        return applyMovementsToStock(buildStockFromPurchases(purchaseHistory), stockMovements);
+    }, [purchaseHistory, stockMovements]);
+
+    // Record a stock-out movement (consumption / waste / adjustment) in the item's own unit
+    const handleRecordStockMovement = React.useCallback(async (
+        item: { ingredientId: string; ingredientName: string; unit: string },
+        quantity: number,
+        type: 'consumption' | 'waste' | 'adjustment',
+        reason?: string
+    ) => {
+        try {
+            await addMovements([{
+                ingredientId: item.ingredientId,
+                ingredientName: item.ingredientName,
+                quantity,
+                unit: item.unit,
+                type,
+                reason,
+            }]);
+            const label = type === 'waste' ? 'Merma' : type === 'adjustment' ? 'Ajuste' : 'Consumo';
+            showToast(`${label} registrado: −${quantity} ${item.unit} de ${item.ingredientName}`, 'success');
+        } catch (e) {
+            console.error(e);
+            showToast('Error registrando el movimiento de stock', 'error');
+        }
+    }, [addMovements]);
+
+    // Automatic depletion: producing/serving a recipe deducts its ingredients from stock
+    const [produceRecipe, setProduceRecipe] = React.useState<Recipe | null>(null);
+    const handleProduceConfirm = React.useCallback(async (lines: any[], servings: number) => {
+        if (!lines.length) return;
+        try {
+            await addMovements(lines.map(l => ({
+                ingredientId: l.ingredientId,
+                ingredientName: l.ingredientName,
+                quantity: l.quantity,
+                unit: l.unit,
+                type: 'consumption' as const,
+                reason: `Producción: ${produceRecipe?.nombre || 'receta'} ×${servings}`,
+                recipeId: produceRecipe?.id,
+                recipeName: produceRecipe?.nombre,
+            })));
+            showToast(`Stock descontado: ${lines.length} ingrediente(s) · ${produceRecipe?.nombre} ×${servings}`, 'success');
+        } catch (e) {
+            console.error(e);
+            showToast('Error descontando el stock', 'error');
+        }
+    }, [addMovements, produceRecipe]);
+
+    // Physical count (#4): each difference becomes a signed 'adjustment' movement (digital − counted)
+    const handlePhysicalCount = React.useCallback(async (
+        adjustments: { item: { ingredientId: string; ingredientName: string; unit: string }; counted: number; delta: number }[]
+    ) => {
+        if (adjustments.length === 0) return;
+        try {
+            await addMovements(adjustments.map(a => ({
+                ingredientId: a.item.ingredientId,
+                ingredientName: a.item.ingredientName,
+                quantity: a.delta, // signed: >0 removes, <0 adds back
+                unit: a.item.unit,
+                type: 'adjustment' as const,
+                reason: 'Conteo físico',
+            })));
+            showToast(`Conteo aplicado: ${adjustments.length} ajuste(s) de inventario`, 'success');
+        } catch (e) {
+            console.error(e);
+            showToast('Error aplicando el conteo físico', 'error');
+        }
+    }, [addMovements]);
 
     // --- Bulk Purchase Logic ---
     const [isBulkPurchaseModalOpen, setIsBulkPurchaseModalOpen] = React.useState(false);
@@ -301,25 +389,14 @@ const GrimoriumInner: React.FC<GrimoriumViewProps> = () => {
         setIsBulkPurchaseModalOpen(true);
     };
 
-    const [stockRules, setStockRules] = React.useState<any[]>([]);
+    // Persistent stock rules (Firestore-backed — survive reloads)
+    const { rules: stockRules, saveRule: saveStockRule, deleteRule: deleteStockRule, ensureRule } = useStockRules();
 
     const checkAndCreateRule = (ingredientId: string, ingredientName: string) => {
-        setStockRules(prev => {
-            if (!prev.find(r => r.ingredientId === ingredientId)) {
-                // Auto-create rule
-                const newRule = {
-                    id: Math.random().toString(36).substr(2, 9),
-                    ingredientId,
-                    ingredientName,
-                    minStock: 1,
-                    reorderQuantity: 1,
-                    active: true
-                };
-                showToast(`Regla de stock creada para ${ingredientName}`, 'info');
-                return [...prev, newRule];
-            }
-            return prev;
-        });
+        if (!stockRules.find(r => r.ingredientId === ingredientId)) {
+            ensureRule(ingredientId, ingredientName);
+            showToast(`Regla de stock creada para ${ingredientName}`, 'info');
+        }
     };
 
     const confirmBulkPurchase = async (orders: { ingredientId: string; quantity: number; totalCost: number; unit: string }[]) => {
@@ -379,9 +456,20 @@ const GrimoriumInner: React.FC<GrimoriumViewProps> = () => {
         }
     };
 
-    const handleLaunchOrder = async (order: Order) => {
+    // Step 1: send the order to the supplier — no purchases, no stock change yet
+    const handleSendOrder = async (order: Order) => {
         try {
-            // ... [Logic omitted for brevity]
+            await updateOrderStatus(order.id, 'sent');
+            showToast("Pedido enviado al proveedor — pendiente de recibir", 'success');
+        } catch (e) {
+            console.error(e);
+            showToast("Error enviando pedido", 'error');
+        }
+    };
+
+    // Step 2: mark as received — NOW creates the purchases and updates stock (original launch logic)
+    const handleReceiveOrder = async (order: Order) => {
+        try {
             const promises = order.items.map(async (item) => {
                 const ingredient = allIngredients.find(i => i.id === item.ingredientId);
                 if (ingredient) checkAndCreateRule(ingredient.id, ingredient.nombre);
@@ -402,10 +490,10 @@ const GrimoriumInner: React.FC<GrimoriumViewProps> = () => {
             });
             await Promise.all(promises);
             await updateOrderStatus(order.id, 'completed');
-            showToast("Pedido lanzado y stock actualizado", 'success');
+            showToast("Pedido recibido y stock actualizado", 'success');
         } catch (e) {
             console.error(e);
-            showToast("Error lanzando pedido", 'error');
+            showToast("Error recibiendo pedido", 'error');
         }
     };
     const handleDeletePurchase = async (purchaseId: string) => {
@@ -421,6 +509,45 @@ const GrimoriumInner: React.FC<GrimoriumViewProps> = () => {
     const handleDeleteRecipe = async (recipeId: string) => {
         await hookDeleteRecipe(recipeId);
         setSelectedRecipeId(null);
+    };
+
+    // Routes the recipe "Herramientas" actions to the right place: in-Grimorium
+    // layers stay here; cross-module tools navigate carrying the recipe context.
+    const handleRecipeToolNavigate = (view: string, data?: any) => {
+        const recipe: Recipe | undefined = data?.recipe || selectedRecipe || undefined;
+        switch (view) {
+            case 'escandallator':
+            case 'cost':
+                if (recipe) setSelectedEscandalloRecipe(recipe);
+                setLayer('cost');
+                setEscandallatorSubTab('calculator');
+                break;
+            case 'batcher':
+                if (recipe) { setSelectedEscandalloRecipe(recipe); setBatchSelectedRecipeId(recipe.id); }
+                setLayer('cost');
+                setEscandallatorSubTab('production');
+                break;
+            case 'zerowaste':
+            case 'zeroWaste':
+                setLayer('optimization');
+                break;
+            case 'cerebrity':
+            case 'cerebrIty':
+            case 'lab': {
+                // Stash recipe context so Cerebrity/The Lab can pick it up
+                try {
+                    if (recipe) sessionStorage.setItem('nexus_recipe_context', JSON.stringify({ id: recipe.id, nombre: recipe.nombre }));
+                    sessionStorage.setItem('cerebrity_tab', view === 'lab' ? 'lab' : 'creativity');
+                } catch { /* ignore */ }
+                navigate('/cerebrity');
+                break;
+            }
+            case 'menu':
+                navigate('/make-menu');
+                break;
+            default:
+                break;
+        }
     };
 
     const queryClient = useQueryClient();
@@ -489,8 +616,43 @@ const GrimoriumInner: React.FC<GrimoriumViewProps> = () => {
             gradientTheme={currentGradient}
             backgroundMode="screen"
             transparentColumns={true}
+            gridColsOverride={
+                viewMode === 'recipes' ? 'grid-cols-1 lg:grid-cols-[3fr_4.4fr_2.6fr]'
+                    // Market needs a wider right column (ingredient detail) and a leaner left one
+                    : viewMode === 'market' ? 'grid-cols-1 lg:grid-cols-[2fr_5fr_3fr]'
+                        : undefined
+            }
+            onMainScroll={viewMode === 'recipes' ? handleMainScroll : undefined}
+            {...{
+                // On phones the detail column becomes a sheet that opens on selection
+                mobile: viewMode === 'recipes'
+                    ? {
+                        detailOpen: !!selectedRecipe,
+                        onDetailClose: () => setSelectedRecipeId(null),
+                        detailTitle: selectedRecipe?.nombre,
+                        detailSubtitle: 'Ficha de receta',
+                        insightsLabel: 'Análisis',
+                        accentClass: 'bg-teal-500',
+                    }
+                    : viewMode === 'market'
+                        ? {
+                            detailOpen: !!selectedIngredient,
+                            onDetailClose: () => setSelectedIngredientId(null),
+                            detailTitle: selectedIngredient?.nombre,
+                            detailSubtitle: 'Detalle de ingrediente',
+                            insightsLabel: 'Comparativa',
+                            accentClass: 'bg-emerald-500',
+                        }
+                        : {
+                            detailOpen: !!selectedStockItemId,
+                            onDetailClose: () => setSelectedStockItemId(null),
+                            insightsLabel: 'Reglas y proveedores',
+                            detailLabel: 'Pedidos',
+                            accentClass: 'bg-sky-500',
+                        },
+            }}
             className=""
-            header={<GrimoriumToolbar />}
+            header={viewMode === 'recipes' ? <GrimoriumToolbar collapsed={headerCollapsed} /> : <GrimoriumToolbar collapsed={false} />}
             leftSidebar={
                 <>
                     {/* STANDARD SIDEBAR for Recipes */}
@@ -501,6 +663,7 @@ const GrimoriumInner: React.FC<GrimoriumViewProps> = () => {
                             selectedRecipe={selectedRecipe}
                             allIngredients={allIngredients}
                             selectedIngredient={selectedIngredient}
+                            onSelectRecipe={handleSelectRecipeCard}
                             onImportRecipes={() => setShowTxtImportModal(true)}
                             onImportPdf={() => setShowPdfImportModal(true)}
                             onOpenIngredients={() => { /* Handled by sidebar logic */ }}
@@ -519,6 +682,7 @@ const GrimoriumInner: React.FC<GrimoriumViewProps> = () => {
                         <MarketSidebar
                             allIngredients={allIngredients}
                             selectedIngredient={selectedIngredient}
+                            onNewSupplier={() => setShowSuppliersModal(true)}
                         />
                     )}
 
@@ -536,51 +700,32 @@ const GrimoriumInner: React.FC<GrimoriumViewProps> = () => {
                         </div>
                     )}
 
-                    {/* STOCK MODE SPLIT SIDEBAR (50/50) */}
+                    {/* STOCK MODE SIDEBAR — Reglas & Alertas (primary) on top, Proveedores below */}
                     {viewMode === 'stock' && (
-                        <div className="h-full flex flex-col gap-4 p-4">
-                            {/* TOP HALF: PROVEEDORES (Floating, Invisible Container) */}
-                            <div className="flex-1 flex flex-col min-h-0 relative">
-                                <div className="mb-2 pl-2">
-                                    <h3 className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest flex items-center gap-2 mb-2">
-                                        <Icon svg={ICONS.user} className="w-3 h-3 text-emerald-500" />
-                                        Proveedores
-                                    </h3>
-                                    {/* Action Button moved here, horizontal style */}
-                                    <button
-                                        onClick={() => setShowSuppliersModal(true)}
-                                        className="w-full flex items-center justify-center gap-2 py-2 px-3 bg-white/40 dark:bg-slate-800/40 hover:bg-emerald-500 hover:text-white dark:hover:bg-emerald-600 text-slate-600 dark:text-slate-300 rounded-xl backdrop-blur-sm transition-all text-xs font-bold border border-white/20 dark:border-white/5 shadow-sm group"
-                                    >
-                                        <Icon svg={ICONS.plus} className="w-3.5 h-3.5 group-hover:scale-110 transition-transform" />
-                                        <span>Nuevo Proveedor</span>
-                                    </button>
+                        <div className="lg:h-full lg:min-h-0 lg:overflow-hidden flex flex-col gap-4 p-0 lg:p-3">
+                            {/* PRIMARY: ALERTAS & REGLAS (~64%) */}
+                            <div className="flex-[64] flex flex-col min-h-0 bg-white/55 dark:bg-slate-900/50 rounded-3xl border border-white/40 dark:border-white/5 backdrop-blur-xl shadow-premium overflow-hidden">
+                                {/* Unified narrow-first header: icon + title + count chip (no truncating subtitle) */}
+                                <div className="flex items-center gap-2.5 px-4 py-3 border-b border-slate-200/50 dark:border-white/5 shrink-0 bg-gradient-to-r from-amber-50/60 to-transparent dark:from-amber-900/10">
+                                    <span className="p-1.5 rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 text-white shadow-sm shadow-amber-500/30 shrink-0">
+                                        <Icon svg={ICONS.alertCircle} className="w-3.5 h-3.5" />
+                                    </span>
+                                    <h3 className="flex-1 min-w-0 text-sm font-black text-slate-700 dark:text-slate-200 tracking-tight truncate">Reglas & Alertas</h3>
+                                    {stockRules.length > 0 && (
+                                        <span className="shrink-0 min-w-[22px] text-center text-[11px] font-black text-amber-600 dark:text-amber-400 bg-amber-100/80 dark:bg-amber-900/30 px-2 py-0.5 rounded-full tabular-nums">
+                                            {stockRules.length}
+                                        </span>
+                                    )}
                                 </div>
-
-                                <div className="flex-1 overflow-y-auto custom-scrollbar py-2 pr-1">
-                                    <SuppliersList db={db!} userId={userId!} onSelect={() => setShowSuppliersModal(true)} />
-                                </div>
-                            </div>
-
-                            {/* DIVIDER with gradient fading */}
-                            <div className="h-px bg-gradient-to-r from-transparent via-slate-300/30 dark:via-slate-600/30 to-transparent shrink-0" />
-
-                            {/* BOTTOM HALF: REGLAS DE STOCK (Floating, Full Scroll) */}
-                            <div className="flex-1 flex flex-col min-h-0 relative">
-                                <div className="mb-2 pl-2 shrink-0">
-                                    <h3 className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                                        <Icon svg={ICONS.alertCircle} className="w-3 h-3 text-amber-500" />
-                                        Alertas & Reglas
-                                    </h3>
-                                </div>
-                                <div className="flex-1 overflow-y-auto custom-scrollbar pr-1 pb-2">
+                                <div className="lg:flex-1 lg:overflow-y-auto custom-scrollbar lg:min-h-0">
                                     {activeLayer === 'composition' && (
                                         <StockRulesPanel
                                             allIngredients={allIngredients}
                                             stockItems={calculatedStockItems}
                                             rules={stockRules}
-                                            onSaveRule={(rule) => setStockRules(prev => [...prev, rule])}
-                                            onDeleteRule={(id) => setStockRules(prev => prev.filter(r => r.id !== id))}
-                                            onUpdateRules={setStockRules}
+                                            onSaveRule={(rule) => saveStockRule(rule)}
+                                            onDeleteRule={(id) => deleteStockRule(id)}
+                                            onUpdateRules={(newRules) => newRules.forEach(saveStockRule)}
                                             onQuickBuy={startPurchase}
                                             onBulkOrder={(ingredients) => {
                                                 setBulkPurchaseTargets(ingredients);
@@ -588,6 +733,35 @@ const GrimoriumInner: React.FC<GrimoriumViewProps> = () => {
                                             }}
                                         />
                                     )}
+                                </div>
+                            </div>
+
+                            {/* SECONDARY: PROVEEDORES (~36%) */}
+                            <div className="flex-[36] flex flex-col min-h-0 bg-white/55 dark:bg-slate-900/50 rounded-3xl border border-white/40 dark:border-white/5 backdrop-blur-xl shadow-premium overflow-hidden">
+                                {/* Unified narrow-first header */}
+                                <div className="flex items-center gap-2.5 px-4 py-3 border-b border-slate-200/50 dark:border-white/5 shrink-0 bg-gradient-to-r from-emerald-50/60 to-transparent dark:from-emerald-900/10">
+                                    <span className="p-1.5 rounded-xl bg-gradient-to-br from-emerald-400 to-teal-500 text-white shadow-sm shadow-emerald-500/30 shrink-0">
+                                        <Icon svg={ICONS.user} className="w-3.5 h-3.5" />
+                                    </span>
+                                    <h3 className="flex-1 min-w-0 text-sm font-black text-slate-700 dark:text-slate-200 tracking-tight truncate">Proveedores</h3>
+                                    {suppliers.length > 0 && (
+                                        <span className="shrink-0 min-w-[22px] text-center text-[11px] font-black text-emerald-600 dark:text-emerald-400 bg-emerald-100/80 dark:bg-emerald-900/30 px-2 py-0.5 rounded-full tabular-nums">
+                                            {suppliers.length}
+                                        </span>
+                                    )}
+                                </div>
+                                {/* Full-width action button (narrow-first) */}
+                                <div className="px-3 pt-3 shrink-0">
+                                    <button
+                                        onClick={() => setShowSuppliersModal(true)}
+                                        className="w-full flex items-center justify-center gap-2 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl transition-all text-xs font-bold shadow-sm shadow-emerald-500/30 hover:shadow-emerald-500/50 hover:-translate-y-0.5 group"
+                                    >
+                                        <Icon svg={ICONS.plus} className="w-4 h-4 group-hover:rotate-90 transition-transform" />
+                                        <span>Nuevo proveedor</span>
+                                    </button>
+                                </div>
+                                <div className="flex-1 overflow-y-auto custom-scrollbar p-3">
+                                    <SuppliersList db={db!} userId={userId!} onSelect={() => setShowSuppliersModal(true)} />
                                 </div>
                             </div>
                         </div>
@@ -606,7 +780,7 @@ const GrimoriumInner: React.FC<GrimoriumViewProps> = () => {
                         {/* COST LAYER (Takes precedence if active) - REVERTED: Now in Right Sidebar */}
 
                         {/* RECIPES VIEW */}
-                        {viewMode === 'recipes' && (
+                        {viewMode === 'recipes' && activeLayer !== 'optimization' && (
                             <RecipeList
                                 recipes={filteredRecipes}
                                 isLoading={recipesLoading}
@@ -633,21 +807,33 @@ const GrimoriumInner: React.FC<GrimoriumViewProps> = () => {
 
                         {/* ZERO WASTE RESULTS VIEW */}
                         {activeLayer === 'optimization' && (
-                            <div className="grid grid-cols-1 gap-6 pb-6 px-4">
-                                {zwResults.map((recipe, index) => (
-                                    <ZeroWasteResultCard
-                                        key={index}
-                                        recipe={recipe}
-                                        db={db!}
-                                        userId={userId!}
-                                        appId={appId!}
-                                    />
-                                ))}
-                            </div>
+                            zwResults.length > 0 ? (
+                                <div className="grid grid-cols-1 gap-6 pb-6 px-4">
+                                    {zwResults.map((recipe, index) => (
+                                        <ZeroWasteResultCard
+                                            key={index}
+                                            recipe={recipe}
+                                            db={db!}
+                                            userId={userId!}
+                                            appId={appId!}
+                                        />
+                                    ))}
+                                </div>
+                            ) : (
+                                <div className="h-full flex flex-col items-center justify-center text-center p-8">
+                                    <div className="p-4 bg-lime-100 dark:bg-lime-900/20 rounded-full mb-4">
+                                        <Icon svg={ICONS.refresh} className="w-10 h-10 text-lime-600 dark:text-lime-400" />
+                                    </div>
+                                    <h3 className="text-xl font-bold text-slate-700 dark:text-slate-200 mb-1">Zero Waste Lab</h3>
+                                    <p className="text-sm text-slate-500 dark:text-slate-400 max-w-sm">
+                                        Selecciona ingredientes y mermas en el panel derecho y genera elaboraciones (cordiales, siropes, polvos) para aprovecharlo todo.
+                                    </p>
+                                </div>
+                            )
                         )}
 
                         {/* MARKET VIEW (formerly Ingredients) */}
-                        {viewMode === 'market' && (
+                        {viewMode === 'market' && activeLayer !== 'optimization' && (
                             <IngredientListPanel
                                 ingredients={filteredIngredients}
                                 selectedIngredientIds={selectedIngredients}
@@ -670,7 +856,7 @@ const GrimoriumInner: React.FC<GrimoriumViewProps> = () => {
                         )}
 
                         {/* STOCK VIEW (Promoted to Main View) */}
-                        {viewMode === 'stock' && (
+                        {viewMode === 'stock' && activeLayer !== 'optimization' && (
                             <StockInventoryPanel
                                 stockItems={calculatedStockItems}
                                 purchases={purchaseHistory}
@@ -678,6 +864,8 @@ const GrimoriumInner: React.FC<GrimoriumViewProps> = () => {
                                 onSelectIngredient={(ingredientId) => {
                                     setSelectedStockItemId(ingredientId);
                                 }}
+                                onRecordMovement={handleRecordStockMovement}
+                                onPhysicalCount={handlePhysicalCount}
                             />
                         )}
 
@@ -693,12 +881,14 @@ const GrimoriumInner: React.FC<GrimoriumViewProps> = () => {
                                 <RecipeDetailPanel
                                     recipe={selectedRecipe}
                                     allIngredients={allIngredients}
+                                    allRecipes={allRecipes}
+                                    onProduce={(r) => setProduceRecipe(r)}
                                     onEdit={(r) => onOpenRecipeModal(r)}
                                     // ...
                                     onDelete={(r) => handleDeleteRecipe(r.id)}
                                     onDuplicate={handleDuplicateRecipe}
                                     onToolToggle={setIsToolOpen}
-                                    onNavigate={(view, data) => setCurrentView(view)}
+                                    onNavigate={handleRecipeToolNavigate}
                                     onClose={() => setSelectedRecipeId(null)}
                                     onEscandallo={() => { setSelectedEscandalloRecipe(selectedRecipe); setLayer('cost'); setEscandallatorSubTab('calculator'); }}
                                     onBatcher={() => {
@@ -754,7 +944,8 @@ const GrimoriumInner: React.FC<GrimoriumViewProps> = () => {
                                             setEditingOrder(null);
                                             setIsReplenishModalOpen(true);
                                         }}
-                                        onLaunchOrder={handleLaunchOrder}
+                                        onSendOrder={handleSendOrder}
+                                        onReceiveOrder={handleReceiveOrder}
                                         onDeleteOrder={deleteOrder}
                                         onDeleteHistoryItem={handleDeletePurchase}
                                         onEditOrder={(order) => {
@@ -855,6 +1046,17 @@ const GrimoriumInner: React.FC<GrimoriumViewProps> = () => {
             />
 
             {showSuppliersModal && <SuppliersManagerModal isOpen={showSuppliersModal} onClose={() => setShowSuppliersModal(false)} />}
+
+            {produceRecipe && (
+                <ProduceRecipeModal
+                    recipe={produceRecipe}
+                    allIngredients={allIngredients}
+                    allRecipes={allRecipes}
+                    stockItems={calculatedStockItems}
+                    onClose={() => setProduceRecipe(null)}
+                    onConfirm={handleProduceConfirm}
+                />
+            )}
 
             {showIngredientModal && (
                 <IngredientFormModal

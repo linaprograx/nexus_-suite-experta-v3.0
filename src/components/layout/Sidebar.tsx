@@ -1,20 +1,13 @@
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { ViewName } from '../../../types';
 import { useApp } from '../../context/AppContext';
 import { useUI } from '../../context/UIContext';
 import { Icon } from '../ui/Icon';
 import { ICONS } from '../ui/icons';
 import { Button } from '../ui/Button';
-
-const APP_ROUTES: { view: ViewName; label: string; icon: string }[] = [
-  { view: 'dashboard', label: 'Dashboard', icon: ICONS.grid },
-  { view: 'grimorium', label: 'Grimorium', icon: ICONS.book },
-  { view: 'cerebrIty', label: 'CerebrIty', icon: ICONS.brain },
-  { view: 'pizarron', label: 'Pizarrón', icon: ICONS.layoutGrid },
-  { view: 'avatar', label: 'Avatar', icon: ICONS.radar },
-  { view: 'colegium', label: 'Colegium', icon: ICONS.school },
-];
+import { NexusOrb } from '../ui/NexusOrb';
+import { APP_SECTIONS } from '../../config/appSections';
+import { useSectionsStore } from '../../store/sectionsStore';
 
 interface NavLinkProps {
   view: string; // Changed from ViewName to string for router paths
@@ -33,7 +26,7 @@ const NavLink: React.FC<NavLinkProps> = ({ view, label, icon, currentPath, onNav
   const baseClasses = "group flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium transition-all duration-300 relative overflow-hidden";
 
   const activeClasses =
-    "text-white bg-gradient-to-r from-blue-500 via-fuchsia-500 to-orange-500 shadow-lg shadow-orange-500/30 " +
+    "text-white bg-gradient-to-br from-amber-400 via-orange-500 to-rose-500 shadow-lg shadow-orange-500/30 " +
     "border border-white/20 dark:border-white/30";
 
   const inactiveClasses =
@@ -70,6 +63,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
 }) => {
   const { auth, userProfile } = useApp();
   const { theme, setTheme, isSidebarCollapsed, toggleSidebar } = useUI();
+  const isEnabled = useSectionsStore(s => s.isEnabled);
+  const hiddenSections = useSectionsStore(s => s.hiddenSections); // subscribe so nav re-renders on toggle
 
   const navigate = useNavigate();
   const location = useLocation();
@@ -87,20 +82,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
       {/* Header */}
       <div className={`h-20 flex items-center px-4 ${isSidebarCollapsed ? 'justify-center' : 'justify-between'}`}>
         <div className={`flex items-center gap-3 ${isSidebarCollapsed ? 'justify-center w-full' : ''}`}>
-          {/* Logo Circular */}
-          {/* Logo Circular - Living Energy Sphere (Mini) */}
-          <div className="w-10 h-10 rounded-full relative flex-shrink-0 group-hover:scale-110 transition-transform duration-500">
-            {/* Outer Glow */}
-            <div className="absolute inset-0 rounded-full blur-[10px] bg-orange-500/20 group-hover:bg-orange-500/40 transition-colors duration-500" />
-
-            <div className="w-full h-full rounded-full relative z-10 overflow-hidden shadow-[inset_0_-4px_8px_rgba(0,0,0,0.6),inset_0_2px_6px_rgba(255,255,255,0.4)]">
-              {/* Conic Gradient Core */}
-              <div className="absolute inset-[-50%] w-[200%] h-[200%] animate-[spin_20s_linear_infinite]"
-                style={{ background: 'conic-gradient(from 0deg, #3b82f6, #8b5cf6, #ec4899, #f97316, #fbbf24, #3b82f6)' }} />
-              {/* Surface Gloss */}
-              <div className="absolute top-1.5 left-2 w-3 h-1.5 bg-white/50 blur-[2px] rounded-full -rotate-45" />
-              <div className="absolute inset-0 backdrop-blur-[1px]" />
-            </div>
+          {/* Nexus brand mark (unified) */}
+          <div className="group-hover:scale-110 transition-transform duration-500">
+            <NexusOrb size={40} />
           </div>
 
           {!isSidebarCollapsed && (
@@ -134,10 +118,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
       {/* Nav Items */}
       <nav className="flex-1 px-3 space-y-2 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-transparent">
-        {APP_ROUTES.map(route => (
+        {APP_SECTIONS.filter(section => isEnabled(section.id)).map(section => (
           <NavLink
-            key={route.view}
-            {...route}
+            key={section.id}
+            view={section.id}
+            label={section.label}
+            icon={section.icon}
             currentPath={location.pathname}
             onNavigate={handleNavigate}
             isCollapsed={isSidebarCollapsed}
@@ -169,7 +155,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </button>
 
         <button
-          onClick={() => setTheme(prevTheme => prevTheme === 'dark' ? 'light' : 'dark')}
+          onClick={() => setTheme((prevTheme: string) => prevTheme === 'dark' ? 'light' : 'dark')}
           className={`flex items-center gap-3 rounded-xl py-2 px-3 text-sm font-medium transition text-slate-600 dark:text-slate-300 hover:bg-white/50 dark:hover:bg-white/10 hover:text-slate-900 dark:hover:text-white dark:hover:shadow-[0_0_20px_rgba(15,23,42,0.6)] ${isSidebarCollapsed ? 'justify-center' : ''}`}
           title={isSidebarCollapsed ? "Cambiar Tema" : ""}
         >
@@ -198,7 +184,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       {/* DESKTOP SIDEBAR */}
       <aside
         className={`
-            hidden md:flex flex-col fixed left-0 top-0 h-screen z-40
+            hidden lg:flex flex-col fixed left-0 top-0 h-screen z-40
             bg-[#f8fafc]/80 backdrop-blur-2xl border-r border-slate-200/60
             dark:bg-[#0f172a]/80 dark:backdrop-blur-2xl dark:border-slate-800/60
             transition-all duration-300 ease-in-out
@@ -212,7 +198,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       {/* Overlay */}
       {isMobileOpen && (
         <div
-          className="md:hidden fixed inset-0 z-40 bg-black/60 backdrop-blur-sm transition-opacity"
+          className="lg:hidden fixed inset-0 z-40 bg-black/60 backdrop-blur-sm transition-opacity"
           onClick={onCloseMobile}
         />
       )}
@@ -220,7 +206,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       {/* Drawer Panel */}
       <div
         className={`
-            md:hidden fixed inset-y-0 left-0 z-50 w-64
+            lg:hidden fixed inset-y-0 left-0 z-50 w-64
             bg-[#f8fafc]/90 backdrop-blur-2xl border-r border-slate-200/60
             dark:bg-[#0f172a]/90 dark:backdrop-blur-2xl dark:border-slate-800/60
             transform transition-transform duration-300 ease-in-out

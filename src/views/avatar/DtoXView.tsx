@@ -8,7 +8,7 @@ type Scenario = 'Servicio Lento' | 'Servicio Medio' | 'Rush (Intenso)';
 type Finding = { id: string; title: string; severity: 'high' | 'medium' | 'low'; lostTime: string; suggestion: string };
 
 const AvatarColumn = ({ title, children }: { title: string, children?: React.ReactNode }) => (
-    <div className="h-full min-h-0 flex flex-col rounded-2xl border border-slate-700/50 overflow-hidden bg-slate-800/20 backdrop-blur-md shadow-xl ring-1 ring-white/5">
+    <div className="min-h-full lg:h-full lg:min-h-0 flex flex-col rounded-2xl border border-slate-700/50 overflow-hidden bg-slate-800/20 backdrop-blur-md shadow-xl ring-1 ring-white/5">
         <div className="p-4 border-b border-slate-700/50 bg-slate-800/40">
             <h3 className="font-bold text-slate-300 tracking-wide text-xs uppercase flex items-center gap-2">
                 <span className="w-1.5 h-1.5 rounded-full bg-indigo-500"></span>

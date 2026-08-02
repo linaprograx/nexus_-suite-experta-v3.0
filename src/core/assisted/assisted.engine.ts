@@ -31,7 +31,7 @@ export const generateAssistedInsights = (input: AssistedEngineInput): AssistedIn
 
     allInsights.forEach(insight => {
         const existing = uniqueMap.get(insight.id);
-        if (!existing || insight.priorityScore > existing.priorityScore) {
+        if (!existing || (insight.priorityScore ?? 0) > (existing.priorityScore ?? 0)) {
             uniqueMap.set(insight.id, insight);
         }
     });
@@ -55,7 +55,7 @@ export const generateAssistedInsights = (input: AssistedEngineInput): AssistedIn
     // Exception: 'success' insights might have lower scores (10-15) but we might want to show them if nothing else exists.
     // Revised Strategy: If 'success' is the ONLY thing, show it. If there are risks, hide success.
 
-    const risks = processed.filter(i => i.severity !== 'success' && i.priorityScore >= 22);
+    const risks = processed.filter(i => i.severity !== 'success' && (i.priorityScore ?? 0) >= 22);
 
     if (risks.length > 0) {
         // Show risks, ignore success insights
@@ -68,5 +68,5 @@ export const generateAssistedInsights = (input: AssistedEngineInput): AssistedIn
     }
 
     // 4. Sorting
-    return processed.sort((a, b) => b.priorityScore - a.priorityScore);
+    return processed.sort((a, b) => (b.priorityScore ?? 0) - (a.priorityScore ?? 0));
 };

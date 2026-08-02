@@ -33,7 +33,7 @@ export const MenuDesignInspector = ({
 
             {/* Title */}
             <div>
-                <label className="text-xs font-medium text-slate-600 block mb-1">Proposal Title</label>
+                <label className="text-xs font-medium text-slate-600 dark:text-slate-400 block mb-1">Proposal Title</label>
                 <input
                     className="w-full border rounded text-sm px-2 py-1 font-bold"
                     value={firstNode.content.title || ''}
@@ -43,8 +43,8 @@ export const MenuDesignInspector = ({
 
             {/* Style Hints (Read Only) */}
             <div>
-                <label className="text-xs font-medium text-slate-600 block mb-1">Theme / Style</label>
-                <div className="text-xs text-slate-500 italic bg-slate-50 p-2 rounded border">
+                <label className="text-xs font-medium text-slate-600 dark:text-slate-400 block mb-1">Theme / Style</label>
+                <div className="text-xs text-slate-500 dark:text-slate-400 italic bg-slate-50 dark:bg-slate-800 p-2 rounded border border-slate-200 dark:border-slate-700">
                     {firstNode.content.styleHints || 'No style hints'}
                 </div>
             </div>
@@ -86,12 +86,12 @@ export const MenuDesignInspector = ({
             />
 
             {/* Action: Save to Make Menu */}
-            <div className="pt-3 border-t border-slate-200 mt-2">
+            <div className="pt-3 border-t border-slate-200 dark:border-slate-700 mt-2">
                 <button
-                    className="w-full py-2 bg-slate-900 text-white rounded shadow text-xs font-bold hover:bg-slate-800 transition-colors flex items-center justify-center gap-2"
+                    className="w-full py-2 bg-slate-900 dark:bg-slate-700 text-white rounded shadow text-xs font-bold hover:bg-slate-800 dark:hover:bg-slate-600 transition-colors flex items-center justify-center gap-2"
                     onClick={() => {
                         // This logic duplicates the MiniToolbar action but is good for accessibility
-                        import('../../../../services/makeMenuService').then(({ makeMenuService }) => {
+                        import('../../../../../services/makeMenuService').then(({ makeMenuService }) => {
                             const db = pizarronStore.getState().db;
                             const appId = pizarronStore.getState().appId;
                             if (db && appId) {
@@ -104,7 +104,7 @@ export const MenuDesignInspector = ({
                         });
                     }}
                 >
-                    <Icon svg={ICONS.save} className="w-4 h-4" />
+                    <Icon svg={ICONS.check} className="w-4 h-4" />
                     Save to Make Menu
                 </button>
             </div>

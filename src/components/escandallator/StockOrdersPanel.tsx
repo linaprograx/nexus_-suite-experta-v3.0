@@ -9,7 +9,8 @@ interface StockOrdersPanelProps {
     purchases: PurchaseEvent[];
     orders: Order[]; // Drafts
     onCreateOrder?: () => void;
-    onLaunchOrder: (order: Order) => void;
+    onSendOrder: (order: Order) => void;    // draft → sent (enviado al proveedor)
+    onReceiveOrder: (order: Order) => void; // sent → completed (recibido: suma stock)
     onDeleteOrder: (orderId: string) => void;
     onDeleteHistoryGroup?: (providerName: string) => void;
     onDeleteHistoryItem?: (id: string) => void;
@@ -27,7 +28,8 @@ export const StockOrdersPanel: React.FC<StockOrdersPanelProps> = ({
     purchases,
     orders = [],
     onCreateOrder,
-    onLaunchOrder,
+    onSendOrder,
+    onReceiveOrder,
     onDeleteOrder,
     onDeleteHistoryGroup,
     onDeleteHistoryItem,
@@ -77,8 +79,84 @@ export const StockOrdersPanel: React.FC<StockOrdersPanelProps> = ({
         document.body.removeChild(link);
     };
 
+    const draftOrders = orders.filter(o => o.status === 'draft');
+    const sentOrders = orders.filter(o => o.status === 'sent');
+
+    const renderOrderCard = (order: Order, mode: 'draft' | 'sent') => (
+        <div
+            key={order.id}
+            className={`bg-white/60 dark:bg-slate-800/60 backdrop-blur-md rounded-xl border p-3 shadow-sm relative group transition-all ${mode === 'sent' ? 'border-amber-200 dark:border-amber-900/40' : 'border-indigo-100 dark:border-indigo-900/30 cursor-pointer hover:border-indigo-300'}`}
+            onClick={() => mode === 'draft' && onEditOrder && onEditOrder(order)}
+        >
+            <div className="flex justify-between items-start mb-2">
+                <div>
+                    <div className="flex items-center gap-2">
+                        <span className="font-bold text-slate-800 dark:text-slate-200 text-sm">{order.name || 'Pedido'}</span>
+                        {mode === 'sent' && (
+                            <span className="text-[9px] font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded-full flex items-center gap-1">
+                                <Icon svg={ICONS.clock} className="w-2.5 h-2.5" /> En camino
+                            </span>
+                        )}
+                    </div>
+                    <span className="text-[10px] text-slate-500">{order.createdAt instanceof Date ? order.createdAt.toLocaleDateString() : 'Fecha desc.'}</span>
+                </div>
+                <span className="text-xs font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/20 px-2 py-0.5 rounded-full border border-indigo-100">
+                    €{order.totalEstimatedCost.toFixed(2)}
+                </span>
+            </div>
+
+            <div className="mb-3 max-h-24 overflow-y-auto custom-scrollbar bg-slate-50/50 dark:bg-slate-900/50 rounded p-2">
+                {order.items.map((item, idx) => (
+                    <div key={idx} className="flex justify-between text-[10px] text-slate-600 dark:text-slate-400 border-b border-slate-100 last:border-0 py-1">
+                        <span>{item.ingredientName}</span>
+                        <span>x{item.quantity} {item.unit}</span>
+                    </div>
+                ))}
+            </div>
+
+            <div className="flex gap-2 mt-2">
+                {mode === 'draft' ? (
+                    <Button
+                        size="sm"
+                        onClick={(e) => { e.stopPropagation(); onSendOrder(order); }}
+                        className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] h-7"
+                    >
+                        <Icon svg={ICONS.send} className="w-3 h-3 mr-1" />
+                        Enviar Pedido
+                    </Button>
+                ) : (
+                    <Button
+                        size="sm"
+                        onClick={(e) => { e.stopPropagation(); onReceiveOrder(order); }}
+                        className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] h-7"
+                    >
+                        <Icon svg={ICONS.check} className="w-3 h-3 mr-1" />
+                        Marcar Recibido
+                    </Button>
+                )}
+                <button
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        handleDownloadCSV({ providerName: order.name || 'Pedido', items: order.items, totalValue: order.totalEstimatedCost });
+                    }}
+                    className="p-1.5 text-slate-400 hover:text-indigo-600 transition-colors"
+                    title="Descargar CSV"
+                >
+                    <Icon svg={ICONS.fileText} className="w-4 h-4" />
+                </button>
+                <button
+                    onClick={(e) => { e.stopPropagation(); onDeleteOrder(order.id); }}
+                    className="p-1.5 text-slate-400 hover:text-red-500 transition-colors"
+                    title="Eliminar Pedido"
+                >
+                    <Icon svg={ICONS.trash} className="w-4 h-4" />
+                </button>
+            </div>
+        </div>
+    );
+
     return (
-        <div className="h-full flex flex-col bg-white/30 dark:bg-slate-900/40 backdrop-blur-xl border-l border-white/20 dark:border-white/5">
+        <div className="h-full flex flex-col bg-white/40 dark:bg-slate-900/40 backdrop-blur-xl border border-white/30 dark:border-white/5 rounded-3xl overflow-hidden shadow-premium">
             {/* Toolbar Header */}
             <div className="p-4 border-b border-white/10 shrink-0">
                 <div className="flex items-center justify-between mb-4">
@@ -99,7 +177,7 @@ export const StockOrdersPanel: React.FC<StockOrdersPanelProps> = ({
                         onClick={() => setActiveTab('drafts')}
                         className={`flex-1 py-1.5 text-xs font-semibold rounded-md transition-all ${activeTab === 'drafts' ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
                     >
-                        Borradores ({orders.filter(o => o.status === 'draft').length})
+                        Pedidos ({draftOrders.length + sentOrders.length})
                     </button>
                     <button
                         onClick={() => setActiveTab('history')}
@@ -113,72 +191,31 @@ export const StockOrdersPanel: React.FC<StockOrdersPanelProps> = ({
             {/* Content List */}
             <div className="flex-1 overflow-y-auto custom-scrollbar p-4 space-y-4">
 
-                {/* DRAFTS VIEW */}
+                {/* DRAFTS + SENT VIEW */}
                 {activeTab === 'drafts' && (
                     <>
-                        {orders.filter(o => o.status === 'draft').length === 0 ? (
+                        {draftOrders.length === 0 && sentOrders.length === 0 ? (
                             <div className="text-center py-10 opacity-60">
-                                <p className="text-sm text-slate-500">No hay borradores pendientes.</p>
+                                <p className="text-sm text-slate-500">No hay pedidos pendientes.</p>
                             </div>
                         ) : (
-                            orders.filter(o => o.status === 'draft').map(order => (
-                                <div
-                                    key={order.id}
-                                    className="bg-white/60 dark:bg-slate-800/60 backdrop-blur-md rounded-xl border border-indigo-100 dark:border-indigo-900/30 p-3 shadow-sm relative group cursor-pointer hover:border-indigo-300 transition-all"
-                                    onClick={() => onEditOrder && onEditOrder(order)}
-                                >
-                                    <div className="flex justify-between items-start mb-2">
-                                        <div>
-                                            <span className="font-bold text-slate-800 dark:text-slate-200 text-sm block">{order.name || 'Pedido'}</span>
-                                            <span className="text-[10px] text-slate-500">{order.createdAt instanceof Date ? order.createdAt.toLocaleDateString() : 'Fecha desc.'}</span>
-                                        </div>
-                                        <span className="text-xs font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/20 px-2 py-0.5 rounded-full border border-indigo-100">
-                                            €{order.totalEstimatedCost.toFixed(2)}
-                                        </span>
+                            <>
+                                {/* En camino (enviados al proveedor) */}
+                                {sentOrders.length > 0 && (
+                                    <div className="space-y-3">
+                                        <p className="text-[10px] font-bold uppercase tracking-widest text-amber-500 px-1">En camino ({sentOrders.length})</p>
+                                        {sentOrders.map(order => renderOrderCard(order, 'sent'))}
                                     </div>
+                                )}
 
-                                    <div className="mb-3 max-h-24 overflow-y-auto custom-scrollbar bg-slate-50/50 dark:bg-slate-900/50 rounded p-2">
-                                        {order.items.map((item, idx) => (
-                                            <div key={idx} className="flex justify-between text-[10px] text-slate-600 dark:text-slate-400 border-b border-slate-100 last:border-0 py-1">
-                                                <span>{item.ingredientName}</span>
-                                                <span>x{item.quantity} {item.unit}</span>
-                                            </div>
-                                        ))}
+                                {/* Borradores */}
+                                {draftOrders.length > 0 && (
+                                    <div className="space-y-3">
+                                        {sentOrders.length > 0 && <p className="text-[10px] font-bold uppercase tracking-widest text-indigo-400 px-1">Borradores ({draftOrders.length})</p>}
+                                        {draftOrders.map(order => renderOrderCard(order, 'draft'))}
                                     </div>
-
-                                    <div className="flex gap-2 mt-2">
-                                        <Button
-                                            size="sm"
-                                            onClick={(e) => { e.stopPropagation(); onLaunchOrder(order); }}
-                                            className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] h-7"
-                                        >
-                                            <Icon svg={ICONS.check} className="w-3 h-3 mr-1" />
-                                            Lanzar Pedido
-                                        </Button>
-                                        <button
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                handleDownloadCSV({
-                                                    providerName: order.name || 'Borrador',
-                                                    items: order.items,
-                                                    totalValue: order.totalEstimatedCost
-                                                });
-                                            }}
-                                            className="p-1.5 text-slate-400 hover:text-indigo-600 transition-colors"
-                                            title="Descargar CSV"
-                                        >
-                                            <Icon svg={ICONS.fileText} className="w-4 h-4" />
-                                        </button>
-                                        <button
-                                            onClick={(e) => { e.stopPropagation(); onDeleteOrder(order.id); }}
-                                            className="p-1.5 text-slate-400 hover:text-red-500 transition-colors"
-                                            title="Eliminar Borrador"
-                                        >
-                                            <Icon svg={ICONS.trash} className="w-4 h-4" />
-                                        </button>
-                                    </div>
-                                </div>
-                            ))
+                                )}
+                            </>
                         )}
                     </>
                 )}

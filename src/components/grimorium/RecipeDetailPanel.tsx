@@ -9,6 +9,8 @@ import { RecipeActionsPanel } from '../../features/recipes/ui/RecipeActionsPanel
 import { ViewName } from '../../types';
 
 import { calculateRecipeCost, CostedIngredient } from '../../core/costing/costCalculator';
+import { printRecipeCard } from './printRecipeCard';
+import { useActiveMenu } from '../../hooks/useActiveMenu';
 import { calculatePricing } from '../../core/costing/pricingEngine';
 import { formatCost, getMarginBgColor, getMarginTextColor } from '../../core/costing/costFormatter';
 
@@ -16,6 +18,7 @@ import { formatCost, getMarginBgColor, getMarginTextColor } from '../../core/cos
 export const RecipeDetailPanel: React.FC<{
   recipe: Recipe | null;
   allIngredients: Ingredient[];
+  allRecipes?: Recipe[];
   onEdit: (recipe: Recipe) => void;
   onDelete: (recipe: Recipe) => void;
   onDuplicate: (recipe: Recipe) => void;
@@ -24,13 +27,15 @@ export const RecipeDetailPanel: React.FC<{
   onToolToggle?: (isOpen: boolean) => void;
   onEscandallo?: () => void;
   onBatcher?: () => void;
-}> = ({ recipe, allIngredients, onEdit, onDelete, onDuplicate, onNavigate, onClose, onToolToggle, onEscandallo, onBatcher }) => {
+  onProduce?: (recipe: Recipe) => void;
+}> = ({ recipe, allIngredients, allRecipes = [], onEdit, onDelete, onDuplicate, onNavigate, onClose, onToolToggle, onEscandallo, onBatcher, onProduce }) => {
   const { compactMode } = useUI();
+  const { menu, addToMenu, removeFromMenu } = useActiveMenu();
 
   const costData = React.useMemo(() => {
     if (!recipe) return null;
-    return calculateRecipeCost(recipe, allIngredients);
-  }, [recipe, allIngredients]);
+    return calculateRecipeCost(recipe, allIngredients, undefined, allRecipes);
+  }, [recipe, allIngredients, allRecipes]);
 
   const pricingData = React.useMemo(() => {
     if (!costData) return null;
@@ -55,17 +60,77 @@ export const RecipeDetailPanel: React.FC<{
         {recipe.imageUrl ? (
           <img src={recipe.imageUrl} alt={recipe.nombre} className="w-full h-48 rounded-2xl object-cover mb-4 shadow-sm" />
         ) : (
-          <div className="w-full h-48 rounded-2xl bg-gradient-to-br from-indigo-500 via-purple-600 to-pink-500 mb-4 flex items-center justify-center shadow-sm">
+          <div className="w-full h-48 rounded-2xl bg-gradient-to-br from-emerald-500 via-teal-500 to-cyan-500 mb-4 flex items-center justify-center shadow-sm">
             <span className="text-6xl font-bold text-white/50">{recipe.nombre.substring(0, 2).toUpperCase()}</span>
           </div>
         )}
-        <div className="flex justify-between items-start mb-6">
-          <h2 className="text-2xl font-black text-slate-800 dark:text-white leading-tight drop-shadow-sm">{recipe.nombre}</h2>
-          <div className="flex gap-1">
-            <Button variant="outline" size="sm" onClick={() => onEdit(recipe)} className="h-8 w-8 p-0"><Icon svg={ICONS.edit} className="w-3.5 h-3.5" /></Button>
-            <Button variant="destructive" size="sm" onClick={() => onDelete(recipe)} className="h-8 w-8 p-0"><Icon svg={ICONS.trash} className="w-3.5 h-3.5" /></Button>
-            <Button variant="ghost" size="icon" onClick={onClose} className="h-8 w-8 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"><Icon svg={ICONS.x} /></Button>
-          </div>
+        <div className="flex justify-between items-start gap-3 mb-6">
+          <h2 className="text-2xl font-black text-slate-800 dark:text-white leading-tight drop-shadow-sm flex-1 min-w-0">{recipe.nombre}</h2>
+          <button onClick={onClose} className="shrink-0 h-8 w-8 flex items-center justify-center rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+            <Icon svg={ICONS.x} className="w-4 h-4" />
+          </button>
+        </div>
+
+        {/* Primary actions — clear, balanced buttons */}
+        <div className="flex gap-2 mb-6">
+          <button
+            onClick={() => onEdit(recipe)}
+            className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-500 text-white text-xs font-bold uppercase tracking-widest shadow-lg shadow-teal-900/20 transition-all hover:-translate-y-0.5"
+          >
+            <Icon svg={ICONS.edit} className="w-4 h-4" /> Editar
+          </button>
+          {(() => {
+            const onMenu = menu.find(m => m.recipeId === recipe.id);
+            return (
+              <button
+                onClick={() => onMenu
+                  ? removeFromMenu(onMenu.id)
+                  : addToMenu({
+                    recipeId: recipe.id,
+                    nombre: recipe.nombre,
+                    precioVenta: recipe.precioVenta || 0,
+                    costSnapshot: costData.costoTotal || 0,
+                    marginSnapshot: margin,
+                  })}
+                title={onMenu ? 'Quitar de la carta' : 'Añadir a la carta activa'}
+                className={`shrink-0 px-3.5 py-2.5 rounded-xl border transition-colors ${onMenu
+                  ? 'bg-teal-600 border-teal-600 text-white hover:bg-teal-700'
+                  : 'bg-white/60 dark:bg-slate-800/60 border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-800'}`}
+              >
+                <Icon svg={ICONS.book} className="w-4 h-4" />
+              </button>
+            );
+          })()}
+          {onProduce && (
+            <button
+              onClick={() => onProduce(recipe)}
+              title="Producir / servir — descuenta del stock"
+              className="shrink-0 px-3.5 py-2.5 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-500/30 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 transition-colors"
+            >
+              <Icon svg={ICONS.flask} className="w-4 h-4" />
+            </button>
+          )}
+          <button
+            onClick={() => printRecipeCard(recipe, costData, allRecipes)}
+            title="Imprimir ficha técnica"
+            className="shrink-0 px-3.5 py-2.5 rounded-xl bg-white/60 dark:bg-slate-800/60 border border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-800 transition-colors"
+          >
+            <Icon svg={ICONS.fileText} className="w-4 h-4" />
+          </button>
+          <button
+            onClick={() => onDuplicate(recipe)}
+            title="Duplicar receta"
+            className="shrink-0 px-3.5 py-2.5 rounded-xl bg-white/60 dark:bg-slate-800/60 border border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-800 transition-colors"
+          >
+            <Icon svg={ICONS.copy || ICONS.layout} className="w-4 h-4" />
+          </button>
+          <button
+            onClick={() => onDelete(recipe)}
+            title="Eliminar receta"
+            className="shrink-0 px-3.5 py-2.5 rounded-xl bg-rose-50 dark:bg-rose-900/20 border border-rose-200 dark:border-rose-500/30 text-rose-600 dark:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-900/40 transition-colors"
+          >
+            <Icon svg={ICONS.trash} className="w-4 h-4" />
+          </button>
         </div>
 
         <div className="space-y-6 mt-6">
@@ -76,6 +141,9 @@ export const RecipeDetailPanel: React.FC<{
               <div className="bg-white/40 dark:bg-slate-800/40 rounded-xl p-3 border border-slate-100 dark:border-slate-800">
                 <p className="text-xs text-slate-500">Costo Total</p>
                 <p className="text-xl font-bold">{formatCost(costData.costoTotal)}</p>
+                {(recipe.porciones || 1) > 1 && (
+                  <p className="text-[11px] text-slate-400 mt-0.5">{formatCost(costData.costoTotal / (recipe.porciones || 1))} · {recipe.porciones} porciones</p>
+                )}
               </div>
               <div className="bg-white/40 dark:bg-slate-800/40 rounded-xl p-3 border border-slate-100 dark:border-slate-800">
                 <p className="text-xs text-slate-500">Margen Actual</p>
@@ -128,6 +196,24 @@ export const RecipeDetailPanel: React.FC<{
             </div>
           </div>
 
+          {/* Coctelería specs — technique / glassware / ice / garnish / ABV */}
+          {(recipe.technique || recipe.glassware || recipe.ice || recipe.garnish || recipe.abv != null) && (
+            <div className="flex flex-wrap gap-2">
+              {[
+                { label: 'Técnica', value: recipe.technique },
+                { label: 'Cristalería', value: recipe.glassware },
+                { label: 'Hielo', value: recipe.ice },
+                { label: 'Garnish', value: recipe.garnish },
+                { label: 'ABV', value: recipe.abv != null ? `${recipe.abv}%` : '' },
+              ].filter(s => s.value).map(s => (
+                <div key={s.label} className="flex flex-col px-3 py-1.5 rounded-xl bg-white/50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800">
+                  <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">{s.label}</span>
+                  <span className="text-sm font-medium text-slate-700 dark:text-slate-200">{s.value}</span>
+                </div>
+              ))}
+            </div>
+          )}
+
           {(recipe as any).preparacion && (
             <div>
               <h3 className="font-semibold text-slate-900 dark:text-white mb-3">Preparación</h3>
@@ -136,6 +222,18 @@ export const RecipeDetailPanel: React.FC<{
               </div>
             </div>
           )}
+
+          {/* Tools & customizations (escandallo, batch…) */}
+          <div>
+            <h3 className="font-semibold text-slate-900 dark:text-white mb-3">Herramientas</h3>
+            <RecipeActionsPanel
+              recipe={recipe}
+              allIngredients={allIngredients}
+              onNavigate={onNavigate}
+              onDuplicate={onDuplicate}
+              onToolToggle={onToolToggle}
+            />
+          </div>
         </div>
       </div >
 

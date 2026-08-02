@@ -62,7 +62,7 @@ export const ChampionFineTuningPanel: React.FC = () => {
                                 <div key={key} style={{ animationDelay: `${idx * 100}ms` }} className="animate-in slide-in-from-left-4 fade-in duration-500">
                                     <div className="flex justify-between mb-1.5">
                                         <span className="text-[9px] uppercase font-bold text-slate-400 tracking-wider">{key}</span>
-                                        <span className="text-[9px] font-mono font-bold text-slate-600">{score}/100</span>
+                                        <span className="text-[9px] font-mono font-bold text-slate-600">{String(score)}/100</span>
                                     </div>
                                     <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
                                         <div

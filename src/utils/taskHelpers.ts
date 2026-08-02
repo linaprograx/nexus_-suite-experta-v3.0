@@ -1,4 +1,4 @@
-import { PizarronTask } from '../../types';
+import { PizarronTask } from '../types';
 
 export const safeNormalizeTask = (task: any): PizarronTask => {
   return {

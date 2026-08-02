@@ -29,43 +29,41 @@ export const ChampionModeView: React.FC = () => {
 
     return (
         <ChampionProvider engine={engine}>
-            <div className="w-full h-full p-6 relative flex flex-col font-sans overflow-hidden overscroll-none">
+            <div className="w-full min-h-full lg:h-full p-4 lg:p-6 relative flex flex-col font-sans lg:overflow-hidden lg:overscroll-none">
 
                 {/* INTRO BANNER (Only in Design Mode) */}
                 {viewMode !== 'PRESENTATION' && <ChampionIntroBanner />}
 
                 {/* NAVIGATION BAR - FIXED & INTERACTIVE */}
-                <div className={`w-full flex justify-center items-center gap-4 transition-all duration-500 mb-8 z-50 ${viewMode === 'PRESENTATION' ? 'opacity-30 hover:opacity-100' : 'opacity-100 relative'}`}>
+                <div className={`w-full flex justify-center items-center gap-1.5 lg:gap-4 transition-all duration-500 mb-5 lg:mb-8 z-50 ${viewMode === 'PRESENTATION' ? 'opacity-30 hover:opacity-100' : 'opacity-100 relative'}`}>
                     {['Briefing', 'Motor Creativo', 'Validación', 'Plan'].map((step, i) => {
                         const isActive = activeStepIndex === i;
+                        const isCompleted = i < activeStepIndex;
                         return (
                             <div
                                 key={step}
                                 className="flex items-center gap-2 cursor-pointer group"
                                 onClick={() => {
-                                    if (i === 3) {
-                                        setActiveStepIndex(3);
-                                        // engine.actions.setViewMode('DESIGN'); // Optional: force exit
-                                    } else {
-                                        setActiveStepIndex(i);
-                                        engine.actions.setViewMode('DESIGN'); // Exit presentation on nav click
-                                    }
+                                    setActiveStepIndex(i);
+                                    if (i !== 3) engine.actions.setViewMode('DESIGN');
                                 }}
                             >
                                 <div className={`
                                     w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-bold border transition-all duration-300
                                     ${isActive
                                         ? 'bg-violet-600 border-violet-600 text-white shadow-lg shadow-violet-500/30 scale-110'
-                                        : 'bg-white border-slate-200 text-slate-400 group-hover:border-violet-300 group-hover:text-violet-500'}
+                                        : isCompleted
+                                        ? 'bg-violet-900/60 border-violet-700/60 text-violet-300'
+                                        : 'bg-white/10 border-white/20 text-slate-400 group-hover:border-violet-400/50 group-hover:text-violet-300'}
                                 `}>
-                                    {i + 1}
+                                    {isCompleted ? '✓' : i + 1}
                                 </div>
 
-                                <span className={`text-[10px] uppercase font-bold tracking-wider transition-colors duration-300 ${isActive ? "text-violet-600" : "text-slate-300 group-hover:text-violet-400"}`}>
+                                <span className={`text-[10px] uppercase font-bold tracking-wider transition-colors duration-300 ${isActive ? 'inline' : 'hidden lg:inline'} ${isActive ? 'text-violet-300' : isCompleted ? 'text-violet-500' : 'text-slate-500 group-hover:text-violet-400'}`}>
                                     {step}
                                 </span>
 
-                                {i < 3 && <div className={`w-8 h-[1px] transition-colors duration-300 ${isActive ? 'bg-violet-200' : 'bg-slate-100'}`} />}
+                                {i < 3 && <div className={`w-3 lg:w-8 h-[1px] transition-colors duration-300 ${isCompleted ? 'bg-violet-700' : 'bg-white/10'}`} />}
                             </div>
                         );
                     })}

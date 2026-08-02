@@ -5,6 +5,44 @@ import { parseMultipleRecipes } from '../../utils/recipeImporter';
 import { parseCsvRecipes } from '../../utils/csvRecipeImporter';
 import { importPdfRecipes } from '../../lib/pdf/importPdfRecipes';
 import { parseEuroNumber } from "../../utils/parseEuroNumber";
+import { resolveStandardPack } from "../../utils/packNormalization";
+import { calculateIngredientPrice } from "../../utils/costCalculator";
+
+/**
+ * Parse one CSV line respecting quoted fields (so a value like
+ * "Ron Bacardi, Carta Blanca" doesn't get split on its inner comma).
+ */
+const parseCsvLine = (line: string, delimiter: string): string[] => {
+    const out: string[] = [];
+    let cur = '';
+    let inQuotes = false;
+    for (let i = 0; i < line.length; i++) {
+        const ch = line[i];
+        if (ch === '"') {
+            if (inQuotes && line[i + 1] === '"') { cur += '"'; i++; } // escaped quote
+            else inQuotes = !inQuotes;
+        } else if (ch === delimiter && !inQuotes) {
+            out.push(cur); cur = '';
+        } else {
+            cur += ch;
+        }
+    }
+    out.push(cur);
+    return out.map(s => s.trim().replace(/^"|"$/g, ''));
+};
+
+/** Detect the delimiter from the header row (; preferred for ES Excel, else ,). */
+const detectDelimiter = (headerLine: string): string => {
+    const semi = (headerLine.match(/;/g) || []).length;
+    const comma = (headerLine.match(/,/g) || []).length;
+    const tab = (headerLine.match(/\t/g) || []).length;
+    if (tab > semi && tab > comma) return '\t';
+    return semi >= comma ? ';' : ',';
+};
+
+/** Map a header cell to a known logical column. Accent/case-insensitive. */
+const normalizeHeader = (h: string): string =>
+    h.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
 
 /**
  * Service to handle all Recipe and Ingredient import logic.
@@ -69,24 +107,57 @@ export const recipeImporter = {
         supplierId: string = ""
     ): Promise<{ created: number; updated: number }> {
         const text = await file.text();
-        const rows = text.split('\n').slice(1);
+        const lines = text.split(/\r?\n/).filter(l => l.trim());
+        if (lines.length === 0) return { created: 0, updated: 0 };
+
         const ingredientsColPath = `artifacts/${appId}/users/${userId}/grimorio-ingredients`;
+        const delimiter = detectDelimiter(lines[0]);
+
+        // --- Header detection: map logical columns to indices ---
+        // Supports both labelled headers and the legacy positional format
+        // (col0=nombre, col1=categoria, col2=precio, col3=unidad).
+        const headerCells = parseCsvLine(lines[0], delimiter).map(normalizeHeader);
+        const findCol = (...aliases: string[]) =>
+            headerCells.findIndex(h => aliases.some(a => h === a || h.includes(a)));
+
+        const looksLikeHeader = headerCells.some(h =>
+            ['nombre', 'producto', 'precio', 'price', 'categoria', 'unidad', 'formato'].some(k => h.includes(k))
+        );
+
+        const idx = looksLikeHeader
+            ? {
+                name: Math.max(0, findCol('nombre', 'producto', 'articulo', 'descripcion')),
+                category: findCol('categoria', 'familia', 'tipo'),
+                price: findCol('precio', 'price', 'coste', 'costo', 'pvp'),
+                unit: findCol('unidad', 'formato', 'envase', 'presentacion'),
+            }
+            : { name: 0, category: 1, price: 2, unit: 3 };
+
+        const dataLines = looksLikeHeader ? lines.slice(1) : lines;
 
         const batch = writeBatch(db);
         let count = 0;
         let updatedCount = 0;
         const existingMap = new Map(allIngredients.map(i => [i.nombre.toLowerCase().trim(), i]));
 
-        for (const row of rows) {
-            if (!row.trim()) continue;
-            const cols = row.split(text.includes(';') ? ';' : ',');
-            if (!cols[0]) continue;
+        for (const line of dataLines) {
+            const cols = parseCsvLine(line, delimiter);
+            const name = (cols[idx.name] || '').trim();
+            if (!name) continue;
 
-            const name = cols[0].trim();
             const normalizedName = name.toLowerCase();
-            const price = parseEuroNumber(cols[2]);
-            const unit = cols[3]?.trim() || 'und';
-            const category = cols[1]?.trim() || 'General';
+            const price = parseEuroNumber(cols[idx.price] ?? '');
+            const unitText = (idx.unit >= 0 ? cols[idx.unit] : '')?.trim() || '';
+            const category = (idx.category >= 0 ? cols[idx.category] : '')?.trim() || 'General';
+
+            // --- NORMALIZE pack into canonical standardUnit + standardQuantity ---
+            // Handles "0,7 L", "700ml", "70cl", "kg", "und" → always ml/g/und.
+            const { standardUnit, standardQuantity } = resolveStandardPack({
+                name,
+                unitText,
+            });
+            // Per-base price (€/ml, €/g, €/und), already used by the costing engine.
+            const standardPrice = calculateIngredientPrice(price, standardQuantity, 0);
 
             const existingIngredient = existingMap.get(normalizedName);
 
@@ -105,12 +176,23 @@ export const recipeImporter = {
                     const currentSupplierData = existingIngredient.supplierData || {};
                     updates.supplierData = {
                         ...currentSupplierData,
-                        [supplierId]: { price: price, unit: unit, lastUpdated: serverTimestamp() }
+                        [supplierId]: {
+                            price, unit: unitText || existingIngredient.unidadCompra || 'und',
+                            formatQty: standardQuantity, formatUnit: standardUnit,
+                            lastUpdated: serverTimestamp()
+                        }
                     };
-                    // Update global price if 0 or new
-                    if (!existingIngredient.precioCompra || existingIngredient.precioCompra === 0) {
-                        updates.precioCompra = price;
-                    }
+                    needsUpdate = true;
+                }
+
+                // Refresh price + canonical pack if missing or stale
+                if (price > 0 && (!existingIngredient.precioCompra || existingIngredient.precioCompra === 0)) {
+                    updates.precioCompra = price;
+                }
+                if (!existingIngredient.standardQuantity || !existingIngredient.standardUnit) {
+                    updates.standardUnit = standardUnit;
+                    updates.standardQuantity = standardQuantity;
+                    if (standardPrice > 0) updates.standardPrice = standardPrice;
                     needsUpdate = true;
                 }
 
@@ -124,12 +206,22 @@ export const recipeImporter = {
                     nombre: name,
                     categoria: category,
                     precioCompra: price,
-                    unidadCompra: unit,
+                    unidadCompra: unitText || `${standardQuantity} ${standardUnit}`,
+                    // Canonical normalized pack — costing never has to guess again
+                    standardUnit,
+                    standardQuantity,
+                    standardPrice: standardPrice > 0 ? standardPrice : undefined,
                     proveedores: supplierId ? [supplierId] : [],
                     supplierData: supplierId ? {
-                        [supplierId]: { price: price, unit: unit, lastUpdated: serverTimestamp() }
+                        [supplierId]: {
+                            price, unit: unitText || 'und',
+                            formatQty: standardQuantity, formatUnit: standardUnit,
+                            lastUpdated: serverTimestamp()
+                        }
                     } : {}
                 };
+                // Firestore rejects `undefined` — strip it
+                Object.keys(dataToSave).forEach(k => dataToSave[k] === undefined && delete dataToSave[k]);
                 batch.set(newDocRef, dataToSave);
                 count++;
             }
