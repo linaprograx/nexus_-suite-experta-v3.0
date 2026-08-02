@@ -224,6 +224,11 @@ export const PizarraManager: React.FC<{ onClose: () => void; appId: string }> = 
                 // 7. Inject Initial Nodes
                 nodes.forEach(n => pizarronStore.addNode(n));
 
+                // Encuadra lo recién creado. Sin esto nace a zoom 1 —medida de
+                // monitor— y en un móvil solo se ve una esquina, que es lo que
+                // hacía parecer que el elemento se hubiera añadido gigante.
+                setTimeout(() => pizarronStore.fitContent(), 120);
+
                 // 8. Close Manager
                 // Note: PizarronRoot will detect the change in effectiveBoardId (boards[0]) and re-init the adapter automatically.
                 onClose();
@@ -287,6 +292,10 @@ export const PizarraManager: React.FC<{ onClose: () => void; appId: string }> = 
         // const firstBoardId = metadata.boards[0]?.id || 'general';
         // firestoreAdapter.init(appId, firstBoardId);
 
+        // Al abrir, encuadrar: la pizarra guarda el zoom con el que se dejó, que
+        // pudo ser de escritorio.
+        setTimeout(() => pizarronStore.fitContent(), 250);
+
         onClose();
     };
 
@@ -300,21 +309,21 @@ export const PizarraManager: React.FC<{ onClose: () => void; appId: string }> = 
 
     return (
         <div
-            className="fixed inset-0 z-[200] flex items-center justify-center bg-black/60 backdrop-blur-sm pointer-events-auto"
+            className="fixed inset-0 z-[200] flex items-center justify-center p-2 lg:p-0 bg-black/60 backdrop-blur-sm pointer-events-auto"
         >
             <ErrorBoundary>
                 <div
-                    className="pizarra-manager-modal bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-[900px] h-[600px] flex overflow-hidden pointer-events-auto animate-in fade-in zoom-in duration-200 border border-slate-200 dark:border-slate-800"
+                    className="pizarra-manager-modal bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full h-[85dvh] lg:w-[900px] lg:h-[600px] flex flex-col lg:flex-row overflow-hidden pointer-events-auto animate-in fade-in zoom-in duration-200 border border-slate-200 dark:border-slate-800"
                 >
                     {/* Sidebar */}
-                    <div className="w-64 bg-slate-50 dark:bg-slate-950 border-r border-slate-200 dark:border-slate-800 p-4 flex flex-col">
-                        <h2 className="text-xl font-bold text-slate-800 dark:text-white mb-6 px-2 flex items-center gap-2">
+                    <div className="shrink-0 w-full lg:w-64 bg-slate-50 dark:bg-slate-950 border-b lg:border-b-0 lg:border-r border-slate-200 dark:border-slate-800 p-3 lg:p-4 flex flex-row lg:flex-col gap-1 lg:gap-0 overflow-x-auto lg:overflow-visible no-scrollbar">
+                        <h2 className="text-xl font-bold text-slate-800 dark:text-white mb-6 px-2 hidden lg:flex items-center gap-2">
                             <LuLayoutDashboard className="text-blue-600" />
                             Pizarras
                         </h2>
-                        <div className="space-y-1">
+                        <div className="flex flex-row gap-1 overflow-x-auto no-scrollbar lg:block lg:space-y-1">
                             <button
-                                className={`w-full text-left px-3 py-2.5 rounded-lg text-sm font-medium transition-colors flex items-center gap-3 ${activeTab === 'history' ? 'bg-white dark:bg-slate-800 shadow-sm text-blue-700 dark:text-blue-400' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'}`}
+                                className={`shrink-0 lg:w-full text-left px-3 py-2 lg:py-2.5 rounded-lg text-xs lg:text-sm font-medium transition-colors whitespace-nowrap flex items-center gap-3 ${activeTab === 'history' ? 'bg-white dark:bg-slate-800 shadow-sm text-blue-700 dark:text-blue-400' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'}`}
                                 onClick={() => setActiveTab('history')}
                             >
                                 <LuClock size={18} />
@@ -322,21 +331,21 @@ export const PizarraManager: React.FC<{ onClose: () => void; appId: string }> = 
                             </button>
                             {/* 'Mis Pizarras' hidden from direct nav, accessible via Historial 'View All' */}
                             <button
-                                className={`w-full text-left px-3 py-2.5 rounded-lg text-sm font-medium transition-colors flex items-center gap-3 ${activeTab === 'new-project' ? 'bg-white dark:bg-slate-800 shadow-sm text-blue-700 dark:text-blue-400' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'}`}
+                                className={`shrink-0 lg:w-full text-left px-3 py-2 lg:py-2.5 rounded-lg text-xs lg:text-sm font-medium transition-colors whitespace-nowrap flex items-center gap-3 ${activeTab === 'new-project' ? 'bg-white dark:bg-slate-800 shadow-sm text-blue-700 dark:text-blue-400' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'}`}
                                 onClick={() => { setActiveTab('new-project'); setStep('select'); }}
                             >
                                 <LuPlus size={18} />
                                 Nueva Pizarra
                             </button>
                             <button
-                                className={`w-full text-left px-3 py-2.5 rounded-lg text-sm font-medium transition-colors flex items-center gap-3 ${activeTab === 'my-templates' ? 'bg-white dark:bg-slate-800 shadow-sm text-blue-700 dark:text-blue-400' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'}`}
+                                className={`shrink-0 lg:w-full text-left px-3 py-2 lg:py-2.5 rounded-lg text-xs lg:text-sm font-medium transition-colors whitespace-nowrap flex items-center gap-3 ${activeTab === 'my-templates' ? 'bg-white dark:bg-slate-800 shadow-sm text-blue-700 dark:text-blue-400' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'}`}
                                 onClick={() => setActiveTab('my-templates')}
                             >
                                 <LuLayoutTemplate size={18} />
                                 Mis Plantillas
                             </button>
                             <button
-                                className={`w-full text-left px-3 py-2.5 rounded-lg text-sm font-medium transition-colors flex items-center gap-3 ${activeTab === 'imports' ? 'bg-white dark:bg-slate-800 shadow-sm text-blue-700 dark:text-blue-400' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'}`}
+                                className={`shrink-0 lg:w-full text-left px-3 py-2 lg:py-2.5 rounded-lg text-xs lg:text-sm font-medium transition-colors whitespace-nowrap flex items-center gap-3 ${activeTab === 'imports' ? 'bg-white dark:bg-slate-800 shadow-sm text-blue-700 dark:text-blue-400' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'}`}
                                 onClick={() => setActiveTab('imports')}
                             >
                                 <LuDownload size={18} />
@@ -378,7 +387,7 @@ export const PizarraManager: React.FC<{ onClose: () => void; appId: string }> = 
                                         </button>
                                     </div>
                                 ) : (
-                                    <div className="grid grid-cols-2 gap-6">
+                                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 lg:gap-6">
                                         {recentPizarras.map(p => (
                                             <div
                                                 key={p.id}
@@ -466,7 +475,7 @@ export const PizarraManager: React.FC<{ onClose: () => void; appId: string }> = 
                                         )}
                                     </div>
                                 ) : (
-                                    <div className="grid grid-cols-3 gap-6">
+                                    <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 lg:gap-6">
                                         {/* Add New Card */}
                                         <div
                                             onClick={() => { setActiveTab('new-project'); setStep('select'); }}
@@ -529,7 +538,7 @@ export const PizarraManager: React.FC<{ onClose: () => void; appId: string }> = 
                                     <p className="text-slate-500 dark:text-slate-400 text-sm">Selecciona una estructura base o comienza desde cero.</p>
                                 </div>
 
-                                <div className="grid grid-cols-3 gap-5">
+                                <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 lg:gap-5">
                                     {/* BLANK BOARD OPTION (Manual) */}
                                     <button
                                         type="button"
@@ -646,7 +655,7 @@ export const PizarraManager: React.FC<{ onClose: () => void; appId: string }> = 
                                 <input ref={miroInputRef} type="file" accept="image/*" className="hidden"
                                     onChange={e => { const f = e.target.files?.[0]; if (f) handleImport(f, 'miro'); e.target.value = ''; }} />
 
-                                <div className="grid grid-cols-2 gap-6 mb-8">
+                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 lg:gap-6 mb-6 lg:mb-8">
                                     <button
                                         disabled={importStatus === 'analyzing'}
                                         onClick={() => canvaInputRef.current?.click()}

@@ -373,7 +373,11 @@ class PizarronStore {
         this.historyIndex = -1;
     }
 
-    fitContent(padding = 100) {
+    fitContent(padding?: number) {
+        // El margen fijo de 100px estaba pensado para un monitor: sobre 390px de
+        // ancho se comía más de la mitad del espacio y el encuadre salía diminuto.
+        const compacto = typeof window !== 'undefined' && window.innerWidth < 1024;
+        const margen = padding ?? (compacto ? 24 : 100);
         this.setState(state => {
             const nodeIds = Object.keys(state.nodes);
             if (nodeIds.length === 0) {
@@ -394,10 +398,13 @@ class PizarronStore {
             const contentH = maxY - minY;
             // Use browser window dimensions as approximation for canvas size
             const containerW = window.innerWidth || 1920;
-            const containerH = window.innerHeight || 1080;
+            // En móvil hay barra superior y barra de navegación: si no se descuentan,
+            // el contenido queda encuadrado por detrás de ellas.
+            const cromo = compacto ? 150 : 0;
+            const containerH = (window.innerHeight || 1080) - cromo;
 
-            const scaleX = (containerW - padding * 2) / contentW;
-            const scaleY = (containerH - padding * 2) / contentH;
+            const scaleX = (containerW - margen * 2) / contentW;
+            const scaleY = (containerH - margen * 2) / contentH;
             let zoom = Math.min(scaleX, scaleY);
 
             // Clamp zoom

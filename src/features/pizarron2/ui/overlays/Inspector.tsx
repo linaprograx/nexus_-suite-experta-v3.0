@@ -109,37 +109,6 @@ export const Inspector: React.FC<InspectorProps> = ({ embedded = false }) => {
                             }}
                         />
 
-                        {/* DEBUG: Structure for Shapes (Preserved) */}
-                        <div>
-                            <label className="text-xs font-medium text-rose-600 block mb-1">Internal Structure</label>
-                            <button
-                                onClick={() => {
-                                    const struct = {
-                                        template: 'grid' as const,
-                                        rows: [
-                                            { id: 'r1', height: 1 },
-                                            { id: 'r2', height: 1 }
-                                        ],
-                                        cols: [
-                                            { id: 'c1', width: 1 },
-                                            { id: 'c2', width: 1 }
-                                        ],
-                                        id: 'grid-2x2',
-                                        zones: [],
-                                        cells: {
-                                            'r1_c1': { content: 'A' },
-                                            'r1_c2': { content: 'B' },
-                                            'r2_c1': { content: 'C' },
-                                            'r2_c2': { content: 'D' }
-                                        }
-                                    };
-                                    pizarronStore.updateStructure(firstNode.id, struct);
-                                }}
-                                className="w-full py-1 bg-rose-50 text-rose-600 border border-rose-200 rounded text-xs hover:bg-rose-100"
-                            >
-                                Inject 2x2 Grid
-                            </button>
-                        </div>
                     </div >
                 );
 

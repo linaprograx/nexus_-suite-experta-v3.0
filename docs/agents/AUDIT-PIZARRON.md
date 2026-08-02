@@ -123,6 +123,32 @@ verdad para el mismo nodo. Candidato a unificación futura.
 
 ---
 
+### B0 ✅ Botón de depuración en producción
+
+`Inspector.tsx` mostraba **"Inject 2×2 Grid"** en rojo, con el comentario
+`{/* DEBUG: Structure for Shapes (Preserved) */}`. Inyectaba una rejilla fija
+con celdas 'A','B','C','D'. Herramienta de desarrollo que se quedó a la vista
+del usuario. Eliminado; `updateStructure` se sigue usando en `TextEditor`, así
+que no queda código huérfano.
+
+### B0b ✅ Encuadre al crear o abrir una pizarra
+
+Nacían con `zoom: 1` —medida de monitor—, así que en un móvil solo se veía una
+esquina y parecía que el contenido se hubiera añadido gigante.
+
+Ya existía `store.fitContent()`, mejor escrito que un encuadre nuevo: acota el
+zoom entre 0.1 y 1.2. **No se duplicó**; se corrigió para móvil (margen de
+100→24px, que sobre 390px se comía más de la mitad, y descuento del alto de las
+barras) y se llamó en los dos flujos que no lo hacían: añadir tablero y abrir
+pizarra guardada.
+
+### B0c ✅ Diálogo de pizarras con medidas de escritorio
+
+`PizarraManager` medía **900×600 fijos** con barra lateral de 256px, sobre una
+pantalla de 390. Ahora ocupa el ancho disponible, apila barra sobre contenido, y
+la barra pasa de columna a tira horizontal deslizable: **de 197px de alto a
+61px**, devolviendo 136px al contenido.
+
 ## 🟡 BAJOS
 
 ### B1 ✅ Overlays fuera del viewport
