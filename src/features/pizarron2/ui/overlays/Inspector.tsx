@@ -29,7 +29,17 @@ import { CostingInspector } from './inspectors/CostingInspector';
 import { CostingScenarioInspector } from './inspectors/CostingScenarioInspector';
 import { IngredientRecipeInspector } from './inspectors/IngredientRecipeInspector';
 import { MenuDesignInspector } from './inspectors/MenuDesignInspector';
-export const Inspector: React.FC = () => {
+interface InspectorProps {
+    /**
+     * Renderiza solo el contenido, sin el contenedor flotante ni el fondo.
+     * Lo usa el panel contextual del móvil para reutilizar tal cual todos los
+     * paneles por tipo de nodo —forma, imagen, menu-design, flecha…— en vez de
+     * reimplementarlos y arriesgarse a que las dos versiones diverjan.
+     */
+    embedded?: boolean;
+}
+
+export const Inspector: React.FC<InspectorProps> = ({ embedded = false }) => {
     const {
         firstNode,
         effectiveType,
@@ -785,16 +795,20 @@ export const Inspector: React.FC = () => {
         }
     };
 
+    // Embebido: sin contenedor flotante. Quien lo aloja (el panel contextual del
+    // móvil) ya aporta posición, scroll y fondo.
+    if (embedded) {
+        return (
+            <div className="flex flex-col gap-4" onPointerDown={(e) => e.stopPropagation()}>
+                {renderContent()}
+            </div>
+        );
+    }
+
     return (
-        // En móvil, panel inferior a ancho completo. La posición de escritorio
-        // (centro + 220px) situaba el panel en x=415 sobre una pantalla de 390:
-        // quedaba entero fuera del borde derecho, invisible e inalcanzable.
         <div
-            className="fixed pointer-events-auto z-[100] transition-all duration-500 ease-out-expo
-                       inset-x-2 lg:inset-x-auto lg:w-72
-                       bottom-[calc(60px+env(safe-area-inset-bottom)+0.5rem)] lg:bottom-auto
-                       max-h-[34dvh] lg:max-h-none overflow-y-auto lg:overflow-visible
-                       lg:top-[100px] lg:left-1/2 lg:ml-[220px]"
+            className="fixed w-72 pointer-events-auto z-[100] transition-all duration-500 ease-out-expo
+                       top-[100px] left-1/2 ml-[220px]"
             onPointerDown={(e) => e.stopPropagation()} // Prevent canvas drag
         >
             <div className="bg-white/95 dark:bg-slate-900/95 backdrop-blur shadow-2xl border border-slate-200 dark:border-slate-700 rounded-2xl p-4 flex flex-col gap-4 animate-in fade-in zoom-in-95 duration-500 slide-in-from-bottom-2">

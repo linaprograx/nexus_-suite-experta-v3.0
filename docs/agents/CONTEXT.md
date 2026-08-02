@@ -149,6 +149,21 @@ se salía igualmente.
 En móvil estos paneles se anclan abajo a ancho completo en vez de seguir a la
 selección; el espacio no da para otra cosa.
 
+### Pizarrón: un solo panel contextual en móvil
+
+`Inspector` y `MiniToolbar` mostraban **propiedades solapadas del mismo nodo**
+(color, tamaño, efectos, posición). En escritorio conviven porque sobra sitio;
+en 390px competían por los mismos píxeles.
+
+En móvil los sustituye `MobileContextPanel`, que **reutiliza el Inspector
+entero** mediante su prop `embedded` en vez de reimplementar sus paneles por
+tipo de nodo. Así no hay dos versiones que puedan divergir.
+
+> **Hallazgo pendiente:** `PizarronRoot` tiene un `isMobileMode` que oculta
+> todos los overlays de escritorio, pero **nadie añade nunca la clase
+> `mobile-pizarron-mode` al body**, así que está muerto. Es la palanca natural
+> para las fases P1–P4; activarlo hoy dejaría Pizarrón sin herramientas.
+
 ### `100dvh`, no `100vh`, en pantallas completas
 
 En iOS Safari, `vh` incluye las barras que se colapsan: `100vh` mide más de lo

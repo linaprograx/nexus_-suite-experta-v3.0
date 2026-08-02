@@ -13,6 +13,7 @@ import { PresentationMode } from './presentation/PresentationMode';
 import { usePizarronIntelligence } from '../hooks/usePizarronIntelligence'; // Added import
 import { KeyboardShortcutsManager } from '../engine/KeyboardShortcutsManager';
 
+import { MobileContextPanel } from './overlays/MobileContextPanel';
 import { MiniToolbar } from './overlays/MiniToolbar';
 import { GuideOverlay } from './overlays/GuideOverlay';
 import { Firestore } from 'firebase/firestore';
@@ -143,13 +144,23 @@ export const PizarronRoot: React.FC<PizarronRootProps> = ({ appId, boardId, user
                         <TopBar />
                         {/* Desktop-Only Overlays */}
                         <LeftRail />
-                        <Inspector />
+                        {/* Inspector y MiniToolbar solo en escritorio: en móvil los
+                            sustituye MobileContextPanel, que fusiona ambos. Competían
+                            por los mismos píxeles mostrando propiedades solapadas. */}
+                        <div className="hidden lg:contents">
+                            <Inspector />
+                        </div>
                         <GuideOverlay />
                         <MiniMap />
                         <CollapsedDock />
 
                         {/* MiniToolbar - appears above selected elements */}
-                        <MiniToolbar />
+                        <div className="hidden lg:contents">
+                            <MiniToolbar />
+                        </div>
+
+                        {/* Panel contextual único del móvil (P0 del plan de Pizarrón) */}
+                        <MobileContextPanel />
 
                     </>
                 )}
