@@ -1,5 +1,4 @@
 import React from 'react';
-import { pizarronStore } from '../../../state/store';
 import { ColorPicker, FontSelector } from '../../shared/UnifiedSelectors';
 import { TextStyleController } from '../../components/TextStyleController';
 import { VisualEffectsController } from '../../components/VisualEffectsController';
@@ -30,21 +29,8 @@ export const IconInspector = ({
 
                         {/* Visual Effects */}
                         <VisualEffectsController
-                            opacity={firstNode.content.opacity ?? 1}
-                            shadow={firstNode.content.filters?.shadow ?? null}
-                            borderRadius={0}
-                            borderWidth={0}
-                            onChange={(eff) => {
-                                const patch: any = {};
-                                if (eff.opacity !== undefined) patch.opacity = eff.opacity;
-                                if (eff.shadow !== undefined) {
-                                    patch.filters = {
-                                        ...firstNode.content.filters,
-                                        shadow: eff.shadow ? { color: 'rgba(0,0,0,0.2)', blur: 10, offsetX: 0, offsetY: 4 } : undefined
-                                    };
-                                }
-                                updateNode(patch);
-                            }}
+                            targets={[firstNode]}
+                            onApply={(_id, patch) => updateNode(patch)}
                         />
                     </div>
                 );

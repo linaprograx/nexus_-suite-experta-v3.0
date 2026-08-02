@@ -26,7 +26,7 @@ Dos defectos encadenados:
 No era un problema de pintado: `engine/renderer.ts` tiene 14 menciones de
 `borderRadius` y 9 de sombra. El dato nunca llegaba.
 
-### G2 ⬜ El mismo defecto está copiado en 4 inspectores más
+### G2 ✅ El mismo defecto estaba copiado en 4 inspectores más
 
 Cada uno descarta un **subconjunto distinto** de campos — deriva clásica de
 copia y pega:
@@ -38,10 +38,23 @@ copia y pega:
 | `inspectors/BoardInspector.tsx:338` | por verificar | `opacity={1}` cableado |
 | `Inspector.tsx:106` y `:317` | por verificar | props cableadas |
 
-> **Cómo arreglarlo bien:** no parchear uno a uno. `VisualEffectsController`
-> debería recibir el **nodo** y una única función de guardado, en vez de cuatro
-> props sueltas que cada llamante interpreta a su manera. Mientras la firma
-> permita olvidarse de un campo, alguien se lo volverá a olvidar.
+**Resuelto cambiando la firma, no parcheando.** `VisualEffectsController` ahora
+recibe `targets` (los nodos) y un único `onApply`. Lee los valores del nodo y
+construye el parche completo internamente, así que **un llamante ya no puede
+olvidarse de un campo**: la API no se lo permite.
+
+Migrados los 12 bloques de 8 archivos. TypeScript señaló todos los llamantes
+antiguos al cambiar la firma, que es justo la señal que se buscaba.
+
+Dos matices que costaron una vuelta atrás:
+
+- **`BoardInspector` no escribía en el nodo, sino en la ZONA activa** de su
+  estructura. Una migración en bloque lo habría hecho pintar el tablero entero.
+  Se le pasa la zona como destino sintético, traduciendo `filters.shadow` a
+  `style.shadow`, que es donde el modelo de zonas guarda la sombra.
+- Los sub-inspectores reciben un `updateNode` que **ya aplica a toda la
+  selección**. Escribir nodo a nodo desde el store habría perdido la
+  multiselección, así que se delega en ese ayudante.
 
 ### G3 ⬜ `isMobileMode` está muerto
 

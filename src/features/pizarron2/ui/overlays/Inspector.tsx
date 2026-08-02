@@ -102,12 +102,10 @@ export const Inspector: React.FC<InspectorProps> = ({ embedded = false }) => {
 
                         {/* Visual Effects */}
                         <VisualEffectsController
-                            borderWidth={firstNode.content.borderWidth || 0}
-                            borderRadius={0} // shapes usually sharp? or maybe allow rounding? existing code only had border width
-                            opacity={1}
-                            shadow={null} // Shapes didn't have shadow in Inspector?
-                            onChange={(eff) => {
-                                if (eff.borderWidth !== undefined) updateNode({ borderWidth: eff.borderWidth });
+                            targets={getTargets()}
+                            onApply={(id, patch) => {
+                                const n = pizarronStore.getState().nodes[id];
+                                if (n) pizarronStore.updateNode(id, { content: { ...n.content, ...patch } });
                             }}
                         />
 
@@ -193,31 +191,11 @@ export const Inspector: React.FC<InspectorProps> = ({ embedded = false }) => {
                         />
 
                         {/* Visual Effects - Opacity & Border */}
-                        {/* Los valores se leen del nodo, no se cablean: con opacity={1}
-                            y borderRadius={0} fijos, los deslizadores volvían siempre a
-                            cero y parecían no responder.
-                            Y el manejador guardaba solo opacity y borderWidth: borderRadius
-                            y shadow llegaban aquí y se descartaban, pese a que el renderer
-                            sí sabe pintarlos. */}
                         <VisualEffectsController
-                            opacity={firstNode?.content?.opacity ?? 1}
-                            borderWidth={firstNode?.content?.borderWidth ?? 0}
-                            borderRadius={firstNode?.content?.borderRadius ?? 0}
-                            shadow={firstNode?.content?.filters?.shadow ?? null}
-                            onChange={(eff) => {
-                                const targets = getTargets();
-                                targets.forEach(n => {
-                                    const patch: any = {};
-                                    if (eff.opacity !== undefined) patch.opacity = eff.opacity;
-                                    if (eff.borderWidth !== undefined) patch.borderWidth = eff.borderWidth;
-                                    if (eff.borderRadius !== undefined) patch.borderRadius = eff.borderRadius;
-                                    if (eff.shadow !== undefined) {
-                                        patch.filters = { ...(n.content as any)?.filters, shadow: eff.shadow };
-                                    }
-                                    if (Object.keys(patch).length > 0) {
-                                        pizarronStore.updateNode(n.id, { content: { ...n.content, ...patch } });
-                                    }
-                                });
+                            targets={getTargets()}
+                            onApply={(id, patch) => {
+                                const n = pizarronStore.getState().nodes[id];
+                                if (n) pizarronStore.updateNode(id, { content: { ...n.content, ...patch } });
                             }}
                         />
                     </div>
@@ -312,20 +290,10 @@ export const Inspector: React.FC<InspectorProps> = ({ embedded = false }) => {
 
                         {/* Visual Effects */}
                         <VisualEffectsController
-                            opacity={firstNode.content.opacity ?? 1}
-                            shadow={firstNode.content.filters?.shadow}
-                            borderRadius={0}
-                            borderWidth={0}
-                            onChange={(eff) => {
-                                const patch: any = {};
-                                if (eff.opacity !== undefined) patch.opacity = eff.opacity;
-                                if (eff.shadow !== undefined) {
-                                    patch.filters = {
-                                        ...firstNode.content.filters,
-                                        shadow: eff.shadow ? { color: 'rgba(0,0,0,0.2)', blur: 10, offsetX: 0, offsetY: 4 } : undefined
-                                    };
-                                }
-                                updateNode(patch);
+                            targets={getTargets()}
+                            onApply={(id, patch) => {
+                                const n = pizarronStore.getState().nodes[id];
+                                if (n) pizarronStore.updateNode(id, { content: { ...n.content, ...patch } });
                             }}
                         />
                     </div>
@@ -382,22 +350,10 @@ export const Inspector: React.FC<InspectorProps> = ({ embedded = false }) => {
 
                         {/* Visual Effects */}
                         <VisualEffectsController
-                            opacity={firstNode.content.opacity ?? 1}
-                            shadow={firstNode.content.filters?.shadow}
-                            borderRadius={firstNode.content.borderRadius || 0}
-                            borderWidth={firstNode.content.borderWidth || 0}
-                            onChange={(eff) => {
-                                const patch: any = {};
-                                if (eff.opacity !== undefined) patch.opacity = eff.opacity;
-                                if (eff.borderRadius !== undefined) patch.borderRadius = eff.borderRadius;
-                                if (eff.borderWidth !== undefined) patch.borderWidth = eff.borderWidth;
-                                if (eff.shadow !== undefined) {
-                                    patch.filters = {
-                                        ...firstNode.content.filters,
-                                        shadow: eff.shadow ? { color: 'rgba(0,0,0,0.2)', blur: 10, offsetX: 0, offsetY: 4 } : undefined
-                                    };
-                                }
-                                updateNode(patch);
+                            targets={getTargets()}
+                            onApply={(id, patch) => {
+                                const n = pizarronStore.getState().nodes[id];
+                                if (n) pizarronStore.updateNode(id, { content: { ...n.content, ...patch } });
                             }}
                         />
                     </div>
@@ -653,22 +609,10 @@ export const Inspector: React.FC<InspectorProps> = ({ embedded = false }) => {
 
                         {/* Visual Effects */}
                         <VisualEffectsController
-                            borderRadius={firstNode.content.borderRadius || 12}
-                            borderWidth={firstNode.content.borderWidth || 1}
-                            opacity={firstNode.content.opacity ?? 1}
-                            shadow={firstNode.content.filters?.shadow}
-                            onChange={(eff) => {
-                                const patch: any = {};
-                                if (eff.borderRadius !== undefined) patch.borderRadius = eff.borderRadius;
-                                if (eff.borderWidth !== undefined) patch.borderWidth = eff.borderWidth;
-                                if (eff.opacity !== undefined) patch.opacity = eff.opacity;
-                                if (eff.shadow !== undefined) {
-                                    patch.filters = {
-                                        ...firstNode.content.filters,
-                                        shadow: eff.shadow || undefined
-                                    };
-                                }
-                                updateNode(patch);
+                            targets={getTargets()}
+                            onApply={(id, patch) => {
+                                const n = pizarronStore.getState().nodes[id];
+                                if (n) pizarronStore.updateNode(id, { content: { ...n.content, ...patch } });
                             }}
                         />
 
@@ -742,22 +686,10 @@ export const Inspector: React.FC<InspectorProps> = ({ embedded = false }) => {
 
                         {/* Visual Effects */}
                         <VisualEffectsController
-                            borderRadius={firstNode.content.borderRadius || 16}
-                            borderWidth={firstNode.content.borderWidth || 1}
-                            opacity={firstNode.content.opacity ?? 1}
-                            shadow={firstNode.content.filters?.shadow}
-                            onChange={(eff) => {
-                                const patch: any = {};
-                                if (eff.borderRadius !== undefined) patch.borderRadius = eff.borderRadius;
-                                if (eff.borderWidth !== undefined) patch.borderWidth = eff.borderWidth;
-                                if (eff.opacity !== undefined) patch.opacity = eff.opacity;
-                                if (eff.shadow !== undefined) {
-                                    patch.filters = {
-                                        ...firstNode.content.filters,
-                                        shadow: eff.shadow || undefined
-                                    };
-                                }
-                                updateNode(patch);
+                            targets={getTargets()}
+                            onApply={(id, patch) => {
+                                const n = pizarronStore.getState().nodes[id];
+                                if (n) pizarronStore.updateNode(id, { content: { ...n.content, ...patch } });
                             }}
                         />
 

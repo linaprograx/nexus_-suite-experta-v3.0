@@ -66,23 +66,8 @@ export const MenuDesignInspector = ({
 
             {/* Visual Effects */}
             <VisualEffectsController
-                borderRadius={firstNode.content.borderRadius || 16}
-                borderWidth={firstNode.content.borderWidth || 1}
-                opacity={firstNode.content.opacity ?? 1}
-                shadow={firstNode.content.filters?.shadow}
-                onChange={(eff) => {
-                    const patch: any = {};
-                    if (eff.borderRadius !== undefined) patch.borderRadius = eff.borderRadius;
-                    if (eff.borderWidth !== undefined) patch.borderWidth = eff.borderWidth;
-                    if (eff.opacity !== undefined) patch.opacity = eff.opacity;
-                    if (eff.shadow !== undefined) {
-                        patch.filters = {
-                            ...firstNode.content.filters,
-                            shadow: eff.shadow || undefined
-                        };
-                    }
-                    updateNode(patch);
-                }}
+                targets={[firstNode]}
+                onApply={(_id, patch) => updateNode(patch)}
             />
 
             {/* Action: Save to Make Menu */}

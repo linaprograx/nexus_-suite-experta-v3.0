@@ -331,21 +331,32 @@ export const BoardInspector = ({
                                 />
 
                                 {/* Visual Effects (Radius, Border Width, Shadow) */}
+                                {/* Caso especial: aquí el efecto NO va al contenido del
+                                    nodo, sino al estilo de la ZONA activa dentro de su
+                                    estructura. Se le pasa la zona como destino sintético
+                                    y se traduce `filters.shadow` a `style.shadow`, que es
+                                    donde el modelo de zonas guarda la sombra. */}
                                 <VisualEffectsController
-                                    borderRadius={activeZone.style?.borderRadius ?? 0}
-                                    borderWidth={activeZone.style?.borderWidth ?? 0}
-                                    shadow={activeZone.style?.shadow}
-                                    opacity={1} // Zone opacity not currently tracked in model, default 1
-                                    onChange={(effects) => {
+                                    targets={[{
+                                        id: activeZoneId as string,
+                                        content: {
+                                            borderRadius: activeZone.style?.borderRadius ?? 0,
+                                            borderWidth: activeZone.style?.borderWidth ?? 0,
+                                            opacity: activeZone.style?.opacity ?? 1,
+                                            filters: { shadow: activeZone.style?.shadow ?? null },
+                                        },
+                                    }]}
+                                    onApply={(_zoneId, patch) => {
                                         const newStructure = JSON.parse(JSON.stringify(firstNode.structure));
-                                        const z = newStructure.zones.find((z: any) => z.id === activeZoneId);
+                                        const z = newStructure.zones.find((zz: any) => zz.id === activeZoneId);
+                                        if (!z) return;
                                         if (!z.style) z.style = {};
-
-                                        if (effects.borderRadius !== undefined) z.style.borderRadius = effects.borderRadius;
-                                        if (effects.borderWidth !== undefined) z.style.borderWidth = effects.borderWidth;
-                                        if (effects.shadow !== undefined) {
-                                            if (effects.shadow === null) delete z.style.shadow;
-                                            else z.style.shadow = effects.shadow;
+                                        if (patch.borderRadius !== undefined) z.style.borderRadius = patch.borderRadius;
+                                        if (patch.borderWidth !== undefined) z.style.borderWidth = patch.borderWidth;
+                                        if (patch.opacity !== undefined) z.style.opacity = patch.opacity;
+                                        if (patch.filters !== undefined) {
+                                            if (patch.filters.shadow) z.style.shadow = patch.filters.shadow;
+                                            else delete z.style.shadow;
                                         }
                                         pizarronStore.updateNode(firstNode.id, { structure: newStructure });
                                     }}

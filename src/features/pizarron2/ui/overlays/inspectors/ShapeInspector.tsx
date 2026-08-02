@@ -1,5 +1,4 @@
 import React from 'react';
-import { pizarronStore } from '../../../state/store';
 import { ColorPicker, FontSelector } from '../../shared/UnifiedSelectors';
 import { TextStyleController } from '../../components/TextStyleController';
 import { VisualEffectsController } from '../../components/VisualEffectsController';
@@ -45,17 +44,8 @@ export const ShapeInspector = ({
 
                         {/* Visual Effects */}
                         <VisualEffectsController
-                            borderWidth={firstNode.content.borderWidth || 0}
-                            borderRadius={firstNode.content.borderRadius || 0}
-                            opacity={firstNode.content.opacity ?? 1}
-                            shadow={null}
-                            onChange={(eff) => {
-                                const patch: any = {};
-                                if (eff.borderWidth !== undefined) patch.borderWidth = eff.borderWidth;
-                                if (eff.borderRadius !== undefined) patch.borderRadius = eff.borderRadius;
-                                if (eff.opacity !== undefined) patch.opacity = eff.opacity;
-                                updateNode(patch);
-                            }}
+                            targets={[firstNode]}
+                            onApply={(_id, patch) => updateNode(patch)}
                         />
 
                     </div >

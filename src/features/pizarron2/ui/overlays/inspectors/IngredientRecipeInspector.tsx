@@ -1,5 +1,4 @@
 import React from 'react';
-import { pizarronStore } from '../../../state/store';
 import { ColorPicker, FontSelector } from '../../shared/UnifiedSelectors';
 import { TextStyleController } from '../../components/TextStyleController';
 import { VisualEffectsController } from '../../components/VisualEffectsController';
@@ -55,23 +54,8 @@ export const IngredientRecipeInspector = ({
 
                         {/* Visual Effects */}
                         <VisualEffectsController
-                            borderRadius={firstNode.content.borderRadius || 12}
-                            borderWidth={firstNode.content.borderWidth || 1}
-                            opacity={firstNode.content.opacity ?? 1}
-                            shadow={firstNode.content.filters?.shadow}
-                            onChange={(eff) => {
-                                const patch: any = {};
-                                if (eff.borderRadius !== undefined) patch.borderRadius = eff.borderRadius;
-                                if (eff.borderWidth !== undefined) patch.borderWidth = eff.borderWidth;
-                                if (eff.opacity !== undefined) patch.opacity = eff.opacity;
-                                if (eff.shadow !== undefined) {
-                                    patch.filters = {
-                                        ...firstNode.content.filters,
-                                        shadow: eff.shadow || undefined
-                                    };
-                                }
-                                updateNode(patch);
-                            }}
+                            targets={[firstNode]}
+                            onApply={(_id, patch) => updateNode(patch)}
                         />
 
                         {/* Node Info (Read-only) */}

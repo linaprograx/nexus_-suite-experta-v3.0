@@ -67,19 +67,10 @@ export const GroupInspector = ({
 
                         {/* Visual Effects - Opacity & Border */}
                         <VisualEffectsController
-                            opacity={1}
-                            borderWidth={0}
-                            borderRadius={0}
-                            onChange={(eff) => {
-                                const targets = getTargets();
-                                targets.forEach((n: any) => {
-                                    const patch: any = {};
-                                    if (eff.opacity !== undefined) patch.opacity = eff.opacity;
-                                    if (eff.borderWidth !== undefined) patch.borderWidth = eff.borderWidth;
-                                    if (Object.keys(patch).length > 0) {
-                                        pizarronStore.updateNode(n.id, { content: { ...n.content, ...patch } });
-                                    }
-                                });
+                            targets={getTargets()}
+                            onApply={(id, patch) => {
+                                const n = pizarronStore.getState().nodes[id];
+                                if (n) pizarronStore.updateNode(id, { content: { ...n.content, ...patch } });
                             }}
                         />
                     </div>
