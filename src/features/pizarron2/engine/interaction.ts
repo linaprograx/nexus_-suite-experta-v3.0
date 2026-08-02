@@ -1,3 +1,4 @@
+import { scaled } from './nodeDefaults';
 import { logger } from "../../../utils/logger";
 
 import { pizarronStore } from '../state/store';
@@ -575,12 +576,12 @@ export class InteractionManager {
                     type: 'text',
                     x: worldPos.x,
                     y: worldPos.y,
-                    w: 200, // Default width
-                    h: 50,  // Default height estimate
+                    w: scaled(200), // Escalado al lienzo: 200px es medida de escritorio
+                    h: scaled(50),
                     zIndex: (state.order.length || 0) + 100,
                     content: {
                         title: 'Type something...',
-                        fontSize: 24,
+                        fontSize: Math.max(14, scaled(24)),
                         fontFamily: 'Inter',
                         color: '#1e293b'
                     },

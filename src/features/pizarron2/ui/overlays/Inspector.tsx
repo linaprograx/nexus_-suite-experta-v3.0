@@ -793,7 +793,7 @@ export const Inspector: React.FC = () => {
             className="fixed pointer-events-auto z-[100] transition-all duration-500 ease-out-expo
                        inset-x-2 lg:inset-x-auto lg:w-72
                        bottom-[calc(60px+env(safe-area-inset-bottom)+0.5rem)] lg:bottom-auto
-                       max-h-[45dvh] lg:max-h-none overflow-y-auto lg:overflow-visible
+                       max-h-[34dvh] lg:max-h-none overflow-y-auto lg:overflow-visible
                        lg:top-[100px] lg:left-1/2 lg:ml-[220px]"
             onPointerDown={(e) => e.stopPropagation()} // Prevent canvas drag
         >

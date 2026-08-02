@@ -51,15 +51,16 @@ export default function PizarronView(props: PizarronViewProps) {
     // 2. We position Pizarron fixed at left-0 (mobile) or left-20 (desktop).
     // 3. We use z-30 to ensure we are above page backgrounds but BELOW the Sidebar (so it remains visible).
     <div className="fixed inset-0 lg:left-20 z-30 bg-slate-50 dark:bg-slate-950 overflow-hidden">
-      {/* The canvas covers the whole viewport on phones, so it needs its own way out.
-          Bottom-left, not top-left: the top strip belongs to the canvas' own zoom and
-          alignment controls, and the two were landing on top of each other. Sits just
-          above the app's bottom nav, which is empty space on this screen. */}
+      {/* El lienzo ocupa toda la pantalla en el móvil, así que necesita su propia
+          salida. Arriba a la izquierda: la barra de zoom va centrada y el rail de
+          herramientas a media altura, de modo que esa esquina queda libre. Estuvo
+          abajo, pero ahí choca con el panel del Inspector, que ahora ocupa todo el
+          ancho inferior. Respeta el área segura para no pisar el reloj de iOS. */}
       <button
         onClick={() => navigate('/')}
         aria-label="Salir del Pizarrón"
-        className="lg:hidden fixed z-50 h-11 pl-3 pr-4 rounded-full bg-white/90 dark:bg-slate-800/90 backdrop-blur-md border border-slate-200 dark:border-white/10 shadow-lg flex items-center gap-1 text-xs font-bold text-slate-700 dark:text-slate-200 active:scale-95 transition-transform"
-        style={{ bottom: 'calc(60px + env(safe-area-inset-bottom) + 0.75rem)', left: '0.75rem' }}
+        className="lg:hidden fixed z-[120] h-10 pl-2 pr-3 rounded-full bg-white/90 dark:bg-slate-800/90 backdrop-blur-md border border-slate-200 dark:border-white/10 shadow-lg flex items-center gap-1 text-xs font-bold text-slate-700 dark:text-slate-200 active:scale-95 transition-transform"
+        style={{ top: 'calc(env(safe-area-inset-top) + 1rem)', left: '0.5rem' }}
       >
         <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6" /></svg>
         Salir

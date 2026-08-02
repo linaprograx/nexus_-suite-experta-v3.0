@@ -90,8 +90,16 @@ Por orden de gravedad:
    390px se comen el ancho. Las fichas pequeñas pasan a 2 por fila.
 4. **Inventario y Mercado** — tarjetas demasiado grandes y espaciadas. En móvil
    deberían ser **filas densas**, no tarjetas.
-5. **Pizarrón** — los menús flotantes se salen de la pantalla al tocar un
-   elemento del canvas.
+5. 🔄 **Pizarrón** — en curso. Resuelto: Inspector y barra de texto que se
+   salían de pantalla, barra superior pisando el reloj de iOS, "Salir" solapado
+   con el Inspector, dock y minimapa chocando con la navegación, y los nodos
+   nuevos que nacían con medidas de escritorio (ver `nodeDefaults.ts`).
+
+   **Pendiente: auditoría completa.** El módulo tiene 9 capas flotantes
+   compitiendo por 390px. Lo hecho evita solapes y desbordes, pero un lienzo
+   cómodo en móvil pide decidir *qué herramientas se muestran*, no solo dónde.
+   Candidatos: rail de herramientas en tira horizontal inferior, Inspector
+   plegable, y modo "solo lectura" para consultar una pizarra sin editarla.
 
 ### ⬜ M4 — Rendimiento en móvil
 

@@ -1,6 +1,7 @@
 import { logger } from "../../../../utils/logger";
 
 import React, { useEffect, useState } from 'react';
+import { scaled } from '../../engine/nodeDefaults';
 import { pizarronStore } from '../../state/store';
 import {
     LuMousePointer2,
@@ -63,7 +64,7 @@ export const LeftRail: React.FC = () => {
             const newNode: any = {
                 id: crypto.randomUUID(),
                 type: 'image',
-                x: cx - 100, y: cy - 100, w: 200, h: 200,
+                x: cx - scaled(200) / 2, y: cy - scaled(200) / 2, w: scaled(200), h: scaled(200),
                 zIndex: Object.keys(state.nodes).length + 1,
                 content: { src: '', opacity: 1, borderRadius: 0 },
                 updatedAt: Date.now(),
@@ -125,7 +126,7 @@ export const LeftRail: React.FC = () => {
     }, []);
 
     return (
-        <div className={`absolute left-4 top-1/2 -translate-y-1/2 flex gap-2 pointer-events-auto items-start transition-all duration-700 ease-out-expo ${mounted ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-12'}`}>
+        <div className={`absolute left-2 lg:left-4 top-1/2 -translate-y-1/2 max-h-[55dvh] lg:max-h-none overflow-y-auto no-scrollbar flex gap-2 pointer-events-auto items-start transition-all duration-700 ease-out-expo ${mounted ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-12'}`}>
             {/* Main Strip */}
             <div className="bg-white/90 dark:bg-slate-900/90 backdrop-blur shadow-sm border border-slate-200 dark:border-slate-700 rounded-2xl p-2 flex flex-col gap-2">
                 {TOOLS.map((tool: any, i) => {

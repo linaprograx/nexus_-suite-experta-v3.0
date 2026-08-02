@@ -76,7 +76,8 @@ export const TopBar: React.FC = () => {
     };
 
     return (
-        <div className="absolute top-2 lg:top-4 left-1/2 -translate-x-1/2 max-w-[calc(100vw-1rem)] overflow-x-auto no-scrollbar bg-white/90 dark:bg-slate-900/90 backdrop-blur shadow-sm border border-slate-200 dark:border-slate-700 rounded-full px-4 py-2 flex items-center gap-4 pointer-events-auto">
+        <div style={{ top: 'calc(env(safe-area-inset-top) + 1rem)' }}
+            className="absolute left-1/2 -translate-x-1/2 max-w-[calc(100vw-1rem)] overflow-x-auto no-scrollbar bg-white/90 dark:bg-slate-900/90 backdrop-blur shadow-sm border border-slate-200 dark:border-slate-700 rounded-full px-4 py-2 flex items-center gap-4 pointer-events-auto">
             <div className="flex items-center gap-2">
                 <button onClick={handleZoomOut} className="w-8 h-8 flex items-center justify-center hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full text-slate-600 dark:text-slate-300 font-bold">-</button>
                 <span className="text-xs font-mono w-12 text-center text-slate-900 dark:text-slate-200">{Math.round(zoom * 100)}%</span>
