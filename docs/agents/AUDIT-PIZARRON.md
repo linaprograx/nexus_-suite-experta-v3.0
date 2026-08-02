@@ -90,15 +90,26 @@ Se centraliza en `engine/nodeDefaults.ts` (factor 0.6 por debajo de `lg`).
 **Cualquier punto de creación nuevo debe usar `scaled()`**, o volvemos a tener
 cuatro criterios distintos.
 
-### M2 ⬜ Doce herramientas en una columna vertical
+### M2 ✅ Doce herramientas en una columna vertical
 
 `ui/overlays/LeftRail.tsx`
 
-En móvil ocupa **464px de alto** flotando sobre el lienzo. Mitigado con
-`max-h-[55dvh]` y desplazamiento, pero sigue tapando el lado izquierdo.
+Ocupaba **464px de alto** flotando sobre el lienzo y tapaba todo el lado
+izquierdo del dibujo.
 
-Es la fase **P1** del plan: tira horizontal inferior con 4 primarias
-(Seleccionar, Mover, Texto, Forma) y "Más" para el resto.
+**P1 cerrado.** `MobileToolStrip` es una tira horizontal sobre la barra de
+navegación, en la zona del pulgar: cuatro primarias (Seleccionar, Mover, Texto,
+Forma) a 44px cada una, y "Más" abre una rejilla con las otras siete. Doce no
+caben en 390px sin bajar del mínimo táctil.
+
+La lista y el comportamiento se extrajeron a `pizarronTools.tsx`, compartido
+por el rail de escritorio y la tira móvil: **añadir una herramienta la hace
+aparecer en las dos** sin tocar nada más.
+
+Con algo seleccionado la tira se oculta y manda el panel contextual, que ocupa
+esa misma franja. Apilarlos obligaría a mover la tira cada vez que el panel
+cambia de altura, y un control que se desplaza bajo el dedo es peor que uno que
+desaparece: tocar el lienzo deselecciona y la tira vuelve.
 
 ### M3 ⬜ El presupuesto de espacio no cuadra
 

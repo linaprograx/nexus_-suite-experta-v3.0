@@ -14,6 +14,7 @@ import { usePizarronIntelligence } from '../hooks/usePizarronIntelligence'; // A
 import { KeyboardShortcutsManager } from '../engine/KeyboardShortcutsManager';
 
 import { MobileContextPanel } from './overlays/MobileContextPanel';
+import { MobileToolStrip } from './overlays/MobileToolStrip';
 import { MiniToolbar } from './overlays/MiniToolbar';
 import { GuideOverlay } from './overlays/GuideOverlay';
 import { Firestore } from 'firebase/firestore';
@@ -159,7 +160,9 @@ export const PizarronRoot: React.FC<PizarronRootProps> = ({ appId, boardId, user
                             <MiniToolbar />
                         </div>
 
-                        {/* Panel contextual único del móvil (P0 del plan de Pizarrón) */}
+                        {/* Móvil: tira de herramientas y panel contextual (P0 y P1).
+                            LeftRail se oculta solo desde su propio `hidden lg:flex`. */}
+                        <MobileToolStrip />
                         <MobileContextPanel />
 
                     </>
