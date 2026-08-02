@@ -111,7 +111,7 @@ esa misma franja. Apilarlos obligaría a mover la tira cada vez que el panel
 cambia de altura, y un control que se desplaza bajo el dedo es peor que uno que
 desaparece: tocar el lienzo deselecciona y la tira vuelve.
 
-### M3 ⬜ El presupuesto de espacio no cuadra
+### M3 ✅ El presupuesto de espacio no cuadra
 
 Medido en iPhone 14 Pro (390×844):
 
@@ -123,8 +123,20 @@ Con la barra de zoom (50px), el rail (464px flotando) y el panel contextual
 (hasta 287px), al lienzo le quedaban **≈354px de 691**. La mitad de la
 pantalla en controles.
 
-P0 lo mejora —sin selección el panel no se monta—, pero P1 y P2 siguen
-pendientes.
+**Cerrado con P0, P1 y P2.** Sin selección, el lienzo tiene ahora la pantalla
+entera menos la tira de herramientas (58px) y la barra de zoom (159px de ancho,
+centrada arriba). Medido a 390×844:
+
+| Antes | Ahora |
+|---|---|
+| Barra superior a casi todo el ancho | 159px, centrada |
+| Rail de 464px de alto tapando el lado izquierdo | tira de 58px abajo |
+| Panel contextual siempre presente | solo con selección |
+| **Lienzo ≈354px de 691** | **lienzo ≈630px de 691** |
+
+En P2 se ocultaron en móvil los bloques de **Posición** y **Alinear** de la
+barra superior: operan sobre la selección y ya viven en el panel contextual.
+Tenerlos en dos sitios era la misma trampa de siempre.
 
 ### M4 ⬜ `MiniToolbar` sigue vivo en escritorio con lógica solapada
 

@@ -77,7 +77,7 @@ export const TopBar: React.FC = () => {
 
     return (
         <div style={{ top: 'calc(env(safe-area-inset-top) + 1rem)' }}
-            className="absolute left-1/2 -translate-x-1/2 max-w-[calc(100vw-1rem)] overflow-x-auto no-scrollbar bg-white/90 dark:bg-slate-900/90 backdrop-blur shadow-sm border border-slate-200 dark:border-slate-700 rounded-full px-4 py-2 flex items-center gap-4 pointer-events-auto">
+            className="absolute left-1/2 -translate-x-1/2 max-w-[calc(100vw-1rem)] overflow-x-auto no-scrollbar bg-white/90 dark:bg-slate-900/90 backdrop-blur shadow-sm border border-slate-200 dark:border-slate-700 rounded-full px-2 lg:px-4 py-1.5 lg:py-2 flex items-center gap-2 lg:gap-4 pointer-events-auto">
             <div className="flex items-center gap-2">
                 <button onClick={handleZoomOut} className="w-8 h-8 flex items-center justify-center hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full text-slate-600 dark:text-slate-300 font-bold">-</button>
                 <span className="text-xs font-mono w-12 text-center text-slate-900 dark:text-slate-200">{Math.round(zoom * 100)}%</span>
@@ -85,7 +85,7 @@ export const TopBar: React.FC = () => {
             </div>
 
             {/* Separator */}
-            <div className="w-px h-4 bg-slate-300 mx-2"></div>
+            <div className="w-px h-4 bg-slate-300 mx-0.5 lg:mx-2"></div>
 
             {/* Board Switcher (Notebook Mode) */}
             {activePizarra && boards.length > 0 && (
@@ -105,7 +105,7 @@ export const TopBar: React.FC = () => {
                     </button>
 
                     {/* Scrollable Board List - Max Width ~4 items */}
-                    <div className="flex bg-slate-100 dark:bg-slate-800 rounded-lg p-1 gap-1 overflow-x-auto max-w-[320px] scrollbar-hide">
+                    <div className="flex bg-slate-100 dark:bg-slate-800 rounded-lg p-1 gap-1 overflow-x-auto max-w-[130px] lg:max-w-[320px] scrollbar-hide">
                         {[...boards].sort((a, b) => (a.id === activeBoard?.id ? -1 : 1)).map((b, i) => (
                             <button
                                 key={b.id}
@@ -122,6 +122,9 @@ export const TopBar: React.FC = () => {
                 </div>
             )}
 
+            {/* Posición y Alinear operan sobre la selección y ya viven en
+                MobileContextPanel: aquí solo se muestran en escritorio. */}
+            <div className="hidden lg:contents">
             {hasSelection && (
                 <>
                     <div className="w-px h-4 bg-slate-300 dark:bg-slate-600 mx-2"></div>
@@ -218,17 +221,18 @@ export const TopBar: React.FC = () => {
                     </div>
                 </>
             )}
+            </div>
 
             {activePizarra && (
                 <>
-                    <div className="h-8 w-px bg-slate-200 dark:bg-slate-700 mx-2" />
+                    <div className="h-8 w-px bg-slate-200 dark:bg-slate-700 mx-1 lg:mx-2" />
 
                     <button
                         onClick={() => pizarronStore.setUIFlag('showMenuGenerator', true)}
-                        className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-nexus-orange to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white rounded-xl font-bold shadow-lg shadow-orange-500/20 transition-all active:scale-95 group"
+                        className="flex items-center gap-2 px-2.5 lg:px-4 py-2 bg-gradient-to-r from-nexus-orange to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white rounded-xl font-bold shadow-lg shadow-orange-500/20 transition-all active:scale-95 group"
                     >
                         <LuMenu className="w-4 h-4 group-hover:rotate-12 transition-transform" />
-                        <span>Diseñar con IA</span>
+                        <span className="hidden lg:inline">Diseñar con IA</span>
                     </button>
                 </>
             )}
