@@ -15,6 +15,8 @@ import { KeyboardShortcutsManager } from '../engine/KeyboardShortcutsManager';
 
 import { MobileContextPanel } from './overlays/MobileContextPanel';
 import { MobileToolStrip } from './overlays/MobileToolStrip';
+import { ModoConsultaToggle } from './overlays/ModoConsultaToggle';
+import { useResponsive } from '../../../hooks/useResponsive';
 import { MiniToolbar } from './overlays/MiniToolbar';
 import { GuideOverlay } from './overlays/GuideOverlay';
 import { Firestore } from 'firebase/firestore';
@@ -37,6 +39,21 @@ interface PizarronRootProps {
 export const PizarronRoot: React.FC<PizarronRootProps> = ({ appId, boardId, userId, db }) => {
     // Detect if running in mobile mode (via body class)
     const [isMobileMode, setIsMobileMode] = React.useState(false);
+
+    // P3 · Modo consulta. En móvil se entra mirando, no editando: el andamiaje
+    // de edición solo aparece cuando se pide. En escritorio no aplica.
+    const { isMobile, isTablet } = useResponsive();
+    const lienzoCompacto = isMobile || isTablet;
+    const [enConsulta, setEnConsulta] = React.useState(true);
+
+    // En consulta la herramienta activa pasa a 'hand': así un toque desplaza el
+    // lienzo en vez de crear o arrastrar elementos. Es lo que hace que el modo
+    // sea de verdad de solo mirar, sin tocar el motor de interacción.
+    React.useEffect(() => {
+        if (!lienzoCompacto) return;
+        pizarronStore.setActiveTool(enConsulta ? 'hand' : 'pointer');
+        if (enConsulta) pizarronStore.setSelection([]);
+    }, [enConsulta, lienzoCompacto]);
 
     React.useEffect(() => {
         const checkMobileMode = () => {
@@ -161,9 +178,21 @@ export const PizarronRoot: React.FC<PizarronRootProps> = ({ appId, boardId, user
                         </div>
 
                         {/* Móvil: tira de herramientas y panel contextual (P0 y P1).
-                            LeftRail se oculta solo desde su propio `hidden lg:flex`. */}
-                        <MobileToolStrip />
-                        <MobileContextPanel />
+                            En modo consulta no se montan: el lienzo se queda con toda
+                            la pantalla. LeftRail se oculta desde su propio `hidden lg:flex`. */}
+                        {!(lienzoCompacto && enConsulta) && (
+                            <>
+                                <MobileToolStrip />
+                                <MobileContextPanel />
+                            </>
+                        )}
+
+                        {lienzoCompacto && (
+                            <ModoConsultaToggle
+                                enConsulta={enConsulta}
+                                onToggle={() => setEnConsulta(v => !v)}
+                            />
+                        )}
 
                     </>
                 )}

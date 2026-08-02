@@ -188,9 +188,34 @@ compilación. Riesgo de seguridad y estorbo para la minificación.
 ### B4 ⬜ Gráficas sin altura resuelta
 Avisos de Recharts `width(-1) and height(-1)`. Cosmético pero ruidoso.
 
-### B5 ⬜ Sin gestos nativos
-No hay pellizcar-para-zoom ni desplazar con dos dedos. El zoom exige apuntar a
-los botones `−` / `+`. Es la fase **P4**.
+### B5 ✅ Sin gestos nativos
+
+**P4 cerrado.** `useCanvasGestures` añade pellizcar-para-zoom y desplazamiento
+con dos dedos.
+
+Dos detalles que lo hacen convivir con la edición:
+- **Solo actúa con dos dedos.** Con uno, el evento llega intacto al
+  `interactionManager`, que es quien selecciona, arrastra y dibuja.
+- `passive: false` es obligatorio. Sin él el navegador ignora el
+  `preventDefault` y superpone su propio zoom de página al nuestro.
+
+El punto del mundo bajo los dedos se mantiene fijo durante el zoom; sin ese
+cálculo el lienzo se escapa hacia una esquina.
+
+---
+
+### P3 ✅ Modo consulta
+
+En móvil, Pizarrón **arranca en consulta**: sin tira de herramientas ni panel
+contextual, con la herramienta activa en `hand` para que un toque desplace el
+lienzo en vez de crear o arrastrar. Un botón alterna a edición.
+
+La apuesta es que el uso mayoritario en barra es mirar —el escandallo, la
+carta, el tablero de la semana— y no editar con el dedo. Si resulta falsa,
+cambiar el valor inicial de `enConsulta` en `PizarronRoot` la invierte.
+
+Se implementa con estado local y cambio de herramienta, **sin tocar el motor de
+interacción**: nada que revertir si hay que deshacerlo.
 
 ---
 

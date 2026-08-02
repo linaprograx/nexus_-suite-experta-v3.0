@@ -1,6 +1,7 @@
 import { logger } from "../../../utils/logger";
 
 import React, { useEffect, useRef } from 'react';
+import { useCanvasGestures } from './useCanvasGestures';
 import { renderer } from '../engine/renderer';
 import { pizarronStore, usePizarronStore } from '../state/store';
 import { interactionManager } from '../engine/interaction';
@@ -22,6 +23,9 @@ export let canvasSize = { w: window.innerWidth, h: window.innerHeight };
 export const CanvasStage: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const containerRef = useRef<HTMLDivElement>(null);
+    // Pellizcar para zoom y dos dedos para desplazar (P4). Solo actúa con dos
+    // dedos, así que un dedo sigue llegando intacto al interactionManager.
+    useCanvasGestures(containerRef);
     const rafId = useRef<number>(0);
     // Use global map instead of local ref so Inspector can access it
     const externalDataRef = { current: externalDataMap };
