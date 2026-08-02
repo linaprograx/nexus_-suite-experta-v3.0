@@ -7,6 +7,49 @@ El "por qué" es lo que más vale dentro de tres semanas.
 
 ---
 
+## 2026-08-02 (noche) · Claude Code · Despliegue en producción y auditoría de Pizarrón
+
+**Qué**
+
+- **Primer despliegue en producción**: `nexus-suite-experta-v3-0.vercel.app`,
+  desde la rama `deploy/mobile-v1`. Procedimiento completo en `HANDOFF.md`.
+- **Icono de la app**: se generaron los PNG del orbe Nexus. `index.html`
+  apuntaba a `/vite.svg`, que no existe, y no había manifest ni
+  `apple-touch-icon`: iOS ponía la "N" genérica.
+- **P0 de Pizarrón**: `MobileContextPanel` fusiona Inspector y MiniToolbar.
+- **Auditoría de Pizarrón** en `docs/agents/AUDIT-PIZARRON.md`.
+
+**Los tres tropiezos del despliegue, para no repetirlos**
+
+1. La rama no estaba en GitHub. Vercel llevaba meses desplegando `main`.
+2. GitHub bloqueó el push por una clave de Stripe en `ai-gateway/.env`. De ahí
+   nace la rama aplanada `deploy/mobile-v1`. La clave **ya estaba** en `main`,
+   repo público: pendiente de rotar.
+3. Las variables de entorno se añadieron al entorno **Preview** y el build de
+   producción seguía fallando con el mismo error. Son entornos separados.
+
+Además, el CSP tenía `frame-src 'none'`, que habría roto el login con Google en
+producción: Firebase Auth carga un iframe en `<proyecto>.firebaseapp.com`. Se
+detectó leyendo `vercel.json` antes de desplegar, no en caliente.
+
+**El hallazgo de la auditoría**
+
+Rounding, opacidad y sombra no funcionaban por dos defectos encadenados: props
+cableadas a literales (los deslizadores volvían siempre a cero) y un manejador
+que descartaba `borderRadius` y `shadow`. El renderer sí sabía pintarlos —14 y
+9 menciones en `renderer.ts`—, el dato nunca llegaba.
+
+Lo relevante es que **el mismo defecto está copiado en 4 inspectores más**, y
+cada uno descarta un subconjunto distinto de campos. La corrección buena no es
+parchear uno a uno, sino cambiar la firma de `VisualEffectsController`.
+
+**Pendiente**
+
+G2 de la auditoría, Mercado, y las fases P1–P4 de Pizarrón. Nada verificado en
+móvil real.
+
+---
+
 ## 2026-08-02 (tarde) · Claude Code · Un solo modelo de layout móvil
 
 **Qué**

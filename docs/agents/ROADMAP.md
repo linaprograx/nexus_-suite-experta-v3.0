@@ -95,11 +95,14 @@ Por orden de gravedad:
    con el Inspector, dock y minimapa chocando con la navegación, y los nodos
    nuevos que nacían con medidas de escritorio (ver `nodeDefaults.ts`).
 
-   **Pendiente: auditoría completa.** El módulo tiene 9 capas flotantes
-   compitiendo por 390px. Lo hecho evita solapes y desbordes, pero un lienzo
-   cómodo en móvil pide decidir *qué herramientas se muestran*, no solo dónde.
-   Candidatos: rail de herramientas en tira horizontal inferior, Inspector
-   plegable, y modo "solo lectura" para consultar una pizarra sin editarla.
+   **P0 cerrado:** `MobileContextPanel` fusiona Inspector y MiniToolbar en una
+   hoja inferior de tres alturas. Sin selección no se monta.
+
+   **Auditoría hecha:** ver `docs/agents/AUDIT-PIZARRON.md`. 3 graves, 4 medios
+   y 5 bajos, con archivo:línea. Corregidos G1, M1, B1 y B2.
+
+   **Fases pendientes:** P1 herramientas a tira inferior · P2 barra superior
+   mínima · P3 modo consulta · P4 gestos nativos.
 
 ### ⬜ M4 — Rendimiento en móvil
 

@@ -193,16 +193,27 @@ export const Inspector: React.FC<InspectorProps> = ({ embedded = false }) => {
                         />
 
                         {/* Visual Effects - Opacity & Border */}
+                        {/* Los valores se leen del nodo, no se cablean: con opacity={1}
+                            y borderRadius={0} fijos, los deslizadores volvían siempre a
+                            cero y parecían no responder.
+                            Y el manejador guardaba solo opacity y borderWidth: borderRadius
+                            y shadow llegaban aquí y se descartaban, pese a que el renderer
+                            sí sabe pintarlos. */}
                         <VisualEffectsController
-                            opacity={1}
-                            borderWidth={0}
-                            borderRadius={0}
+                            opacity={firstNode?.content?.opacity ?? 1}
+                            borderWidth={firstNode?.content?.borderWidth ?? 0}
+                            borderRadius={firstNode?.content?.borderRadius ?? 0}
+                            shadow={firstNode?.content?.filters?.shadow ?? null}
                             onChange={(eff) => {
                                 const targets = getTargets();
                                 targets.forEach(n => {
                                     const patch: any = {};
                                     if (eff.opacity !== undefined) patch.opacity = eff.opacity;
                                     if (eff.borderWidth !== undefined) patch.borderWidth = eff.borderWidth;
+                                    if (eff.borderRadius !== undefined) patch.borderRadius = eff.borderRadius;
+                                    if (eff.shadow !== undefined) {
+                                        patch.filters = { ...(n.content as any)?.filters, shadow: eff.shadow };
+                                    }
                                     if (Object.keys(patch).length > 0) {
                                         pizarronStore.updateNode(n.id, { content: { ...n.content, ...patch } });
                                     }

@@ -56,12 +56,17 @@ hazlo igualmente en cuanto puedas:
 | `docs/agents/ROADMAP.md` | Fases del trabajo y su estado | Al cerrar una fase |
 | `docs/agents/HANDOFF.md` | **Estado del relevo.** Se sobrescribe entero | Cada sesión |
 | `docs/agents/WORKLOG.md` | Diario acumulativo, lo más reciente arriba | Cada sesión |
+| `docs/agents/AUDIT-PIZARRON.md` | Auditoría del módulo más frágil, con archivo:línea | Al cerrar hallazgos |
 
 ## Dónde se trabaja
 
-- **Rama única:** `feat/mobile-v1`
-- **Directorio único:** el checkout principal del repo
+- **Rama de desarrollo:** `feat/mobile-v1` ← aquí se programa
+- **Rama de producción:** `deploy/mobile-v1` ← espejo aplanado; cada push
+  despliega a `nexus-suite-experta-v3-0.vercel.app`
 - **Servidor de desarrollo: puerto 3100**
+
+El procedimiento exacto para desplegar, y por qué las dos ramas no se fusionan
+con `git merge`, está en `docs/agents/HANDOFF.md`. **Léelo antes de desplegar.**
 
 > ⚠️ **No uses el puerto 3000.** Provocó un incidente real: se depuró durante
 > horas una vista que no contenía los cambios, porque el servidor del 3000

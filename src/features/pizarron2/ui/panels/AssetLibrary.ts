@@ -1,3 +1,4 @@
+import { scaled } from '../../engine/nodeDefaults';
 import { BoardNode } from "../../engine/types";
 import { FontDefinition } from "../../engine/FontLoader";
 import { STRUCTURE_TEMPLATES } from "../../engine/structures";
@@ -403,8 +404,8 @@ export const TEMPLATE_LIBRARIES: AssetCategory[] = [
                         type: 'costing',
                         x: 0,
                         y: 0,
-                        w: 300,
-                        h: 200,
+                        w: scaled(300),
+                        h: scaled(200),
                         content: {
                             title: 'Recipe Costing',
                             borderRadius: 12,
@@ -426,8 +427,8 @@ export const TEMPLATE_LIBRARIES: AssetCategory[] = [
                         type: 'costing-scenario',
                         x: 0,
                         y: 0,
-                        w: 400,
-                        h: 250,
+                        w: scaled(400),
+                        h: scaled(250),
                         content: {
                             title: 'Scenario Analysis',
                             borderRadius: 12,

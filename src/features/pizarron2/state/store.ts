@@ -1,3 +1,4 @@
+import { scaled } from '../engine/nodeDefaults';
 import { logger } from "../../../utils/logger";
 
 
@@ -1773,8 +1774,8 @@ class PizarronStore {
                     type: 'menu-design',
                     x: startX + (i * spacing),
                     y: centerY - 350,
-                    w: 500, // Phase 6.11: Wider default for better layout
-                    h: 700,
+                    w: scaled(500), // Escalado: 500x700 no cabe en un móvil
+                    h: scaled(700),
                     zIndex: maxZ + 1 + i, // Ensure they are on top
                     createdAt: Date.now(),
                     content: {

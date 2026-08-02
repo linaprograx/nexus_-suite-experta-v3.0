@@ -7,84 +7,97 @@
 ---
 
 **Última actualización:** 2026-08-02
-**Sesión anterior:** Claude Code (se agotó el límite)
-**Rama:** `feat/mobile-v1` · último commit `ebf9ed9`
-**Estado del árbol:** limpio, TypeScript 0 errores, build correcto
+**Sesión anterior:** Claude Code
+**Estado:** árbol limpio, TypeScript 0 errores, build correcto
+
+## 🚀 Hay despliegue en producción
+
+Esto es nuevo desde el último relevo y **cambia cómo se trabaja**:
+
+| | |
+|---|---|
+| **URL en producción** | `nexus-suite-experta-v3-0.vercel.app` |
+| **Proyecto de Vercel** | `nexus-suite-experta-v3-0` (id `prj_GIIJu8AZfrDJtXW3Ydfd64zrU6R7`) |
+| **Rama de producción** | `deploy/mobile-v1` |
+| **Rama de desarrollo** | `feat/mobile-v1` ← **trabaja aquí** |
+
+**Cada push a `deploy/mobile-v1` despliega a producción automáticamente.**
+
+### El flujo de despliegue, y por qué es así
+
+`deploy/mobile-v1` es un **espejo aplanado** de `feat/mobile-v1`, no una rama
+normal. Motivo: el historial de `feat/mobile-v1` arrastra `ai-gateway/.env` con
+una clave de Stripe, y la protección de secretos de GitHub bloquea el push.
+
+Para desplegar:
+
+```bash
+git checkout deploy/mobile-v1
+git checkout feat/mobile-v1 -- .     # trae el árbol, no el historial
+git add -A && git commit -m "..."
+git push origin deploy/mobile-v1
+git checkout feat/mobile-v1          # vuelve a desarrollo
+```
+
+> ⚠️ **No uses `git merge` entre ambas.** Genera conflictos porque la rama de
+> despliegue ya contiene la versión aplanada. El `checkout -- .` es el camino.
+
+> ⚠️ **`.env` no está versionado.** Si al cambiar de rama la app deja de
+> arrancar con "Firebase configuration incomplete", cópialo del checkout
+> principal: `cp /Users/lianalviz/nexus_-suite-experta-v3.0/.env .env`
+
+### Variables de entorno en Vercel
+
+Están en el entorno **Production**. Si un build falla con "Missing required
+environment variables", es que se añadieron solo a Preview: son entornos
+separados. `VITE_AI_GATEWAY_URL` **no puede ir vacía** — el validador usa
+`!process.env[key]` y la cadena vacía cuenta como ausente.
 
 ## Dónde estamos
 
-Fase **M3 — adaptación vista por vista**. Puntos 1, 2 y 3 cerrados.
-El punto 4 está **a medias** (ver abajo). El 5 sin empezar.
+Fase **M3 — adaptación vista por vista**. Ver `ROADMAP.md`.
 
 ## ⏸️ Lo que quedó a medias — EMPIEZA POR AQUÍ
 
-**Punto 4 de M3: compactar Inventario y Mercado.**
+**Hay una auditoría completa de Pizarrón en `docs/agents/AUDIT-PIZARRON.md`.**
+Léela antes de tocar ese módulo: lleva archivo:línea de cada hallazgo,
+clasificado en graves/medios/bajos, y una sección de "qué NO tocar".
 
-- ✅ **Inventario hecho** (`src/components/grimorium/IngredientListPanel.tsx`,
-  commit `ebf9ed9`): padding de ficha 16→10px, hueco 16→8px, señales de mercado
-  ocultas en móvil, precio de 18→16px.
-- ⬜ **Mercado sin tocar.** Es el mismo tipo de problema: fichas grandes y
-  espaciadas. Empieza mirando `viewMode === 'market'` en
-  `src/views/GrimoriumView.tsx` (líneas ~622, ~637, ~681, ~836) para localizar
-  qué componente pinta esa lista, y aplícale el mismo criterio que a
-  Inventario. El usuario lo describió así: *"hay que compactar las cards, me
-  parecen muy grandes y espaciadas, se podría mostrar de otra forma"*.
+Lo más rentable ahora, por orden:
 
-**Punto 5 de M3: Pizarrón.** Sin empezar. Al tocar un elemento del canvas se
-abren menús flotantes que **se salen de las dimensiones de la pantalla**.
-
-## Lo cerrado en esta sesión
-
-1. **Un solo modelo de layout móvil.** Se extrajo de `PremiumLayout` a
-   `src/components/layout/StackedMobileShell.tsx`, y `PremiumLayout` ahora
-   delega en él. Ver la decisión y su motivo en `CONTEXT.md`.
-2. **Cerebrity** migrado a ese shell: sus tres columnas se declaran una vez y
-   las consumen escritorio y móvil. El historial pasa a hoja inferior.
-3. **Avatar**: scroll (las 5 sub-vistas fijaban `h-full`+`overflow-hidden`),
-   rejilla 2×2 en Núcleo, indicador de pasos compactado en Competición.
-4. **Colegium**: ritmo vertical (era el problema real, no las columnas).
-5. **Pizarrón**: las plantillas no se añadían al doble toque.
-
-## Reglas que NO debes romper
-
-> **El umbral móvil es `lg` (1024px), no `md`.** Si ves un `md:` gobernando
-> estructura —altura, overflow, columnas, visibilidad—, es un bug.
-
-> **Toda vista debe gatear su `h-full` y su `overflow` tras `lg:`.** Si alguna
-> los fija en móvil, rompe el scroll de toda la pantalla. Es el primer sitio
-> donde mirar si el scroll se rompe otra vez.
-
-> **Si añades una vista con columnas laterales, usa `StackedMobileShell`.** No
-> escribas otra variante. Pero ojo: una rejilla de *tarjetas* no lo necesita —
-> las de Avatar y Colegium no lo usan, y es deliberado.
-
-Los tres motivos están razonados en `docs/agents/CONTEXT.md`.
+1. **G2 de la auditoría** — el mismo defecto de props cableadas está copiado en
+   4 inspectores más, y cada uno descarta campos distintos. La corrección buena
+   no es parchear uno a uno, sino cambiar la firma de
+   `VisualEffectsController` para que reciba el nodo y una sola función de
+   guardado.
+2. **Punto 4 de M3** — compactar **Mercado**. Inventario ya se hizo
+   (`StockInventoryPanel`, no `IngredientListPanel`, que fue un error de
+   diagnóstico previo). Empieza por `viewMode === 'market'` en
+   `GrimoriumView.tsx`.
+3. **P1 de Pizarrón** — herramientas a tira horizontal inferior. Libera los
+   464px que hoy ocupa el rail lateral.
 
 ## ⚠️ Verificación pendiente
 
-Nada de lo hecho hoy está **verificado en pantalla con sesión iniciada**: el
-agente no tiene la sesión de Firebase del usuario. Compila y pasa TypeScript,
-que no es lo mismo que funcionar.
+Nada de la última tanda está verificado **en un móvil real**. Compila y pasa
+TypeScript, que no es lo mismo que funcionar.
 
-Sin confirmar visualmente:
-- Fichas compactas de Inventario (lo último, sin ver).
-- El scroll vertical en Avatar, Cerebrity, Colegium y Grimorio.
-- Cerebrity con el historial en hoja inferior.
-- Avatar Núcleo en rejilla 2×2.
-- El gesto de arrastre desde los bordes y las pestañas de color.
-- Las plantillas de Pizarrón al segundo toque.
-- El efecto glass del panel de notificaciones.
-
-**Pizarrón sigue siendo la verificación de mayor riesgo**: viene de una fusión
-con 10 archivos en conflicto resueltos por criterio (commit `915c957`). El
-usuario ya confirmó que funciona en general, pero conviene no construir encima
-sin probar. Punto de retorno: etiqueta `pre-merge-frosty`.
+Sin confirmar por el usuario:
+- Que rounding, opacidad y sombra ya respondan (G1).
+- El panel contextual de Pizarrón con una selección real: que el toque en el
+  agarre cicle entre las tres alturas.
+- Que los elementos nuevos ya no nazcan enormes tras cubrir los 4 puntos de
+  creación.
+- El icono del orbe al añadir a la pantalla de inicio — **iOS cachea el icono**,
+  hay que borrar el acceso directo y volver a añadirlo.
 
 ## Avisos
 
 - **Servidor de desarrollo: puerto 3100.** No uses el 3000: hubo un incidente
-  real depurando un worktree que no tenía los cambios.
-- El `ai-gateway` (puerto 3001) no está levantado. Los
-  `ERR_CONNECTION_REFUSED` de Cerebrity y Avatar son eso, no fallos de layout.
-- Quedan por hacer, fuera del trabajo de móvil: desplegar el gateway, rotar las
-  claves y activar Stripe. Detalles en `CONTEXT.md`.
+  real depurando un worktree sin los cambios.
+- El `ai-gateway` (3001) no está desplegado. En producción apunta a una URL de
+  marcador, así que **la IA de Cerebrity y Avatar no responde**. No es un bug
+  de layout.
+- **La clave de Stripe sigue publicada** en el historial de `main`, repo
+  público. Es de prueba, pero hay que rotarla —y la de Gemini— antes de
+  conectar Stripe de verdad. El usuario quiere ayuda; no lo hagas solo.
