@@ -1575,9 +1575,9 @@ export class PizarronRenderer {
                 if (node.rotation) ctx.rotate(node.rotation);
                 ctx.translate(-cx, -cy);
 
-                // Only draw desktop selection overlay if NOT in mobile mode
-                const isMobile = document.body.classList.contains('mobile-pizarron-mode');
-                if (!isMobile) {
+                // La rama `else` que había aquí pertenecía a un modo móvil que
+                // nunca se activaba: dependía de la clase "mobile-pizarron-mode",
+                // que nadie añadía. Se conserva solo el camino que sí se ejecutaba.
                     ctx.strokeRect(node.x, node.y, node.w, node.h);
                     ctx.restore();
 
@@ -1589,9 +1589,6 @@ export class PizarronRenderer {
                         this.drawControls(ctx, node, zoom, PREMIUM_COLOR);
                         ctx.restore();
                     }
-                } else {
-                    ctx.restore();
-                }
             }
         } else {
             // Multi Selection

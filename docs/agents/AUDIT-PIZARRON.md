@@ -289,12 +289,15 @@ interno de pestañas pasa de columna de 80px a tira horizontal deslizable.
 Ya tenía tres formas de cerrarse —botón, Escape y toque fuera—, así que tapar
 la tira de herramientas no deja a nadie atrapado.
 
-### G3 ⬜ `isMobileMode` sigue muerto *(heredado de la primera ronda)*
+### G3 ✅ `isMobileMode` sigue muerto *(heredado de la primera ronda)*
 
-Ahora **sí es activable**: ya existen los overlays móviles que faltaban
-(`MobileToolStrip`, `MobileContextPanel`, `ModoConsultaToggle`). Limpiar esa
-rama muerta —en `PizarronRoot` y en `renderer.ts:1579`— dejaría un solo
-mecanismo de detección en vez de dos.
+**Eliminado**, no activado. La detección de móvil ya la hace `useResponsive`;
+mantener además una clase en el body era un segundo mecanismo que nadie
+alimentaba.
+
+En `renderer.ts` la condición muerta arrastraba una **rama `else` entera** —el
+dibujado alternativo para móvil— que nunca se ejecutó. Se conserva solo el
+camino real.
 
 ## 🟠 MEDIOS
 
@@ -307,20 +310,27 @@ se detecta o no. Explica que a veces "cueste" seleccionar.
 **Resuelto:** una sola constante `DOBLE_TOQUE_MS = 350`, punto medio entre los
 dos valores que había.
 
-### M6 ⬜ Dos componentes que no monta nadie
+### M6 ✅ Dos componentes que no monta nadie
 
-`ShapeSelector.tsx` y `ColorPickerModal.tsx` no aparecen referenciados en
-ningún sitio. O son código muerto —y se borran— o son función perdida que
-alguien escribió y nunca conectó, como pasó con `isMobileMode` y con
-`editingImageId`. **Hay que decidir cuál de las dos cosas es** antes de que se
-sumen a la lista de fantasmas del módulo.
+`ShapeSelector.tsx` y `ColorPickerModal.tsx`: **cero referencias en todo `src/`**.
+Eliminados, 228 líneas. Nota: `ColorPicker`, en `UnifiedSelectors`, es otro
+componente y sí se usa; el borrado era la variante en modal.
 
-### M4 ⬜ `MiniToolbar` duplicado en escritorio *(heredado)*
+### M4 ⬜ `MiniToolbar` duplicado en escritorio *(heredado)* — CORREGIDO EL DIAGNÓSTICO
 
-499 líneas repitiendo propiedades del Inspector. En móvil ya no se monta, y
-tras esta ronda el Inspector cubre además negrita, cursiva, espaciado y
-mayúsculas. **La duplicación en escritorio ya no aporta nada**: candidato claro
-a eliminación, no solo a unificación.
+Esta auditoría lo dio por "candidato claro a eliminación". **Era una conclusión
+precipitada.** Al verificarlo antes de borrar, MiniToolbar tiene tres cosas que
+el Inspector no:
+
+| | MiniToolbar | Inspector |
+|---|---|---|
+| Guardar en Make Menu | ✅ | ❌ |
+| Deshacer / rehacer | ✅ | ❌ |
+| Posición | ✅ | ❌ |
+
+Eliminarlo perdería función en escritorio. Sigue siendo candidato a
+**unificación** —llevar esas tres al Inspector y entonces sí retirarlo—, pero
+no a borrado directo.
 
 ## 🟡 BAJOS
 

@@ -161,7 +161,7 @@ export const PizarronRoot: React.FC<PizarronRootProps> = ({ appId, boardId, user
             {/* Standard Overlays (Hidden during Presentation AND Mobile) */}
             <div className={`absolute inset-0 z-10 pointer-events-none transition-opacity duration-500 ${isPresenting ? 'opacity-0' : 'opacity-100'} ${isMobileMode ? 'hidden' : ''}`}>
                 {/* Overlays */}
-                {!isPresenting && !isMobileMode && (
+                {!isPresenting && (
                     <>
                         <TopBar />
                         {/* Desktop-Only Overlays */}
