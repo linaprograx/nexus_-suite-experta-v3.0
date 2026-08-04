@@ -120,7 +120,7 @@ const AppLayout: React.FC<any> = ({
                 {/* The pb-[…] reserves the bottom bar's footprint so the last row of
                     any list stays tappable instead of sitting under the glass. Dropped
                     at lg, where the bar is hidden and the sidebar takes over. */}
-                <main className="flex-1 overflow-y-auto p-2 sm:p-4 pb-[calc(60px_+_env(safe-area-inset-bottom)_+_0.5rem)] lg:pb-4">
+                <main className="flex-1 overflow-y-auto p-2 sm:p-4 pt-[calc(env(safe-area-inset-top)+0.5rem)] lg:pt-4 pb-[calc(60px_+_env(safe-area-inset-bottom)_+_0.5rem)] lg:pb-4">
                     <AppRoutes
                         db={db} userId={userId} appId={appId} auth={auth} storage={storage}
                     />

@@ -136,23 +136,23 @@ export const AuthComponent = () => {
                 <div className="absolute inset-x-8 top-0 h-px bg-gradient-to-r from-transparent via-white/25 to-transparent" />
 
                 {/* === CONTENT === */}
-                <div className="relative pt-8 pb-7 px-5 sm:pt-12 sm:pb-10 sm:px-8 flex flex-col items-center z-20">
+                <div className="relative pt-6 pb-5 px-4 sm:pt-12 sm:pb-10 sm:px-8 flex flex-col items-center z-20">
 
                   {/* ICON: Living Energy Sphere */}
                   <motion.div
                     initial={{ scale: 0.5, opacity: 0, filter: 'blur(10px)' }}
                     animate={{ scale: 1, opacity: 1, filter: 'blur(0px)' }}
                     transition={{ delay: 0.5, duration: 1.0, type: "spring" }}
-                    className="relative mb-10 group"
+                    className="relative mb-5 sm:mb-10 group"
                   >
-                    <NexusOrb size={72} />
+                    <NexusOrb size={typeof window !== 'undefined' && window.innerWidth < 640 ? 52 : 72} />
                   </motion.div>
 
                   <motion.h1
                     initial={{ opacity: 0, y: 5 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.6 }}
-                    className="text-3xl font-light text-white tracking-[0.08em] mb-2"
+                    className="text-2xl sm:text-3xl font-light text-white tracking-[0.08em] mb-1 sm:mb-2"
                     style={{ fontFamily: 'Georgia, serif' }}
                   >
                     Nexus
@@ -161,7 +161,7 @@ export const AuthComponent = () => {
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ delay: 0.7 }}
-                    className="flex items-center gap-2.5 mb-9"
+                    className="flex items-center gap-2.5 mb-5 sm:mb-9"
                   >
                     <span className="w-5 h-px bg-gradient-to-r from-transparent to-orange-400/50" />
                     <span className="text-[9px] uppercase tracking-[0.3em] font-medium text-slate-400">Suite Experta</span>
@@ -181,7 +181,7 @@ export const AuthComponent = () => {
                     />
                   </motion.div>
 
-                  <form onSubmit={handleSubmit} className="w-full space-y-5">
+                  <form onSubmit={handleSubmit} className="w-full space-y-3 sm:space-y-5">
                     <motion.div
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
@@ -199,7 +199,7 @@ export const AuthComponent = () => {
                         onChange={(e) => setEmail(e.target.value)}
                         disabled={loading}
                         autoComplete="email"
-                        className="w-full rounded-xl pl-11 pr-5 py-4 bg-[#0a0f1c]/40 border border-white/5 text-[12px] font-medium tracking-wide text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-orange-500/30 focus:border-orange-500/30 transition-all duration-300 shadow-[inset_0_2px_8px_rgba(0,0,0,0.2)] group-hover:bg-[#0a0f1c]/60"
+                        className="w-full rounded-xl pl-11 pr-5 py-3 sm:py-4 bg-[#0a0f1c]/40 border border-white/5 text-[12px] font-medium tracking-wide text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-orange-500/30 focus:border-orange-500/30 transition-all duration-300 shadow-[inset_0_2px_8px_rgba(0,0,0,0.2)] group-hover:bg-[#0a0f1c]/60"
                       />
                     </motion.div>
 
@@ -220,7 +220,7 @@ export const AuthComponent = () => {
                         onChange={(e) => setPassword(e.target.value)}
                         disabled={loading}
                         autoComplete="current-password"
-                        className="w-full rounded-xl pl-11 pr-12 py-4 bg-[#0a0f1c]/40 border border-white/5 text-[12px] font-medium tracking-wide text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-orange-500/30 focus:border-orange-500/30 transition-all duration-300 shadow-[inset_0_2px_8px_rgba(0,0,0,0.2)] group-hover:bg-[#0a0f1c]/60"
+                        className="w-full rounded-xl pl-11 pr-12 py-3 sm:py-4 bg-[#0a0f1c]/40 border border-white/5 text-[12px] font-medium tracking-wide text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-orange-500/30 focus:border-orange-500/30 transition-all duration-300 shadow-[inset_0_2px_8px_rgba(0,0,0,0.2)] group-hover:bg-[#0a0f1c]/60"
                       />
                       {/* Show/hide toggle */}
                       <button
@@ -257,7 +257,7 @@ export const AuthComponent = () => {
                       whileTap={{ scale: 0.97 }}
                       type="submit"
                       disabled={loading}
-                      className="relative w-full py-4 mt-4 rounded-xl font-bold text-[12px] tracking-widest text-slate-100 uppercase transition-all duration-300 overflow-hidden group bg-gradient-to-b from-white/10 to-transparent border border-white/5 shadow-[0_0_20px_-5px_rgba(249,115,22,0.15)] hover:shadow-[0_0_30px_-5px_rgba(249,115,22,0.3)] hover:border-orange-500/20"
+                      className="relative w-full py-3 sm:py-4 mt-3 sm:mt-4 rounded-xl font-bold text-[12px] tracking-widest text-slate-100 uppercase transition-all duration-300 overflow-hidden group bg-gradient-to-b from-white/10 to-transparent border border-white/5 shadow-[0_0_20px_-5px_rgba(249,115,22,0.15)] hover:shadow-[0_0_30px_-5px_rgba(249,115,22,0.3)] hover:border-orange-500/20"
                     >
                       {/* Single refined top beam (warm, centered) */}
                       <div className="absolute top-0 left-1/4 right-1/4 h-px bg-gradient-to-r from-transparent via-orange-300 to-transparent opacity-80 shadow-[0_0_12px_1px_rgba(249,115,22,0.4)]" />
@@ -278,7 +278,7 @@ export const AuthComponent = () => {
                     animate={{ opacity: 1 }}
                     transition={{ delay: 1.2 }}
                     onClick={() => { setIsLogin(!isLogin); setError(''); }}
-                    className="mt-8 text-[10px] text-slate-500 transition-colors tracking-widest uppercase font-medium group/toggle"
+                    className="mt-5 sm:mt-8 text-[10px] text-slate-500 transition-colors tracking-widest uppercase font-medium group/toggle"
                   >
                     {isLogin ? '¿Sin cuenta? ' : '¿Ya tienes cuenta? '}
                     <span className="text-orange-400/80 group-hover/toggle:text-orange-300 transition-colors">

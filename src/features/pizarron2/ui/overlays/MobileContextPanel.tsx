@@ -60,9 +60,10 @@ export const MobileContextPanel: React.FC = () => {
         return pizarronStore.subscribe(leer);
     }, []);
 
-    // Cada nueva selección vuelve al estado mínimo: abrir a media pantalla sin
-    // que lo pidas sería robarte el lienzo justo cuando acabas de tocar algo.
-    React.useEffect(() => { setSnap('peek'); }, [seleccion.join(',')]);
+    // Cada nueva selección abre a media altura, con las propiedades a la vista.
+    // Empezar en 'peek' mostraba cuatro iconos y ninguna señal de que hubiera
+    // más: parecía que el panel no tenía nada que ofrecer.
+    React.useEffect(() => { setSnap('half'); }, [seleccion.join(',')]);
 
     if (seleccion.length === 0) return null;
 
@@ -87,6 +88,9 @@ export const MobileContextPanel: React.FC = () => {
                 <span className="h-1.5 w-10 rounded-full bg-slate-300 dark:bg-slate-600" />
                 <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
                     {varios ? `${seleccion.length} elementos` : 'Selección'}
+                    <span className="ml-1 font-normal normal-case tracking-normal text-slate-400/70">
+                        · {snap === 'full' ? 'toca para reducir' : 'toca para ampliar'}
+                    </span>
                 </span>
             </button>
 
