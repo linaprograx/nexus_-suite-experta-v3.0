@@ -53,12 +53,27 @@ export const UIProvider: React.FC<{ children: React.ReactNode }> = ({ children }
     localStorage.setItem('isSidebarCollapsed', JSON.stringify(isSidebarCollapsed));
   }, [isSidebarCollapsed]);
 
+  /**
+   * Alterna claro/oscuro partiendo del tema REALMENTE aplicado.
+   *
+   * Antes cada llamante hacía `prev === 'dark' ? 'light' : 'dark'`, pero el
+   * valor inicial es 'system'. Con un sistema en oscuro, el primer toque pasaba
+   * de 'system' a 'dark' — que es justo lo que ya se estaba pintando— y parecía
+   * que el botón no hacía nada: había que pulsarlo dos veces.
+   */
+  const toggleTheme = () => setTheme(prev => {
+    const efectivo = prev === 'system'
+      ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
+      : prev;
+    return efectivo === 'dark' ? 'light' : 'dark';
+  });
+
   const toggleSidebar = () => setIsSidebarCollapsed(prev => !prev);
   const toggleCompactMode = () => setCompactMode(prev => !prev);
   const toggleFocusMode = () => setFocusMode(prev => !prev);
 
   return (
-    <UIContext.Provider value={{ theme, setTheme, isSidebarCollapsed, toggleSidebar, compactMode, toggleCompactMode, focusMode, toggleFocusMode }}>
+    <UIContext.Provider value={{ theme, setTheme, toggleTheme, isSidebarCollapsed, toggleSidebar, compactMode, toggleCompactMode, focusMode, toggleFocusMode }}>
       {children}
     </UIContext.Provider>
   );

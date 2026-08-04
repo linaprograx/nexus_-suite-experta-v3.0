@@ -5,6 +5,8 @@ import { useSectionsStore } from '../../../store/sectionsStore';
 import { Icon } from '../../../components/ui/Icon';
 import { ICONS } from '../../../components/ui/icons';
 import { BottomSheet } from '../../../components/ui/BottomSheet';
+import { useUI } from '../../../context/UIContext';
+import { useApp } from '../../../context/AppContext';
 
 /** Height of the bar itself, excluding the safe-area inset. */
 export const BOTTOM_NAV_HEIGHT = 60;
@@ -84,6 +86,15 @@ const FloatingBottomNav: React.FC = () => {
     const location = useLocation();
     const navigate = useNavigate();
     const hiddenSections = useSectionsStore(s => s.hiddenSections);
+    const { theme, toggleTheme } = useUI();
+    const { auth } = useApp();
+
+    // Claro/oscuro y cerrar sesión viven en la barra lateral de escritorio, que
+    // en móvil no existe. Sin esto, lo único era bajar a Personal y desplazarse
+    // hasta el fondo — y cerrar sesión no estaba en ninguna parte.
+    const enOscuro = theme === 'dark' ||
+        (theme === 'system' && typeof window !== 'undefined' &&
+            window.matchMedia('(prefers-color-scheme: dark)').matches);
     const [moreOpen, setMoreOpen] = React.useState(false);
 
     const visible = React.useMemo(
@@ -147,8 +158,8 @@ const FloatingBottomNav: React.FC = () => {
                 open={moreOpen}
                 onClose={() => setMoreOpen(false)}
                 title="Más"
-                snaps={['peek', 'half']}
-                initialSnap="peek"
+                snaps={['half', 'full']}
+                initialSnap="half"
             >
                 <div className="grid grid-cols-3 gap-3 p-4">
                     {overflow.map(s => {
@@ -170,6 +181,24 @@ const FloatingBottomNav: React.FC = () => {
                             </button>
                         );
                     })}
+                </div>
+
+                <div className="px-4 pb-6 pt-2 border-t border-slate-100 dark:border-slate-800 space-y-2">
+                    <button
+                        onClick={toggleTheme}
+                        className="w-full h-12 px-4 rounded-2xl flex items-center gap-3 text-sm font-semibold text-slate-700 dark:text-slate-200 bg-slate-50 dark:bg-white/5 active:scale-[0.98] transition-transform"
+                    >
+                        <Icon svg={enOscuro ? ICONS.sun : ICONS.moon} className="w-5 h-5" />
+                        {enOscuro ? 'Modo claro' : 'Modo oscuro'}
+                    </button>
+
+                    <button
+                        onClick={() => auth?.signOut()}
+                        className="w-full h-12 px-4 rounded-2xl flex items-center gap-3 text-sm font-semibold text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/30 active:scale-[0.98] transition-transform"
+                    >
+                        <Icon svg={ICONS.logout || ICONS.x} className="w-5 h-5" />
+                        Cerrar sesión
+                    </button>
                 </div>
             </BottomSheet>
         </>

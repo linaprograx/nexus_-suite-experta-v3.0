@@ -62,7 +62,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onCloseMobile
 }) => {
   const { auth, userProfile } = useApp();
-  const { theme, setTheme, isSidebarCollapsed, toggleSidebar } = useUI();
+  const { theme, toggleTheme, isSidebarCollapsed, toggleSidebar } = useUI();
   const isEnabled = useSectionsStore(s => s.isEnabled);
   const hiddenSections = useSectionsStore(s => s.hiddenSections); // subscribe so nav re-renders on toggle
 
@@ -155,7 +155,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </button>
 
         <button
-          onClick={() => setTheme((prevTheme: string) => prevTheme === 'dark' ? 'light' : 'dark')}
+          onClick={toggleTheme}
           className={`flex items-center gap-3 rounded-xl py-2 px-3 text-sm font-medium transition text-slate-600 dark:text-slate-300 hover:bg-white/50 dark:hover:bg-white/10 hover:text-slate-900 dark:hover:text-white dark:hover:shadow-[0_0_20px_rgba(15,23,42,0.6)] ${isSidebarCollapsed ? 'justify-center' : ''}`}
           title={isSidebarCollapsed ? "Cambiar Tema" : ""}
         >

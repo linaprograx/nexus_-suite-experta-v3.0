@@ -433,6 +433,8 @@ export interface ColegiumResult {
 export interface UIContextType {
     theme: string;
     setTheme: React.Dispatch<React.SetStateAction<string>>;
+    /** Alterna claro/oscuro partiendo del tema realmente aplicado, no del guardado. */
+    toggleTheme: () => void;
     isSidebarCollapsed: boolean;
     toggleSidebar: () => void;
     compactMode: boolean;
