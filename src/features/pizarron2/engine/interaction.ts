@@ -30,6 +30,8 @@ export class InteractionManager {
 
     // Double Click Helpers
     private lastClickTime: number = 0;
+    /** Único umbral del doble toque. Antes había 400ms en un sitio y 300 en otro. */
+    private static readonly DOBLE_TOQUE_MS = 350;
     private lastClickId: string | null = null;
 
     /** Returns true if any ancestor (via parentId) has collapsed === true. */
@@ -362,7 +364,7 @@ export class InteractionManager {
         // DOUBLE CLICK (Text Edit)
         const now = Date.now();
         // Allow slightly longer for double click (400ms)
-        if (hitId && hitId === this.lastClickId && (now - this.lastClickTime) < 400) {
+        if (hitId && hitId === this.lastClickId && (now - this.lastClickTime) < InteractionManager.DOBLE_TOQUE_MS) {
             const node = nodes[hitId];
 
             // Structured Board Logic (Zones - Phase 7)
@@ -539,7 +541,7 @@ export class InteractionManager {
 
         // Check Double Click
         const clickTime = Date.now();
-        const doubleClickThreshold = 300;
+        const doubleClickThreshold = InteractionManager.DOBLE_TOQUE_MS;
         const isDoubleClick = (clickTime - this.lastClickTime < doubleClickThreshold);
         this.lastClickTime = clickTime;
 

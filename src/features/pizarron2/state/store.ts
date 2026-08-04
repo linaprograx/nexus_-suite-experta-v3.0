@@ -104,6 +104,12 @@ class PizarronStore {
         }
     }
 
+    /** ¿Hay algo que deshacer? Permite desactivar el botón en vez de mentir. */
+    canUndo(): boolean { return this.historyIndex > 0; }
+
+    /** ¿Hay algo que rehacer? */
+    canRedo(): boolean { return this.historyIndex < this.history.length - 1; }
+
     undo() {
         if (this.historyIndex <= 0) return; // Nothing to undo
 

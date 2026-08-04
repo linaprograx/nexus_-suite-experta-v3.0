@@ -99,6 +99,17 @@ export const MobileContextPanel: React.FC = () => {
 
             {/* Acciones rápidas — visibles en las tres alturas */}
             <div className="shrink-0 flex items-center gap-1 px-2 pb-2 overflow-x-auto no-scrollbar border-b border-slate-100 dark:border-slate-800">
+                {/* Con algo seleccionado la tira de herramientas se oculta, así que
+                    deshacer vive también aquí: es justo cuando más falta hace,
+                    porque es editando cuando se estropea algo. */}
+                <Accion label="Deshacer" onClick={() => pizarronStore.undo()}>
+                    <Icono d="M9 14L4 9l5-5M4 9h11a5 5 0 0 1 0 10h-4" />
+                </Accion>
+                <Accion label="Rehacer" onClick={() => pizarronStore.redo()}>
+                    <Icono d="M15 14l5-5-5-5M20 9H9a5 5 0 0 0 0 10h4" />
+                </Accion>
+                <span className="w-px h-6 bg-slate-200 dark:bg-slate-700 mx-1 shrink-0" />
+
                 <Accion label="Traer al frente" onClick={() => pizarronStore.bringToFront()}>
                     <Icono d="M12 19V5M5 12l7-7 7 7" />
                 </Accion>

@@ -252,7 +252,7 @@ grueso: `renderer.ts` (2152), `store.ts` (1827), `interaction.ts` (1525),
 
 ## 🔴 GRAVES
 
-### G4 ⬜ No hay deshacer en móvil
+### G4 ✅ No hay deshacer en móvil
 
 `undo` y `redo` **existen en el store** y funcionan, pero no están expuestos en
 `MobileToolStrip` ni en `MobileContextPanel`: cero menciones en ambos.
@@ -261,8 +261,14 @@ En un lienzo táctil esto no es una comodidad, es una red de seguridad. Un
 arrastre accidental con el pulgar mueve un nodo y **no hay forma de volver
 atrás**. En escritorio se salva con Ctrl+Z, que en un teléfono no existe.
 
-**Es lo más rentable de toda esta ronda:** la función ya está hecha, solo falta
-un botón.
+**Resuelto.** Deshacer y rehacer están ahora en los dos estados: en la tira de
+herramientas cuando no hay selección, y en las acciones rápidas del panel
+cuando la hay —que es justo cuando más falta hacen, porque es editando cuando
+se estropea algo, y ahí la tira se oculta.
+
+El store no exponía si había algo que deshacer (`history` es privado), así que
+se añadieron `canUndo()` y `canRedo()`: los botones se atenúan en vez de
+mentir. La tira pasa de 5 a 7 botones, 330px de los 374 disponibles.
 
 ### G5 ⬜ La biblioteca ocupa el 82% de la pantalla
 
@@ -288,13 +294,14 @@ mecanismo de detección en vez de dos.
 
 ## 🟠 MEDIOS
 
-### M5 ⬜ Dos umbrales distintos para el doble toque
+### M5 ✅ Dos umbrales distintos para el doble toque
 
 `engine/interaction.ts:365` usa **400ms** y `:542` usa **300ms**, en el mismo
 archivo y para el mismo gesto. Según por dónde entre el evento, el doble toque
 se detecta o no. Explica que a veces "cueste" seleccionar.
 
-Debe haber **una constante**.
+**Resuelto:** una sola constante `DOBLE_TOQUE_MS = 350`, punto medio entre los
+dos valores que había.
 
 ### M6 ⬜ Dos componentes que no monta nadie
 

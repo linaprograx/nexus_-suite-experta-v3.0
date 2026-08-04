@@ -1,5 +1,5 @@
 import React from 'react';
-import { LuEllipsis, LuX } from 'react-icons/lu';
+import { LuEllipsis, LuX, LuUndo2, LuRedo2 } from 'react-icons/lu';
 import { pizarronStore } from '../../state/store';
 import {
     TOOLS, Tool, HERRAMIENTAS_PRIMARIAS,
@@ -23,14 +23,16 @@ import {
 const NAV = 'calc(60px + env(safe-area-inset-bottom))';
 
 const Boton: React.FC<{
-    tool: Tool; activa: boolean; onClick: () => void; conEtiqueta?: boolean;
-}> = ({ tool, activa, onClick, conEtiqueta }) => (
+    tool: Tool; activa: boolean; onClick: () => void; conEtiqueta?: boolean; deshabilitada?: boolean;
+}> = ({ tool, activa, onClick, conEtiqueta, deshabilitada }) => (
     <button
         onClick={onClick}
+        disabled={deshabilitada}
         aria-label={tool.label}
         aria-pressed={activa}
         className={`shrink-0 flex flex-col items-center justify-center gap-0.5 rounded-xl transition-colors active:scale-90
             ${conEtiqueta ? 'w-[4.5rem] h-16' : 'w-11 h-11'}
+            ${deshabilitada ? 'opacity-30' : ''}
             ${activa
                 ? 'bg-orange-50 dark:bg-orange-900/25 text-orange-600 dark:text-orange-400'
                 : 'text-slate-600 dark:text-slate-300'}`}
@@ -46,6 +48,11 @@ export const MobileToolStrip: React.FC = () => {
     const showProjectManager = pizarronStore.useSelector(s => s.uiFlags.showProjectManager);
     const mode = pizarronStore.useSelector(s => s.interactionState.mode);
     const haySeleccion = pizarronStore.useSelector(s => (s.selection ? Array.from(s.selection).length : 0) > 0);
+    // Se lee en cada render; los cambios de estado del lienzo ya provocan uno.
+    const nodos = pizarronStore.useSelector(s => Object.keys(s.nodes).length);
+    const puedeDeshacer = pizarronStore.canUndo();
+    const puedeRehacer = pizarronStore.canRedo();
+    void nodos; // fuerza el re-render tras cada edición
     const [masAbierto, setMasAbierto] = React.useState(false);
 
     // Con algo seleccionado manda el panel contextual, que ocupa esta misma
@@ -70,6 +77,22 @@ export const MobileToolStrip: React.FC = () => {
                 onPointerDown={e => e.stopPropagation()}
             >
                 <div className="flex items-center gap-1 px-1.5 py-1.5 rounded-2xl bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border border-slate-200 dark:border-white/10 shadow-xl">
+                    {/* Deshacer y rehacer. En un lienzo táctil un arrastre accidental
+                        no tiene vuelta atrás: aquí no hay Ctrl+Z que salve. */}
+                    <Boton
+                        tool={{ id: 'undo', label: 'Deshacer', icon: <LuUndo2 size={20} /> }}
+                        activa={false}
+                        deshabilitada={!puedeDeshacer}
+                        onClick={() => pizarronStore.undo()}
+                    />
+                    <Boton
+                        tool={{ id: 'redo', label: 'Rehacer', icon: <LuRedo2 size={20} /> }}
+                        activa={false}
+                        deshabilitada={!puedeRehacer}
+                        onClick={() => pizarronStore.redo()}
+                    />
+                    <span className="w-px h-6 bg-slate-200 dark:bg-slate-700 mx-0.5" />
+
                     {primarias.map(t => (
                         <Boton key={t.id} tool={t} activa={herramientaActiva(t, flags)} onClick={() => usar(t)} />
                     ))}
