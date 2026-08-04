@@ -68,6 +68,9 @@ export const MobileContextPanel: React.FC = () => {
     if (seleccion.length === 0) return null;
 
     const varios = seleccion.length > 1;
+    // El estado de bloqueo lo marca el primer seleccionado: con una selección
+    // mixta, la acción unifica en vez de alternar cada nodo por su cuenta.
+    const bloqueado = !!(pizarronStore.getState().nodes as any)?.[seleccion[0]]?.locked;
     const alinear = (modo: string) => (pizarronStore as any).alignSelected?.(modo);
 
     return (
@@ -117,6 +120,23 @@ export const MobileContextPanel: React.FC = () => {
                         <Icono d="M4 8V4h4M16 4h4v4M20 16v4h-4M8 20H4v-4" />
                     </Accion>
                 )}
+                <Accion label="Desagrupar" onClick={() => (pizarronStore as any).ungroupSelection?.()}>
+                    <Icono d="M4 8V4h4M16 4h4v4M20 16v4h-4M8 20H4v-4M9 15l6-6" />
+                </Accion>
+
+                {/* Bloquear: el motor de interacción ya respeta `locked` al arrastrar
+                    y al seleccionar, así que basta con marcar el nodo. */}
+                <Accion
+                    label={bloqueado ? 'Desbloquear' : 'Bloquear'}
+                    onClick={() => seleccion.forEach(id => {
+                        const n = pizarronStore.getState().nodes[id];
+                        if (n) pizarronStore.updateNode(id, { locked: !bloqueado } as any);
+                    })}
+                >
+                    <Icono d={bloqueado
+                        ? 'M7 11V7a5 5 0 0 1 9.9-1M5 11h14v10H5z'
+                        : 'M7 11V7a5 5 0 0 1 10 0v4M5 11h14v10H5z'} />
+                </Accion>
 
                 <span className="flex-1" />
 

@@ -184,6 +184,7 @@ export interface BoardNode {
         // Rich Text Props
         lineHeight?: number;
         letterSpacing?: string;
+        textTransform?: 'none' | 'uppercase' | 'lowercase' | 'capitalize';
         listType?: 'none' | 'bullet' | 'number';
         padding?: number;
         verticalAlign?: 'top' | 'middle' | 'bottom';

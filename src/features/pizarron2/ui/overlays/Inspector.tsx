@@ -190,6 +190,54 @@ export const Inspector: React.FC<InspectorProps> = ({ embedded = false }) => {
                                 onChange={(f) => updateNode({ fontFamily: f })}
                             />
 
+                            {/* Interlineado y espaciado entre letras */}
+                            <div className="mt-3 grid grid-cols-2 gap-3">
+                                <label className="block">
+                                    <span className="text-[10px] text-slate-500 dark:text-slate-400">Interlineado</span>
+                                    <input
+                                        type="range" min="0.8" max="2.4" step="0.1"
+                                        className="w-full h-1 mt-1 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer"
+                                        value={firstNode.content.lineHeight ?? 1.2}
+                                        onChange={(e) => updateNode({ lineHeight: parseFloat(e.target.value) })}
+                                    />
+                                </label>
+                                <label className="block">
+                                    <span className="text-[10px] text-slate-500 dark:text-slate-400">Espaciado</span>
+                                    <input
+                                        type="range" min="-2" max="12" step="1"
+                                        className="w-full h-1 mt-1 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer"
+                                        value={parseInt(String(firstNode.content.letterSpacing || '0'), 10) || 0}
+                                        onChange={(e) => updateNode({ letterSpacing: `${e.target.value}px` })}
+                                    />
+                                </label>
+                            </div>
+
+                            {/* Mayúsculas / minúsculas */}
+                            <div className="mt-2 flex items-center gap-1">
+                                {([
+                                    ['none', 'Aa', 'Normal'],
+                                    ['uppercase', 'AA', 'MAYUSCULAS'],
+                                    ['lowercase', 'aa', 'minusculas'],
+                                    ['capitalize', 'Ab', 'Capitalizar'],
+                                ] as const).map(([valor, letra, titulo]) => {
+                                    const puesto = (firstNode.content.textTransform ?? 'none') === valor;
+                                    return (
+                                        <button
+                                            key={valor}
+                                            title={titulo}
+                                            aria-label={titulo}
+                                            aria-pressed={puesto}
+                                            onClick={() => updateNode({ textTransform: valor })}
+                                            className={`flex-1 h-10 rounded-lg text-xs font-bold transition-colors ${puesto
+                                                ? 'bg-orange-50 dark:bg-orange-900/25 text-orange-600 dark:text-orange-400'
+                                                : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'}`}
+                                        >
+                                            {letra}
+                                        </button>
+                                    );
+                                })}
+                            </div>
+
                             {/* Negrita, cursiva, subrayado y tachado.
                                 Viven aquí, y no solo en MiniToolbar, porque esa barra
                                 no se monta en móvil: al ponerlos en el Inspector
