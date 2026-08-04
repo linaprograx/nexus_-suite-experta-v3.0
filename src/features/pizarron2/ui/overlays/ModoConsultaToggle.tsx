@@ -20,7 +20,12 @@ export const ModoConsultaToggle: React.FC<{
         onClick={onToggle}
         aria-label={enConsulta ? 'Editar' : 'Volver a consulta'}
         aria-pressed={!enConsulta}
-        className={`lg:hidden fixed z-[95] h-11 pl-3 pr-4 rounded-full shadow-lg border flex items-center gap-2 text-xs font-bold active:scale-95 transition-all
+        // pointer-events-auto es OBLIGATORIO aquí: el contenedor de overlays de
+        // PizarronRoot es pointer-events-none para que los toques lleguen al
+        // lienzo, y cada overlay debe reactivarlos por su cuenta. Sin esto el
+        // botón se pinta pero es inerte, y como en modo consulta no hay tira de
+        // herramientas, deja al usuario sin ninguna forma de editar.
+        className={`lg:hidden fixed z-[95] pointer-events-auto h-11 pl-3 pr-4 rounded-full shadow-lg border flex items-center gap-2 text-xs font-bold active:scale-95 transition-all
             ${enConsulta
                 ? 'bg-white/90 dark:bg-slate-800/90 border-slate-200 dark:border-white/10 text-slate-700 dark:text-slate-200'
                 : 'bg-orange-500 border-orange-400 text-white'}`}
