@@ -316,21 +316,32 @@ dos valores que había.
 Eliminados, 228 líneas. Nota: `ColorPicker`, en `UnifiedSelectors`, es otro
 componente y sí se usa; el borrado era la variante en modal.
 
-### M4 ⬜ `MiniToolbar` duplicado en escritorio *(heredado)* — CORREGIDO EL DIAGNÓSTICO
+### M4 ✅ `MiniToolbar` duplicado en escritorio *(heredado)*
 
-Esta auditoría lo dio por "candidato claro a eliminación". **Era una conclusión
-precipitada.** Al verificarlo antes de borrar, MiniToolbar tiene tres cosas que
-el Inspector no:
+**Eliminado**, 499 líneas.
 
-| | MiniToolbar | Inspector |
-|---|---|---|
-| Guardar en Make Menu | ✅ | ❌ |
-| Deshacer / rehacer | ✅ | ❌ |
-| Posición | ✅ | ❌ |
+El diagnóstico pasó por dos vueltas, y la lección vale más que el resultado:
 
-Eliminarlo perdería función en escritorio. Sigue siendo candidato a
-**unificación** —llevar esas tres al Inspector y entonces sí retirarlo—, pero
-no a borrado directo.
+1. Primero se dio por "candidato claro a eliminación".
+2. Al verificar contra el Inspector aparecieron tres funciones que este no
+   tenía —Guardar en Make Menu, deshacer/rehacer y Posición— y se marcó como
+   NO borrable.
+3. Al verificar contra **el resto de la app**, no solo contra el Inspector,
+   resultó que ninguna era exclusiva:
+
+| | Ya vivía además en |
+|---|---|
+| Guardar en Make Menu | `MenuDesignInspector` y `TopBar` |
+| Posición | `TopBar` (4 referencias) |
+| Deshacer / rehacer | `KeyboardShortcutsManager` (Ctrl+Z) |
+
+**Comparar contra un solo componente no basta para declarar algo único.** El
+segundo diagnóstico era tan precipitado como el primero, solo que en la
+dirección contraria.
+
+Antes de retirarlo se añadieron botones de deshacer y rehacer a `TopBar`: eran
+lo único que quedaba escondido tras un atajo de teclado, invisible para quien
+no lo conozca.
 
 ## 🟡 BAJOS
 

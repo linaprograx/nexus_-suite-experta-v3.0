@@ -5,10 +5,9 @@ import { Inspector } from './Inspector';
 /**
  * Panel contextual único del móvil.
  *
- * Sustituye a la pareja Inspector + MiniToolbar, que en escritorio conviven
- * porque sobra sitio —uno flota junto a la selección, el otro vive a la
- * derecha— pero que en un móvil competían por los mismos píxeles mostrando
- * propiedades solapadas del mismo nodo.
+ * Sustituye al Inspector flotante de escritorio, que en 390px se dibujaba
+ * fuera de pantalla. Reutiliza su contenido íntegro mediante la prop
+ * `embedded`, así que no hay dos versiones que puedan divergir.
  *
  * Tres alturas:
  *  - `peek`   ~92px  · solo acciones rápidas; el lienzo sigue visible

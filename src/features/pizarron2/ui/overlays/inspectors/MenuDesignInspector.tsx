@@ -75,7 +75,6 @@ export const MenuDesignInspector = ({
                 <button
                     className="w-full py-2 bg-slate-900 dark:bg-slate-700 text-white rounded shadow text-xs font-bold hover:bg-slate-800 dark:hover:bg-slate-600 transition-colors flex items-center justify-center gap-2"
                     onClick={() => {
-                        // This logic duplicates the MiniToolbar action but is good for accessibility
                         import('../../../../../services/makeMenuService').then(({ makeMenuService }) => {
                             const db = pizarronStore.getState().db;
                             const appId = pizarronStore.getState().appId;

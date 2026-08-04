@@ -239,10 +239,9 @@ export const Inspector: React.FC<InspectorProps> = ({ embedded = false }) => {
                             </div>
 
                             {/* Negrita, cursiva, subrayado y tachado.
-                                Viven aquí, y no solo en MiniToolbar, porque esa barra
-                                no se monta en móvil: al ponerlos en el Inspector
-                                aparecen a la vez en escritorio y en el panel del
-                                teléfono, sin duplicar la lógica. */}
+                                Viven aquí porque el Inspector lo consume tanto
+                                escritorio como el panel del móvil: una sola
+                                definición para las dos presentaciones. */}
                             <div className="mt-2 flex items-center gap-1">
                                 {([
                                     ['fontWeight', 'bold', 'normal', 'B', 'Negrita', 'font-bold'],
@@ -745,7 +744,6 @@ export const Inspector: React.FC<InspectorProps> = ({ embedded = false }) => {
                             <button
                                 className="w-full py-2 bg-slate-900 text-white rounded shadow text-xs font-bold hover:bg-slate-800 transition-colors flex items-center justify-center gap-2"
                                 onClick={() => {
-                                    // This logic duplicates the MiniToolbar action but is good for accessibility
                                     import('../../../../services/makeMenuService').then(({ makeMenuService }) => {
                                         const db = pizarronStore.getState().db;
                                         const appId = pizarronStore.getState().appId;

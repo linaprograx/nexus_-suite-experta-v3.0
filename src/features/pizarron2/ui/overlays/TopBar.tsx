@@ -3,7 +3,7 @@ import { logger } from "../../../../utils/logger";
 import React, { useEffect, useState } from 'react';
 import { pizarronStore } from '../../state/store';
 import { useNavigate } from 'react-router-dom';
-import { LuLayoutGrid, LuSend, LuMenu } from 'react-icons/lu';
+import { LuLayoutGrid, LuSend, LuMenu, LuUndo2, LuRedo2 } from 'react-icons/lu';
 
 export const TopBar: React.FC = () => {
     const navigate = useNavigate();
@@ -78,6 +78,28 @@ export const TopBar: React.FC = () => {
     return (
         <div style={{ top: 'calc(env(safe-area-inset-top) + 1rem)' }}
             className="absolute left-1/2 -translate-x-1/2 max-w-[calc(100vw-1rem)] overflow-x-auto no-scrollbar bg-white/90 dark:bg-slate-900/90 backdrop-blur shadow-sm border border-slate-200 dark:border-slate-700 rounded-full px-2 lg:px-4 py-1.5 lg:py-2 flex items-center gap-2 lg:gap-4 pointer-events-auto">
+            <div className="hidden lg:flex items-center gap-1">
+                <button
+                    onClick={() => pizarronStore.undo()}
+                    disabled={!pizarronStore.canUndo()}
+                    title="Deshacer (Ctrl+Z)"
+                    aria-label="Deshacer"
+                    className="w-8 h-8 flex items-center justify-center hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full text-slate-600 dark:text-slate-300 disabled:opacity-30"
+                >
+                    <LuUndo2 className="w-4 h-4" />
+                </button>
+                <button
+                    onClick={() => pizarronStore.redo()}
+                    disabled={!pizarronStore.canRedo()}
+                    title="Rehacer (Ctrl+Shift+Z)"
+                    aria-label="Rehacer"
+                    className="w-8 h-8 flex items-center justify-center hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full text-slate-600 dark:text-slate-300 disabled:opacity-30"
+                >
+                    <LuRedo2 className="w-4 h-4" />
+                </button>
+            </div>
+            <div className="hidden lg:block w-px h-4 bg-slate-300 mx-0.5" />
+
             <div className="flex items-center gap-2">
                 <button onClick={handleZoomOut} className="w-8 h-8 flex items-center justify-center hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full text-slate-600 dark:text-slate-300 font-bold">-</button>
                 <span className="text-xs font-mono w-12 text-center text-slate-900 dark:text-slate-200">{Math.round(zoom * 100)}%</span>

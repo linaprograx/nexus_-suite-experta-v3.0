@@ -17,7 +17,6 @@ import { MobileContextPanel } from './overlays/MobileContextPanel';
 import { MobileToolStrip } from './overlays/MobileToolStrip';
 import { ModoConsultaToggle } from './overlays/ModoConsultaToggle';
 import { useResponsive } from '../../../hooks/useResponsive';
-import { MiniToolbar } from './overlays/MiniToolbar';
 import { GuideOverlay } from './overlays/GuideOverlay';
 import { Firestore } from 'firebase/firestore';
 import { LibrarySidePanel } from './panels/LibrarySidePanel';
@@ -166,20 +165,14 @@ export const PizarronRoot: React.FC<PizarronRootProps> = ({ appId, boardId, user
                         <TopBar />
                         {/* Desktop-Only Overlays */}
                         <LeftRail />
-                        {/* Inspector y MiniToolbar solo en escritorio: en móvil los
-                            sustituye MobileContextPanel, que fusiona ambos. Competían
-                            por los mismos píxeles mostrando propiedades solapadas. */}
+                        {/* Inspector solo en escritorio: en móvil lo sustituye
+                            MobileContextPanel. */}
                         <div className="hidden lg:contents">
                             <Inspector />
                         </div>
                         <GuideOverlay />
                         <MiniMap />
                         <CollapsedDock />
-
-                        {/* MiniToolbar - appears above selected elements */}
-                        <div className="hidden lg:contents">
-                            <MiniToolbar />
-                        </div>
 
                         {/* Móvil: tira de herramientas y panel contextual (P0 y P1).
                             En modo consulta no se montan: el lienzo se queda con toda
