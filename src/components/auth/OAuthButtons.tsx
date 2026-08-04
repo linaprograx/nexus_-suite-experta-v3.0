@@ -114,11 +114,11 @@ export const OAuthButtons: React.FC<OAuthButtonsProps> = ({ onSuccess, onError }
             </motion.button>
 
             {/* Divider — blends with the glass card */}
-            <div className="relative flex items-center justify-center py-2">
+            <div className="relative w-full flex items-center justify-center py-2">
                 <div className="absolute inset-0 flex items-center">
                     <div className="w-full h-px bg-gradient-to-r from-transparent via-white/15 to-transparent"></div>
                 </div>
-                <div className="relative px-4 backdrop-blur-md">
+                <div className="relative w-full text-center px-4 backdrop-blur-md">
                     <span className="text-[10px] text-slate-500 uppercase tracking-[0.2em]">o continúa con email</span>
                 </div>
             </div>

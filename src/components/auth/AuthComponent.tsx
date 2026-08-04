@@ -110,7 +110,7 @@ export const AuthComponent = () => {
             style={{ transformStyle: 'preserve-3d' }}
             // m-auto (not the parent's items-center) so a card taller than the viewport
             // stays fully reachable by scrolling instead of having its top clipped.
-            className="relative z-10 m-auto w-full max-w-[340px] sm:max-w-[380px] px-4 sm:px-6 py-6"
+            className="relative z-10 m-auto w-full max-w-[290px] sm:max-w-[380px] px-4 sm:px-6 py-6"
           >
             {/* === REAL GLASS STACK (High Transparency) === */}
 
@@ -278,10 +278,10 @@ export const AuthComponent = () => {
                     animate={{ opacity: 1 }}
                     transition={{ delay: 1.2 }}
                     onClick={() => { setIsLogin(!isLogin); setError(''); }}
-                    className="mt-5 sm:mt-8 text-[10px] text-slate-500 transition-colors tracking-widest uppercase font-medium group/toggle"
+                    className="mt-7 sm:mt-9 mb-1 px-3 py-1.5 rounded-full bg-black/25 backdrop-blur-sm text-[10px] text-slate-300 transition-colors tracking-widest uppercase font-medium group/toggle"
                   >
                     {isLogin ? '¿Sin cuenta? ' : '¿Ya tienes cuenta? '}
-                    <span className="text-orange-400/80 group-hover/toggle:text-orange-300 transition-colors">
+                    <span className="text-orange-300 group-hover/toggle:text-orange-200 transition-colors">
                       {isLogin ? 'Crear Cuenta' : 'Iniciar Sesión'}
                     </span>
                   </motion.button>
