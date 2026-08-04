@@ -7,108 +7,108 @@
 ---
 
 **Última actualización:** 2026-08-03
-**Sesión anterior:** Codex — creación del relevo unificado
-**Estado:** árbol limpio. No se ha modificado código de la aplicación en esta
-sesión; se ha creado y verificado el worktree único de relevo.
+**Sesión anterior:** Claude Code
+**Estado:** árbol limpio, TypeScript 0 errores, build correcto, todo desplegado
 
-## 🚀 Hay despliegue en producción
-
-Esto es nuevo desde el último relevo y **cambia cómo se trabaja**:
+## Dónde se trabaja
 
 | | |
 |---|---|
-| **URL en producción** | `nexus-suite-experta-v3-0.vercel.app` |
-| **Proyecto de Vercel** | `nexus-suite-experta-v3-0` (id `prj_GIIJu8AZfrDJtXW3Ydfd64zrU6R7`) |
+| **Rama de desarrollo** | `feat/mobile-v1-unified` ← **trabaja aquí** |
+| **Worktree** | `/Users/lianalviz/nexus-suite-mobile-v1` |
 | **Rama de producción** | `deploy/mobile-v1` |
-| **Rama de desarrollo activa** | `feat/mobile-v1-unified` ← **trabaja aquí** |
-| **Worktree único de relevo** | `/Users/lianalviz/nexus-suite-mobile-v1` |
-| **Rama anterior** | `feat/mobile-v1` — conserva el trabajo histórico de Claude; no usarla para trabajo nuevo |
+| **URL en producción** | `nexus-suite-experta-v3-0.vercel.app` |
+| **Servidor de desarrollo** | **puerto 3100** (nunca el 3000) |
 
-**Cada push a `deploy/mobile-v1` despliega a producción automáticamente.**
+> ⚠️ Ese worktree **no tiene `node_modules`**. Antes de nada: `npm install`.
+> Y `.env` no está versionado: si la app arranca con "Firebase configuration
+> incomplete", cópialo del checkout principal
+> (`cp /Users/lianalviz/nexus_-suite-experta-v3.0/.env .env`).
 
-### El flujo de despliegue, y por qué es así
+### Desplegar
 
-`deploy/mobile-v1` es un **espejo aplanado** de la rama de desarrollo, no una rama
-normal. Motivo: el historial de `feat/mobile-v1` arrastra `ai-gateway/.env` con
-una clave de Stripe, y la protección de secretos de GitHub bloquea el push.
-
-Para desplegar:
+`deploy/mobile-v1` **desciende** de la rama de desarrollo, así que el despliegue
+es un avance directo — ya no hace falta aplanar nada:
 
 ```bash
 git checkout deploy/mobile-v1
-git checkout feat/mobile-v1-unified -- . # trae el árbol, no el historial
-git add -A && git commit -m "..."
+git merge --ff-only feat/mobile-v1-unified
 git push origin deploy/mobile-v1
-git checkout feat/mobile-v1-unified  # vuelve a desarrollo
+git checkout feat/mobile-v1-unified
 ```
 
-> ⚠️ **No uses `git merge` entre ambas.** Genera conflictos porque la rama de
-> despliegue ya contiene la versión aplanada. El `checkout -- .` es el camino.
+Cada push despliega a producción automáticamente. Las variables de entorno viven
+en el entorno **Production** de Vercel; si un build falla por variables ausentes,
+es que se añadieron solo a Preview: son entornos separados.
 
-> ⚠️ **`.env` no está versionado.** Si al cambiar de rama la app deja de
-> arrancar con "Firebase configuration incomplete", cópialo del checkout
-> principal: `cp /Users/lianalviz/nexus_-suite-experta-v3.0/.env .env`
+## Qué se hizo en esta sesión
 
-### Variables de entorno en Vercel
+**18 commits.** Resumen; el detalle y el porqué están en `WORKLOG.md`.
 
-Están en el entorno **Production**. Si un build falla con "Missing required
-environment variables", es que se añadieron solo a Preview: son entornos
-separados. `VITE_AI_GATEWAY_URL` **no puede ir vacía** — el validador usa
-`!process.env[key]` y la cadena vacía cuenta como ausente.
+### Pizarrón móvil: plan completo (P0–P4)
 
-## Dónde estamos
+- **P0** `MobileContextPanel` — un solo panel contextual, que reutiliza el
+  Inspector entero vía su prop `embedded`.
+- **P1** `MobileToolStrip` — herramientas a tira horizontal sobre la barra de
+  navegación. La lista vive en `pizarronTools.tsx`, compartida con el rail de
+  escritorio.
+- **P2** barra superior mínima: Posición y Alinear bajan al panel contextual.
+- **P3** modo consulta — disponible, pero **ya no por defecto**. Se entra
+  editando: arrancar sin poder seleccionar se leía como un fallo.
+- **P4** `useCanvasGestures` — pellizcar para zoom y dos dedos para desplazar.
 
-Fase **M3 — adaptación vista por vista**. Ver `ROADMAP.md`.
+### Segunda auditoría de Pizarrón — cerrada
 
-## Estado comprobado por Git
+Ver `AUDIT-PIZARRON.md`. Los tres graves y los tres medios, resueltos:
 
-`deploy/mobile-v1` y el worktree unificado parten del commit
-`5cdf911 feat(pizarron): modo consulta y gestos nativos en móvil (P3 y P4)`.
-Por tanto, P0, P1, P2, P3 y P4 de la adaptación móvil de Pizarrón **ya están
-implementados**. Este hecho corrige las referencias antiguas de este documento
-y de `ROADMAP.md` que aún marcaban P3/P4 como pendientes.
+- Deshacer y rehacer en móvil (existían en el store, sin exponer).
+- Biblioteca de 320px a hoja inferior.
+- Umbral único de doble toque (había 300ms y 400ms para el mismo gesto).
+- **727 líneas** de código muerto o duplicado eliminadas.
 
-## ⏸️ Lo que queda por hacer — EMPIEZA POR AQUÍ
+### Correcciones de toda la app
 
-**Hay una auditoría completa de Pizarrón en `docs/agents/AUDIT-PIZARRON.md`.**
-Léela antes de tocar ese módulo: lleva archivo:línea de cada hallazgo,
-clasificado en graves/medios/bajos, y una sección de "qué NO tocar".
+Modo oscuro que fallaba al primer toque, área segura en las cabeceras, arranque
+en Dashboard, cerrar sesión en móvil, degradados a sangre, login compacta.
 
-Lo más rentable ahora, por orden:
+## ⏸️ Lo que queda — EMPIEZA POR AQUÍ
 
-1. **G2 de la auditoría** — el mismo defecto de props cableadas está copiado en
-   4 inspectores más, y cada uno descarta campos distintos. La corrección buena
-   no es parchear uno a uno, sino cambiar la firma de
-   `VisualEffectsController` para que reciba el nodo y una sola función de
-   guardado.
-2. **Punto 4 de M3** — compactar **Mercado**. Inventario ya se hizo
-   (`StockInventoryPanel`, no `IngredientListPanel`, que fue un error de
-   diagnóstico previo). Empieza por `viewMode === 'market'` en
-   `GrimoriumView.tsx`.
-3. **Verificación real de Pizarrón móvil** — P0–P4 compilan y están desplegados,
-   pero falta comprobarlos con sesión iniciada en un teléfono real.
+1. **`docs/agents/PLAN-GRIMORIO-MERCADO.md`** — trabajo grande y **para una
+   sesión aparte**. Tres bugs de datos en móvil (inventario, selector de
+   ingredientes y mercado vacíos pese a verse en escritorio) y el cambio de
+   Mercado a catálogo de proveedores de Madrid. Tiene **cuatro decisiones que
+   hay que tomar con el usuario** antes de escribir una línea.
 
-## ⚠️ Verificación pendiente
+2. **Restos menores de Pizarrón** — B6 y B7 en `AUDIT-PIZARRON.md`: medidas de
+   escritorio sueltas y ausencia de atajos táctiles.
 
-Nada de la última tanda está verificado **en un móvil real**. Compila y pasa
-TypeScript, que no es lo mismo que funcionar.
+3. **Infraestructura** (detalle en `CONTEXT.md`): desplegar el `ai-gateway`,
+   rotar las claves de Gemini y Stripe, activar Stripe.
 
-Sin confirmar por el usuario:
-- Que rounding, opacidad y sombra ya respondan (G1).
-- El panel contextual de Pizarrón con una selección real: que el toque en el
-  agarre cicle entre las tres alturas.
-- Que los elementos nuevos ya no nazcan enormes tras cubrir los 4 puntos de
-  creación.
-- El icono del orbe al añadir a la pantalla de inicio — **iOS cachea el icono**,
-  hay que borrar el acceso directo y volver a añadirlo.
+## ⚠️ Antes de tocar Pizarrón, lee esto
 
-## Avisos
+Este módulo ha dado **cuatro casos de código escrito y nunca conectado**:
+`isMobileMode`, `editingImageId`, `ShapeSelector` y `ColorPickerModal`, más una
+rama `else` en el renderer que jamás se ejecutó. Tres ya se limpiaron.
 
-- **Servidor de desarrollo: puerto 3100.** No uses el 3000: hubo un incidente
-  real depurando un worktree sin los cambios.
-- El `ai-gateway` (3001) no está desplegado. En producción apunta a una URL de
-  marcador, así que **la IA de Cerebrity y Avatar no responde**. No es un bug
-  de layout.
-- **La clave de Stripe sigue publicada** en el historial de `main`, repo
-  público. Es de prueba, pero hay que rotarla —y la de Gemini— antes de
-  conectar Stripe de verdad. El usuario quiere ayuda; no lo hagas solo.
+> **Si algo parece una función y no responde, comprueba primero si está
+> conectado**, antes de darlo por roto y "arreglarlo".
+
+Y la lección que más tiempo costó, al retirar `MiniToolbar`:
+
+> **Comparar contra un solo componente no basta para declarar algo único.**
+> Se dieron por exclusivas tres funciones que ya vivían en `TopBar`, en
+> `MenuDesignInspector` y en los atajos de teclado. Hay que buscar en todo
+> `src/`, no en el vecino.
+
+## Verificación pendiente
+
+Lo desplegado hoy **no está probado con el dedo en su totalidad**. El usuario
+prueba en un iPhone real; el agente no puede, porque `env(safe-area-inset-*)`
+vale 0 fuera de un móvil y los gestos táctiles no se reproducen en un navegador
+de escritorio.
+
+Sin confirmar: la biblioteca como hoja inferior, deshacer/rehacer, y que el
+borrado de `MiniToolbar` no haya dejado hueco en escritorio.
+
+Punto de retorno si algo del motor se rompe: etiqueta **`pre-merge-frosty`**.

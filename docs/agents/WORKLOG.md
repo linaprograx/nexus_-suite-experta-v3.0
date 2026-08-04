@@ -39,6 +39,69 @@ la fase correspondiente del roadmap.
 
 ---
 
+## 2026-08-03 · Claude Code · Pizarrón móvil completo y limpieza del módulo
+
+**Qué**
+
+- **P0–P4 del plan de Pizarrón**, cerrados: panel contextual único, tira de
+  herramientas horizontal, barra superior mínima, modo consulta y gestos
+  nativos (pellizcar para zoom, dos dedos para desplazar).
+- **Segunda auditoría** del módulo, y sus tres graves y tres medios resueltos.
+- **727 líneas eliminadas**: `MiniToolbar` (499), `ShapeSelector` y
+  `ColorPickerModal` (228), más la rama muerta de `isMobileMode`.
+- Correcciones de app: modo oscuro, área segura, arranque, sesión, login.
+
+**Los hallazgos que más valen**
+
+*El modo oscuro fallaba al primer toque.* El botón hacía
+`prev === 'dark' ? 'light' : 'dark'`, pero el tema inicial es `'system'`. Con el
+sistema en oscuro, el primer toque pasaba de `'system'` a `'dark'` —lo que ya se
+estaba pintando— y no cambiaba nada. Ahora `toggleTheme` resuelve `'system'` a
+su valor efectivo antes de invertirlo, y vive en `UIContext` para que no vuelva
+a haber dos versiones.
+
+*Deshacer no existía en móvil.* `undo` y `redo` estaban en el store y
+funcionaban, sin exponer en ninguna parte de la interfaz táctil. En un lienzo
+que se maneja con el pulgar eso no es comodidad: es la diferencia entre poder
+equivocarse y no poder.
+
+*El doble toque usaba dos umbrales.* 400ms en `interaction.ts:365` y 300ms en
+`:542`, para el mismo gesto. Explica que el usuario reportara dos veces que
+"cuesta seleccionar": según por dónde entrara el evento, se detectaba o no.
+
+*El scroll fantasma lo causé yo.* Al estirar el degradado para cubrir el área
+segura le puse una altura mayor que la pantalla; siendo `absolute` dentro del
+`<main>` que scrollea, ese sobrante generaba altura desplazable y la vista se
+quedaba descolocada entre secciones. El fondo pasó a `fixed`: es un telón, no
+contenido.
+
+**La lección del día**
+
+Retirar `MiniToolbar` costó tres diagnósticos. Primero se dio por borrable.
+Luego, comparándolo **con el Inspector**, aparecieron tres funciones que este no
+tenía y se marcó como intocable. Finalmente, comparando **con toda la app**,
+resultó que ninguna era exclusiva: ya vivían en `TopBar`, en
+`MenuDesignInspector` y en los atajos de teclado.
+
+Comparar contra un solo componente no basta para declarar algo único. El segundo
+diagnóstico fue tan precipitado como el primero, en dirección contraria, y era
+el que habría dejado 499 líneas duplicadas para siempre.
+
+**Una decisión revertida a propósito**
+
+El modo consulta arrancaba activo, partiendo de que en barra se mira más que se
+edita. El uso real dijo lo contrario: entrar y no poder seleccionar se lee como
+un fallo, no como un modo. Se invirtió el valor por defecto. La función sigue
+ahí; deja de imponerse.
+
+**Pendiente**
+
+`PLAN-GRIMORIO-MERCADO.md` para una sesión aparte, los restos menores B6/B7 de
+la auditoría, y la infraestructura (gateway, rotación de claves, Stripe). Nada
+de lo desplegado hoy está verificado por completo en un móvil real.
+
+---
+
 ## 2026-08-02 (noche) · Claude Code · Despliegue en producción y auditoría de Pizarrón
 
 **Qué**

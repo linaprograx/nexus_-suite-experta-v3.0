@@ -56,7 +56,7 @@ solo **reordenaba** elementos, no los **escalaba** en proporción a la pantalla.
 - Respeto de `env(safe-area-inset-*)`.
 - Controles en la zona alcanzable por el pulgar.
 
-### 🔄 M3 — Adaptación vista por vista ← **AQUÍ ESTAMOS**
+### ✅ M3 — Adaptación vista por vista
 
 **La causa común del "no hay scroll":** la rama móvil de `PremiumLayout` usaba
 `h-full`, así que medía exactamente el alto del `<main>` que scrollea. Su
@@ -104,6 +104,11 @@ Por orden de gravedad:
    **P1–P4 cerradas en Git:** tira inferior de herramientas, barra superior
    mínima, modo consulta y gestos nativos. Falta verificación con sesión
    iniciada en un teléfono real.
+
+### 🔄 M3.1 — Grimorio: datos y catálogo ← **AQUÍ ESTAMOS**
+
+Trabajo grande, con documento propio: `PLAN-GRIMORIO-MERCADO.md`. Tres bugs de
+datos en móvil y el cambio de Mercado a catálogo de proveedores.
 
 ### ⬜ M4 — Rendimiento en móvil
 

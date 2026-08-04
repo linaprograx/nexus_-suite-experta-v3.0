@@ -57,6 +57,7 @@ hazlo igualmente en cuanto puedas:
 | `docs/agents/HANDOFF.md` | **Estado del relevo.** Se sobrescribe entero | Cada sesión |
 | `docs/agents/WORKLOG.md` | Diario acumulativo, lo más reciente arriba | Cada sesión |
 | `docs/agents/AUDIT-PIZARRON.md` | Auditoría del módulo más frágil, con archivo:línea | Al cerrar hallazgos |
+| `docs/agents/PLAN-GRIMORIO-MERCADO.md` | Trabajo pendiente de Grimorio y Mercado | Al avanzar en él |
 
 ## Dónde se trabaja
 

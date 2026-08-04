@@ -176,6 +176,33 @@ tipo de nodo. Así no hay dos versiones que puedan divergir.
 > `mobile-pizarron-mode` al body**, así que está muerto. Es la palanca natural
 > para las fases P1–P4; activarlo hoy dejaría Pizarrón sin herramientas.
 
+### Los fondos de pantalla completa van `fixed`, no `absolute`
+
+Un fondo `absolute` más alto que su contenedor **genera altura desplazable**
+dentro del `<main>` que scrollea: la vista se podía arrastrar sin haber
+contenido, y el desplazamiento persistía al cambiar de sección.
+
+Un telón de pantalla es `fixed`. Así no aporta scroll y cubre el ancho completo
+sin necesidad de márgenes negativos.
+
+### Una sola fuente de verdad por propiedad
+
+Los bugs más caros de este proyecto nacieron todos de lo mismo: la misma cosa
+escrita en varios sitios que fueron divergiendo. Rounding y sombra que no se
+guardaban, herramientas que aparecían en un sitio y no en otro, el toggle de
+tema con dos implementaciones.
+
+El patrón que funciona:
+- Las **herramientas** del lienzo viven en `pizarronTools.tsx`, y las consumen
+  el rail de escritorio y la tira móvil.
+- Las **propiedades** de nodo viven en el `Inspector`, y lo consumen escritorio
+  y el panel móvil vía la prop `embedded`.
+- El **tema** se alterna con `toggleTheme` de `UIContext`, no con lógica local.
+
+> Antes de declarar algo "único" de un componente, búscalo en **todo `src/`**.
+> Se dio `MiniToolbar` por irreemplazable comparándolo solo con el Inspector, y
+> resultó que sus tres funciones ya vivían en otros tres sitios.
+
 ### `100dvh`, no `100vh`, en pantallas completas
 
 En iOS Safari, `vh` incluye las barras que se colapsan: `100vh` mide más de lo
