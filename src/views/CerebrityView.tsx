@@ -809,7 +809,7 @@ const CerebrityView: React.FC<CerebrityViewProps> = () => {
 
       {/* Vibrant Gradient Background (Mobile Style) - First Child = Behind */}
       <div
-        className="absolute inset-x-0 top-0 h-[100dvh] lg:h-full pointer-events-none transition-all duration-700 ease-in-out rounded-3xl z-0"
+        className="absolute inset-x-0 top-[calc(-1*(env(safe-area-inset-top)+0.5rem))] lg:top-0 h-[calc(100dvh+env(safe-area-inset-top))] lg:h-full pointer-events-none transition-all duration-700 ease-in-out rounded-3xl z-0"
         style={{
           background: activeTab === 'creativity'
             ? 'linear-gradient(180deg, #FF00CC 0%, rgba(255, 0, 204, 0.4) 30%, rgba(255, 0, 204, 0) 45%)'

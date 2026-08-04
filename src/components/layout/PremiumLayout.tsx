@@ -112,7 +112,7 @@ export const PremiumLayout: React.FC<PremiumLayoutProps> = ({
                 rightOpen={mobile?.detailOpen}
                 onRightClose={mobile?.onDetailClose}
                 accentClass={mobile?.accentClass || 'bg-teal-500'}
-                background={<div className={`absolute inset-x-0 top-0 h-[100dvh] pointer-events-none z-0 rounded-3xl ${activeGradient}`} />}
+                background={<div className={`absolute inset-x-0 top-[calc(-1*(env(safe-area-inset-top)+0.5rem))] lg:top-0 h-[calc(100dvh+env(safe-area-inset-top))] lg:h-full pointer-events-none z-0 rounded-3xl ${activeGradient}`} />}
             />
         );
     }

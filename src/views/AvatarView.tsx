@@ -55,12 +55,12 @@ const AvatarView: React.FC<AvatarViewProps> = () => {
         <div className="min-h-full w-full flex flex-col relative">
             {/* VIBRANT GRADIENT BACKGROUND (Full Screen with Floating feel via internal padding) */}
             <div
-                className="absolute inset-x-0 top-0 h-[100dvh] lg:h-full pointer-events-none transition-all duration-700 ease-in-out z-0 rounded-3xl"
+                className="absolute inset-x-0 top-[calc(-1*(env(safe-area-inset-top)+0.5rem))] lg:top-0 h-[calc(100dvh+env(safe-area-inset-top))] lg:h-full pointer-events-none transition-all duration-700 ease-in-out z-0 rounded-3xl"
                 style={getGradientStyle()}
             />
 
             {/* Background Glows/Noise */}
-            <div className="absolute inset-x-0 top-0 h-[100dvh] lg:h-full overflow-hidden z-0 pointer-events-none rounded-3xl">
+            <div className="absolute inset-x-0 top-[calc(-1*(env(safe-area-inset-top)+0.5rem))] lg:top-0 h-[calc(100dvh+env(safe-area-inset-top))] lg:h-full overflow-hidden z-0 pointer-events-none rounded-3xl">
                 <div className="absolute top-0 left-0 w-full h-full bg-noise opacity-[0.02]"></div>
                 <div className="absolute -top-[20%] -right-[10%] w-[50%] h-[50%] bg-white/5 blur-[100px] rounded-full mix-blend-overlay"></div>
             </div>
