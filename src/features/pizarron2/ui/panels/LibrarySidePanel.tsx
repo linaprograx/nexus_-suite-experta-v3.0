@@ -176,17 +176,17 @@ export const LibrarySidePanel: React.FC = () => {
     return (
         <div
             ref={ref}
-            className="absolute top-14 left-0 bottom-0 w-80 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 shadow-xl flex z-[60] pointer-events-auto animate-in slide-in-from-left duration-200"
+            className="fixed inset-x-0 bottom-[calc(60px+env(safe-area-inset-bottom))] h-[68dvh] rounded-t-3xl flex-col lg:absolute lg:inset-x-auto lg:top-14 lg:left-0 lg:bottom-0 lg:w-80 lg:h-auto lg:rounded-none lg:flex-row bg-white dark:bg-slate-900 border-t lg:border-t-0 lg:border-r border-slate-200 dark:border-slate-800 shadow-2xl flex z-[95] pointer-events-auto overflow-hidden animate-in slide-in-from-bottom lg:slide-in-from-left duration-200"
         >
             {/* Tabs Rail */}
-            <div className="w-20 bg-slate-50 dark:bg-slate-950 border-r border-slate-200 dark:border-slate-800 flex flex-col items-center py-4 gap-2 h-full">
+            <div className="shrink-0 w-full lg:w-20 bg-slate-50 dark:bg-slate-950 border-b lg:border-b-0 lg:border-r border-slate-200 dark:border-slate-800 flex flex-row lg:flex-col items-center px-2 py-2 lg:py-4 gap-2 lg:h-full overflow-x-auto lg:overflow-visible no-scrollbar">
                 {/* Main Tabs */}
-                <div className="flex-1 flex flex-col gap-2 w-full px-2 overflow-y-auto custom-scrollbar">
+                <div className="flex flex-row lg:flex-col lg:flex-1 gap-2 w-auto lg:w-full px-0 lg:px-2 lg:overflow-y-auto custom-scrollbar">
                     {TABS.map(tab => (
                         <button
                             key={tab.id}
                             onClick={() => setActiveTab(tab.id)}
-                            className={`w-full aspect-square rounded-xl shrink-0 flex flex-col items-center justify-center gap-1 transition-all duration-300 ${activeTab === tab.id
+                            className={`w-14 lg:w-full aspect-square rounded-xl shrink-0 flex flex-col items-center justify-center gap-1 transition-all duration-300 ${activeTab === tab.id
                                 ? 'border-2 border-orange-500 bg-orange-100 text-orange-600 shadow-md scale-105'
                                 : 'text-slate-500 hover:text-orange-500 hover:bg-orange-50 hover:shadow-[0_0_10px_rgba(249,115,22,0.3)] hover:scale-105'
                                 }`}
@@ -198,7 +198,7 @@ export const LibrarySidePanel: React.FC = () => {
                 </div>
 
                 {/* Bottom Tabs (Settings) */}
-                <div className="w-full px-2 pt-2 border-t border-slate-200 dark:border-slate-800 mt-2">
+                <div className="shrink-0 w-auto lg:w-full px-0 lg:px-2 pl-2 lg:pl-2 lg:pt-2 border-l lg:border-l-0 lg:border-t border-slate-200 dark:border-slate-800 lg:mt-2">
                     <button
                         onClick={() => setActiveTab('settings')}
                         className={`w-full aspect-square rounded-xl shrink-0 flex flex-col items-center justify-center gap-1 transition-all ${activeTab === 'settings'
@@ -213,7 +213,7 @@ export const LibrarySidePanel: React.FC = () => {
             </div>
 
             {/* Content Area */}
-            <div className="flex-1 flex flex-col h-full overflow-hidden bg-slate-50/50 dark:bg-slate-900/50">
+            <div className="flex-1 min-h-0 flex flex-col lg:h-full overflow-hidden bg-slate-50/50 dark:bg-slate-900/50">
 
                 {/* Header & Search */}
                 <div className="p-4 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex flex-col gap-3">

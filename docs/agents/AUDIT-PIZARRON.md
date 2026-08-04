@@ -270,7 +270,7 @@ El store no exponía si había algo que deshacer (`history` es privado), así qu
 se añadieron `canUndo()` y `canRedo()`: los botones se atenúan en vez de
 mentir. La tira pasa de 5 a 7 botones, 330px de los 374 disponibles.
 
-### G5 ⬜ La biblioteca ocupa el 82% de la pantalla
+### G5 ✅ La biblioteca ocupa el 82% de la pantalla
 
 `ui/panels/LibrarySidePanel.tsx:179`
 
@@ -282,8 +282,12 @@ absolute top-14 left-0 bottom-0 w-80
 iPhone arranca bajo el reloj. Es una de las herramientas de la tira ("Biblioteca")
 y hoy es inusable en móvil.
 
-Debería seguir el patrón ya establecido: hoja inferior con `BottomSheet`, como
-el resto.
+**Resuelto** con el patrón ya establecido: hoja inferior de 68dvh anclada sobre
+la barra de navegación en móvil, panel lateral intacto en escritorio. El rail
+interno de pestañas pasa de columna de 80px a tira horizontal deslizable.
+
+Ya tenía tres formas de cerrarse —botón, Escape y toque fuera—, así que tapar
+la tira de herramientas no deja a nadie atrapado.
 
 ### G3 ⬜ `isMobileMode` sigue muerto *(heredado de la primera ronda)*
 
