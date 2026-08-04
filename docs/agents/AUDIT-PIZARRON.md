@@ -238,3 +238,105 @@ interacción**: nada que revertir si hay que deshacerlo.
   criterio (commit `915c957`). Punto de retorno: etiqueta `pre-merge-frosty`.
 - **`state/store.ts`**: fuente de verdad del lienzo y de la sincronización con
   Firestore.
+
+---
+
+# Segunda ronda · 2026-08-03
+
+Tras cerrar P0–P4 y probarlo con usuarios reales. La primera ronda arregló
+**dónde** estaba cada cosa; esta mira **qué falta y qué sobra**.
+
+Módulo: **62 archivos, 16.524 líneas**. Los cuatro mayores concentran el
+grueso: `renderer.ts` (2152), `store.ts` (1827), `interaction.ts` (1525),
+`Inspector.tsx` (844).
+
+## 🔴 GRAVES
+
+### G4 ⬜ No hay deshacer en móvil
+
+`undo` y `redo` **existen en el store** y funcionan, pero no están expuestos en
+`MobileToolStrip` ni en `MobileContextPanel`: cero menciones en ambos.
+
+En un lienzo táctil esto no es una comodidad, es una red de seguridad. Un
+arrastre accidental con el pulgar mueve un nodo y **no hay forma de volver
+atrás**. En escritorio se salva con Ctrl+Z, que en un teléfono no existe.
+
+**Es lo más rentable de toda esta ronda:** la función ya está hecha, solo falta
+un botón.
+
+### G5 ⬜ La biblioteca ocupa el 82% de la pantalla
+
+`ui/panels/LibrarySidePanel.tsx:179`
+
+```
+absolute top-14 left-0 bottom-0 w-80
+```
+
+320px de ancho sobre 390, y `top-14` **no reserva el área segura**, así que en
+iPhone arranca bajo el reloj. Es una de las herramientas de la tira ("Biblioteca")
+y hoy es inusable en móvil.
+
+Debería seguir el patrón ya establecido: hoja inferior con `BottomSheet`, como
+el resto.
+
+### G3 ⬜ `isMobileMode` sigue muerto *(heredado de la primera ronda)*
+
+Ahora **sí es activable**: ya existen los overlays móviles que faltaban
+(`MobileToolStrip`, `MobileContextPanel`, `ModoConsultaToggle`). Limpiar esa
+rama muerta —en `PizarronRoot` y en `renderer.ts:1579`— dejaría un solo
+mecanismo de detección en vez de dos.
+
+## 🟠 MEDIOS
+
+### M5 ⬜ Dos umbrales distintos para el doble toque
+
+`engine/interaction.ts:365` usa **400ms** y `:542` usa **300ms**, en el mismo
+archivo y para el mismo gesto. Según por dónde entre el evento, el doble toque
+se detecta o no. Explica que a veces "cueste" seleccionar.
+
+Debe haber **una constante**.
+
+### M6 ⬜ Dos componentes que no monta nadie
+
+`ShapeSelector.tsx` y `ColorPickerModal.tsx` no aparecen referenciados en
+ningún sitio. O son código muerto —y se borran— o son función perdida que
+alguien escribió y nunca conectó, como pasó con `isMobileMode` y con
+`editingImageId`. **Hay que decidir cuál de las dos cosas es** antes de que se
+sumen a la lista de fantasmas del módulo.
+
+### M4 ⬜ `MiniToolbar` duplicado en escritorio *(heredado)*
+
+499 líneas repitiendo propiedades del Inspector. En móvil ya no se monta, y
+tras esta ronda el Inspector cubre además negrita, cursiva, espaciado y
+mayúsculas. **La duplicación en escritorio ya no aporta nada**: candidato claro
+a eliminación, no solo a unificación.
+
+## 🟡 BAJOS
+
+### B6 ⬜ Restos de medidas de escritorio
+`BoardInspector` con `h-[100px]`, `TopBar` con `w-[320px]` en la lista de
+tableros. Menores, pero conviene barrerlos.
+
+### B7 ⬜ Sin atajos táctiles equivalentes al teclado
+En escritorio hay atajos (V, T, R, L, P, Espacio). En móvil no hay equivalente
+para nada. Un pulsado largo sobre el lienzo podría abrir un menú rápido.
+
+---
+
+## Lo que yo haría, por orden
+
+1. **G4 — deshacer.** Coste bajo, valor alto: la función existe. Es lo único de
+   esta lista que cambia la sensación de seguridad al usar el lienzo con el dedo.
+2. **M5 — unificar el umbral.** Una constante. Explica una fricción que el
+   usuario ya ha reportado dos veces.
+3. **G5 — la biblioteca a hoja inferior.** Devuelve una herramienta entera al
+   móvil, con un patrón que ya está construido y probado.
+4. **M6 — decidir sobre los dos componentes huérfanos.** Antes de que nadie
+   construya encima de ellos creyendo que funcionan.
+5. **M4 y G3 — limpieza.** Quitar `MiniToolbar` y la rama muerta de
+   `isMobileMode`. Menos código y una sola fuente de verdad.
+
+> **Advertencia sobre el orden:** los puntos 1 a 3 se pueden hacer sin tocar el
+> motor. Los puntos 4 y 5 sí lo tocan, y `renderer.ts` e `interaction.ts` vienen
+> de una fusión con conflictos resueltos por criterio. Punto de retorno:
+> etiqueta `pre-merge-frosty`.
