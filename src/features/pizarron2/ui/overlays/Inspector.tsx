@@ -189,6 +189,36 @@ export const Inspector: React.FC<InspectorProps> = ({ embedded = false }) => {
                                 currentFont={firstNode.content.fontFamily || 'Inter'}
                                 onChange={(f) => updateNode({ fontFamily: f })}
                             />
+
+                            {/* Negrita, cursiva, subrayado y tachado.
+                                Viven aquí, y no solo en MiniToolbar, porque esa barra
+                                no se monta en móvil: al ponerlos en el Inspector
+                                aparecen a la vez en escritorio y en el panel del
+                                teléfono, sin duplicar la lógica. */}
+                            <div className="mt-2 flex items-center gap-1">
+                                {([
+                                    ['fontWeight', 'bold', 'normal', 'B', 'Negrita', 'font-bold'],
+                                    ['fontStyle', 'italic', 'normal', 'I', 'Cursiva', 'italic font-serif'],
+                                    ['textDecoration', 'underline', 'none', 'U', 'Subrayado', 'underline'],
+                                    ['textDecoration', 'line-through', 'none', 'S', 'Tachado', 'line-through'],
+                                ] as const).map(([campo, activo, inactivo, letra, titulo, clase]) => {
+                                    const puesto = (firstNode.content as any)?.[campo] === activo;
+                                    return (
+                                        <button
+                                            key={titulo}
+                                            title={titulo}
+                                            aria-label={titulo}
+                                            aria-pressed={puesto}
+                                            onClick={() => updateNode({ [campo]: puesto ? inactivo : activo } as any)}
+                                            className={`w-10 h-10 rounded-lg text-sm transition-colors ${clase} ${puesto
+                                                ? 'bg-orange-50 dark:bg-orange-900/25 text-orange-600 dark:text-orange-400'
+                                                : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'}`}
+                                        >
+                                            {letra}
+                                        </button>
+                                    );
+                                })}
+                            </div>
                             <div className="mt-2 text-xs">
                                 <TextStyleController
                                     fontSize={firstNode.content.fontSize || 16}
