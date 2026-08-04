@@ -55,22 +55,22 @@ const AvatarView: React.FC<AvatarViewProps> = () => {
         <div className="min-h-full w-full flex flex-col relative">
             {/* VIBRANT GRADIENT BACKGROUND (Full Screen with Floating feel via internal padding) */}
             <div
-                className="absolute inset-x-[-0.5rem] lg:inset-x-0 top-[calc(-1*(env(safe-area-inset-top)+0.5rem))] lg:top-0 h-[calc(100dvh+env(safe-area-inset-top))] lg:h-full pointer-events-none transition-all duration-700 ease-in-out z-0 rounded-3xl"
+                className="fixed lg:absolute inset-x-0 top-0 h-[100dvh] lg:h-full pointer-events-none transition-all duration-700 ease-in-out z-0 rounded-3xl"
                 style={getGradientStyle()}
             />
 
             {/* Background Glows/Noise */}
-            <div className="absolute inset-x-[-0.5rem] lg:inset-x-0 top-[calc(-1*(env(safe-area-inset-top)+0.5rem))] lg:top-0 h-[calc(100dvh+env(safe-area-inset-top))] lg:h-full overflow-hidden z-0 pointer-events-none rounded-3xl">
+            <div className="fixed lg:absolute inset-x-0 top-0 h-[100dvh] lg:h-full overflow-hidden z-0 pointer-events-none rounded-3xl">
                 <div className="absolute top-0 left-0 w-full h-full bg-noise opacity-[0.02]"></div>
                 <div className="absolute -top-[20%] -right-[10%] w-[50%] h-[50%] bg-white/5 blur-[100px] rounded-full mix-blend-overlay"></div>
             </div>
 
             {/* PERSISTENT HEADER SECTION */}
-            <div className="flex-shrink-0 pt-4 lg:pt-8 pb-3 lg:pb-4 z-10 relative px-4 lg:px-12">
+            <div className="flex-shrink-0 pt-2 lg:pt-8 pb-3 lg:pb-4 z-10 relative px-4 lg:px-12">
 
                 {/* Titles */}
                 <div className="flex flex-col items-start gap-1 mb-4 lg:mb-6">
-                    <h1 className="text-6xl lg:text-8xl font-black italic text-white tracking-tighter drop-shadow-2xl leading-none opacity-90 pl-1"
+                    <h1 className="text-[4.25rem] lg:text-8xl font-black italic text-white tracking-tighter drop-shadow-2xl leading-none opacity-90 pl-1"
                         style={{ fontFamily: 'Georgia, serif' }}>
                         Avatar
                     </h1>

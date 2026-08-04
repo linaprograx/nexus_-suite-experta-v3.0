@@ -17,7 +17,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
     const { compactMode } = useUI();
 
     return (
-        <div className={`min-h-full w-full lg:h-full lg:overflow-y-auto bg-gray-50 dark:bg-gray-900 pb-32 transition-all duration-500 custom-scrollbar ${compactMode ? 'p-3' : 'p-3 md:p-6 lg:p-10'}`}>
+        <div className={`min-h-full w-full lg:h-full lg:overflow-y-auto bg-slate-50 dark:bg-slate-950 pb-32 transition-all duration-500 custom-scrollbar ${compactMode ? 'p-3' : 'p-3 md:p-6 lg:p-10'}`}>
             {/* Header Zone */}
             <div className="mb-4 md:mb-8 animate-in fade-in slide-in-from-top-4 duration-700">
                 {header}

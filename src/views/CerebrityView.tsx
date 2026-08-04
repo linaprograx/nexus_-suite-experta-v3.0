@@ -799,7 +799,7 @@ const CerebrityView: React.FC<CerebrityViewProps> = () => {
     : <PowerTreeColumn mode={activeTab === 'creativity' ? 'cerebrity' : 'lab'} powers={allPowers} onClickPower={handlePowerClick} />;
 
   return (
-    <div className="min-h-full lg:h-[calc(100dvh-2rem)] w-full flex flex-col px-3 lg:px-8 py-3 lg:py-6 relative">
+    <div className="min-h-full lg:h-[calc(100dvh-2rem)] w-full flex flex-col px-3 lg:px-8 pt-1 pb-3 lg:py-6 relative">
       {/* Save toast */}
       {saveToast && (
         <div className="fixed top-6 right-6 z-[60] px-4 py-2.5 bg-emerald-500/90 text-white rounded-full text-xs font-bold uppercase tracking-widest shadow-lg backdrop-blur-md animate-in fade-in slide-in-from-top-2 duration-300 flex items-center gap-2">
@@ -809,7 +809,7 @@ const CerebrityView: React.FC<CerebrityViewProps> = () => {
 
       {/* Vibrant Gradient Background (Mobile Style) - First Child = Behind */}
       <div
-        className="absolute inset-x-[-0.5rem] lg:inset-x-0 top-[calc(-1*(env(safe-area-inset-top)+0.5rem))] lg:top-0 h-[calc(100dvh+env(safe-area-inset-top))] lg:h-full pointer-events-none transition-all duration-700 ease-in-out rounded-3xl z-0"
+        className="fixed lg:absolute inset-x-0 top-0 h-[100dvh] lg:h-full pointer-events-none transition-all duration-700 ease-in-out rounded-3xl z-0"
         style={{
           background: activeTab === 'creativity'
             ? 'linear-gradient(180deg, #FF00CC 0%, rgba(255, 0, 204, 0.4) 30%, rgba(255, 0, 204, 0) 45%)'
@@ -827,7 +827,7 @@ const CerebrityView: React.FC<CerebrityViewProps> = () => {
       <div className="flex-shrink-0 mb-3 lg:mb-6 z-10 text-white relative">
         <div className="mb-4 pl-2">
           <div className="flex items-center gap-3 flex-wrap">
-            <h1 className="text-5xl lg:text-7xl font-black italic tracking-tighter leading-[0.8] mb-1 drop-shadow-xl"
+            <h1 className="text-[3.75rem] lg:text-7xl font-black italic tracking-tighter leading-[0.8] mb-1 drop-shadow-xl"
               style={{ fontFamily: 'Georgia, serif', textShadow: '0 4px 30px rgba(0,0,0,0.3)' }}>
               Cerebrity
             </h1>

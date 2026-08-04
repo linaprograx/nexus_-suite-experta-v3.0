@@ -75,6 +75,29 @@ const AppLayout: React.FC<any> = ({
     const navigate = useNavigate();
     const location = useLocation();
 
+    /**
+     * Arranque en Dashboard cuando la app se abre desde la pantalla de inicio.
+     *
+     * iOS guarda en el acceso directo la URL exacta desde la que se creó, no el
+     * `start_url` del manifest, y además restaura la última página al reanudar.
+     * Por eso la app abría en Avatar: se añadió estando allí. Aquí se detecta el
+     * lanzamiento en modo app (standalone) y, si es un arranque en frío —no una
+     * navegación interna—, se redirige a Dashboard, que es la pantalla pensada
+     * como inicio.
+     */
+    React.useEffect(() => {
+        const enModoApp = window.matchMedia('(display-mode: standalone)').matches
+            || (window.navigator as any).standalone === true;
+        const arranqueEnFrio = !sessionStorage.getItem('nexus:arrancado');
+        sessionStorage.setItem('nexus:arrancado', '1');
+
+        if (enModoApp && arranqueEnFrio && location.pathname !== '/') {
+            navigate('/', { replace: true });
+        }
+        // Solo al montar: una navegación posterior del usuario no debe redirigirse.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
     // #18 · Push Grimorio business alerts into the app-wide notification tray
     const { menu: activeMenu } = useActiveMenu();
     const grimorioAlerts = React.useMemo(
@@ -120,7 +143,7 @@ const AppLayout: React.FC<any> = ({
                 {/* The pb-[…] reserves the bottom bar's footprint so the last row of
                     any list stays tappable instead of sitting under the glass. Dropped
                     at lg, where the bar is hidden and the sidebar takes over. */}
-                <main className="flex-1 overflow-y-auto p-2 sm:p-4 pt-[calc(env(safe-area-inset-top)+0.5rem)] lg:pt-4 pb-[calc(60px_+_env(safe-area-inset-bottom)_+_0.5rem)] lg:pb-4">
+                <main className="flex-1 overflow-y-auto overscroll-none p-2 sm:p-4 pt-[calc(env(safe-area-inset-top)+0.5rem)] lg:pt-4 pb-[calc(60px_+_env(safe-area-inset-bottom)_+_0.5rem)] lg:pb-4">
                     <AppRoutes
                         db={db} userId={userId} appId={appId} auth={auth} storage={storage}
                     />

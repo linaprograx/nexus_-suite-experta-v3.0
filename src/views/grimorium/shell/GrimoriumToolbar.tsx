@@ -104,7 +104,7 @@ export const GrimoriumToolbar: React.FC<{ collapsed?: boolean }> = ({ collapsed 
         <div className="flex flex-col w-full">
             {/* 1. HEADER TITLE — collapses on scroll */}
             <div className={`pl-2 z-10 text-white relative overflow-hidden transition-all duration-300 ease-out ${collapsed ? 'max-h-0 opacity-0 mb-0' : 'max-h-40 opacity-100 mb-2 lg:mb-6'}`}>
-                <h1 className="text-6xl lg:text-7xl font-black italic tracking-tighter leading-[0.8] mb-1 drop-shadow-xl"
+                <h1 className="text-[4.25rem] lg:text-7xl font-black italic tracking-tighter leading-[0.8] mb-1 drop-shadow-xl"
                     style={{ fontFamily: 'Georgia, serif', textShadow: '0 4px 30px rgba(0,0,0,0.3)' }}>
                     Grimorio
                 </h1>
