@@ -110,7 +110,7 @@ export const AuthComponent = () => {
             style={{ transformStyle: 'preserve-3d' }}
             // m-auto (not the parent's items-center) so a card taller than the viewport
             // stays fully reachable by scrolling instead of having its top clipped.
-            className="relative z-10 m-auto w-full max-w-[380px] px-4 sm:px-6 py-6"
+            className="relative z-10 m-auto w-full max-w-[340px] sm:max-w-[380px] px-4 sm:px-6 py-6"
           >
             {/* === REAL GLASS STACK (High Transparency) === */}
 

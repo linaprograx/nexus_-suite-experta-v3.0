@@ -70,7 +70,7 @@ const AvatarView: React.FC<AvatarViewProps> = () => {
 
                 {/* Titles */}
                 <div className="flex flex-col items-start gap-1 mb-4 lg:mb-6">
-                    <h1 className="text-[4.25rem] lg:text-8xl font-black italic text-white tracking-tighter drop-shadow-2xl leading-none opacity-90 pl-1"
+                    <h1 className="text-[2.25rem] lg:text-8xl font-black italic text-white tracking-tighter drop-shadow-2xl leading-none opacity-90 pl-1"
                         style={{ fontFamily: 'Georgia, serif' }}>
                         Avatar
                     </h1>

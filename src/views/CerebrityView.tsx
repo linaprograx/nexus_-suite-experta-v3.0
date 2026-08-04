@@ -827,7 +827,7 @@ const CerebrityView: React.FC<CerebrityViewProps> = () => {
       <div className="flex-shrink-0 mb-3 lg:mb-6 z-10 text-white relative">
         <div className="mb-4 pl-2">
           <div className="flex items-center gap-3 flex-wrap">
-            <h1 className="text-[3.75rem] lg:text-7xl font-black italic tracking-tighter leading-[0.8] mb-1 drop-shadow-xl"
+            <h1 className="text-[2rem] lg:text-7xl font-black italic tracking-tighter leading-[0.8] mb-1 drop-shadow-xl"
               style={{ fontFamily: 'Georgia, serif', textShadow: '0 4px 30px rgba(0,0,0,0.3)' }}>
               Cerebrity
             </h1>

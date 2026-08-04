@@ -40,11 +40,15 @@ export const PizarronRoot: React.FC<PizarronRootProps> = ({ appId, boardId, user
     // Detect if running in mobile mode (via body class)
     const [isMobileMode, setIsMobileMode] = React.useState(false);
 
-    // P3 · Modo consulta. En móvil se entra mirando, no editando: el andamiaje
-    // de edición solo aparece cuando se pide. En escritorio no aplica.
+    // P3 · Modo consulta, disponible pero NO por defecto.
+    //
+    // Arrancaba en consulta partiendo de que el uso mayoritario en barra sería
+    // mirar. En la práctica el usuario entra a editar, y encontrarse el lienzo
+    // sin poder seleccionar se lee como un fallo, no como un modo. Se invierte:
+    // se entra editando y el botón lleva a consulta cuando se quiere leer.
     const { isMobile, isTablet } = useResponsive();
     const lienzoCompacto = isMobile || isTablet;
-    const [enConsulta, setEnConsulta] = React.useState(true);
+    const [enConsulta, setEnConsulta] = React.useState(false);
 
     // En consulta la herramienta activa pasa a 'hand': así un toque desplaza el
     // lienzo en vez de crear o arrastrar elementos. Es lo que hace que el modo
