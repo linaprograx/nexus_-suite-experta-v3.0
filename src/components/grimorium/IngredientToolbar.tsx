@@ -1,6 +1,7 @@
 import React from 'react';
 import { Icon } from '../ui/Icon';
 import { ICONS } from '../ui/icons';
+import { FranjaFija } from '../layout/FranjaFija';
 import { Button } from '../ui/Button';
 
 interface IngredientToolbarProps {
@@ -27,7 +28,7 @@ export const IngredientToolbar: React.FC<IngredientToolbarProps> = ({
     onImport
 }) => {
     return (
-        <div className="flex items-center gap-2 w-full mb-4 animate-in fade-in slide-in-from-top-2 duration-300 sticky top-[var(--cabecera,0px)] z-20 lg:static backdrop-blur-md">
+        <FranjaFija className="flex items-center gap-2 w-full mb-4 animate-in fade-in slide-in-from-top-2 duration-300">
             {/* Search Bar - Flexible width */}
             <div className="relative flex-1 group">
                 <Icon svg={ICONS.search} className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-emerald-400 group-focus-within:text-emerald-500 transition-colors" />
@@ -80,6 +81,6 @@ export const IngredientToolbar: React.FC<IngredientToolbarProps> = ({
                     <Icon svg={ICONS.upload} className="w-4 h-4" />
                 </Button>
             )}
-        </div>
+        </FranjaFija>
     );
 };

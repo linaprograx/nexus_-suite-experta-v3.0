@@ -9,6 +9,7 @@ import { useApp } from '../../context/AppContext';
 import { doc, deleteDoc, writeBatch } from 'firebase/firestore';
 import { calculateInventoryMetrics } from '../../utils/stockUtils';
 import { StockResolverPanel } from '../../components/stock/StockResolverPanel';
+import { FranjaFija } from '../layout/FranjaFija';
 import { useStockResolver } from '../../features/stock/hooks/useStockResolver';
 import { PhysicalCountModal } from './PhysicalCountModal';
 
@@ -169,7 +170,7 @@ export const StockInventoryPanel: React.FC<StockInventoryPanelProps> = ({
             {/* STICKY GLASS TOOLBAR (Search 3/4 + Category 1/4) */}
             {/* HIDE IF EXTERNAL CONTROLS ARE PROVIDED */}
             {(externalSearchTerm === undefined && externalCategory === undefined) && (
-                <div className="shrink-0 px-3 pb-3 pt-2 lg:px-6 lg:pb-4 relative sticky top-[var(--cabecera,0px)] z-20 lg:static backdrop-blur-md">
+                <FranjaFija className="shrink-0 px-3 pb-3 pt-2 lg:px-6 lg:pb-4 relative">
                     <div className="flex gap-2 items-center w-full">
                         {/* Search Bar - Grows */}
                         <div className="relative flex-1 group">
@@ -248,7 +249,7 @@ export const StockInventoryPanel: React.FC<StockInventoryPanelProps> = ({
                             </Button>
                         )}
                     </div>
-                </div>
+                </FranjaFija>
 
             )}
 

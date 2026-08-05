@@ -99,9 +99,27 @@ export const StackedMobileShell: React.FC<StackedMobileShellProps> = ({
         >
             {background}
 
+            {/* Tapa de la zona fija.
+                La cabecera y la barra de filtros son transparentes a propósito:
+                el degradado de la vista es `fixed`, así que un fondo propio
+                nunca casaría con él y se vería la costura. En su lugar se pinta
+                aquí una SEGUNDA copia de ese mismo fondo, recortada a la altura
+                de la zona fija (cabecera + filtros). Al ser el mismo elemento
+                `fixed`, cae en los mismos píxeles: opaco, sin costura y sin
+                tener que replicar el degradado a mano. Va por encima del
+                contenido y por debajo de las barras. */}
             {header && (
-                <div ref={refCabecera} className="shrink-0 sticky top-0 px-3 pt-3 pb-1 z-30">
-                    <div className="absolute inset-0 -z-10 backdrop-blur-md" />
+                <div
+                    className="lg:hidden fixed inset-x-0 top-0 z-[25] overflow-hidden pointer-events-none"
+                    style={{ height: 'calc(var(--cabecera, 0px) + var(--filtros, 0px))' }}
+                    aria-hidden
+                >
+                    {background}
+                </div>
+            )}
+
+            {header && (
+                <div ref={refCabecera} className="shrink-0 sticky top-0 px-3 pt-3 z-30">
                     {header}
                 </div>
             )}

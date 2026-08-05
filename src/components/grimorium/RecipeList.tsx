@@ -5,6 +5,7 @@ import { Card } from '../ui/Card';
 import { Button } from '../ui/Button';
 import { Icon } from '../ui/Icon';
 import { ICONS } from '../ui/icons';
+import { FranjaFija } from '../layout/FranjaFija';
 import { useUI } from '../../context/UIContext';
 
 // Simple utility for class names
@@ -196,7 +197,7 @@ export const RecipeList: React.FC<RecipeListProps> = ({
   return (
     <div className="lg:h-full flex flex-col w-full max-w-full">
       {/* Toolbar Header */}
-      <div className="py-4 flex flex-col gap-4 w-full sticky top-[var(--cabecera,0px)] z-20 lg:static backdrop-blur-md">
+      <FranjaFija className="py-4 flex flex-col gap-4 w-full">
         {/* Search Bar - Full Width */}
         <div className="relative w-full group">
           <Icon svg={ICONS.search} className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-emerald-500 transition-colors" />
@@ -266,7 +267,7 @@ export const RecipeList: React.FC<RecipeListProps> = ({
             <span className="hidden sm:inline">Nueva</span>
           </button>
         </div>
-      </div>
+      </FranjaFija>
 
       {/* List Header (Actions) */}
       <div className="px-1 py-2 flex items-center justify-between text-xs text-slate-500 mb-2">
