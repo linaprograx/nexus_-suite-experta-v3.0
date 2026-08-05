@@ -105,10 +105,13 @@ Por orden de gravedad:
    mínima, modo consulta y gestos nativos. Falta verificación con sesión
    iniciada en un teléfono real.
 
-### 🔄 M3.1 — Grimorio: datos y catálogo ← **AQUÍ ESTAMOS**
+### 🔄 M3.1 — Grimorio: datos, operación y catálogo ← **AQUÍ ESTAMOS**
 
-Trabajo grande, con documento propio: `PLAN-GRIMORIO-MERCADO.md`. Tres bugs de
-datos en móvil y el cambio de Mercado a catálogo de proveedores.
+Trabajo transversal de **Recetas / Inventario / Mercado**, con documento propio:
+`PLAN-GRIMORIO-MERCADO.md`. El diagnóstico de código de los tres bugs móviles
+está cerrado; falta instrumentar la sesión iPhone a 390px antes de modificar.
+El catálogo de proveedores, pedido, facturas, recetas compartidas y guía interna
+se planifican por entregas en ese documento y requieren decisiones previas.
 
 ### ⬜ M4 — Rendimiento en móvil
 

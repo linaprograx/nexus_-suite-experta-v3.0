@@ -8,7 +8,7 @@
 
 **Última actualización:** 2026-08-05
 **Sesión anterior:** Codex
-**Estado:** árbol limpio tras commit; TypeScript 0 errores y build correcto.
+**Estado:** diagnóstico y roadmap de Grimorio documentados; no se cambió código de producto.
 
 ## Dónde se trabaja
 
@@ -39,6 +39,27 @@ No se ha desplegado esta sesión.
 
 ## Qué se cerró en esta sesión
 
+### Grimorio — diagnóstico read-only y roadmap transversal
+
+- Se trazaron los tres bugs móviles de datos sin cambiar código. Inventario no
+  renderiza el catálogo de ~1300 ingredientes: construye stock desde compras
+  y movimientos. Las alertas corresponden a compras huérfanas/sin vínculo.
+- El selector de vínculo recibe `allIngredients`, el mismo catálogo que Mercado;
+  si resulta vacío hay que comprobar la consulta/hook en la sesión afectada.
+- Mercado móvil y escritorio consumen la misma `IngredientListPanel` y el mismo
+  `allIngredients`; el shell móvil solo reubica columnas. No hay evidencia para
+  corregir CSS o crear una fuente móvil distinta.
+- Se reescribió `PLAN-GRIMORIO-MERCADO.md` como roadmap coordinado de Recetas,
+  Inventario y Mercado: catálogo, pedido, facturas, recetas compartidas y guía
+  interna. Pizarrón y Oráculo permanecen fuera.
+
+### Pendiente imprescindible
+
+En un iPhone/sesión autenticada a 390px, capturar el estado de
+`useIngredients` (longitud/loading/error), compras y stock calculado. No hacer
+la corrección hasta distinguir en tiempo real: catálogo vacío, error Firestore,
+filtro/render, o compras huérfanas.
+
 ### Tema, escritorio
 
 - El botón de claro/oscuro de la barra lateral resuelve ahora el **tema
@@ -67,14 +88,12 @@ No se ha desplegado esta sesión.
 
 ## Lo siguiente
 
-1. **Validación real en iPhone** del pellizco a dos dedos: no deben aparecer
-   nodos de texto; comprobar también biblioteca como hoja inferior y
-   deshacer/rehacer.
-2. **`PLAN-GRIMORIO-MERCADO.md`**, en sesión separada: diagnosticar los tres
-   bugs de datos en móvil antes de cambiar diseño. El catálogo de proveedores
-   requiere las cuatro decisiones del usuario escritas en ese plan antes de
-   programar.
-3. Menores de Pizarrón B6/B7 y la infraestructura, solo cuando se prioricen.
+1. **Validación real Grimorio a 390px** con sesión afectada y los cuatro datos
+   de instrumentación descritos en `PLAN-GRIMORIO-MERCADO.md`.
+2. Acordar las cuatro decisiones del catálogo global antes de programarlo;
+   después validar un proveedor de prueba.
+3. Validación real en iPhone del pellizco de Pizarrón y luego sus menores B6/B7,
+   solo cuando se prioricen.
 
 ## Recordatorios críticos
 

@@ -41,6 +41,15 @@ creativa), **Pizarrón** (canvas colaborativo), **Avatar**, **Colegium**,
 | Gesto de bordes | `src/hooks/useEdgeSwipe.ts` |
 | Layout de 3 columnas | `src/components/layout/PremiumLayout.tsx` |
 
+### Grimorio: catálogo y stock no son sinónimos
+
+`useIngredients` lee el catálogo maestro de
+`artifacts/{appId}/users/{uid}/grimorio-ingredients`. El stock visible se
+deriva, en cambio, de `users/{uid}/purchases` menos `stock_movements`; una
+compra sin `ingredientId` válido se trata como conflicto de vinculación. Motivo:
+el catálogo describe lo que se puede adquirir y el stock describe lo que se ha
+recibido/consumido. No unificar ambos sin una decisión de producto explícita.
+
 `appSections.ts` alimenta a la vez el sidebar de escritorio, la barra inferior
 de móvil y el centro de mando de secciones en Personal. **No crees una segunda
 lista de secciones.**

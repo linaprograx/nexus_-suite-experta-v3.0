@@ -1,112 +1,107 @@
-# Plan — Grimorio: Inventario móvil y Mercado como catálogo
+# Plan — Grimorio: Recetas, Inventario y Mercado
 
-**Creado:** 2026-08-03 · **Estado:** sin empezar
-**Para:** una sesión dedicada. No mezclar con el trabajo de Pizarrón.
+**Actualizado:** 2026-08-05 · **Estado:** diagnóstico cerrado; decisiones de producto pendientes.
 
-> Este documento es el punto de partida de esa sesión. Léelo entero, y antes de
-> tocar código lee también `AGENTS.md`, `HANDOFF.md` y `CONTEXT.md`.
+Grimorio es un solo flujo operativo: **Mercado/pedido inicial → Inventario y
+reglas → creación o recepción de Recetas → coste y operación**. Pizarrón y
+Oráculo quedan expresamente fuera de este plan.
 
----
+## Diagnóstico móvil (lectura de código)
 
-## Parte 1 · Bugs de datos en móvil
+La comprobación en una sesión autenticada a 390px sigue pendiente: no había una
+sesión abierta disponible durante este diagnóstico. El recorrido de datos sí
+permite separar las causas, sin inferir que sean de CSS.
 
-Reportados en un iPhone real, con sesión iniciada. **No son problemas de
-maquetación**: los mismos datos que en escritorio se ven, en móvil no llegan.
+| Incidencia | Veredicto | Evidencia |
+|---|---|---|
+| Inventario muestra alertas, no ~1300 productos | **No es la lista del catálogo.** El inventario solo construye existencias desde compras, menos movimientos. Si las compras no tienen `ingredientId` válido, se omiten de la lista y aparecen como conflictos de vinculación. | `GrimoriumView.tsx:296-303`, `usePurchaseIngredient.ts:14-39`, `stockUtils.ts:23-61` |
+| Selector «Seleccionar ingrediente» vacío | **Debe recibir el catálogo** a través de `allIngredients`; no tiene rama móvil propia. Si está vacío, `useIngredients` devolvió `[]`/error/no se habilitó, o el usuario observa otro origen de selector. | `StockResolverPanel.tsx:86-97`; el catálogo procede de `useIngredients.ts:18-28` |
+| Mercado vacío en móvil, lleno en escritorio | **La vista móvil usa la misma instancia de `IngredientListPanel` y el mismo `allIngredients`.** No hay bifurcación móvil de datos ni de renderizado en la llamada. El siguiente paso debe capturar `isLoading`, `error` y longitud en la sesión afectada; el código no sustenta una corrección responsive. | `GrimoriumView.tsx:90-96,835-855`; `PremiumLayout.tsx:104-117` transforma columnas en hojas, no los datos. |
 
-### 1.1 Inventario muestra alertas en vez de los ~1300 productos
+### Prueba mínima pendiente en iPhone, 390px
 
-En escritorio el inventario lista unos **1300 productos**. En móvil, en su
-lugar aparecen **alertas de vinculación** del tipo *"tienes que vincular los
-ingredientes"*.
+1. Abrir Recetas, Inventario y Mercado con la cuenta afectada; capturar la
+   consola para errores de Firestore e índice/permisos.
+2. Registrar, temporalmente y sin datos sensibles, `allIngredients.length`,
+   `useIngredients.isLoading/error`, `purchaseHistory.length` y
+   `calculatedStockItems.length`.
+3. Si `allIngredients > 0` y Mercado sigue vacío, investigar
+   `IngredientListPanel`/filtros; si es 0, investigar la consulta o permisos.
+4. Si hay compras sin `ingredientId`, usar el resolver; si hay ~1300 ingredientes
+   pero ninguna compra, decidir explícitamente si Inventario debe representar
+   catálogo, existencias reales, o ambos como listas distintas.
 
-Como el layout ya se compactó y funciona (`StockInventoryPanel`), la sospecha
-es que la vista móvil renderiza otra rama —un panel de alertas o un estado
-vacío— en vez de la lista. **Primer sitio a mirar:** qué condiciona esa rama y
-si depende de algo que en móvil no se resuelve (un `useMemo` con dependencias
-distintas, una carga diferida, un `viewMode`).
+No aplicar cambios hasta obtener esa evidencia de sesión. En particular, no
+mezclar «catálogo» con «stock real»: hoy son modelos distintos.
 
-### 1.2 El selector de ingredientes no lista nada
+## Decisiones bloqueantes del catálogo global
 
-Al tocar *"selecciona el ingrediente"* en esa alerta, **no aparece ninguna
-lista**. Puede ser el mismo origen que 1.1 —la colección no llega— o un panel
-que en móvil se monta vacío.
+Antes de implementar Mercado-catálogos hay que acordar:
 
-Ruta de datos: `artifacts/{appId}/users/{uid}/grimorio-ingredients`.
+1. **Entrada y extracción:** PDF/Excel/CSV publicado, scraping autorizado o
+   carga manual; propietario de la extracción y frecuencia de actualización.
+   No existe instalada la skill `csv-inventario-app` citada en la nota previa.
+2. **Taxonomía:** familia → subfamilia, más etiquetas transversales necesarias
+   (frío/seco, alcohólico, formato, alérgenos, etc.).
+3. **Visibilidad:** catálogo global leído por todas las cuentas, o copia por
+   usuario; cambia reglas Firestore, coste de lectura, actualizaciones y borrado.
+4. **Precio:** precio vigente con fecha, o histórico inmutable por proveedor y
+   referencia. La recomendación a validar es histórico por observación de
+   precio, manteniendo una proyección vigente para consulta.
 
-### 1.3 Mercado sale vacío en móvil
+Restricciones: `src/core/costing/costCalculator.ts` sigue siendo la fuente única
+de coste y `src/utils/packNormalization.ts` la de unidades/formato. Cualquier
+importación debe pasar por ellas; no crear una calculadora o normalizador paralelo.
 
-En escritorio está lleno; en móvil, vacío. Mismo patrón que 1.1, y refuerza la
-hipótesis de que hay una condición de carga o de render que distingue por
-tamaño de pantalla donde no debería.
+## Roadmap transversal por entregas
 
-> **Antes de tocar nada:** comprobar en el navegador, a 390px y **con sesión
-> iniciada**, si los datos llegan al cliente (¿está poblado el store/hook?) o si
-> llegan y no se pintan. Esa bifurcación decide todo el trabajo posterior.
+### E1 — Fiabilidad de datos y contrato operativo
 
----
+- Ejecutar la prueba móvil anterior y reparar solo la causa demostrada.
+- Definir la separación visible entre catálogo, compra y stock real.
+- Especificar el pedido inicial ficticio mensual: crea inventario desde una
+  proyección, no factura ni gasto, y debe ser identificable/reversible.
+- Acordar permisos para recetas compartidas: propietario autoriza, receptor
+  previsualiza e importa; los ingredientes faltantes pasan a una lista de compra.
 
-## Parte 2 · Mercado como catálogo de proveedores
+### E2 — Fundaciones del catálogo y de coste
 
-Cambio de alcance, no un arreglo. Es el trabajo grande de esta sesión.
+- Resolver las cuatro decisiones bloqueantes y validar un proveedor con un
+  catálogo de prueba.
+- Modelo de catálogo global y referencias proveedor-producto; normalización,
+  deduplicación auditable y precios fechados.
+- Navegación móvil y escritorio para explorar por taxonomía, buscar y comparar;
+  no duplicar los datos por usuario salvo decisión explícita.
+- Enlazar referencias seleccionadas con ingredientes propios sin romper el
+  coste ni el historial de compras.
 
-### La idea
+### E3 — Pedido y recepción
 
-La cuenta del creador —**lian931128@gmail.com**— pasa a ser **cuenta de
-desarrollador**. Su Mercado alojará los catálogos de **todos los proveedores de
-hostelería de Madrid**: productos, precios y unidades, obtenidos de los
-catálogos publicados por cada proveedor.
+- Preferencias/puntuación de proveedor y comparación reproducible.
+- Cesta que divide el pedido por proveedor y genera una hoja por proveedor.
+- Recepción de pedido: convierte líneas aceptadas en compras/stock, registra
+  sustituciones, diferencias y precios efectivamente pagados.
+- Preparar envío externo como integración posterior: requiere autorización por
+  proveedor, credenciales/configuración y trazabilidad; no se enviará nada por
+  defecto.
 
-### Lo que eso rompe
+### E4 — Finanzas y colaboración de recetas
 
-El Mercado actual está pensado para **decenas** de productos propios. Va a
-recibir **miles**, repartidos en muchas categorías: cristalería, alcoholes, sin
-alcohol, aperitivo, fruta, fresco, y bastantes más.
+- Ingesta de facturas con revisión humana, conciliación con recepción y control
+  mensual. Requiere política de retención, permisos y proveedor OCR si se usa.
+- Recetas compartidas: autorización, versión/origen, importación y resolución
+  de ingredientes faltantes en Mercado/Inventario.
+- El coste operativo mantiene `costCalculator.ts` como única fuente; los datos
+  de factura enriquecen compras, nunca lo sustituyen con fórmulas paralelas.
 
-La búsqueda actual funciona, pero **buscar es lo que se hace cuando ya sabes
-qué quieres**. Con un catálogo de miles de referencias hace falta además poder
-**explorar**: llegar sin saber el nombre exacto.
+### E5 — Guía interna no IA
 
-### Decisiones que hay que tomar con el usuario ANTES de programar
+- Primer uso por pantalla: overlay/blur, foco sobre elemento real, secuencia
+  lógica, Atrás/Siguiente/Omitir y ayuda repetible.
+- Estado por usuario y versión de guía, accesible y no bloqueante.
+- Recorrido Grimorio: Mercado → pedido inicial/Inventario y reglas → Recetas,
+  incluidas recetas compartidas y compra de faltantes.
 
-1. **De dónde salen los catálogos.** El usuario propone buscarlos en la web. Hay
-   que acordar el formato de entrada (PDF, Excel, CSV, scraping) y quién hace la
-   extracción. Existe una skill del proyecto, `csv-inventario-app`, que convierte
-   tablas de productos al CSV que la app importa: **conviene revisarla antes de
-   inventar un pipeline nuevo**.
-
-2. **Taxonomía de categorías.** Con miles de referencias, la jerarquía es el
-   diseño principal. ¿Dos niveles (familia → subfamilia)? ¿Etiquetas cruzadas
-   (frío/seco, alcohólico/no)? Esto condiciona la navegación entera.
-
-3. **Alcance de la visibilidad.** ¿El catálogo del desarrollador lo ven todas las
-   cuentas, o se copia a cada usuario? Afecta a las reglas de Firestore, al
-   coste de lectura y al modelo de datos. **Es la decisión con más consecuencias
-   técnicas de las tres.**
-
-4. **Precios.** ¿Se guardan como histórico por proveedor —encajaría con el motor
-   de costes, que ya usa `purchaseHistory`— o como precio único vigente?
-
-### Restricciones que ya existen y conviene respetar
-
-- El **motor de costes** (`src/core/costing/costCalculator.ts`) es fuente única.
-  Cualquier producto nuevo debe encajar en su modelo de unidades.
-- La **normalización de unidades** vive en `src/utils/packNormalization.ts`, y ya
-  sabe leer etiquetas sucias tipo `"0.750 L"`. Los catálogos de proveedor
-  llegarán con formatos irregulares: **usar esto, no reimplementarlo**.
-- La vista móvil de Grimorio ya está adaptada (tira de pestañas, fichas
-  compactas). El rediseño de Mercado debe partir de ahí, no de cero.
-
----
-
-## Cómo abordarlo
-
-Sugerencia de orden, para que el trabajo grande no dependa de incógnitas:
-
-1. **Los tres bugs de la Parte 1.** Son concretos y desbloquean el uso diario.
-   Además, entender por qué los datos no llegan en móvil es probablemente
-   requisito para lo demás.
-2. **Las cuatro decisiones** de la Parte 2, con el usuario. Sin ellas, cualquier
-   código que se escriba se tira.
-3. **Un catálogo de prueba** —un proveedor, no todos— para validar el pipeline
-   de importación y la taxonomía antes de escalar.
-4. **El rediseño de navegación** de Mercado, ya con datos reales encima.
+Cada entrega requiere diseño/validación en móvil y escritorio. Las integraciones
+externas (envío de pedidos, OCR/facturas) no se activan sin autorización y
+configuración explícitas.

@@ -7,6 +7,37 @@ El "por qué" es lo que más vale dentro de tres semanas.
 
 ---
 
+## 2026-08-05 · Codex · Diagnóstico móvil y roadmap de Grimorio
+
+**Qué**
+
+- Se realizó diagnóstico solo lectura de los tres síntomas móviles de Grimorio.
+  El catálogo de ingredientes se consulta en `useIngredients`; Mercado lo pasa
+  directamente a `IngredientListPanel`. Inventario, por su parte, calcula las
+  existencias exclusivamente desde `purchases` menos `stock_movements`.
+- Se confirmó que el panel de conflictos usa ese mismo catálogo en su selector:
+  un selector vacío significa que `allIngredients` no llegó a ese render, no
+  que exista un selector móvil independiente.
+- Se documentó el roadmap transversal Recetas → Inventario → Mercado, con el
+  pedido inicial ficticio, catálogo de proveedores, pedidos, facturas, recetas
+  compartidas y guía interna no IA. También se anotaron sus permisos y
+  dependencias de integración.
+
+**Por qué**
+
+La observación «en escritorio lleno, en móvil vacío» podía inducir a parchear
+el responsive. El trazado muestra que Inventario y Mercado no representan el
+mismo dominio: catálogo frente a stock real. Cambiarlo sin capturar los datos
+de la sesión afectada podría ocultar compras huérfanas y romper el inventario.
+
+**Pendiente**
+
+No había una sesión autenticada abierta para validar las longitudes reales a
+390px. Hacer esa prueba antes de código y acordar las cuatro decisiones del
+catálogo antes de iniciar importación o Mercado global.
+
+---
+
 ## 2026-08-05 · Codex · Tema de escritorio e Inspector fantasma
 
 **Qué**
