@@ -8,7 +8,7 @@
 
 **Última actualización:** 2026-08-05
 **Sesión anterior:** Codex
-**Estado:** diagnóstico y roadmap de Grimorio documentados; no se cambió código de producto.
+**Estado:** Inventario móvil compactado y listo para desplegar/probar; TypeScript y build correctos.
 
 ## Dónde se trabaja
 
@@ -53,6 +53,16 @@ No se ha desplegado esta sesión.
   Inventario y Mercado: catálogo, pedido, facturas, recetas compartidas y guía
   interna. Pizarrón y Oráculo permanecen fuera.
 
+### Grimorio — primera mejora móvil visible
+
+- `StockInventoryPanel` ahora deja el scroll al documento en móvil (las alturas
+  y el `overflow` interno quedan tras `lg:`), de acuerdo con el patrón de
+  `StackedMobileShell`. En escritorio no cambia.
+- En móvil se compactaron márgenes, indicadores y tarjetas métricas de
+  Inventario para que se vea más lista operativa y menos tablero de tarjetas.
+- `npm run typecheck` y `npm run build` correctos. El build mantiene avisos
+  preexistentes de `eval`, CSS y tamaño de chunks.
+
 ### Pendiente imprescindible
 
 En un iPhone/sesión autenticada a 390px, capturar el estado de
@@ -88,11 +98,13 @@ filtro/render, o compras huérfanas.
 
 ## Lo siguiente
 
-1. **Validación real Grimorio a 390px** con sesión afectada y los cuatro datos
+1. Desplegar esta mejora y validar **Inventario** a 390px: scroll de página,
+   métricas compactas, filas legibles y acceso a detalle.
+2. **Validación real Grimorio a 390px** con sesión afectada y los cuatro datos
    de instrumentación descritos en `PLAN-GRIMORIO-MERCADO.md`.
-2. Acordar las cuatro decisiones del catálogo global antes de programarlo;
+3. Acordar las cuatro decisiones del catálogo global antes de programarlo;
    después validar un proveedor de prueba.
-3. Validación real en iPhone del pellizco de Pizarrón y luego sus menores B6/B7,
+4. Validación real en iPhone del pellizco de Pizarrón y luego sus menores B6/B7,
    solo cuando se prioricen.
 
 ## Recordatorios críticos

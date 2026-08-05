@@ -50,6 +50,12 @@ compra sin `ingredientId` válido se trata como conflicto de vinculación. Motiv
 el catálogo describe lo que se puede adquirir y el stock describe lo que se ha
 recibido/consumido. No unificar ambos sin una decisión de producto explícita.
 
+En móvil, `StockInventoryPanel` no debe fijar altura ni manejar su propio
+scroll: `StackedMobileShell` usa la página como único contenedor desplazable.
+Sus clases estructurales de altura/overflow deben estar gateadas tras `lg:`;
+motivo: evitar que el contenido de Inventario quede recortado dentro de una
+altura heredada del shell.
+
 `appSections.ts` alimenta a la vez el sidebar de escritorio, la barra inferior
 de móvil y el centro de mando de secciones en Personal. **No crees una segunda
 lista de secciones.**

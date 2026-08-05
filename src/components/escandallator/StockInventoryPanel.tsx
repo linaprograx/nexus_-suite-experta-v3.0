@@ -152,10 +152,10 @@ export const StockInventoryPanel: React.FC<StockInventoryPanelProps> = ({
 
 
     return (
-        <div className="h-full flex flex-col overflow-hidden relative">
+        <div className="lg:h-full flex flex-col lg:overflow-hidden relative">
 
             {/* RESOLVER PANEL - Fixed at top if present, content below begins after toolbar */}
-            <div className="shrink-0 px-6 pt-6 pb-2 z-30 relative">
+            <div className="shrink-0 px-3 pt-3 pb-2 lg:px-6 lg:pt-6 z-30 relative">
                 <StockResolverPanel
                     autoFixCount={autoFixCount}
                     manualFixCandidates={manualFixCandidates}
@@ -169,7 +169,7 @@ export const StockInventoryPanel: React.FC<StockInventoryPanelProps> = ({
             {/* STICKY GLASS TOOLBAR (Search 3/4 + Category 1/4) */}
             {/* HIDE IF EXTERNAL CONTROLS ARE PROVIDED */}
             {(externalSearchTerm === undefined && externalCategory === undefined) && (
-                <div className="shrink-0 px-6 pb-4 pt-2 z-20 relative">
+                <div className="shrink-0 px-3 pb-3 pt-2 lg:px-6 lg:pb-4 z-20 relative">
                     <div className="flex gap-2 items-center w-full">
                         {/* Search Bar - Grows */}
                         <div className="relative flex-1 group">
@@ -253,21 +253,21 @@ export const StockInventoryPanel: React.FC<StockInventoryPanelProps> = ({
             )}
 
             {/* SCROLLABLE CONTENT */}
-            <div className="flex-1 overflow-y-auto custom-scrollbar px-6 pb-20">
+            <div className="lg:flex-1 lg:overflow-y-auto custom-scrollbar px-3 lg:px-6 pb-20">
 
                 {/* Header Metrics (Auto-Scaling Text) */}
-                <div className="flex gap-6 mb-8 shrink-0">
+                <div className="flex gap-2 lg:gap-6 mb-4 lg:mb-8 shrink-0">
                     {/* Inventory Value Card */}
-                    <div className="flex-1 bg-gradient-to-br from-emerald-500/10 to-teal-500/10 border border-emerald-500/20 rounded-3xl p-6 flex flex-col justify-between relative overflow-hidden group backdrop-blur-sm">
+                    <div className="flex-1 bg-gradient-to-br from-emerald-500/10 to-teal-500/10 border border-emerald-500/20 rounded-2xl lg:rounded-3xl p-3 lg:p-6 flex flex-col justify-between relative overflow-hidden group backdrop-blur-sm">
                         <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
                             <Icon svg={ICONS.dollarSign} className="w-32 h-32" />
                         </div>
                         <div>
                             <h4 className="text-xs font-bold text-emerald-800 dark:text-emerald-200 uppercase tracking-widest mb-2 opacity-70">Valor Inventario</h4>
-                            <div className="flex items-center justify-center h-16 w-full relative z-10">
+                            <div className="flex items-center justify-center h-10 lg:h-16 w-full relative z-10">
                                 <span
                                     className={`font-bold tracking-tighter text-emerald-900 dark:text-emerald-100 transition-all duration-300
-                                    ${filteredMetrics.totalValue > 99999 ? 'text-3xl' : filteredMetrics.totalValue > 9999 ? 'text-4xl' : 'text-5xl lg:text-6xl'}
+                                    ${filteredMetrics.totalValue > 99999 ? 'text-2xl lg:text-3xl' : filteredMetrics.totalValue > 9999 ? 'text-3xl lg:text-4xl' : 'text-3xl lg:text-6xl'}
                                 `}
                                 >
                                     €{filteredMetrics.totalValue.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
@@ -284,16 +284,16 @@ export const StockInventoryPanel: React.FC<StockInventoryPanelProps> = ({
                     </div>
 
                     {/* Items Count Card */}
-                    <div className="flex-1 bg-gradient-to-br from-indigo-500/10 to-violet-500/10 border border-indigo-500/20 rounded-3xl p-6 flex flex-col justify-between relative overflow-hidden group backdrop-blur-sm">
+                    <div className="flex-1 bg-gradient-to-br from-indigo-500/10 to-violet-500/10 border border-indigo-500/20 rounded-2xl lg:rounded-3xl p-3 lg:p-6 flex flex-col justify-between relative overflow-hidden group backdrop-blur-sm">
                         <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
                             <Icon svg={ICONS.box} className="w-32 h-32" />
                         </div>
                         <div>
                             <h4 className="text-xs font-bold text-indigo-800 dark:text-indigo-200 uppercase tracking-widest mb-2 opacity-70">Items en Stock</h4>
-                            <div className="flex items-center justify-center h-16 w-full relative z-10">
+                            <div className="flex items-center justify-center h-10 lg:h-16 w-full relative z-10">
                                 <span
                                     className={`font-black tracking-tighter text-indigo-900 dark:text-indigo-100 transition-all duration-300
-                                     ${filteredMetrics.totalItems > 999 ? 'text-4xl' : 'text-5xl lg:text-7xl'}
+                                     ${filteredMetrics.totalItems > 999 ? 'text-3xl lg:text-4xl' : 'text-3xl lg:text-7xl'}
                                 `}
                                 >
                                     {filteredMetrics.totalItems}
@@ -304,9 +304,9 @@ export const StockInventoryPanel: React.FC<StockInventoryPanelProps> = ({
                 </div>
 
                 {/* Inventory Grid (GLASS CARDS) */}
-                <div className="mb-4 flex items-center justify-between">
-                    <h3 className="text-lg font-bold text-slate-700 dark:text-slate-200 flex items-center gap-2">
-                        <Icon svg={ICONS.layers} className="w-5 h-5 text-emerald-500" />
+                <div className="mb-3 lg:mb-4 flex items-center justify-between">
+                    <h3 className="text-base lg:text-lg font-bold text-slate-700 dark:text-slate-200 flex items-center gap-2">
+                        <Icon svg={ICONS.layers} className="w-4 h-4 lg:w-5 lg:h-5 text-emerald-500" />
                         Existencias Reales
                     </h3>
                     <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400 bg-emerald-100/50 dark:bg-emerald-900/30 px-3 py-1 rounded-full border border-emerald-200/50 dark:border-emerald-800/50 backdrop-blur-sm">
@@ -322,7 +322,7 @@ export const StockInventoryPanel: React.FC<StockInventoryPanelProps> = ({
                                 key={item.ingredientId}
                                 onClick={() => onSelectIngredient && onSelectIngredient(item.ingredientId)}
                                 className={`
-                                relative flex flex-col justify-between min-h-0 lg:min-h-[160px] p-3 lg:p-5 rounded-2xl lg:rounded-3xl transition-all duration-300 cursor-pointer group
+                                relative flex flex-col justify-between min-h-0 lg:min-h-[160px] p-2.5 lg:p-5 rounded-xl lg:rounded-3xl transition-all duration-300 cursor-pointer group
                                 backdrop-blur-md border shadow-lg
                                 ${isSelected
                                         ? 'bg-emerald-500/10 border-emerald-500 shadow-emerald-500/20 scale-[1.02]'
@@ -331,21 +331,21 @@ export const StockInventoryPanel: React.FC<StockInventoryPanelProps> = ({
                             `}
                             >
                                 {/* Glass Reflection Effect */}
-                                <div className="absolute inset-0 rounded-3xl bg-gradient-to-br from-white/40 to-transparent opacity-50 pointer-events-none" />
+                                <div className="absolute inset-0 rounded-xl lg:rounded-3xl bg-gradient-to-br from-white/40 to-transparent opacity-50 pointer-events-none" />
 
                                 <div className="relative z-10 flex justify-between items-start mb-2">
-                                    <div className="flex items-center gap-3">
+                                    <div className="flex items-center gap-2 lg:gap-3">
                                         <div className="relative group/check" onClick={(e) => e.stopPropagation()}>
                                             <input
                                                 type="checkbox"
                                                 checked={isSelected}
                                                 onChange={() => toggleSelection(item.ingredientId)}
-                                                className="peer appearance-none w-6 h-6 rounded-xl border-2 border-slate-300/50 dark:border-slate-600/50 checked:bg-emerald-500 checked:border-emerald-500 cursor-pointer transition-all bg-white/30"
+                                                className="peer appearance-none w-5 h-5 lg:w-6 lg:h-6 rounded-lg lg:rounded-xl border-2 border-slate-300/50 dark:border-slate-600/50 checked:bg-emerald-500 checked:border-emerald-500 cursor-pointer transition-all bg-white/30"
                                             />
                                             <Icon svg={ICONS.check} className="absolute inset-0 m-auto w-3 h-3 text-white opacity-0 peer-checked:opacity-100 pointer-events-none" />
                                         </div>
-                                        <div className={`p-2 rounded-xl ${isSelected ? 'bg-emerald-500 text-white' : 'bg-white/30 dark:bg-black/20 text-slate-500 dark:text-slate-400'}`}>
-                                            <Icon svg={ICONS.box} className="w-5 h-5" />
+                                        <div className={`p-1.5 lg:p-2 rounded-lg lg:rounded-xl ${isSelected ? 'bg-emerald-500 text-white' : 'bg-white/30 dark:bg-black/20 text-slate-500 dark:text-slate-400'}`}>
+                                            <Icon svg={ICONS.box} className="w-4 h-4 lg:w-5 lg:h-5" />
                                         </div>
                                     </div>
                                     <div className="flex items-center gap-2">
@@ -362,8 +362,8 @@ export const StockInventoryPanel: React.FC<StockInventoryPanelProps> = ({
                                     </div>
                                 </div>
 
-                                <div className="relative z-10 px-1">
-                                    <h4 className="text-base font-bold text-slate-800 dark:text-slate-100 uppercase leading-tight mb-1 line-clamp-2">
+                                <div className="relative z-10 px-0.5 lg:px-1">
+                                    <h4 className="text-sm lg:text-base font-bold text-slate-800 dark:text-slate-100 uppercase leading-tight mb-1 line-clamp-2">
                                         {item.ingredientName}
                                     </h4>
                                     <span className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-widest bg-white/30 dark:bg-black/20 px-2 py-0.5 rounded-lg inline-block backdrop-blur-sm">
@@ -371,9 +371,9 @@ export const StockInventoryPanel: React.FC<StockInventoryPanelProps> = ({
                                     </span>
                                 </div>
 
-                                <div className="relative z-10 mt-auto pt-4 flex items-end justify-between border-t border-white/10 dark:border-white/5">
+                                <div className="relative z-10 mt-2 lg:mt-auto pt-2 lg:pt-4 flex items-end justify-between border-t border-white/10 dark:border-white/5">
                                     <div className="flex items-baseline gap-1">
-                                        <span className="text-4xl font-black text-emerald-600 dark:text-emerald-400 tracking-tighter drop-shadow-sm">
+                                        <span className="text-3xl lg:text-4xl font-black text-emerald-600 dark:text-emerald-400 tracking-tighter drop-shadow-sm">
                                             {Number.isInteger(item.quantityAvailable) ? item.quantityAvailable : item.quantityAvailable?.toFixed(1) || '0'}
                                         </span>
                                         <span className="text-xs font-bold text-slate-400 uppercase mb-1">{item.unit}</span>

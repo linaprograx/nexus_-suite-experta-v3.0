@@ -22,6 +22,10 @@ El "por qué" es lo que más vale dentro de tres semanas.
   pedido inicial ficticio, catálogo de proveedores, pedidos, facturas, recetas
   compartidas y guía interna no IA. También se anotaron sus permisos y
   dependencias de integración.
+- Se inició M3.1 con una corrección visible, independiente de la incógnita de
+  datos: Inventario deja de fijar altura/scroll interno en móvil, y se compactan
+  métricas, espaciados e indicadores. La página vuelve a ser el único scroll;
+  el diseño de escritorio se conserva detrás de `lg:`.
 
 **Por qué**
 
@@ -33,8 +37,9 @@ de la sesión afectada podría ocultar compras huérfanas y romper el inventario
 **Pendiente**
 
 No había una sesión autenticada abierta para validar las longitudes reales a
-390px. Hacer esa prueba antes de código y acordar las cuatro decisiones del
-catálogo antes de iniciar importación o Mercado global.
+390px. Probar el cambio visual desplegado y capturar los conteos antes de tocar
+la lógica de catálogo; acordar las cuatro decisiones antes de iniciar
+importación o Mercado global.
 
 ---
 
