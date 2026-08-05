@@ -14,8 +14,8 @@ export const useStockResolver = (allIngredients: Ingredient[], purchases: Purcha
     const [isResolving, setIsResolving] = useState(false);
 
     // Helper: Strict Normalization
-    const normalize = (str: string) => {
-        return str
+    const normalize = (str?: string | null) => {
+        return (str ?? '')
             .toLowerCase()
             .normalize("NFD").replace(/[\u0300-\u036f]/g, "") // Remove accents
             .replace(/[^a-z0-9\s]/g, "") // Remove special chars

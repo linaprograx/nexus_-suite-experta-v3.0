@@ -196,7 +196,7 @@ export const RecipeList: React.FC<RecipeListProps> = ({
   return (
     <div className="lg:h-full flex flex-col w-full max-w-full">
       {/* Toolbar Header */}
-      <div className="py-4 flex flex-col gap-4 w-full">
+      <div className="py-4 flex flex-col gap-4 w-full sticky top-[var(--cabecera,0px)] z-20 lg:static backdrop-blur-md">
         {/* Search Bar - Full Width */}
         <div className="relative w-full group">
           <Icon svg={ICONS.search} className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-emerald-500 transition-colors" />

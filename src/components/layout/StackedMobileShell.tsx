@@ -69,6 +69,23 @@ export const StackedMobileShell: React.FC<StackedMobileShellProps> = ({
 
     const bothClosed = !leftOpen && !isRightOpen;
 
+    // La cabecera se queda fija arriba, y publica su altura en `--cabecera` para
+    // que las barras de búsqueda de cada pestaña se anclen justo debajo sin que
+    // nadie tenga que escribir un número a mano. Se mide en vez de fijarse
+    // porque la cabecera cambia de alto entre pestañas y al colapsarse: un valor
+    // escrito a mano se desincroniza en cuanto alguien toque el logo o las
+    // pastillas, y el síntoma —una franja que tapa la primera fila— es de los
+    // que cuesta relacionar con su causa.
+    const refCabecera = React.useRef<HTMLDivElement>(null);
+    const [altoCabecera, setAltoCabecera] = React.useState(0);
+    React.useEffect(() => {
+        const el = refCabecera.current;
+        if (!el) return;
+        const ro = new ResizeObserver(([entrada]) => setAltoCabecera(entrada.contentRect.height));
+        ro.observe(el);
+        return () => ro.disconnect();
+    }, [header]);
+
     return (
         <div
             id={id}
@@ -77,11 +94,17 @@ export const StackedMobileShell: React.FC<StackedMobileShellProps> = ({
             // its clientHeight and nothing can scroll — the overflow is just clipped.
             // Letting it grow hands the scroll back to the page.
             className="min-h-full w-full flex flex-col relative"
+            style={{ ['--cabecera' as any]: `${altoCabecera}px` }}
             {...edgeSwipe}
         >
             {background}
 
-            {header && <div className="shrink-0 px-3 pt-3 z-30 relative">{header}</div>}
+            {header && (
+                <div ref={refCabecera} className="shrink-0 sticky top-0 px-3 pt-3 pb-1 z-30">
+                    <div className="absolute inset-0 -z-10 backdrop-blur-md" />
+                    {header}
+                </div>
+            )}
 
             {/* No inner scroller and no min-h-0 clamp: the content grows and the page
                 scrolls. Views must gate their own `h-full`/`overflow` behind `lg:`. */}

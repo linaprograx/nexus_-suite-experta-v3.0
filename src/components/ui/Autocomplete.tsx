@@ -10,8 +10,15 @@ interface AutocompleteProps {
   placeholder?: string;
 }
 
-const normalizeStr = (str: string) =>
-  str
+// Tolera el nombre ausente a propósito.
+//
+// El tipo declara `nombre: string`, pero los ingredientes llegan de Firestore
+// con un `as Ingredient` sin validar. Bastaba UN documento sin nombre para que
+// `.toLowerCase()` lanzara dentro del `.filter`, y como el filtro corre en un
+// `setTimeout` el error se perdía: la lista se quedaba vacía y el desplegable
+// decía "Sin resultados" para cualquier búsqueda, siempre.
+const normalizeStr = (str?: string | null) =>
+  (str ?? '')
     .toLowerCase()
     .normalize('NFD')
     .replace(/[̀-ͯ]/g, '')
