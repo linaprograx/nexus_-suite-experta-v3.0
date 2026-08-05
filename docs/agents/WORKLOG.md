@@ -41,6 +41,14 @@ No había una sesión autenticada abierta para validar las longitudes reales a
 la lógica de catálogo; acordar las cuatro decisiones antes de iniciar
 importación o Mercado global.
 
+**Nota de relevo**
+
+El despliegue no llegó a `origin`: el checkout a `deploy/mobile-v1` encontró
+archivos de Pizarrón de la rama de trabajo superpuestos y Git abortó el merge
+antes del push. Se guardaron de forma recuperable en `stash@{0}` y el worktree
+se restauró limpio a `feat/mobile-v1-unified`. Revisar ese stash antes de
+retomar el despliegue.
+
 ---
 
 ## 2026-08-05 · Codex · Tema de escritorio e Inspector fantasma

@@ -8,7 +8,7 @@
 
 **Última actualización:** 2026-08-05
 **Sesión anterior:** Codex
-**Estado:** Inventario móvil compactado y listo para desplegar/probar; TypeScript y build correctos.
+**Estado:** Inventario móvil compactado y confirmado; TypeScript y build correctos. Despliegue pendiente de sanear la rama `deploy/mobile-v1`.
 
 ## Dónde se trabaja
 
@@ -62,6 +62,11 @@ No se ha desplegado esta sesión.
   Inventario para que se vea más lista operativa y menos tablero de tarjetas.
 - `npm run typecheck` y `npm run build` correctos. El build mantiene avisos
   preexistentes de `eval`, CSS y tamaño de chunks.
+- **No se desplegó.** El avance `deploy/mobile-v1 ← feat/mobile-v1-unified`
+  abortó antes de merge/push porque el checkout de producción tenía archivos de
+  Pizarrón superpuestos. Se preservaron en
+  `stash@{0}: recovery: partial deploy checkout 2026-08-05`; el worktree ya
+  volvió limpio a `feat/mobile-v1-unified`. No borrar ese stash sin revisarlo.
 
 ### Pendiente imprescindible
 
@@ -98,7 +103,8 @@ filtro/render, o compras huérfanas.
 
 ## Lo siguiente
 
-1. Desplegar esta mejora y validar **Inventario** a 390px: scroll de página,
+1. Revisar `stash@{0}` y sanear el checkout de `deploy/mobile-v1`; solo entonces
+   desplegar esta mejora y validar **Inventario** a 390px: scroll de página,
    métricas compactas, filas legibles y acceso a detalle.
 2. **Validación real Grimorio a 390px** con sesión afectada y los cuatro datos
    de instrumentación descritos en `PLAN-GRIMORIO-MERCADO.md`.
