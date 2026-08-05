@@ -32,6 +32,21 @@ export const useStockResolver = (allIngredients: Ingredient[], purchases: Purcha
 
     useEffect(() => {
         // Use a timeout to unblock the main thread during mount/tab transitions
+        // Sin catálogo no se puede concluir nada.
+        //
+        // `existingIds` se construye desde `allIngredients`; si llega vacío, TODA
+        // compra con `ingredientId` parece huérfana y, al estar vacío también el
+        // mapa de nombres, ninguna encuentra pareja: salían ~1300 "conflictos
+        // manuales", uno por producto. `useIngredients` devuelve `[]` mientras
+        // carga, así que en el móvil —donde traer 1300 documentos por red tarda
+        // segundos— el panel se quedaba a la vista. En escritorio la consulta
+        // vuelve de caché y apenas parpadeaba: no era un fallo de la vista móvil,
+        // sino de latencia.
+        if (allIngredients.length === 0) {
+            setResolutionState({ allBroken: [], autoFixable: [], manualFixable: [] });
+            return;
+        }
+
         const timer = setTimeout(() => {
             const broken: UnresolvedPurchase[] = [];
             const existingIds = new Set(allIngredients.map(i => i.id));

@@ -870,6 +870,8 @@ export class InteractionManager {
     }
 
     onPointerMove(e: React.PointerEvent<HTMLCanvasElement>) {
+        if (gestoMultitactil.activo || (e as any).isPrimary === false) return;
+
         if (!this.canvas) return;
 
         const state = pizarronStore.getState();
@@ -1017,12 +1019,20 @@ export class InteractionManager {
                     if (node) {
                         const updates: any = { x: nx, y: ny, w: nw, h: nh };
 
-                        // Text Scaling (Proportional)
-                        if (node.type === 'text' && this.initialResizeState?.fontSize) {
-                            const initialH = this.initialResizeState.h;
+                        // La fuente crece con la caja.
+                        //
+                        // Antes se leía de `initialResizeState`, que es `{...bounds}`: un
+                        // rectángulo geométrico SIN `fontSize`. La condición nunca se
+                        // cumplía y el texto se quedaba igual mientras la caja cambiaba.
+                        // Se usa `initialNodesState`, que ya captura `content.fontSize`
+                        // y es el mismo origen que usa la ruta de multiselección: un
+                        // solo sitio de donde sale el tamaño inicial.
+                        const inicial: { h: number; fontSize?: number } | undefined = this.initialNodesState ? (this.initialNodesState as any)[id] : undefined;
+                        if (node.type === 'text' && inicial?.fontSize) {
+                            const initialH = inicial.h;
                             if (initialH > 0) {
                                 const ratio = nh / initialH;
-                                const newSize = Math.max(8, Math.round(this.initialResizeState.fontSize * ratio));
+                                const newSize = Math.max(8, Math.round(inicial.fontSize * ratio));
                                 updates.content = { ...node.content, fontSize: newSize };
                             }
                         }
@@ -1328,6 +1338,7 @@ export class InteractionManager {
     }
 
     onPointerUp(e: React.PointerEvent<HTMLCanvasElement>) {
+        if (gestoMultitactil.activo || (e as any).isPrimary === false) return;
         (e.target as HTMLElement).releasePointerCapture(e.pointerId);
         (e.target as HTMLElement).style.cursor = 'default';
 
