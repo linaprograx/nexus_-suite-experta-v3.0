@@ -25,6 +25,17 @@ export interface StackedMobileShellProps {
     accentClass?: string;
     /** Painted behind everything. Each view supplies its own so it keeps its look. */
     background?: React.ReactNode;
+    /**
+     * Clases del degradado de la vista. Si se pasan, la cabecera queda **fija**
+     * arriba en lugar de irse con el scroll.
+     *
+     * Se piden las clases y no un booleano porque la franja tiene que pintar
+     * EXACTAMENTE el mismo degradado que el fondo, con `bg-fixed` para que
+     * quede anclado al viewport igual que el fondo (que es `fixed`). Así la
+     * banda es indistinguible de lo que hay detrás y no aparece la costura que
+     * deja cualquier barra opaca sobre un degradado.
+     */
+    headerGradient?: string;
     id?: string;
 }
 
@@ -49,7 +60,7 @@ export const StackedMobileShell: React.FC<StackedMobileShellProps> = ({
     rightTitle, rightSubtitle,
     rightOpen, onRightClose,
     accentClass = 'bg-teal-500',
-    background,
+    background, headerGradient,
     id,
 }) => {
     const [leftOpen, setLeftOpen] = React.useState(false);
@@ -81,7 +92,28 @@ export const StackedMobileShell: React.FC<StackedMobileShellProps> = ({
         >
             {background}
 
-            {header && <div className="shrink-0 px-3 pt-3 z-30 relative">{header}</div>}
+            {header && (
+                <div
+                    className={`shrink-0 px-3 pt-3 z-30 ${headerGradient ? 'sticky' : 'relative'}`}
+                    // Se ancla por debajo del área segura: con `top: 0` la cabecera
+                    // se metería bajo el reloj y la batería al quedar fija.
+                    style={headerGradient ? { top: 'env(safe-area-inset-top)' } : undefined}
+                >
+                    {headerGradient && (
+                        <>
+                            {/* Base opaca: el degradado se vuelve transparente al 45%,
+                                así que por sí solo dejaría transparentar el contenido
+                                que pasa por debajo. */}
+                            <div aria-hidden className="absolute inset-x-0 bottom-0 -z-10 bg-slate-50 dark:bg-slate-950"
+                                style={{ top: 'calc(-1 * env(safe-area-inset-top) - 0.5rem)' }} />
+                            {/* El mismo degradado del fondo, anclado al viewport. */}
+                            <div aria-hidden className={`absolute inset-x-0 bottom-0 -z-10 pointer-events-none bg-fixed ${headerGradient}`}
+                                style={{ top: 'calc(-1 * env(safe-area-inset-top) - 0.5rem)' }} />
+                        </>
+                    )}
+                    {header}
+                </div>
+            )}
 
             {/* No inner scroller and no min-h-0 clamp: the content grows and the page
                 scrolls. Views must gate their own `h-full`/`overflow` behind `lg:`. */}

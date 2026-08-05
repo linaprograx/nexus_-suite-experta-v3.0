@@ -633,6 +633,7 @@ const GrimoriumInner: React.FC<GrimoriumViewProps> = () => {
                         detailSubtitle: 'Ficha de receta',
                         insightsLabel: 'Análisis',
                         accentClass: 'bg-teal-500',
+                        cabeceraFija: true,
                     }
                     : viewMode === 'market'
                         ? {
@@ -642,6 +643,7 @@ const GrimoriumInner: React.FC<GrimoriumViewProps> = () => {
                             detailSubtitle: 'Detalle de ingrediente',
                             insightsLabel: 'Comparativa',
                             accentClass: 'bg-emerald-500',
+                            cabeceraFija: true,
                         }
                         : {
                             detailOpen: !!selectedStockItemId,
@@ -649,6 +651,7 @@ const GrimoriumInner: React.FC<GrimoriumViewProps> = () => {
                             insightsLabel: 'Reglas y proveedores',
                             detailLabel: 'Pedidos',
                             accentClass: 'bg-sky-500',
+                            cabeceraFija: true,
                         },
             }}
             className=""

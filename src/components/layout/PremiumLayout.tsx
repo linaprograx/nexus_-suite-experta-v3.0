@@ -21,6 +21,8 @@ export interface MobileLayoutOptions {
     detailSubtitle?: string;
     /** Labels for the floating panel switchers. */
     insightsLabel?: string;
+    /** Fija la cabecera arriba en móvil en lugar de dejarla irse con el scroll. */
+    cabeceraFija?: boolean;
     detailLabel?: string;
     /** Tailwind bg-* class used for the sheet grabber, to keep the module's identity. */
     accentClass?: string;
@@ -102,6 +104,7 @@ export const PremiumLayout: React.FC<PremiumLayoutProps> = ({
             <StackedMobileShell
                 id={id}
                 header={header}
+                headerGradient={mobile?.cabeceraFija ? activeGradient : undefined}
                 main={<>{mainContent}{children}</>}
                 left={leftSidebar}
                 right={layoutMode === 'colegium' ? undefined : rightSidebar}

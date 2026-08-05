@@ -10,8 +10,17 @@ interface AutocompleteProps {
   placeholder?: string;
 }
 
-const normalizeStr = (str: string) =>
-  str
+/**
+ * Tolera nombres ausentes o no textuales.
+ *
+ * Antes recibía `str: string` y hacía `.toLowerCase()` directo. Bastaba UN
+ * ingrediente sin `nombre` —normal en catálogos importados por CSV— para que
+ * lanzara dentro del `setTimeout` del filtro: el temporizador se abortaba en
+ * silencio, `filteredItems` se quedaba vacío y el desplegable decía "sin
+ * resultados" escribieras lo que escribieras.
+ */
+const normalizeStr = (str: unknown) =>
+  String(str ?? '')
     .toLowerCase()
     .normalize('NFD')
     .replace(/[̀-ͯ]/g, '')
@@ -35,7 +44,11 @@ export const Autocomplete: React.FC<AutocompleteProps> = ({
   useEffect(() => {
     const selectedItem = items.find(item => item.id === selectedId);
     setSearchTerm(selectedItem ? selectedItem.nombre : '');
-  }, [selectedId, items]);
+    // Depende solo de `selectedId`. Con `items` en las dependencias, cualquier
+    // cambio de identidad del array reiniciaba `searchTerm` y borraba bajo el
+    // dedo lo que el usuario estuviera escribiendo.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedId]);
 
   // Track input position for the portal dropdown
   const updateRect = () => {
@@ -62,14 +75,13 @@ export const Autocomplete: React.FC<AutocompleteProps> = ({
   useEffect(() => {
     if (!isOpen) return;
     const handler = setTimeout(() => {
-      if (searchTerm.length < 1) {
-        setFilteredItems([]);
-        return;
-      }
+      // Sin texto se muestra el principio del catálogo: en un móvil, obligar a
+      // teclear a ciegas ante una lista vacía se lee como que no hay nada.
       const normalizedSearch = normalizeStr(searchTerm);
-      const sorted = items
-        .filter(item => normalizeStr(item.nombre).includes(normalizedSearch))
-        .slice(0, 50);
+      const sorted = (normalizedSearch
+        ? items.filter(item => normalizeStr(item.nombre).includes(normalizedSearch))
+        : items
+      ).slice(0, 50);
       setFilteredItems(sorted);
       setActiveIndex(0);
     }, 100);
@@ -101,14 +113,14 @@ export const Autocomplete: React.FC<AutocompleteProps> = ({
 
   // Close on outside click (accounts for the portalled list)
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
+    const handleClickOutside = (event: Event) => {
       const target = event.target as Node;
       if (wrapperRef.current && !wrapperRef.current.contains(target) && !(target as HTMLElement).closest?.('[data-autocomplete-portal]')) {
         setIsOpen(false);
       }
     };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener('pointerdown', handleClickOutside);
+    return () => document.removeEventListener('pointerdown', handleClickOutside);
   }, []);
 
   return (
@@ -137,17 +149,17 @@ export const Autocomplete: React.FC<AutocompleteProps> = ({
             filteredItems.map((item, index) => (
               <li
                 key={item.id}
-                onMouseDown={(e) => { e.preventDefault(); handleSelect(item); }}
+                onPointerDown={(e) => { e.preventDefault(); handleSelect(item); }}
                 onMouseEnter={() => setActiveIndex(index)}
                 className={`px-4 py-2.5 cursor-pointer text-sm text-slate-700 dark:text-slate-200 ${activeIndex === index ? 'bg-teal-50 dark:bg-teal-900/30 text-teal-700 dark:text-teal-300' : ''}`}
               >
                 {item.nombre}
               </li>
             ))
-          ) : searchTerm ? (
-            <li className="px-4 py-2.5 text-sm text-slate-400">Sin resultados en el inventario</li>
           ) : (
-            <li className="px-4 py-2.5 text-xs text-slate-400 italic">Escribe para buscar en tu inventario…</li>
+            <li className="px-4 py-2.5 text-sm text-slate-400">
+              {items.length === 0 ? 'Cargando inventario…' : 'Sin resultados en el inventario'}
+            </li>
           )}
         </ul>,
         document.body
