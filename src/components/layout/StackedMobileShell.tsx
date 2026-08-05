@@ -69,23 +69,6 @@ export const StackedMobileShell: React.FC<StackedMobileShellProps> = ({
 
     const bothClosed = !leftOpen && !isRightOpen;
 
-    // La cabecera se queda fija arriba, y publica su altura en `--cabecera` para
-    // que las barras de búsqueda de cada pestaña se anclen justo debajo sin que
-    // nadie tenga que escribir un número a mano. Se mide en vez de fijarse
-    // porque la cabecera cambia de alto entre pestañas y al colapsarse: un valor
-    // escrito a mano se desincroniza en cuanto alguien toque el logo o las
-    // pastillas, y el síntoma —una franja que tapa la primera fila— es de los
-    // que cuesta relacionar con su causa.
-    const refCabecera = React.useRef<HTMLDivElement>(null);
-    const [altoCabecera, setAltoCabecera] = React.useState(0);
-    React.useEffect(() => {
-        const el = refCabecera.current;
-        if (!el) return;
-        const ro = new ResizeObserver(([entrada]) => setAltoCabecera(entrada.contentRect.height));
-        ro.observe(el);
-        return () => ro.disconnect();
-    }, [header]);
-
     return (
         <div
             id={id}
@@ -94,35 +77,11 @@ export const StackedMobileShell: React.FC<StackedMobileShellProps> = ({
             // its clientHeight and nothing can scroll — the overflow is just clipped.
             // Letting it grow hands the scroll back to the page.
             className="min-h-full w-full flex flex-col relative"
-            style={{ ['--cabecera' as any]: `${altoCabecera}px` }}
             {...edgeSwipe}
         >
             {background}
 
-            {/* Tapa de la zona fija.
-                La cabecera y la barra de filtros son transparentes a propósito:
-                el degradado de la vista es `fixed`, así que un fondo propio
-                nunca casaría con él y se vería la costura. En su lugar se pinta
-                aquí una SEGUNDA copia de ese mismo fondo, recortada a la altura
-                de la zona fija (cabecera + filtros). Al ser el mismo elemento
-                `fixed`, cae en los mismos píxeles: opaco, sin costura y sin
-                tener que replicar el degradado a mano. Va por encima del
-                contenido y por debajo de las barras. */}
-            {header && (
-                <div
-                    className="lg:hidden fixed inset-x-0 top-0 z-[25] overflow-hidden pointer-events-none"
-                    style={{ height: 'calc(var(--cabecera, 0px) + var(--filtros, 0px))' }}
-                    aria-hidden
-                >
-                    {background}
-                </div>
-            )}
-
-            {header && (
-                <div ref={refCabecera} className="shrink-0 sticky top-0 px-3 pt-3 z-30">
-                    {header}
-                </div>
-            )}
+            {header && <div className="shrink-0 px-3 pt-3 z-30 relative">{header}</div>}
 
             {/* No inner scroller and no min-h-0 clamp: the content grows and the page
                 scrolls. Views must gate their own `h-full`/`overflow` behind `lg:`. */}

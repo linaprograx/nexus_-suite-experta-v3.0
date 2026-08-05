@@ -10,15 +10,8 @@ interface AutocompleteProps {
   placeholder?: string;
 }
 
-// Tolera el nombre ausente a propósito.
-//
-// El tipo declara `nombre: string`, pero los ingredientes llegan de Firestore
-// con un `as Ingredient` sin validar. Bastaba UN documento sin nombre para que
-// `.toLowerCase()` lanzara dentro del `.filter`, y como el filtro corre en un
-// `setTimeout` el error se perdía: la lista se quedaba vacía y el desplegable
-// decía "Sin resultados" para cualquier búsqueda, siempre.
-const normalizeStr = (str?: string | null) =>
-  (str ?? '')
+const normalizeStr = (str: string) =>
+  str
     .toLowerCase()
     .normalize('NFD')
     .replace(/[̀-ͯ]/g, '')
@@ -31,24 +24,18 @@ export const Autocomplete: React.FC<AutocompleteProps> = ({
   placeholder = 'Buscar...',
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
+  const [filteredItems, setFilteredItems] = useState<Ingredient[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
   const [rect, setRect] = useState<{ top: number; left: number; width: number } | null>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Refleja en el campo el ingrediente ya elegido.
-  //
-  // NO depende de `items`: cada vez que esa lista cambiaba de referencia, el
-  // efecto volvía a correr y machacaba con '' lo que estuvieras tecleando. La
-  // lista se consulta por referencia para poder leerla sin declararla
-  // dependencia.
-  const refItems = useRef(items);
-  refItems.current = items;
+  // Set initial input value from selectedId
   useEffect(() => {
-    const selectedItem = refItems.current.find(item => item.id === selectedId);
-    if (selectedItem) setSearchTerm(selectedItem.nombre);
-  }, [selectedId]);
+    const selectedItem = items.find(item => item.id === selectedId);
+    setSearchTerm(selectedItem ? selectedItem.nombre : '');
+  }, [selectedId, items]);
 
   // Track input position for the portal dropdown
   const updateRect = () => {
@@ -71,23 +58,23 @@ export const Autocomplete: React.FC<AutocompleteProps> = ({
     };
   }, [isOpen]);
 
-  // Filtrado síncrono.
-  //
-  // Antes vivía en un `setTimeout` dentro de un efecto que escribía a estado.
-  // Ese montaje tenía dos trampas: cualquier excepción dentro del temporizador
-  // se perdía sin llegar a consola y dejaba la lista vacía para siempre —el
-  // desplegable respondía "Sin resultados" a todo—, y el resultado podía quedar
-  // desfasado respecto a lo tecleado. Un `useMemo` no puede desincronizarse ni
-  // tragarse un error: si algo falla, falla a la vista.
-  const filteredItems = React.useMemo(() => {
-    const normalizedSearch = normalizeStr(searchTerm);
-    if (!normalizedSearch) return [];
-    return items
-      .filter(item => normalizeStr(item.nombre).includes(normalizedSearch))
-      .slice(0, 50);
-  }, [searchTerm, items]);
-
-  useEffect(() => { setActiveIndex(filteredItems.length > 0 ? 0 : -1); }, [filteredItems]);
+  // Search logic
+  useEffect(() => {
+    if (!isOpen) return;
+    const handler = setTimeout(() => {
+      if (searchTerm.length < 1) {
+        setFilteredItems([]);
+        return;
+      }
+      const normalizedSearch = normalizeStr(searchTerm);
+      const sorted = items
+        .filter(item => normalizeStr(item.nombre).includes(normalizedSearch))
+        .slice(0, 50);
+      setFilteredItems(sorted);
+      setActiveIndex(0);
+    }, 100);
+    return () => clearTimeout(handler);
+  }, [searchTerm, items, isOpen]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (!isOpen) return;
