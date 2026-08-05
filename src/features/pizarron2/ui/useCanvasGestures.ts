@@ -1,5 +1,6 @@
 import React from 'react';
 import { pizarronStore } from '../state/store';
+import { gestoMultitactil } from '../engine/gestureState';
 
 /**
  * Pellizcar para hacer zoom y dos dedos para desplazar el lienzo.
@@ -41,6 +42,9 @@ export const useCanvasGestures = (ref: React.RefObject<HTMLElement | null>) => {
             const [a, b] = [e.touches[0], e.touches[1]];
             const vp = pizarronStore.getState().viewport;
             activo = true;
+            // Silencia al motor mientras dure el gesto: sus eventos pointer llegan
+            // por un flujo distinto y stopPropagation() no los alcanza.
+            gestoMultitactil.activo = true;
             distIni = distancia(a, b);
             zoomIni = vp.zoom;
             centroIni = centro(a, b);
@@ -74,7 +78,10 @@ export const useCanvasGestures = (ref: React.RefObject<HTMLElement | null>) => {
         };
 
         const onEnd = (e: TouchEvent) => {
-            if (e.touches.length < 2) activo = false;
+            if (e.touches.length < 2) {
+                activo = false;
+                gestoMultitactil.terminar();
+            }
         };
 
         // `passive: false` es obligatorio: sin él el navegador ignora el

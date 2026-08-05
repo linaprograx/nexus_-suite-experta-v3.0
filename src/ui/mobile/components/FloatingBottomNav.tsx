@@ -86,15 +86,12 @@ const FloatingBottomNav: React.FC = () => {
     const location = useLocation();
     const navigate = useNavigate();
     const hiddenSections = useSectionsStore(s => s.hiddenSections);
-    const { theme, toggleTheme } = useUI();
+    const { isDarkMode, toggleTheme } = useUI();
     const { auth } = useApp();
 
     // Claro/oscuro y cerrar sesión viven en la barra lateral de escritorio, que
     // en móvil no existe. Sin esto, lo único era bajar a Personal y desplazarse
     // hasta el fondo — y cerrar sesión no estaba en ninguna parte.
-    const enOscuro = theme === 'dark' ||
-        (theme === 'system' && typeof window !== 'undefined' &&
-            window.matchMedia('(prefers-color-scheme: dark)').matches);
     const [moreOpen, setMoreOpen] = React.useState(false);
 
     const visible = React.useMemo(
@@ -188,8 +185,8 @@ const FloatingBottomNav: React.FC = () => {
                         onClick={toggleTheme}
                         className="w-full h-12 px-4 rounded-2xl flex items-center gap-3 text-sm font-semibold text-slate-700 dark:text-slate-200 bg-slate-50 dark:bg-white/5 active:scale-[0.98] transition-transform"
                     >
-                        <Icon svg={enOscuro ? ICONS.sun : ICONS.moon} className="w-5 h-5" />
-                        {enOscuro ? 'Modo claro' : 'Modo oscuro'}
+                        <Icon svg={isDarkMode ? ICONS.sun : ICONS.moon} className="w-5 h-5" />
+                        {isDarkMode ? 'Modo claro' : 'Modo oscuro'}
                     </button>
 
                     <button

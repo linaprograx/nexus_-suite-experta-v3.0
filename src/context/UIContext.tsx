@@ -49,6 +49,15 @@ export const UIProvider: React.FC<{ children: React.ReactNode }> = ({ children }
     applyTheme(theme);
   }, [theme]);
 
+  // `theme` puede ser "system", pero la interfaz debe mostrar siempre el
+  // estado que el usuario ve de verdad. Dejar que cada barra lo resolviera por
+  // su cuenta hizo que escritorio enseñase el icono y texto equivocados.
+  const isDarkMode = theme === 'dark' || (
+    theme === 'system' &&
+    typeof window !== 'undefined' &&
+    window.matchMedia('(prefers-color-scheme: dark)').matches
+  );
+
   React.useEffect(() => {
     localStorage.setItem('isSidebarCollapsed', JSON.stringify(isSidebarCollapsed));
   }, [isSidebarCollapsed]);
@@ -73,7 +82,7 @@ export const UIProvider: React.FC<{ children: React.ReactNode }> = ({ children }
   const toggleFocusMode = () => setFocusMode(prev => !prev);
 
   return (
-    <UIContext.Provider value={{ theme, setTheme, toggleTheme, isSidebarCollapsed, toggleSidebar, compactMode, toggleCompactMode, focusMode, toggleFocusMode }}>
+    <UIContext.Provider value={{ theme, isDarkMode, setTheme, toggleTheme, isSidebarCollapsed, toggleSidebar, compactMode, toggleCompactMode, focusMode, toggleFocusMode }}>
       {children}
     </UIContext.Provider>
   );

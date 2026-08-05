@@ -198,6 +198,8 @@ El patrón que funciona:
 - Las **propiedades** de nodo viven en el `Inspector`, y lo consumen escritorio
   y el panel móvil vía la prop `embedded`.
 - El **tema** se alterna con `toggleTheme` de `UIContext`, no con lógica local.
+  Su `isDarkMode` resuelve `system` al estado visible; tanto Sidebar como la
+  navegación móvil deben usarlo para icono y etiqueta.
 
 > Antes de declarar algo "único" de un componente, búscalo en **todo `src/`**.
 > Se dio `MiniToolbar` por irreemplazable comparándolo solo con el Inspector, y

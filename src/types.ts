@@ -432,6 +432,8 @@ export interface ColegiumResult {
 
 export interface UIContextType {
     theme: string;
+    /** Tema efectivo que se está pintando; resuelve `system` según el dispositivo. */
+    isDarkMode: boolean;
     setTheme: React.Dispatch<React.SetStateAction<string>>;
     /** Alterna claro/oscuro partiendo del tema realmente aplicado, no del guardado. */
     toggleTheme: () => void;

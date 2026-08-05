@@ -62,7 +62,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onCloseMobile
 }) => {
   const { auth, userProfile } = useApp();
-  const { theme, toggleTheme, isSidebarCollapsed, toggleSidebar } = useUI();
+  const { isDarkMode, toggleTheme, isSidebarCollapsed, toggleSidebar } = useUI();
   const isEnabled = useSectionsStore(s => s.isEnabled);
   const hiddenSections = useSectionsStore(s => s.hiddenSections); // subscribe so nav re-renders on toggle
 
@@ -160,9 +160,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
           title={isSidebarCollapsed ? "Cambiar Tema" : ""}
         >
           <div className="flex items-center justify-center">
-            <Icon svg={theme === 'dark' ? ICONS.sun : ICONS.moon} className="h-5 w-5 text-slate-500 group-hover:text-slate-900 dark:group-hover:text-slate-200" />
+            <Icon svg={isDarkMode ? ICONS.sun : ICONS.moon} className="h-5 w-5 text-slate-500 group-hover:text-slate-900 dark:group-hover:text-slate-200" />
           </div>
-          {!isSidebarCollapsed && <span>{theme === 'dark' ? 'Modo Claro' : 'Modo Oscuro'}</span>}
+          {!isSidebarCollapsed && <span>{isDarkMode ? 'Modo Claro' : 'Modo Oscuro'}</span>}
         </button>
 
         <button

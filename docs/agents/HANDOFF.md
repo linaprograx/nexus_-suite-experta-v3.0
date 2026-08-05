@@ -6,9 +6,9 @@
 
 ---
 
-**Última actualización:** 2026-08-03
-**Sesión anterior:** Claude Code
-**Estado:** árbol limpio, TypeScript 0 errores, build correcto, todo desplegado
+**Última actualización:** 2026-08-05
+**Sesión anterior:** Codex
+**Estado:** árbol limpio tras commit; TypeScript 0 errores y build correcto.
 
 ## Dónde se trabaja
 
@@ -20,15 +20,13 @@
 | **URL en producción** | `nexus-suite-experta-v3-0.vercel.app` |
 | **Servidor de desarrollo** | **puerto 3100** (nunca el 3000) |
 
-> ⚠️ Ese worktree **no tiene `node_modules`**. Antes de nada: `npm install`.
-> Y `.env` no está versionado: si la app arranca con "Firebase configuration
-> incomplete", cópialo del checkout principal
-> (`cp /Users/lianalviz/nexus_-suite-experta-v3.0/.env .env`).
+`node_modules` está instalado en este worktree. `.env` no se versiona: si
+Firebase informa de configuración incompleta, cópialo del checkout principal.
 
 ### Desplegar
 
-`deploy/mobile-v1` **desciende** de la rama de desarrollo, así que el despliegue
-es un avance directo — ya no hace falta aplanar nada:
+`deploy/mobile-v1` desciende de la rama de desarrollo; el despliegue es avance
+directo:
 
 ```bash
 git checkout deploy/mobile-v1
@@ -37,78 +35,53 @@ git push origin deploy/mobile-v1
 git checkout feat/mobile-v1-unified
 ```
 
-Cada push despliega a producción automáticamente. Las variables de entorno viven
-en el entorno **Production** de Vercel; si un build falla por variables ausentes,
-es que se añadieron solo a Preview: son entornos separados.
+No se ha desplegado esta sesión.
 
-## Qué se hizo en esta sesión
+## Qué se cerró en esta sesión
 
-**18 commits.** Resumen; el detalle y el porqué están en `WORKLOG.md`.
+### Tema, escritorio
 
-### Pizarrón móvil: plan completo (P0–P4)
+- El botón de claro/oscuro de la barra lateral resuelve ahora el **tema
+  efectivo**, también cuando la preferencia guardada es `system`. Usa el mismo
+  dato que móvil para que texto e icono estén siempre sincronizados.
+- El sol de “Modo claro” es exactamente el mismo icono correcto que se ve en
+  móvil.
 
-- **P0** `MobileContextPanel` — un solo panel contextual, que reutiliza el
-  Inspector entero vía su prop `embedded`.
-- **P1** `MobileToolStrip` — herramientas a tira horizontal sobre la barra de
-  navegación. La lista vive en `pizarronTools.tsx`, compartida con el rail de
-  escritorio.
-- **P2** barra superior mínima: Posición y Alinear bajan al panel contextual.
-- **P3** modo consulta — disponible, pero **ya no por defecto**. Se entra
-  editando: arrancar sin poder seleccionar se leía como un fallo.
-- **P4** `useCanvasGestures` — pellizcar para zoom y dos dedos para desplazar.
+### Pizarrón, escritorio y móvil
 
-### Segunda auditoría de Pizarrón — cerrada
+- El Inspector de escritorio no se monta con la selección vacía. La tarjeta
+  que decía `Multiple Selection` era un estado fantasma: sin selección no hay
+  inspector; con una o varias selecciones se muestran las propiedades reales.
+- Se verificó y confirmó la corrección pendiente de gesto multitáctil: durante
+  pellizco o arrastre con dos dedos, el motor de edición ignora los eventos
+  pointer. Evita que un pellizco active por accidente el doble toque y cree
+  un nodo `Type something...`.
 
-Ver `AUDIT-PIZARRON.md`. Los tres graves y los tres medios, resueltos:
+### Verificación
 
-- Deshacer y rehacer en móvil (existían en el store, sin exponer).
-- Biblioteca de 320px a hoja inferior.
-- Umbral único de doble toque (había 300ms y 400ms para el mismo gesto).
-- **727 líneas** de código muerto o duplicado eliminadas.
+- `npm run typecheck` correcto.
+- `npm run build` correcto.
+- Permanecen avisos anteriores: `eval` en `ingredientParser.ts`, dos reglas
+  CSS con interpolaciones literales y avisos de tamaño/dynamic import. No se
+  introdujeron ni se modificaron en esta sesión.
 
-### Correcciones de toda la app
+## Lo siguiente
 
-Modo oscuro que fallaba al primer toque, área segura en las cabeceras, arranque
-en Dashboard, cerrar sesión en móvil, degradados a sangre, login compacta.
+1. **Validación real en iPhone** del pellizco a dos dedos: no deben aparecer
+   nodos de texto; comprobar también biblioteca como hoja inferior y
+   deshacer/rehacer.
+2. **`PLAN-GRIMORIO-MERCADO.md`**, en sesión separada: diagnosticar los tres
+   bugs de datos en móvil antes de cambiar diseño. El catálogo de proveedores
+   requiere las cuatro decisiones del usuario escritas en ese plan antes de
+   programar.
+3. Menores de Pizarrón B6/B7 y la infraestructura, solo cuando se prioricen.
 
-## ⏸️ Lo que queda — EMPIEZA POR AQUÍ
+## Recordatorios críticos
 
-1. **`docs/agents/PLAN-GRIMORIO-MERCADO.md`** — trabajo grande y **para una
-   sesión aparte**. Tres bugs de datos en móvil (inventario, selector de
-   ingredientes y mercado vacíos pese a verse en escritorio) y el cambio de
-   Mercado a catálogo de proveedores de Madrid. Tiene **cuatro decisiones que
-   hay que tomar con el usuario** antes de escribir una línea.
-
-2. **Restos menores de Pizarrón** — B6 y B7 en `AUDIT-PIZARRON.md`: medidas de
-   escritorio sueltas y ausencia de atajos táctiles.
-
-3. **Infraestructura** (detalle en `CONTEXT.md`): desplegar el `ai-gateway`,
-   rotar las claves de Gemini y Stripe, activar Stripe.
-
-## ⚠️ Antes de tocar Pizarrón, lee esto
-
-Este módulo ha dado **cuatro casos de código escrito y nunca conectado**:
-`isMobileMode`, `editingImageId`, `ShapeSelector` y `ColorPickerModal`, más una
-rama `else` en el renderer que jamás se ejecutó. Tres ya se limpiaron.
-
-> **Si algo parece una función y no responde, comprueba primero si está
-> conectado**, antes de darlo por roto y "arreglarlo".
-
-Y la lección que más tiempo costó, al retirar `MiniToolbar`:
-
-> **Comparar contra un solo componente no basta para declarar algo único.**
-> Se dieron por exclusivas tres funciones que ya vivían en `TopBar`, en
-> `MenuDesignInspector` y en los atajos de teclado. Hay que buscar en todo
-> `src/`, no en el vecino.
-
-## Verificación pendiente
-
-Lo desplegado hoy **no está probado con el dedo en su totalidad**. El usuario
-prueba en un iPhone real; el agente no puede, porque `env(safe-area-inset-*)`
-vale 0 fuera de un móvil y los gestos táctiles no se reproducen en un navegador
-de escritorio.
-
-Sin confirmar: la biblioteca como hoja inferior, deshacer/rehacer, y que el
-borrado de `MiniToolbar` no haya dejado hueco en escritorio.
-
-Punto de retorno si algo del motor se rompe: etiqueta **`pre-merge-frosty`**.
+- `engine/renderer.ts`, `engine/interaction.ts` y `state/store.ts` son núcleo
+  sensible. Punto de retorno: etiqueta `pre-merge-frosty`.
+- Antes de asumir que una función está rota, comprobar que esté conectada. Este
+  módulo ya acumuló varios componentes o ramas escritos pero nunca montados.
+- Una propiedad debe tener una sola fuente de verdad: herramientas en
+  `pizarronTools.tsx`, propiedades de nodo en `Inspector`, y tema en
+  `UIContext`.

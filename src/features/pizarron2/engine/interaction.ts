@@ -1,4 +1,5 @@
 import { scaled } from './nodeDefaults';
+import { gestoMultitactil } from './gestureState';
 import { logger } from "../../../utils/logger";
 
 import { pizarronStore } from '../state/store';
@@ -223,6 +224,11 @@ export class InteractionManager {
     }
     onPointerDown(e: React.PointerEvent<HTMLCanvasElement>) {
         if (!this.canvas) return; // Guard
+        // Durante un pellizco o un arrastre a dos dedos, el motor no debe hacer
+        // nada: esos eventos pertenecen al gesto de zoom, no a la edición.
+        // `isPrimary` descarta además el segundo dedo por sí solo, incluso si la
+        // bandera llegase tarde.
+        if (gestoMultitactil.activo || (e as any).isPrimary === false) return;
 
         const state = pizarronStore.getState();
         const { viewport, order, nodes } = state;

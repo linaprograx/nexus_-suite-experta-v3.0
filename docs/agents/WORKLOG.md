@@ -7,6 +7,36 @@ El "por qué" es lo que más vale dentro de tres semanas.
 
 ---
 
+## 2026-08-05 · Codex · Tema de escritorio e Inspector fantasma
+
+**Qué**
+
+- Se corrigió el conmutador claro/oscuro de escritorio. `UIContext` expone
+  ahora `isDarkMode`, el tema efectivo que resuelve el valor guardado
+  `system`; Sidebar y la navegación móvil consumen esa misma fuente.
+- Se eliminó el Inspector fantasma de Pizarrón: con selección vacía devuelve
+  `null`, no una tarjeta que decía *Multiple Selection*.
+- Se revisó, validó y confirmó el trabajo sin commit de Claude para los gestos
+  multitáctiles: una bandera entre `useCanvasGestures` e `interaction.ts`
+  bloquea la edición durante un pellizco/dos dedos, evitando nodos de texto
+  creados accidentalmente.
+- `npm run typecheck` y `npm run build` correctos.
+
+**Por qué**
+
+El escritorio mostraba icono/texto basándose en `theme === 'dark'`; si el
+usuario conservaba `system`, eso podía no representar lo que estaba viendo y
+dejaba dos criterios entre móvil y escritorio. El Inspector confundía “cero
+selecciones” con “varias selecciones”, por eso quedaba visible nada más abrir
+un lienzo vacío.
+
+**Pendiente**
+
+Probar el pellizco en iPhone real y continuar solo después con la sesión
+separada de Grimorio/Mercado.
+
+---
+
 ## 2026-08-03 · Codex · Worktree único de relevo
 
 **Qué**

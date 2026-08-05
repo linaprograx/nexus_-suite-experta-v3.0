@@ -54,12 +54,13 @@ export const Inspector: React.FC<InspectorProps> = ({ embedded = false }) => {
         ingredients
     } = useInspectorLogic();
 
-    // NOW we can return if no selection
+    // Sin selección no hay nada que inspeccionar. Antes se montaba el
+    // contenedor de "Multiple Selection", que es un estado válido solo con
+    // varios nodos seleccionados y parecía un panel fantasma al abrir Pizarrón.
+    if (!firstNode) return null;
 
     // Render Content based on Type
     const renderContent = () => {
-        if (!firstNode) return <div className="text-sm text-slate-500 dark:text-slate-400 italic text-center py-4">Multiple Selection</div>;
-
         switch (effectiveType) {
             case 'board':
                 return <BoardInspector
