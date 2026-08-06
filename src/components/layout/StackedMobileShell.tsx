@@ -1,5 +1,6 @@
 import React from 'react';
 import { BottomSheet } from '../ui/BottomSheet';
+import { FranjaFondo } from './FranjaFondo';
 import { useEdgeSwipe } from '../../hooks/useEdgeSwipe';
 
 export interface StackedMobileShellProps {
@@ -36,6 +37,7 @@ export interface StackedMobileShellProps {
      * deja cualquier barra opaca sobre un degradado.
      */
     headerGradient?: string;
+    style?: React.CSSProperties;
     id?: string;
 }
 
@@ -60,7 +62,7 @@ export const StackedMobileShell: React.FC<StackedMobileShellProps> = ({
     rightTitle, rightSubtitle,
     rightOpen, onRightClose,
     accentClass = 'bg-teal-500',
-    background, headerGradient,
+    background, headerGradient, style,
     id,
 }) => {
     const [leftOpen, setLeftOpen] = React.useState(false);
@@ -80,6 +82,22 @@ export const StackedMobileShell: React.FC<StackedMobileShellProps> = ({
 
     const bothClosed = !leftOpen && !isRightOpen;
 
+    // La franja publica su altura real en `--franja-alto` para que las barras de
+    // filtros de cada vista puedan pegarse justo debajo sin conocerla. Se mide en
+    // vez de fijarse a mano porque la cabecera cambia de alto al plegarse, y un
+    // número escrito a mano se quedaría desfasado en cuanto se toque el diseño.
+    const franjaRef = React.useRef<HTMLDivElement>(null);
+    const raizRef = React.useRef<HTMLDivElement>(null);
+    React.useEffect(() => {
+        const franja = franjaRef.current, raiz = raizRef.current;
+        if (!franja || !raiz) return;
+        const publicar = () => raiz.style.setProperty('--franja-alto', `${franja.offsetHeight}px`);
+        publicar();
+        const ro = new ResizeObserver(publicar);
+        ro.observe(franja);
+        return () => ro.disconnect();
+    }, [header, headerGradient]);
+
     return (
         <div
             id={id}
@@ -87,30 +105,22 @@ export const StackedMobileShell: React.FC<StackedMobileShellProps> = ({
             // of the scrolling <main> above it, so main's scrollHeight never exceeds
             // its clientHeight and nothing can scroll — the overflow is just clipped.
             // Letting it grow hands the scroll back to the page.
+            ref={raizRef}
             className="min-h-full w-full flex flex-col relative"
+            style={style}
             {...edgeSwipe}
         >
             {background}
 
             {header && (
                 <div
+                    ref={franjaRef}
                     className={`shrink-0 px-3 pt-3 z-30 ${headerGradient ? 'sticky' : 'relative'}`}
                     // Se ancla por debajo del área segura: con `top: 0` la cabecera
                     // se metería bajo el reloj y la batería al quedar fija.
                     style={headerGradient ? { top: 'env(safe-area-inset-top)' } : undefined}
                 >
-                    {headerGradient && (
-                        <>
-                            {/* Base opaca: el degradado se vuelve transparente al 45%,
-                                así que por sí solo dejaría transparentar el contenido
-                                que pasa por debajo. */}
-                            <div aria-hidden className="absolute inset-x-0 bottom-0 -z-10 bg-slate-50 dark:bg-slate-950"
-                                style={{ top: 'calc(-1 * env(safe-area-inset-top) - 0.5rem)' }} />
-                            {/* El mismo degradado del fondo, anclado al viewport. */}
-                            <div aria-hidden className={`absolute inset-x-0 bottom-0 -z-10 pointer-events-none bg-fixed ${headerGradient}`}
-                                style={{ top: 'calc(-1 * env(safe-area-inset-top) - 0.5rem)' }} />
-                        </>
-                    )}
+                    {headerGradient && <FranjaFondo arriba="calc(-1 * env(safe-area-inset-top) - 0.5rem)" />}
                     {header}
                 </div>
             )}
