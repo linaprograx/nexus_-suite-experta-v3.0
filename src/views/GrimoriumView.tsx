@@ -782,8 +782,15 @@ const GrimoriumInner: React.FC<GrimoriumViewProps> = () => {
                 </>
             }
             mainContent={
-                <div className="h-full flex flex-col relative p-0 bg-transparent shadow-none border-none">
-                    <div className="flex-1 overflow-y-auto custom-scrollbar">
+                <div className="lg:h-full flex flex-col relative p-0 bg-transparent shadow-none border-none">
+                    {/* Scroll interno solo en escritorio.
+                        En móvil scrollea la página. Este contenedor envuelve las TRES
+                        pestañas, así que mientras creaba un scroll propio se convertía
+                        en el ancla del `sticky` de todas las barras de filtros; y como
+                        su contenido cabe entero, nunca scrollea y el `sticky` no
+                        llegaba a activarse. Por eso fallaba también en Inventario, cuyo
+                        panel sí estaba bien limitado. */}
+                    <div className="lg:flex-1 lg:overflow-y-auto custom-scrollbar">
                         {/* COST LAYER (Takes precedence if active) - REVERTED: Now in Right Sidebar */}
 
                         {/* RECIPES VIEW */}
