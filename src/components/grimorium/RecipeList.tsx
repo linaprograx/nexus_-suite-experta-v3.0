@@ -3,6 +3,7 @@ import { Recipe, Ingredient } from '../../types';
 import { calculateRecipeCost } from '../../core/costing/costCalculator';
 import { Card } from '../ui/Card';
 import { Button } from '../ui/Button';
+import { EnLaFranjaFija } from '../layout/FranjaFija';
 import { Icon } from '../ui/Icon';
 import { ICONS } from '../ui/icons';
 import { useUI } from '../../context/UIContext';
@@ -196,6 +197,7 @@ export const RecipeList: React.FC<RecipeListProps> = ({
   return (
     <div className="lg:h-full flex flex-col w-full max-w-full">
       {/* Toolbar Header */}
+      <EnLaFranjaFija>
       <div
           className="py-4 flex flex-col gap-4 w-full"
         >
@@ -269,6 +271,7 @@ export const RecipeList: React.FC<RecipeListProps> = ({
           </button>
         </div>
       </div>
+      </EnLaFranjaFija>
 
       {/* List Header (Actions) */}
       <div className="px-1 py-2 flex items-center justify-between text-xs text-slate-500 mb-2">

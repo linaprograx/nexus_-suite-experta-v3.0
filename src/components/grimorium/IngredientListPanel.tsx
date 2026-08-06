@@ -1,6 +1,7 @@
 import React, { useRef } from 'react';
 import { Ingredient } from '../../types';
 import { Card } from '../ui/Card';
+import { EnLaFranjaFija } from '../layout/FranjaFija';
 import { Icon } from '../ui/Icon';
 import { ICONS } from '../ui/icons';
 import { Button } from '../ui/Button';
@@ -226,6 +227,7 @@ export const IngredientListPanel: React.FC<IngredientListPanelProps> = ({
   return (
     <div className="lg:h-full flex flex-col bg-transparent border-0 shadow-none w-full max-w-full lg:max-w-[97%] px-1 lg:px-8">
       {/* Unique Integrated Header */}
+      <EnLaFranjaFija>
       <div
           className="py-4 flex flex-col gap-4 w-full justify-start"
         >
@@ -354,6 +356,7 @@ export const IngredientListPanel: React.FC<IngredientListPanelProps> = ({
           <div className="w-24 text-right">Precio / Unidad</div>
         </div>
       </div>
+      </EnLaFranjaFija>
 
       {/* List Body */}
       <div className="lg:flex-1 lg:overflow-y-auto custom-scrollbar p-0 w-full z-0">

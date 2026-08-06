@@ -1,6 +1,7 @@
 import React from 'react';
 import { BottomSheet } from '../ui/BottomSheet';
 import { FranjaFondo } from './FranjaFondo';
+import { ID_HUECO_FRANJA } from './FranjaFija';
 import { useEdgeSwipe } from '../../hooks/useEdgeSwipe';
 
 export interface StackedMobileShellProps {
@@ -135,6 +136,11 @@ export const StackedMobileShell: React.FC<StackedMobileShellProps> = ({
                 >
                     {headerGradient && <FranjaFondo />}
                     {header}
+                    {/* Aquí aterriza la barra de filtros de la vista. Al vivir DENTRO
+                        de la cabecera, su alto entra en la misma medición y el
+                        contenido reserva el hueco exacto: no hay dos bordes que
+                        alinear ni rendija posible entre ambos. */}
+                    {headerGradient && <div id={ID_HUECO_FRANJA} />}
                 </div>
             )}
 
