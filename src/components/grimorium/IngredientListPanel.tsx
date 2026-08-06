@@ -229,7 +229,9 @@ export const IngredientListPanel: React.FC<IngredientListPanelProps> = ({
       {/* Unique Integrated Header */}
       <div
           className="py-4 flex flex-col gap-4 w-full justify-start sticky lg:static z-20"
-          style={{ top: 'calc(env(safe-area-inset-top) + var(--franja-alto, 0px))' }}
+          // La franja fija ya incluye el área segura dentro de su propia altura;
+          // volver a sumarla aquí dejaría la barra desplazada hacia abajo.
+          style={{ top: 'var(--franja-alto, 0px)' }}
         >
         <FranjaFondo />
         {/* 1. Search Bar - Expands */}

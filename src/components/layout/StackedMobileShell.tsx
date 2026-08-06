@@ -118,19 +118,35 @@ export const StackedMobileShell: React.FC<StackedMobileShellProps> = ({
             {header && (
                 <div
                     ref={franjaRef}
-                    className={`shrink-0 px-3 pt-3 z-30 ${headerGradient ? 'sticky' : 'relative'}`}
-                    // Se ancla por debajo del área segura: con `top: 0` la cabecera
-                    // se metería bajo el reloj y la batería al quedar fija.
-                    style={headerGradient ? { top: 'env(safe-area-inset-top)' } : undefined}
+                    // `fixed`, no `sticky`.
+                    //
+                    // Un elemento pegajoso sigue viviendo dentro del flujo: depende del
+                    // contenedor de scroll que le toque y se descoloca cuando el
+                    // navegador móvil recoge sus propias barras, que es el "se mueve un
+                    // poco" al scrollear. Fijo no puede moverse.
+                    //
+                    // Se ancla en el borde real (`top: 0`) y mete el área segura como
+                    // relleno propio: así su fondo cubre también la franja del reloj y
+                    // ningún elemento puede asomar por encima al pasar por debajo.
+                    className={`z-30 ${headerGradient ? 'fixed inset-x-0 top-0 lg:static lg:px-3 lg:pt-3' : 'relative shrink-0 px-3 pt-3'}`}
+                    style={headerGradient
+                        ? { paddingTop: 'calc(env(safe-area-inset-top) + 0.75rem)', paddingLeft: '0.75rem', paddingRight: '0.75rem' }
+                        : undefined}
                 >
-                    {headerGradient && <FranjaFondo arriba="calc(-1 * env(safe-area-inset-top) - 0.5rem)" />}
+                    {headerGradient && <FranjaFondo />}
                     {header}
                 </div>
             )}
 
             {/* No inner scroller and no min-h-0 clamp: the content grows and the page
                 scrolls. Views must gate their own `h-full`/`overflow` behind `lg:`. */}
-            <div className="grow px-3 pt-2 relative z-20 flex flex-col">
+            {/* La cabecera fija ya no ocupa sitio en el flujo, así que el contenido
+                reserva su altura. Se usa la medida real publicada por la franja y no
+                un número escrito a mano, que se desfasaría al plegarse el título. */}
+            <div
+                className="grow px-3 pt-2 relative z-20 flex flex-col"
+                style={headerGradient ? { paddingTop: 'var(--franja-alto, 0px)' } : undefined}
+            >
                 {main}
             </div>
 

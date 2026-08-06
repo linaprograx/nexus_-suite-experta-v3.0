@@ -176,7 +176,9 @@ export const StockInventoryPanel: React.FC<StockInventoryPanelProps> = ({
                 // comporta exactamente igual que antes.
                 <div
                     className="shrink-0 px-3 pb-3 pt-2 lg:px-6 lg:pb-4 z-20 sticky lg:static"
-                    style={{ top: 'calc(env(safe-area-inset-top) + var(--franja-alto, 0px))' }}
+                    // La franja fija ya incluye el área segura dentro de su propia altura;
+          // volver a sumarla aquí dejaría la barra desplazada hacia abajo.
+          style={{ top: 'var(--franja-alto, 0px)' }}
                 >
                     <FranjaFondo />
                     <div className="flex gap-2 items-center w-full">
