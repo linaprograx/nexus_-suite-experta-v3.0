@@ -233,7 +233,7 @@ export const IngredientListPanel: React.FC<IngredientListPanelProps> = ({
           // volver a sumarla aquí dejaría la barra desplazada hacia abajo.
           style={{ top: 'var(--franja-alto, 0px)' }}
         >
-        <FranjaFondo />
+        <FranjaFondo arriba="-1.5rem" />
         {/* 1. Search Bar - Expands */}
         <div className="relative w-full group">
           <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">

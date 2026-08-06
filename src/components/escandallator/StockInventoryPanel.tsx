@@ -180,7 +180,7 @@ export const StockInventoryPanel: React.FC<StockInventoryPanelProps> = ({
           // volver a sumarla aquí dejaría la barra desplazada hacia abajo.
           style={{ top: 'var(--franja-alto, 0px)' }}
                 >
-                    <FranjaFondo />
+                    <FranjaFondo arriba="-1.5rem" />
                     <div className="flex gap-2 items-center w-full">
                         {/* Search Bar - Grows */}
                         <div className="relative flex-1 group">

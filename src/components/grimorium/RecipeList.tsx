@@ -203,7 +203,7 @@ export const RecipeList: React.FC<RecipeListProps> = ({
           // volver a sumarla aquí dejaría la barra desplazada hacia abajo.
           style={{ top: 'var(--franja-alto, 0px)' }}
         >
-        <FranjaFondo />
+        <FranjaFondo arriba="-1.5rem" />
         {/* Search Bar - Full Width */}
         <div className="relative w-full group">
           <Icon svg={ICONS.search} className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-emerald-500 transition-colors" />

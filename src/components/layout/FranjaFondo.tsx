@@ -25,6 +25,12 @@ import React from 'react';
  * transformado hace que `background-attachment: fixed` deje de anclarse al
  * viewport, que es justo lo que hace que la franja calce con el fondo.
  *
+ * `arriba` admite valores negativos para SOLAPAR con la franja de encima. Las
+ * barras de filtros lo usan: si el fondo empezase justo donde acaba la cabecera,
+ * bastarían unos píxeles de diferencia entre ambas medidas para que se colase
+ * una esquirla del contenido que pasa por debajo. Solapar es más robusto que
+ * confiar en que dos alturas calculadas por separado calcen al píxel.
+ *
  * **Solo móvil (`lg:hidden`).** En escritorio nada de esto se queda fijo, así que
  * pintar la base opaca ahí dibujaba un bloque blanco sólido sobre el degradado
  * en las tres pestañas. No basta con limitar la POSICIÓN a móvil: el fondo
