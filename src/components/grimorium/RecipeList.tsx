@@ -287,7 +287,11 @@ export const RecipeList: React.FC<RecipeListProps> = ({
         <span className="italic">{isLoading ? 'Cargando...' : `${uniqueRecipes.length} recetas`}</span>
       </div>
 
-      <div className="flex-1 overflow-y-auto custom-scrollbar p-0 w-full">
+      {/* El scroll interno solo en escritorio. En móvil scrollea la página: un
+          contenedor de scroll intermedio se convierte en el ancla del `sticky`
+          de la barra de filtros y, como nunca llega a scrollear, el `sticky`
+          no se activaba. Es la regla que ya seguían los otros dos paneles. */}
+      <div className="lg:flex-1 lg:overflow-y-auto custom-scrollbar p-0 w-full">
         {isLoading ? (
           <div className="grid grid-cols-2 gap-4 px-0.5 pb-20">
             {Array.from({ length: 6 }).map((_, i) => (
