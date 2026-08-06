@@ -1,7 +1,6 @@
 import React, { useRef } from 'react';
 import { Ingredient } from '../../types';
 import { Card } from '../ui/Card';
-import { FranjaFondo } from '../layout/FranjaFondo';
 import { Icon } from '../ui/Icon';
 import { ICONS } from '../ui/icons';
 import { Button } from '../ui/Button';
@@ -228,12 +227,8 @@ export const IngredientListPanel: React.FC<IngredientListPanelProps> = ({
     <div className="lg:h-full flex flex-col bg-transparent border-0 shadow-none w-full max-w-full lg:max-w-[97%] px-1 lg:px-8">
       {/* Unique Integrated Header */}
       <div
-          className="py-4 flex flex-col gap-4 w-full justify-start sticky lg:static z-20"
-          // La franja fija ya incluye el área segura dentro de su propia altura;
-          // volver a sumarla aquí dejaría la barra desplazada hacia abajo.
-          style={{ top: 'var(--franja-alto, 0px)' }}
+          className="py-4 flex flex-col gap-4 w-full justify-start"
         >
-        <FranjaFondo arriba="-1.5rem" />
         {/* 1. Search Bar - Expands */}
         <div className="relative w-full group">
           <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
