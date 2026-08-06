@@ -21,10 +21,19 @@ export const fetchRecipes = async (db: Firestore, userId: string) => {
     return snap.docs.map(d => ({ ...d.data(), id: d.id } as Recipe));
 };
 
+/**
+ * Sin `orderBy('nombre')` a propósito.
+ *
+ * Firestore EXCLUYE en silencio todo documento que no tenga el campo por el que
+ * se ordena. Un catálogo importado con ese campo escrito de otra forma devuelve
+ * cero resultados y la vista se ve simplemente "vacía", sin ningún error. Se
+ * ordena en el cliente, que además tolera nombres ausentes.
+ */
 export const fetchIngredients = async (db: Firestore, appId: string, userId: string) => {
-    const q = query(collection(db, `artifacts/${appId}/users/${userId}/grimorio-ingredients`), orderBy('nombre'));
-    const snap = await getDocs(q);
-    return snap.docs.map(d => ({ ...d.data(), id: d.id } as Ingredient));
+    const snap = await getDocs(collection(db, `artifacts/${appId}/users/${userId}/grimorio-ingredients`));
+    return snap.docs
+        .map(d => ({ ...d.data(), id: d.id } as Ingredient))
+        .sort((a, b) => String(a?.nombre ?? '').localeCompare(String(b?.nombre ?? '')));
 };
 
 export const fetchTasks = async (db: Firestore, appId: string) => {

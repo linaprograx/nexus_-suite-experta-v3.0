@@ -23,9 +23,24 @@ export const useIngredients = () => {
             if (!db || !userId || !appId) return [];
 
             // 1. Master catalog
-            const q = query(collection(db, `artifacts/${appId}/users/${userId}/grimorio-ingredients`), orderBy('nombre'));
-            const snap = await getDocs(q);
-            const masters = snap.docs.map(d => ({ ...d.data(), id: d.id } as Ingredient));
+            // Sin `orderBy('nombre')`: Firestore excluye en silencio los documentos
+            // que no tengan ese campo, y un catálogo importado con otro nombre de
+            // campo devuelve cero resultados sin dar ningún error. Se ordena abajo.
+            // Una lectura denegada por reglas se veía igual que un catálogo vacío:
+            // el error viajaba hasta `error` y nadie lo pintaba. Al menos queda
+            // constancia de cuál de las dos cosas ocurre.
+            const ruta = `artifacts/${appId}/users/${userId}/grimorio-ingredients`;
+            let snap;
+            try {
+                snap = await getDocs(collection(db, ruta));
+            } catch (e) {
+                console.error('[useIngredients] fallo al leer el catálogo en', ruta, e);
+                throw e;
+            }
+            if (snap.empty) console.warn('[useIngredients] el catálogo existe pero está vacío:', ruta);
+            const masters = snap.docs
+                .map(d => ({ ...d.data(), id: d.id } as Ingredient))
+                .sort((a, b) => String(a?.nombre ?? '').localeCompare(String(b?.nombre ?? '')));
 
             // 2. Purchases → weighted-average unit cost, indexed by id AND name
             type Agg = { totalCost: number; totalQty: number; unit?: string };
