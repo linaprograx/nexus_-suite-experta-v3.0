@@ -15,12 +15,22 @@ export const useCabeceraPlegable = (umbral = 64) => {
     const [plegada, setPlegada] = React.useState(false);
     const [ancho, setAncho] = React.useState(() => (typeof window === 'undefined' ? 0 : window.innerWidth));
 
+    // El seguimiento del ancho va en su PROPIO efecto, y no dentro del de abajo.
+    // Estando junto al `return` temprano de escritorio, el escuchador de `resize`
+    // no llegaba a registrarse nunca en pantalla ancha: el hook se desarmaba y ya
+    // no volvía a evaluarse al estrecharse la ventana, así que el pliegue no se
+    // activaba jamás si la app había arrancado en escritorio.
+    React.useEffect(() => {
+        const reevaluar = () => setAncho(window.innerWidth);
+        window.addEventListener('resize', reevaluar);
+        return () => window.removeEventListener('resize', reevaluar);
+    }, []);
+
     React.useEffect(() => {
         // Solo móvil. En escritorio la cabecera no es fija y el listado scrollea
         // dentro de su columna, así que plegar el título ahí sería un cambio que
         // nadie ha pedido en la vista que hoy funciona bien.
-        const mq = window.matchMedia('(max-width: 1023px)');
-        if (!mq.matches) { setPlegada(false); return; }
+        if (!window.matchMedia('(max-width: 1023px)').matches) { setPlegada(false); return; }
 
         const cont = document.querySelector('main');
         if (!cont) return;
@@ -38,14 +48,7 @@ export const useCabeceraPlegable = (umbral = 64) => {
         };
 
         cont.addEventListener('scroll', alScrollear, { passive: true });
-        // Al cambiar de tamaño se reevalúa: girar el teléfono o abrir la ventana
-        // puede cruzar el umbral en cualquier dirección.
-        const reevaluar = () => setAncho(window.innerWidth);
-        window.addEventListener('resize', reevaluar);
-        return () => {
-            cont.removeEventListener('scroll', alScrollear);
-            window.removeEventListener('resize', reevaluar);
-        };
+        return () => cont.removeEventListener('scroll', alScrollear);
     }, [umbral, ancho]);
 
     return plegada;
