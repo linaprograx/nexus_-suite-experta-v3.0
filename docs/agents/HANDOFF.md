@@ -6,9 +6,9 @@
 
 ---
 
-**Última actualización:** 2026-08-05
+**Última actualización:** 2026-08-06
 **Sesión anterior:** Codex
-**Estado:** Inventario móvil compactado y confirmado; TypeScript y build correctos. Despliegue pendiente de sanear la rama `deploy/mobile-v1`.
+**Estado:** Visión de producto consolidada en documento canónico; código sin cambios. Despliegue pendiente de sanear la rama `deploy/mobile-v1`.
 
 ## Dónde se trabaja
 
@@ -38,6 +38,18 @@ git checkout feat/mobile-v1-unified
 No se ha desplegado esta sesión.
 
 ## Qué se cerró en esta sesión
+
+### Visión de producto — consolidación documental
+
+- Se integró la visión estratégica del fundador y la auditoría técnica en
+  `docs/NEXUS_MASTER_VISION_v1.1.md`, sin cambiar código ni iniciar estudio de
+  mercado.
+- El documento separa decisiones confirmadas, capacidades actuales, en
+  desarrollo y futuras. Corrige tres afirmaciones que el código no sostiene
+  como presentes: Mercado global (los datos actuales son por usuario), pedido
+  externo a proveedor y jerarquía organizativa operativa.
+- Stripe e IA quedan clasificados como capacidades parciales: existe base de
+  código, pero faltan despliegue/credenciales seguros y validación real.
 
 ### Grimorio — diagnóstico read-only y roadmap transversal
 
@@ -103,14 +115,17 @@ filtro/render, o compras huérfanas.
 
 ## Lo siguiente
 
-1. Revisar `stash@{0}` y sanear el checkout de `deploy/mobile-v1`; solo entonces
+1. Si se retoma producto estratégico, usar `docs/NEXUS_MASTER_VISION_v1.1.md`
+   como fuente canónica y no iniciar el estudio de mercado hasta recibir ese
+   encargo expreso.
+2. Revisar `stash@{0}` y sanear el checkout de `deploy/mobile-v1`; solo entonces
    desplegar esta mejora y validar **Inventario** a 390px: scroll de página,
    métricas compactas, filas legibles y acceso a detalle.
-2. **Validación real Grimorio a 390px** con sesión afectada y los cuatro datos
+3. **Validación real Grimorio a 390px** con sesión afectada y los cuatro datos
    de instrumentación descritos en `PLAN-GRIMORIO-MERCADO.md`.
-3. Acordar las cuatro decisiones del catálogo global antes de programarlo;
+4. Acordar las cuatro decisiones del catálogo global antes de programarlo;
    después validar un proveedor de prueba.
-4. Validación real en iPhone del pellizco de Pizarrón y luego sus menores B6/B7,
+5. Validación real en iPhone del pellizco de Pizarrón y luego sus menores B6/B7,
    solo cuando se prioricen.
 
 ## Recordatorios críticos

@@ -7,6 +7,34 @@ El "por qué" es lo que más vale dentro de tres semanas.
 
 ---
 
+## 2026-08-06 · Codex · Consolidación de la visión del fundador
+
+**Qué**
+
+- Se creó `docs/NEXUS_MASTER_VISION_v1.1.md` como fuente canónica consolidada
+  de visión de producto. Integra la visión aportada por el fundador y la
+  auditoría técnica existente, sin tocar el código ni iniciar investigación de
+  mercado.
+- Se distinguieron capacidades actuales, en desarrollo y futuras. Se anotaron
+  como contradicciones reales: el catálogo Mercado aún es por usuario, el
+  pedido externo/recepción no está construido como flujo completo y la
+  jerarquía organizativa aún no existe como modelo operativo verificable.
+
+**Por qué**
+
+La visión máxima debe dirigir el producto sin convertir una ambición en una
+afirmación técnica falsa. La separación explícita de madurez permite usar el
+documento después en un Brand Book o estudio de mercado sin prometer funciones
+que todavía no están operativas.
+
+**Pendiente**
+
+No se ha iniciado el estudio de mercado, el Brand Book ni se ha modificado
+ninguna carpeta de código. Cuando se autorice el siguiente trabajo estratégico,
+partir de `docs/NEXUS_MASTER_VISION_v1.1.md`.
+
+---
+
 ## 2026-08-05 · Codex · Diagnóstico móvil y roadmap de Grimorio
 
 **Qué**
