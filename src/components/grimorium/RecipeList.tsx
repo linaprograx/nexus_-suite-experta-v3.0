@@ -3,6 +3,7 @@ import { Recipe, Ingredient } from '../../types';
 import { calculateRecipeCost } from '../../core/costing/costCalculator';
 import { Card } from '../ui/Card';
 import { Button } from '../ui/Button';
+import { FranjaFondo } from '../layout/FranjaFondo';
 import { Icon } from '../ui/Icon';
 import { ICONS } from '../ui/icons';
 import { useUI } from '../../context/UIContext';
@@ -196,7 +197,11 @@ export const RecipeList: React.FC<RecipeListProps> = ({
   return (
     <div className="lg:h-full flex flex-col w-full max-w-full">
       {/* Toolbar Header */}
-      <div className="py-4 flex flex-col gap-4 w-full">
+      <div
+          className="py-4 flex flex-col gap-4 w-full sticky lg:static z-20"
+          style={{ top: 'calc(env(safe-area-inset-top) + var(--franja-alto, 0px))' }}
+        >
+        <FranjaFondo />
         {/* Search Bar - Full Width */}
         <div className="relative w-full group">
           <Icon svg={ICONS.search} className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-emerald-500 transition-colors" />
