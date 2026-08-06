@@ -34,7 +34,6 @@ import { PremiumLayout } from '../components/layout/PremiumLayout';
 import { useDebounce } from '../hooks/useDebounce';
 import { RecipeToolbar } from '../components/grimorium/RecipeToolbar';
 import { IngredientToolbar } from '../components/grimorium/IngredientToolbar';
-import { useCabeceraPlegable } from '../hooks/useCabeceraPlegable';
 import { exportToCSV } from '../utils/exportToCSV';
 import { Card, CardContent } from '../components/ui/Card';
 // import { callGeminiApi } from '../utils/gemini'; // REMOVED: Legacy
@@ -126,9 +125,6 @@ const GrimoriumInner: React.FC<GrimoriumViewProps> = () => {
     const [loading, setLoading] = React.useState(false);
     // Collapsing header on scroll (Grimorio only) — hysteresis to avoid flicker
     const [headerCollapsed, setHeaderCollapsed] = React.useState(false);
-    // En móvil scrollea la página, no el shell, así que `handleMainScroll` no se
-    // dispara nunca ahí. Este hook escucha el contenedor real.
-    const cabeceraPlegada = useCabeceraPlegable();
     const handleMainScroll = (e: React.UIEvent<HTMLDivElement>) => {
         const t = (e.currentTarget as HTMLElement).scrollTop;
         setHeaderCollapsed(prev => (t > 48 ? true : t < 16 ? false : prev));
@@ -659,7 +655,7 @@ const GrimoriumInner: React.FC<GrimoriumViewProps> = () => {
                         },
             }}
             className=""
-            header={<GrimoriumToolbar collapsed={cabeceraPlegada || (viewMode === 'recipes' && headerCollapsed)} />}
+            header={viewMode === 'recipes' ? <GrimoriumToolbar collapsed={headerCollapsed} /> : <GrimoriumToolbar collapsed={false} />}
             leftSidebar={
                 <>
                     {/* STANDARD SIDEBAR for Recipes */}

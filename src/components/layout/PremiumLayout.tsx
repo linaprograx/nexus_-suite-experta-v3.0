@@ -53,16 +53,6 @@ interface PremiumLayoutProps {
 // Gradient definitions mapping (Avatar Standard: 4-Stop Opacity)
 // Optimized: Moved outside component to prevent re-creation on every render.
 // Colors: Tuned to "Mobile Deep" saturation (600/700 scale).
-/**
- * Extrae el degradado en crudo de la clase de Tailwind para poder pasarlo como
- * variable CSS a las franjas fijas. Se deriva de `gradients` en vez de copiarlo
- * para que no puedan desincronizarse el fondo y la franja que debe imitarlo.
- */
-const crudo = (clases: string, oscuro: boolean): string => {
-    const re = oscuro ? /dark:bg-\[([^\]]+)\]/ : /(?:^|\s)bg-\[([^\]]+)\]/;
-    return (clases.match(re)?.[1] || '').replace(/_/g, ' ');
-};
-
 const gradients: Record<GradientTheme, string> = {
     violet: "bg-[linear-gradient(to_bottom,#7c3aed_0%,rgba(124,58,237,0.8)_20%,transparent_45%)] dark:bg-[linear-gradient(to_bottom,rgba(124,58,237,0.7)_0%,rgba(124,58,237,0.5)_20%,transparent_40%)]", // Violet-600
     cyan: "bg-[linear-gradient(to_bottom,#0891b2_0%,rgba(8,145,178,0.8)_20%,transparent_45%)] dark:bg-[linear-gradient(to_bottom,rgba(8,145,178,0.7)_0%,rgba(8,145,178,0.5)_20%,transparent_40%)]", // Cyan-600
@@ -115,10 +105,6 @@ export const PremiumLayout: React.FC<PremiumLayoutProps> = ({
                 id={id}
                 header={header}
                 headerGradient={mobile?.cabeceraFija ? activeGradient : undefined}
-                style={{
-                    '--franja-fondo': crudo(activeGradient, false),
-                    '--franja-fondo-dark': crudo(activeGradient, true),
-                } as React.CSSProperties}
                 main={<>{mainContent}{children}</>}
                 left={leftSidebar}
                 right={layoutMode === 'colegium' ? undefined : rightSidebar}
