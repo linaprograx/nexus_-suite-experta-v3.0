@@ -189,7 +189,7 @@ export const MarketSidebar: React.FC<MarketSidebarProps> = ({
                                 </div>
                                 <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest truncate">Prov.</span>
                             </div>
-                            <span className="text-2xl xl:text-3xl font-black text-slate-800 dark:text-slate-100 tabular-nums leading-none truncate max-w-full">
+                            <span className="text-xl xl:text-2xl font-black text-slate-800 dark:text-slate-100 tabular-nums leading-none max-w-full">
                                 {stats.totalSuppliers}
                             </span>
                         </div>
@@ -202,7 +202,7 @@ export const MarketSidebar: React.FC<MarketSidebarProps> = ({
                                 </div>
                                 <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest truncate">Items</span>
                             </div>
-                            <span className="text-2xl xl:text-3xl font-black text-slate-800 dark:text-slate-100 tabular-nums leading-none truncate max-w-full">
+                            <span className="text-xl xl:text-2xl font-black text-slate-800 dark:text-slate-100 tabular-nums leading-none max-w-full">
                                 {stats.totalProducts}
                             </span>
                         </div>

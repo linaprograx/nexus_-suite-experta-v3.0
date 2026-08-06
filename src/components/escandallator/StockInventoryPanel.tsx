@@ -8,6 +8,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useApp } from '../../context/AppContext';
 import { doc, deleteDoc, writeBatch } from 'firebase/firestore';
 import { calculateInventoryMetrics } from '../../utils/stockUtils';
+import { FranjaFondo } from '../layout/FranjaFondo';
 import { StockResolverPanel } from '../../components/stock/StockResolverPanel';
 import { useStockResolver } from '../../features/stock/hooks/useStockResolver';
 import { PhysicalCountModal } from './PhysicalCountModal';
@@ -169,7 +170,15 @@ export const StockInventoryPanel: React.FC<StockInventoryPanelProps> = ({
             {/* STICKY GLASS TOOLBAR (Search 3/4 + Category 1/4) */}
             {/* HIDE IF EXTERNAL CONTROLS ARE PROVIDED */}
             {(externalSearchTerm === undefined && externalCategory === undefined) && (
-                <div className="shrink-0 px-3 pb-3 pt-2 lg:px-6 lg:pb-4 z-20 relative">
+                // En móvil se queda pegada justo debajo de la cabecera fija, que
+                // publica su altura en `--franja-alto`. No se mueve de sitio en el
+                // árbol: solo cambia de anclaje, así que en escritorio (`lg:`) se
+                // comporta exactamente igual que antes.
+                <div
+                    className="shrink-0 px-3 pb-3 pt-2 lg:px-6 lg:pb-4 z-20 sticky lg:static"
+                    style={{ top: 'calc(env(safe-area-inset-top) + var(--franja-alto, 0px))' }}
+                >
+                    <FranjaFondo />
                     <div className="flex gap-2 items-center w-full">
                         {/* Search Bar - Grows */}
                         <div className="relative flex-1 group">
