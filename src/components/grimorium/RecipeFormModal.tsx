@@ -262,18 +262,21 @@ export const RecipeFormModal: React.FC<RecipeFormModalProps> = ({ isOpen, onClos
             // —Cerrar y Guardar— se metió bajo el reloj y el notch. Reservar solo
             // por un lado desplaza el problema al otro.
             //
-            // OJO con la sintaxis: en `calc()` el `+` EXIGE espacios a ambos lados.
-            // Escrito como `calc(1rem+env(...))` es CSS inválido y el navegador
-            // descarta la declaración entera —sin avisar—, así que no reservaba
-            // nada y la cabecera seguía bajo el reloj. En Tailwind esos espacios
-            // se escriben con guiones bajos: `calc(0.5rem_+_env(...))`.
+            // La tarjeta usa `max-h-full`, NO una fracción del viewport.
+            //
+            // Con `max-h-[92vh]` medía 776px sobre una pantalla de 844, mientras el
+            // hueco real —descontando el reloj arriba y la barra de navegación
+            // abajo— son unos 683px. Al estar centrada, se desbordaba por ambos
+            // lados y su cabecera acababa bajo el reloj. Atada al alto del
+            // contenedor ya no puede salirse: el scroll interno se encarga del
+            // resto, que es justo para lo que está.
             className="fixed inset-0 z-[60] flex items-center justify-center p-4 pt-[calc(0.5rem_+_env(safe-area-inset-top))] pb-[calc(0.5rem_+_60px_+_env(safe-area-inset-bottom))] lg:pt-4 lg:pb-4"
         >
             {/* Backdrop — fade only (no transform) to avoid Safari backdrop-filter flicker */}
             <div className="absolute inset-0 bg-slate-900/50 backdrop-blur-md animate-in fade-in duration-200" onClick={onClose} style={{ WebkitBackdropFilter: 'blur(12px)' }} />
 
             {/* Modal */}
-            <div className="relative w-full max-w-4xl max-h-[92vh] flex flex-col bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-200/60 dark:border-white/10 overflow-hidden animate-in fade-in duration-200">
+            <div className="relative w-full max-w-4xl max-h-full flex flex-col bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-200/60 dark:border-white/10 overflow-hidden animate-in fade-in duration-200">
                 {/* Header — Grimorio brand (emerald/teal) */}
                 <div className="relative px-4 py-2 lg:py-3.5 shrink-0 bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-600 overflow-hidden">
                     <div className="absolute -top-8 -right-8 w-40 h-40 bg-white/10 rounded-full blur-2xl pointer-events-none" />

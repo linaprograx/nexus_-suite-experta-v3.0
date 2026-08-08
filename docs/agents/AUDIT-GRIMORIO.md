@@ -125,31 +125,22 @@ claro cuál cierra qué.
 
 ---
 
-# ⚠️ HALLAZGO TRANSVERSAL · `calc()` inválido en toda la app
+# ⚠️ Un hallazgo que resultó FALSO — anotado para que no se repita
 
-En `calc()`, el `+` **exige espacios a ambos lados**. Sin ellos el CSS es
-inválido y el navegador **descarta la declaración entera, sin avisar**. En
-Tailwind esos espacios se escriben con guiones bajos: `calc(60px_+_env(...))`.
+Se dio por roto el `calc()` de seis sitios por escribirse sin espacios alrededor
+del `+` (`calc(60px+env(...))`), que en CSS puro sería inválido.
 
-Había **seis** casos escritos sin espacios. Cinco corregidos:
+**No lo es en este proyecto:** Tailwind normaliza los valores arbitrarios y
+emite `calc(env(safe-area-inset-top) + .5rem)`, con espacios. Comprobado en el
+CSS compilado. `App.tsx` nunca estuvo caído.
 
-| Archivo | Qué reservaba |
-|---|---|
-| `CollapsedDock.tsx:64` | hueco sobre la barra de navegación |
-| `LibrarySidePanel.tsx:179` | ídem |
-| `AvatarCoreView.tsx:612` | ídem |
-| `StockInventoryPanel.tsx:218` | posición de un desplegable |
-| `RecipeFormModal.tsx` | área segura del modal — **era el fallo de la cabecera bajo el reloj** |
+La causa real de que la cabecera del modal pisara el reloj era otra: la tarjeta
+medía `max-h-[92vh]` (776px sobre 844) mientras el hueco disponible —descontando
+reloj y barra de navegación— son unos 683px. Al estar centrada se desbordaba por
+arriba y por abajo. Se ata a `max-h-full`.
 
-**El sexto NO se ha tocado, a propósito:** `src/App.tsx:146`, el relleno
-superior de `<main>`. Es el área segura de **todas** las vistas. Lleva caído
-desde siempre, y la app entera se ha ido ajustando encima de esa realidad:
-corregirlo empuja ~59px hacia abajo cada pantalla en un iPhone y además chocaría
-con el hueco que Grimorio ya reserva para su franja fija.
-
-No es algo que deba entrar de rebote en otro arreglo. **Hay que hacerlo con el
-teléfono delante**, revisando vista por vista, y ajustando a la vez el hueco de
-la franja para que no se sumen dos reservas.
+> **La lección:** el CSS compilado es la verdad, no el que se escribe. Antes de
+> declarar rota una regla, búscala en `dist/assets/*.css`.
 
 ---
 
