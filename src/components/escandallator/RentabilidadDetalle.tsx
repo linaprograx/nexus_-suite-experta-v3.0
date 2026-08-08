@@ -39,7 +39,8 @@ const eur = (n: number) => `€${(isNaN(n) ? 0 : n).toFixed(2)}`;
 export const RentabilidadDetalle: React.FC<Props> = ({
     receta, allIngredients, allRecipes, costeReal, precioVenta,
 }) => {
-    const [margenObjetivo, setMargenObjetivo] = React.useState(75);
+    // 80% es el suelo de rentabilidad que el negocio quiere sostener.
+    const [margenObjetivo, setMargenObjetivo] = React.useState(80);
 
     const desglose = React.useMemo(
         () => calculateRecipeCost(receta, allIngredients, undefined, allRecipes),
@@ -59,10 +60,50 @@ export const RentabilidadDetalle: React.FC<Props> = ({
             .slice(0, 4);
     }, [desglose, teorico]);
 
-    // Precio necesario para el margen objetivo: PVP = coste / (1 - margen).
     const base = hayReal ? costeReal : teorico;
-    const objetivo = Math.min(95, Math.max(0, margenObjetivo));
-    const precioNecesario = objetivo < 100 ? base / (1 - objetivo / 100) : 0;
+
+    /**
+     * Sugerencias de precio, **partiendo del que la receta ya tiene**.
+     *
+     * Antes esto proponía un precio salido de la nada a partir de un margen
+     * tecleado, ignorando que la receta ya está valorada. Lo que hace falta no es
+     * inventar un precio, sino **explorar alrededor del actual**: hasta dónde se
+     * puede bajar sin romper la rentabilidad.
+     *
+     * El suelo es el margen mínimo (80% por defecto): por debajo no se sugiere
+     * nada, aunque el precio actual dé mucho margen de maniobra.
+     *
+     * Cuando el precio actual **no** llega al suelo, las sugerencias apuntan
+     * hacia arriba: es el caso de una receta con coste elevado.
+     */
+    const precioActual = (receta.precioVenta || 0) || precioVenta || 0;
+    const suelo = margenObjetivo < 100 ? base / (1 - margenObjetivo / 100) : 0;
+    const aMedio = (n: number) => Math.round(n * 2) / 2;   // precios de barra: pasos de 0,50
+
+    const sugerencias = React.useMemo(() => {
+        if (!precioActual || !base) return [];
+        if (precioActual >= suelo) {
+            // Hay recorrido: se puede bajar sin bajar del margen objetivo.
+            const moderado = Math.max(suelo, aMedio(precioActual * 0.85));
+            const agresivo = Math.max(suelo, aMedio(precioActual * 0.80));
+            return [
+                { etiqueta: 'Moderado', precio: moderado },
+                { etiqueta: 'Agresivo', precio: agresivo },
+            ].filter((s, i, a) => i === 0 || Math.abs(s.precio - a[0].precio) > 0.01);
+        }
+        // No llega al margen objetivo: las sugerencias apuntan hacia arriba.
+        //
+        // Una de ellas es una subida realista y la otra, el precio que el objetivo
+        // exige. Se muestran las dos a propósito: cuando la segunda es
+        // desproporcionada, el mensaje útil no es «sube el precio» sino que **el
+        // problema está en el coste**, y eso solo se ve teniendo ambas delante.
+        return [
+            { etiqueta: 'Subida realista', precio: aMedio(precioActual * 1.15) },
+            { etiqueta: `Para el ${margenObjetivo}%`, precio: aMedio(suelo) },
+        ];
+    }, [precioActual, base, suelo]);
+
+    const margenDe = (p: number) => (p > 0 ? ((p - base) / p) * 100 : 0);
 
     return (
         <div className="space-y-3">
@@ -107,34 +148,62 @@ export const RentabilidadDetalle: React.FC<Props> = ({
                 </div>
             )}
 
-            {/* El cálculo inverso: qué precio necesito */}
+            {/* Sugerencias alrededor del precio actual */}
             <div className="p-4 rounded-2xl bg-white/60 dark:bg-slate-900/50 border border-slate-200/60 dark:border-white/10">
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">Precio para un margen objetivo</p>
-                <div className="flex items-center gap-3 flex-wrap">
-                    <div className="flex items-center gap-2">
+                <div className="flex items-center justify-between gap-3 mb-3 flex-wrap">
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Precio y alternativas</p>
+                    <label className="flex items-center gap-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                        Margen mínimo
                         <input
                             type="number" min={0} max={95} value={margenObjetivo}
                             onChange={e => setMargenObjetivo(Number(e.target.value))}
-                            aria-label="Margen objetivo en porcentaje"
-                            className="w-20 h-10 px-3 rounded-xl text-sm tabular-nums bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-100"
-                        />
-                        <span className="text-sm text-slate-500 dark:text-slate-400">% de margen</span>
-                    </div>
-                    <span className="text-slate-300 dark:text-slate-600">→</span>
-                    <span className="text-2xl font-bold tabular-nums text-teal-600 dark:text-teal-400">
-                        {eur(precioNecesario)}
-                    </span>
+                            aria-label="Margen mínimo en porcentaje"
+                            className="w-16 h-8 px-2 rounded-lg text-sm tabular-nums bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-100"
+                        />%
+                    </label>
                 </div>
-                {precioVenta > 0 && precioNecesario > 0 && (
-                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">
-                        {precioVenta >= precioNecesario
-                            ? `Tu precio actual (${eur(precioVenta)}) ya lo cumple.`
-                            : `Faltan ${eur(precioNecesario - precioVenta)} sobre tu precio actual (${eur(precioVenta)}).`}
+
+                {!precioActual ? (
+                    <p className="text-sm text-slate-400 italic">
+                        Esta receta todavía no tiene precio de venta. Ponle uno y aquí verás hasta dónde puedes moverlo.
                     </p>
+                ) : (
+                    <>
+                        <div className="flex items-baseline gap-3 mb-3 pb-3 border-b border-slate-200/70 dark:border-slate-700/60">
+                            <div>
+                                <span className="block text-[10px] text-slate-400 uppercase tracking-widest">Actual</span>
+                                <span className="text-2xl font-bold tabular-nums text-slate-800 dark:text-slate-100">{eur(precioActual)}</span>
+                            </div>
+                            <span className={`text-sm font-bold tabular-nums ${margenDe(precioActual) >= margenObjetivo ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
+                                {margenDe(precioActual).toFixed(0)}% de margen
+                            </span>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-2">
+                            {sugerencias.map((sug, k) => (
+                                <div key={k} className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/70 dark:border-slate-700/60">
+                                    <span className="block text-[10px] text-slate-400 uppercase tracking-widest mb-1">{sug.etiqueta}</span>
+                                    <span className="block text-xl font-bold tabular-nums text-teal-600 dark:text-teal-400">{eur(sug.precio)}</span>
+                                    <span className="block text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                                        {margenDe(sug.precio).toFixed(0)}% · {sug.precio < precioActual ? `−${eur(precioActual - sug.precio)}` : `+${eur(sug.precio - precioActual)}`}
+                                    </span>
+                                </div>
+                            ))}
+                        </div>
+
+                        {suelo > precioActual * 1.6 && (
+                            <p className="text-xs text-amber-700 dark:text-amber-400 mt-2.5 leading-snug">
+                                Llegar al {margenObjetivo}% exigiría multiplicar el precio por{' '}
+                                {(suelo / precioActual).toFixed(1)}. Con este coste, la palanca no es el
+                                precio: mira arriba qué ingrediente se lleva la mayor parte.
+                            </p>
+                        )}
+                        <p className="text-[10px] text-slate-400 mt-2">
+                            Sobre el coste {hayReal ? 'real' : 'teórico'} de {eur(base)}.
+                            {precioActual >= suelo ? ` Ninguna sugerencia baja del ${margenObjetivo}%.` : ''}
+                        </p>
+                    </>
                 )}
-                <p className="text-[10px] text-slate-400 mt-2">
-                    Calculado sobre el coste {hayReal ? 'real' : 'teórico'}: {eur(base)}
-                </p>
             </div>
         </div>
     );
