@@ -58,6 +58,7 @@ hazlo igualmente en cuanto puedas:
 | `docs/agents/WORKLOG.md` | Diario acumulativo, lo más reciente arriba | Cada sesión |
 | `docs/agents/AUDIT-PIZARRON.md` | Auditoría del módulo más frágil, con archivo:línea | Al cerrar hallazgos |
 | `docs/agents/AUDIT-GRIMORIO.md` | Auditoría funcional de Grimorio, con archivo:línea | Al cerrar hallazgos |
+| `docs/agents/PLAN-CARTAS.md` | Las cartas como entidad: entregas E1–E5 | Al avanzar en él |
 | `docs/agents/AUDIT-MOVIL.md` | Defectos vistos usando la app en el teléfono | Al cerrar hallazgos |
 | `docs/agents/PLAN-GRIMORIO-MERCADO.md` | Trabajo pendiente de Grimorio y Mercado | Al avanzar en él |
 | `docs/agents/PLAN-CEREBRITY.md` | Cerebrity: poderes, contexto y **regla de gasto de API** | Al avanzar en él |
