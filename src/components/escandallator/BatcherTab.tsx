@@ -64,18 +64,57 @@ const BatcherTab: React.FC<BatcherTabProps> = ({
         const targetVolumeMl = targetUnit === 'Litros' ? parseFloat(targetQuantity) * 1000 : parseFloat(targetQuantity) * BOTTLE_SIZE_ML;
         const scalingFactor = targetVolumeMl / originalVolume;
 
-        const finalBatchData = recipe.ingredientes.map(ing => {
-            let amount = (typeof ing.cantidad === 'string' ? parseFloat(ing.cantidad) : ing.cantidad) || 0;
-            if (ing.unidad === 'cl') amount *= 10;
-            if (ing.unidad === 'oz') amount *= 30;
+        /**
+         * Escala la receta **bajando a las subrecetas**.
+         *
+         * Antes se listaban todos los ingredientes en bruto, incluidos los que en
+         * realidad forman parte de una subpreparación. Para producir no sirve: lo
+         * que hace falta saber es cuánto usar de cada ingrediente suelto, cuánto
+         * de cada subreceta ya preparada, y —aparte— **cuánto hay que preparar de
+         * esa subreceta** para tener esa cantidad.
+         *
+         * El rendimiento de una subreceta es la suma de sus componentes, igual
+         * criterio que usa `recipeTotalVolume` para prorratear su coste. Así, si
+         * la subreceta rinde 100 ml y el lote necesita 300, sus componentes se
+         * multiplican por 3.
+         */
+        const aMl = (cantidad: any, unidad: string) => {
+            let n = (typeof cantidad === 'string' ? parseFloat(cantidad) : cantidad) || 0;
+            if (unidad === 'cl') n *= 10;
+            if (unidad === 'oz') n *= 30;
+            return n;
+        };
+        const enVolumen = (u: string) => u === 'ml' || u === 'cl' || u === 'oz' || u === 'g';
 
-            return {
+        const finalBatchData: any[] = recipe.ingredientes.map((ing: any) => {
+            const amount = aMl(ing.cantidad, ing.unidad);
+            const escalado = amount * scalingFactor;
+
+            const fila: any = {
                 ingredient: ing.nombre,
                 originalQty: `${ing.cantidad} ${ing.unidad}`,
-                batchQty: (ing.unidad === 'ml' || ing.unidad === 'cl' || ing.unidad === 'oz' || ing.unidad === 'g')
-                    ? `${(amount * scalingFactor).toFixed(0)} ml`
-                    : `${((ing.cantidad || 0) * scalingFactor).toFixed(1)} ${ing.unidad}`
+                batchQty: enVolumen(ing.unidad)
+                    ? `${escalado.toFixed(0)} ${ing.unidad === 'g' ? 'g' : 'ml'}`
+                    : `${((ing.cantidad || 0) * scalingFactor).toFixed(1)} ${ing.unidad}`,
             };
+
+            const componentes = (ing.subItems || []) as any[];
+            if ((ing.isSubRecipe || ing.isGarnish) && componentes.length > 0) {
+                const rendimiento = componentes.reduce((a, si) => a + aMl(si.cantidad, si.unidad), 0);
+                if (rendimiento > 0) {
+                    const factorSub = escalado / rendimiento;
+                    fila.esPreparacion = true;
+                    fila.tipo = ing.isGarnish ? 'garnish' : 'subreceta';
+                    fila.componentes = componentes.map((si: any) => ({
+                        ingredient: si.nombre,
+                        originalQty: `${si.cantidad} ${si.unidad}`,
+                        batchQty: enVolumen(si.unidad)
+                            ? `${(aMl(si.cantidad, si.unidad) * factorSub).toFixed(0)} ${si.unidad === 'g' ? 'g' : 'ml'}`
+                            : `${((si.cantidad || 0) * factorSub).toFixed(1)} ${si.unidad}`,
+                    }));
+                }
+            }
+            return fila;
         });
 
         if (includeDilution) {

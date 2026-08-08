@@ -56,25 +56,48 @@ export const BatcherResultado: React.FC<BatcherResultadoProps> = ({ resultado, o
 
             <div className="flex flex-col gap-2">
                 {filas.map((fila: any, i: number) => (
-                    <div
-                        key={i}
-                        className="flex items-center justify-between gap-3 p-4 rounded-xl bg-white/80 dark:bg-slate-900/50 border border-slate-200/60 dark:border-white/10"
-                    >
-                        <div className="min-w-0">
-                            <span className="block font-medium text-sm text-slate-800 dark:text-slate-200 break-words">
-                                {fila.ingredient}
-                            </span>
-                            {/* Cuánto lleva UN trago. En una hoja de producción es el
-                                contraste que permite comprobar el escalado de un vistazo. */}
-                            {fila.originalQty && fila.originalQty !== '-' && (
-                                <span className="block text-[11px] text-slate-400 mt-0.5">
-                                    {fila.originalQty} por trago
+                    <div key={i} className="rounded-xl overflow-hidden border border-slate-200/60 dark:border-white/10">
+                        <div className={`flex items-center justify-between gap-3 p-4 ${fila.esPreparacion ? 'bg-amber-50 dark:bg-amber-900/15' : 'bg-white/80 dark:bg-slate-900/50'}`}>
+                            <div className="min-w-0">
+                                <span className="block font-medium text-sm text-slate-800 dark:text-slate-200 break-words">
+                                    {fila.ingredient}
+                                    {fila.esPreparacion && (
+                                        <span className="ml-2 text-[10px] font-bold uppercase tracking-wider text-amber-700 dark:text-amber-400">
+                                            {fila.tipo === 'garnish' ? 'garnish' : 'subreceta'}
+                                        </span>
+                                    )}
                                 </span>
-                            )}
+                                {/* Cuánto lleva UN trago. En barra es el contraste que
+                                    permite comprobar el escalado de un vistazo. */}
+                                {fila.originalQty && fila.originalQty !== '-' && (
+                                    <span className="block text-[11px] text-slate-400 mt-0.5">
+                                        {fila.originalQty} por trago
+                                    </span>
+                                )}
+                            </div>
+                            <span className="shrink-0 text-lg font-bold text-emerald-600 dark:text-emerald-400 tabular-nums">
+                                {fila.batchQty}
+                            </span>
                         </div>
-                        <span className="shrink-0 text-lg font-bold text-emerald-600 dark:text-emerald-400 tabular-nums">
-                            {fila.batchQty}
-                        </span>
+
+                        {/* Qué hay que preparar para tener esa cantidad. Sin esto la
+                            hoja pedía los ingredientes en bruto y quien produce no
+                            sabía qué era una preparación aparte. */}
+                        {fila.componentes?.length > 0 && (
+                            <div className="px-4 py-3 bg-white/60 dark:bg-slate-900/40 border-t border-dashed border-amber-300/60 dark:border-amber-700/40">
+                                <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2">
+                                    Para preparar {fila.batchQty}
+                                </p>
+                                <div className="space-y-1.5">
+                                    {fila.componentes.map((c: any, k: number) => (
+                                        <div key={k} className="flex items-center justify-between gap-3">
+                                            <span className="text-sm text-slate-600 dark:text-slate-300 min-w-0 break-words">{c.ingredient}</span>
+                                            <span className="shrink-0 text-sm font-bold text-slate-700 dark:text-slate-200 tabular-nums">{c.batchQty}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
                     </div>
                 ))}
             </div>
