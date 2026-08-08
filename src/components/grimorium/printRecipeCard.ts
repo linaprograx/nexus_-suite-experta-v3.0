@@ -14,7 +14,28 @@ const money = (n: number) => `€${(isNaN(n) ? 0 : n).toFixed(2)}`;
  * Opens a clean, self-contained print window with a standardized recipe card
  * (ficha técnica). Kept out of the app's DOM so print CSS never leaks.
  */
-export function printRecipeCard(recipe: Partial<Recipe>, cost: RecipeCostResult, allRecipes: Recipe[] = []): void {
+/**
+ * Fichas imprimibles: **una lista, no una receta**.
+ *
+ * Antes esto exportaba exactamente una receta. Exportar una carta entera habría
+ * exigido un segundo camino, y dos caminos para lo mismo acaban divergiendo — es
+ * el error más caro de este proyecto. Ahora el motor recibe una lista, y exportar
+ * una sola receta es el caso de una lista con un elemento.
+ */
+
+export interface PortadaCarta {
+    nombre: string;
+    concepto?: string;
+    fecha?: string;
+}
+
+export interface FichaImprimible {
+    recipe: Partial<Recipe>;
+    cost: RecipeCostResult;
+}
+
+/** El cuerpo de UNA ficha, sin envoltorio de documento. */
+const fichaHtml = (recipe: Partial<Recipe>, cost: RecipeCostResult, allRecipes: Recipe[] = []): string => {
     const porciones = (recipe.porciones && recipe.porciones > 0) ? recipe.porciones : 1;
     const costoTotal = cost?.costoTotal || 0;
     const venta = recipe.precioVenta || 0;
@@ -65,10 +86,81 @@ export function printRecipeCard(recipe: Partial<Recipe>, cost: RecipeCostResult,
         `<div class="spec"><span class="k">${esc(k)}</span><span class="v">${esc(v)}</span></div>`
     ).join('');
 
+    return `  <div class="head">
+    ${recipe.imageUrl ? `<img src="${esc(recipe.imageUrl)}" alt="">` : ''}
+    <div>
+      <h1>${esc(recipe.nombre || 'Receta sin nombre')}</h1>
+      <div class="cat">${esc((recipe.categorias || []).join(' · '))}</div>
+    </div>
+  </div>
+
+  ${specsHtml ? `<div class="specs">${specsHtml}</div>` : ''}
+
+  <h2>Ingredientes</h2>
+  <table>
+    <colgroup><col class="c-name"><col class="c-qty"><col class="c-cost"></colgroup>
+    <thead><tr><th>Ingrediente</th><th class="num">Cantidad</th><th class="num">Coste</th></tr></thead>
+    <tbody>${rowsHtml || '<tr><td colspan="3">Sin ingredientes</td></tr>'}</tbody>
+  </table>
+
+  ${recipe.preparacion ? `<h2>Preparación</h2><div class="prep">${esc(recipe.preparacion)}</div>` : ''}
+
+  <div class="totals">
+    <div class="box"><div class="l">Coste total</div><div class="n">${money(costoTotal)}</div></div>
+    ${porciones > 1 ? `<div class="box"><div class="l">Coste / porción</div><div class="n">${money(costoTotal / porciones)}</div></div>` : ''}
+    <div class="box"><div class="l">Precio venta</div><div class="n">${money(venta)}</div></div>
+    <div class="box"><div class="l">Margen</div><div class="n">${margen.toFixed(0)}%</div></div>
+  </div>
+
+  <div class="foot">Ficha generada por Nexus Suite · Grimorio — ${new Date().toLocaleDateString('es-ES')}</div>`;
+};
+
+/** Portada del recetario. Solo se pinta al exportar una carta entera. */
+const portadaHtml = (portada: PortadaCarta, recetas: number, costeMedio: number): string => `
+  <section class="portada">
+    <div class="p-marca">Nexus Suite · Grimorio</div>
+    <h1 class="p-titulo">${esc(portada.nombre || 'Carta sin título')}</h1>
+    ${portada.concepto ? `<p class="p-concepto">${esc(portada.concepto)}</p>` : ''}
+    <div class="p-datos">
+      <div><span>Recetas</span><b>${recetas}</b></div>
+      <div><span>Coste medio</span><b>${money(costeMedio)}</b></div>
+      <div><span>Fecha</span><b>${esc(portada.fecha || new Date().toLocaleDateString('es-ES'))}</b></div>
+    </div>
+  </section>`;
+
+/**
+ * Abre el recetario listo para imprimir o guardar como PDF.
+ *
+ * Cada ficha empieza en página nueva: una hoja de producción se reparte en barra
+ * y tiene que salir delimitada por receta, no a caballo entre dos hojas.
+ */
+export function printRecipeCards(
+    fichas: FichaImprimible[],
+    allRecipes: Recipe[] = [],
+    portada?: PortadaCarta,
+): void {
+    if (!fichas.length) return;
+
+    const costeMedio = fichas.reduce((a, f) => a + (f.cost?.costoTotal || 0), 0) / fichas.length;
+    const cuerpos = fichas
+        .map(f => `<section class="ficha">${fichaHtml(f.recipe, f.cost, allRecipes)}</section>`)
+        .join('\n');
+
     const html = `<!doctype html><html lang="es"><head><meta charset="utf-8">
-<title>${esc(recipe.nombre || 'Receta')} — Ficha técnica</title>
+<title>${esc(portada?.nombre || fichas[0].recipe.nombre || 'Recetario')} — Nexus Suite</title>
 <style>
   * { box-sizing: border-box; }
+  /* Cada ficha en su hoja: una hoja de producción se reparte en barra y tiene
+     que salir delimitada por receta, no a caballo entre dos páginas. */
+  .ficha { page-break-after: always; break-after: page; }
+  .ficha:last-child { page-break-after: auto; break-after: auto; }
+  .portada { page-break-after: always; break-after: page; padding: 60px 0 40px; }
+  .p-marca { font-size: 11px; letter-spacing: .18em; text-transform: uppercase; color: #94a3b8; margin-bottom: 18px; }
+  .p-titulo { font-size: 44px; line-height: 1.05; margin: 0 0 18px; color: #0f172a; }
+  .p-concepto { font-size: 15px; line-height: 1.6; color: #475569; max-width: 60ch; margin: 0 0 34px; white-space: pre-wrap; }
+  .p-datos { display: flex; gap: 34px; border-top: 3px solid #0d9488; padding-top: 18px; }
+  .p-datos span { display: block; font-size: 10px; letter-spacing: .12em; text-transform: uppercase; color: #94a3b8; }
+  .p-datos b { font-size: 20px; color: #0f172a; }
   body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; color: #1f2937; margin: 0; padding: 32px; }
   .head { display: flex; gap: 26px; align-items: center; border-bottom: 3px solid #0d9488; padding-bottom: 20px; margin-bottom: 22px; }
   .head img { width: 170px; height: 170px; object-fit: cover; border-radius: 18px; box-shadow: 0 8px 24px rgba(15,23,42,.16); flex-shrink: 0; }
@@ -110,33 +202,8 @@ export function printRecipeCard(recipe: Partial<Recipe>, cost: RecipeCostResult,
   .foot { margin-top: 28px; font-size: 10px; color: #cbd5e1; }
   @media print { body { padding: 12mm; } .noprint { display: none; } }
 </style></head><body>
-  <div class="head">
-    ${recipe.imageUrl ? `<img src="${esc(recipe.imageUrl)}" alt="">` : ''}
-    <div>
-      <h1>${esc(recipe.nombre || 'Receta sin nombre')}</h1>
-      <div class="cat">${esc((recipe.categorias || []).join(' · '))}</div>
-    </div>
-  </div>
-
-  ${specsHtml ? `<div class="specs">${specsHtml}</div>` : ''}
-
-  <h2>Ingredientes</h2>
-  <table>
-    <colgroup><col class="c-name"><col class="c-qty"><col class="c-cost"></colgroup>
-    <thead><tr><th>Ingrediente</th><th class="num">Cantidad</th><th class="num">Coste</th></tr></thead>
-    <tbody>${rowsHtml || '<tr><td colspan="3">Sin ingredientes</td></tr>'}</tbody>
-  </table>
-
-  ${recipe.preparacion ? `<h2>Preparación</h2><div class="prep">${esc(recipe.preparacion)}</div>` : ''}
-
-  <div class="totals">
-    <div class="box"><div class="l">Coste total</div><div class="n">${money(costoTotal)}</div></div>
-    ${porciones > 1 ? `<div class="box"><div class="l">Coste / porción</div><div class="n">${money(costoTotal / porciones)}</div></div>` : ''}
-    <div class="box"><div class="l">Precio venta</div><div class="n">${money(venta)}</div></div>
-    <div class="box"><div class="l">Margen</div><div class="n">${margen.toFixed(0)}%</div></div>
-  </div>
-
-  <div class="foot">Ficha generada por Nexus Suite · Grimorio — ${new Date().toLocaleDateString('es-ES')}</div>
+  ${portada ? portadaHtml(portada, fichas.length, costeMedio) : ''}
+  ${cuerpos}
 
   <!-- Salida propia.
        La ficha se abre con window.open, y en una PWA instalada en iOS eso se
@@ -156,8 +223,13 @@ export function printRecipeCard(recipe: Partial<Recipe>, cost: RecipeCostResult,
 </body></html>`;
 
     const w = window.open('', '_blank', 'width=840,height=1000');
-    if (!w) { alert('Permite las ventanas emergentes para imprimir la ficha.'); return; }
+    if (!w) { alert('Permite las ventanas emergentes para imprimir.'); return; }
     w.document.open();
     w.document.write(html);
     w.document.close();
+}
+
+/** Una sola receta: el caso de una lista con un elemento. */
+export function printRecipeCard(recipe: Partial<Recipe>, cost: RecipeCostResult, allRecipes: Recipe[] = []): void {
+    printRecipeCards([{ recipe, cost }], allRecipes);
 }

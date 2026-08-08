@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useApp } from '../context/AppContext';
+import { useCartas } from './useCartas';
 import { collection, query, orderBy, onSnapshot, addDoc, deleteDoc, updateDoc, doc, serverTimestamp } from 'firebase/firestore';
 
 /**
@@ -29,6 +30,7 @@ const path = (userId: string) => `users/${userId}/menu_items`;
 
 export const useActiveMenu = () => {
     const { db, userId } = useApp();
+    const { cartaActiva } = useCartas();
     const [menu, setMenu] = useState<MenuEntry[]>([]);
     const [loading, setLoading] = useState(true);
 
@@ -48,8 +50,10 @@ export const useActiveMenu = () => {
     const addToMenu = useCallback(async (entry: Omit<MenuEntry, 'id' | 'addedAt'>) => {
         if (!db || !userId) return;
         const clean = Object.fromEntries(Object.entries(entry).filter(([, v]) => v !== undefined));
-        await addDoc(collection(db, path(userId)), { ...clean, addedAt: serverTimestamp() });
-    }, [db, userId]);
+        // Se sella a qué carta pertenece. Sin esto, al cambiar de carta la
+        // receta añadida aparecería en todas.
+        await addDoc(collection(db, path(userId)), { ...clean, cartaId: cartaActiva?.id, addedAt: serverTimestamp() });
+    }, [db, userId, cartaActiva?.id]);
 
     const removeFromMenu = useCallback(async (id: string) => {
         if (!db || !userId) return;
@@ -64,5 +68,23 @@ export const useActiveMenu = () => {
         await updateDoc(doc(db, path(userId), id), update);
     }, [db, userId]);
 
-    return { menu, loading, addToMenu, removeFromMenu, refreshEntry };
+    /**
+     * Solo las entradas de la carta activa.
+     *
+     * Sin esto, al tener varias cartas se mezclarían todas: el panel mostraría
+     * los cócteles de la de verano junto a los de la actual. Las entradas sin
+     * `cartaId` —anteriores a la migración— se dan por de la carta activa, para
+     * que nada desaparezca si la migración aún no ha corrido.
+     */
+    const menuDeLaCarta = cartaActiva
+        ? menu.filter(m => !m.cartaId || m.cartaId === cartaActiva.id)
+        : menu;
+
+    return {
+        menu: menuDeLaCarta,
+        /** Todas las entradas, de cualquier carta. Rara vez hace falta. */
+        menuCompleto: menu,
+        cartaActivaId: cartaActiva?.id,
+        loading, addToMenu, removeFromMenu, refreshEntry,
+    };
 };

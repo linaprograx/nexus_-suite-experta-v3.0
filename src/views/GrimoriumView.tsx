@@ -162,10 +162,8 @@ const GrimoriumInner: React.FC<GrimoriumViewProps> = () => {
     // categoría sigue funcionando dentro de la carta.
     const soloCarta = useAlcanceCarta();
     const { menu } = useActiveMenu();
-    const idsEnCarta = React.useMemo(() => {
-        const deLaCarta = cartaActiva ? menu.filter(m => !m.cartaId || m.cartaId === cartaActiva.id) : menu;
-        return new Set(deLaCarta.map(m => m.recipeId));
-    }, [menu, cartaActiva?.id]);
+    // `menu` ya viene acotado a la carta activa desde el hook.
+    const idsEnCarta = React.useMemo(() => new Set(menu.map(m => m.recipeId)), [menu]);
 
     const filteredRecipes = React.useMemo(
         () => (soloCarta ? hookFilteredRecipes.filter(r => idsEnCarta.has(r.id)) : hookFilteredRecipes),

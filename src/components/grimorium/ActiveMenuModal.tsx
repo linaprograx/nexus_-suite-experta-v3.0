@@ -7,6 +7,8 @@ import { useCartas } from '../../hooks/useCartas';
 import { useRecipes } from '../../hooks/useRecipes';
 import { useIngredients } from '../../hooks/useIngredients';
 import { computeMenuDrift, summarizeDrift, MenuDrift } from '../../utils/menuDrift';
+import { printRecipeCards } from './printRecipeCard';
+import { calculateRecipeCost } from '../../core/costing/costCalculator';
 
 const SEV: Record<string, { label: string; cls: string; dot: string }> = {
     ok: { label: 'Al día', cls: 'text-emerald-600 dark:text-emerald-400', dot: 'bg-emerald-500' },
@@ -25,7 +27,7 @@ export const ActiveMenuModal: React.FC<{
     onSelectRecipe?: (r: Recipe) => void;
 }> = ({ onClose, onSelectRecipe }) => {
     const { menu, loading, removeFromMenu, refreshEntry } = useActiveMenu();
-    const { cartaActiva, actualizarCarta } = useCartas();
+    const { cartas, cartaActiva, actualizarCarta, crearCarta } = useCartas();
 
     // Identidad de la carta. Hasta ahora no había dónde guardar esto, y el
     // usuario acabó escribiendo el nombre del menú en el campo PREPARACIÓN de una
@@ -40,6 +42,38 @@ export const ActiveMenuModal: React.FC<{
 
     const guardar = (cambios: Partial<{ nombre: string; concepto: string; fecha: string }>) => {
         if (cartaActiva) actualizarCarta(cartaActiva.id, cambios);
+    };
+
+    /**
+     * Exporta la carta entera: portada + una ficha por cóctel, con el mismo
+     * diseño que la ficha suelta. Usa el mismo motor, que ahora recibe una lista.
+     */
+    const exportarCarta = () => {
+        const recetas = menu
+            .map(m => allRecipes.find(r => r.id === m.recipeId))
+            .filter((r): r is Recipe => !!r);
+
+        if (!recetas.length) { alert('La carta no tiene recetas que exportar.'); return; }
+
+        // Si falta el nombre o el concepto se piden ahora, en vez de generar un
+        // recetario sin portada. Se guardan, para no volver a preguntar.
+        let n = nombre.trim();
+        if (!n) {
+            n = (window.prompt('¿Cómo se llama esta carta?') || '').trim();
+            if (!n) return;
+            setNombre(n); guardar({ nombre: n });
+        }
+        let c = concepto.trim();
+        if (!c) {
+            c = (window.prompt('Concepto del menú (opcional): de qué va, frases gancho…') || '').trim();
+            if (c) { setConcepto(c); guardar({ concepto: c }); }
+        }
+
+        printRecipeCards(
+            recetas.map(r => ({ recipe: r, cost: calculateRecipeCost(r, allIngredients, undefined, allRecipes) })),
+            allRecipes,
+            { nombre: n, concepto: c, fecha: cartaActiva?.fecha },
+        );
     };
     const { recipes: allRecipes } = useRecipes();
     const { ingredients: allIngredients } = useIngredients();
@@ -85,6 +119,29 @@ export const ActiveMenuModal: React.FC<{
                 {/* Identidad de la carta — nombre, concepto y fecha */}
                 {cartaActiva && (
                     <div className="px-5 pt-4 shrink-0 space-y-2">
+                        {/* Varias cartas: la de ahora, la de hace seis meses, la de
+                            hace un año. Cambiar de activa es archivar la actual y
+                            activar otra: solo hay una activa a la vez, que es lo que
+                            hace que «la carta» signifique algo sin ambigüedad. */}
+                        {cartas.length > 1 && (
+                            <select
+                                value={cartaActiva.id}
+                                onChange={async e => {
+                                    const destino = e.target.value;
+                                    if (destino === cartaActiva.id) return;
+                                    await actualizarCarta(cartaActiva.id, { estado: 'archivada' });
+                                    await actualizarCarta(destino, { estado: 'activa' });
+                                }}
+                                className="w-full h-10 px-3 rounded-xl text-sm font-bold bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-100"
+                            >
+                                {cartas.map(c => (
+                                    <option key={c.id} value={c.id}>
+                                        {c.nombre}{c.estado === 'archivada' ? ' · archivada' : ''}
+                                    </option>
+                                ))}
+                            </select>
+                        )}
+
                         <input
                             value={nombre}
                             onChange={e => setNombre(e.target.value)}
@@ -100,12 +157,33 @@ export const ActiveMenuModal: React.FC<{
                             placeholder="Concepto del menú: de qué va, frases gancho, cómo se presenta…"
                             className="w-full px-3 py-2 rounded-xl text-sm resize-none bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200"
                         />
-                        <input
-                            type="date"
-                            value={cartaActiva.fecha || ''}
-                            onChange={e => guardar({ fecha: e.target.value })}
-                            className="w-full h-10 px-3 rounded-xl text-sm bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200"
-                        />
+                        <div className="flex gap-2">
+                            <input
+                                type="date"
+                                value={cartaActiva.fecha || ''}
+                                onChange={e => guardar({ fecha: e.target.value })}
+                                className="flex-1 h-10 px-3 rounded-xl text-sm bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200"
+                            />
+                            <button
+                                onClick={async () => {
+                                    const n = (window.prompt('Nombre de la carta nueva') || '').trim();
+                                    if (!n) return;
+                                    // La nueva nace activa, así que la anterior se archiva.
+                                    if (cartaActiva) await actualizarCarta(cartaActiva.id, { estado: 'archivada' });
+                                    await crearCarta(n);
+                                }}
+                                title="Crear una carta nueva"
+                                className="shrink-0 h-10 px-3 rounded-xl bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold uppercase tracking-wider"
+                            >
+                                + Nueva
+                            </button>
+                            <button
+                                onClick={exportarCarta}
+                                className="shrink-0 h-10 px-4 rounded-xl bg-teal-600 hover:bg-teal-500 text-white text-xs font-bold uppercase tracking-wider flex items-center gap-2"
+                            >
+                                <Icon svg={ICONS.book} className="w-4 h-4" /> Exportar carta
+                            </button>
+                        </div>
                     </div>
                 )}
 
