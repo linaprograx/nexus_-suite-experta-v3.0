@@ -10,6 +10,8 @@ interface EscandalloTabProps {
     allRecipes: Recipe[];
     selectedRecipe: Recipe | null;
     allIngredients?: any[];
+    /** Fracción de líneas respaldadas por historial de compra (0–1). */
+    realCoverage?: number;
     precioVenta: number;
     onSelectRecipe: (recipe: Recipe | null) => void;
     onPriceChange: (price: number) => void;
@@ -20,6 +22,7 @@ const EscandalloTab: React.FC<EscandalloTabProps> = ({
     allRecipes,
     selectedRecipe,
     allIngredients = [],
+    realCoverage = 0,
     precioVenta,
     onSelectRecipe,
     onPriceChange,
@@ -92,12 +95,21 @@ const EscandalloTab: React.FC<EscandalloTabProps> = ({
                                         <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400 tabular-nums">
                                             €{realCost.toFixed(2)}
                                         </p>
-                                        <p className="text-[10px] text-emerald-500/70 mt-0.5">Basado en Stock</p>
+                                        <p className="text-[10px] text-emerald-500/70 mt-0.5">
+                                            {realCoverage >= 0.999
+                                                ? 'Basado en compras'
+                                                : `${Math.round(realCoverage * 100)}% respaldado por compras`}
+                                        </p>
                                     </>
                                 ) : (
                                     <>
-                                        <p className="text-lg font-medium text-slate-400 italic">No disponible</p>
-                                        <p className="text-[10px] text-slate-400 mt-0.5">Falta Stock</p>
+                                        {/* Ya no se dice "no disponible" con un coste teórico
+                                            delante: se muestra ese mismo coste y se explica que
+                                            aún no hay compras que lo respalden. */}
+                                        <p className="text-2xl font-bold text-slate-400 tabular-nums">
+                                            €{(selectedRecipe?.costoReceta || 0).toFixed(2)}
+                                        </p>
+                                        <p className="text-[10px] text-slate-400 mt-0.5">Sin compras aún</p>
                                     </>
                                 )}
                             </div>
@@ -153,6 +165,7 @@ const EscandalloTab: React.FC<EscandalloTabProps> = ({
             {selectedRecipe && (
                 <div className="mt-4">
                     <RentabilidadDetalle
+                        cobertura={realCoverage}
                         receta={selectedRecipe}
                         allIngredients={allIngredients}
                         allRecipes={allRecipes}

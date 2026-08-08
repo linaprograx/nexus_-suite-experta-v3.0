@@ -32,12 +32,14 @@ interface Props {
     /** Coste real derivado del stock. `-1` cuando no hay datos suficientes. */
     costeReal: number;
     precioVenta: number;
+    /** Fracción del coste real respaldada por compras (0–1). */
+    cobertura?: number;
 }
 
 const eur = (n: number) => `€${(isNaN(n) ? 0 : n).toFixed(2)}`;
 
 export const RentabilidadDetalle: React.FC<Props> = ({
-    receta, allIngredients, allRecipes, costeReal, precioVenta,
+    receta, allIngredients, allRecipes, costeReal, precioVenta, cobertura = 0,
 }) => {
     // 80% es el suelo de rentabilidad que el negocio quiere sostener.
     const [margenObjetivo, setMargenObjetivo] = React.useState(80);
@@ -112,7 +114,9 @@ export const RentabilidadDetalle: React.FC<Props> = ({
                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Desviación del coste</p>
                 {desviacion === null ? (
                     <p className="text-sm text-slate-400 italic">
-                        Sin coste real todavía. Hace falta historial de compras de estos ingredientes.
+                        Todavía no hay compras registradas de estos ingredientes, así que no hay
+                        con qué comparar. En cuanto registres alguna, aquí verás si la receta se
+                        encarece.
                     </p>
                 ) : (
                     <div className="flex items-baseline gap-3 flex-wrap">
@@ -121,6 +125,12 @@ export const RentabilidadDetalle: React.FC<Props> = ({
                         </span>
                         <span className="text-xs text-slate-500 dark:text-slate-400">
                             {eur(teorico)} previsto → {eur(costeReal)} real
+                            {cobertura > 0 && cobertura < 0.999 && (
+                                <span className="block text-[11px] text-amber-600 dark:text-amber-400 mt-0.5">
+                                    Solo el {Math.round(cobertura * 100)}% del coste está respaldado por compras;
+                                    el resto es teórico.
+                                </span>
+                            )}
                         </span>
                     </div>
                 )}

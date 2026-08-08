@@ -43,15 +43,34 @@ interface EscandallatorPanelProps {
 
 const EscandallatorPanel: React.FC<EscandallatorPanelProps> = (props) => {
 
-    // --- REAL COST CALCULATION ---
-    const realCost = useMemo(() => {
-        if (!props.selectedRecipe || !props.selectedRecipe.ingredientes) return 0;
+    /**
+     * Coste real a partir del stock, **con cobertura parcial**.
+     *
+     * Tenía dos problemas encadenados:
+     *
+     * 1. Buscaba `s.ingredientId === ing.id`, pero la línea de receta guarda el
+     *    identificador en `ingredientId`, no en `id`. `ing.id` era `undefined`
+     *    siempre, así que **nunca encontraba stock** y el cartel "No disponible ·
+     *    Falta Stock" salía en todas las recetas. No era cierto: la comparación
+     *    no podía acertar.
+     * 2. Era todo o nada: bastaba un ingrediente sin historial para ocultar el
+     *    análisis entero. Con subrecetas —que no tienen `ingredientId`— eso pasa
+     *    casi siempre.
+     *
+     * Ahora se suma lo que se conoce y se informa de **cuánto se conoce**. Un
+     * dato parcial declarado como parcial vale más que un cartel que no dice
+     * nada, y no obliga a fiarse de un número sin saber de dónde sale.
+     */
+    const { realCost, realCoverage } = useMemo(() => {
+        if (!props.selectedRecipe || !props.selectedRecipe.ingredientes) return { realCost: 0, realCoverage: 0 };
 
         let totalRealCost = 0;
-        let isComplete = true;
+        let conDato = 0;
+        let total = 0;
 
         props.selectedRecipe.ingredientes.forEach((ing: any) => {
-            const stockItem = props.stockItems.find(s => s.ingredientId === ing.id);
+            total++;
+            const stockItem = props.stockItems.find(s => s.ingredientId === ing.ingredientId);
 
             if (stockItem && stockItem.averageUnitCost > 0) {
                 // Determine Stock Price Per Base Unit
@@ -86,14 +105,19 @@ const EscandallatorPanel: React.FC<EscandallatorPanelProps> = (props) => {
                 const recipeQtyBase = recipeQty * recipeMultiplier;
 
                 totalRealCost += recipeQtyBase * metricPrice;
+                conDato++;
             } else {
-                // If stock missing, fallback to theoretical? 
-                // For "Real Cost", strict mode says missing.
-                isComplete = false;
+                // Sin historial de compra para esta línea: se cuenta su coste
+                // teórico, para que el total siga siendo comparable, y se anota
+                // que no está respaldada por compras reales.
+                totalRealCost += Number((ing as any).costo) || 0;
             }
         });
 
-        return isComplete ? totalRealCost : -1;
+        // Sin ninguna línea respaldada, el número no diría nada: se marca como
+        // no disponible, igual que antes, pero ahora es una situación real.
+        if (conDato === 0) return { realCost: -1, realCoverage: 0 };
+        return { realCost: totalRealCost, realCoverage: total > 0 ? conDato / total : 0 };
     }, [props.selectedRecipe, props.stockItems]);
 
 
@@ -132,6 +156,7 @@ const EscandallatorPanel: React.FC<EscandallatorPanelProps> = (props) => {
                             onSelectRecipe={props.onSelectRecipe}
                             onPriceChange={props.onPriceChange}
                             realCost={realCost}
+                            realCoverage={realCoverage}
                             allIngredients={props.allIngredients || []}
                         />
                     )}
