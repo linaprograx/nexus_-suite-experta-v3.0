@@ -125,6 +125,34 @@ claro cuál cierra qué.
 
 ---
 
+# ⚠️ HALLAZGO TRANSVERSAL · `calc()` inválido en toda la app
+
+En `calc()`, el `+` **exige espacios a ambos lados**. Sin ellos el CSS es
+inválido y el navegador **descarta la declaración entera, sin avisar**. En
+Tailwind esos espacios se escriben con guiones bajos: `calc(60px_+_env(...))`.
+
+Había **seis** casos escritos sin espacios. Cinco corregidos:
+
+| Archivo | Qué reservaba |
+|---|---|
+| `CollapsedDock.tsx:64` | hueco sobre la barra de navegación |
+| `LibrarySidePanel.tsx:179` | ídem |
+| `AvatarCoreView.tsx:612` | ídem |
+| `StockInventoryPanel.tsx:218` | posición de un desplegable |
+| `RecipeFormModal.tsx` | área segura del modal — **era el fallo de la cabecera bajo el reloj** |
+
+**El sexto NO se ha tocado, a propósito:** `src/App.tsx:146`, el relleno
+superior de `<main>`. Es el área segura de **todas** las vistas. Lleva caído
+desde siempre, y la app entera se ha ido ajustando encima de esa realidad:
+corregirlo empuja ~59px hacia abajo cada pantalla en un iPhone y además chocaría
+con el hueco que Grimorio ya reserva para su franja fija.
+
+No es algo que deba entrar de rebote en otro arreglo. **Hay que hacerlo con el
+teléfono delante**, revisando vista por vista, y ajustando a la vez el hueco de
+la franja para que no se sumen dos reservas.
+
+---
+
 # GRUPO 3 · BAJOS
 
 ## ⬜ R11 · Controles sin etiqueta accesible

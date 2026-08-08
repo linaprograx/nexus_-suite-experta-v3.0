@@ -261,7 +261,13 @@ export const RecipeFormModal: React.FC<RecipeFormModalProps> = ({ isOpen, onClos
             // Arriba: al reservar sitio abajo la tarjeta creció, y su cabecera
             // —Cerrar y Guardar— se metió bajo el reloj y el notch. Reservar solo
             // por un lado desplaza el problema al otro.
-            className="fixed inset-0 z-[60] flex items-center justify-center p-4 pt-[calc(1rem+env(safe-area-inset-top))] pb-[calc(1rem+60px+env(safe-area-inset-bottom))] lg:pt-4 lg:pb-4"
+            //
+            // OJO con la sintaxis: en `calc()` el `+` EXIGE espacios a ambos lados.
+            // Escrito como `calc(1rem+env(...))` es CSS inválido y el navegador
+            // descarta la declaración entera —sin avisar—, así que no reservaba
+            // nada y la cabecera seguía bajo el reloj. En Tailwind esos espacios
+            // se escriben con guiones bajos: `calc(0.5rem_+_env(...))`.
+            className="fixed inset-0 z-[60] flex items-center justify-center p-4 pt-[calc(0.5rem_+_env(safe-area-inset-top))] pb-[calc(0.5rem_+_60px_+_env(safe-area-inset-bottom))] lg:pt-4 lg:pb-4"
         >
             {/* Backdrop — fade only (no transform) to avoid Safari backdrop-filter flicker */}
             <div className="absolute inset-0 bg-slate-900/50 backdrop-blur-md animate-in fade-in duration-200" onClick={onClose} style={{ WebkitBackdropFilter: 'blur(12px)' }} />
@@ -269,19 +275,19 @@ export const RecipeFormModal: React.FC<RecipeFormModalProps> = ({ isOpen, onClos
             {/* Modal */}
             <div className="relative w-full max-w-4xl max-h-[92vh] flex flex-col bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-200/60 dark:border-white/10 overflow-hidden animate-in fade-in duration-200">
                 {/* Header — Grimorio brand (emerald/teal) */}
-                <div className="relative px-4 py-3.5 shrink-0 bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-600 overflow-hidden">
+                <div className="relative px-4 py-2 lg:py-3.5 shrink-0 bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-600 overflow-hidden">
                     <div className="absolute -top-8 -right-8 w-40 h-40 bg-white/10 rounded-full blur-2xl pointer-events-none" />
                     <div className="relative flex items-center justify-between z-10">
-                        <button onClick={onClose} className="w-9 h-9 rounded-full bg-white/15 hover:bg-white/25 text-white flex items-center justify-center transition-colors">
+                        <button onClick={onClose} className="w-8 h-8 lg:w-9 lg:h-9 rounded-full bg-white/15 hover:bg-white/25 text-white flex items-center justify-center transition-colors">
                             <Icon svg={ICONS.x} className="w-5 h-5" />
                         </button>
-                        <h2 className="text-lg font-bold text-white flex-1 text-center truncate px-2">
+                        <h2 className="text-base lg:text-lg font-bold text-white flex-1 text-center truncate px-2">
                             {recipe.id ? "Editar Receta" : "Nueva Receta"}
                         </h2>
                         <button
                             onClick={handleSubmit}
                             disabled={isUploading}
-                            className={`rounded-full font-bold text-xs px-5 h-9 transition-all ${isUploading ? 'bg-white/40 text-white/70' : 'bg-white text-emerald-700 hover:shadow-lg hover:-translate-y-0.5'}`}
+                            className={`rounded-full font-bold text-xs px-5 h-8 lg:h-9 transition-all ${isUploading ? 'bg-white/40 text-white/70' : 'bg-white text-emerald-700 hover:shadow-lg hover:-translate-y-0.5'}`}
                         >
                             {isUploading ? 'Subiendo…' : 'Guardar'}
                         </button>
@@ -289,7 +295,10 @@ export const RecipeFormModal: React.FC<RecipeFormModalProps> = ({ isOpen, onClos
                 </div>
 
                 {/* Scrollable content — 2 columns on desktop */}
-                <div className="flex-1 overflow-y-auto custom-scrollbar p-5">
+                {/* `overflow-x-hidden`: el contenido solo debe deslizarse en vertical.
+                    Alguna fila interna es más ancha que el modal y arrastraba la vista
+                    de lado, dejando la mitad del formulario fuera. */}
+                <div className="flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar p-5">
                     <form id="recipe-form" onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
                         {/* LEFT: identity + prep */}

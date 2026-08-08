@@ -609,7 +609,7 @@ export const AvatarCoreView: React.FC = () => {
                     })}
                 </div>
 
-                <div className="fixed bottom-[calc(60px+env(safe-area-inset-bottom)+0.75rem)] lg:bottom-12 left-0 w-full flex justify-center z-20 pointer-events-none animate-in fade-in slide-in-from-bottom-12 duration-1000 delay-500">
+                <div className="fixed bottom-[calc(60px_+_env(safe-area-inset-bottom)_+_0.75rem)] lg:bottom-12 left-0 w-full flex justify-center z-20 pointer-events-none animate-in fade-in slide-in-from-bottom-12 duration-1000 delay-500">
                     <button
                         onClick={() => setShowMap(true)}
                         className="pointer-events-auto flex items-center gap-3 lg:gap-8 px-4 lg:px-8 py-2 rounded-full bg-slate-950/60 backdrop-blur-2xl border border-white/10 shadow-[0_20px_50px_-12px_rgba(0,0,0,0.8)] hover:bg-slate-950/80 transition-all hover:scale-[1.02] hover:border-white/20 hover:shadow-indigo-500/20 group hover:animate-pulse-slow"

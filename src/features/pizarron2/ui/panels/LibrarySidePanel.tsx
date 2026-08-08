@@ -176,7 +176,7 @@ export const LibrarySidePanel: React.FC = () => {
     return (
         <div
             ref={ref}
-            className="fixed inset-x-0 bottom-[calc(60px+env(safe-area-inset-bottom))] h-[68dvh] rounded-t-3xl flex-col lg:absolute lg:inset-x-auto lg:top-14 lg:left-0 lg:bottom-0 lg:w-80 lg:h-auto lg:rounded-none lg:flex-row bg-white dark:bg-slate-900 border-t lg:border-t-0 lg:border-r border-slate-200 dark:border-slate-800 shadow-2xl flex z-[95] pointer-events-auto overflow-hidden animate-in slide-in-from-bottom lg:slide-in-from-left duration-200"
+            className="fixed inset-x-0 bottom-[calc(60px_+_env(safe-area-inset-bottom))] h-[68dvh] rounded-t-3xl flex-col lg:absolute lg:inset-x-auto lg:top-14 lg:left-0 lg:bottom-0 lg:w-80 lg:h-auto lg:rounded-none lg:flex-row bg-white dark:bg-slate-900 border-t lg:border-t-0 lg:border-r border-slate-200 dark:border-slate-800 shadow-2xl flex z-[95] pointer-events-auto overflow-hidden animate-in slide-in-from-bottom lg:slide-in-from-left duration-200"
         >
             {/* Tabs Rail */}
             <div className="shrink-0 w-full lg:w-20 bg-slate-50 dark:bg-slate-950 border-b lg:border-b-0 lg:border-r border-slate-200 dark:border-slate-800 flex flex-row lg:flex-col items-center px-2 py-2 lg:py-4 gap-2 lg:h-full overflow-x-auto lg:overflow-visible no-scrollbar">

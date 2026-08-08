@@ -215,7 +215,7 @@ export const StockInventoryPanel: React.FC<StockInventoryPanelProps> = ({
 
                             {/* Dropdown Menu */}
                             {showCategoryDropdown && (
-                                <div className="absolute top-[calc(100%+8px)] right-0 w-full min-w-[220px] max-h-64 overflow-y-auto custom-scrollbar bg-white/90 dark:bg-slate-900/95 backdrop-blur-xl border border-white/20 rounded-2xl shadow-xl z-50 p-2 animate-in fade-in zoom-in-95 duration-100 origin-top-right">
+                                <div className="absolute top-[calc(100%_+_8px)] right-0 w-full min-w-[220px] max-h-64 overflow-y-auto custom-scrollbar bg-white/90 dark:bg-slate-900/95 backdrop-blur-xl border border-white/20 rounded-2xl shadow-xl z-50 p-2 animate-in fade-in zoom-in-95 duration-100 origin-top-right">
                                     <button
                                         onClick={() => { setInternalSelectedCategory('all'); setShowCategoryDropdown(false); }}
                                         className="w-full text-left px-3 py-3 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800/50 text-sm font-medium transition-colors flex justify-between group items-center mb-1"

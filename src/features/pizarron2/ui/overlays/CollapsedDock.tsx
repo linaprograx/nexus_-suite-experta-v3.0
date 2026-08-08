@@ -61,7 +61,7 @@ export const CollapsedDock: React.FC = () => {
     }
 
     return (
-        <div className="absolute bottom-[calc(60px+env(safe-area-inset-bottom)+0.5rem)] lg:bottom-0 left-0 w-full h-20 lg:h-24 px-2 lg:px-4 pb-2 flex gap-2 lg:gap-4 items-end pointer-events-none z-50">
+        <div className="absolute bottom-[calc(60px_+_env(safe-area-inset-bottom)_+_0.5rem)] lg:bottom-0 left-0 w-full h-20 lg:h-24 px-2 lg:px-4 pb-2 flex gap-2 lg:gap-4 items-end pointer-events-none z-50">
             {/* Zone 1: Operational (25%) */}
             <div className="flex-1 bg-slate-50/50 dark:bg-slate-800/50 backdrop-blur-md border-t border-r border-slate-200 dark:border-slate-700 rounded-tr-2xl h-full p-2 overflow-y-auto pointer-events-auto flex flex-col-reverse relative group/zone">
                 <div className="absolute top-0 right-2 text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest opacity-0 group-hover/zone:opacity-100 transition-opacity">Operational</div>
