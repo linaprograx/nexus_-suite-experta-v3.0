@@ -1,6 +1,7 @@
 # Auditoría de Grimorio
 
-**Fecha:** 2026-08-08 · **Autor:** Claude Code
+**Fecha:** 2026-08-08 · **Autor:** Claude Code + hallazgos del fundador
+**Actualizado:** tras cerrar el grupo de GRAVES del flujo de Recetas.
 **Alcance:** **solo Grimorio.** Pizarrón, Cerebrity y el resto quedan fuera.
 **Método:** lectura de código + medición en la app **en producción, con sesión
 real**, a 390×844. Cada hallazgo lleva archivo:línea y, cuando existe, la cifra
@@ -14,133 +15,169 @@ medida.
 
 ---
 
-## 🔴 GRAVES
+# GRUPO 1 · GRAVES — impiden completar una tarea
 
-### G1 ⬜ El selector de ingredientes no se puede scrollear: tocarlo selecciona
+## ✅ R1 · El selector de ingredientes no se podía scrollear
 
-`src/components/ui/Autocomplete.tsx:151`
+`src/components/ui/Autocomplete.tsx` — **regresión mía del 2026-08-06**.
 
-```tsx
-onPointerDown={(e) => { e.preventDefault(); handleSelect(item); }}
-```
+`onPointerDown` + `preventDefault()`: en táctil `pointerdown` se dispara **al
+posar el dedo**, así que arrastrar para ver más opciones seleccionaba la de
+debajo; y el `preventDefault()` **cancelaba el gesto de scroll del navegador**.
 
-Dos consecuencias, ambas medidas:
+Ahora selecciona en `onClick`, que solo llega si el navegador ha decidido que
+fue un toque y no un arrastre — justo la distinción que hacía falta.
 
-1. En táctil, `pointerdown` se dispara **al posar el dedo**. Intentar arrastrar
-   para ver más opciones **selecciona la que hay debajo del dedo**.
-2. `preventDefault()` sobre `pointerdown` **cancela el gesto de scroll del
-   navegador**. La lista es literalmente inmanejable: se midieron **50 opciones**
-   con `scrollHeight > clientHeight` — hay contenido que scrollear y no se puede.
+**Verificado en producción:** 18 opciones para "vodka", lista scrolleable, y un
+arrastre simulado sobre una opción ya **no** cambia el valor del campo.
 
-**Es una regresión mía del 2026-08-06.** Se cambió `onMouseDown` por
-`onPointerDown` para "cubrir ratón y dedo por el mismo camino"; en ratón
-funciona, en dedo rompe el scroll.
+## ✅ R2 · La lista salía fuera de pantalla y no se leía
 
-**Arreglo correcto:** seleccionar en un evento de *fin* de interacción (`click`,
-o `pointerup` comprobando que el dedo no se ha desplazado), nunca en el de
-inicio. Y no llamar a `preventDefault()` en `pointerdown` dentro de una lista
-scrolleable.
+Se fijaba bajo el campo sin medir el espacio. Medido antes: la lista iba de 630
+a **870 sobre un viewport de 844**, sin contar la barra inferior.
 
-### G2 ⬜ La lista del selector se sale de la pantalla
+Dos correcciones:
+- **Posición**: mide el hueco real, se abre **hacia arriba** cuando abajo no
+  cabe, y acota su altura.
+- **Ancho**: toma el de la **fila** del ingrediente (`data-fila-ingrediente`), no
+  el del campo. Medido: el campo tiene **48px** y la fila **306px** — por eso los
+  nombres largos del catálogo eran ilegibles.
 
-`src/components/ui/Autocomplete.tsx:143-147` — la lista se posiciona
-`position: fixed` en `top: rect.bottom + 4`, **sin acotar al viewport y sin
-voltear hacia arriba** cuando no cabe.
+**Verificado:** lista de 306px de ancho, dentro de la pantalla, `touch-action:
+pan-y`.
 
-Medido con el campo de ingrediente del modal de receta a 390×844:
+## ✅ R3 · No se podía introducir el precio de venta
 
-| | |
-|---|---|
-| Campo de texto | acaba en **626** |
-| Lista (`max-h-60` = 240px) | de **630** a **870** |
-| Alto del viewport | **844** |
-| **Fuera de pantalla** | **26px**, y eso **sin contar** la barra inferior (60px + área segura) |
+Modal y barra de navegación estaban **ambos en `z-50`** y ganaba la barra por
+montarse después: tapaba el pie del modal, que es donde se introduce el precio.
 
-Es la otra mitad de "sale fuera de lugar". Con el campo un poco más abajo, la
-lista queda casi entera fuera.
+El modal sube a `z-[60]` y además **reserva el alto de la barra**, para que el
+pie quede a la vista y no solo por delante.
 
-**Arreglo:** acotar al viewport y voltear hacia arriba cuando el espacio inferior
-sea menor que la altura de la lista. Ya existe precedente en el proyecto: el
-hallazgo B1 de `AUDIT-PIZARRON.md` fue exactamente esto.
+## ✅ R4 · El modal de edición se abría detrás de la ficha
 
-### G3 ⬜ La capa "Costes" secuestra la ficha de receta y esconde "Editar"
+`GrimoriumView.tsx` — `onEdit` abría el modal sin cerrar la hoja de detalle.
+Ahora limpia `selectedRecipeId` primero.
 
-`src/views/GrimoriumView.tsx` — las vistas se pintan bajo
-`activeLayer !== 'optimization'`.
+> **Conviértelo en invariante:** una sola superficie modal a la vez. Si no,
+> reaparecerá en ingredientes, stock y pedidos.
 
-Con la capa de Costes activa, al abrir una receta la hoja se titula **"CACAO ·
-Ficha de receta"** pero su contenido es la **Calculadora de Rentabilidad**. La
-receta no está, y **el botón "Editar" desaparece del DOM**: desde el móvil no
-hay forma de editar una receta mientras la capa esté encendida.
+## ✅ R5 · El título de la hoja mentía sobre su contenido
 
-**Causalidad verificada:** apagando "Costes", `Editar` vuelve a existir y a ser
-visible en la misma sesión, sin recargar.
+Con una capa activa, la hoja decía "Ficha de receta" y mostraba la calculadora
+de rentabilidad. Ahora el título refleja lo que hay dentro.
 
-Lo que lo convierte en grave no es la función, es que **no hay ninguna señal de
-que la capa esté activa**: el botón devuelve `aria-pressed="false"` después de
-pulsarlo y no cambia de aspecto. El usuario ve "Ficha de receta" con otro
-contenido dentro y no tiene forma de deducir por qué ni cómo salir.
+> **Corrección de un hallazgo anterior:** dije que el botón de capa no marcaba su
+> estado. **Es falso** — sí lo hace (pastilla blanca). Mi medición leyó un nodo
+> obsoleto porque `LayerToggle` está definido *dentro* de `GrimoriumToolbar`, y
+> React lo remonta en cada render. Eso último sí conviene arreglar, pero es otra
+> cosa y no es grave.
 
-**Tres cosas distintas que arreglar:**
-1. Que el botón refleje su estado (`aria-pressed` real + marca visual).
-2. Que el título de la hoja diga lo que hay dentro, no "Ficha de receta".
-3. Decidir si una capa transversal debe poder vaciar el detalle. Lo razonable es
-   que el detalle siga siendo el detalle y la capa añada, no sustituya.
+## ⬜ R6 · El Batcher (pestaña "Producción") no funciona
 
----
+Reportado por el fundador: **antes funcionaba**. Debe generar lotes a partir de
+una receta, con dilución del 20% cuando el cóctel se sirve directo.
 
-## 🟠 MEDIOS
+Pedido explícito, y es lo más valioso de este punto:
+- Poder **seleccionar varias recetas** a la vez.
+- **Exportar el resultado** con el mismo cuidado que la ficha de receta: una
+  hoja de producción limpia, delimitada por receta, con instrucciones y medidas.
+  Es lo que convierte esto en algo que el equipo usa en barra.
+- Renombrar la pestaña "Producción" → **"Batcher"**.
 
-### M1 ⬜ La barra de navegación tapa el pie del modal
-
-Modal de receta y barra inferior están **ambos en `z-50`**
-(`RecipeFormModal.tsx:245` y `FloatingBottomNav`), y la barra se monta después,
-así que gana.
-
-Medido: la tarjeta del modal va de **34 a 810**; la barra empieza en **784**.
-Le tapa **26px**, y en un iPhone real más, porque la barra crece con
-`env(safe-area-inset-bottom)`.
-
-**Arreglo:** un escalafón de z-index explícito. Un modal debe estar por encima
-de la navegación, y hoy solo lo decide el orden de montaje — que es frágil.
-
-### M2 ⬜ El modal de receta no se cierra con Escape
-
-`RecipeFormModal.tsx` no registra ningún manejador de teclado. Cierra el clic en
-el fondo (`:247`) y el botón de la cabecera (`:255`), pero no la tecla. En
-escritorio, donde se rellena un formulario largo con teclado, se echa en falta.
-
-### M3 ⬜ Controles sin etiqueta accesible
-
-El botón de cerrar del modal (`RecipeFormModal.tsx:255`) es un icono sin texto
-ni `aria-label`. En la hoja de detalle se encontraron **dos botones sin ninguna
-etiqueta**. Además de accesibilidad, dificulta las pruebas automatizadas: no hay
-forma de referirse a ellos.
-
-### M4 ⬜ Dos "×" simultáneos en la hoja de detalle
-
-Con la capa activa conviven el aspa de la hoja y el aspa de la herramienta
-incrustada, uno encima del otro. No está claro cuál cierra qué.
+**Sin diagnosticar todavía.** Primer paso: averiguar si dejó de funcionar o
+nunca se conectó — este proyecto tiene ya siete casos de código escrito y jamás
+enchufado.
 
 ---
 
-## 🟡 BAJOS
+# GRUPO 2 · MEDIOS — funcionan, pero mal o a medias
 
-### B1 ⬜ Persistencia de la capa activa — **por confirmar**
+## ⬜ R7 · Las capas no muestran nada hasta tocar la pestaña de borde
 
-La capa de Costes seguía encendida tras una navegación con recarga forzada, pero
-**no** hay nada en `localStorage` que lo explique. No está confirmado si
-sobrevive a un arranque en frío. Merece comprobarse: si sobrevive, el usuario
-puede abrir la app días después y encontrarse Grimorio "roto" sin saber por qué.
+Al activar **Costes** o **Zero Waste** no ocurre nada visible: hay que
+seleccionar una receta o tocar la pestaña oculta del borde derecho para que
+aparezca el panel. Quien no sepa que esa pestaña existe, concluye que el botón
+está roto.
 
-### B2 ⬜ Código muerto en el módulo
+**Arreglo natural:** que activar una capa **abra su panel** en móvil.
 
-Ya anotado en `HANDOFF.md`, se repite aquí porque es de Grimorio:
+## ⬜ R8 · "Rentabilidad" no aporta nada sobre la ficha
 
-- `src/features/ingredients/useIngredients.ts` — duplicado de
-  `src/hooks/useIngredients.ts`, **sin importar por nadie**.
-- `RecipeToolbar.tsx` e `IngredientToolbar.tsx` — importados en
-  `GrimoriumView.tsx` y **nunca renderizados**.
+Muestra coste, beneficio y margen — lo mismo que ya se ve en la receta. Hay que
+enriquecerla para que justifique su sitio: comparación con el coste real de
+compras, desviación, histórico de precio, sensibilidad del margen al PVP.
+
+**Requiere decidir con el fundador qué debe responder** esa pantalla.
+
+## ⬜ R9 · "Carta" no filtra las recetas
+
+Hoy abre una ventanita con las recetas publicadas y al cerrarla no cambia nada.
+Lo pedido: que funcione como **un espacio de trabajo** — al activarlo, Recetas
+muestra solo lo que está en carta.
+
+**Plan pendiente de aprobación** (ver abajo).
+
+## ⬜ R10 · Dos "×" simultáneos en la hoja de detalle
+
+El aspa de la hoja y el de la herramienta incrustada, uno junto al otro. No está
+claro cuál cierra qué.
+
+---
+
+# GRUPO 3 · BAJOS
+
+## ⬜ R11 · Controles sin etiqueta accesible
+
+El botón de cerrar del modal y dos botones de la hoja de detalle no tienen texto
+ni `aria-label`.
+
+## ⬜ R12 · `LayerToggle` se define dentro de `GrimoriumToolbar`
+
+`GrimoriumToolbar.tsx:71`. React lo trata como un tipo de componente nuevo en
+cada render y lo **remonta entero** cada vez. Coste innecesario y fuente de
+rarezas al medir el DOM.
+
+## ⬜ R13 · Zero Waste Lab no genera nada
+
+Depende del `ai-gateway`, que no está desplegado. **No es un fallo de Grimorio**;
+se cierra cuando se despliegue el gateway.
+
+## ⬜ R14 · Código muerto del módulo
+
+- `src/features/ingredients/useIngredients.ts` — duplicado, sin importar.
+- `RecipeToolbar.tsx` e `IngredientToolbar.tsx` — importados y nunca renderizados.
+
+---
+
+# Plan propuesto para R9 · "Carta" como espacio de trabajo
+
+**Pendiente de tu aprobación.**
+
+**La idea:** que "Carta" deje de ser una ventanita informativa y pase a ser un
+**filtro de alcance** sobre Recetas — despeja el listado y deja solo aquello en
+lo que estás trabajando.
+
+**Por qué así y no como una vista nueva:** Recetas ya tiene buscador, categoría y
+estado. Una vista aparte duplicaría los tres y divergirían, que es el error que
+más caro ha salido en este proyecto. Un filtro más reutiliza todo lo que existe.
+
+**Los pasos:**
+
+1. Un estado de alcance (`todas` | `carta`) junto a los filtros que ya hay, no en
+   un sitio nuevo.
+2. El botón "Carta" alterna ese alcance. El modal actual sigue disponible, pero
+   deja de ser lo único que hace el botón.
+3. **Señal clara de que el filtro está puesto**: el botón marcado y el contador
+   diciendo "8 de 15 · en carta". Sin eso repetimos el problema de la capa de
+   Costes: filtrar sin avisar se lee como "faltan recetas".
+4. Una forma obvia de quitarlo, sin volver a buscar el mismo botón.
+
+**Riesgo:** bajo. Es un filtro más sobre una lista ya filtrada; si falla, muestra
+de más, nunca de menos.
+
+**Lo que hay que decidir contigo:** si al activarlo debe además **fijar la vista**
+en carta al volver a entrar en Grimorio, o si debe empezar siempre en "todas".
 
 ---
 
