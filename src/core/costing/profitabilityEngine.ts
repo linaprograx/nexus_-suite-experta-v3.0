@@ -81,7 +81,7 @@ export const calculateRecipeProfitability = (entrada: EntradaRentabilidad): Reci
     const s: BusinessCostSettings = { ...AJUSTES_COSTE_POR_DEFECTO, ...(entrada.settings || {}) };
 
     // GLOBAL DEFAULT → RECIPE OVERRIDE
-    const ov: RecipeCostOverrides = entrada.overrides || (recipe as any)?.costes || {};
+    const ov: RecipeCostOverrides = entrada.overrides || recipe?.costingOverrides || {};
 
     // ── 1. Ingredientes (fuente única: no se recalcula aquí)
     const ingredientCost = calculateRecipeCost(recipe, allIngredients, purchaseHistory, allRecipes).costoTotal || 0;

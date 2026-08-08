@@ -239,6 +239,13 @@ export interface Recipe {
     abv?: number;
     /** Nº de porciones/raciones/tragos que rinde la receta (para coste por porción). */
     porciones?: number;
+    /**
+     * Sobrescrituras de coste de ESTA receta sobre la configuración del negocio.
+     * Agrupado a propósito: son seis conceptos que pertenecen juntos, y sueltos
+     * en la raíz ensuciarían el modelo sin ganar nada.
+     * Ausente = la receta hereda todo del negocio y se comporta como siempre.
+     */
+    costingOverrides?: import('./core/costing/profitability.types').RecipeCostOverrides;
 }
 
 export interface CerebrityResult {

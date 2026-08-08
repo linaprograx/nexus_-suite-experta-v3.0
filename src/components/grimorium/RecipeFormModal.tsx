@@ -9,6 +9,7 @@ import { Select } from '../ui/Select';
 import { Button } from '../ui/Button';
 import { Icon } from '../ui/Icon';
 import { Autocomplete } from '../ui/Autocomplete';
+import { CostesAvanzados } from './CostesAvanzados';
 import { ICONS } from '../ui/icons';
 import { Recipe, Ingredient, IngredientLineItem } from '../../types';
 import { useApp } from '../../context/AppContext';
@@ -201,8 +202,24 @@ export const RecipeFormModal: React.FC<RecipeFormModalProps> = ({ isOpen, onClos
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         const safeCost = currentCost || 0;
+        // Firestore rechaza `undefined`. Los overrides usan `undefined` para decir
+        // "hereda del negocio", así que aquí esos campos simplemente no se escriben:
+        // ausente y heredado significan lo mismo, y así no se guarda ruido.
+        const limpiarOverrides = (o: any) => {
+            if (!o) return undefined;
+            const salida: any = {};
+            for (const [k, v] of Object.entries(o)) {
+                if (v === undefined || v === null) continue;
+                if (Array.isArray(v) && v.length === 0) continue;
+                salida[k] = v;
+            }
+            return Object.keys(salida).length ? salida : undefined;
+        };
+        const overridesLimpios = limpiarOverrides(recipe.costingOverrides);
+
         const dataToSave = {
             ...recipe,
+            ...(overridesLimpios ? { costingOverrides: overridesLimpios } : {}),
             ingredientes: cleanLineItems(lineItems),
             costoReceta: safeCost, // Legacy support
             costoTotal: safeCost,  // Standard field
@@ -691,6 +708,17 @@ export const RecipeFormModal: React.FC<RecipeFormModalProps> = ({ isOpen, onClos
                                 })}
                             </div>
                         </div>
+
+                        {/* Costes avanzados. Plegado por defecto y al final: quien solo
+                            quiera ingredientes, cantidades y precio no debería notar
+                            siquiera que existe. */}
+                        <CostesAvanzados
+                            recipe={recipe}
+                            lineItems={lineItems}
+                            allIngredients={allIngredients}
+                            allRecipes={allRecipes}
+                            onChange={(costingOverrides) => setRecipe(prev => ({ ...prev, costingOverrides }))}
+                        />
                     </form>
                 </div>
 
