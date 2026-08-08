@@ -36,7 +36,7 @@ export const Autocomplete: React.FC<AutocompleteProps> = ({
   const [filteredItems, setFilteredItems] = useState<Ingredient[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
-  const [rect, setRect] = useState<{ top: number; left: number; width: number } | null>(null);
+  const [rect, setRect] = useState<{ top?: number; bottom?: number; left: number; width: number; maxH: number } | null>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -50,13 +50,39 @@ export const Autocomplete: React.FC<AutocompleteProps> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedId]);
 
-  // Track input position for the portal dropdown
+  /**
+   * Coloca la lista.
+   *
+   * Antes se fijaba en `top: rect.bottom + 4` sin más: con el campo en la mitad
+   * baja de la pantalla, la lista (240px) se salía por abajo. Medido a 390x844
+   * con el campo del modal de receta: la lista iba de 630 a 870 sobre un
+   * viewport de 844 — y eso sin contar la barra inferior.
+   *
+   * Ahora se mide el espacio real y, si abajo no cabe, se abre hacia arriba. La
+   * altura se acota a lo que haya disponible, así que nunca queda fuera.
+   *
+   * El ancho se toma de la FILA del ingrediente (`data-fila-ingrediente`), no
+   * del campo de texto: el campo es estrecho y los nombres del catálogo son
+   * largos ("AGUERRIDO, REFUGIO CUPREATA CAPON ZACATE LIMON"). Si no hay fila
+   * marcada, se cae al ancho del propio campo.
+   */
+  const RESERVA_INFERIOR = 76;  // barra de navegación + área segura
+  const MARGEN = 4;
+
   const updateRect = () => {
     const el = wrapperRef.current;
-    if (el) {
-      const r = el.getBoundingClientRect();
-      setRect({ top: r.bottom + 4, left: r.left, width: r.width });
-    }
+    if (!el) return;
+    const r = el.getBoundingClientRect();
+    const fila = el.closest('[data-fila-ingrediente]') as HTMLElement | null;
+    const rf = fila ? fila.getBoundingClientRect() : r;
+
+    const abajo = window.innerHeight - r.bottom - RESERVA_INFERIOR - MARGEN;
+    const arriba = r.top - MARGEN;
+    const haciaArriba = abajo < 140 && arriba > abajo;
+
+    setRect(haciaArriba
+      ? { bottom: window.innerHeight - r.top + MARGEN, left: rf.left, width: rf.width, maxH: Math.max(120, Math.min(280, arriba)) }
+      : { top: r.bottom + MARGEN, left: rf.left, width: rf.width, maxH: Math.max(120, Math.min(280, abajo)) });
   };
 
   useEffect(() => {
@@ -142,16 +168,28 @@ export const Autocomplete: React.FC<AutocompleteProps> = ({
       {isOpen && rect && createPortal(
         <ul
           data-autocomplete-portal
-          style={{ position: 'fixed', top: rect.top, left: rect.left, width: rect.width, zIndex: 9999 }}
-          className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-2xl overflow-y-auto max-h-60 animate-in fade-in-0 zoom-in-95"
+          style={{
+            position: 'fixed', left: rect.left, width: rect.width, zIndex: 9999,
+            ...(rect.top !== undefined ? { top: rect.top } : { bottom: rect.bottom }),
+            maxHeight: rect.maxH,
+            // Deja el scroll vertical al navegador; sin esto el gesto se pierde.
+            touchAction: 'pan-y', overscrollBehavior: 'contain',
+          }}
+          className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-2xl overflow-y-auto animate-in fade-in-0"
         >
           {filteredItems.length > 0 ? (
             filteredItems.map((item, index) => (
               <li
                 key={item.id}
-                onPointerDown={(e) => { e.preventDefault(); handleSelect(item); }}
+                // `onClick`, NO `onPointerDown`. En táctil `pointerdown` se dispara al
+                // POSAR el dedo, así que arrastrar para ver más opciones
+                // seleccionaba la de debajo; y su `preventDefault()` cancelaba el
+                // gesto de scroll del navegador, dejando la lista inmanejable.
+                // El clic solo llega si el navegador ha decidido que fue un toque
+                // y no un arrastre, que es justo la distinción que hacía falta.
+                onClick={() => handleSelect(item)}
                 onMouseEnter={() => setActiveIndex(index)}
-                className={`px-4 py-2.5 cursor-pointer text-sm text-slate-700 dark:text-slate-200 ${activeIndex === index ? 'bg-teal-50 dark:bg-teal-900/30 text-teal-700 dark:text-teal-300' : ''}`}
+                className={`px-4 py-3 cursor-pointer text-sm leading-snug break-words text-slate-700 dark:text-slate-200 border-b border-slate-100 dark:border-slate-700/60 last:border-0 ${activeIndex === index ? 'bg-teal-50 dark:bg-teal-900/30 text-teal-700 dark:text-teal-300' : ''}`}
               >
                 {item.nombre}
               </li>

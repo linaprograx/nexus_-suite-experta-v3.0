@@ -37,6 +37,15 @@ export const RecipeFormModal: React.FC<RecipeFormModalProps> = ({ isOpen, onClos
     const { purchaseHistory } = usePurchaseIngredient();
     const [recipe, setRecipe] = React.useState<Partial<Recipe>>({});
     const [lineItems, setLineItems] = React.useState<IngredientLineItem[]>([]);
+
+    // Escape cierra. En escritorio se rellena un formulario largo con el teclado
+    // y no había forma de salir sin ir al ratón.
+    React.useEffect(() => {
+        if (!isOpen) return;
+        const alPulsar = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+        window.addEventListener('keydown', alPulsar);
+        return () => window.removeEventListener('keydown', alPulsar);
+    }, [isOpen, onClose]);
     const [isUploading, setIsUploading] = React.useState(false);
 
     // Dynamic Cost Calculation — enriches ingredients with real purchase prices in real time.
@@ -242,7 +251,14 @@ export const RecipeFormModal: React.FC<RecipeFormModalProps> = ({ isOpen, onClos
     const inputCls = "bg-slate-50 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-100";
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div
+            // z-[60] y hueco inferior. El modal y la barra de navegación estaban
+            // ambos en z-50 y ganaba la barra por montarse después: tapaba el pie,
+            // que es donde se introduce el PRECIO DE VENTA. Un modal debe estar por
+            // encima de la navegación, y además se reserva su alto para que el pie
+            // quede a la vista en lugar de simplemente por delante.
+            className="fixed inset-0 z-[60] flex items-center justify-center p-4 pb-[calc(1rem+60px+env(safe-area-inset-bottom))] lg:pb-4"
+        >
             {/* Backdrop — fade only (no transform) to avoid Safari backdrop-filter flicker */}
             <div className="absolute inset-0 bg-slate-900/50 backdrop-blur-md animate-in fade-in duration-200" onClick={onClose} style={{ WebkitBackdropFilter: 'blur(12px)' }} />
 
@@ -559,7 +575,7 @@ export const RecipeFormModal: React.FC<RecipeFormModalProps> = ({ isOpen, onClos
                                                         const siCost = batch.costoPorIngrediente[k]?.costo ?? 0;
                                                         const siLinked = !!si.ingredientId || allIngredients.some(g => g.nombre?.trim().toLowerCase() === (si.nombre || '').trim().toLowerCase());
                                                         return (
-                                                            <div key={k} className="flex gap-1.5 items-center">
+                                                            <div key={k} data-fila-ingrediente className="flex gap-1.5 items-center">
                                                                 <div className="flex-1 min-w-0">
                                                                     <Autocomplete
                                                                         items={allIngredients}
@@ -614,7 +630,7 @@ export const RecipeFormModal: React.FC<RecipeFormModalProps> = ({ isOpen, onClos
                                     }
 
                                     return (
-                                        <div key={index} className="flex gap-2 items-center bg-slate-50 dark:bg-slate-800/60 p-2 rounded-xl border border-slate-100 dark:border-slate-700/60">
+                                        <div key={index} data-fila-ingrediente className="flex gap-2 items-center bg-slate-50 dark:bg-slate-800/60 p-2 rounded-xl border border-slate-100 dark:border-slate-700/60">
                                             <div className="flex-1 min-w-0">
                                                 <Autocomplete
                                                     items={allIngredients}

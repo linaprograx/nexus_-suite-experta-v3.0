@@ -633,8 +633,16 @@ const GrimoriumInner: React.FC<GrimoriumViewProps> = () => {
                     ? {
                         detailOpen: !!selectedRecipe,
                         onDetailClose: () => setSelectedRecipeId(null),
-                        detailTitle: selectedRecipe?.nombre,
-                        detailSubtitle: 'Ficha de receta',
+                        // El título debe decir lo que hay DENTRO. Con una capa activa
+                        // el panel derecho no muestra la receta sino su herramienta, y
+                        // leer "Ficha de receta" sobre una calculadora de rentabilidad
+                        // desconcierta: parece que la ficha se ha roto.
+                        detailTitle: activeLayer === 'cost' ? 'Rentabilidad y producción'
+                            : activeLayer === 'optimization' ? 'Zero Waste Lab'
+                                : selectedRecipe?.nombre,
+                        detailSubtitle: activeLayer === 'cost' ? (selectedRecipe?.nombre || 'Herramientas de coste')
+                            : activeLayer === 'optimization' ? 'Aprovechamiento de descartes'
+                                : 'Ficha de receta',
                         insightsLabel: 'Análisis',
                         accentClass: 'bg-teal-500',
                         cabeceraFija: true,
@@ -897,7 +905,10 @@ const GrimoriumInner: React.FC<GrimoriumViewProps> = () => {
                                     allIngredients={allIngredients}
                                     allRecipes={allRecipes}
                                     onProduce={(r) => setProduceRecipe(r)}
-                                    onEdit={(r) => onOpenRecipeModal(r)}
+                                    // Cierra la ficha antes de abrir el modal: si no, el
+                                    // modal aparecía DETRÁS de la hoja de detalle y había
+                                    // que cerrarla a mano para llegar a él.
+                                    onEdit={(r) => { setSelectedRecipeId(null); onOpenRecipeModal(r); }}
                                     // ...
                                     onDelete={(r) => handleDeleteRecipe(r.id)}
                                     onDuplicate={handleDuplicateRecipe}
