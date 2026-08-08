@@ -3,6 +3,7 @@ import { Firestore, addDoc, collection, serverTimestamp, doc, deleteDoc, updateD
 import { Recipe, Ingredient } from '../types';
 import { PremiumLayout } from '../components/layout/PremiumLayout';
 import EscandalloTab from '../components/escandallator/EscandalloTab';
+import { BatcherResultado } from '../components/escandallator/BatcherResultado';
 import BatcherTab from '../components/escandallator/BatcherTab';
 import StockManagerTab from '../components/escandallator/StockManagerTab';
 import EscandalloHistorySidebar from '../components/escandallator/EscandalloHistorySidebar';
@@ -266,40 +267,11 @@ const EscandallatorView: React.FC<EscandallatorViewProps> = ({ db, userId, appId
                         )}
 
                         {/* BATCHER RESULTS */}
+                        {/* BATCHER RESULTS — mismo componente que la capa de Costes de
+                            Grimorio. Tenerlo duplicado fue lo que permitió que una copia
+                            leyera un campo inexistente y la otra no. */}
                         {activeTab === 'batcher' && (
-                            batchResult ? (
-                                <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                                    <div className="bg-white/60 dark:bg-slate-900/40 backdrop-blur-md rounded-2xl border border-white/20 dark:border-white/5 p-4 flex justify-between items-center shadow-sm">
-                                        <div>
-                                            <h3 className="font-semibold text-slate-800 dark:text-slate-200">Total Batch</h3>
-                                            <p className="text-xs text-slate-500 dark:text-slate-400">{batchResult.meta.targetQuantity} {batchResult.meta.targetUnit}</p>
-                                        </div>
-                                        <div className="flex gap-2">
-                                            <Button size="sm" onClick={handleSaveBatchToPizarron} className="bg-emerald-600 hover:bg-emerald-700 text-white">
-                                                <Icon svg={ICONS.check} className="w-4 h-4" />
-                                            </Button>
-                                        </div>
-                                    </div>
-
-                                    <div className="flex flex-col gap-3">
-                                        {batchResult.data.map((row: any, index: number) => (
-                                            <div key={index} className="flex items-center justify-between p-4 rounded-xl bg-white/80 dark:bg-slate-900/70 backdrop-blur-md border border-white/20 dark:border-white/5 shadow-sm">
-                                                <span className="font-medium text-sm text-slate-800 dark:text-slate-200">{row.ingredient}</span>
-                                                <div className="text-right">
-                                                    <span className="block text-lg font-bold text-emerald-600 dark:text-emerald-400 tabular-nums">{row.batchQty}</span>
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-                            ) : (
-                                <Card className="h-full flex items-center justify-center p-6 bg-white/40 dark:bg-slate-900/20 border-white/20 dark:border-white/5">
-                                    <CardContent className="text-center text-muted-foreground flex flex-col items-center">
-                                        <Icon svg={ICONS.layers} className="w-12 h-12 mb-4 opacity-20" />
-                                        <p>Configura el batch para ver los resultados aquí.</p>
-                                    </CardContent>
-                                </Card>
-                            )
+                            <BatcherResultado resultado={batchResult} onGuardar={handleSaveBatchToPizarron} />
                         )}
 
                         {/* STOCK DETAILS (Read-Only) */}

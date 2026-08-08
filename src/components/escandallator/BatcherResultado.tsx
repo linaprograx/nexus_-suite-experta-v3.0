@@ -60,11 +60,20 @@ export const BatcherResultado: React.FC<BatcherResultadoProps> = ({ resultado, o
                         key={i}
                         className="flex items-center justify-between gap-3 p-4 rounded-xl bg-white/80 dark:bg-slate-900/50 border border-slate-200/60 dark:border-white/10"
                     >
-                        <span className="font-medium text-sm text-slate-800 dark:text-slate-200 min-w-0 break-words">
-                            {fila.ingredient}
-                        </span>
+                        <div className="min-w-0">
+                            <span className="block font-medium text-sm text-slate-800 dark:text-slate-200 break-words">
+                                {fila.ingredient}
+                            </span>
+                            {/* Cuánto lleva UN trago. En una hoja de producción es el
+                                contraste que permite comprobar el escalado de un vistazo. */}
+                            {fila.originalQty && fila.originalQty !== '-' && (
+                                <span className="block text-[11px] text-slate-400 mt-0.5">
+                                    {fila.originalQty} por trago
+                                </span>
+                            )}
+                        </div>
                         <span className="shrink-0 text-lg font-bold text-emerald-600 dark:text-emerald-400 tabular-nums">
-                            {fila.amount}
+                            {fila.batchQty}
                         </span>
                     </div>
                 ))}
