@@ -1014,6 +1014,7 @@ const GrimoriumInner: React.FC<GrimoriumViewProps> = () => {
                                 onSelectRecipe={setSelectedEscandalloRecipe}
                                 onPriceChange={setPrecioVenta}
                                 setBatchResult={setBatchResult}
+                                batchResult={batchResult}
                                 batchSelectedRecipeId={batchSelectedRecipeId}
                                 batchTargetQty={batchTargetQty}
                                 batchTargetUnit={batchTargetUnit}

@@ -252,12 +252,16 @@ export const RecipeFormModal: React.FC<RecipeFormModalProps> = ({ isOpen, onClos
 
     return (
         <div
-            // z-[60] y hueco inferior. El modal y la barra de navegación estaban
+            // Hueco ARRIBA y ABAJO, ambos con área segura.
+            // Abajo: el modal y la barra de navegación estaban
             // ambos en z-50 y ganaba la barra por montarse después: tapaba el pie,
             // que es donde se introduce el PRECIO DE VENTA. Un modal debe estar por
             // encima de la navegación, y además se reserva su alto para que el pie
             // quede a la vista en lugar de simplemente por delante.
-            className="fixed inset-0 z-[60] flex items-center justify-center p-4 pb-[calc(1rem+60px+env(safe-area-inset-bottom))] lg:pb-4"
+            // Arriba: al reservar sitio abajo la tarjeta creció, y su cabecera
+            // —Cerrar y Guardar— se metió bajo el reloj y el notch. Reservar solo
+            // por un lado desplaza el problema al otro.
+            className="fixed inset-0 z-[60] flex items-center justify-center p-4 pt-[calc(1rem+env(safe-area-inset-top))] pb-[calc(1rem+60px+env(safe-area-inset-bottom))] lg:pt-4 lg:pb-4"
         >
             {/* Backdrop — fade only (no transform) to avoid Safari backdrop-filter flicker */}
             <div className="absolute inset-0 bg-slate-900/50 backdrop-blur-md animate-in fade-in duration-200" onClick={onClose} style={{ WebkitBackdropFilter: 'blur(12px)' }} />

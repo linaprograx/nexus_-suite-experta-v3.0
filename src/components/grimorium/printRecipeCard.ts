@@ -103,6 +103,10 @@ export function printRecipeCard(recipe: Partial<Recipe>, cost: RecipeCostResult,
   .totals { display: flex; gap: 24px; margin-top: 22px; border-top: 2px solid #e2e8f0; padding-top: 14px; }
   .totals .box .l { font-size: 10px; text-transform: uppercase; letter-spacing: .08em; color: #94a3b8; font-weight: 700; }
   .totals .box .n { font-size: 20px; font-weight: 800; }
+  .salir { position: fixed; top: 12px; right: 12px; z-index: 99; border: 0; border-radius: 999px;
+    padding: 10px 16px; font: 600 14px/1 -apple-system, system-ui, sans-serif; color: #fff;
+    background: #0f172a; box-shadow: 0 4px 14px rgba(0,0,0,.25); cursor: pointer; }
+  @media print { .salir { display: none; } }
   .foot { margin-top: 28px; font-size: 10px; color: #cbd5e1; }
   @media print { body { padding: 12mm; } .noprint { display: none; } }
 </style></head><body>
@@ -133,7 +137,22 @@ export function printRecipeCard(recipe: Partial<Recipe>, cost: RecipeCostResult,
   </div>
 
   <div class="foot">Ficha generada por Nexus Suite · Grimorio — ${new Date().toLocaleDateString('es-ES')}</div>
-  <script>window.onload = function(){ setTimeout(function(){ window.print(); }, 250); };<\/script>
+
+  <!-- Salida propia.
+       La ficha se abre con window.open, y en una PWA instalada en iOS eso se
+       muestra SIN barra del navegador: sin botón atrás y sin pestañas. La única
+       salida era cerrar la aplicación entera y volver a abrirla. Este botón le
+       da su propia puerta. Se oculta al imprimir para que no salga en el papel. -->
+  <button class="salir" onclick="cerrarFicha()">✕ Cerrar</button>
+  <script>
+    function cerrarFicha() {
+      // window.close() solo funciona en ventanas abiertas por script; si el
+      // navegador lo rechaza, se vuelve atrás, que en la PWA devuelve a la app.
+      window.close();
+      setTimeout(function(){ if (!window.closed) history.back(); }, 120);
+    }
+    window.onload = function(){ setTimeout(function(){ window.print(); }, 250); };
+  <\/script>
 </body></html>`;
 
     const w = window.open('', '_blank', 'width=840,height=1000');

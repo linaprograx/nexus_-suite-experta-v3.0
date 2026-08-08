@@ -5,6 +5,7 @@ import { Icon } from '../ui/Icon';
 import { ICONS } from '../ui/icons';
 import EscandalloTab from './EscandalloTab';
 import BatcherTab from './BatcherTab';
+import { BatcherResultado } from './BatcherResultado';
 
 interface EscandallatorPanelProps {
     db: Firestore;
@@ -23,6 +24,8 @@ interface EscandallatorPanelProps {
 
     // Batcher Props
     setBatchResult: (result: any) => void;
+    /** El resultado calculado. Sin esto el botón no producía ningún efecto visible. */
+    batchResult?: any;
     batchSelectedRecipeId: string;
     batchTargetQty: string;
     batchTargetUnit: 'Litros' | 'Botellas';
@@ -144,6 +147,11 @@ const EscandallatorPanel: React.FC<EscandallatorPanelProps> = (props) => {
                             onUnitChange={props.onBatchUnitChange}
                             onDilutionChange={props.onBatchDilutionChange}
                         />
+                    )}
+                    {props.activeSubTab === 'production' && (
+                        <div className="mt-4">
+                            <BatcherResultado resultado={props.batchResult} />
+                        </div>
                     )}
                 </div>
             </div>
