@@ -32,8 +32,6 @@ import { IngredientListPanel } from '../components/grimorium/IngredientListPanel
 import { IngredientDetailPanel } from '../components/grimorium/IngredientDetailPanel';
 import { PremiumLayout } from '../components/layout/PremiumLayout';
 import { useDebounce } from '../hooks/useDebounce';
-import { RecipeToolbar } from '../components/grimorium/RecipeToolbar';
-import { IngredientToolbar } from '../components/grimorium/IngredientToolbar';
 import { useCabeceraPlegable } from '../hooks/useCabeceraPlegable';
 import { useCartas } from '../hooks/useCartas';
 import { useAlcanceCarta, fijarAlcanceCarta } from '../hooks/useAlcanceCarta';
@@ -651,8 +649,17 @@ const GrimoriumInner: React.FC<GrimoriumViewProps> = () => {
                 // On phones the detail column becomes a sheet that opens on selection
                 mobile: viewMode === 'recipes'
                     ? {
-                        detailOpen: !!selectedRecipe,
-                        onDetailClose: () => setSelectedRecipeId(null),
+                        // Activar una capa abre su panel. Antes no ocurría nada
+                        // visible al pulsar Costes o Zero Waste: había que descubrir
+                        // la pestaña oculta del borde derecho, y quien no la conocía
+                        // concluía que el botón estaba roto.
+                        detailOpen: !!selectedRecipe || activeLayer !== 'composition',
+                        // Cerrar el panel apaga la capa. Así el aspa de la hoja
+                        // significa lo mismo que el de la herramienta y sobra uno.
+                        onDetailClose: () => {
+                            if (activeLayer !== 'composition') toggleLayer('composition');
+                            else setSelectedRecipeId(null);
+                        },
                         // El título debe decir lo que hay DENTRO. Con una capa activa
                         // el panel derecho no muestra la receta sino su herramienta, y
                         // leer "Ficha de receta" sobre una calculadora de rentabilidad
@@ -669,8 +676,11 @@ const GrimoriumInner: React.FC<GrimoriumViewProps> = () => {
                     }
                     : viewMode === 'market'
                         ? {
-                            detailOpen: !!selectedIngredient,
-                            onDetailClose: () => setSelectedIngredientId(null),
+                            detailOpen: !!selectedIngredient || activeLayer !== 'composition',
+                            onDetailClose: () => {
+                                if (activeLayer !== 'composition') toggleLayer('composition');
+                                else setSelectedIngredientId(null);
+                            },
                             detailTitle: selectedIngredient?.nombre,
                             detailSubtitle: 'Detalle de ingrediente',
                             insightsLabel: 'Comparativa',
@@ -678,8 +688,11 @@ const GrimoriumInner: React.FC<GrimoriumViewProps> = () => {
                             cabeceraFija: true,
                         }
                         : {
-                            detailOpen: !!selectedStockItemId,
-                            onDetailClose: () => setSelectedStockItemId(null),
+                            detailOpen: !!selectedStockItemId || activeLayer !== 'composition',
+                            onDetailClose: () => {
+                                if (activeLayer !== 'composition') toggleLayer('composition');
+                                else setSelectedStockItemId(null);
+                            },
                             insightsLabel: 'Reglas y proveedores',
                             detailLabel: 'Pedidos',
                             accentClass: 'bg-sky-500',
@@ -1029,11 +1042,15 @@ const GrimoriumInner: React.FC<GrimoriumViewProps> = () => {
                     )}
                     renderCostLayer={() => (
                         <div className="h-full bg-white/30 dark:bg-slate-900/30 backdrop-blur-xl rounded-2xl border border-rose-500/20 dark:border-rose-500/20 shadow-premium overflow-hidden flex flex-col relative group">
-                            <div className="flex-none p-2 flex justify-end absolute top-2 right-2 z-50">
+                            {/* En móvil manda el aspa de la hoja, que además apaga la capa: dos aspas
+                                juntas no dejaban claro cuál cerraba qué. */}
+                            <div className="hidden lg:flex flex-none p-2 justify-end absolute top-2 right-2 z-50">
                                 <Button
                                     variant="ghost"
                                     size="sm"
-                                    onClick={() => toggleLayer('composition')} // Switch back to composition
+                                    onClick={() => toggleLayer('composition')}
+                                    aria-label="Cerrar la capa"
+                                    title="Cerrar la capa y volver a la ficha"
                                     className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
                                 >
                                     <Icon svg={ICONS.x} className="w-4 h-4" />
@@ -1052,6 +1069,7 @@ const GrimoriumInner: React.FC<GrimoriumViewProps> = () => {
                                 onPriceChange={setPrecioVenta}
                                 setBatchResult={setBatchResult}
                                 batchResult={batchResult}
+                                allIngredients={allIngredients}
                                 batchSelectedRecipeId={batchSelectedRecipeId}
                                 batchTargetQty={batchTargetQty}
                                 batchTargetUnit={batchTargetUnit}

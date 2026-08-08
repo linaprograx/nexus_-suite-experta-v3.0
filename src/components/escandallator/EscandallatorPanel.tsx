@@ -11,6 +11,8 @@ interface EscandallatorPanelProps {
     db: Firestore;
     appId: string;
     allRecipes: Recipe[];
+    /** Necesario para el desglose de coste por ingrediente de Rentabilidad. */
+    allIngredients?: any[];
 
     // Controlled SubTab
     activeSubTab: 'calculator' | 'production';
@@ -114,7 +116,7 @@ const EscandallatorPanel: React.FC<EscandallatorPanelProps> = (props) => {
                 >
                     <div className="flex items-center gap-1.5">
                         <Icon svg={ICONS.layers} className="w-3.5 h-3.5" />
-                        <span>Producción</span>
+                        <span>Batcher</span>
                     </div>
                 </button>
             </div>
@@ -130,6 +132,7 @@ const EscandallatorPanel: React.FC<EscandallatorPanelProps> = (props) => {
                             onSelectRecipe={props.onSelectRecipe}
                             onPriceChange={props.onPriceChange}
                             realCost={realCost}
+                            allIngredients={props.allIngredients || []}
                         />
                     )}
                     {props.activeSubTab === 'production' && (

@@ -281,7 +281,7 @@ export const RecipeFormModal: React.FC<RecipeFormModalProps> = ({ isOpen, onClos
                 <div className="relative px-4 py-2 lg:py-3.5 shrink-0 bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-600 overflow-hidden">
                     <div className="absolute -top-8 -right-8 w-40 h-40 bg-white/10 rounded-full blur-2xl pointer-events-none" />
                     <div className="relative flex items-center justify-between z-10">
-                        <button onClick={onClose} className="w-8 h-8 lg:w-9 lg:h-9 rounded-full bg-white/15 hover:bg-white/25 text-white flex items-center justify-center transition-colors">
+                        <button onClick={onClose} aria-label="Cerrar sin guardar" title="Cerrar sin guardar" className="w-8 h-8 lg:w-9 lg:h-9 rounded-full bg-white/15 hover:bg-white/25 text-white flex items-center justify-center transition-colors">
                             <Icon svg={ICONS.x} className="w-5 h-5" />
                         </button>
                         <h2 className="text-base lg:text-lg font-bold text-white flex-1 text-center truncate px-2">

@@ -1,4 +1,5 @@
 import React from 'react';
+import { RentabilidadDetalle } from './RentabilidadDetalle';
 import { Recipe } from '../../types';
 import { Card, CardContent } from '../ui/Card';
 import { Label } from '../ui/Label';
@@ -8,6 +9,7 @@ import { Input } from '../ui/Input';
 interface EscandalloTabProps {
     allRecipes: Recipe[];
     selectedRecipe: Recipe | null;
+    allIngredients?: any[];
     precioVenta: number;
     onSelectRecipe: (recipe: Recipe | null) => void;
     onPriceChange: (price: number) => void;
@@ -17,6 +19,7 @@ interface EscandalloTabProps {
 const EscandalloTab: React.FC<EscandalloTabProps> = ({
     allRecipes,
     selectedRecipe,
+    allIngredients = [],
     precioVenta,
     onSelectRecipe,
     onPriceChange,
@@ -141,6 +144,21 @@ const EscandalloTab: React.FC<EscandalloTabProps> = ({
                             </div>
                         </div>
                     </Card>
+                </div>
+            )}
+
+            {/* Lo que solo puede saberse cruzando datos: desviación real vs teórico,
+                dónde está el coste, y el precio para un margen objetivo. Sin esto la
+                pestaña repetía los cuatro números de la ficha. */}
+            {selectedRecipe && (
+                <div className="mt-4">
+                    <RentabilidadDetalle
+                        receta={selectedRecipe}
+                        allIngredients={allIngredients}
+                        allRecipes={allRecipes}
+                        costeReal={realCost}
+                        precioVenta={precioVenta}
+                    />
                 </div>
             )}
         </div>

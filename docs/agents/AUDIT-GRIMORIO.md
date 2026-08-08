@@ -1,7 +1,7 @@
 # Auditoría de Grimorio
 
 **Fecha:** 2026-08-08 · **Autor:** Claude Code + hallazgos del fundador
-**Actualizado:** tras cerrar el grupo de GRAVES del flujo de Recetas.
+**Actualizado:** **Recetas cerrado** — graves, medios y bajos. Siguiente: Inventario y Mercado.
 **Alcance:** **solo Grimorio.** Pizarrón, Cerebrity y el resto quedan fuera.
 **Método:** lectura de código + medición en la app **en producción, con sesión
 real**, a 390×844. Cada hallazgo lleva archivo:línea y, cuando existe, la cifra
@@ -73,7 +73,7 @@ de rentabilidad. Ahora el título refleja lo que hay dentro.
 > React lo remonta en cada render. Eso último sí conviene arreglar, pero es otra
 > cosa y no es grave.
 
-## ⬜ R6 · El Batcher (pestaña "Producción") no funciona
+## ✅ R6 · El Batcher (pestaña "Producción") no funciona
 
 Reportado por el fundador: **antes funcionaba**. Debe generar lotes a partir de
 una receta, con dilución del 20% cuando el cóctel se sirve directo.
@@ -85,43 +85,62 @@ Pedido explícito, y es lo más valioso de este punto:
   Es lo que convierte esto en algo que el equipo usa en barra.
 - Renombrar la pestaña "Producción" → **"Batcher"**.
 
-**Sin diagnosticar todavía.** Primer paso: averiguar si dejó de funcionar o
-nunca se conectó — este proyecto tiene ya siete casos de código escrito y jamás
-enchufado.
+**Diagnosticado y resuelto.** `GrimoriumView` declaraba el estado `batchResult`,
+pasaba el *setter* a `BatcherTab` y **nunca leía el valor**: el cálculo se hacía
+y se guardaba en un estado que no pintaba nadie. En la vista suelta del
+Escandallator sí funciona porque allí se renderiza inline — de ahí el "antes
+funcionaba". El resultado se extrae a `BatcherResultado`, compartido por ambas
+pantallas. La pestaña pasa a llamarse **Batcher**.
+
+Queda pendiente de este punto: seleccionar varias recetas a la vez para un mismo
+lote. Exportar ya está resuelto por la vía de `printRecipeCards`.
 
 ---
 
 # GRUPO 2 · MEDIOS — funcionan, pero mal o a medias
 
-## ⬜ R7 · Las capas no muestran nada hasta tocar la pestaña de borde
+## ✅ R7 · Las capas no muestran nada hasta tocar la pestaña de borde
 
 Al activar **Costes** o **Zero Waste** no ocurre nada visible: hay que
 seleccionar una receta o tocar la pestaña oculta del borde derecho para que
 aparezca el panel. Quien no sepa que esa pestaña existe, concluye que el botón
 está roto.
 
-**Arreglo natural:** que activar una capa **abra su panel** en móvil.
+**Resuelto:** activar una capa abre su panel, y cerrar el panel apaga la capa.
+Eso último hace además que el aspa de la hoja signifique lo mismo que el de la
+herramienta, con lo que sobra uno (ver R10).
 
-## ⬜ R8 · "Rentabilidad" no aporta nada sobre la ficha
+## ✅ R8 · "Rentabilidad" no aporta nada sobre la ficha
 
-Muestra coste, beneficio y margen — lo mismo que ya se ve en la receta. Hay que
-enriquecerla para que justifique su sitio: comparación con el coste real de
-compras, desviación, histórico de precio, sensibilidad del margen al PVP.
+Mostraba coste, beneficio y margen — los mismos cuatro números de la ficha.
 
-**Requiere decidir con el fundador qué debe responder** esa pantalla.
+**Resuelto** con lo que solo puede saberse cruzando datos, en
+`RentabilidadDetalle.tsx`:
 
-## ⬜ R9 · "Carta" no filtra las recetas
+1. **Desviación** entre coste teórico y real. Los dos números ya estaban, pero
+   uno al lado del otro: nadie los restaba.
+2. **Dónde está el coste** — los ingredientes que más pesan, en euros y en
+   porcentaje. Es la parte accionable.
+3. **Precio para un margen objetivo** — el cálculo inverso.
 
-Hoy abre una ventanita con las recetas publicadas y al cerrarla no cambia nada.
-Lo pedido: que funcione como **un espacio de trabajo** — al activarlo, Recetas
-muestra solo lo que está en carta.
+Todo sale de `costCalculator`, que sigue siendo la fuente única de coste: aquí
+no se calcula ningún coste por cuenta propia.
 
-**Plan pendiente de aprobación** (ver abajo).
+> **A revisar con el fundador:** son las tres preguntas que me parecieron más
+> útiles, no una decisión suya. Si esperaba otra cosa, se cambia.
 
-## ⬜ R10 · Dos "×" simultáneos en la hoja de detalle
+## ✅ R9 · "Carta" no filtra las recetas
 
-El aspa de la hoja y el de la herramienta incrustada, uno junto al otro. No está
-claro cuál cierra qué.
+**Resuelto, y más allá del filtro.** Las cartas pasan a ser una entidad con
+nombre, concepto, fecha y estado, con exportación del recetario completo y
+soporte para varias cartas. Ver `PLAN-CARTAS.md` (E1–E5, todas entregadas).
+
+## ✅ R10 · Dos "×" simultáneos en la hoja de detalle
+
+El aspa de la hoja y el de la herramienta incrustada, uno junto al otro.
+
+**Resuelto:** en móvil solo queda el de la hoja, que apaga la capa. El de la
+herramienta se conserva en escritorio, donde la capa no ocupa una hoja.
 
 ---
 
@@ -146,26 +165,29 @@ arriba y por abajo. Se ata a `max-h-full`.
 
 # GRUPO 3 · BAJOS
 
-## ⬜ R11 · Controles sin etiqueta accesible
+## ✅ R11 · Controles sin etiqueta accesible
 
-El botón de cerrar del modal y dos botones de la hoja de detalle no tienen texto
-ni `aria-label`.
+Resuelto en el botón de cerrar del modal y en el aspa de la capa.
 
-## ⬜ R12 · `LayerToggle` se define dentro de `GrimoriumToolbar`
+## ✅ R12 · `LayerToggle` se define dentro de `GrimoriumToolbar`
 
-`GrimoriumToolbar.tsx:71`. React lo trata como un tipo de componente nuevo en
-cada render y lo **remonta entero** cada vez. Coste innecesario y fuente de
-rarezas al medir el DOM.
+Resuelto: se saca fuera del componente y recibe `activeLayer` y `toggleLayer`
+por props. Definido dentro, React lo trataba como un tipo nuevo en cada render y
+lo remontaba entero — coste innecesario, y la causa de que yo leyera un
+`aria-pressed` obsoleto y diera por roto algo que funcionaba.
 
 ## ⬜ R13 · Zero Waste Lab no genera nada
 
 Depende del `ai-gateway`, que no está desplegado. **No es un fallo de Grimorio**;
 se cierra cuando se despliegue el gateway.
 
-## ⬜ R14 · Código muerto del módulo
+## ✅ R14 · Código muerto del módulo
 
-- `src/features/ingredients/useIngredients.ts` — duplicado, sin importar.
-- `RecipeToolbar.tsx` e `IngredientToolbar.tsx` — importados y nunca renderizados.
+**Retirados**, tras comprobar uno a uno que nadie los usa:
+
+- `src/features/ingredients/useIngredients.ts` — duplicado, sin ningún importador.
+- `RecipeToolbar.tsx` e `IngredientToolbar.tsx` — solo importados, nunca renderizados.
+- `RecipeBatcherModal.tsx` — sin ningún importador.
 
 ---
 

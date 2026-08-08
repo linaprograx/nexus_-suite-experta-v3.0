@@ -68,38 +68,11 @@ export const GrimoriumToolbar: React.FC<{ collapsed?: boolean }> = ({ collapsed 
         </button>
     );
 
-    // Helper for Layer Toggles (The "Tools") - MIGRATOR STYLE
-    const LayerToggle = ({ layer, label, icon, colorClass }: { layer: GrimoriumLayer, label: string, icon: string, colorClass: string }) => {
-        const isActive = activeLayer === layer;
+    // `LayerToggle` vive FUERA del componente (más abajo). Definido aquí dentro,
+    // React lo trataba como un tipo nuevo en cada render y lo remontaba entero:
+    // coste innecesario, pérdida de estado y nodos del DOM que se sustituyen bajo
+    // los pies de quien esté midiendo.
 
-        // Extract hex from colorClass approx or hardcode for now for simplicity, 
-        // or just use text class if active? 
-        // Let's stick to simple text classes for tools for now, or match the Pill style if desired.
-        // User asked to style "Grimorio Desktop" like "Grimorio Mobile". 
-        // Mobile screenshot 4 doesn't show these tools clearly, but let's make them consistent pills too.
-
-        const tint = isActive ? colorClass.replace('bg-', 'text-') : 'text-white';
-
-        return (
-            <button
-                onClick={() => toggleLayer(layer)}
-                className={`
-                  shrink-0 h-10 px-3 lg:px-4 rounded-full text-xs font-bold uppercase tracking-wider
-                  flex items-center gap-2 transition-all duration-300 border
-                  ${isActive
-                        ? 'bg-white shadow-md border-transparent' // Active: White bg
-                        : 'bg-white/10 text-white border-white/10 hover:bg-white/20' // Inactive: Glass
-                    }
-                `}
-                title={`Toggle ${label} Layer`}
-                aria-pressed={isActive}
-                aria-label={label}
-            >
-                <Icon svg={icon} className={`w-4 h-4 ${tint}`} />
-                <span className={`hidden lg:inline ${tint}`}>{label}</span>
-            </button>
-        );
-    };
 
     return (
         <div className="flex flex-col w-full">
@@ -156,6 +129,7 @@ export const GrimoriumToolbar: React.FC<{ collapsed?: boolean }> = ({ collapsed 
 
                     {/* Cost Layer (Escandallo) */}
                     <LayerToggle
+                        activeLayer={activeLayer} toggleLayer={toggleLayer}
                         layer="cost"
                         label="Costes"
                         icon={ICONS.chart}
@@ -164,6 +138,7 @@ export const GrimoriumToolbar: React.FC<{ collapsed?: boolean }> = ({ collapsed 
 
                     {/* Optimization Layer (Zero Waste) */}
                     <LayerToggle
+                        activeLayer={activeLayer} toggleLayer={toggleLayer}
                         layer="optimization"
                         label="Zero Waste"
                         icon={ICONS.refresh}
@@ -189,3 +164,38 @@ export const GrimoriumToolbar: React.FC<{ collapsed?: boolean }> = ({ collapsed 
         </div>
     );
 };
+
+const LayerToggle: React.FC<{
+    layer: GrimoriumLayer; label: string; icon: string; colorClass: string;
+    activeLayer: GrimoriumLayer; toggleLayer: (l: GrimoriumLayer) => void;
+}> = ({ layer, label, icon, colorClass, activeLayer, toggleLayer }) => {
+        const isActive = activeLayer === layer;
+
+        // Extract hex from colorClass approx or hardcode for now for simplicity, 
+        // or just use text class if active? 
+        // Let's stick to simple text classes for tools for now, or match the Pill style if desired.
+        // User asked to style "Grimorio Desktop" like "Grimorio Mobile". 
+        // Mobile screenshot 4 doesn't show these tools clearly, but let's make them consistent pills too.
+
+        const tint = isActive ? colorClass.replace('bg-', 'text-') : 'text-white';
+
+        return (
+            <button
+                onClick={() => toggleLayer(layer)}
+                className={`
+                  shrink-0 h-10 px-3 lg:px-4 rounded-full text-xs font-bold uppercase tracking-wider
+                  flex items-center gap-2 transition-all duration-300 border
+                  ${isActive
+                        ? 'bg-white shadow-md border-transparent' // Active: White bg
+                        : 'bg-white/10 text-white border-white/10 hover:bg-white/20' // Inactive: Glass
+                    }
+                `}
+                title={`Toggle ${label} Layer`}
+                aria-pressed={isActive}
+                aria-label={label}
+            >
+                <Icon svg={icon} className={`w-4 h-4 ${tint}`} />
+                <span className={`hidden lg:inline ${tint}`}>{label}</span>
+            </button>
+        );
+    };
