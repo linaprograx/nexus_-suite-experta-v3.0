@@ -1,10 +1,37 @@
 # Plan — Grimorio: Recetas, Inventario y Mercado
 
-**Actualizado:** 2026-08-05 · **Estado:** diagnóstico cerrado; decisiones de producto pendientes.
+**Actualizado:** 2026-08-06 · **Estado:** **bugs de datos RESUELTOS**;
+decisiones de producto del catálogo global, pendientes.
 
 Grimorio es un solo flujo operativo: **Mercado/pedido inicial → Inventario y
 reglas → creación o recepción de Recetas → coste y operación**. Pizarrón y
 Oráculo quedan expresamente fuera de este plan.
+
+## ✅ Los tres bugs de datos, resueltos (2026-08-06)
+
+**Causa única, y no era de la vista móvil:** `VITE_FIREBASE_APP_ID` se pegó en
+Vercel con dos saltos de línea al final. Como `appId` forma parte de las rutas
+de Firestore (`artifacts/${appId}/users/...`), todas ellas apuntaban a una
+colección inexistente. Firestore no da error —una colección que no existe es
+simplemente una colección vacía—, así que se veía como "no hay datos".
+
+Corregido recortando toda la configuración en `src/config/firebaseConfig.ts`.
+**Verificado en producción:** Mercado muestra 1367 productos y 3 proveedores, el
+selector de ingredientes lista con normalidad y los conflictos de stock son 0.
+
+> Pendiente: que el usuario limpie el valor en el panel de Vercel. El código lo
+> recorta, pero el valor sigue sucio allí.
+
+El diagnóstico de Codex que sigue **acertó al descartar** que fuera un problema
+de CSS o de bifurcación móvil, y su paso 3 —"si `allIngredients` es 0,
+investigar la consulta o permisos"— es exactamente el que cerró el caso. Se
+conserva por eso.
+
+La pista que estaba a la vista: **recetas y compras funcionaban**, y son las
+colecciones que **no** usan `appId` en su ruta.
+
+<details>
+<summary>Diagnóstico previo (resuelto, se conserva por su método)</summary>
 
 ## Diagnóstico móvil (lectura de código)
 
@@ -34,7 +61,9 @@ permite separar las causas, sin inferir que sean de CSS.
 No aplicar cambios hasta obtener esa evidencia de sesión. En particular, no
 mezclar «catálogo» con «stock real»: hoy son modelos distintos.
 
-## Decisiones bloqueantes del catálogo global
+</details>
+
+## Decisiones bloqueantes del catálogo global ⬜ PENDIENTE
 
 Antes de implementar Mercado-catálogos hay que acordar:
 

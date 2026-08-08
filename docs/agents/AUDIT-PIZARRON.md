@@ -10,6 +10,32 @@ Lo marcado ✅ ya está corregido; lo demás está abierto.
 
 ## 🔴 GRAVES
 
+### G0 ✅ El pellizco de dos dedos creaba nodos de texto
+
+`ui/useCanvasGestures.ts` + `engine/interaction.ts` — regresión de P4.
+
+El hook de gestos escucha eventos **touch**; el lienzo escucha eventos
+**pointer**. Son flujos independientes del navegador: `preventDefault()` y
+`stopPropagation()` sobre uno **no alcanzan al otro**. Los dos dedos llegaban al
+motor como dos `pointerdown` seguidos y el detector de doble toque —que solo
+mira el tiempo entre pulsaciones— los tomaba por un doble toque.
+
+Era el origen de los "Type something..." que aparecían solos al hacer zoom.
+
+Resuelto con una bandera compartida en `engine/gestureState.ts`, más el descarte
+de los punteros no primarios por si la bandera llegase tarde.
+
+### G0b ✅ La fuente no escalaba al redimensionar un texto
+
+`engine/interaction.ts` — la ruta de **selección única** leía el tamaño inicial
+de `initialResizeState`, que es `{...bounds}`: un rectángulo geométrico **sin
+`fontSize`**. La condición nunca se cumplía, así que la caja crecía y la letra
+se quedaba igual.
+
+La lógica ya existía y **funcionaba en multiselección**, que lee de
+`initialNodesState`. Ahora ambas rutas leen del mismo sitio.
+
+
 ### G1 ✅ Rounding, opacidad y sombra no se guardaban
 
 `ui/overlays/Inspector.tsx` (inspector de formas)

@@ -40,6 +40,10 @@ creativa), **Pizarrón** (canvas colaborativo), **Avatar**, **Colegium**,
 | **Modelo de layout móvil** | `src/components/layout/StackedMobileShell.tsx` |
 | Gesto de bordes | `src/hooks/useEdgeSwipe.ts` |
 | Layout de 3 columnas | `src/components/layout/PremiumLayout.tsx` |
+| **Franja fija de móvil** | `src/components/layout/FranjaFija.tsx` |
+| Fondo de la franja | `src/components/layout/FranjaFondo.tsx` |
+| Pliegue del título al scrollear | `src/hooks/useCabeceraPlegable.ts` |
+| Gesto multitáctil de Pizarrón | `src/features/pizarron2/engine/gestureState.ts` |
 
 ### Grimorio: catálogo y stock no son sinónimos
 
@@ -219,6 +223,102 @@ El patrón que funciona:
 > Antes de declarar algo "único" de un componente, búscalo en **todo `src/`**.
 > Se dio `MiniToolbar` por irreemplazable comparándolo solo con el Inspector, y
 > resultó que sus tres funciones ya vivían en otros tres sitios.
+
+### Las variables de entorno se recortan al leerlas
+
+`src/config/firebaseConfig.ts` pasa todos los valores por `.trim()`. **No es
+cosmética.**
+
+`appId` no solo identifica la app: **forma parte de rutas de Firestore**
+(`artifacts/${appId}/users/...`). En producción la variable se pegó en Vercel
+con dos saltos de línea al final, y eso metió un `\n\n` dentro de la ruta. El
+resultado apunta a una colección que no existe — y Firestore **no da error**,
+porque una colección inexistente es simplemente una colección vacía.
+
+El fallo se manifestó como "no hay datos" en Mercado, en el catálogo y en el
+selector de ingredientes, mientras las colecciones que **no** usan `appId`
+(recetas en `users/{uid}/grimorio`, compras en `users/{uid}/purchases`) seguían
+funcionando con normalidad. Esa asimetría es la firma del problema: si unas
+cosas cargan y otras no, **mira si las que fallan comparten `appId` en la
+ruta**.
+
+Costó tres diagnósticos equivocados: se atribuyó primero a latencia de red,
+después al `orderBy` de la consulta. Ninguno era.
+
+### Una franja fija es UNA capa, no dos alineadas
+
+La cabecera fija de Grimorio en móvil contiene **título, pestañas, iconos,
+buscador y filtros dentro del mismo elemento**. La barra de filtros se inyecta
+con un portal (`FranjaFija.tsx`) desde el panel que la define.
+
+Se intentó primero lo obvio —cabecera fija por un lado, barra de filtros
+pegajosa por otro— y **no puede funcionar**: obliga a que dos alturas
+calculadas por separado coincidan al píxel en todo momento, y esas alturas
+cambian solas (el título se pliega, se cambia de pestaña). Cualquier desajuste
+abre una rendija por la que se ve pasar el listado, o descuelga la barra.
+Produjo una ristra de defectos en la que cada corrección ajustaba una medida y
+desajustaba la otra.
+
+Con un solo elemento no hay dos bordes que alinear, el fondo es uno solo, y el
+hueco que reserva el contenido (`--franja-alto`) sale de **una única medición**.
+Los defectos desaparecen por construcción.
+
+Se usa un portal y no se mueve el JSX porque cada barra vive dentro de su panel
+con su propio estado (desplegable de categoría, conteo físico, botón de
+importar). Levantar ese estado sería el refactor de tres paneles que ya rompió
+Grimorio una vez.
+
+> El umbral del portal es **1023px**, el mismo de las clases `lg:`. No uses
+> `useIsMobile`, que corta en 768: dos criterios para la misma decisión acaban
+> discrepando en tabletas.
+
+### Un cambio de móvil se limita ENTERO, no por propiedades
+
+Al fijar la barra de filtros se limitó a móvil la *posición*
+(`sticky lg:static`) y se olvidó el *fondo*, que siguió pintándose en todas las
+anchuras: un bloque blanco sólido sobre el degradado, en las tres pestañas de
+escritorio.
+
+Limitar una propiedad no limita el componente. Si algo solo debe existir en
+móvil, **que no se monte** fuera de móvil —condición de JavaScript o `lg:hidden`
+en todas sus capas—, y compruébalo a 1280px antes de entregar.
+
+### El scroll en móvil lo lleva la página, no los contenedores
+
+Una vista que crea su propio contenedor de scroll (`overflow-y-auto` sin
+limitar) se convierte en el ancla de cualquier `sticky` que haya dentro. Si ese
+contenedor nunca llega a scrollear —porque su contenido cabe entero— el
+`sticky` **no se activa jamás** y el elemento se va con la página.
+
+Ocurrió dos veces: en `RecipeList` y en el envoltorio de `mainContent` de
+`GrimoriumView`, que envuelve las tres pestañas y por eso rompía también
+Inventario, cuyo panel sí estaba bien limitado.
+
+> Las vistas deben limitar su propio `h-full` y su `overflow` detrás de `lg:`.
+
+### `??` no es `||` cuando el valor por defecto es `false`
+
+`rightOpen ?? manualRightOpen` en `StackedMobileShell` dejaba inerte la pestaña
+de borde derecha: `??` solo cede ante `null`/`undefined`, y Grimorio pasa
+`detailOpen: !!seleccion`, que sin selección vale `false` —no es nulo— y ganaba
+siempre. Se pulsaba y no ocurría nada.
+
+Cuando un valor controlado convive con uno manual y el "apagado" es `false`, lo
+que quieres es `||`.
+
+### El pellizco táctil no llega por el flujo de pointer
+
+`useCanvasGestures` escucha eventos **touch**; el lienzo de Pizarrón escucha
+eventos **pointer**. Son flujos independientes del navegador: `preventDefault()`
+o `stopPropagation()` sobre uno **no alcanza al otro**.
+
+Sin coordinarlos, dos dedos llegaban al motor como dos `pointerdown` seguidos y
+el detector de doble toque —que solo mira el tiempo entre pulsaciones— los
+tomaba por un doble toque y creaba un nodo de texto. Era el origen de los
+"Type something..." que aparecían solos al hacer zoom.
+
+La coordinación vive en `engine/gestureState.ts`: una bandera compartida que el
+motor consulta, más el descarte de los punteros no primarios.
 
 ### `100dvh`, no `100vh`, en pantallas completas
 

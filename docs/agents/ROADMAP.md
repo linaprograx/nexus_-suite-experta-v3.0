@@ -108,10 +108,17 @@ Por orden de gravedad:
 ### 🔄 M3.1 — Grimorio: datos, operación y catálogo ← **AQUÍ ESTAMOS**
 
 Trabajo transversal de **Recetas / Inventario / Mercado**, con documento propio:
-`PLAN-GRIMORIO-MERCADO.md`. El diagnóstico de código de los tres bugs móviles
-está cerrado; falta instrumentar la sesión iPhone a 390px antes de modificar.
-El catálogo de proveedores, pedido, facturas, recetas compartidas y guía interna
-se planifican por entregas en ese documento y requieren decisiones previas.
+`PLAN-GRIMORIO-MERCADO.md`.
+
+- ✅ **Los tres bugs de datos, resueltos** (2026-08-06). Causa única: el `appId`
+  llevaba saltos de línea y corrompía las rutas de Firestore que lo usan. No era
+  un problema de la vista móvil.
+- ✅ **Franja fija de Grimorio en móvil**: título, pestañas, iconos, buscador y
+  filtros en una sola capa inmóvil, con el listado pasando por detrás.
+  Verificado en las tres pestañas a 390px y 1280px.
+- ⬜ **Pendiente de dedo**: el pliegue del título en un iPhone real.
+- ⬜ **Catálogo de proveedores**, pedidos, facturas, recetas compartidas y guía
+  interna: por entregas en ese documento, con **cuatro decisiones previas**.
 
 ### ⬜ M4 — Rendimiento en móvil
 

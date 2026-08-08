@@ -6,9 +6,10 @@
 
 ---
 
-**Última actualización:** 2026-08-06
-**Sesión anterior:** Codex
-**Estado:** Visión de producto consolidada en documento canónico; código sin cambios. Despliegue pendiente de sanear la rama `deploy/mobile-v1`.
+**Última actualización:** 2026-08-06 (noche)
+**Sesión anterior:** Claude Code
+**Estado:** árbol limpio, TypeScript 0 errores, build correcto, todo desplegado
+y **verificado en la app en producción** a 390px y 1280px.
 
 ## Dónde se trabaja
 
@@ -21,7 +22,8 @@
 | **Servidor de desarrollo** | **puerto 3100** (nunca el 3000) |
 
 `node_modules` está instalado en este worktree. `.env` no se versiona: si
-Firebase informa de configuración incompleta, cópialo del checkout principal.
+Firebase informa de configuración incompleta, cópialo del checkout principal
+(`cp /Users/lianalviz/nexus_-suite-experta-v3.0/.env .env`).
 
 ### Desplegar
 
@@ -35,105 +37,100 @@ git push origin deploy/mobile-v1
 git checkout feat/mobile-v1-unified
 ```
 
-No se ha desplegado esta sesión.
+Cada push despliega solo. **El hash del bundle de Vercel NO coincide con el de
+tu build local** (compila por su cuenta), así que para saber si tu cambio ya
+está en vivo busca una cadena tuya dentro del JS servido, no el nombre del
+archivo:
 
-## Qué se cerró en esta sesión
+```bash
+until curl -s "https://nexus-suite-experta-v3-0.vercel.app/$(curl -s https://nexus-suite-experta-v3-0.vercel.app/ | grep -o 'assets/index-[^"]*\.js' | head -1)" | grep -q 'UNA_CADENA_DE_TU_CAMBIO'; do sleep 10; done
+```
 
-### Visión de producto — consolidación documental
+Tarda entre 1 y 7 minutos. Y el navegador cachea: para ver el cambio hay que
+navegar con un parámetro distinto (`?v=8`), no basta con recargar.
 
-- Se integró la visión estratégica del fundador y la auditoría técnica en
-  `docs/NEXUS_MASTER_VISION_v1.1.md`, sin cambiar código ni iniciar estudio de
-  mercado.
-- El documento separa decisiones confirmadas, capacidades actuales, en
-  desarrollo y futuras. Corrige tres afirmaciones que el código no sostiene
-  como presentes: Mercado global (los datos actuales son por usuario), pedido
-  externo a proveedor y jerarquía organizativa operativa.
-- Stripe e IA quedan clasificados como capacidades parciales: existe base de
-  código, pero faltan despliegue/credenciales seguros y validación real.
+---
 
-### Grimorio — diagnóstico read-only y roadmap transversal
+## ⚠️ ACCIÓN PENDIENTE DEL USUARIO — importante
 
-- Se trazaron los tres bugs móviles de datos sin cambiar código. Inventario no
-  renderiza el catálogo de ~1300 ingredientes: construye stock desde compras
-  y movimientos. Las alertas corresponden a compras huérfanas/sin vínculo.
-- El selector de vínculo recibe `allIngredients`, el mismo catálogo que Mercado;
-  si resulta vacío hay que comprobar la consulta/hook en la sesión afectada.
-- Mercado móvil y escritorio consumen la misma `IngredientListPanel` y el mismo
-  `allIngredients`; el shell móvil solo reubica columnas. No hay evidencia para
-  corregir CSS o crear una fuente móvil distinta.
-- Se reescribió `PLAN-GRIMORIO-MERCADO.md` como roadmap coordinado de Recetas,
-  Inventario y Mercado: catálogo, pedido, facturas, recetas compartidas y guía
-  interna. Pizarrón y Oráculo permanecen fuera.
+**La variable `VITE_FIREBASE_APP_ID` en Vercel contiene dos saltos de línea al
+final.** Se pegó así. El código ya la recorta
+(`src/config/firebaseConfig.ts`), de modo que la app funciona, **pero el valor
+sigue sucio en el panel de Vercel**. Conviene limpiarlo: cualquier sitio que
+lea la variable sin pasar por ese recorte volvería a romperse.
 
-### Grimorio — primera mejora móvil visible
+Por qué importaba tanto: `appId` no solo identifica la app, **forma parte de
+rutas de Firestore** (`artifacts/${appId}/users/...`). Con el salto de línea
+dentro, esas rutas apuntaban a una colección inexistente. Firestore **no da
+error** —una colección que no existe es simplemente una colección vacía—, así
+que el fallo se veía como "no hay datos". Fue la causa raíz de Mercado vacío,
+del catálogo vacío, del selector de ingredientes sin resultados y de los ~1300
+"conflictos de stock". Costó **tres diagnósticos equivocados** antes de dar con
+ella.
 
-- `StockInventoryPanel` ahora deja el scroll al documento en móvil (las alturas
-  y el `overflow` interno quedan tras `lg:`), de acuerdo con el patrón de
-  `StackedMobileShell`. En escritorio no cambia.
-- En móvil se compactaron márgenes, indicadores y tarjetas métricas de
-  Inventario para que se vea más lista operativa y menos tablero de tarjetas.
-- `npm run typecheck` y `npm run build` correctos. El build mantiene avisos
-  preexistentes de `eval`, CSS y tamaño de chunks.
-- **No se desplegó.** El avance `deploy/mobile-v1 ← feat/mobile-v1-unified`
-  abortó antes de merge/push porque el checkout de producción tenía archivos de
-  Pizarrón superpuestos. Se preservaron en
-  `stash@{0}: recovery: partial deploy checkout 2026-08-05`; el worktree ya
-  volvió limpio a `feat/mobile-v1-unified`. No borrar ese stash sin revisarlo.
+---
 
-### Pendiente imprescindible
+## Qué se hizo en esta sesión
 
-En un iPhone/sesión autenticada a 390px, capturar el estado de
-`useIngredients` (longitud/loading/error), compras y stock calculado. No hacer
-la corrección hasta distinguir en tiempo real: catálogo vacío, error Firestore,
-filtro/render, o compras huérfanas.
+Detalle y motivos en `WORKLOG.md`. Resumen:
 
-### Tema, escritorio
+- **Causa raíz del `appId`** (arriba). Mercado pasó de vacío a **1367
+  productos**; el selector de ingredientes de recetas volvió a listar.
+- **Pizarrón**: el pellizco de dos dedos creaba nodos de texto; la fuente no
+  escalaba al redimensionar un texto suelto.
+- **Grimorio móvil**: la cabecera es ahora **una sola capa fija** que contiene
+  título, pestañas, iconos, buscador y filtros. Ver la decisión
+  *"Una franja fija es UNA capa"* en `CONTEXT.md` — **léela antes de tocarla**.
+- Pestaña de borde derecha que no abría nada; recuento de Mercado cortado a
+  "1…".
 
-- El botón de claro/oscuro de la barra lateral resuelve ahora el **tema
-  efectivo**, también cuando la preferencia guardada es `system`. Usa el mismo
-  dato que móvil para que texto e icono estén siempre sincronizados.
-- El sol de “Modo claro” es exactamente el mismo icono correcto que se ve en
-  móvil.
+## ⏸️ Lo que queda — EMPIEZA POR AQUÍ
 
-### Pizarrón, escritorio y móvil
+1. **Verificación en iPhone real.** Nada de la franja fija está confirmado con
+   el dedo. `env(safe-area-inset-*)` vale 0 fuera de un móvil y las barras de
+   Safari se recogen al scrollear, así que el ajuste fino solo se ve allí.
+   Concretamente sin confirmar: el pliegue del título (umbral de 64px y
+   tolerancia de 6px al temblor del dedo, en `useCabeceraPlegable.ts`).
 
-- El Inspector de escritorio no se monta con la selección vacía. La tarjeta
-  que decía `Multiple Selection` era un estado fantasma: sin selección no hay
-  inspector; con una o varias selecciones se muestran las propiedades reales.
-- Se verificó y confirmó la corrección pendiente de gesto multitáctil: durante
-  pellizco o arrastre con dos dedos, el motor de edición ignora los eventos
-  pointer. Evita que un pellizco active por accidente el doble toque y cree
-  un nodo `Type something...`.
+2. **`docs/agents/PLAN-GRIMORIO-MERCADO.md`** — la Parte 1 (bugs de datos) está
+   **resuelta**; queda la **Parte 2**: convertir Mercado en catálogo de
+   proveedores de Madrid. Tiene **cuatro decisiones que tomar con el usuario**
+   antes de escribir código.
 
-### Verificación
+3. **Restos de Pizarrón** — B3, B6 y B7 en `AUDIT-PIZARRON.md`.
 
-- `npm run typecheck` correcto.
-- `npm run build` correcto.
-- Permanecen avisos anteriores: `eval` en `ingredientParser.ts`, dos reglas
-  CSS con interpolaciones literales y avisos de tamaño/dynamic import. No se
-  introdujeron ni se modificaron en esta sesión.
+4. **Infraestructura** (detalle en `CONTEXT.md`): desplegar el `ai-gateway`,
+   rotar claves de Gemini y Stripe, activar Stripe.
 
-## Lo siguiente
+## Código muerto localizado y NO retirado
 
-1. Si se retoma producto estratégico, usar `docs/NEXUS_MASTER_VISION_v1.1.md`
-   como fuente canónica y no iniciar el estudio de mercado hasta recibir ese
-   encargo expreso.
-2. Revisar `stash@{0}` y sanear el checkout de `deploy/mobile-v1`; solo entonces
-   desplegar esta mejora y validar **Inventario** a 390px: scroll de página,
-   métricas compactas, filas legibles y acceso a detalle.
-3. **Validación real Grimorio a 390px** con sesión afectada y los cuatro datos
-   de instrumentación descritos en `PLAN-GRIMORIO-MERCADO.md`.
-4. Acordar las cuatro decisiones del catálogo global antes de programarlo;
-   después validar un proveedor de prueba.
-5. Validación real en iPhone del pellizco de Pizarrón y luego sus menores B6/B7,
-   solo cuando se prioricen.
+No se tocó por no mezclarlo con lo urgente. Verifica antes de borrar:
 
-## Recordatorios críticos
+- `src/features/ingredients/useIngredients.ts` — duplicado de
+  `src/hooks/useIngredients.ts`. **No lo importa nadie.**
+- `RecipeToolbar.tsx` e `IngredientToolbar.tsx` — importados en
+  `GrimoriumView.tsx` y **nunca renderizados**.
 
-- `engine/renderer.ts`, `engine/interaction.ts` y `state/store.ts` son núcleo
-  sensible. Punto de retorno: etiqueta `pre-merge-frosty`.
-- Antes de asumir que una función está rota, comprobar que esté conectada. Este
-  módulo ya acumuló varios componentes o ramas escritos pero nunca montados.
-- Una propiedad debe tener una sola fuente de verdad: herramientas en
-  `pizarronTools.tsx`, propiedades de nodo en `Inspector`, y tema en
-  `UIContext`.
+Son el quinto, sexto y séptimo caso del patrón de este proyecto:
+
+> **Si algo parece una función y no responde, comprueba primero si está
+> conectado**, antes de darlo por roto y "arreglarlo".
+
+## ⚠️ Cómo NO repetir los errores de esta sesión
+
+Tres veces se rompió Grimorio entregando cambios que compilaban. Las causas,
+por orden de gravedad:
+
+1. **Un cambio "de móvil" que no estaba limitado a móvil.** Se limitó la
+   *posición* con `sticky lg:static` y se olvidó el *fondo*, que pintó un
+   bloque blanco sólido en escritorio. **Limita el componente entero, no una
+   propiedad.**
+2. **Reestructurar `StackedMobileShell`**, del que cuelgan las tres columnas de
+   Grimorio entero: rompe las tres pestañas a la vez. Añade props opcionales
+   apagadas por defecto; no reorganices su árbol.
+3. **Entregar sin mirar.** TypeScript y el build no ven un rectángulo blanco.
+   **Verifica en el navegador, midiendo el DOM**, antes de dar algo por hecho —
+   no después.
+
+Punto de retorno si el motor de Pizarrón se rompe: etiqueta
+**`pre-merge-frosty`**.

@@ -7,6 +7,100 @@ El "por qué" es lo que más vale dentro de tres semanas.
 
 ---
 
+## 2026-08-06 · Claude Code · La causa raíz del catálogo vacío y la franja fija
+
+**Lo importante de esta entrada: el `appId` con saltos de línea.** Si vuelve a
+aparecer algo "vacío sin error" en Grimorio, empieza por ahí.
+
+**Qué**
+
+- **Causa raíz de todos los fallos de datos de Grimorio.** El bundle de
+  producción llevaba grabado
+  `appId: "1:368869694849:web:5d6b8efb3305d374dddc80\n\n"`: la variable se pegó
+  en Vercel con dos retornos de carro. Como `appId` forma parte de rutas de
+  Firestore, todas las de `artifacts/...` apuntaban a una colección
+  inexistente. Mercado pasó de vacío a **1367 productos**; el selector de
+  ingredientes de recetas, de "sin resultados" a listar con normalidad.
+- **Pizarrón**: el pellizco de dos dedos creaba nodos de texto; la fuente no
+  escalaba al redimensionar un texto suelto (sí funcionaba en multiselección).
+- **Grimorio móvil**: cabecera fija de una sola capa con buscador y filtros
+  dentro, título que se pliega al bajar, pestaña de borde derecha operativa,
+  recuento de Mercado que ya no se corta.
+
+**El diagnóstico, y los dos que fallaron antes**
+
+Los ~1300 "conflictos manuales de stock" se atribuyeron primero a **latencia de
+red**: el catálogo llega vacío mientras carga y el resolver marca todo como
+huérfano. Se puso una guarda para no calcular sin catálogo. **La guarda estaba
+bien pero el diagnóstico no**: tapaba el síntoma de un catálogo que estaba
+vacío de verdad.
+
+El segundo intento fue el `orderBy('nombre')`, que en Firestore **excluye en
+silencio los documentos que no tengan ese campo**. Plausible, y el cambio se
+conserva porque protege de un fallo real, pero tampoco era la causa.
+
+Lo que cerró el caso fue **mirar la app corriendo**. El aviso en consola
+distinguía dos cosas que hasta entonces se veían igual —lectura denegada frente
+a colección vacía— y dijo *"el catálogo existe pero está vacío"*, con la ruta
+impresa. En esa ruta se veía el salto de línea.
+
+> La pista que estaba a la vista desde el principio: **recetas y compras
+> funcionaban**, y son las dos colecciones que **no** usan `appId` en su ruta.
+> Cuando unas cosas cargan y otras no, mira qué comparten las que fallan.
+
+Una comparación anterior del `appId` local contra el de producción los dio por
+idénticos: la expresión regular que usé para extraerlo **se comía el espacio
+final**. Comparar valores "limpiándolos" primero puede ocultar justo el
+problema que buscas.
+
+**La franja fija: por qué costó tantas iteraciones**
+
+Se intentó primero lo obvio —cabecera fija por un lado, barra de filtros
+pegajosa por otro, alineadas por una variable con la altura— y produjo una
+ristra de defectos: bloque blanco en escritorio, borde cuadrado con costuras,
+hueco enorme entre los iconos y el buscador, rendija por la que se veía pasar el
+listado, barra descolgada del contenido. Cada corrección ajustaba una medida y
+desajustaba la otra.
+
+**El error no era ninguno de esos defectos, era el planteamiento**: dos bloques
+posicionados por separado obligados a coincidir al píxel, con alturas que
+cambian solas. La solución fue dejar de tener dos bloques — la barra se inyecta
+dentro de la cabecera con un portal. Detalle y motivos en `CONTEXT.md`.
+
+**Tres veces se rompió Grimorio en producción**
+
+Y conviene que quede escrito, porque las tres son evitables:
+
+1. Reestructurar `StackedMobileShell`, del que cuelgan las tres columnas de
+   Grimorio entero: rompió las tres pestañas a la vez.
+2. Limitar a móvil la *posición* de la barra y olvidar el *fondo*, que pintó un
+   bloque blanco sólido en escritorio.
+3. Entregar sin haberlo mirado. TypeScript y el build no ven un rectángulo
+   blanco.
+
+Lo que cambió el ritmo fue **poder medir el DOM en la app corriendo**: alturas,
+posiciones a distintos scrolls, contenedores de scroll intermedios, capas
+visibles por anchura. Los tres últimos arreglos salieron a la primera.
+
+**Hallazgos secundarios**
+
+- La pestaña de borde derecha estaba inerte por `??` en vez de `||`.
+- El recuento de Mercado llevaba `truncate` y se cortaba a "1…" — con el
+  catálogo vacío nunca había pasado de una cifra.
+- Dos contenedores creaban scroll propio en móvil e impedían cualquier `sticky`
+  dentro.
+- Código muerto localizado y **no retirado**: `features/ingredients/useIngredients.ts`
+  (duplicado sin importar), `RecipeToolbar` e `IngredientToolbar` (importados y
+  nunca renderizados).
+
+**Pendiente**
+
+Limpiar `VITE_FIREBASE_APP_ID` en Vercel (el código la recorta, pero el valor
+sigue sucio). Verificación en iPhone real de la franja fija y del pliegue del
+título. Parte 2 de `PLAN-GRIMORIO-MERCADO.md`.
+
+---
+
 ## 2026-08-06 · Codex · Consolidación de la visión del fundador
 
 **Qué**

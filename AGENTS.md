@@ -58,6 +58,7 @@ hazlo igualmente en cuanto puedas:
 | `docs/agents/WORKLOG.md` | Diario acumulativo, lo más reciente arriba | Cada sesión |
 | `docs/agents/AUDIT-PIZARRON.md` | Auditoría del módulo más frágil, con archivo:línea | Al cerrar hallazgos |
 | `docs/agents/PLAN-GRIMORIO-MERCADO.md` | Trabajo pendiente de Grimorio y Mercado | Al avanzar en él |
+| `docs/NEXUS_MASTER_VISION_v1.1.md` | Visión de producto del fundador | Casi nunca |
 
 ## Dónde se trabaja
 
