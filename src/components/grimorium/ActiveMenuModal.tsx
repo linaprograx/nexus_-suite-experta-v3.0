@@ -3,6 +3,7 @@ import { Recipe } from '../../types';
 import { Icon } from '../ui/Icon';
 import { ICONS } from '../ui/icons';
 import { useActiveMenu } from '../../hooks/useActiveMenu';
+import { useCartas } from '../../hooks/useCartas';
 import { useRecipes } from '../../hooks/useRecipes';
 import { useIngredients } from '../../hooks/useIngredients';
 import { computeMenuDrift, summarizeDrift, MenuDrift } from '../../utils/menuDrift';
@@ -24,6 +25,22 @@ export const ActiveMenuModal: React.FC<{
     onSelectRecipe?: (r: Recipe) => void;
 }> = ({ onClose, onSelectRecipe }) => {
     const { menu, loading, removeFromMenu, refreshEntry } = useActiveMenu();
+    const { cartaActiva, actualizarCarta } = useCartas();
+
+    // Identidad de la carta. Hasta ahora no había dónde guardar esto, y el
+    // usuario acabó escribiendo el nombre del menú en el campo PREPARACIÓN de una
+    // receta. Se edita en local y se guarda al salir del campo, para no escribir
+    // en Firestore en cada tecla.
+    const [nombre, setNombre] = React.useState('');
+    const [concepto, setConcepto] = React.useState('');
+    React.useEffect(() => {
+        setNombre(cartaActiva?.nombre || '');
+        setConcepto(cartaActiva?.concepto || '');
+    }, [cartaActiva?.id, cartaActiva?.nombre, cartaActiva?.concepto]);
+
+    const guardar = (cambios: Partial<{ nombre: string; concepto: string; fecha: string }>) => {
+        if (cartaActiva) actualizarCarta(cartaActiva.id, cambios);
+    };
     const { recipes: allRecipes } = useRecipes();
     const { ingredients: allIngredients } = useIngredients();
 
@@ -54,7 +71,7 @@ export const ActiveMenuModal: React.FC<{
                     <div className="relative z-10 flex items-center gap-3">
                         <span className="p-2 rounded-xl bg-white/20 backdrop-blur-sm text-white"><Icon svg={ICONS.book} className="w-5 h-5" /></span>
                         <div>
-                            <h2 className="text-base font-bold text-white">Carta activa</h2>
+                            <h2 className="text-base font-bold text-white truncate">{nombre || 'Carta activa'}</h2>
                             <p className="text-xs text-white/80">
                                 {sum.total} receta(s){sum.needsAttention > 0 ? ` · ${sum.needsAttention} requieren atención` : ' · todo al día'}
                             </p>
@@ -64,6 +81,33 @@ export const ActiveMenuModal: React.FC<{
                         <Icon svg={ICONS.x} className="w-5 h-5" />
                     </button>
                 </div>
+
+                {/* Identidad de la carta — nombre, concepto y fecha */}
+                {cartaActiva && (
+                    <div className="px-5 pt-4 shrink-0 space-y-2">
+                        <input
+                            value={nombre}
+                            onChange={e => setNombre(e.target.value)}
+                            onBlur={() => guardar({ nombre: nombre.trim() || 'Carta sin título' })}
+                            placeholder="Nombre de la carta (ej. Drink Your Game)"
+                            className="w-full h-10 px-3 rounded-xl text-sm font-bold bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-100"
+                        />
+                        <textarea
+                            value={concepto}
+                            onChange={e => setConcepto(e.target.value)}
+                            onBlur={() => guardar({ concepto })}
+                            rows={2}
+                            placeholder="Concepto del menú: de qué va, frases gancho, cómo se presenta…"
+                            className="w-full px-3 py-2 rounded-xl text-sm resize-none bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200"
+                        />
+                        <input
+                            type="date"
+                            value={cartaActiva.fecha || ''}
+                            onChange={e => guardar({ fecha: e.target.value })}
+                            className="w-full h-10 px-3 rounded-xl text-sm bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200"
+                        />
+                    </div>
+                )}
 
                 {/* Summary */}
                 {sum.total > 0 && (

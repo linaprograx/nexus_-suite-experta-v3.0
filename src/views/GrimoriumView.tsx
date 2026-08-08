@@ -35,6 +35,9 @@ import { useDebounce } from '../hooks/useDebounce';
 import { RecipeToolbar } from '../components/grimorium/RecipeToolbar';
 import { IngredientToolbar } from '../components/grimorium/IngredientToolbar';
 import { useCabeceraPlegable } from '../hooks/useCabeceraPlegable';
+import { useCartas } from '../hooks/useCartas';
+import { useAlcanceCarta, fijarAlcanceCarta } from '../hooks/useAlcanceCarta';
+import { useActiveMenu } from '../hooks/useActiveMenu';
 import { exportToCSV } from '../utils/exportToCSV';
 import { Card, CardContent } from '../components/ui/Card';
 // import { callGeminiApi } from '../utils/gemini'; // REMOVED: Legacy
@@ -129,6 +132,12 @@ const GrimoriumInner: React.FC<GrimoriumViewProps> = () => {
     // En móvil scrollea la página, no el shell, así que `handleMainScroll` no se
     // dispara nunca ahí. Este hook escucha el contenedor real.
     const cabeceraPlegada = useCabeceraPlegable();
+
+    // Las cartas. La migración adopta las entradas de menú anteriores a que la
+    // carta existiera como entidad: no borra ni reescribe nada, solo les añade el
+    // `cartaId` que les falta, y es idempotente.
+    const { cartaActiva, migrarSiHaceFalta } = useCartas();
+    React.useEffect(() => { migrarSiHaceFalta(); }, [migrarSiHaceFalta]);
     const handleMainScroll = (e: React.UIEvent<HTMLDivElement>) => {
         const t = (e.currentTarget as HTMLElement).scrollTop;
         setHeaderCollapsed(prev => (t > 48 ? true : t < 16 ? false : prev));
@@ -148,7 +157,20 @@ const GrimoriumInner: React.FC<GrimoriumViewProps> = () => {
     } = useGrimorium({ db: db!, userId: userId!, allRecipes, allIngredients });
 
     // Create aliases for backward compatibility
-    const filteredRecipes = hookFilteredRecipes;
+    // Alcance de la carta: filtra el listado a lo que está en la carta activa.
+    // Se aplica DESPUÉS de los filtros normales, así que buscar y filtrar por
+    // categoría sigue funcionando dentro de la carta.
+    const soloCarta = useAlcanceCarta();
+    const { menu } = useActiveMenu();
+    const idsEnCarta = React.useMemo(() => {
+        const deLaCarta = cartaActiva ? menu.filter(m => !m.cartaId || m.cartaId === cartaActiva.id) : menu;
+        return new Set(deLaCarta.map(m => m.recipeId));
+    }, [menu, cartaActiva?.id]);
+
+    const filteredRecipes = React.useMemo(
+        () => (soloCarta ? hookFilteredRecipes.filter(r => idsEnCarta.has(r.id)) : hookFilteredRecipes),
+        [soloCarta, hookFilteredRecipes, idsEnCarta]
+    );
     const handleDuplicateRecipe = hookDuplicateRecipe;
 
     // Zero Waste State (Restored)
@@ -803,6 +825,22 @@ const GrimoriumInner: React.FC<GrimoriumViewProps> = () => {
 
                         {/* RECIPES VIEW */}
                         {viewMode === 'recipes' && activeLayer !== 'optimization' && (
+                            <>
+                            {/* Filtrar sin avisar se lee como "faltan recetas" — es
+                                justo lo que pasó con la capa de Costes. */}
+                            {soloCarta && (
+                                <div className="flex items-center justify-between gap-3 mb-3 px-3 py-2.5 rounded-2xl bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800">
+                                    <span className="text-xs font-bold text-emerald-800 dark:text-emerald-300 truncate">
+                                        {cartaActiva?.nombre || 'Carta'} · {filteredRecipes.length} de {hookFilteredRecipes.length}
+                                    </span>
+                                    <button
+                                        onClick={() => fijarAlcanceCarta(false)}
+                                        className="shrink-0 h-8 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-bold uppercase tracking-wider"
+                                    >
+                                        Ver todas
+                                    </button>
+                                </div>
+                            )}
                             <RecipeList
                                 recipes={filteredRecipes}
                                 isLoading={recipesLoading}
@@ -825,6 +863,7 @@ const GrimoriumInner: React.FC<GrimoriumViewProps> = () => {
                                 onImport={() => setShowImportChoiceModal(true)}
                                 allIngredients={allIngredients}
                             />
+                            </>
                         )}
 
                         {/* ZERO WASTE RESULTS VIEW */}

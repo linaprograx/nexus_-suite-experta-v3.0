@@ -5,6 +5,7 @@ import { ICONS } from '../../../components/ui/icons';
 import { IntelPreferencesPanel } from '../../../features/learning/components/IntelPreferencesPanel';
 import { AuditLogModal } from '../../../components/grimorium/AuditLogModal';
 import { ActiveMenuModal } from '../../../components/grimorium/ActiveMenuModal';
+import { fijarAlcanceCarta } from '../../../hooks/useAlcanceCarta';
 
 // Toolbar for Grimorium View (Recipes, Stock, Market)
 export const GrimoriumToolbar: React.FC<{ collapsed?: boolean }> = ({ collapsed = false }) => {
@@ -173,7 +174,18 @@ export const GrimoriumToolbar: React.FC<{ collapsed?: boolean }> = ({ collapsed 
 
             {showIntelPanel && <IntelPreferencesPanel onClose={() => setShowIntelPanel(false)} />}
             {showAuditLog && <AuditLogModal onClose={() => setShowAuditLog(false)} />}
-            {showMenu && <ActiveMenuModal onClose={() => setShowMenu(false)} />}
+            {showMenu && (
+                <ActiveMenuModal
+                    onClose={() => {
+                        setShowMenu(false);
+                        // Al cerrar el panel, Recetas se queda mostrando solo la
+                        // carta: "para lo que sería útil, como crear un espacio de
+                        // trabajo dentro de Recetas". Se sale desde el aviso que
+                        // aparece sobre el listado.
+                        fijarAlcanceCarta(true);
+                    }}
+                />
+            )}
         </div>
     );
 };

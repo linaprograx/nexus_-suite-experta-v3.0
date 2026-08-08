@@ -15,6 +15,13 @@ export interface MenuEntry {
     costSnapshot: number;
     marginSnapshot: number;
     section?: string;
+    /**
+     * A qué carta pertenece. La pertenencia vive AQUÍ y no dentro de la receta,
+     * porque una misma receta puede estar en varias cartas a la vez.
+     * Opcional por compatibilidad: las entradas anteriores a las cartas no lo
+     * tienen hasta que `useCartas.migrarSiHaceFalta()` se lo añade.
+     */
+    cartaId?: string;
     addedAt: Date | any;
 }
 
