@@ -63,6 +63,31 @@ mezclar «catálogo» con «stock real»: hoy son modelos distintos.
 
 </details>
 
+## El destino, en una frase (ampliado 2026-08-08)
+
+Un usuario nuevo abre Nexus y **ya encuentra Mercado lleno** con los catálogos
+de los proveedores de hostelería de Madrid. Lanza un **pedido ficticio** que le
+monta el inventario del bar que ya tiene, sin gastar un euro. Le **comparten
+recetas** de otro usuario y la app le resuelve los ingredientes que le faltan.
+Cuando pide de verdad, la cesta **se reparte sola entre proveedores**, cada uno
+recibe su hoja, y la factura que vuelve alimenta el control de gasto mensual.
+Un **guía** lo lleva de la mano la primera vez que entra a cada pantalla.
+
+Eso es el plan entero. Lo que sigue lo desmenuza y lo ordena.
+
+**Dependencia dura entre piezas** — no se pueden adelantar:
+
+```
+catálogo de proveedores  →  pedido ficticio  →  recetas compartidas
+        ↓                                              ↓
+  multi-proveedor  →  envío externo  →  factura  →  economía
+```
+
+Recetas compartidas necesita que Mercado tenga producto (si no, "cómprame lo que
+me falta" no tiene de dónde); el envío externo necesita que la cesta ya sepa
+partirse por proveedor; y la contabilidad necesita facturas, que solo existen si
+antes hubo pedido real.
+
 ## Decisiones bloqueantes del catálogo global ⬜ PENDIENTE
 
 Antes de implementar Mercado-catálogos hay que acordar:
@@ -134,3 +159,187 @@ importación debe pasar por ellas; no crear una calculadora o normalizador paral
 Cada entrega requiere diseño/validación en móvil y escritorio. Las integraciones
 externas (envío de pedidos, OCR/facturas) no se activan sin autorización y
 configuración explícitas.
+
+---
+
+# Ampliación 2026-08-08 — detalle de las entregas
+
+Lo que sigue **no sustituye** el roadmap de arriba: lo concreta con lo que el
+fundador especificó el 2026-08-08. Cada bloque dice a qué entrega pertenece.
+
+## E1 · Pedido ficticio inicial ("ya tengo el bar montado")
+
+**El problema real.** Un bar que ya está abierto tiene botellas en el almacén.
+Obligarle a **comprar de nuevo** para que aparezcan en Inventario es pedirle que
+gaste dinero y acumule producto que no necesita. Es el primer muro de entrada de
+la app, y es artificial.
+
+**Qué hace.** Un pedido que se cursa **contra el catálogo de Mercado** pero:
+
+- no genera factura,
+- no sale de la app —**no se envía a nadie**—,
+- sí crea existencias en Inventario, con precio tomado del catálogo.
+
+**Límite:** al menos **una vez al mes**. La periodicidad existe para que sea un
+arranque y una regularización, no un atajo permanente para inventar stock.
+
+**Reglas que debe cumplir:**
+
+- **Identificable.** Cada compra nacida así queda marcada como tal. Si no se
+  distingue de una compra real, el control de gasto de E4 queda envenenado desde
+  el primer mes: aparecería un gasto que nunca ocurrió.
+- **Reversible.** Se puede deshacer entero.
+- **Sin coste falso.** Cuenta para existencias y para el coste de escandallo,
+  **no** para el gasto del periodo.
+- Pasa por `costCalculator.ts` y `packNormalization.ts` como cualquier otra
+  compra. Sin excepciones ni atajos.
+
+**Decisión pendiente:** qué precio se le asigna. ¿El del catálogo el día del
+pedido ficticio, o cero? Afecta directamente al escandallo. La recomendación a
+validar es **precio de catálogo marcado como estimado**: un coste aproximado es
+útil; un coste cero miente en todas las recetas.
+
+## E4 · Recetas compartidas entre usuarios
+
+**Para qué.** Un usuario nuevo entra, ve Mercado lleno, pero crear su primera
+ficha de receta le cuesta. Que alguien le comparta unas cuantas resuelve dos
+cosas a la vez: **ve la app funcionando con datos reales** y aprende el formato
+de la ficha copiando una que ya está bien hecha.
+
+**Flujo, con la autorización en el sitio correcto:**
+
+1. El propietario comparte una o varias fichas con otro usuario de Nexus.
+2. El receptor **previsualiza** antes de aceptar nada.
+3. Al importar, la app calcula **qué ingredientes le faltan** en su catálogo y
+   en su inventario.
+4. Le propone: añadir esos ingredientes a su catálogo, y **comprar en Mercado**
+   los que no tenga.
+5. **Nada de esto ocurre sin que el receptor lo autorice**, y la autorización es
+   por paso, no un único "acepto" que arrastre compras detrás.
+
+> El punto delicado es el 4. Que importar una receta pueda **generar un pedido**
+> es exactamente el tipo de efecto que un usuario no espera de un botón
+> "importar". La compra debe ser una decisión aparte, con su propia pantalla y
+> su importe a la vista.
+
+**A resolver al diseñarlo:** identidad y origen de la ficha compartida
+(quién la escribió, qué versión), si el receptor obtiene una copia
+independiente o un enlace vivo —la recomendación es **copia**, para que editarla
+no altere la del autor—, y qué ocurre con las sub-recetas y garnishes que
+cuelgan de ella (se arrastran, o se rompen los enlaces).
+
+## E2 · Catálogo de proveedores de Madrid
+
+**El objetivo.** Que Mercado contenga los catálogos de **todos** los proveedores
+de hostelería de Madrid, agrupados y organizados. Nombres puestos sobre la mesa
+como punto de partida: **Bordino, In Vino Veritas, La Fuente, Álvarez,
+Barkonsult, OTC, Amer Global, Martins Brands**, y los que se vayan encontrando.
+Fruta y verdura es una familia aparte —**Frutas Eloy** o equivalente—, y esa
+separación no es un detalle: es la que fuerza el reparto de E3.
+
+Un mismo producto **existirá en varios proveedores a distinto precio**. Ese es
+el dato que da valor a todo lo demás; el modelo debe soportarlo desde el primer
+día, no añadirlo después.
+
+**Esto sigue bloqueado por las cuatro decisiones de más arriba.** En particular
+la de extracción: no es lo mismo un PDF publicado que una tarifa que el
+comercial manda por WhatsApp, y de eso depende quién mantiene el catálogo al día
+y con qué frecuencia. **El catálogo no se mantiene solo**, y un catálogo con
+precios de hace un año hace daño en vez de ayudar.
+
+## E3 · Un pedido, varios proveedores
+
+**El caso que lo define.** El usuario mete en la cesta: 5 botellas de Bacardí,
+4 de Martini Rosso, la gama Monin completa, 12 L de zumo de limón, 6 L de
+naranja y 4 kg de limas.
+
+Ningún distribuidor de alcohol sirve fruta. El pedido **tiene que partirse**: una
+parte a Bordino, otra a una frutería.
+
+**Lo que hace el sistema:**
+
+1. Para cada línea, mira qué proveedores la tienen.
+2. Elige proveedor por **preferencia del usuario** o por **puntuación** —el
+   sistema de puntos está por inventar, y hasta que exista manda la preferencia
+   manual—.
+3. Agrupa por proveedor y **genera tantas hojas de pedido como proveedores**.
+4. El usuario ve el reparto **antes** de que salga nada, y puede moverlo a mano.
+
+La generación de la hoja de pedido **ya existe**. Lo nuevo es el reparto y la
+comparación entre proveedores.
+
+**Caso a decidir:** el mínimo de pedido. Repartir con criterio de precio unitario
+puede dejar dos líneas sueltas en un proveedor que exige 150 € mínimos. La
+comparación tiene que ser **por pedido completo**, no línea a línea, o
+recomendará cosas que no se pueden cursar.
+
+## E3/E4 · Envío externo y vuelta de la factura
+
+**El objetivo del fundador:** que la hoja de pedido salga sola hacia el
+**comercial** de cada proveedor por WhatsApp o correo, que este prepare y
+facture, y que **la factura vuelva a Nexus** y alimente un control de economía:
+cuánto se está gastando este mes, y dónde se podría optimizar.
+
+**Es la parte más difícil del plan, y no por el código.** Conviene decirlo
+claro para que no sorprenda a mitad de camino:
+
+- **Los datos de contacto de los comerciales no existen en ninguna base de
+  datos.** Hay que recopilarlos uno a uno y mantenerlos: la gente cambia de
+  empresa. Es trabajo manual y continuo, no un desarrollo.
+- **WhatsApp no se automatiza sin más.** El envío programático exige la API de
+  WhatsApp Business: número de empresa verificado, plantillas aprobadas de
+  antemano y un proveedor de por medio. No es "abrir un enlace de WhatsApp".
+- **Correo es mucho más barato de arrancar** y no depende de aprobaciones
+  ajenas. Recomendación: **empezar por correo**, con WhatsApp después.
+- **Enviar es irreversible.** Un pedido mal partido que sale solo llega a un
+  proveedor de verdad. Debe existir siempre una confirmación explícita del
+  usuario, y una hoja que se pueda revisar antes de salir.
+- **La factura que vuelve es un PDF de formato libre.** Leerla automáticamente
+  es OCR con revisión humana; cada proveedor tiene su plantilla. La primera
+  versión razonable es **subir la factura y casarla a mano** con el pedido, y
+  automatizar después con datos reales delante.
+
+**Escalón intermedio que da casi todo el valor sin nada de lo anterior:**
+generar la hoja por proveedor y dejar que el usuario **la envíe él** con un
+toque (compartir nativo, o abrir el correo con todo redactado). El pedido sale
+igual, y la app no depende de integraciones ni de credenciales de nadie.
+
+**La economía es lo último**, y no por importancia: sin facturas conciliadas no
+hay nada que contabilizar. El escalón previo es **gasto por proveedor y por mes
+a partir de las compras registradas**, que ya existen. Eso se puede tener pronto
+y responde a la mitad de la pregunta.
+
+## E5 · El guía de primer uso
+
+**Alcance ampliado:** el fundador lo quiere **en todas las vistas de todas las
+secciones**, no solo en Grimorio.
+
+**Comportamiento:** al entrar por primera vez a una vista, toma la pantalla —
+desenfoca y oscurece todo **menos el elemento que hay que tocar**— y lleva al
+usuario por una secuencia de pasos. La siguiente vez ya no aparece, pero la guía
+**se puede volver a lanzar** cuando el usuario quiera.
+
+**Recorrido de Grimorio**, que es el que define el orden correcto del módulo:
+
+1. Comprar en **Mercado** para tener producto.
+2. Cómo funcionan **stock y reglas** en Inventario.
+3. Crear una **receta**, o pedir que te compartan una.
+4. Sobre todo: **cómo se trabaja con la ficha de receta**.
+
+**Una decisión que tomar, con recomendación.** El fundador lo llama "agente" y
+dice que "vivirá dentro de Nexus". El plan original lo especificó como guía
+**no IA**. La diferencia importa: una guía con guion fijo cuesta **cero** por
+uso, funciona sin conexión al gateway y es predecible; un agente con IA cuesta
+una llamada por paso, en la pantalla donde el usuario todavía no ha aportado
+nada, y puede equivocarse justo cuando el usuario aún no sabe distinguirlo.
+
+> Recomendación: **v1 con guion determinista**, con la puerta abierta a que más
+> adelante un agente conteste preguntas libres *dentro* de esa guía. El efecto
+> visual —desenfoque, foco, pasos— es el mismo en ambos casos, así que empezar
+> por el guion no cierra ninguna puerta. Ver `PLAN-CEREBRITY.md` para el criterio
+> general sobre gasto de API.
+
+**Cuidado con el orden:** una guía escrita antes de que el flujo esté cerrado se
+queda obsoleta a la primera. Va **después** del pedido ficticio y de recetas
+compartidas, porque son justo los pasos que tiene que enseñar.
+

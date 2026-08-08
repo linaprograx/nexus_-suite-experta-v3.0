@@ -6,10 +6,16 @@
 
 ---
 
-**Última actualización:** 2026-08-06 (noche)
-**Sesión anterior:** Claude Code
-**Estado:** árbol limpio, TypeScript 0 errores, build correcto, todo desplegado
-y **verificado en la app en producción** a 390px y 1280px.
+**Última actualización:** 2026-08-08
+**Sesión anterior:** Claude Code — **solo documentación, sin tocar código.**
+**Estado:** el código sigue exactamente como lo dejó la sesión del 2026-08-06
+(árbol limpio, TypeScript 0 errores, build correcto, desplegado y verificado en
+producción a 390px y 1280px).
+
+**Lo que cambió el 2026-08-08:** tres días de uso real en el teléfono
+produjeron una lista de defectos, y el fundador amplió el plan de Grimorio y
+abrió el de Cerebrity. Todo eso está ahora escrito, priorizado y rastreado hasta
+archivo:línea. **No se corrigió nada**: ese es el trabajo que empieza ahora.
 
 ## Dónde se trabaja
 
@@ -86,21 +92,45 @@ Detalle y motivos en `WORKLOG.md`. Resumen:
 
 ## ⏸️ Lo que queda — EMPIEZA POR AQUÍ
 
-1. **Verificación en iPhone real.** Nada de la franja fija está confirmado con
-   el dedo. `env(safe-area-inset-*)` vale 0 fuera de un móvil y las barras de
-   Safari se recogen al scrollear, así que el ajuste fino solo se ve allí.
-   Concretamente sin confirmar: el pliegue del título (umbral de 64px y
-   tolerancia de 6px al temblor del dedo, en `useCabeceraPlegable.ts`).
+1. **`docs/agents/AUDIT-MOVIL.md` — A1, y hazlo ya.** Desactivar dos secciones
+   en Personal → Configuraciones deja al usuario **sin modo oscuro y sin cerrar
+   sesión**, sin forma de recuperarlos. La causa está confirmada leyendo el
+   código (`FloatingBottomNav.tsx:103-107` y `:144`): "Más" se trata como
+   desbordamiento y desaparece en cuanto los destinos caben en la barra, pero
+   los controles globales viven dentro de esa hoja. Es media hora de trabajo y
+   es lo único de la lista que deja funciones inalcanzables.
 
-2. **`docs/agents/PLAN-GRIMORIO-MERCADO.md`** — la Parte 1 (bugs de datos) está
+2. **A2** del mismo documento — el modal de edición de receta se abre detrás del
+   detalle porque `GrimoriumView.tsx:900` no limpia `selectedRecipeId`. Otra
+   sesión corta. Conviértelo en invariante ("una sola superficie modal a la
+   vez") o reaparecerá en ingredientes, stock y pedidos.
+
+3. **A3, A4, A5** — parpadeo al scrollear, lentitud de Inventario y el escalado
+   de texto en Pizarrón. Estos sí piden medir antes de tocar; el documento dice
+   qué medir en cada caso.
+
+4. **Verificación en iPhone real.** Sigue pendiente y ahora estorba más: A3, A4
+   y A6 no se pueden cerrar sin ella. `env(safe-area-inset-*)` vale 0 fuera de
+   un móvil y las barras de Safari se recogen al scrollear. Sin confirmar en
+   concreto: el pliegue del título (umbral de 64px y tolerancia de 6px al
+   temblor del dedo, en `useCabeceraPlegable.ts`).
+
+5. **`docs/agents/PLAN-GRIMORIO-MERCADO.md`** — la Parte 1 (bugs de datos) está
    **resuelta**; queda la **Parte 2**: convertir Mercado en catálogo de
-   proveedores de Madrid. Tiene **cuatro decisiones que tomar con el usuario**
-   antes de escribir código.
+   proveedores de Madrid. Ampliado el 2026-08-08 con pedido ficticio, recetas
+   compartidas, reparto multi-proveedor, envío externo, facturas y guía de
+   primer uso. Sigue con **cuatro decisiones que tomar con el usuario** antes de
+   escribir una línea.
 
-3. **Restos de Pizarrón** — B3, B6 y B7 en `AUDIT-PIZARRON.md`.
+6. **`docs/agents/PLAN-CEREBRITY.md`** — nuevo. Sus fases C1–C4 **no gastan
+   API** y se pueden intercalar cuando convenga. Lee la regla de gasto antes de
+   ejecutar nada allí.
 
-4. **Infraestructura** (detalle en `CONTEXT.md`): desplegar el `ai-gateway`,
-   rotar claves de Gemini y Stripe, activar Stripe.
+7. **Restos de Pizarrón** — B3, B6 y B7 en `AUDIT-PIZARRON.md`.
+
+8. **Infraestructura** (detalle en `CONTEXT.md`): desplegar el `ai-gateway`,
+   rotar claves de Gemini y Stripe, activar Stripe. El gateway bloquea la fase
+   C5 de Cerebrity.
 
 ## Código muerto localizado y NO retirado
 

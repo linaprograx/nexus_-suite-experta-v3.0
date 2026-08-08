@@ -7,6 +7,75 @@ El "por qué" es lo que más vale dentro de tres semanas.
 
 ---
 
+## 2026-08-08 · Claude Code · Tres días de uso real, y el plan que salió de ahí
+
+**Sesión de documentación. No se tocó una línea de código**, por petición
+expresa del fundador. Lo que sigue son hallazgos y planificación.
+
+**De dónde sale**
+
+El fundador usó Nexus en el móvil, en barra, durante tres días. Es la primera
+prueba de uso sostenido de verdad, y vale más que cualquier auditoría de código:
+sacó cinco defectos que ninguna revisión había visto. Además cerró qué quiere
+que sea Mercado, y señaló Cerebrity como lo siguiente.
+
+**Qué se escribió**
+
+- **`docs/agents/AUDIT-MOVIL.md`** (nuevo) — los cinco defectos, rastreados
+  hasta archivo:línea, priorizados P0–P2, con orden de ejecución y criterios de
+  aceptación. Más el mandato de la auditoría completa de interacción móvil.
+- **`docs/agents/PLAN-CEREBRITY.md`** (nuevo) — auditoría de Cerebrity hecha
+  **sin ejecutar una sola llamada de IA**, y las fases C1–C5.
+- **`PLAN-GRIMORIO-MERCADO.md`** — ampliado con el detalle del destino: pedido
+  ficticio mensual, recetas compartidas entre usuarios, catálogo de proveedores
+  de Madrid, reparto multi-proveedor, envío externo, facturas y guía de primer
+  uso.
+- **`ROADMAP.md`** — nueva fase **M3.2** (estabilidad de uso móvil), que pasa a
+  ser el "aquí estamos". Cerebrity aparece como línea propia fuera del móvil.
+- **`HANDOFF.md`** y este diario.
+
+**Lo que se encontró leyendo código, y merece la pena recordar**
+
+*Desactivar dos secciones deja al usuario sin cerrar sesión.* La causa es una
+cuenta que sale sola: `APP_SECTIONS` tiene 6 entradas, `PERSONAL` se añade
+aparte, y `MAX_SLOTS` vale 5. Con dos secciones desactivadas quedan exactamente
+5 destinos, así que `FloatingBottomNav.tsx:105` devuelve `overflow: []`, el
+botón "Más" no se pinta (`:144`) — y modo oscuro (`:184`) y cerrar sesión
+(`:192`) **viven dentro de esa hoja**.
+
+> El error de diseño no es la aritmética: es haber tratado "Más" como un
+> **desbordamiento** cuando es un **destino fijo**. Los controles del sistema
+> acabaron colgando de una preferencia del usuario. Merece revisión general:
+> **nada estructural debería renderizarse condicionalmente a partir de una
+> preferencia.**
+
+*Cerebrity tiene dos Synthesis.* La real es la pestaña `creativity` de
+`CerebrityView` (el rótulo `SYNTHESIS` se pinta en `:845`), que lee recetas e
+ingredientes y llama al gateway. La otra, `views/unleash/SynthesisView.tsx`,
+tiene su `handleGenerate` **con el resultado escrito a mano** y no importa
+ningún poder — y `UnleashView` ni siquiera está enrutado (`/unleash` redirige a
+`/cerebrity`). Octavo caso del patrón de este proyecto: *si algo parece una
+función y no responde, comprueba primero si está conectado.*
+
+*El árbol de poderes está escrito dos veces.* Los nueve poderes visibles son una
+lista literal en `CerebrityView.tsx:383-393`, mientras `features/cerebrity/powers/`
+tiene once módulos que **nadie importa desde fuera de su propia carpeta**; dos
+de ellos (`intensityCreative`, `techCoherence`) ni siquiera están en el barril.
+Y el despacho compara **el nombre en castellano** (`:406`), así que renombrar un
+poder en la interfaz rompería su ejecución en silencio.
+
+**Una nota de método que salió sola**
+
+Toda esta sesión —incluida la auditoría entera de Cerebrity— se hizo **leyendo**.
+Cero llamadas de IA, cero euros. Merece quedar escrito porque el motivo por el
+que Cerebrity nunca se había recorrido era precisamente el miedo al coste: buena
+parte de lo que hay que arreglar allí **no necesita ejecutar nada**.
+
+**Qué quedó pendiente**
+
+Todo. Ni un defecto corregido: era el encargo. El orden está en `HANDOFF.md`,
+empezando por A1.
+
 ## 2026-08-06 · Claude Code · La causa raíz del catálogo vacío y la franja fija
 
 **Lo importante de esta entrada: el `appId` con saltos de línea.** Si vuelve a

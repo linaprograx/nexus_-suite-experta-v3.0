@@ -105,7 +105,7 @@ Por orden de gravedad:
    mínima, modo consulta y gestos nativos. Falta verificación con sesión
    iniciada en un teléfono real.
 
-### 🔄 M3.1 — Grimorio: datos, operación y catálogo ← **AQUÍ ESTAMOS**
+### 🔄 M3.1 — Grimorio: datos, operación y catálogo
 
 Trabajo transversal de **Recetas / Inventario / Mercado**, con documento propio:
 `PLAN-GRIMORIO-MERCADO.md`.
@@ -119,8 +119,50 @@ Trabajo transversal de **Recetas / Inventario / Mercado**, con documento propio:
 - ⬜ **Pendiente de dedo**: el pliegue del título en un iPhone real.
 - ⬜ **Catálogo de proveedores**, pedidos, facturas, recetas compartidas y guía
   interna: por entregas en ese documento, con **cuatro decisiones previas**.
+  Ampliado con detalle el 2026-08-08.
+
+### 🔄 M3.2 — Estabilidad de uso móvil ← **AQUÍ ESTAMOS**
+
+Primera prueba de uso real y sostenida en el teléfono (tres días, 2026-08-08).
+Salieron cinco defectos, documentados con archivo:línea en
+**`docs/agents/AUDIT-MOVIL.md`**.
+
+- ⬜ **A1 · P0** — desactivar dos secciones en Personal → Configuraciones deja
+  **sin menú "Más", sin modo oscuro y sin cerrar sesión**. Causa confirmada:
+  `FloatingBottomNav.tsx:103-107` trata "Más" como desbordamiento, y los
+  controles globales viven dentro de él.
+- ⬜ **A2 · P1** — el modal de edición de receta se abre **detrás** del panel de
+  detalle, que nadie cierra (`GrimoriumView.tsx:900`).
+- ⬜ **A3 · P1** — parpadeo al hacer scroll en Grimorio.
+- ⬜ **A4 · P2** — Inventario lento, con retardo entre toque y respuesta.
+- ⬜ **A5 · P2** — Pizarrón: la letra no acompaña al redimensionar un texto.
+  Ojo: se cerró un hallazgo idéntico (`G0b`) el 2026-08-06 — verificar si es
+  regresión o un caso distinto antes de tocar nada.
+
+> Va **antes** que el catálogo de Mercado: A1 deja funciones del sistema
+> inaccesibles, y el resto de M3.1 está bloqueado por decisiones de producto que
+> aún no se han tomado.
 
 ### ⬜ M4 — Rendimiento en móvil
+
+Absorbe **A4** y **A6** de `AUDIT-MOVIL.md`. Regla de arranque: perfilar en un
+teléfono real antes de optimizar nada — sin ese número, cualquier cambio es
+decorativo.
+
+---
+
+## Fuera del trabajo de móvil
+
+### ⬜ Cerebrity — flujo, poderes y contexto
+
+Documento propio: **`docs/agents/PLAN-CEREBRITY.md`**. Nunca se ha recorrido su
+flujo porque hacerlo con la IA conectada cuesta dinero. La auditoría de código
+(2026-08-08, sin gastar una sola llamada) encontró dos Synthesis —una de ellas
+sin enrutar y con el resultado escrito a mano—, el árbol de poderes duplicado
+entre una lista literal y una carpeta que nadie importa, y el despacho de
+poderes hecho por comparación de nombres en castellano.
+
+Las fases C1–C4 **no gastan API**; solo C5, la validación, lo hace.
 
 ---
 

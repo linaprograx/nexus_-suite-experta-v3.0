@@ -57,12 +57,17 @@ hazlo igualmente en cuanto puedas:
 | `docs/agents/HANDOFF.md` | **Estado del relevo.** Se sobrescribe entero | Cada sesión |
 | `docs/agents/WORKLOG.md` | Diario acumulativo, lo más reciente arriba | Cada sesión |
 | `docs/agents/AUDIT-PIZARRON.md` | Auditoría del módulo más frágil, con archivo:línea | Al cerrar hallazgos |
+| `docs/agents/AUDIT-GRIMORIO.md` | Auditoría funcional de Grimorio, con archivo:línea | Al cerrar hallazgos |
+| `docs/agents/AUDIT-MOVIL.md` | Defectos vistos usando la app en el teléfono | Al cerrar hallazgos |
 | `docs/agents/PLAN-GRIMORIO-MERCADO.md` | Trabajo pendiente de Grimorio y Mercado | Al avanzar en él |
+| `docs/agents/PLAN-CEREBRITY.md` | Cerebrity: poderes, contexto y **regla de gasto de API** | Al avanzar en él |
 | `docs/NEXUS_MASTER_VISION_v1.1.md` | Visión de producto del fundador | Casi nunca |
 
 ## Dónde se trabaja
 
-- **Rama de desarrollo:** `feat/mobile-v1` ← aquí se programa
+- **Rama de desarrollo:** `feat/mobile-v1-unified` ← aquí se programa
+  (worktree `/Users/lianalviz/nexus-suite-mobile-v1`; este archivo decía
+  `feat/mobile-v1`, que quedó atrás — git manda)
 - **Rama de producción:** `deploy/mobile-v1` ← espejo aplanado; cada push
   despliega a `nexus-suite-experta-v3-0.vercel.app`
 - **Servidor de desarrollo: puerto 3100**
