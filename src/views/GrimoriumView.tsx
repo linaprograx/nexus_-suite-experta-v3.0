@@ -528,9 +528,34 @@ const GrimoriumInner: React.FC<GrimoriumViewProps> = () => {
         }
     };
 
+    /**
+     * Borrado de una receta.
+     *
+     * Escribe directamente en `users/{uid}/grimorio` e invalida la caché, que es
+     * exactamente lo que hace `handleDeleteSelectedRecipes` —el borrado múltiple,
+     * comprobado funcionando— en lugar de delegar en `useGrimorium`.
+     *
+     * El camino anterior pasaba por `grimoriumService`, que apuntaba a
+     * `users/{uid}/recipes`: una colección inexistente. Firestore resuelve un
+     * `deleteDoc` sobre un documento que no existe SIN ERROR, así que el diálogo
+     * se cerraba, la consola quedaba limpia y la receta seguía ahí. Corregir la
+     * ruta del servicio no bastó, de modo que este flujo deja de depender de él.
+     *
+     * Faltaba además invalidar la consulta: sin eso, aunque el borrado hubiera
+     * funcionado, el listado habría seguido mostrando la receta.
+     */
     const handleDeleteRecipe = async (recipeId: string) => {
-        await hookDeleteRecipe(recipeId);
-        setSelectedRecipeId(null);
+        if (!db || !userId || !recipeId) return;
+        if (!window.confirm('¿Seguro que quieres eliminar esta receta?')) return;
+        try {
+            await deleteDoc(doc(db, `users/${userId}/grimorio`, recipeId));
+            queryClient.invalidateQueries({ queryKey: ['recipes'] });
+            setSelectedRecipeId(null);
+            showToast('Receta eliminada.', 'success');
+        } catch (error) {
+            console.error('Error al eliminar la receta:', error);
+            showToast('No se ha podido eliminar la receta.', 'error');
+        }
     };
 
     // Routes the recipe "Herramientas" actions to the right place: in-Grimorium
