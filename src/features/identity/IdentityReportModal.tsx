@@ -185,8 +185,12 @@ export const IdentityReportModal: React.FC<{ onClose: () => void }> = ({ onClose
         return {
             total: grupos.length,
             fichas: grupos.reduce((a, g) => a + g.fichas.length, 0),
-            bajo: cuenta('BAJO'), medio: cuenta('MEDIO'),
-            alto: cuenta('ALTO'), bloqueado: cuenta('BLOQUEADO'),
+            bajo: cuenta('BAJO'), medio: cuenta('MEDIO'), alto: cuenta('ALTO'),
+            // Lo que de verdad queda fuera de una fusión son las VARIANTES.
+            // El contador de 'bloqueados' se quedó a cero por construcción en
+            // cuanto el núcleo pasó a ser solo nombres idénticos: un número que
+            // nunca puede cambiar no informa de nada.
+            variantes: grupos.reduce((a, g) => a + g.variantes.length, 0),
         };
     }, [grupos]);
 
@@ -215,7 +219,7 @@ export const IdentityReportModal: React.FC<{ onClose: () => void }> = ({ onClose
                         { l: 'Fichas', v: resumen.fichas, c: 'text-slate-700 dark:text-slate-200' },
                         { l: 'Bajo', v: resumen.bajo, c: 'text-emerald-600' },
                         { l: 'Medio/Alto', v: resumen.medio + resumen.alto, c: 'text-amber-600' },
-                        { l: 'Bloqueados', v: resumen.bloqueado, c: 'text-rose-600' },
+                        { l: 'Variantes', v: resumen.variantes, c: 'text-rose-600' },
                     ].map(k => (
                         <div key={k.l} className="bg-white dark:bg-slate-900 py-2.5 text-center">
                             <div className={`text-lg font-bold ${k.c}`}>{k.v}</div>

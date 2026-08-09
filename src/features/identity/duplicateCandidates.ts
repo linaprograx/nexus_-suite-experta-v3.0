@@ -177,25 +177,45 @@ const evaluarRiesgo = (
     return { riesgo: 'BAJO', motivo: 'Mismo nombre, misma categoría y mismo formato.' };
 };
 
-/** Suma de existencias, solo si las unidades se pueden convertir a una base común. */
+/**
+ * Suma de existencias.
+ *
+ * Primero el caso fácil, que es el más común y el que la primera versión se
+ * saltaba: **si todas las fichas usan la misma cadena de unidad, sumar es
+ * trivialmente correcto** aunque esa cadena no se sepa convertir a una base.
+ * Seis «0.700 L» más uno «0.700 L» son siete «0.700 L», y para eso no hace
+ * falta I1. Exigir la conversión ahí bloqueaba fusiones que eran seguras.
+ *
+ * I1 solo hace falta cuando las unidades se escriben distinto.
+ */
 const simular = (fichas: FichaCandidata[]): GrupoCandidato['simulacion'] => {
     const conStock = fichas.filter(f => f.stockCantidad > 0);
     if (conStock.length === 0) {
         return { sumable: true, cantidad: 0, base: '—', valor: 0 };
     }
 
-    const normalizadas = conStock.map(f => ({
-        f,
-        n: normalizeToBase(f.stockCantidad, f.stockUnidad),
-    }));
+    const unidades = new Set(conStock.map(f => (f.stockUnidad || '').trim().toLowerCase()));
+    const valor = conStock.reduce((a, f) => a + f.stockValor, 0);
 
+    if (unidades.size === 1) {
+        return {
+            sumable: true,
+            cantidad: conStock.reduce((a, f) => a + f.stockCantidad, 0),
+            base: conStock[0].stockUnidad,
+            valor,
+        };
+    }
+
+    // Unidades distintas: solo se pueden sumar si se convierten a la misma base.
+    const normalizadas = conStock.map(f => ({ f, n: normalizeToBase(f.stockCantidad, f.stockUnidad) }));
     const bases = new Set(normalizadas.map(x => x.n.base));
+
     if (bases.has('unknown')) {
         const cuales = normalizadas.filter(x => x.n.base === 'unknown').map(x => `"${x.f.stockUnidad}"`);
         return {
             sumable: false,
-            motivo: `No se puede convertir ${cuales.join(', ')} a una unidad base. `
-                + 'Es el bloqueo de I1: hasta normalizar unidades, sumar sería inventar.',
+            motivo: `Las unidades se escriben distinto y no se puede convertir ${cuales.join(', ')} `
+                + 'a una base común. Hasta normalizar unidades (I1), sumar sería inventar.',
         };
     }
     if (bases.size > 1) {
@@ -209,14 +229,10 @@ const simular = (fichas: FichaCandidata[]): GrupoCandidato['simulacion'] => {
         sumable: true,
         cantidad: normalizadas.reduce((a, x) => a + x.n.qty, 0),
         base: Array.from(bases)[0],
-        valor: conStock.reduce((a, f) => a + f.stockValor, 0),
+        valor,
     };
 };
 
-/**
- * Devuelve los grupos candidatos, ordenados por gravedad: primero lo que se
- * puede resolver, al final lo bloqueado.
- */
 export const detectarCandidatos = (e: Entrada): GrupoCandidato[] => {
     const conTokens = e.allIngredients
         .filter(i => i?.id && i?.nombre)
