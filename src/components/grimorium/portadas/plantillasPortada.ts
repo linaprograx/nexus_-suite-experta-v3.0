@@ -108,71 +108,125 @@ const editorial: PlantillaPortada = {
 const clubhouse: PlantillaPortada = {
     id: 'clubhouse',
     nombre: 'Clubhouse Premium',
-    descripcion: 'Verde profundo, dorado y tipografía editorial.',
+    descripcion: 'Verde profundo, dorado y fotografía protagonista.',
 
     /**
-     * **Este tema no toca geometría. A propósito.**
+     * Geometría recuperada.
      *
-     * Las versiones anteriores cambiaban la disposición: rejilla propia, alturas
-     * en milímetros, posicionamiento absoluto y centrado con flex. El PDF salía
-     * con 90, 63 y 112 páginas para cinco recetas, y el navegador llegaba a
-     * colgarse calculando la maquetación. Tres intentos, tres resultados peores.
+     * Estuvo reducida a color y tipografía mientras el PDF salía con decenas de
+     * páginas. La causa no era el diseño: el documento no declaraba anchura de
+     * maquetación y en un móvil se componía a 390px. Con `meta viewport` en
+     * 794px —A4 a 96 ppp— el documento pagina correctamente, así que la
+     * composición vuelve.
      *
-     * La disposición base ya paginaba bien. Así que aquí solo hay **color,
-     * tipografía y filetes**: ni `display`, ni `position`, ni `min-height`, ni
-     * `grid`, ni alturas en mm. Un tema que no altera la caja no puede romper la
-     * paginación.
-     *
-     * Cuando el PDF esté verificado se podrá reintroducir la foto grande, pero
-     * midiendo sobre un documento real, no a ciegas.
+     * Aun así, dos cautelas que no se retiran:
+     * - Nada de márgenes negativos para ir a sangre: dependían del relleno del
+     *   cuerpo, que cambia entre pantalla e impresión.
+     * - La tabla conserva table-layout:fixed y partido de palabra, o un nombre
+     *   largo vuelve a ensancharla más allá de su columna.
      */
     css: `
-  .portada { page-break-after: always; break-after: page;
-             background: #08302a; color: #f7f4ec; padding: 96px 56px 120px;
-             -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-  .p-marca { font-size: 10px; letter-spacing: .3em; text-transform: uppercase; color: #c9a227; margin-bottom: 28px; }
-  .p-titulo { font-size: 64px; line-height: .96; margin: 0 0 26px; color: #f7f4ec;
-              text-transform: uppercase; letter-spacing: -.015em; word-break: break-word; }
-  .p-titulo .l2 { color: #c9a227; }
-  .p-concepto { font-size: 15px; line-height: 1.7; color: #cfe3dd; max-width: 54ch; margin: 0 0 44px; white-space: pre-wrap; }
-  .p-datos { border-top: 2px solid #c9a227; padding-top: 20px; }
-  .p-datos span { font-size: 9px; letter-spacing: .18em; text-transform: uppercase; color: #c9a227; }
-  .p-datos b { font-size: 18px; color: #f7f4ec; }`,
+  .cb { page-break-after: always; break-after: page; position: relative; overflow: hidden;
+        min-height: 244mm; padding: 78px 56px 56px;
+        display: flex; flex-direction: column; justify-content: center;
+        background: linear-gradient(150deg, #0a3730 0%, #06231e 58%, #041713 100%); color: #f7f4ec;
+        -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .cb-marca { font-size: 10px; letter-spacing: .34em; text-transform: uppercase; color: #c9a227; margin-bottom: 26px; }
+  .cb-titulo { margin: 0; text-transform: uppercase; letter-spacing: -.015em; line-height: .92;
+               font-size: 82px; font-weight: 800; word-break: break-word; }
+  .cb-titulo .l2 { display: block; color: #c9a227; }
+  .cb-filete { width: 118px; height: 2px; background: #c9a227; margin: 30px 0; }
+  .cb-sub { font-size: 15px; line-height: 1.7; color: #cfe3dd; max-width: 54ch; margin: 0; white-space: pre-wrap; }
+  .cb-datos { position: absolute; left: 56px; right: 56px; bottom: 56px; display: flex; }
+  .cb-datos > div { padding: 0 26px; border-left: 1px solid rgba(201,162,39,.38); }
+  .cb-datos > div:first-child { padding-left: 0; border-left: 0; }
+  .cb-datos span { display: block; font-size: 9px; letter-spacing: .18em; text-transform: uppercase; color: #c9a227; margin-bottom: 5px; }
+  .cb-datos b { font-size: 17px; font-weight: 600; color: #f7f4ec; }`,
 
     html: d => {
         // El título se parte por PALABRAS, nunca a mitad: la primera en crema y
-        // el resto en dorado. Con una sola palabra no hay segunda parte.
+        // el resto en dorado. Con una sola palabra no hay segunda línea.
         const palabras = String(d.titulo).trim().split(/\s+/);
         const l1 = esc(palabras[0] || '');
         const l2 = esc(palabras.slice(1).join(' '));
         return `
-  <section class="portada">
-    <div class="p-marca">Carta de cócteles</div>
-    <h1 class="p-titulo">${l1}${l2 ? ` <span class="l2">${l2}</span>` : ''}</h1>
-    ${d.subtitulo ? `<p class="p-concepto">${esc(d.subtitulo)}</p>` : ''}
-    <div class="p-datos">
-      <div><span>Recetas</span> <b>${d.recetas}</b> &nbsp;·&nbsp;
-           <span>Fecha</span> <b>${esc(d.fecha || '')}</b> &nbsp;·&nbsp;
-           <span>Coste medio</span> <b>${esc(d.costeMedio)}</b></div>
+  <section class="cb">
+    <div class="cb-marca">Carta de cócteles</div>
+    <h1 class="cb-titulo">${l1}${l2 ? `<span class="l2">${l2}</span>` : ''}</h1>
+    <div class="cb-filete"></div>
+    ${d.subtitulo ? `<p class="cb-sub">${esc(d.subtitulo)}</p>` : ''}
+    <div class="cb-datos">
+      <div><span>Carta de cócteles</span><b>${d.recetas} receta${d.recetas === 1 ? '' : 's'}</b></div>
+      <div><span>Fecha</span><b>${esc(d.fecha || '')}</b></div>
+      <div><span>Coste medio</span><b>${esc(d.costeMedio)}</b></div>
     </div>
   </section>`;
     },
 
-    /** Solo color y tipografía. Ninguna regla que altere la caja. */
     cssFicha: `
-  .head { border-bottom-color: #c9a227; }
-  .head h1 { color: #08302a; text-transform: uppercase; letter-spacing: -.01em; }
-  .cat { color: #c9a227; letter-spacing: .18em; text-transform: uppercase; }
-  h2 { color: #08302a; letter-spacing: .2em; text-transform: uppercase; }
-  thead th { background: #08302a; color: #f7f4ec; letter-spacing: .14em; }
-  tbody td { border-bottom-color: #eeeae0; }
+  body { color: #123; }
+
+  /* La FOTO es el elemento principal: columna izquierda entera, con el
+     escandallo compuesto a su derecha bajo las especificaciones.
+     Abarcar las dos filas es lo que deja que la imagen sea alta sin fijarle una
+     altura: crece hasta donde llegue el contenido de la derecha y nunca se
+     recorta, así una receta de 8 filas y otra de 15 componen distinto. */
+  .ficha-top { grid-template-columns: 300px 1fr; gap: 30px; margin-bottom: 8px; }
+  .col-foto { grid-row: 1 / span 2; }
+  .col-escandallo { grid-column: 2; grid-row: 2; border-bottom: 1px solid #e6e1d5; padding-bottom: 18px; }
+  .col-escandallo h2 { margin-top: 20px; }
+  .col-foto img { width: 300px; height: auto; max-height: 420px; object-fit: contain;
+                  border-radius: 4px; box-shadow: 0 12px 34px rgba(4,23,19,.24); background: #06231e; }
+
+  .head { border-bottom: 0; padding-bottom: 0; }
+  .col-info h1, .head h1 { font-size: 40px; line-height: 1.02; margin: 0 0 6px; color: #0a3730;
+                           text-transform: uppercase; letter-spacing: -.01em; word-break: break-word; }
+  .cat { font-size: 10px; letter-spacing: .2em; text-transform: uppercase; color: #c9a227; margin-bottom: 18px; }
+
+  /* Especificaciones en cuatro columnas separadas por filete. */
+  .specs { display: flex; flex-wrap: wrap; gap: 0; margin: 0; border-top: 1px solid #e6e1d5; padding-top: 16px; }
+  .spec { flex: 1; min-width: 96px; padding: 0 14px; border-left: 1px solid #e6e1d5; text-align: center; }
+  .spec:first-child { border-left: 0; padding-left: 0; }
+  .spec .k { display: block; font-size: 8.5px; letter-spacing: .17em; text-transform: uppercase; color: #9aa39c; margin-bottom: 4px; }
+  .spec .v { font-size: 13px; color: #0a3730; font-weight: 600; }
+
+  h2 { font-size: 12px; letter-spacing: .22em; text-transform: uppercase; color: #0a3730;
+       margin: 30px 0 12px; padding-bottom: 0; border: 0; }
+
+  /* table-layout:fixed es imprescindible: sin él un nombre largo ensancha la
+     tabla más allá de su columna y reaparece el desbordamiento. */
+  table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+  td, th { overflow-wrap: anywhere; word-break: break-word; }
+  thead th { background: #0a3730; color: #f7f4ec; font-size: 9px; letter-spacing: .17em;
+             text-transform: uppercase; font-weight: 600; padding: 9px 14px; text-align: left; }
+  thead th.num { text-align: right; }
+  tbody td { padding: 10px 14px; border-bottom: 1px solid #eeeae0; font-size: 13px; color: #1e2a26; }
+  tbody tr:last-child td { border-bottom: 0; }
+  .num { text-align: right; font-variant-numeric: tabular-nums; }
   .dot { color: #2f9e8f; }
   .k-sub .dot { color: #7c6bd4; }
   .k-garnish .dot { color: #c9a227; }
-  .prep { background: #f7f4ec; border-left: 3px solid #c9a227; }
-  .totals { border-top-color: #c9a227; }
-  .totals .box .n { color: #08302a; }
-  .foot { color: #b3ada0; }`,
+  .tag { border-color: #e0dac9; color: #9aa39c; }
+  .branch { background: #e6e1d5; }
+  .k-sub .branch { background: #ded7f5; }
+  .k-garnish .branch { background: #f0e3bb; }
+
+  /* Nada de títulos huérfanos ni bandas partidas entre páginas. */
+  h2, .prep, .totals, .specs { break-inside: avoid; page-break-inside: avoid; }
+  tr { break-inside: avoid; page-break-inside: avoid; }
+
+  .prep { background: #f7f4ec; border-left: 3px solid #c9a227; border-radius: 0 6px 6px 0;
+          padding: 14px 18px; font-size: 13px; line-height: 1.7; color: #1e2a26; }
+
+  .totals { display: flex; gap: 0; margin-top: 30px; border: 1px solid #e6e1d5; border-radius: 6px;
+            padding: 18px 0; background: #fbfaf6; }
+  .totals .box { flex: 1; text-align: center; border-left: 1px solid #e6e1d5; padding: 0 16px; }
+  .totals .box:first-child { border-left: 0; }
+  .totals .box .l { font-size: 9px; letter-spacing: .17em; color: #9aa39c; }
+  .totals .box .n { font-size: 24px; font-weight: 700; color: #0a3730; margin-top: 4px; }
+
+  .foot { margin-top: 26px; padding-top: 12px; border-top: 1px solid #e6e1d5;
+          font-size: 9px; letter-spacing: .12em; text-transform: uppercase; color: #b3ada0; }`,
 };
 
 /** Registro. Añadir una plantilla es añadirla aquí; el exportador no cambia. */
