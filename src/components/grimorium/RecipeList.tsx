@@ -1,11 +1,12 @@
 import { createPortal } from 'react-dom';
 import React from 'react';
 import { Recipe, Ingredient } from '../../types';
-import { calculateRecipeCost } from '../../core/costing/costCalculator';
 import { Card } from '../ui/Card';
 import { Button } from '../ui/Button';
 import { EnLaFranjaFija } from '../layout/FranjaFija';
 import { calculateRecipeProfitability } from '../../core/costing/profitabilityEngine';
+import { BusinessCostSettings } from '../../core/costing/profitability.types';
+import { useBusinessCostSettings } from '../../hooks/useBusinessCostSettings';
 import { Icon } from '../ui/Icon';
 import { ICONS } from '../ui/icons';
 import { useUI } from '../../context/UIContext';
@@ -65,7 +66,8 @@ const RecipeCard = React.memo(({
   onToggleSelection,
   onDragStart,
   allIngredients,
-  allRecipes = []
+  allRecipes = [],
+  ajustes
 }: {
   recipe: Recipe,
   isViewing: boolean,
@@ -74,17 +76,24 @@ const RecipeCard = React.memo(({
   onToggleSelection: (id: string) => void,
   onDragStart?: (e: React.DragEvent, recipe: Recipe) => void,
   allIngredients: Ingredient[],
-  allRecipes?: Recipe[]
+  allRecipes?: Recipe[],
+  /** Ajustes de Economía. Llegan por prop a propósito: `useBusinessCostSettings`
+   *  abre un onSnapshot, y llamarlo dentro de la tarjeta sería una suscripción
+   *  por receta. Se resuelve una vez en el padre. */
+  ajustes?: BusinessCostSettings
 }) => {
   const mainCategory = recipe.categorias?.[0] || 'General';
   const isDone = recipe.categorias?.includes('Carta') || recipe.categorias?.includes('Terminado');
 
-  // Calculate cost dynamically to ensure consistency with Detail Panel (incl. sub-recipes)
-  const costData = React.useMemo(() => {
-    return calculateRecipeCost(recipe, allIngredients, undefined, allRecipes);
-  }, [recipe, allIngredients, allRecipes]);
+  // El coste que se enseña es el del motor de rentabilidad — el mismo que la
+  // ficha y que Escandallo. Antes era solo el coste de ingredientes, así que la
+  // tarjeta decía 1,18 € donde la ficha decía 1,42 €: el comentario de aquí
+  // prometía "consistencia con el panel de detalle" y había dejado de cumplirse.
+  const p = React.useMemo(() => calculateRecipeProfitability({
+    recipe, allIngredients, allRecipes, settings: ajustes,
+  }), [recipe, allIngredients, allRecipes, ajustes]);
 
-  const displayCost = costData?.costoTotal || recipe.costoTotal || recipe.costoReceta || 0;
+  const displayCost = p.realServedCost || recipe.costoTotal || recipe.costoReceta || 0;
 
   return (
     <div className="w-full relative group">
@@ -338,6 +347,8 @@ export const RecipeList: React.FC<RecipeListProps> = ({
   allIngredients // Destructure
 }) => {
   const { compactMode } = useUI();
+  // Una sola suscripción para toda la lista; se reparte por prop a las tarjetas.
+  const { ajustes } = useBusinessCostSettings();
 
   // Deduplicate recipes
   const [orden, setOrden] = React.useState<CriterioOrden>('recientes');
@@ -357,7 +368,9 @@ export const RecipeList: React.FC<RecipeListProps> = ({
     const metricas = new Map<string, { coste: number; precio: number; margen: number }>();
     if (orden.startsWith('coste') || orden.startsWith('precio') || orden.startsWith('margen')) {
       for (const r of sinDuplicados) {
-        const p = calculateRecipeProfitability({ recipe: r, allIngredients, allRecipes: sinDuplicados });
+        // `settings` va explícito: sin él la ordenación usaba los ajustes por
+        // defecto y ordenaba por un margen distinto del que muestra la tarjeta.
+        const p = calculateRecipeProfitability({ recipe: r, allIngredients, allRecipes: sinDuplicados, settings: ajustes });
         metricas.set(r.id, { coste: p.realServedCost, precio: p.precioVenta, margen: p.grossMarginPercentage });
       }
     }
@@ -555,6 +568,7 @@ export const RecipeList: React.FC<RecipeListProps> = ({
                         onDragStart={onDragStart}
                         allIngredients={allIngredients} // Pass it down
                         allRecipes={recipes}
+                        ajustes={ajustes}
                       />
                     ))}
                   </div>
