@@ -127,12 +127,18 @@ const clubhouse: PlantillaPortada = {
      */
     css: `
   /* border-box es obligatorio aquí: sin él el relleno SUMA a la altura y la
-     portada creciera de más. La altura es 228mm y no los 273mm teóricos de un
-     A4 porque Safari imprime cabecera y pie propios —la URL y "Página n de m"—
-     que comen altura por encima del margen de @page. Con 244mm la portada se
-     derramaba a una segunda hoja. */
+     portada creciera de más.
+
+     La altura va por PROPORCIÓN del ancho, no en milímetros. Los milímetros son
+     absolutos, pero el área imprimible real no es la teórica: Safari añade su
+     cabecera y su pie —la URL y "Página n de m"— que comen altura por encima
+     del margen de @page, y esa merma no se puede medir desde el CSS. Probé
+     244mm y 228mm y las dos se derramaban a una segunda hoja.
+
+     Con aspect-ratio la portada mide siempre 1,33 veces su propio ancho, así
+     que encoge y crece con la página en lugar de contra ella. */
   .cb { page-break-after: always; break-after: page; position: relative; overflow: hidden;
-        box-sizing: border-box; min-height: 228mm; padding: 78px 56px 56px;
+        box-sizing: border-box; width: 100%; aspect-ratio: 1 / 1.33; padding: 78px 56px 56px;
         display: flex; flex-direction: column; justify-content: center;
         background: linear-gradient(150deg, #0a3730 0%, #06231e 58%, #041713 100%); color: #f7f4ec;
         -webkit-print-color-adjust: exact; print-color-adjust: exact; }
@@ -266,7 +272,7 @@ const cartel: PlantillaPortada = {
     descripcion: 'El título a toda página, fondo profundo.',
     css: `
   .pc { page-break-after: always; break-after: page; position: relative;
-        min-height: 228mm; display: flex; flex-direction: column; justify-content: center;
+        width: 100%; aspect-ratio: 1 / 1.33; display: flex; flex-direction: column; justify-content: center;
         background: #0f172a; color: #f8fafc; margin: 0; padding: 56px 44px; }
   /* El navegador omite los fondos al imprimir salvo que se le pida. */
   .pc { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
