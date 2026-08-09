@@ -92,13 +92,12 @@ const fichaHtml = (recipe: Partial<Recipe>, cost: RecipeCostResult, allRecipes: 
 
     return `  <div class="head">
     ${recipe.imageUrl ? `<img src="${esc(recipe.imageUrl)}" alt="">` : ''}
-    <div>
+    <div class="head-info">
       <h1>${esc(recipe.nombre || 'Receta sin nombre')}</h1>
       <div class="cat">${esc((recipe.categorias || []).join(' · '))}</div>
+      ${specsHtml ? `<div class="specs">${specsHtml}</div>` : ''}
     </div>
   </div>
-
-  ${specsHtml ? `<div class="specs">${specsHtml}</div>` : ''}
 
   <h2>Ingredientes</h2>
   <table>
@@ -166,7 +165,7 @@ export function printRecipeCards(
   /* Los estilos de la portada los aporta la plantilla elegida. */
   body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; color: #1f2937; margin: 0; padding: 32px; }
   .head { display: flex; gap: 26px; align-items: center; border-bottom: 3px solid #0d9488; padding-bottom: 20px; margin-bottom: 22px; }
-  .head img { width: 170px; height: 170px; object-fit: cover; border-radius: 18px; box-shadow: 0 8px 24px rgba(15,23,42,.16); flex-shrink: 0; }
+  .head img { width: 170px; height: 170px; object-fit: contain; border-radius: 18px; box-shadow: 0 8px 24px rgba(15,23,42,.16); flex-shrink: 0; }
   h1 { font-size: 34px; margin: 0 0 6px; letter-spacing: -.02em; }
   .cat { color: #64748b; font-size: 13px; text-transform: uppercase; letter-spacing: .08em; }
   .specs { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 20px; }
@@ -205,6 +204,7 @@ export function printRecipeCards(
   .foot { margin-top: 28px; font-size: 10px; color: #cbd5e1; }
   @media print { body { padding: 12mm; } .noprint { display: none; } }
 ${portada ? plantillaPorId(portada.plantilla).css : ''}
+${portada ? (plantillaPorId(portada.plantilla).cssFicha || '') : ''}
 </style></head><body>
   ${portada ? portadaHtml(portada, fichas.length, costeMedio) : ''}
   ${cuerpos}

@@ -25,8 +25,19 @@ export interface PlantillaPortada {
     nombre: string;
     /** Frase corta para la miniatura de selección. */
     descripcion: string;
+    /** CSS de la portada. */
     css: string;
     html: (d: DatosPortada) => string;
+    /**
+     * CSS de la FICHA de receta. Opcional: sin él, la ficha usa el estilo base
+     * del exportador, que es lo que ya funcionaba.
+     *
+     * Un tema viste componentes que ya existen —`.head`, `.specs`, la tabla del
+     * escandallo, `.prep`, `.totals`, `.foot`— y **no decide qué datos hay ni en
+     * qué orden**. Esa separación es lo que permite añadir temas sin tocar el
+     * motor.
+     */
+    cssFicha?: string;
 }
 
 const esc = (s: any): string =>
@@ -105,8 +116,126 @@ const cartel: PlantillaPortada = {
   </section>`,
 };
 
+
+/**
+ * Clubhouse Premium — verde profundo, crema y dorado.
+ *
+ * Toma de la referencia el sistema, no la geometría: masa de color a sangre,
+ * título protagonista en dos pesos, filete dorado y banda de metadatos con
+ * separadores.
+ *
+ * Dos decisiones deliberadas donde se aparta de la referencia, ambas para no
+ * romper recetas reales:
+ *
+ * - **El escandallo va a ancho completo**, no encajado junto a la foto. Con
+ *   quince ingredientes, una sub-receta y un garnish, una tabla estrecha se
+ *   alarga el doble y multiplica los saltos de página.
+ * - **La foto tiene alto MÁXIMO, no fijo**, y se muestra entera (`contain`).
+ *   Estirarla hasta cuadrar con el texto obliga a suponer que todas las recetas
+ *   miden lo mismo, y a recortar la imagen.
+ *
+ * El título usa tamaño fluido: "DRINK YOUR GAME" llena la página y
+ * "WINTER COLLECTION 2026" encoge sin desbordar ni partir palabras.
+ */
+const clubhouse: PlantillaPortada = {
+    id: 'clubhouse',
+    nombre: 'Clubhouse Premium',
+    descripcion: 'Verde profundo, dorado y fotografía protagonista.',
+    css: `
+  .cb { page-break-after: always; break-after: page; position: relative; overflow: hidden;
+        min-height: 245mm; margin: -28px -24px 0; padding: 74px 56px 56px;
+        display: flex; flex-direction: column; justify-content: center;
+        background: linear-gradient(150deg, #0a3730 0%, #06231e 58%, #041713 100%); color: #f7f4ec;
+        -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .cb-marca { font-size: 10px; letter-spacing: .34em; text-transform: uppercase; color: #c9a227; margin-bottom: 26px; }
+  .cb-titulo { margin: 0; text-transform: uppercase; letter-spacing: -.015em; line-height: .92;
+               /* Fluido: un título largo encoge en vez de desbordar. */
+               font-size: clamp(38px, 9.4vw, 82px); font-weight: 800; }
+  .cb-titulo .l2 { display: block; color: #c9a227; }
+  .cb-filete { width: 118px; height: 2px; background: #c9a227; margin: 30px 0; }
+  .cb-sub { font-size: 15px; line-height: 1.7; color: #cfe3dd; max-width: 54ch; margin: 0; white-space: pre-wrap; }
+  .cb-datos { position: absolute; left: 56px; right: 56px; bottom: 56px; display: flex; }
+  .cb-datos > div { padding: 0 26px; border-left: 1px solid rgba(201,162,39,.38); }
+  .cb-datos > div:first-child { padding-left: 0; border-left: 0; }
+  .cb-datos span { display: block; font-size: 9px; letter-spacing: .18em; text-transform: uppercase; color: #c9a227; margin-bottom: 5px; }
+  .cb-datos b { font-size: 17px; font-weight: 600; color: #f7f4ec; }`,
+
+    html: d => {
+        // El título se parte por PALABRAS, nunca a mitad: la primera va en
+        // blanco y el resto en dorado, como en la referencia. Con una sola
+        // palabra, simplemente no hay segunda línea.
+        const palabras = String(d.titulo).trim().split(/\s+/);
+        const l1 = esc(palabras[0] || '');
+        const l2 = esc(palabras.slice(1).join(' '));
+        return `
+  <section class="cb">
+    <div class="cb-marca">Carta de cócteles</div>
+    <h1 class="cb-titulo">${l1}${l2 ? `<span class="l2">${l2}</span>` : ''}</h1>
+    <div class="cb-filete"></div>
+    ${d.subtitulo ? `<p class="cb-sub">${esc(d.subtitulo)}</p>` : ''}
+    <div class="cb-datos">
+      <div><span>Carta de cócteles</span><b>${d.recetas} receta${d.recetas === 1 ? '' : 's'}</b></div>
+      <div><span>Fecha</span><b>${esc(d.fecha || '')}</b></div>
+      <div><span>Coste medio</span><b>${esc(d.costeMedio)}</b></div>
+    </div>
+  </section>`;
+    },
+
+    cssFicha: `
+  body { color: #123; }
+  /* Identidad: foto a la izquierda, título y specs a la derecha. */
+  .head { display: flex; gap: 30px; align-items: flex-start; border-bottom: 0; padding-bottom: 0; margin-bottom: 26px; }
+  .head img { width: 232px; height: auto; max-height: 300px; object-fit: contain;
+              border-radius: 4px; box-shadow: 0 10px 30px rgba(4,23,19,.22); background: #06231e; }
+  .head-info { flex: 1; min-width: 0; }
+  .head h1 { font-size: 40px; line-height: 1.02; margin: 0 0 6px; color: #0a3730; text-transform: uppercase;
+             letter-spacing: -.01em; word-break: break-word; }
+  .cat { font-size: 10px; letter-spacing: .2em; text-transform: uppercase; color: #c9a227; margin-bottom: 20px; }
+
+  /* Especificaciones: cuatro columnas separadas por filete, como la referencia. */
+  .specs { display: flex; flex-wrap: wrap; gap: 0; margin: 0; border-top: 1px solid #e6e1d5; padding-top: 16px; }
+  .spec { flex: 1; min-width: 96px; padding: 0 14px; border-left: 1px solid #e6e1d5; text-align: center; }
+  .spec:first-child { border-left: 0; padding-left: 0; }
+  .spec .k { display: block; font-size: 8.5px; letter-spacing: .17em; text-transform: uppercase; color: #9aa39c; margin-bottom: 4px; }
+  .spec .v { font-size: 13px; color: #0a3730; font-weight: 600; }
+
+  h2 { font-size: 12px; letter-spacing: .22em; text-transform: uppercase; color: #0a3730;
+       margin: 30px 0 12px; padding-bottom: 0; border: 0; }
+
+  /* Escandallo a ancho completo. */
+  table { width: 100%; border-collapse: collapse; }
+  thead th { background: #0a3730; color: #f7f4ec; font-size: 9px; letter-spacing: .17em;
+             text-transform: uppercase; font-weight: 600; padding: 9px 14px; text-align: left; }
+  thead th.num { text-align: right; }
+  tbody td { padding: 10px 14px; border-bottom: 1px solid #eeeae0; font-size: 13px; color: #1e2a26; }
+  tbody tr:last-child td { border-bottom: 0; }
+  .num { text-align: right; font-variant-numeric: tabular-nums; }
+  .dot { color: #2f9e8f; }
+  .k-sub .dot { color: #7c6bd4; }
+  .k-garnish .dot { color: #c9a227; }
+  .tag { border-color: #e0dac9; color: #9aa39c; }
+  /* Sub-recetas y garnish: sangrado y filete, sin cambiar la estructura. */
+  .branch { background: #e6e1d5; }
+  .k-sub .branch { background: #ded7f5; }
+  .k-garnish .branch { background: #f0e3bb; }
+
+  .prep { background: #f7f4ec; border-left: 3px solid #c9a227; border-radius: 0 6px 6px 0;
+          padding: 14px 18px; font-size: 13px; line-height: 1.7; color: #1e2a26; }
+
+  /* Rentabilidad: banda reconocible, sin gritar. */
+  .totals { display: flex; gap: 0; margin-top: 30px; border: 1px solid #e6e1d5; border-radius: 6px;
+            padding: 18px 0; background: #fbfaf6; }
+  .totals .box { flex: 1; text-align: center; border-left: 1px solid #e6e1d5; padding: 0 16px; }
+  .totals .box:first-child { border-left: 0; }
+  .totals .box .l { font-size: 9px; letter-spacing: .17em; color: #9aa39c; }
+  .totals .box .n { font-size: 24px; font-weight: 700; color: #0a3730; margin-top: 4px; }
+
+  .foot { margin-top: 26px; padding-top: 12px; border-top: 1px solid #e6e1d5;
+          font-size: 9px; letter-spacing: .12em; text-transform: uppercase; color: #b3ada0; }`,
+};
+
 /** Registro. Añadir una plantilla es añadirla aquí; el exportador no cambia. */
-export const PLANTILLAS_PORTADA: PlantillaPortada[] = [editorial, cartel];
+export const PLANTILLAS_PORTADA: PlantillaPortada[] = [editorial, clubhouse, cartel];
 
 export const PLANTILLA_POR_DEFECTO = 'editorial';
 
