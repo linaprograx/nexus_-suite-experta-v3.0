@@ -5,6 +5,7 @@ import { useCreativeWeekPro } from '../creative-week-pro';
 import { useNextBestAction } from '../next-best-action';
 import { calculateRecipeCost } from '../../core/costing/costCalculator';
 import { buildCurrentStock } from '../../utils/stockUtils';
+import { resolverMaestro, indicePorId } from '../../core/identity/masterProduct';
 import { useStockRules } from '../../hooks/useStockRules';
 import { useStockMovements } from '../../hooks/useStockMovements';
 
@@ -44,7 +45,10 @@ export const useDashboardMetrics = ({
 
     // 1. Real inventory metrics (from purchase history + stock rules)
     const inventory = useMemo(() => {
-        const stock = buildCurrentStock(purchaseHistory, stockMovements);
+        // Misma consolidación que Inventario: si solo la aplicara una de las dos,
+        // volveríamos al fallo I4 en cuanto existiera el primer alias.
+        const porId = indicePorId(allIngredients || []);
+        const stock = buildCurrentStock(purchaseHistory, stockMovements, id => resolverMaestro(id, porId));
         const inventoryValue = stock.reduce((sum, s) => sum + (s.totalValue || 0), 0);
         const distinctItems = stock.length;
         const productsWithoutPrice = allIngredients.filter(i => !hasPrice(i)).length;

@@ -46,6 +46,7 @@ import { usePurchaseIngredient } from '../hooks/usePurchaseIngredient';
 import { useStockRules } from '../hooks/useStockRules';
 
 import { buildCurrentStock } from '../utils/stockUtils';
+import { resolverMaestro, indicePorId } from '../core/identity/masterProduct';
 import { useStockMovements } from '../hooks/useStockMovements';
 import { calculateEscandallo } from '../core/finance/cost.engine';
 import { useEscandallator } from '../hooks/useEscandallator';
@@ -320,10 +321,14 @@ const GrimoriumInner: React.FC<GrimoriumViewProps> = () => {
     // Stock = purchases IN − movements OUT (consumption/waste/adjustment).
     // With no movements recorded, applyMovementsToStock returns the purchase-built stock unchanged.
     const { movements: stockMovements, addMovements } = useStockMovements();
+    // Consolidación por producto maestro. Hoy es una operación NULA: mientras
+    // ningún ingrediente tenga `masterProductId`, `resolverMaestro` devuelve el
+    // mismo id que recibe y el resultado es idéntico al de antes.
+    const indiceIngredientes = React.useMemo(() => indicePorId(allIngredients || []), [allIngredients]);
     const calculatedStockItems = React.useMemo(() => {
         if (!purchaseHistory) return [];
-        return buildCurrentStock(purchaseHistory, stockMovements);
-    }, [purchaseHistory, stockMovements]);
+        return buildCurrentStock(purchaseHistory, stockMovements, id => resolverMaestro(id, indiceIngredientes));
+    }, [purchaseHistory, stockMovements, indiceIngredientes]);
 
     // Record a stock-out movement (consumption / waste / adjustment) in the item's own unit
     const handleRecordStockMovement = React.useCallback(async (

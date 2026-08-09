@@ -111,10 +111,75 @@ export const applyMovementsToStock = (stock: StockItem[], movements: StockMoveme
  * exportadas porque el motor de coste usa `buildStockFromPurchases` a solas
  * para derivar precios de compra, que es otra pregunta distinta.
  */
+/**
+ * Une las filas que son alias del mismo producto maestro.
+ *
+ * **Regla conservadora, y a propósito:** solo se unen las filas que comparten
+ * la MISMA cadena de unidad. Si dos alias vienen en `0.700 L` y
+ * `BOTELLA (700ML)`, sumar sus cantidades daría un número sin significado —
+ * es el bloqueo de I1. En ese caso **no se unen y se dejan tal cual**, que es
+ * preferible a enseñar una cifra inventada.
+ *
+ * `buildStockFromPurchases` NO se toca: lo consume también el motor de coste
+ * (`costCalculator.ts:27`) para derivar precios de compra, y cambiar su
+ * agrupación movería el coste de las recetas.
+ */
+export const consolidarPorMaestro = (
+    stock: StockItem[],
+    resolver: (ingredientId: string) => string,
+): StockItem[] => {
+    const porMaestro = new Map<string, StockItem[]>();
+    for (const item of stock) {
+        const maestro = resolver(item.ingredientId);
+        if (!porMaestro.has(maestro)) porMaestro.set(maestro, []);
+        porMaestro.get(maestro)!.push(item);
+    }
+
+    const salida: StockItem[] = [];
+    for (const [maestroId, filas] of porMaestro.entries()) {
+        if (filas.length === 1) { salida.push(filas[0]); continue; }
+
+        const unidades = new Set(filas.map(f => (f.unit || '').trim().toLowerCase()));
+        if (unidades.size > 1) {
+            // Unidades incompatibles: se dejan separadas. Fase D no debería
+            // haber permitido este alias, pero si llega, no se miente.
+            salida.push(...filas);
+            continue;
+        }
+
+        // La fila maestra presta identidad y nombre; el resto aporta cantidad.
+        const principal = filas.find(f => f.ingredientId === maestroId) || filas[0];
+        const cantidad = filas.reduce((a, f) => a + (f.quantityAvailable || 0), 0);
+        const valor = filas.reduce((a, f) => a + (f.totalValue || 0), 0);
+        const masReciente = filas.reduce((a, f) =>
+            new Date(f.lastPurchaseDate).getTime() > new Date(a.lastPurchaseDate).getTime() ? f : a);
+
+        salida.push({
+            ...principal,
+            ingredientId: maestroId,
+            quantityAvailable: cantidad,
+            totalValue: valor,
+            averageUnitCost: cantidad > 0 ? valor / cantidad : principal.averageUnitCost,
+            lastPurchaseDate: masReciente.lastPurchaseDate,
+            providerName: masReciente.providerName,
+            lastPurchaseQuantity: masReciente.lastPurchaseQuantity,
+        });
+    }
+    return salida;
+};
+
+/**
+ * Existencias actuales. `resolverMaestro` es **opcional**: sin él, el resultado
+ * es exactamente el de antes de que existiera la identidad maestra.
+ */
 export const buildCurrentStock = (
     purchases: PurchaseEvent[],
     movements: StockMovement[] = [],
-): StockItem[] => applyMovementsToStock(buildStockFromPurchases(purchases), movements);
+    resolverMaestro?: (ingredientId: string) => string,
+): StockItem[] => {
+    const base = applyMovementsToStock(buildStockFromPurchases(purchases), movements);
+    return resolverMaestro ? consolidarPorMaestro(base, resolverMaestro) : base;
+};
 
 export const calculateInventoryMetrics = (stock: StockItem[]) => {
     const totalValue = stock.reduce((sum, item) => sum + item.totalValue, 0);
