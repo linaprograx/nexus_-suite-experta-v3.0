@@ -186,7 +186,7 @@ const clubhouse: PlantillaPortada = {
 
   /* La FOTO es el elemento principal: ocupa la columna izquierda entera y el
      escandallo se compone a su derecha, bajo las especificaciones.
-     `grid-row: 1 / span 2` es lo que deja que la imagen sea alta sin obligar a
+     grid-row: 1 / span 2 es lo que deja que la imagen sea alta sin obligar a
      que todas las recetas midan lo mismo: crece hasta donde llegue el contenido
      de la derecha, y nunca se recorta. */
   .ficha-top { grid-template-columns: 300px 1fr; gap: 30px; margin-bottom: 8px; }
