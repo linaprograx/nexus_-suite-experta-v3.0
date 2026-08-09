@@ -49,7 +49,20 @@ export const ActiveMenuModal: React.FC<{
      * diseño que la ficha suelta. Usa el mismo motor, que ahora recibe una lista.
      */
     const exportarCarta = () => {
-        const recetas = menu
+        // El orden de la carta manda sobre el del catálogo.
+        // Lo que el usuario ve como secuencia de su carta es lo que recibe
+        // impreso; si no ha ordenado nada, se respeta el orden de las entradas.
+        const secuencia = cartaActiva?.orden;
+        const entradas = secuencia?.length
+            ? [...menu].sort((a, b) => {
+                const ia = secuencia.indexOf(a.recipeId);
+                const ib = secuencia.indexOf(b.recipeId);
+                // Las que no estén en la secuencia van al final, sin barajarse.
+                return (ia === -1 ? Number.MAX_SAFE_INTEGER : ia) - (ib === -1 ? Number.MAX_SAFE_INTEGER : ib);
+            })
+            : menu;
+
+        const recetas = entradas
             .map(m => allRecipes.find(r => r.id === m.recipeId))
             .filter((r): r is Recipe => !!r);
 

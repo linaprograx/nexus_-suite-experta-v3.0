@@ -25,6 +25,18 @@ export interface Carta {
     concepto?: string;
     fecha?: string;
     estado: 'activa' | 'archivada';
+    /**
+     * Secuencia manual de la carta: lista de `recipeId` en el orden elegido.
+     *
+     * El orden del catálogo y el de una carta son cosas distintas. El catálogo
+     * puede estar por «más recientes» mientras trabajas, y la carta necesita su
+     * propia secuencia comercial. Si esta lista existe, **manda sobre cualquier
+     * criterio**, y es la que recibe la exportación: lo que el usuario ve como
+     * orden de su carta es lo que debe salir impreso.
+     *
+     * Ausente = se usa el orden natural de las entradas.
+     */
+    orden?: string[];
     createdAt?: any;
 }
 

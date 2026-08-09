@@ -1,5 +1,5 @@
 import React, { useRef, useEffect } from 'react';
-import { Firestore, updateDoc, addDoc, collection, doc } from 'firebase/firestore';
+import { Firestore, updateDoc, addDoc, collection, doc, serverTimestamp } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { useQueryClient } from '@tanstack/react-query';
 import { Modal } from '../ui/Modal';
@@ -260,7 +260,11 @@ export const RecipeFormModal: React.FC<RecipeFormModalProps> = ({ isOpen, onClos
                     entityId: dataToSave.id,
                 });
             } else {
-                const docRef = await addDoc(collection(db, `users/${userId}/grimorio`), dataToSave);
+                // Fecha de creación, para poder ordenar por "más recientes".
+                // Solo al crear: editar no debe alterar el orden del catálogo.
+                const docRef = await addDoc(collection(db, `users/${userId}/grimorio`), {
+                    ...dataToSave, createdAt: serverTimestamp(),
+                });
                 console.log("✅ Nueva receta creada:", docRef.id);
                 logActivity(db, userId, {
                     actionType: 'RECIPE_CREATED',

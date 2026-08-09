@@ -4,6 +4,7 @@ import { calculateRecipeCost } from '../../core/costing/costCalculator';
 import { Card } from '../ui/Card';
 import { Button } from '../ui/Button';
 import { EnLaFranjaFija } from '../layout/FranjaFija';
+import { calculateRecipeProfitability } from '../../core/costing/profitabilityEngine';
 import { Icon } from '../ui/Icon';
 import { ICONS } from '../ui/icons';
 import { useUI } from '../../context/UIContext';
@@ -159,6 +160,44 @@ const RecipeCard = React.memo(({
 });
 
 /**
+ * Criterios de ordenación del catálogo.
+ *
+ * Ordenar **no es filtrar**: esto solo cambia la secuencia, nunca qué se ve. Se
+ * mantienen separados a propósito para que añadir filtros más adelante no toque
+ * nada de aquí.
+ *
+ * El coste y el margen salen del motor de rentabilidad, no de campos guardados
+ * en la receta: esos pueden estar desactualizados si cambió el precio de un
+ * ingrediente, y ordenar por un número obsoleto es peor que no ordenar.
+ */
+export type CriterioOrden =
+    | 'recientes' | 'antiguas' | 'az' | 'za'
+    | 'coste-asc' | 'coste-desc' | 'precio-asc' | 'precio-desc'
+    | 'margen-desc' | 'margen-asc';
+
+const OPCIONES_ORDEN: { id: CriterioOrden; etiqueta: string }[] = [
+    { id: 'recientes', etiqueta: 'Más recientes' },
+    { id: 'antiguas', etiqueta: 'Más antiguas' },
+    { id: 'az', etiqueta: 'A → Z' },
+    { id: 'za', etiqueta: 'Z → A' },
+    { id: 'coste-asc', etiqueta: 'Menor coste' },
+    { id: 'coste-desc', etiqueta: 'Mayor coste' },
+    { id: 'precio-asc', etiqueta: 'Menor precio' },
+    { id: 'precio-desc', etiqueta: 'Mayor precio' },
+    { id: 'margen-desc', etiqueta: 'Mayor margen' },
+    { id: 'margen-asc', etiqueta: 'Menor margen' },
+];
+
+/** Fecha comparable. Sin `createdAt` cae a `updatedAt`, y si no, a 0. */
+const fechaDe = (r: any): number => {
+    const v = r?.createdAt ?? r?.updatedAt;
+    if (!v) return 0;
+    if (typeof v?.toDate === 'function') return v.toDate().getTime();
+    const t = new Date(v).getTime();
+    return isNaN(t) ? 0 : t;
+};
+
+/**
  * A qué grupo del catálogo pertenece una receta.
  *
  * Se deduce de `categorias`, que es donde el proyecto ya guardaba esta
@@ -204,15 +243,45 @@ export const RecipeList: React.FC<RecipeListProps> = ({
   const { compactMode } = useUI();
 
   // Deduplicate recipes
+  const [orden, setOrden] = React.useState<CriterioOrden>('recientes');
+
   const uniqueRecipes = React.useMemo(() => {
     if (!recipes) return [];
     const seen = new Set();
-    return recipes.filter(r => {
+    const sinDuplicados = recipes.filter(r => {
       const duplicate = seen.has(r.id);
       seen.add(r.id);
       return !duplicate;
     });
-  }, [recipes]);
+
+    // El coste y el margen se calculan una vez por receta, no dentro del
+    // comparador: un `sort` llama al comparador O(n log n) veces y recalcular
+    // ahí el escandallo de cada receta sería carísimo con el catálogo grande.
+    const metricas = new Map<string, { coste: number; precio: number; margen: number }>();
+    if (orden.startsWith('coste') || orden.startsWith('precio') || orden.startsWith('margen')) {
+      for (const r of sinDuplicados) {
+        const p = calculateRecipeProfitability({ recipe: r, allIngredients, allRecipes: sinDuplicados });
+        metricas.set(r.id, { coste: p.realServedCost, precio: p.precioVenta, margen: p.grossMarginPercentage });
+      }
+    }
+    const m = (r: any) => metricas.get(r.id) || { coste: 0, precio: 0, margen: 0 };
+    const nombre = (r: any) => (r?.nombre || '').toLocaleLowerCase('es');
+
+    const copia = [...sinDuplicados];
+    switch (orden) {
+      case 'recientes': return copia.sort((a, b) => fechaDe(b) - fechaDe(a) || nombre(a).localeCompare(nombre(b)));
+      case 'antiguas': return copia.sort((a, b) => fechaDe(a) - fechaDe(b) || nombre(a).localeCompare(nombre(b)));
+      case 'az': return copia.sort((a, b) => nombre(a).localeCompare(nombre(b)));
+      case 'za': return copia.sort((a, b) => nombre(b).localeCompare(nombre(a)));
+      case 'coste-asc': return copia.sort((a, b) => m(a).coste - m(b).coste);
+      case 'coste-desc': return copia.sort((a, b) => m(b).coste - m(a).coste);
+      case 'precio-asc': return copia.sort((a, b) => m(a).precio - m(b).precio);
+      case 'precio-desc': return copia.sort((a, b) => m(b).precio - m(a).precio);
+      case 'margen-desc': return copia.sort((a, b) => m(b).margen - m(a).margen);
+      case 'margen-asc': return copia.sort((a, b) => m(a).margen - m(b).margen);
+      default: return copia;
+    }
+  }, [recipes, orden, allIngredients]);
 
   return (
     <div className="lg:h-full flex flex-col w-full max-w-full">
@@ -254,6 +323,17 @@ export const RecipeList: React.FC<RecipeListProps> = ({
             <option value="Pruebas">Pruebas</option>
             <option value="Terminado">Carta</option>
             <option value="Archivada">Archivada</option>
+          </select>
+
+          {/* Ordenar. Separado de los filtros a propósito: cambia la secuencia,
+              nunca qué se ve. */}
+          <select
+            aria-label="Ordenar recetas"
+            className="h-10 pl-3 pr-8 bg-white/50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-700 dark:text-slate-200"
+            value={orden}
+            onChange={(e) => setOrden(e.target.value as CriterioOrden)}
+          >
+            {OPCIONES_ORDEN.map(o => <option key={o.id} value={o.id}>{o.etiqueta}</option>)}
           </select>
 
           {/* Delete Selected Button */}
