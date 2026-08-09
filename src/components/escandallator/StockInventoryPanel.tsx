@@ -167,7 +167,11 @@ export const StockInventoryPanel: React.FC<StockInventoryPanelProps> = ({
 
         let esteMes = 0, mesAnterior = 0;
         for (const p of (purchases || [])) {
-            const val = (p as any).totalCost ?? ((p as any).quantity || 0) * ((p as any).unitPrice || 0);
+            // `||` y no `??`: hay compras guardadas con totalCost = 0 y precio
+            // unitario real. Con `??` el cero se daba por bueno y nunca se
+            // llegaba al respaldo, porque `??` solo cede ante null/undefined.
+            // Es la misma trampa que ya documenta CONTEXT.md.
+            const val = (p as any).totalCost || ((p as any).quantity || 0) * ((p as any).unitPrice || 0);
             const t = toMillis((p as any).createdAt);
             if (t >= inicioMes) esteMes += val;
             else if (t >= inicioMesAnterior) mesAnterior += val;   // solo el mes anterior
