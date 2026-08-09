@@ -5,6 +5,7 @@ import { ICONS } from '../../../components/ui/icons';
 import { IntelPreferencesPanel } from '../../../features/learning/components/IntelPreferencesPanel';
 import { AuditLogModal } from '../../../components/grimorium/AuditLogModal';
 import { ActiveMenuModal } from '../../../components/grimorium/ActiveMenuModal';
+import { IdentityReportModal } from '../../../features/identity/IdentityReportModal';
 import { fijarAlcanceCarta } from '../../../hooks/useAlcanceCarta';
 
 // Toolbar for Grimorium View (Recipes, Stock, Market)
@@ -13,6 +14,7 @@ export const GrimoriumToolbar: React.FC<{ collapsed?: boolean }> = ({ collapsed 
     const [showIntelPanel, setShowIntelPanel] = useState(false);
     const [showAuditLog, setShowAuditLog] = useState(false);
     const [showMenu, setShowMenu] = useState(false);
+    const [showDuplicados, setShowDuplicados] = useState(false);
 
     // Color Mapping for Text matching the old bg classes
     const getColorStyle = (mode: GrimoriumViewMode) => {
@@ -126,6 +128,13 @@ export const GrimoriumToolbar: React.FC<{ collapsed?: boolean }> = ({ collapsed 
                         iconClass="text-emerald-300"
                         title="Carta activa — recetas publicadas y su desviación de coste"
                     />
+                    <ActionButton
+                        onClick={() => setShowDuplicados(true)}
+                        icon={ICONS.copy}
+                        label="Duplicados"
+                        iconClass="text-indigo-300"
+                        title="Informe de productos duplicados — solo lectura"
+                    />
 
                     {/* Cost Layer (Escandallo) */}
                     <LayerToggle
@@ -149,6 +158,7 @@ export const GrimoriumToolbar: React.FC<{ collapsed?: boolean }> = ({ collapsed 
 
             {showIntelPanel && <IntelPreferencesPanel onClose={() => setShowIntelPanel(false)} />}
             {showAuditLog && <AuditLogModal onClose={() => setShowAuditLog(false)} />}
+            {showDuplicados && <IdentityReportModal onClose={() => setShowDuplicados(false)} />}
             {showMenu && (
                 <ActiveMenuModal
                     onClose={() => {
