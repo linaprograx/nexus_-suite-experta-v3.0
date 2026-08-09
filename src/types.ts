@@ -25,6 +25,29 @@ export interface StockItem {
  *  - 'waste': breakage/spillage
  *  - 'adjustment': physical count reconciliation (digital − counted)
  */
+/**
+ * De dónde nace un movimiento de stock. **Ortogonal a `type`.**
+ *
+ * `type` dice qué le pasó a la cantidad (se consumió, se tiró, se ajustó).
+ * `origen` dice **quién o qué lo provocó**, que es una pregunta distinta: un
+ * `consumption` puede venir de producir una receta, de una venta del TPV o de
+ * una invitación, y para analizar rotación —o para auditar un TPV mal
+ * configurado— hay que poder distinguirlos.
+ *
+ * Se añade antes de que nada lo consuma, y a propósito: retrofitar el origen
+ * sobre movimientos ya escritos es imposible, porque el dato se perdió al
+ * escribirlos. Los documentos anteriores a este campo no lo tienen; quien lea
+ * debe tratar la ausencia como «desconocido», nunca suponer un valor.
+ */
+export type StockMovementOrigin =
+    | 'manual'       // registrado a mano por el usuario
+    | 'produccion'   // descuento al producir/servir una receta
+    | 'conteo'       // ajuste nacido de un conteo físico
+    | 'recepcion'    // entrada por recepción de pedido
+    | 'venta'        // consumo teórico desde un TPV externo
+    | 'invitacion'   // cortesía, personal, catas
+    | 'importacion'; // carga masiva de datos
+
 export interface StockMovement {
     id: string;
     ingredientId: string;
@@ -32,6 +55,8 @@ export interface StockMovement {
     quantity: number;   // amount removed, in `unit`
     unit: string;
     type: 'consumption' | 'waste' | 'adjustment';
+    /** Ausente en los movimientos anteriores a 2026-08-09: tratar como desconocido. */
+    origen?: StockMovementOrigin;
     reason?: string;
     recipeId?: string;
     recipeName?: string;

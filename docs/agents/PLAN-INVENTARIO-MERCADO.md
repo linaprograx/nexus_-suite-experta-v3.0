@@ -86,12 +86,74 @@ implementación; **«parcial»**, que existe la pieza pero no el flujo completo.
 |---|---|---|---|
 | 30-33 | Facturas y conciliación | falta | 6 |
 | 34 | Analítica de compras | falta; **hay un escalón barato**: gasto por proveedor y mes desde las compras ya registradas | 4 |
-| 35+ | Configuración de Negocio | ⬜ **EL DOCUMENTO DEL FUNDADOR SE CORTA AQUÍ** | — |
+### Configuración de Negocio y arquitectura (Partes IV y V, recibidas 2026-08-09)
 
-> **Falta la Parte IV entera.** El texto termina a media frase en el punto 35
-> (`- mer`). Es justo la parte que decide qué parámetro vive en Negocio y cuál
-> en la relación producto-proveedor. Pedida al fundador; hasta tenerla, no se
-> toca la configuración.
+| # | Punto | Estado | Fase |
+|---|---|---|---|
+| 35 | Qué vive en Negocio | parcial — `users/{uid}/settings/costes` ya guarda IVA, merma, coste laboral, estructura, comisiones y objetivo de coste | ampliar en 3-6 |
+| 36 | Qué **no** vive en Negocio | correcto y hoy se cumple: no hay proveedor ni precio global en ajustes | — |
+| 37 | Preferente por producto, no global | falta — parte del punto 17 | 3 |
+| 38 | Regla global + override específico | **el patrón YA EXISTE y tiene nombre**: `AJUSTES_COSTE_POR_DEFECTO` → `recipe.costingOverrides`, resuelto en `profitabilityEngine.ts:84`. **Reutilizarlo, no inventar un segundo mecanismo** | — |
+| 39 | Presupuesto de compras | falta | 4 |
+| 40 | Configuración de facturas en Negocio, entidades en Mercado | falta | 6 |
+| 41 | Las cuatro preguntas antes de añadir un campo | **regla adoptada** | — |
+| 42 | Una fuente de verdad por dato | vigente | — |
+| 43 | Recetas no se reabre | vigente — **ver el aviso de abajo** | — |
+| 44 | Motor económico existente | vigente | — |
+| 45 | Agrupación visual ≠ entidad nueva | vigente | — |
+| 46 | Humano en el circuito | vigente; ya se cumple en el pedido | — |
+| 47 | Trazabilidad | parcial — **`users/{uid}/audit_log` ya existe** con `logActionExecution` y su visor `AuditLogModal`. Reutilizar | 4 |
+| 48 | Integraciones desacopladas | vigente | 6 |
+| 49 | No sobreingeniería | vigente | — |
+
+#### Aviso sobre el punto 43 — «Recetas no se reabre»
+
+**I1 no reabre Recetas como código, pero mueve los números que Recetas
+muestra.** Normalizar unidades cambia el coste de los ingredientes, y por tanto
+el escandallo, el margen y el nivel de cada receta afectada.
+
+No es una excepción a la regla: es exactamente el caso que la regla pide
+explicar antes. Por eso el informe en seco de I1 incluye **recetas y
+sub-recetas afectadas con su impacto económico**, y por eso lo aprueba el
+fundador antes de que se escriba nada.
+
+#### Dependencia nueva detectada — el presupuesto (39) y el pedido ficticio
+
+El presupuesto necesita saber **qué es gasto de verdad**. Y en
+`PLAN-GRIMORIO-MERCADO.md` está previsto el **pedido ficticio mensual**, que
+crea inventario **sin gasto**.
+
+Si el pedido ficticio no queda marcado como tal, el presupuesto miente desde el
+primer mes: mostraría como consumido un dinero que nunca salió. **La marca de
+«compra sin gasto» es requisito del punto 39**, no un detalle del pedido
+ficticio.
+
+Además, «gasto comprometido en pedidos abiertos» exige **M1** (que el pedido
+tenga precio) y **M2** (que sepa de quién es). Sin las dos, el presupuesto solo
+puede enseñar gasto pasado.
+
+#### Idea del fundador — avisos de configuración incompleta en Mercado
+
+Cuando lleguen presupuesto y envío por correo, alguien que abre la app por
+primera vez no sabrá que hay que configurarlos ni dónde. Propuesta: un aviso en
+Mercado que lleve directo a Personal → Negocio.
+
+**Reserva importante:** esto es la misma familia que la **guía de primer uso**
+(E5 de `PLAN-GRIMORIO-MERCADO.md`). **No se construyen dos sistemas de avisos.**
+
+Recomendación a validar:
+
+- La **guía de primer uso** se ocupa del primer contacto, una sola vez.
+- La **configuración incompleta** no es un evento de primer uso: es un **estado**
+  que puede durar meses. Por eso conviene mejor una **tarjeta discreta y
+  descartable** dentro de Mercado —«Sin presupuesto configurado», «Sin correo
+  de proveedor»— que una ventana emergente que interrumpe. Una emergente se
+  cierra sin leer la primera vez y ya no vuelve; un estado visible se resuelve
+  cuando el usuario tiene tiempo.
+- En ambos casos, **enlace profundo** a la sección exacta de ajustes, no a
+  «Personal» a secas.
+- La lista de qué falta se **deriva** de lo que las funciones necesitan; nada de
+  una lista escrita a mano que se quede vieja.
 
 ---
 
@@ -168,9 +230,23 @@ resultados.
 Sin esto, cada función nueva hereda el error.
 
 1. **I1 · Unidades canónicas** (punto 9). Normalizar en la entrada con
-   `packNormalization`; cantidad canónica + unidad de presentación. Con informe
-   previo; la migración la lanza el fundador.
-2. **`origen` en `StockMovement`** (prepara 12 y 13).
+   `packNormalization`; cantidad canónica + unidad de presentación.
+
+   **Nada se escribe hasta que el fundador apruebe el informe en seco**, que
+   debe traer, por ítem: unidad actual · unidad propuesta · factor · stock
+   afectado · coste actual · coste resultante · recetas afectadas ·
+   sub-recetas afectadas · impacto económico · ambigüedades.
+
+   Los ingredientes cuya conversión no pueda determinarse **con certeza** se
+   marcan `BLOQUEADO PARA REVISIÓN`. **No se infiere ningún valor.** Un
+   `10813.000 L` no se «interpreta»: se bloquea.
+
+2. **`origen` en `StockMovement`** ✅ **HECHO 2026-08-09**. Campo opcional
+   `StockMovementOrigin` (manual · produccion · conteo · recepcion · venta ·
+   invitacion · importacion), ortogonal a `type`. Escrito ya por las tres rutas
+   vivas: mini-diálogo manual, producción de receta y conteo físico. Los
+   documentos anteriores no lo llevan y se tratan como desconocido. Prepara los
+   puntos 12 y 13.
 3. **I4 · Un solo valor de almacén.**
 4. **I3 · Arreglar o retirar la variación mensual.**
 5. **I2 · Semáforo desde `useStockRules`.**

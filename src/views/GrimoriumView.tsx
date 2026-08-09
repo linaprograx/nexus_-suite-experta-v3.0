@@ -338,6 +338,7 @@ const GrimoriumInner: React.FC<GrimoriumViewProps> = () => {
                 quantity,
                 unit: item.unit,
                 type,
+                origen: 'manual',
                 reason,
             }]);
             const label = type === 'waste' ? 'Merma' : type === 'adjustment' ? 'Ajuste' : 'Consumo';
@@ -359,6 +360,7 @@ const GrimoriumInner: React.FC<GrimoriumViewProps> = () => {
                 quantity: l.quantity,
                 unit: l.unit,
                 type: 'consumption' as const,
+                origen: 'produccion' as const,
                 reason: `Producción: ${produceRecipe?.nombre || 'receta'} ×${servings}`,
                 recipeId: produceRecipe?.id,
                 recipeName: produceRecipe?.nombre,
@@ -382,6 +384,7 @@ const GrimoriumInner: React.FC<GrimoriumViewProps> = () => {
                 quantity: a.delta, // signed: >0 removes, <0 adds back
                 unit: a.item.unit,
                 type: 'adjustment' as const,
+                origen: 'conteo' as const,
                 reason: 'Conteo físico',
             })));
             showToast(`Conteo aplicado: ${adjustments.length} ajuste(s) de inventario`, 'success');
