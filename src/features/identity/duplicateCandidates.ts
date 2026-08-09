@@ -75,6 +75,9 @@ export interface GrupoCandidato {
     motivo: string;
     /** Ficha propuesta como maestra. `null` si el grupo está bloqueado. */
     maestroPropuesto: string | null;
+    /** Productos de nombre parecido pero con alguna palabra que los distingue.
+     *  Se muestran como contexto y NUNCA se fusionan. */
+    variantes: FichaCandidata[];
     /** Suma de stock, solo si las unidades son comparables. */
     simulacion: { sumable: true; cantidad: number; base: string; valor: number }
     | { sumable: false; motivo: string };
@@ -152,17 +155,7 @@ const construirFicha = (ing: Ingredient, e: Entrada): FichaCandidata => {
  */
 const evaluarRiesgo = (
     fichas: FichaCandidata[],
-    hayTokenDistintivo: boolean,
 ): { riesgo: RiesgoFusion; motivo: string } => {
-    if (hayTokenDistintivo) {
-        return {
-            riesgo: 'BLOQUEADO',
-            motivo: 'Los nombres se parecen pero uno tiene una palabra que el otro no '
-                + '(sabor, variedad, color…). Puede ser otro producto — como ABSOLUT VODKA '
-                + 'frente a ABSOLUT MANDARINA. Decisión humana.',
-        };
-    }
-
     const categorias = new Set(fichas.map(f => f.categoria));
     if (categorias.size > 1) {
         return {
@@ -176,8 +169,8 @@ const evaluarRiesgo = (
     if (formatos.size > 1) {
         return {
             riesgo: 'MEDIO',
-            motivo: 'Mismo producto con formatos escritos de forma distinta. '
-                + 'Requiere normalizar unidades (I1) antes de sumar existencias.',
+            motivo: 'Mismo nombre y misma categoría, con el formato escrito de forma distinta. '
+                + 'Hay que normalizar unidades (I1) antes de sumar existencias.',
         };
     }
 
@@ -227,11 +220,26 @@ const simular = (fichas: FichaCandidata[]): GrupoCandidato['simulacion'] => {
 export const detectarCandidatos = (e: Entrada): GrupoCandidato[] => {
     const conTokens = e.allIngredients
         .filter(i => i?.id && i?.nombre)
-        .map(i => ({ ing: i, tokens: tokensFuertes(i.nombre) }))
+        .map(i => ({ ing: i, tokens: tokensFuertes(i.nombre), clave: tokensFuertes(i.nombre).slice().sort().join(' ') }))
         .filter(x => x.tokens.length > 0);
 
-    // Índice por token → ingredientes que lo contienen. Evita comparar todos
-    // contra todos: con 1.367 referencias eso serían ~934.000 comparaciones.
+    /**
+     * El núcleo de un grupo son SOLO los nombres con el mismo conjunto exacto de
+     * palabras fuertes. «ABSOLUT VODKA» y «VODKA ABSOLUT» comparten núcleo;
+     * «VODKA ABSOLUT MANDARINA» no, porque trae una palabra de más.
+     *
+     * La primera versión agrupaba también a los parecidos, y el resultado fue
+     * que MANDARINA contaminaba el grupo entero y bloqueaba la fusión legítima
+     * de los otros dos. Seguro, pero inútil: el informe se llenaba de bloqueos
+     * sin proponer nada. Ahora la variante se muestra al lado, como contexto.
+     */
+    const porClave = new Map<string, typeof conTokens>();
+    for (const x of conTokens) {
+        if (!porClave.has(x.clave)) porClave.set(x.clave, []);
+        porClave.get(x.clave)!.push(x);
+    }
+
+    // Índice por token para localizar variantes sin comparar todos contra todos.
     const porToken = new Map<string, typeof conTokens>();
     for (const x of conTokens) {
         for (const t of x.tokens) {
@@ -240,64 +248,45 @@ export const detectarCandidatos = (e: Entrada): GrupoCandidato[] => {
         }
     }
 
-    const yaAgrupado = new Set<string>();
     const grupos: GrupoCandidato[] = [];
 
-    for (const x of conTokens) {
-        if (yaAgrupado.has(x.ing.id)) continue;
+    for (const [clave, miembros] of porClave.entries()) {
+        if (miembros.length < 2) continue;   // sin duplicado, no hay nada que informar
 
-        const setX = new Set(x.tokens);
-        // Solo se comparan los que comparten al menos un token fuerte.
-        const vecinos = new Set<typeof conTokens[number]>();
-        for (const t of x.tokens) (porToken.get(t) || []).forEach(v => vecinos.add(v));
+        const setNucleo = new Set(miembros[0].tokens);
 
-        const miembros: typeof conTokens = [];
-        let hayTokenDistintivo = false;
-
-        for (const v of vecinos) {
-            if (v.ing.id === x.ing.id || yaAgrupado.has(v.ing.id)) continue;
-            const setV = new Set(v.tokens);
-
-            const comunes = [...setX].filter(t => setV.has(t));
-            if (comunes.length === 0) continue;
-
-            const soloX = [...setX].filter(t => !setV.has(t));
-            const soloV = [...setV].filter(t => !setX.has(t));
-
-            // Conjuntos idénticos → mismo producto muy probablemente.
-            if (soloX.length === 0 && soloV.length === 0) {
-                miembros.push(v);
-                continue;
-            }
-
-            // Uno contiene al otro y lo que sobra son palabras de verdad:
-            // es una VARIANTE, no un duplicado. Se muestra, pero bloqueada.
-            if (comunes.length >= 1 && (soloX.length + soloV.length) <= 2) {
-                miembros.push(v);
-                hayTokenDistintivo = true;
+        // Variantes: comparten alguna palabra, pero traen o les faltan otras.
+        const vistas = new Set<string>();
+        const variantes: typeof conTokens = [];
+        for (const t of setNucleo) {
+            for (const v of porToken.get(t) || []) {
+                if (v.clave === clave || vistas.has(v.ing.id)) continue;
+                const setV = new Set(v.tokens);
+                const comunes = [...setNucleo].filter(k => setV.has(k));
+                const distintos = [...setNucleo].filter(k => !setV.has(k)).length
+                    + [...setV].filter(k => !setNucleo.has(k)).length;
+                // Cerca, pero no igual. Más de dos palabras de diferencia ya es otro producto.
+                if (comunes.length >= 1 && distintos <= 2) {
+                    vistas.add(v.ing.id);
+                    variantes.push(v);
+                }
             }
         }
 
-        if (miembros.length === 0) continue;
-
-        const todos = [x, ...miembros];
-        todos.forEach(m => yaAgrupado.add(m.ing.id));
-
-        const fichas = todos.map(m => construirFicha(m.ing, e));
-        const { riesgo, motivo } = evaluarRiesgo(fichas, hayTokenDistintivo);
+        const fichas = miembros.map(m => construirFicha(m.ing, e));
+        const { riesgo, motivo } = evaluarRiesgo(fichas);
 
         // El maestro propuesto es el que más historia tiene: más compras y más
         // recetas dependiendo de él. Absorber hacia el que menos referencias
         // tiene multiplicaría el trabajo de reconciliación.
-        const maestro = riesgo === 'BLOQUEADO'
-            ? null
-            : [...fichas].sort((a, b) =>
-                (b.compras + b.recetas.length * 3) - (a.compras + a.recetas.length * 3)
-            )[0].id;
+        const maestro = [...fichas].sort((a, b) =>
+            (b.compras + b.recetas.length * 3) - (a.compras + a.recetas.length * 3)
+        )[0].id;
 
         grupos.push({
-            clave: [...setX].sort().join(' '),
+            clave,
             fichas,
+            variantes: variantes.map(v => construirFicha(v.ing, e)),
             riesgo,
             motivo,
             maestroPropuesto: maestro,

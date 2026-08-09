@@ -117,6 +117,26 @@ const Grupo: React.FC<{ g: GrupoCandidato }> = ({ g }) => {
                         ))}
                     </div>
 
+                    {g.variantes.length > 0 && (
+                        <div className="rounded-xl border border-rose-300/60 dark:border-rose-500/30 bg-rose-500/5 p-2.5">
+                            <span className="block text-[9px] uppercase tracking-wider text-rose-600 dark:text-rose-400 mb-1">
+                                Variantes cercanas — NO se fusionan
+                            </span>
+                            <p className="text-[11px] text-slate-600 dark:text-slate-300 leading-relaxed">
+                                Tienen alguna palabra que las distingue, así que pueden ser otro producto.
+                                Se muestran solo para que decidas con todo delante.
+                            </p>
+                            <ul className="mt-1.5 space-y-0.5">
+                                {g.variantes.map(v => (
+                                    <li key={v.id} className="text-[11px] text-slate-700 dark:text-slate-200">
+                                        · <strong>{v.nombre}</strong>
+                                        <span className="text-slate-400"> — {v.categoria} · {v.stockCantidad} {v.stockUnidad}</span>
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
+                    )}
+
                     <div className="rounded-xl border border-slate-200 dark:border-slate-700 p-2.5">
                         <span className="block text-[9px] uppercase tracking-wider text-slate-400 mb-1">
                             Simulación de fusión
