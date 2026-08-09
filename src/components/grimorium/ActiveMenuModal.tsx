@@ -8,6 +8,7 @@ import { useRecipes } from '../../hooks/useRecipes';
 import { useIngredients } from '../../hooks/useIngredients';
 import { computeMenuDrift, summarizeDrift, MenuDrift } from '../../utils/menuDrift';
 import { printRecipeCards } from './printRecipeCard';
+import { PLANTILLAS_PORTADA, PLANTILLA_POR_DEFECTO } from './portadas/plantillasPortada';
 import { calculateRecipeCost } from '../../core/costing/costCalculator';
 
 const SEV: Record<string, { label: string; cls: string; dot: string }> = {
@@ -34,6 +35,9 @@ export const ActiveMenuModal: React.FC<{
     // receta. Se edita en local y se guarda al salir del campo, para no escribir
     // en Firestore en cada tecla.
     const [nombre, setNombre] = React.useState('');
+    // Plantilla de portada. Vive en el estado y no en la carta: elegirla no debe
+    // escribir en Firestore hasta que se sepa que gusta.
+    const [plantilla, setPlantilla] = React.useState(PLANTILLA_POR_DEFECTO);
     const [concepto, setConcepto] = React.useState('');
     React.useEffect(() => {
         setNombre(cartaActiva?.nombre || '');
@@ -85,7 +89,7 @@ export const ActiveMenuModal: React.FC<{
         printRecipeCards(
             recetas.map(r => ({ recipe: r, cost: calculateRecipeCost(r, allIngredients, undefined, allRecipes) })),
             allRecipes,
-            { nombre: n, concepto: c, fecha: cartaActiva?.fecha },
+            { nombre: n, concepto: c, fecha: cartaActiva?.fecha, plantilla },
         );
     };
     const { recipes: allRecipes } = useRecipes();
@@ -190,6 +194,16 @@ export const ActiveMenuModal: React.FC<{
                             >
                                 + Nueva
                             </button>
+                            <select
+                                value={plantilla}
+                                onChange={e => setPlantilla(e.target.value)}
+                                aria-label="Plantilla de portada"
+                                className="h-10 px-2 rounded-xl text-xs bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200"
+                            >
+                                {PLANTILLAS_PORTADA.map(p => (
+                                    <option key={p.id} value={p.id}>{p.nombre}</option>
+                                ))}
+                            </select>
                             <button
                                 onClick={exportarCarta}
                                 className="shrink-0 h-10 px-4 rounded-xl bg-teal-600 hover:bg-teal-500 text-white text-xs font-bold uppercase tracking-wider flex items-center gap-2"

@@ -1,4 +1,5 @@
 import { Recipe } from '../../types';
+import { plantillaPorId } from './portadas/plantillasPortada';
 import type { RecipeCostResult } from '../../core/costing/costCalculator';
 
 const esc = (s: any): string =>
@@ -27,6 +28,9 @@ export interface PortadaCarta {
     nombre: string;
     concepto?: string;
     fecha?: string;
+    /** Id de la plantilla. Ausente = la de siempre, así nada cambia solo. */
+    plantilla?: string;
+    logo?: string;
 }
 
 export interface FichaImprimible {
@@ -115,18 +119,23 @@ const fichaHtml = (recipe: Partial<Recipe>, cost: RecipeCostResult, allRecipes: 
   <div class="foot">Ficha generada por Nexus Suite · Grimorio — ${new Date().toLocaleDateString('es-ES')}</div>`;
 };
 
-/** Portada del recetario. Solo se pinta al exportar una carta entera. */
-const portadaHtml = (portada: PortadaCarta, recetas: number, costeMedio: number): string => `
-  <section class="portada">
-    <div class="p-marca">Nexus Suite · Grimorio</div>
-    <h1 class="p-titulo">${esc(portada.nombre || 'Carta sin título')}</h1>
-    ${portada.concepto ? `<p class="p-concepto">${esc(portada.concepto)}</p>` : ''}
-    <div class="p-datos">
-      <div><span>Recetas</span><b>${recetas}</b></div>
-      <div><span>Coste medio</span><b>${money(costeMedio)}</b></div>
-      <div><span>Fecha</span><b>${esc(portada.fecha || new Date().toLocaleDateString('es-ES'))}</b></div>
-    </div>
-  </section>`;
+/**
+ * La portada la compone la PLANTILLA elegida.
+ *
+ * Antes esta función pintaba el único diseño posible. Ahora solo traduce los
+ * datos del recetario al contrato `DatosPortada` y deja que la plantilla decida
+ * cómo se ven. El motor de exportación no sabe nada de composición, y añadir
+ * plantillas no lo toca.
+ */
+const portadaHtml = (portada: PortadaCarta, recetas: number, costeMedio: number): string =>
+    plantillaPorId(portada.plantilla).html({
+        titulo: portada.nombre || 'Carta sin título',
+        subtitulo: portada.concepto,
+        fecha: portada.fecha || new Date().toLocaleDateString('es-ES'),
+        recetas,
+        costeMedio: money(costeMedio),
+        logo: portada.logo,
+    });
 
 /**
  * Abre el recetario listo para imprimir o guardar como PDF.
@@ -154,13 +163,7 @@ export function printRecipeCards(
      que salir delimitada por receta, no a caballo entre dos páginas. */
   .ficha { page-break-after: always; break-after: page; }
   .ficha:last-child { page-break-after: auto; break-after: auto; }
-  .portada { page-break-after: always; break-after: page; padding: 60px 0 40px; }
-  .p-marca { font-size: 11px; letter-spacing: .18em; text-transform: uppercase; color: #94a3b8; margin-bottom: 18px; }
-  .p-titulo { font-size: 44px; line-height: 1.05; margin: 0 0 18px; color: #0f172a; }
-  .p-concepto { font-size: 15px; line-height: 1.6; color: #475569; max-width: 60ch; margin: 0 0 34px; white-space: pre-wrap; }
-  .p-datos { display: flex; gap: 34px; border-top: 3px solid #0d9488; padding-top: 18px; }
-  .p-datos span { display: block; font-size: 10px; letter-spacing: .12em; text-transform: uppercase; color: #94a3b8; }
-  .p-datos b { font-size: 20px; color: #0f172a; }
+  /* Los estilos de la portada los aporta la plantilla elegida. */
   body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; color: #1f2937; margin: 0; padding: 32px; }
   .head { display: flex; gap: 26px; align-items: center; border-bottom: 3px solid #0d9488; padding-bottom: 20px; margin-bottom: 22px; }
   .head img { width: 170px; height: 170px; object-fit: cover; border-radius: 18px; box-shadow: 0 8px 24px rgba(15,23,42,.16); flex-shrink: 0; }
@@ -201,6 +204,7 @@ export function printRecipeCards(
   @media print { .salir { display: none; } }
   .foot { margin-top: 28px; font-size: 10px; color: #cbd5e1; }
   @media print { body { padding: 12mm; } .noprint { display: none; } }
+${portada ? plantillaPorId(portada.plantilla).css : ''}
 </style></head><body>
   ${portada ? portadaHtml(portada, fichas.length, costeMedio) : ''}
   ${cuerpos}
