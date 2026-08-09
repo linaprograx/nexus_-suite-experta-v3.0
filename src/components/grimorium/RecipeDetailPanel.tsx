@@ -11,8 +11,10 @@ import { ViewName } from '../../types';
 import { calculateRecipeCost, CostedIngredient } from '../../core/costing/costCalculator';
 import { printRecipeCard } from './printRecipeCard';
 import { useActiveMenu } from '../../hooks/useActiveMenu';
-import { calculatePricing } from '../../core/costing/pricingEngine';
-import { formatCost, getMarginBgColor, getMarginTextColor } from '../../core/costing/costFormatter';
+import { formatCost, getMarginBgColor } from '../../core/costing/costFormatter';
+import { calculateRecipeProfitability } from '../../core/costing/profitabilityEngine';
+import { ETIQUETA_NIVEL } from '../../core/costing/businessCostSettings';
+import { useBusinessCostSettings } from '../../hooks/useBusinessCostSettings';
 
 
 export const RecipeDetailPanel: React.FC<{
@@ -31,18 +33,30 @@ export const RecipeDetailPanel: React.FC<{
 }> = ({ recipe, allIngredients, allRecipes = [], onEdit, onDelete, onDuplicate, onNavigate, onClose, onToolToggle, onEscandallo, onBatcher, onProduce }) => {
   const { compactMode } = useUI();
   const { menu, addToMenu, removeFromMenu } = useActiveMenu();
+  const { ajustes } = useBusinessCostSettings();
 
+  // Coste de ingredientes. Se conserva porque lo necesitan el desglose por
+  // líneas y el EXPORTADOR (`printRecipeCard`), que espera esta forma exacta.
   const costData = React.useMemo(() => {
     if (!recipe) return null;
     return calculateRecipeCost(recipe, allIngredients, undefined, allRecipes);
   }, [recipe, allIngredients, allRecipes]);
 
-  const pricingData = React.useMemo(() => {
-    if (!costData) return null;
-    return calculatePricing(costData.costoTotal, recipe?.precioVenta);
-  }, [costData, recipe?.precioVenta]);
+  /**
+   * Rentabilidad. **Fuente única de las cifras económicas de la ficha.**
+   *
+   * Antes esta pantalla calculaba el margen a mano —(precio − coste de
+   * ingredientes) / precio—, coloreaba con umbrales propios (75/67) y sugería
+   * precio multiplicando el coste por 3, 4 y 5. Tres criterios inventados aquí,
+   * que discrepaban de Escandallo sobre la misma receta en cuanto el negocio
+   * configuraba merma, comisiones, mano de obra o impuestos.
+   */
+  const p = React.useMemo(() => {
+    if (!recipe) return null;
+    return calculateRecipeProfitability({ recipe, allIngredients, allRecipes, settings: ajustes });
+  }, [recipe, allIngredients, allRecipes, ajustes]);
 
-  if (!recipe || !costData || !pricingData) {
+  if (!recipe || !costData || !p) {
     return (
       <Card className="h-full flex flex-col items-center justify-center bg-white/60 dark:bg-slate-900/30 backdrop-blur-md border border-slate-200/70 dark:border-slate-800/70 p-8 text-center w-full max-w-[95%] mx-auto">
         <Icon svg={ICONS.layout} className="w-12 h-12 text-slate-300 dark:text-slate-700 mb-4" />
@@ -51,7 +65,9 @@ export const RecipeDetailPanel: React.FC<{
     );
   }
 
-  const margin = recipe.precioVenta ? ((recipe.precioVenta - costData.costoTotal) / recipe.precioVenta) * 100 : 0;
+  const margin = p.grossMarginPercentage;
+  const nivel = ETIQUETA_NIVEL[p.nivel];
+  const margenObjetivo = 100 - ajustes.targetBeverageCostPercentage;
 
   return (
     <Card className="h-full min-h-0 flex flex-col bg-transparent backdrop-blur-md border-0 shadow-none overflow-hidden">
@@ -89,8 +105,17 @@ export const RecipeDetailPanel: React.FC<{
                     recipeId: recipe.id,
                     nombre: recipe.nombre,
                     precioVenta: recipe.precioVenta || 0,
+                    // OJO: el snapshot va en COSTE DE INGREDIENTES a propósito.
+                    // `utils/menuDrift.ts:42` compara este valor contra
+                    // `calculateRecipeCost(...).costoTotal`. Guardar aquí el
+                    // coste servido haría que toda la carta apareciese desviada
+                    // el día del cambio, sin que nada hubiera cambiado.
+                    // Migrar menuDrift al motor es trabajo aparte: exige volver
+                    // a congelar los snapshots ya guardados.
                     costSnapshot: costData.costoTotal || 0,
-                    marginSnapshot: margin,
+                    marginSnapshot: recipe.precioVenta
+                      ? ((recipe.precioVenta - costData.costoTotal) / recipe.precioVenta) * 100
+                      : 0,
                   })}
                 title={onMenu ? 'Quitar de la carta' : 'Añadir a la carta activa'}
                 className={`shrink-0 px-3.5 py-2.5 rounded-xl border transition-colors ${onMenu
@@ -140,32 +165,37 @@ export const RecipeDetailPanel: React.FC<{
             <div className="grid grid-cols-2 gap-3">
               <div className="bg-white/40 dark:bg-slate-800/40 rounded-xl p-3 border border-slate-100 dark:border-slate-800">
                 <p className="text-xs text-slate-500">Costo Total</p>
-                <p className="text-xl font-bold">{formatCost(costData.costoTotal)}</p>
+                <p className="text-xl font-bold">{formatCost(p.realServedCost)}</p>
                 {(recipe.porciones || 1) > 1 && (
-                  <p className="text-[11px] text-slate-400 mt-0.5">{formatCost(costData.costoTotal / (recipe.porciones || 1))} · {recipe.porciones} porciones</p>
+                  <p className="text-[11px] text-slate-400 mt-0.5">{formatCost(p.realServedCost / (recipe.porciones || 1))} · {recipe.porciones} porciones</p>
                 )}
               </div>
               <div className="bg-white/40 dark:bg-slate-800/40 rounded-xl p-3 border border-slate-100 dark:border-slate-800">
                 <p className="text-xs text-slate-500">Margen Actual</p>
-                <p className={`text-xl font-bold ${getMarginTextColor(margin)}`}>{margin.toFixed(1)}%</p>
+                <p className={`text-xl font-bold ${nivel.clase}`}>{margin.toFixed(1)}%</p>
+                <p className="text-[11px] text-slate-400 mt-0.5">{nivel.texto} · objetivo {margenObjetivo}%</p>
               </div>
             </div>
             <div className="mt-3 bg-white/40 dark:bg-slate-800/40 rounded-xl p-3 border border-slate-100 dark:border-slate-800">
               <p className="text-xs font-medium text-slate-600 dark:text-slate-300 mb-2">Precios Sugeridos</p>
               <div className="flex justify-between items-center text-[10px] sm:text-xs">
+                {/* Los tres precios de antes eran el coste × 3, × 4 y × 5: unos
+                    multiplicadores que nadie había elegido y que ignoraban el
+                    objetivo del negocio, el redondeo y los impuestos. Ahora la
+                    referencia es el precio objetivo del motor. */}
                 <div className="text-center">
-                  <span className="text-slate-400 block mb-0.5">Rentable (x3)</span>
-                  <strong className="text-slate-700 dark:text-slate-200">{formatCost(pricingData.precioMinimoRentable)}</strong>
+                  <span className="text-slate-400 block mb-0.5">Objetivo ({ajustes.targetBeverageCostPercentage}%)</span>
+                  <strong className="text-slate-700 dark:text-slate-200">{formatCost(p.precioObjetivoCliente)}</strong>
                 </div>
                 <div className="bg-slate-200 dark:bg-slate-700 w-px h-6 mx-1"></div>
                 <div className="text-center">
-                  <span className="text-slate-400 block mb-0.5">Rec. (x4)</span>
-                  <strong className="text-emerald-600 dark:text-emerald-400">{formatCost(pricingData.precioRecomendado)}</strong>
+                  <span className="text-slate-400 block mb-0.5">Actual</span>
+                  <strong className="text-emerald-600 dark:text-emerald-400">{formatCost(p.precioFinalCliente)}</strong>
                 </div>
                 <div className="bg-slate-200 dark:bg-slate-700 w-px h-6 mx-1"></div>
                 <div className="text-center">
-                  <span className="text-slate-400 block mb-0.5">Premium (x5)</span>
-                  <strong className="text-purple-600 dark:text-purple-400">{formatCost(pricingData.precioPremium)}</strong>
+                  <span className="text-slate-400 block mb-0.5">Beneficio/ud</span>
+                  <strong className="text-purple-600 dark:text-purple-400">{formatCost(p.grossProfit)}</strong>
                 </div>
               </div>
             </div>
