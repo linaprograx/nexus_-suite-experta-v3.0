@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import EconomiaView from './EconomiaView';
 import { doc, onSnapshot, setDoc, collection, query, orderBy, limit, Firestore, updateDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL, FirebaseStorage } from 'firebase/storage';
 import { Auth } from 'firebase/auth';
@@ -286,7 +287,7 @@ const PersonalView: React.FC<PersonalViewProps> = ({ db, userId, storage, auth }
     const { userPlan } = useApp();
 
     const { theme, setTheme, compactMode, toggleCompactMode } = useUI();
-    const [activePage, setActivePage] = useState<'profile' | 'plans'>('profile');
+    const [activePage, setActivePage] = useState<'profile' | 'plans' | 'economia'>('profile');
     const [toast, setToast] = useState({ message: '', type: 'success' as 'success' | 'error' | 'info', isVisible: false });
     const notify = (message: string, type: 'success' | 'error' | 'info' = 'success') => setToast({ message, type, isVisible: true });
     const [profile, setProfile] = useState<Partial<UserProfile>>({});
@@ -420,6 +421,10 @@ const PersonalView: React.FC<PersonalViewProps> = ({ db, userId, storage, auth }
                 {([
                     { id: 'profile', label: 'Perfil', icon: ICONS.user },
                     { id: 'plans', label: 'Planes & Suscripción', icon: ICONS.star },
+                    // Economía va aparte de los ajustes personales a propósito: el
+                    // IVA, el coste laboral o las comisiones son del negocio, no
+                    // preferencias de la persona.
+                    { id: 'economia', label: 'Economía', icon: ICONS.chart },
                 ] as const).map(tab => (
                     <button
                         key={tab.id}
@@ -485,6 +490,8 @@ const PersonalView: React.FC<PersonalViewProps> = ({ db, userId, storage, auth }
                     </div>
                 </div>
             )}
+
+            {activePage === 'economia' && <EconomiaView />}
 
             {/* ── PAGE 2: PLANS & SUBSCRIPTION ──────────────────────────── */}
             {activePage === 'plans' && (

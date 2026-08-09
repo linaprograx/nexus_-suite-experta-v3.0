@@ -114,8 +114,12 @@ export const calculateRecipeProfitability = (entrada: EntradaRentabilidad): Reci
         precioFinalCliente = precioVenta + taxAmount;
     }
 
-    // ── 5. Comisiones de venta
-    const variables = ov.costesVariablesServicio || s.costesVariablesDefault || [];
+    // ── 5. Comisiones de venta. Los de la receta **se suman** a los del
+    //      negocio, no los sustituyen. Antes esto era `||`, y añadir un
+    //      packaging de 0,30 € a una receta borraba en silencio el TPV global de
+    //      esa receta: nadie pediría eso, y obligaría a copiar a mano las
+    //      comisiones globales en cada receta que tuviera algo propio.
+    const variables = [...(s.costesVariablesDefault || []), ...(ov.costesVariablesServicio || [])];
     const variableServiceCost = sumarVariables(variables, precioFinalCliente);
 
     // ── 6. Mano de obra. ESTIMACIÓN, y opcional: fuera salvo que se active.
