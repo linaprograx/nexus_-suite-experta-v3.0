@@ -271,8 +271,14 @@ importe — que es justo lo que E3 daba por supuesto.
 
 ### Fase 2 — Que se pueda usar con el pulgar
 
-8. **I5 · Filas densas + virtualización** en Inventario y Mercado. Cierra
-   también **A4** de `AUDIT-MOVIL.md`.
+8. **I5 · Secciones plegables por proveedor** en Inventario y Mercado, con filas
+   densas dentro de cada sección abierta. Especificado en
+   `PLAN-GRIMORIO-MERCADO.md` → *«Agrupación por proveedor en secciones
+   plegables»*. Lo plegado no se monta, así que es a la vez la mejora de
+   navegación y la de rendimiento: cierra **I5** y buena parte de **A4** de
+   `AUDIT-MOVIL.md`.
+   > Requiere **M2** hecho antes: agrupar Inventario por un proveedor que se
+   > deduce mal es agrupar mal.
 9. **M5, M6, T1** y el repaso de la hoja de pedido.
 
 ### Fase 3 — Pedido ficticio inicial

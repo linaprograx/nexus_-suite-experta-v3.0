@@ -309,6 +309,94 @@ hay nada que contabilizar. El escalón previo es **gasto por proveedor y por mes
 a partir de las compras registradas**, que ya existen. Eso se puede tener pronto
 y responde a la mitad de la pregunta.
 
+## E2/E3 · Agrupación por proveedor en secciones plegables
+
+**Decidido el 2026-08-09.** Aplica a **Inventario y Mercado**, y es la respuesta
+estructural a la pregunta «¿cómo se navega esto cuando haya miles de productos
+de decenas de proveedores?».
+
+**La idea, en las palabras del fundador:** todo lo que venga de Bordino, en una
+sección de Bordino; todo lo de Frutas Eloy, en la suya; lo de Coca-Cola en la de
+Coca-Cola. Secciones que se pliegan y se despliegan. Al tocar una, se abre el
+catálogo entero de ese proveedor.
+
+En **Mercado** hay además varios proveedores por familia: alcoholes tiene
+Bordino, In Vino Veritas, La Fuente y Álvarez; fruta tiene Frutas Eloy, El Anón
+Cubano y Frutería Madrid; refrescos tiene Coca-Cola, Pepsi y Schweppes.
+
+### Por qué esto no es solo estética
+
+Resuelve **I5** de `AUDIT-INVENTARIO-MERCADO.md`: hoy Inventario son 1.325
+tarjetas de ~180 px seguidas, unos 238.000 px de scroll. Con secciones plegadas,
+**lo cerrado no se monta**, así que el árbol de nodos cae de miles a decenas.
+Es a la vez la mejora de navegación y la de rendimiento — y muy probablemente
+buena parte del **A4** de `AUDIT-MOVIL.md` (Inventario lento al tocar).
+
+### Estado real de los datos (medido en producción, 2026-08-09)
+
+Antes de diseñar sobre lo que habrá, conviene mirar lo que hay:
+
+| | |
+|---|---|
+| Referencias en Mercado | 1.367 |
+| **Productos** tras agrupar duplicados | **279** |
+| IN VINO VERITAS | 143 productos |
+| FRUTAS ELOY | 109 |
+| **BORDINOS** | **1** |
+| Sin proveedor asignado | ~26 |
+
+Dos lecturas, y las dos importan:
+
+- **La cobertura es mejor de lo esperado**: ~9 de cada 10 productos ya tienen
+  proveedor. La agrupación tiene con qué trabajar desde el primer día.
+- **Pero Bordino tiene UN producto.** La sección «todo el alcohol de Bordino»
+  que se imagina hoy saldría con una sola línea: el alcohol está casi todo bajo
+  In Vino Veritas o sin asignar. **La agrupación no crea el dato**; hará
+  evidente lo que falta, que es justo lo que se quiere de ella.
+
+### Decisiones de diseño
+
+1. **Eje de agrupación: el proveedor.** En Mercado, segundo nivel por categoría
+   cuando el proveedor sea grande (In Vino Veritas ya tiene 143). En Inventario
+   basta un nivel, al menos al principio.
+2. **La sección «Sin proveedor asignado» se muestra siempre**, nunca se esconde:
+   es la lista de tareas de limpieza del catálogo, y ahora mismo es la única
+   forma de ver qué falta por asignar.
+3. **En Mercado agrupado por proveedor se listan REFERENCIAS, no productos.**
+   Cada proveedor enseña su propia entrada con su precio y su formato — que es
+   justo lo que permite comparar. El distintivo «N opc.» cambia de sentido: pasa
+   de «hay N opciones» a «también en otros N proveedores», y debe llevar a las
+   otras.
+4. **Lo plegado no se renderiza.** No es `display:none`: es no montar. De ahí
+   sale la mejora de rendimiento.
+5. **El estado de plegado se recuerda** por usuario y por pestaña. Quien trabaja
+   con un proveedor no quiere volver a abrirlo cada vez.
+6. **La búsqueda atraviesa las secciones**: al buscar, se abren solas las que
+   tengan resultados y se indica cuántos hay en cada una.
+7. **Cabecera de sección con lo que importa de un vistazo**: nombre del
+   proveedor, nº de productos y —en Inventario— valor acumulado de ese
+   proveedor. Ese último número no existe hoy en ninguna pantalla y responde
+   solo a «cuánto dinero tengo parado con cada proveedor».
+
+### Dependencias — leer antes de empezar
+
+- **Inventario depende de M2.** El proveedor de un ítem de stock sale de la
+  compra, y `handleReceiveOrder` lo vuelve a deducir del ingrediente al recibir
+  en vez de leerlo del pedido. Mientras eso siga así, agrupar Inventario por
+  proveedor agrupará por un dato que puede ser incorrecto. **M2 va antes.**
+- **Conviene después de I1** (unidades canónicas), porque la cabecera de sección
+  con el valor acumulado suma importes que hoy no son fiables donde hay dos
+  formatos del mismo producto.
+- No depende del catálogo de proveedores de Madrid (E2): funciona ya con los
+  tres proveedores actuales, y escala sola cuando entren los demás.
+
+### Encaje en las fases
+
+Va en la **Fase 2** de `AUDIT-INVENTARIO-MERCADO.md` («que se pueda usar con el
+pulgar»), y **sustituye** al punto genérico de «filas densas + virtualización»:
+las secciones plegables son la forma concreta que toma esa fase. La densidad de
+fila sigue haciendo falta *dentro* de cada sección abierta.
+
 ## E5 · El guía de primer uso
 
 **Alcance ampliado:** el fundador lo quiere **en todas las vistas de todas las
