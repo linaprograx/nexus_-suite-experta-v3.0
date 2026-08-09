@@ -97,6 +97,25 @@ export const applyMovementsToStock = (stock: StockItem[], movements: StockMoveme
     });
 };
 
+/**
+ * **Existencias actuales. Fuente única.**
+ *
+ * Stock = compras que entraron − movimientos que salieron. Las dos mitades
+ * juntas, en un solo sitio, porque separarlas ya costó un fallo: el Dashboard
+ * llamaba solo a `buildStockFromPurchases` y enseñaba el almacén como si nunca
+ * se hubiera consumido nada, mientras Inventario sí restaba los movimientos.
+ * Dos cifras distintas del mismo dato en dos pantallas contiguas (39.471 € y
+ * 39.452,96 €), y ninguna forma de saber cuál era la buena.
+ *
+ * Quien necesite existencias llama aquí. Las dos funciones que compone siguen
+ * exportadas porque el motor de coste usa `buildStockFromPurchases` a solas
+ * para derivar precios de compra, que es otra pregunta distinta.
+ */
+export const buildCurrentStock = (
+    purchases: PurchaseEvent[],
+    movements: StockMovement[] = [],
+): StockItem[] => applyMovementsToStock(buildStockFromPurchases(purchases), movements);
+
 export const calculateInventoryMetrics = (stock: StockItem[]) => {
     const totalValue = stock.reduce((sum, item) => sum + item.totalValue, 0);
     const totalItems = stock.length;

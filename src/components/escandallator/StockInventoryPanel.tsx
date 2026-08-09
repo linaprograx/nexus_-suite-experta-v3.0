@@ -93,8 +93,19 @@ export const StockInventoryPanel: React.FC<StockInventoryPanelProps> = ({
     // Recalculate metrics based on FILTERED items
     const filteredMetrics = useMemo(() => calculateInventoryMetrics(filteredStockItems), [filteredStockItems]);
 
-    // Real month-over-month inventory change, derived from the purchase history
-    // (value added this calendar month vs. the accumulated value before it).
+    /**
+     * Compras de este mes frente a las del mes anterior.
+     *
+     * Antes decía «% vs mes anterior» y calculaba `esteMes / TODO_EL_HISTÓRICO`.
+     * Dos errores en una línea: el término de comparación era el acumulado desde
+     * el principio de los tiempos, no el mes anterior, y una variación es
+     * `(actual − anterior) / anterior`, no un cociente. Por eso mostraba «+0%»
+     * el mismo día en que había compras registradas: unos cientos de euros sobre
+     * ~39.000 € de histórico redondean a cero.
+     *
+     * También se corrige el rótulo. Esto mide **compras**, no el valor del
+     * almacén: son cosas distintas y estaba etiquetado como si fueran la misma.
+     */
     const inventoryTrend = useMemo(() => {
         const toMillis = (v: any): number => {
             if (!v) return 0;
@@ -106,15 +117,27 @@ export const StockInventoryPanel: React.FC<StockInventoryPanelProps> = ({
             return 0;
         };
         const now = new Date();
-        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
-        let thisMonth = 0, before = 0;
+        const inicioMes = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
+        const inicioMesAnterior = new Date(now.getFullYear(), now.getMonth() - 1, 1).getTime();
+
+        let esteMes = 0, mesAnterior = 0;
         for (const p of (purchases || [])) {
             const val = (p as any).totalCost ?? ((p as any).quantity || 0) * ((p as any).unitPrice || 0);
             const t = toMillis((p as any).createdAt);
-            if (t >= startOfMonth) thisMonth += val; else before += val;
+            if (t >= inicioMes) esteMes += val;
+            else if (t >= inicioMesAnterior) mesAnterior += val;   // solo el mes anterior
         }
-        const pct = before > 0 ? (thisMonth / before) * 100 : (thisMonth > 0 ? 100 : 0);
-        return { pct, hasData: (purchases?.length || 0) > 0 && (thisMonth > 0 || before > 0) };
+
+        // Sin mes anterior con el que comparar no hay variación que enseñar.
+        // Antes se inventaba un +100%, que es peor que no decir nada.
+        if (mesAnterior <= 0) {
+            return { pct: 0, esteMes, hasData: false };
+        }
+        return {
+            pct: ((esteMes - mesAnterior) / mesAnterior) * 100,
+            esteMes,
+            hasData: true,
+        };
     }, [purchases]);
 
 
@@ -280,8 +303,8 @@ export const StockInventoryPanel: React.FC<StockInventoryPanelProps> = ({
                         <div className="mt-2 flex justify-center">
                             <span className="text-[10px] font-bold bg-white/40 dark:bg-black/20 text-emerald-700 dark:text-emerald-300 px-3 py-1 rounded-full backdrop-blur-md">
                                 {inventoryTrend.hasData
-                                    ? `${inventoryTrend.pct >= 0 ? '+' : ''}${inventoryTrend.pct.toFixed(0)}% vs mes anterior`
-                                    : 'Sin histórico'}
+                                    ? `Compras: ${inventoryTrend.pct >= 0 ? '+' : ''}${inventoryTrend.pct.toFixed(0)}% vs mes anterior`
+                                    : `Compras del mes: €${inventoryTrend.esteMes.toFixed(0)}`}
                             </span>
                         </div>
                     </div>

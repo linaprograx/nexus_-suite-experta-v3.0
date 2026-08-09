@@ -45,7 +45,7 @@ import { Spinner } from '../components/ui/Spinner';
 import { usePurchaseIngredient } from '../hooks/usePurchaseIngredient';
 import { useStockRules } from '../hooks/useStockRules';
 
-import { buildStockFromPurchases, applyMovementsToStock } from '../utils/stockUtils';
+import { buildCurrentStock } from '../utils/stockUtils';
 import { useStockMovements } from '../hooks/useStockMovements';
 import { calculateEscandallo } from '../core/finance/cost.engine';
 import { useEscandallator } from '../hooks/useEscandallator';
@@ -321,7 +321,7 @@ const GrimoriumInner: React.FC<GrimoriumViewProps> = () => {
     const { movements: stockMovements, addMovements } = useStockMovements();
     const calculatedStockItems = React.useMemo(() => {
         if (!purchaseHistory) return [];
-        return applyMovementsToStock(buildStockFromPurchases(purchaseHistory), stockMovements);
+        return buildCurrentStock(purchaseHistory, stockMovements);
     }, [purchaseHistory, stockMovements]);
 
     // Record a stock-out movement (consumption / waste / adjustment) in the item's own unit

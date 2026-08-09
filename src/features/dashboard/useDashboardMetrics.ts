@@ -4,8 +4,9 @@ import { useToday } from '../today';
 import { useCreativeWeekPro } from '../creative-week-pro';
 import { useNextBestAction } from '../next-best-action';
 import { calculateRecipeCost } from '../../core/costing/costCalculator';
-import { buildStockFromPurchases } from '../../utils/stockUtils';
+import { buildCurrentStock } from '../../utils/stockUtils';
 import { useStockRules } from '../../hooks/useStockRules';
+import { useStockMovements } from '../../hooks/useStockMovements';
 
 interface DashboardMetricsProps {
     allRecipes: Recipe[];
@@ -36,10 +37,14 @@ export const useDashboardMetrics = ({
 }: DashboardMetricsProps) => {
 
     const { rules: stockRules } = useStockRules();
+    // Sin los movimientos, el Dashboard enseñaba el almacén como si nunca se
+    // hubiera consumido nada: 39.471 € frente a los 39.452,96 € de Inventario,
+    // sobre los mismos datos. Ahora ambos pasan por `buildCurrentStock`.
+    const { movements: stockMovements } = useStockMovements();
 
     // 1. Real inventory metrics (from purchase history + stock rules)
     const inventory = useMemo(() => {
-        const stock = buildStockFromPurchases(purchaseHistory);
+        const stock = buildCurrentStock(purchaseHistory, stockMovements);
         const inventoryValue = stock.reduce((sum, s) => sum + (s.totalValue || 0), 0);
         const distinctItems = stock.length;
         const productsWithoutPrice = allIngredients.filter(i => !hasPrice(i)).length;
@@ -52,7 +57,7 @@ export const useDashboardMetrics = ({
         }).length;
 
         return { stock, inventoryValue, distinctItems, productsWithoutPrice, lowStockCount };
-    }, [purchaseHistory, allIngredients, stockRules]);
+    }, [purchaseHistory, allIngredients, stockRules, stockMovements]);
 
     // 2. Real recipe costing & margins
     const costing = useMemo(() => {
