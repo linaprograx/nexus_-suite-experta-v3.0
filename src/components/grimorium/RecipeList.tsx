@@ -1,3 +1,4 @@
+import { createPortal } from 'react-dom';
 import React from 'react';
 import { Recipe, Ingredient } from '../../types';
 import { calculateRecipeCost } from '../../core/costing/costCalculator';
@@ -160,6 +161,98 @@ const RecipeCard = React.memo(({
 });
 
 /**
+ * Botón cuadrado con menú, al estilo de la barra del Finder.
+ *
+ * Los tres modificadores —categoría, estado y orden— ocupaban con sus
+ * desplegables casi dos líneas enteras en un móvil, y dejaban fuera a importar,
+ * crear y eliminar. Reducidos a un icono cada uno, la barra cabe en una sola
+ * línea y el valor elegido se sigue viendo: el botón se marca y muestra un punto
+ * cuando no está en su valor por defecto.
+ *
+ * El menú se pinta en un portal anclado al botón, no dentro de la barra, para
+ * que no la ensanche ni quede recortado por el desbordamiento del contenedor.
+ */
+const BotonMenu: React.FC<{
+    icono: string;
+    etiqueta: string;
+    valor: string;
+    porDefecto: string;
+    opciones: { id: string; etiqueta: string }[];
+    onChange: (id: string) => void;
+}> = ({ icono, etiqueta, valor, porDefecto, opciones, onChange }) => {
+    const [abierto, setAbierto] = React.useState(false);
+    const ref = React.useRef<HTMLDivElement>(null);
+    const [pos, setPos] = React.useState<{ top: number; left: number } | null>(null);
+    const activo = valor !== porDefecto;
+
+    const abrir = () => {
+        const r = ref.current?.getBoundingClientRect();
+        if (!r) return;
+        // Se acota al viewport para que un botón cerca del borde derecho no
+        // saque el menú fuera de la pantalla.
+        const ANCHO = 208;
+        setPos({ top: r.bottom + 6, left: Math.max(8, Math.min(r.left, window.innerWidth - ANCHO - 8)) });
+        setAbierto(true);
+    };
+
+    React.useEffect(() => {
+        if (!abierto) return;
+        const fuera = (e: Event) => {
+            const t = e.target as HTMLElement;
+            if (!ref.current?.contains(t) && !t.closest?.('[data-menu-filtro]')) setAbierto(false);
+        };
+        document.addEventListener('pointerdown', fuera);
+        return () => document.removeEventListener('pointerdown', fuera);
+    }, [abierto]);
+
+    const actual = opciones.find(o => o.id === valor);
+
+    return (
+        <div ref={ref} className="relative shrink-0">
+            <button
+                type="button"
+                onClick={() => (abierto ? setAbierto(false) : abrir())}
+                aria-label={`${etiqueta}: ${actual?.etiqueta || 'todas'}`}
+                title={`${etiqueta} · ${actual?.etiqueta || ''}`}
+                aria-expanded={abierto}
+                className={`relative w-10 h-10 rounded-xl flex items-center justify-center border transition-colors ${activo
+                    ? 'bg-teal-600 border-teal-600 text-white'
+                    : 'bg-white/50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300'}`}
+            >
+                <Icon svg={icono} className="w-4 h-4" />
+                {activo && <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-white" />}
+            </button>
+
+            {abierto && pos && createPortal(
+                <div
+                    data-menu-filtro
+                    style={{ position: 'fixed', top: pos.top, left: pos.left, width: 208, zIndex: 9999 }}
+                    className="rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-2xl overflow-hidden max-h-72 overflow-y-auto"
+                >
+                    <p className="px-3 pt-2.5 pb-1.5 text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                        {etiqueta}
+                    </p>
+                    {opciones.map(o => (
+                        <button
+                            key={o.id}
+                            type="button"
+                            onClick={() => { onChange(o.id); setAbierto(false); }}
+                            className={`w-full text-left px-3 py-2.5 text-sm flex items-center justify-between gap-2 ${o.id === valor
+                                ? 'text-teal-600 dark:text-teal-400 font-bold'
+                                : 'text-slate-700 dark:text-slate-200'}`}
+                        >
+                            <span className="min-w-0 break-words">{o.etiqueta}</span>
+                            {o.id === valor && <Icon svg={ICONS.check} className="w-4 h-4 shrink-0" />}
+                        </button>
+                    ))}
+                </div>,
+                document.body,
+            )}
+        </div>
+    );
+};
+
+/**
  * Criterios de ordenación del catálogo.
  *
  * Ordenar **no es filtrar**: esto solo cambia la secuencia, nunca qué se ve. Se
@@ -302,45 +395,53 @@ export const RecipeList: React.FC<RecipeListProps> = ({
           />
         </div>
 
-        {/* Filters Row */}
-        <div className="flex flex-wrap items-center gap-2 w-full">
-          <select
-            className="h-10 pl-3 pr-8 bg-white/50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:ring-emerald-500/50 flex-1 min-w-[120px]"
-            value={selectedCategory}
-            onChange={(e) => onCategoryChange(e.target.value)}
-          >
-            <option value="all">Todas las Categorías</option>
-            {Array.from(new Set(availableCategories)).map(cat => <option key={cat} value={cat}>{cat}</option>)}
-          </select>
+        {/* Barra de acciones — una sola línea.
+            Los tres modificadores son botones cuadrados con menú; el resto de
+            acciones queda a la derecha. */}
+        <div className="flex items-center gap-2 w-full">
+          <BotonMenu
+            icono={ICONS.tag}
+            etiqueta="Categoría"
+            valor={selectedCategory}
+            porDefecto="all"
+            opciones={[
+              { id: 'all', etiqueta: 'Todas las categorías' },
+              ...Array.from(new Set(availableCategories)).map(c => ({ id: c, etiqueta: c })),
+            ]}
+            onChange={onCategoryChange}
+          />
 
-          <select
-            className="h-10 pl-3 pr-8 bg-white/50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:ring-emerald-500/50 flex-1 min-w-[120px]"
-            value={selectedStatus}
-            onChange={(e) => onStatusChange(e.target.value)}
-          >
-            <option value="all">Todos los Estados</option>
-            <option value="Idea">Idea</option>
-            <option value="Pruebas">Pruebas</option>
-            <option value="Terminado">Carta</option>
-            <option value="Archivada">Archivada</option>
-          </select>
+          <BotonMenu
+            icono={ICONS.flag}
+            etiqueta="Estado"
+            valor={selectedStatus}
+            porDefecto="all"
+            opciones={[
+              { id: 'all', etiqueta: 'Todos los estados' },
+              { id: 'Idea', etiqueta: 'Idea' },
+              { id: 'Pruebas', etiqueta: 'Pruebas' },
+              { id: 'Terminado', etiqueta: 'Carta' },
+              { id: 'Archivada', etiqueta: 'Archivada' },
+            ]}
+            onChange={onStatusChange}
+          />
 
-          {/* Ordenar. Separado de los filtros a propósito: cambia la secuencia,
+          {/* Ordenar va aparte de los filtros a propósito: cambia la secuencia,
               nunca qué se ve. */}
-          <select
-            aria-label="Ordenar recetas"
-            className="h-10 pl-3 pr-8 bg-white/50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-700 dark:text-slate-200"
-            value={orden}
-            onChange={(e) => setOrden(e.target.value as CriterioOrden)}
-          >
-            {OPCIONES_ORDEN.map(o => <option key={o.id} value={o.id}>{o.etiqueta}</option>)}
-          </select>
+          <BotonMenu
+            icono={ICONS.sliders}
+            etiqueta="Ordenar por"
+            valor={orden}
+            porDefecto="recientes"
+            opciones={OPCIONES_ORDEN.map(o => ({ id: o.id, etiqueta: o.etiqueta }))}
+            onChange={(v) => setOrden(v as CriterioOrden)}
+          />
 
           {/* Delete Selected Button */}
           {selectedRecipeIds.length > 0 && (
             <Button
               variant="destructive"
-              className="h-10 px-4 ml-auto whitespace-nowrap"
+              className="h-10 px-4 whitespace-nowrap"
               onClick={onDeleteSelected}
               title="Eliminar seleccionadas"
             >
@@ -349,6 +450,9 @@ export const RecipeList: React.FC<RecipeListProps> = ({
             </Button>
           )}
 
+          {/* Acciones, siempre a la derecha. `ml-auto` aquí y no en el botón de
+              borrar, que solo existe cuando hay selección. */}
+          <div className="ml-auto flex items-center gap-2">
           {/* Import Button */}
           <Button
             variant="ghost"
@@ -369,6 +473,7 @@ export const RecipeList: React.FC<RecipeListProps> = ({
             <Icon svg={ICONS.plus} className="w-5 h-5 group-hover:rotate-90 transition-transform duration-300" />
             <span className="hidden sm:inline">Nueva</span>
           </button>
+          </div>
         </div>
       </div>
       </EnLaFranjaFija>
