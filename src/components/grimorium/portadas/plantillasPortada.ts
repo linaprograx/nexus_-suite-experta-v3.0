@@ -174,18 +174,34 @@ const clubhouse: PlantillaPortada = {
      Abarcar las dos filas es lo que deja que la imagen sea alta sin fijarle una
      altura: crece hasta donde llegue el contenido de la derecha y nunca se
      recorta, así una receta de 8 filas y otra de 15 componen distinto. */
-  /* Proporciones, NUNCA anchuras absolutas. Al imprimir, el ancho útil es menor
-     que el de pantalla: una columna de 300px fijos se comía casi todo y a la
-     tabla le quedaban unas decenas de píxeles, así que colapsaba a una letra
-     por línea. El minmax(0,…) es lo que permite que ambas columnas encojan. */
-  .ficha-top { grid-template-columns: minmax(0, 36%) minmax(0, 1fr); gap: 26px; margin-bottom: 8px; }
-  .col-foto { grid-row: 1 / span 2; }
-  .col-escandallo { grid-column: 2; grid-row: 2; border-bottom: 1px solid #e6e1d5; padding-bottom: 18px; }
-  .col-escandallo h2 { margin-top: 20px; }
-  /* Sin max-height, sin object-fit y sin fondo: cualquiera de los tres vuelve a
-     dibujar un recuadro alrededor de una foto que no llene la caja. */
-  .col-foto img { display: block; width: 100%; height: auto;
-                  border-radius: 4px; box-shadow: 0 12px 34px rgba(4,23,19,.24); }
+  /* UNA RECETA, UNA PÁGINA. Todo se compone en dos columnas dentro de la
+     misma rejilla: a la izquierda la foto y bajo ella la preparación y los
+     totales; a la derecha la identidad y el escandallo. Antes preparación y
+     totales iban DESPUÉS de la rejilla, a ancho completo, y por eso caían
+     sistemáticamente en la hoja siguiente.
+
+     display:contents es la pieza que lo hace posible: disuelve el envoltorio
+     .ficha-top para que sus tres hijos sean elementos de la rejilla de .ficha
+     sin tocar el HTML, que es común a todos los temas.
+
+     Las filas van explícitas y no por colocación automática: con una receta sin
+     preparación desaparecen dos elementos, y la colocación automática recolocaría
+     el resto. */
+  .ficha { display: grid; grid-template-columns: minmax(0, 34%) minmax(0, 1fr);
+           column-gap: 26px; align-content: start; }
+  .ficha-top { display: contents; }
+  .col-foto  { grid-column: 1; grid-row: 1; }
+  .col-info  { grid-column: 2; grid-row: 1; align-self: start; }
+  .col-escandallo { grid-column: 2; grid-row: 2 / span 4; align-self: start; }
+  .ficha > h2 { grid-column: 1; grid-row: 2; align-self: end; }
+  .prep      { grid-column: 1; grid-row: 3; align-self: start; }
+  .totals    { grid-column: 1; grid-row: 4; align-self: start; }
+  .foot      { grid-column: 1 / -1; grid-row: 5; }
+
+  /* Anchuras de la tabla repartidas a mano. Con table-layout fijo y sin esto,
+     las tres columnas salen iguales y el nombre del ingrediente parte en tres
+     líneas mientras la de coste va medio vacía. */
+  col.c-name { width: 54%; } col.c-qty { width: 23%; } col.c-cost { width: 23%; }
 
   .head { border-bottom: 0; padding-bottom: 0; }
   .col-info h1, .head h1 { font-size: 40px; line-height: 1.02; margin: 0 0 6px; color: #0a3730;
@@ -227,10 +243,14 @@ const clubhouse: PlantillaPortada = {
   .prep { background: #f7f4ec; border-left: 3px solid #c9a227; border-radius: 0 6px 6px 0;
           padding: 14px 18px; font-size: 13px; line-height: 1.7; color: #1e2a26; }
 
-  .totals { display: flex; gap: 0; margin-top: 30px; border: 1px solid #e6e1d5; border-radius: 6px;
-            padding: 18px 0; background: #fbfaf6; }
-  .totals .box { flex: 1; text-align: center; border-left: 1px solid #e6e1d5; padding: 0 16px; }
-  .totals .box:first-child { border-left: 0; }
+  /* En columna estrecha los totales van APILADOS, no en fila: cuatro cajas en
+     horizontal dentro de un tercio de página no caben. El filete separador pasa
+     de lateral a superior por el mismo motivo. */
+  .totals { display: flex; flex-direction: column; gap: 0; margin-top: 22px;
+            border: 1px solid #e6e1d5; border-radius: 6px; padding: 4px 16px; background: #fbfaf6; }
+  .totals .box { text-align: left; border-top: 1px solid #e6e1d5; padding: 10px 0; }
+  .totals .box:first-child { border-top: 0; }
+  .totals .box .n { font-size: 21px; }
   .totals .box .l { font-size: 9px; letter-spacing: .17em; color: #9aa39c; }
   .totals .box .n { font-size: 24px; font-weight: 700; color: #0a3730; margin-top: 4px; }
 
