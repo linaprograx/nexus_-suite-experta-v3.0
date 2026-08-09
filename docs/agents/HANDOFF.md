@@ -6,9 +6,9 @@
 ---
 
 **Última actualización:** 2026-08-10
-**Estado:** rama de desarrollo limpia antes del cambio de identidad visual;
-TypeScript y build correctos en el último cambio funcional; despliegues siempre
-en `feat/mobile-v1-unified` y `deploy/mobile-v1`.
+**Estado:** identidad visual desplegada y verificada en producción; TypeScript y
+build correctos. Los despliegues siguen siempre en `feat/mobile-v1-unified` y
+`deploy/mobile-v1`.
 
 ## Dónde se trabaja
 
@@ -56,7 +56,7 @@ grep -c -F 'MARCADOR_ASCII' /tmp/prod.js
 | Identidad D | Pendiente: fundador eligió el grupo 3 (dos fichas de mezcal Aguerrido). No se ha escrito todavía. |
 | Mercado móvil | Hecho y desplegado: buscador, filtros y menús responsivos. Pendiente confirmar visualmente el ancho del menú de proveedores en todos los breakpoints. |
 | Depuración de categorías | Herramienta reversible desplegada en `2c17986`; previsualiza 724 fichas. Solo cambia `categoria` y guarda `categoriaAntesDeNormalizar`. Grupos ambiguos excluidos. La confirmación nativa quedó pendiente de aceptación del fundador. |
-| Identidad visual | Validado y pendiente del despliegue de esta sesión: `public/nexus-logo.png` alimenta login, barra lateral, favicon, Apple touch icon e iconos PWA. |
+| Identidad visual | Hecho y verificado en producción: `public/nexus-logo.png` alimenta login, barra lateral, favicon, Apple touch icon e iconos PWA. |
 
 ## Categorías: alcance aprobado
 
@@ -85,9 +85,7 @@ activo de escritorio relevante.
 
 ## Pendiente inmediato
 
-1. Verificar en producción el bundle, el manifiesto y los cinco activos de la
-   nueva identidad visual después del despliegue en curso.
-2. Si el fundador acepta la alerta de Mercado, verificar que el resultado
+1. Si el fundador acepta la alerta de Mercado, verificar que el resultado
    informe 724 fichas depuradas y que la lista muestre las categorías nuevas.
-3. Volver a Fase D de identidad solo con el grupo Aguerrido elegido; preparar
+2. Volver a Fase D de identidad solo con el grupo Aguerrido elegido; preparar
    las dos escrituras y su verificación antes de ejecutarlas.

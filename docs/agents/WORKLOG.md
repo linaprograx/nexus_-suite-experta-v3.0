@@ -30,7 +30,8 @@ Se adopta como fuente `public/nexus-logo.png` y se regeneran los archivos que
 ya consumen navegador, iOS y PWA (`favicon-32.png`, `apple-touch-icon.png`,
 `icon-192.png`, `icon-512.png`). `NexusOrb` deja de dibujar el orbe CSS anterior
 para que acceso y barra lateral muestren exactamente el mismo activo. TypeScript
-y build han pasado; falta verificar el bundle servido tras el despliegue actual.
+y build han pasado. Producción verificada por lectura del bundle servido
+(`nexus-logo.png`) y por los endpoints del manifiesto, icono PWA e icono Apple.
 
 ## 2026-08-09 · Claude Code · Cierre del exportador de Recetas
 
