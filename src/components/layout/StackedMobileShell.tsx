@@ -156,25 +156,28 @@ export const StackedMobileShell: React.FC<StackedMobileShellProps> = ({
                 {main}
             </div>
 
-            {/* Edge affordances. The sheets open by dragging in from the edge, but a
-                gesture with no visible cue is a feature nobody finds. These slim tabs
-                make the edge legible and are tappable in their own right. */}
+            {/* Pestañas de borde. Las hojas se abren arrastrando desde el borde, pero
+                un gesto sin señal visible es una función que nadie encuentra.
+                Eran una línea de 1,5px al 70% de opacidad: se veían apenas y su
+                zona táctil, 24px, quedaba por debajo del mínimo cómodo. Ahora la
+                marca es visible y el área de toque llega a 44px, sin robarle
+                anchura al contenido —el botón es transparente salvo la marca—. */}
             {hasLeft && bothClosed && (
                 <button
                     onClick={() => setLeftOpen(true)}
                     aria-label={leftLabel}
-                    className="fixed left-0 top-1/2 -translate-y-1/2 z-40 w-6 h-24 flex items-center justify-start active:scale-95 transition-transform"
+                    className="fixed left-0 top-1/2 -translate-y-1/2 z-40 w-11 h-28 flex items-center justify-start active:scale-95 transition-transform"
                 >
-                    <span className={`w-1.5 h-20 rounded-r-full shadow-md ${accentClass} opacity-70`} />
+                    <span className={`w-2 h-24 rounded-r-full shadow-lg ring-1 ring-black/10 ${accentClass}`} />
                 </button>
             )}
             {hasRight && bothClosed && (
                 <button
                     onClick={() => setManualRightOpen(true)}
                     aria-label={rightLabel}
-                    className="fixed right-0 top-1/2 -translate-y-1/2 z-40 w-6 h-24 flex items-center justify-end active:scale-95 transition-transform"
+                    className="fixed right-0 top-1/2 -translate-y-1/2 z-40 w-11 h-28 flex items-center justify-end active:scale-95 transition-transform"
                 >
-                    <span className={`w-1.5 h-20 rounded-l-full shadow-md ${accentClass} opacity-70`} />
+                    <span className={`w-2 h-24 rounded-l-full shadow-lg ring-1 ring-black/10 ${accentClass}`} />
                 </button>
             )}
 

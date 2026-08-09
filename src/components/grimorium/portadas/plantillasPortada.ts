@@ -90,6 +90,10 @@ const cartel: PlantillaPortada = {
   .pc { page-break-after: always; break-after: page; position: relative;
         min-height: 240mm; display: flex; flex-direction: column; justify-content: center;
         background: #0f172a; color: #f8fafc; margin: -28px -24px 0; padding: 60px 48px; }
+  /* Al imprimir el relleno del cuerpo pasa a 12mm: el margen negativo debe
+     coincidir con ÉL, o la portada sale más ancha que el área imprimible y el
+     navegador empieza a paginar en horizontal. */
+  @media print { .pc { margin: -12mm -12mm 0; } }
   /* El navegador omite los fondos al imprimir salvo que se le pida. */
   .pc { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   .pc-linea { width: 64px; height: 4px; background: #2dd4bf; margin-bottom: 28px; }
@@ -143,10 +147,13 @@ const clubhouse: PlantillaPortada = {
     descripcion: 'Verde profundo, dorado y fotografía protagonista.',
     css: `
   .cb { page-break-after: always; break-after: page; position: relative; overflow: hidden;
-        min-height: 245mm; margin: -28px -24px 0; padding: 74px 56px 56px;
+        min-height: 232mm; margin: -28px -24px 0; padding: 64px 48px 48px;
         display: flex; flex-direction: column; justify-content: center;
         background: linear-gradient(150deg, #0a3730 0%, #06231e 58%, #041713 100%); color: #f7f4ec;
         -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  /* Mismo motivo que en Cartel: el margen negativo se ajusta al relleno de
+     impresión para que la portada no desborde a lo ancho. */
+  @media print { .cb { margin: -12mm -12mm 0; } }
   .cb-marca { font-size: 10px; letter-spacing: .34em; text-transform: uppercase; color: #c9a227; margin-bottom: 26px; }
   .cb-titulo { margin: 0; text-transform: uppercase; letter-spacing: -.015em; line-height: .92;
                /* Fluido: un título largo encoge en vez de desbordar. */
@@ -208,8 +215,12 @@ const clubhouse: PlantillaPortada = {
   h2 { font-size: 12px; letter-spacing: .22em; text-transform: uppercase; color: #0a3730;
        margin: 30px 0 12px; padding-bottom: 0; border: 0; }
 
-  /* Escandallo a ancho completo. */
-  table { width: 100%; border-collapse: collapse; }
+  /* Escandallo. table-layout:fixed es imprescindible: sin él un nombre largo
+     —"AGUERRIDO, REFUGIO CUPREATA CAPON ZACATE LIMON"— ensancha la tabla más
+     allá de la columna y provoca desbordamiento horizontal, que al imprimir se
+     traduce en páginas de más. */
+  table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+  td, th { overflow-wrap: anywhere; word-break: break-word; }
   thead th { background: #0a3730; color: #f7f4ec; font-size: 9px; letter-spacing: .17em;
              text-transform: uppercase; font-weight: 600; padding: 9px 14px; text-align: left; }
   thead th.num { text-align: right; }
@@ -229,6 +240,11 @@ const clubhouse: PlantillaPortada = {
      explícita antes de la preparación. */
   .col-escandallo { border-bottom: 1px solid #e6e1d5; padding-bottom: 18px; }
   .col-escandallo h2 { margin-top: 20px; }
+
+  /* Nada de títulos huérfanos ni bandas partidas entre páginas. */
+  .col-escandallo h2, .prep, .totals, .specs { break-inside: avoid; page-break-inside: avoid; }
+  tr { break-inside: avoid; page-break-inside: avoid; }
+  .ficha-top { break-inside: auto; }
 
   .prep { background: #f7f4ec; border-left: 3px solid #c9a227; border-radius: 0 6px 6px 0;
           padding: 14px 18px; font-size: 13px; line-height: 1.7; color: #1e2a26; }
