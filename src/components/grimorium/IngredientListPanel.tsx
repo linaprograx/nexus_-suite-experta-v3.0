@@ -304,10 +304,10 @@ export const IngredientListPanel: React.FC<IngredientListPanelProps> = ({
             )}
 
             {showProveedorDropdown && (
-              <div className="absolute top-full right-0 mt-2 w-max max-w-full max-h-60 overflow-y-auto custom-scrollbar bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl z-20 p-1">
+              <div className="absolute top-full right-0 mt-2 inline-flex w-max max-w-full max-h-60 flex-col items-stretch overflow-y-auto custom-scrollbar bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl z-20 p-1">
                 <button
                   onClick={() => { setSelectedProveedorId('all'); setShowProveedorDropdown(false); }}
-                  className="w-full whitespace-nowrap text-right px-4 py-2 text-sm rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                  className="whitespace-nowrap text-right px-4 py-2 text-sm rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
                 >
                   Todos los productos
                 </button>
@@ -315,7 +315,7 @@ export const IngredientListPanel: React.FC<IngredientListPanelProps> = ({
                   <button
                     key={prov.id}
                     onClick={() => { setSelectedProveedorId(prov.id); setShowProveedorDropdown(false); }}
-                    className="w-full whitespace-nowrap text-right px-4 py-2 text-sm rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                    className="whitespace-nowrap text-right px-4 py-2 text-sm rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
                   >
                     {prov.name}
                   </button>
