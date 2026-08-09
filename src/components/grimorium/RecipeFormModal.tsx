@@ -344,7 +344,10 @@ export const RecipeFormModal: React.FC<RecipeFormModalProps> = ({ isOpen, onClos
                                 {/* Name */}
                                 <div className="flex-1 space-y-1 flex flex-col justify-center">
                                     <label className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Nombre</label>
-                                    <Input name="nombre" value={recipe.nombre || ''} onChange={handleRecipeChange} placeholder="Nombre del cóctel" className={`text-lg font-medium ${inputCls}`} required />
+                                    <Input name="nombre" value={recipe.nombre || ''} onChange={handleRecipeChange} placeholder="Nombre del cóctel"
+                                        // Solo en nombres propios. Preparación y notas
+                                        // conservan el comportamiento normal del teclado.
+                                        autoCapitalize="words" className={`text-lg font-medium ${inputCls}`} required />
                                 </div>
                             </div>
 
@@ -572,6 +575,8 @@ export const RecipeFormModal: React.FC<RecipeFormModalProps> = ({ isOpen, onClos
                                                             value={item.nombre || ''}
                                                             onChange={e => updateLineItem(index, 'nombre', e.target.value)}
                                                             placeholder={`Nombre del ${kindName}…`}
+                                                            // Nombre propio de la sub-receta o del garnish.
+                                                            autoCapitalize="words"
                                                             className={`text-sm font-semibold px-2 py-1 h-9 ${inputCls}`}
                                                         />
                                                     </div>

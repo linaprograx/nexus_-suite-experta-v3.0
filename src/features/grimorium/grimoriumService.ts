@@ -13,7 +13,7 @@ import { Firestore } from 'firebase/firestore';
 export const grimoriumService = {
     // --- RECIPES ---
     addRecipe: async (db: Firestore, userId: string, recipeData: Partial<Recipe>) => {
-        const collectionRef = collection(db, `users/${userId}/recipes`);
+        const collectionRef = collection(db, `users/${userId}/grimorio`);
         const docRef = await addDoc(collectionRef, {
             ...recipeData,
             createdAt: serverTimestamp(),
@@ -23,7 +23,7 @@ export const grimoriumService = {
     },
 
     updateRecipe: async (db: Firestore, userId: string, recipeId: string, updates: Partial<Recipe>) => {
-        const docRef = doc(db, `users/${userId}/recipes`, recipeId);
+        const docRef = doc(db, `users/${userId}/grimorio`, recipeId);
         await updateDoc(docRef, {
             ...updates,
             updatedAt: serverTimestamp()
@@ -31,11 +31,20 @@ export const grimoriumService = {
     },
 
     deleteRecipe: async (db: Firestore, userId: string, recipeId: string) => {
-        const docRef = doc(db, `users/${userId}/recipes`, recipeId);
+        const docRef = doc(db, `users/${userId}/grimorio`, recipeId);
         await deleteDoc(docRef);
     },
 
     // --- INGREDIENTS ---
+    //
+    // ⚠️ CUIDADO: estas cinco funciones apuntan a `users/{uid}/ingredients`, que
+    // NO existe. Los ingredientes viven en
+    // `artifacts/{appId}/users/{uid}/grimorio-ingredients`, y para construir esa
+    // ruta hace falta `appId`, que estas firmas no reciben.
+    //
+    // Hoy no las llama nadie, así que no hacen daño — pero si alguien las usa,
+    // escribirá en el vacío sin ningún error, igual que le pasaba a
+    // `deleteRecipe`. Antes de usarlas hay que corregir la ruta Y la firma.
     addIngredient: async (db: Firestore, userId: string, ingredientData: Partial<Ingredient>) => {
         const collectionRef = collection(db, `users/${userId}/ingredients`);
         const docRef = await addDoc(collectionRef, {

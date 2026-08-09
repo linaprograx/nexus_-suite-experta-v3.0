@@ -69,6 +69,22 @@ export const Autocomplete: React.FC<AutocompleteProps> = ({
   const RESERVA_INFERIOR = 76;  // barra de navegación + área segura
   const MARGEN = 4;
 
+  /**
+   * Alto realmente visible, **descontando el teclado**.
+   *
+   * `window.innerHeight` NO cambia cuando iOS abre el teclado: sigue midiendo la
+   * ventana completa, teclado incluido. Por eso la lista se calculaba con un
+   * espacio que ya no existía y acababa debajo del teclado — y al cerrarlo
+   * volvía a su sitio, que es exactamente el síntoma descrito.
+   *
+   * `visualViewport` sí refleja lo que el usuario ve. `offsetTop` recoge además
+   * el desplazamiento que hace el navegador para revelar el campo enfocado.
+   */
+  const altoVisible = () => {
+    const vv = window.visualViewport;
+    return vv ? vv.height + vv.offsetTop : window.innerHeight;
+  };
+
   const updateRect = () => {
     const el = wrapperRef.current;
     if (!el) return;
@@ -76,12 +92,13 @@ export const Autocomplete: React.FC<AutocompleteProps> = ({
     const fila = el.closest('[data-fila-ingrediente]') as HTMLElement | null;
     const rf = fila ? fila.getBoundingClientRect() : r;
 
-    const abajo = window.innerHeight - r.bottom - RESERVA_INFERIOR - MARGEN;
+    const limite = altoVisible();
+    const abajo = limite - r.bottom - RESERVA_INFERIOR - MARGEN;
     const arriba = r.top - MARGEN;
     const haciaArriba = abajo < 140 && arriba > abajo;
 
     setRect(haciaArriba
-      ? { bottom: window.innerHeight - r.top + MARGEN, left: rf.left, width: rf.width, maxH: Math.max(120, Math.min(280, arriba)) }
+      ? { bottom: limite - r.top + MARGEN, left: rf.left, width: rf.width, maxH: Math.max(120, Math.min(280, arriba)) }
       : { top: r.bottom + MARGEN, left: rf.left, width: rf.width, maxH: Math.max(120, Math.min(280, abajo)) });
   };
 
@@ -91,9 +108,17 @@ export const Autocomplete: React.FC<AutocompleteProps> = ({
     const handler = () => updateRect();
     window.addEventListener('scroll', handler, true);
     window.addEventListener('resize', handler);
+    // Abrir o cerrar el teclado dispara `visualViewport.resize`, NO
+    // `window.resize`. Sin esto la lista se quedaba donde estaba y el usuario
+    // veía los resultados fuera de sitio hasta cerrar el teclado.
+    const vv = window.visualViewport;
+    vv?.addEventListener('resize', handler);
+    vv?.addEventListener('scroll', handler);
     return () => {
       window.removeEventListener('scroll', handler, true);
       window.removeEventListener('resize', handler);
+      vv?.removeEventListener('resize', handler);
+      vv?.removeEventListener('scroll', handler);
     };
   }, [isOpen]);
 
