@@ -174,12 +174,12 @@ export const ActiveMenuModal: React.FC<{
                             placeholder="Concepto del menú: de qué va, frases gancho, cómo se presenta…"
                             className="w-full px-3 py-2 rounded-xl text-sm resize-none bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200"
                         />
-                        <div className="flex gap-2">
+                        <div className="flex flex-wrap gap-2">
                             <input
                                 type="date"
                                 value={cartaActiva.fecha || ''}
                                 onChange={e => guardar({ fecha: e.target.value })}
-                                className="flex-1 h-10 px-3 rounded-xl text-sm bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200"
+                                className="w-[7.5rem] shrink-0 h-10 px-2 rounded-xl text-xs bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200"
                             />
                             <button
                                 onClick={async () => {
@@ -190,7 +190,7 @@ export const ActiveMenuModal: React.FC<{
                                     await crearCarta(n);
                                 }}
                                 title="Crear una carta nueva"
-                                className="shrink-0 h-10 px-3 rounded-xl bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold uppercase tracking-wider"
+                                className="shrink-0 h-10 px-2.5 rounded-xl bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold uppercase tracking-wider"
                             >
                                 + Nueva
                             </button>
@@ -198,7 +198,7 @@ export const ActiveMenuModal: React.FC<{
                                 value={plantilla}
                                 onChange={e => setPlantilla(e.target.value)}
                                 aria-label="Plantilla de portada"
-                                className="h-10 px-2 rounded-xl text-xs bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200"
+                                className="flex-1 min-w-0 h-10 px-2 rounded-xl text-xs bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200"
                             >
                                 {PLANTILLAS_PORTADA.map(p => (
                                     <option key={p.id} value={p.id}>{p.nombre}</option>
@@ -206,9 +206,9 @@ export const ActiveMenuModal: React.FC<{
                             </select>
                             <button
                                 onClick={exportarCarta}
-                                className="shrink-0 h-10 px-4 rounded-xl bg-teal-600 hover:bg-teal-500 text-white text-xs font-bold uppercase tracking-wider flex items-center gap-2"
+                                className="shrink-0 h-10 px-3 rounded-xl bg-teal-600 hover:bg-teal-500 text-white text-xs font-bold uppercase tracking-wider flex items-center gap-2"
                             >
-                                <Icon svg={ICONS.book} className="w-4 h-4" /> Exportar carta
+                                <Icon svg={ICONS.book} className="w-4 h-4" /> Exportar
                             </button>
                         </div>
                     </div>

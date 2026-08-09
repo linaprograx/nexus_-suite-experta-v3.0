@@ -183,14 +183,20 @@ const clubhouse: PlantillaPortada = {
 
     cssFicha: `
   body { color: #123; }
-  /* Identidad: foto a la izquierda, título y specs a la derecha. */
-  .head { display: flex; gap: 30px; align-items: flex-start; border-bottom: 0; padding-bottom: 0; margin-bottom: 26px; }
-  .head img { width: 232px; height: auto; max-height: 300px; object-fit: contain;
-              border-radius: 4px; box-shadow: 0 10px 30px rgba(4,23,19,.22); background: #06231e; }
-  .head-info { flex: 1; min-width: 0; }
-  .head h1 { font-size: 40px; line-height: 1.02; margin: 0 0 6px; color: #0a3730; text-transform: uppercase;
+
+  /* La FOTO es el elemento principal: ocupa la columna izquierda entera y el
+     escandallo se compone a su derecha, bajo las especificaciones.
+     `grid-row: 1 / span 2` es lo que deja que la imagen sea alta sin obligar a
+     que todas las recetas midan lo mismo: crece hasta donde llegue el contenido
+     de la derecha, y nunca se recorta. */
+  .ficha-top { grid-template-columns: 300px 1fr; gap: 30px; margin-bottom: 8px; }
+  .col-foto { grid-row: 1 / span 2; }
+  .col-escandallo { grid-column: 2; grid-row: 2; }
+  .col-foto img { width: 300px; height: auto; max-height: 420px; object-fit: contain;
+                  border-radius: 4px; box-shadow: 0 12px 34px rgba(4,23,19,.24); background: #06231e; }
+  .col-info h1, .head h1 { font-size: 40px; line-height: 1.02; margin: 0 0 6px; color: #0a3730; text-transform: uppercase;
              letter-spacing: -.01em; word-break: break-word; }
-  .cat { font-size: 10px; letter-spacing: .2em; text-transform: uppercase; color: #c9a227; margin-bottom: 20px; }
+  .cat { font-size: 10px; letter-spacing: .2em; text-transform: uppercase; color: #c9a227; margin-bottom: 18px; }
 
   /* Especificaciones: cuatro columnas separadas por filete, como la referencia. */
   .specs { display: flex; flex-wrap: wrap; gap: 0; margin: 0; border-top: 1px solid #e6e1d5; padding-top: 16px; }
@@ -218,6 +224,11 @@ const clubhouse: PlantillaPortada = {
   .branch { background: #e6e1d5; }
   .k-sub .branch { background: #ded7f5; }
   .k-garnish .branch { background: #f0e3bb; }
+
+  /* Línea de cierre del escandallo, para que el bloque termine de forma
+     explícita antes de la preparación. */
+  .col-escandallo { border-bottom: 1px solid #e6e1d5; padding-bottom: 18px; }
+  .col-escandallo h2 { margin-top: 20px; }
 
   .prep { background: #f7f4ec; border-left: 3px solid #c9a227; border-radius: 0 6px 6px 0;
           padding: 14px 18px; font-size: 13px; line-height: 1.7; color: #1e2a26; }

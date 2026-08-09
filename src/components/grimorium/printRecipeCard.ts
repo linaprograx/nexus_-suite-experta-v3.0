@@ -90,21 +90,27 @@ const fichaHtml = (recipe: Partial<Recipe>, cost: RecipeCostResult, allRecipes: 
         `<div class="spec"><span class="k">${esc(k)}</span><span class="v">${esc(v)}</span></div>`
     ).join('');
 
-    return `  <div class="head">
-    ${recipe.imageUrl ? `<img src="${esc(recipe.imageUrl)}" alt="">` : ''}
-    <div class="head-info">
+    return `  <!-- Rejilla: la FOTO, la IDENTIDAD y el ESCANDALLO son tres piezas que cada
+       tema coloca donde quiera. El HTML es uno solo; el tema decide si el
+       escandallo va junto a la foto o a ancho completo. -->
+  <div class="ficha-top">
+    <div class="col-foto">
+      ${recipe.imageUrl ? `<img src="${esc(recipe.imageUrl)}" alt="">` : ''}
+    </div>
+    <div class="col-info">
       <h1>${esc(recipe.nombre || 'Receta sin nombre')}</h1>
       <div class="cat">${esc((recipe.categorias || []).join(' · '))}</div>
       ${specsHtml ? `<div class="specs">${specsHtml}</div>` : ''}
     </div>
-  </div>
-
+    <div class="col-escandallo">
   <h2>Ingredientes</h2>
   <table>
     <colgroup><col class="c-name"><col class="c-qty"><col class="c-cost"></colgroup>
     <thead><tr><th>Ingrediente</th><th class="num">Cantidad</th><th class="num">Coste</th></tr></thead>
     <tbody>${rowsHtml || '<tr><td colspan="3">Sin ingredientes</td></tr>'}</tbody>
   </table>
+    </div>
+  </div>
 
   ${recipe.preparacion ? `<h2>Preparación</h2><div class="prep">${esc(recipe.preparacion)}</div>` : ''}
 
@@ -164,8 +170,14 @@ export function printRecipeCards(
   .ficha:last-child { page-break-after: auto; break-after: auto; }
   /* Los estilos de la portada los aporta la plantilla elegida. */
   body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; color: #1f2937; margin: 0; padding: 32px; }
+  /* Colocación por defecto: foto e identidad arriba, escandallo a ancho
+     completo debajo. Un tema puede recolocar estas tres piezas solo con CSS. */
+  .ficha-top { display: grid; grid-template-columns: auto 1fr; gap: 26px; align-items: start; }
+  .col-foto { grid-column: 1; grid-row: 1; }
+  .col-info { grid-column: 2; grid-row: 1; min-width: 0; }
+  .col-escandallo { grid-column: 1 / -1; grid-row: 2; min-width: 0; }
   .head { display: flex; gap: 26px; align-items: center; border-bottom: 3px solid #0d9488; padding-bottom: 20px; margin-bottom: 22px; }
-  .head img { width: 170px; height: 170px; object-fit: contain; border-radius: 18px; box-shadow: 0 8px 24px rgba(15,23,42,.16); flex-shrink: 0; }
+  .col-foto img, .head img { width: 170px; height: 170px; object-fit: contain; border-radius: 18px; box-shadow: 0 8px 24px rgba(15,23,42,.16); flex-shrink: 0; }
   h1 { font-size: 34px; margin: 0 0 6px; letter-spacing: -.02em; }
   .cat { color: #64748b; font-size: 13px; text-transform: uppercase; letter-spacing: .08em; }
   .specs { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 20px; }
