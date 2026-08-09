@@ -6,6 +6,10 @@ import { useApp } from '../../context/AppContext';
 import { Icon } from '../ui/Icon';
 import { ICONS } from '../ui/icons';
 import { normalizeIngredientPacks } from '../../services/migrations/normalizeIngredientPacks';
+import {
+    normalizeIngredientCategories,
+    previewIngredientCategoryNormalization,
+} from '../../services/migrations/normalizeIngredientCategories';
 
 interface MarketSidebarProps {
     allIngredients: Ingredient[];
@@ -23,6 +27,13 @@ export const MarketSidebar: React.FC<MarketSidebarProps> = ({
     const queryClient = useQueryClient();
     const [normalizing, setNormalizing] = useState(false);
     const [normalizeMsg, setNormalizeMsg] = useState<string | null>(null);
+    const [normalizingCategories, setNormalizingCategories] = useState(false);
+    const [categoryNormalizeMsg, setCategoryNormalizeMsg] = useState<string | null>(null);
+
+    const categoryPreview = useMemo(
+        () => previewIngredientCategoryNormalization(allIngredients),
+        [allIngredients],
+    );
 
     const handleNormalizeCatalog = async () => {
         if (!db || !userId || !appId || normalizing) return;
@@ -38,6 +49,34 @@ export const MarketSidebar: React.FC<MarketSidebarProps> = ({
             setNormalizeMsg('✗ Error al normalizar (ver consola)');
         } finally {
             setNormalizing(false);
+        }
+    };
+
+    const handleNormalizeCategories = async () => {
+        if (!db || !userId || !appId || normalizingCategories || categoryPreview.affected === 0) return;
+
+        const message = [
+            `Depurar ${categoryPreview.affected} fichas con nombres de categoría inequívocos.`,
+            'Solo se corrigen ortografía, plural y etiquetas redundantes aprobadas.',
+            'No se modifica stock, precios, proveedores, recetas ni costes.',
+            'Cada ficha conservará su categoría anterior para poder revertirla.',
+            '',
+            'Los casos ambiguos (SEC, KOPPER, MINIS, Importado y posibles familias solapadas) quedan sin tocar.',
+            '¿Aplicar esta depuración?',
+        ].join('\n');
+        if (!window.confirm(message)) return;
+
+        setNormalizingCategories(true);
+        setCategoryNormalizeMsg(null);
+        try {
+            const result = await normalizeIngredientCategories(db, appId, userId);
+            await queryClient.invalidateQueries({ queryKey: ['ingredients'] });
+            setCategoryNormalizeMsg(`✓ ${result.updated} fichas depuradas · ${result.skipped} sin cambios${result.errors ? ` · ${result.errors} errores` : ''}`);
+        } catch (error) {
+            console.error('[CATEGORY_NORMALIZATION] fallo', error);
+            setCategoryNormalizeMsg('✗ Error al depurar categorías (ver consola)');
+        } finally {
+            setNormalizingCategories(false);
         }
     };
 
@@ -350,6 +389,27 @@ export const MarketSidebar: React.FC<MarketSidebarProps> = ({
                             </button>
                             {normalizeMsg && (
                                 <p className="text-[10px] text-center text-slate-500 dark:text-slate-400 mt-1">{normalizeMsg}</p>
+                            )}
+
+                            <button
+                                onClick={handleNormalizeCategories}
+                                disabled={normalizingCategories || categoryPreview.affected === 0}
+                                title="Corrige únicamente las categorías aprobadas y conserva el valor anterior para revertir"
+                                className="flex items-center justify-center gap-2 p-2.5 rounded-xl bg-white/50 hover:bg-violet-50 dark:bg-slate-700/50 dark:hover:bg-slate-700 hover:border-violet-200 border border-white/10 transition-all group disabled:opacity-60 disabled:cursor-wait"
+                            >
+                                <div className={`w-6 h-6 rounded-full bg-violet-100 dark:bg-violet-900/50 text-violet-600 dark:text-violet-400 flex items-center justify-center transition-transform duration-500 ${normalizingCategories ? 'animate-spin' : 'group-hover:rotate-180'}`}>
+                                    <Icon svg={ICONS.refreshCw} className="w-3 h-3" />
+                                </div>
+                                <span className="text-xs font-bold text-slate-600 dark:text-slate-300">
+                                    {normalizingCategories
+                                        ? 'Depurando categorías…'
+                                        : categoryPreview.affected > 0
+                                            ? `Depurar ${categoryPreview.affected} categorías`
+                                            : 'Categorías depuradas'}
+                                </span>
+                            </button>
+                            {categoryNormalizeMsg && (
+                                <p className="text-[10px] text-center text-slate-500 dark:text-slate-400 mt-1">{categoryNormalizeMsg}</p>
                             )}
                         </div>
                     </div>
