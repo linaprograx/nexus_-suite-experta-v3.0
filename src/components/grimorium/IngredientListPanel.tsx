@@ -283,10 +283,10 @@ export const IngredientListPanel: React.FC<IngredientListPanelProps> = ({
             </div>
 
             {showCategoryDropdown && (
-              <div className="absolute top-full left-0 right-0 mt-2 max-h-60 overflow-y-auto custom-scrollbar bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl z-20 p-1">
+              <div className="absolute top-full left-0 mt-2 w-max max-w-full max-h-60 overflow-y-auto custom-scrollbar bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl z-20 p-1">
                 <button
                   onClick={() => { onIngredientFilterChange('category', 'all'); setShowCategoryDropdown(false); }}
-                  className="w-full text-left px-3 py-2 text-sm rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors flex items-center gap-2"
+                  className="w-full whitespace-nowrap text-left px-4 py-2 text-sm rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors flex items-center gap-2"
                 >
                   <span className="text-slate-500">Todas</span>
                 </button>
@@ -294,7 +294,7 @@ export const IngredientListPanel: React.FC<IngredientListPanelProps> = ({
                   <button
                     key={cat}
                     onClick={() => { onIngredientFilterChange('category', cat); setShowCategoryDropdown(false); }}
-                    className="w-full text-left px-3 py-2 text-sm rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors flex items-center gap-2"
+                    className="w-full whitespace-nowrap text-left px-4 py-2 text-sm rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors flex items-center gap-2"
                   >
                     <div className={`w-2.5 h-2.5 shrink-0 rounded-full ${getCategoryColor(cat)}`} />
                     <span className="truncate">{cat}</span>
@@ -304,10 +304,10 @@ export const IngredientListPanel: React.FC<IngredientListPanelProps> = ({
             )}
 
             {showProveedorDropdown && (
-              <div className="absolute top-full left-0 right-0 mt-2 max-h-60 overflow-y-auto custom-scrollbar bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl z-20 p-1">
+              <div className="absolute top-full right-0 mt-2 w-max max-w-full max-h-60 overflow-y-auto custom-scrollbar bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl z-20 p-1">
                 <button
                   onClick={() => { setSelectedProveedorId('all'); setShowProveedorDropdown(false); }}
-                  className="w-full text-left px-3 py-2 text-sm rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                  className="w-full whitespace-nowrap text-right px-4 py-2 text-sm rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
                 >
                   Todos los productos
                 </button>
@@ -315,7 +315,7 @@ export const IngredientListPanel: React.FC<IngredientListPanelProps> = ({
                   <button
                     key={prov.id}
                     onClick={() => { setSelectedProveedorId(prov.id); setShowProveedorDropdown(false); }}
-                    className="w-full text-left px-3 py-2 text-sm rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                    className="w-full whitespace-nowrap text-right px-4 py-2 text-sm rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
                   >
                     {prov.name}
                   </button>
@@ -335,14 +335,13 @@ export const IngredientListPanel: React.FC<IngredientListPanelProps> = ({
                 {/* BULK BUY BUTTON */}
                 {onBulkBuy && (
                   <Button
-                    size="sm"
+                    size="icon"
                     variant="ghost"
                     onClick={onBulkBuy}
                     title={`Comprar ${selectedIngredientIds.length} ingrediente(s)`}
-                    className="h-10 w-10 sm:w-auto sm:px-3 !bg-emerald-50 !text-emerald-700 border border-emerald-200 hover:!bg-emerald-600 hover:!text-white hover:border-emerald-600 transition-colors font-bold"
+                    className="h-10 w-10 !bg-emerald-50 !text-emerald-700 border border-emerald-200 hover:!bg-emerald-600 hover:!text-white hover:border-emerald-600 transition-colors"
                   >
-                    <Icon svg={ICONS.shoppingCart} className="w-4 h-4 sm:hidden" />
-                    <span className="hidden sm:inline">Comprar ({selectedIngredientIds.length})</span>
+                    <Icon svg={ICONS.shoppingCart} className="w-4 h-4" />
                   </Button>
                 )}
 
