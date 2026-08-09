@@ -161,6 +161,13 @@ export function printRecipeCards(
         .join('\n');
 
     const html = `<!doctype html><html lang="es"><head><meta charset="utf-8">
+<!-- Anchura de maquetación fija: 794px = A4 a 96 ppp.
+     Sin esto, en un móvil el documento se compone al ancho del TELÉFONO (~390px):
+     la tabla se estrangula, cada fila se parte en varias líneas y el documento se
+     convierte en un rollo kilométrico que iOS trocea en decenas de hojas. Era la
+     causa real de que el PDF saliera con 63 páginas para cinco recetas, y por eso
+     ningún cambio de CSS la corregía. -->
+<meta name="viewport" content="width=794">
 <title>${esc(portada?.nombre || fichas[0].recipe.nombre || 'Recetario')} — Nexus Suite</title>
 <style>
   * { box-sizing: border-box; }
@@ -169,7 +176,10 @@ export function printRecipeCards(
   .ficha { page-break-after: always; break-after: page; }
   .ficha:last-child { page-break-after: auto; break-after: auto; }
   /* Los estilos de la portada los aporta la plantilla elegida. */
-  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; color: #1f2937; margin: 0; padding: 32px; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; color: #1f2937;
+         margin: 0 auto; padding: 32px; width: 794px; max-width: 100%; }
+  /* Tamaño de página explícito: no depender del que suponga cada dispositivo. */
+  @page { size: A4; margin: 12mm; }
   /* Colocación por defecto: foto e identidad arriba, escandallo a ancho
      completo debajo. Un tema puede recolocar estas tres piezas solo con CSS. */
   .ficha-top { display: grid; grid-template-columns: auto 1fr; gap: 26px; align-items: start; }
@@ -214,7 +224,7 @@ export function printRecipeCards(
     background: #0f172a; box-shadow: 0 4px 14px rgba(0,0,0,.25); cursor: pointer; }
   @media print { .salir { display: none; } }
   .foot { margin-top: 28px; font-size: 10px; color: #cbd5e1; }
-  @media print { body { padding: 12mm; } .noprint { display: none; } }
+  @media print { body { width: auto; padding: 0; } .noprint { display: none; } }
 ${portada ? plantillaPorId(portada.plantilla).css : ''}
 ${portada ? (plantillaPorId(portada.plantilla).cssFicha || '') : ''}
 </style></head><body>
