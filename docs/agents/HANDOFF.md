@@ -6,16 +6,49 @@
 
 ---
 
-**Última actualización:** 2026-08-08
-**Sesión anterior:** Claude Code — **solo documentación, sin tocar código.**
-**Estado:** el código sigue exactamente como lo dejó la sesión del 2026-08-06
-(árbol limpio, TypeScript 0 errores, build correcto, desplegado y verificado en
-producción a 390px y 1280px).
+**Última actualización:** 2026-08-09
+**Sesión anterior:** Claude Code — cierre de **Grimorio → Recetas**.
+**Estado:** árbol limpio, TypeScript 0 errores, build correcto, desplegado y
+verificado en producción leyendo el bundle servido.
 
-**Lo que cambió el 2026-08-08:** tres días de uso real en el teléfono
-produjeron una lista de defectos, y el fundador amplió el plan de Grimorio y
-abrió el de Cerebrity. Todo eso está ahora escrito, priorizado y rastreado hasta
-archivo:línea. **No se corrigió nada**: ese es el trabajo que empieza ahora.
+**Recetas se da por CERRADO.** El exportador a PDF funciona en las tres
+plantillas (Editorial, Clubhouse Premium, Cartel): portada en su hoja y una
+receta por página. Las causas reales y las trampas de proceso están en
+`WORKLOG.md` — **léelas antes de tocar el exportador**, porque casi todo lo que
+parece un problema de diseño era en realidad una medida absoluta.
+
+## Lo siguiente, en orden
+
+1. **Panel de Análisis** (`src/components/grimorium/RecipeFinancialDashboard.tsx`).
+   Diagnosticado y SIN implementar. No usa `calculateRecipeProfitability`:
+   calcula el margen a mano como `(precio − coste de ingredientes) / precio`, así
+   que ignora merma, comisiones, mano de obra, impuestos y estructura. El margen
+   medio que muestra contradice el de la ficha. Los umbrales `70` y `25` están
+   escritos a fuego en vez de leer el objetivo de Economía. Cambio contenido: un
+   fichero, sin tocar maquetación.
+2. **`BusinessCogsPanel.tsx`**: usa compras reales, pero no pasa `allRecipes`, así
+   que no resuelve sub-recetas y su total queda por debajo del real.
+3. **Inventario y Mercado**, nunca auditados en profundidad. Mismo método que
+   funcionó en Recetas: auditoría primero, luego por gravedad.
+   `PLAN-GRIMORIO-MERCADO.md` tiene cuatro decisiones del fundador pendientes.
+4. Líneas de receta que apuntan a un ingrediente inexistente: se imprimen como
+   «—» con coste 0,00 € (visto en *Water Hazard*). Encaja con la revisión de
+   Inventario.
+
+## Regla de datos, no negociable
+
+Los datos son REALES y del negocio del fundador (~1.325 ingredientes, ~1.367
+productos). **No ejecutes acciones destructivas para verificar**: borrados,
+ajustes de stock, resolución de conflictos. Pídele un registro de pruebas o que
+lo ejecute él mientras observas. Hubo un susto de posible pérdida de recetas por
+no seguir esto.
+
+## Regla de despliegue, no negociable
+
+Producción se construye desde **`deploy/mobile-v1`**. Empujar solo a
+`feat/mobile-v1-unified` NO despliega nada: dos iteraciones enteras fueron
+invisibles por esto. Empuja siempre a las dos ramas y verifica leyendo el bundle
+servido, no fiándote del push.
 
 ## Dónde se trabaja
 
