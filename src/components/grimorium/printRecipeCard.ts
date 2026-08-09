@@ -180,18 +180,33 @@ export function printRecipeCards(
          margin: 0 auto; padding: 32px; width: 794px; max-width: 100%; }
   /* Tamaño de página explícito: no depender del que suponga cada dispositivo. */
   @page { size: A4; margin: 12mm; }
-  /* Colocación por defecto: foto e identidad arriba, escandallo a ancho
-     completo debajo. Un tema puede recolocar estas tres piezas solo con CSS. */
-  .ficha-top { display: grid; grid-template-columns: auto 1fr; gap: 26px; align-items: start; }
+  /* UNA RECETA, UNA PÁGINA — colocación por defecto para TODOS los temas.
+     A la izquierda la foto y, bajo ella, preparación y totales; a la derecha la
+     identidad y el escandallo. Con la disposición anterior —escandallo a ancho
+     completo y preparación y totales debajo— casi ninguna receta cabía en su
+     hoja: el contenido se apilaba en una sola columna larguísima.
+
+     display:contents disuelve el envoltorio .ficha-top para que sus tres hijos
+     sean elementos de la rejilla de .ficha. Así el HTML sigue siendo uno solo.
+
+     Las filas van explícitas y no por colocación automática: una receta sin
+     preparación pierde dos elementos, y la automática recolocaría el resto. */
+  .ficha { display: grid; grid-template-columns: minmax(0, 34%) minmax(0, 1fr);
+           column-gap: 26px; align-content: start; }
+  .ficha-top { display: contents; }
   .col-foto { grid-column: 1; grid-row: 1; }
-  .col-info { grid-column: 2; grid-row: 1; min-width: 0; }
-  .col-escandallo { grid-column: 1 / -1; grid-row: 2; min-width: 0; }
+  .col-info { grid-column: 2; grid-row: 1; min-width: 0; align-self: start; }
+  .col-escandallo { grid-column: 2; grid-row: 2 / span 4; min-width: 0; align-self: start; }
+  .ficha > h2 { grid-column: 1; grid-row: 2; align-self: end; }
+  .prep { grid-column: 1; grid-row: 3; align-self: start; }
+  .totals { grid-column: 1; grid-row: 4; align-self: start; }
+  .foot { grid-column: 1 / -1; grid-row: 5; }
   .head { display: flex; gap: 26px; align-items: center; border-bottom: 3px solid #0d9488; padding-bottom: 20px; margin-bottom: 22px; }
   /* Altura automática y NADA de object-fit: encajar una foto vertical dentro de
      un cuadrado deja dos franjas del color del papel a los lados, que es el
      recuadro blanco que rodeaba cada imagen. Fijamos solo la anchura y la foto
      ocupa exactamente su propia área. */
-  .col-foto img, .head img { display: block; width: 170px; height: auto;
+  .col-foto img, .head img { display: block; width: 100%; height: auto;
                              border-radius: 10px; box-shadow: 0 8px 24px rgba(15,23,42,.16); flex-shrink: 0; }
   h1 { font-size: 34px; margin: 0 0 6px; letter-spacing: -.02em; }
   .cat { color: #64748b; font-size: 13px; text-transform: uppercase; letter-spacing: .08em; }
@@ -202,7 +217,7 @@ export function printRecipeCards(
   h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .08em; color: #0d9488; margin: 20px 0 8px; }
   /* One grid for every row: name | qty | cost — identical alignment across all kinds */
   table { width: 100%; border-collapse: collapse; table-layout: fixed; }
-  col.c-name { width: auto; } col.c-qty { width: 130px; } col.c-cost { width: 110px; }
+  col.c-name { width: 54%; } col.c-qty { width: 23%; } col.c-cost { width: 23%; }
   th { text-align: left; padding: 6px 8px; font-size: 10px; text-transform: uppercase; letter-spacing: .06em; color: #94a3b8; border-bottom: 1px solid #e2e8f0; }
   th.num, td.num { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
   td { padding: 8px; font-size: 13px; vertical-align: middle; }
@@ -221,7 +236,8 @@ export function printRecipeCards(
   .k-garnish .branch { background: #fde68a; }
   tr.subrow:last-of-type td { padding-bottom: 8px; }
   .prep { font-size: 13px; line-height: 1.6; white-space: pre-line; background: #f8fafc; border-radius: 8px; padding: 12px 14px; }
-  .totals { display: flex; gap: 24px; margin-top: 22px; border-top: 2px solid #e2e8f0; padding-top: 14px; }
+  .totals { display: flex; flex-direction: column; gap: 10px; margin-top: 22px;
+            border-top: 2px solid #e2e8f0; padding-top: 14px; }
   .totals .box .l { font-size: 10px; text-transform: uppercase; letter-spacing: .08em; color: #94a3b8; font-weight: 700; }
   .totals .box .n { font-size: 20px; font-weight: 800; }
   .salir { position: fixed; top: 12px; right: 12px; z-index: 99; border: 0; border-radius: 999px;
