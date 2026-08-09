@@ -208,19 +208,23 @@ const BotonMenu: React.FC<{
     const actual = opciones.find(o => o.id === valor);
 
     return (
-        <div ref={ref} className="relative shrink-0">
+        <div ref={ref} className="relative flex-1 min-w-0">
             <button
                 type="button"
                 onClick={() => (abierto ? setAbierto(false) : abrir())}
                 aria-label={`${etiqueta}: ${actual?.etiqueta || 'todas'}`}
                 title={`${etiqueta} · ${actual?.etiqueta || ''}`}
                 aria-expanded={abierto}
-                className={`relative w-10 h-10 rounded-xl flex items-center justify-center border transition-colors ${activo
-                    ? 'bg-teal-600 border-teal-600 text-white'
+                // El relleno verde queda reservado al botón de crear receta, que
+                // es la única acción principal de la barra. Aquí el estado activo
+                // se marca con borde y color de icono: se distingue igual sin
+                // competir visualmente con la acción que sí debe destacar.
+                className={`relative w-full h-10 rounded-xl flex items-center justify-center border transition-colors ${activo
+                    ? 'bg-teal-500/10 border-teal-500 text-teal-600 dark:text-teal-400'
                     : 'bg-white/50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300'}`}
             >
                 <Icon svg={icono} className="w-4 h-4" />
-                {activo && <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-white" />}
+                {activo && <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-teal-500" />}
             </button>
 
             {abierto && pos && createPortal(
@@ -399,6 +403,9 @@ export const RecipeList: React.FC<RecipeListProps> = ({
             Los tres modificadores son botones cuadrados con menú; el resto de
             acciones queda a la derecha. */}
         <div className="flex items-center gap-2 w-full">
+          {/* Los tres reparten a partes iguales el espacio libre; el resto de la
+              barra conserva su tamaño. */}
+          <div className="flex-1 min-w-0 flex items-center gap-2">
           <BotonMenu
             icono={ICONS.tag}
             etiqueta="Categoría"
@@ -436,6 +443,7 @@ export const RecipeList: React.FC<RecipeListProps> = ({
             opciones={OPCIONES_ORDEN.map(o => ({ id: o.id, etiqueta: o.etiqueta }))}
             onChange={(v) => setOrden(v as CriterioOrden)}
           />
+          </div>
 
           {/* Delete Selected Button */}
           {selectedRecipeIds.length > 0 && (
