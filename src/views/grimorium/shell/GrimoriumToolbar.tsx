@@ -145,14 +145,10 @@ export const GrimoriumToolbar: React.FC<{ collapsed?: boolean }> = ({ collapsed 
                         colorClass="bg-rose-500"
                     />
 
-                    {/* Optimization Layer (Zero Waste) */}
-                    <LayerToggle
-                        activeLayer={activeLayer} toggleLayer={toggleLayer}
-                        layer="optimization"
-                        label="Zero Waste"
-                        icon={ICONS.refresh}
-                        colorClass="bg-lime-500"
-                    />
+                    {/* Zero Waste ya no tiene icono propio: vive como tercera pestaña
+                        dentro de «Rentabilidad y producción». Seis iconos no caben con
+                        holgura bajo un pulgar, y las tres son herramientas de coste
+                        sobre una receta. Ver HerramientasTabs. */}
                 </div>
             </div>
 

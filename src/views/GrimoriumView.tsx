@@ -63,6 +63,7 @@ import { StockInventoryPanel } from '../components/escandallator/StockInventoryP
 import { StockOrdersPanel } from '../components/escandallator/StockOrdersPanel';
 import { StockRulesPanel } from '../components/escandallator/StockRulesPanel';
 import { StockItemDetailPanel } from '../components/escandallator/StockItemDetailPanel';
+import { HerramientasTabs } from '../components/escandallator/HerramientasTabs';
 
 // Zero Waste Imports
 import ZeroWasteResultCard from '../components/zero-waste/ZeroWasteResultCard';
@@ -1091,6 +1092,7 @@ const GrimoriumInner: React.FC<GrimoriumViewProps> = () => {
                                 allRecipes={allRecipes}
                                 activeSubTab={escandallatorSubTab}
                                 onSubTabChange={setEscandallatorSubTab}
+                                onZeroWaste={() => setLayer('optimization')}
                                 selectedRecipe={selectedEscandalloRecipe || selectedRecipe}
                                 precioVenta={precioVenta}
                                 onSelectRecipe={setSelectedEscandalloRecipe}
@@ -1111,6 +1113,19 @@ const GrimoriumInner: React.FC<GrimoriumViewProps> = () => {
                         </div>
                     )}
                     renderOptimizationLayer={() => (
+                        <div className="h-full flex flex-col overflow-hidden">
+                            {/* Las mismas pestañas que en la capa de coste: sin ellas, Zero
+                                Waste sería un callejón sin salida desde que dejó de tener
+                                su propio icono en la barra. */}
+                            <HerramientasTabs
+                                activa="zerowaste"
+                                onSelect={(h) => {
+                                    if (h === 'zerowaste') return;
+                                    setEscandallatorSubTab(h as 'calculator' | 'production');
+                                    setLayer('cost');
+                                }}
+                            />
+                            <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar">
                         <ZeroWasteControls
                             allIngredients={allIngredients}
                             selectedIngredients={zwSelectedIngredients}
@@ -1120,6 +1135,8 @@ const GrimoriumInner: React.FC<GrimoriumViewProps> = () => {
                             onRawIngredientsChange={setZwRawIngredients}
                             onGenerate={handleGenerateZeroWasteRecipes}
                         />
+                            </div>
+                        </div>
                     )}
                 />
             }

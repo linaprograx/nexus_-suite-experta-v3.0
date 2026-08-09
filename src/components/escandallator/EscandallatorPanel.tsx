@@ -6,6 +6,7 @@ import { ICONS } from '../ui/icons';
 import EscandalloTab from './EscandalloTab';
 import BatcherTab from './BatcherTab';
 import { BatcherResultado } from './BatcherResultado';
+import { HerramientasTabs } from './HerramientasTabs';
 
 interface EscandallatorPanelProps {
     db: Firestore;
@@ -17,6 +18,8 @@ interface EscandallatorPanelProps {
     // Controlled SubTab
     activeSubTab: 'calculator' | 'production';
     onSubTabChange: (tab: 'calculator' | 'production') => void;
+    /** Salta a la capa Zero Waste, que vive fuera de este panel. */
+    onZeroWaste?: () => void;
 
     // Shared/Escandallo Props
     selectedRecipe: Recipe | null;
@@ -123,27 +126,13 @@ const EscandallatorPanel: React.FC<EscandallatorPanelProps> = (props) => {
 
     return (
         <div className="h-full flex flex-col w-full max-w-full overflow-hidden bg-transparent">
-            {/* Sub-navigation for Escandallator */}
-            <div className="flex items-center justify-center pt-6 pb-4 gap-4 flex-shrink-0 bg-white/80 dark:bg-slate-950/80 backdrop-blur-md sticky top-0 z-20 shadow-sm border-b border-rose-100 dark:border-rose-900/20">
-                <button
-                    onClick={() => props.onSubTabChange('calculator')}
-                    className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all ${props.activeSubTab === 'calculator' ? 'bg-rose-500 text-white shadow-md ring-2 ring-rose-500/20' : 'text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800'}`}
-                >
-                    <div className="flex items-center gap-1.5">
-                        <Icon svg={ICONS.chart} className="w-3.5 h-3.5" />
-                        <span>Rentabilidad</span>
-                    </div>
-                </button>
-                <button
-                    onClick={() => props.onSubTabChange('production')}
-                    className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all ${props.activeSubTab === 'production' ? 'bg-amber-500 text-white shadow-md ring-2 ring-amber-500/20' : 'text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800'}`}
-                >
-                    <div className="flex items-center gap-1.5">
-                        <Icon svg={ICONS.layers} className="w-3.5 h-3.5" />
-                        <span>Batcher</span>
-                    </div>
-                </button>
-            </div>
+            <HerramientasTabs
+                activa={props.activeSubTab}
+                onSelect={(h) => {
+                    if (h === 'zerowaste') props.onZeroWaste?.();
+                    else props.onSubTabChange(h);
+                }}
+            />
 
             {/* Central Scrolling Container */}
             <div className="flex-1 overflow-y-auto custom-scrollbar p-4">
