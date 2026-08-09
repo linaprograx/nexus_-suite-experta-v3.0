@@ -10,6 +10,8 @@ import { Button } from '../ui/Button';
 import { Icon } from '../ui/Icon';
 import { Autocomplete } from '../ui/Autocomplete';
 import { CostesAvanzados } from './CostesAvanzados';
+import { useCartas } from '../../hooks/useCartas';
+import { useActiveMenu } from '../../hooks/useActiveMenu';
 import { ICONS } from '../ui/icons';
 import { Recipe, Ingredient, IngredientLineItem } from '../../types';
 import { useApp } from '../../context/AppContext';
@@ -39,6 +41,21 @@ export const RecipeFormModal: React.FC<RecipeFormModalProps> = ({ isOpen, onClos
     const [recipe, setRecipe] = React.useState<Partial<Recipe>>({});
     const [lineItems, setLineItems] = React.useState<IngredientLineItem[]>([]);
 
+    /**
+     * A qué cartas pertenece esta receta.
+     *
+     * Se decide aquí para no obligar a un segundo paso manual después de crear.
+     * La receta sigue existiendo por su cuenta en el catálogo: no pertenecer a
+     * ninguna carta es una opción válida, no un estado incompleto.
+     *
+     * La relación NO se guarda dentro de la receta, sino en `menu_items`, que es
+     * donde ya vivía: una misma receta puede estar en la carta de verano y en la
+     * de primavera a la vez.
+     */
+    const { cartas } = useCartas();
+    const { menuCompleto, addToMenu, removeFromMenu } = useActiveMenu();
+    const [cartasElegidas, setCartasElegidas] = React.useState<string[]>([]);
+
     // Escape cierra. En escritorio se rellena un formulario largo con el teclado
     // y no había forma de salir sin ir al ratón.
     React.useEffect(() => {
@@ -60,6 +77,11 @@ export const RecipeFormModal: React.FC<RecipeFormModalProps> = ({ isOpen, onClos
     React.useEffect(() => {
         setRecipe(initialData || {});
         setLineItems((initialData?.ingredientes || []) as IngredientLineItem[]);
+        // Al editar, se marcan las cartas en las que ya está.
+        const id = initialData?.id;
+        setCartasElegidas(id
+            ? (menuCompleto || []).filter(m => m.recipeId === id && m.cartaId).map(m => m.cartaId as string)
+            : []);
     }, [initialData]);
 
     const handleRecipeChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -226,6 +248,7 @@ export const RecipeFormModal: React.FC<RecipeFormModalProps> = ({ isOpen, onClos
             precioVenta: recipe.precioVenta || 0 // Ensure no NaN
         };
 
+        let recetaId: string | undefined = dataToSave.id;
         try {
             if (dataToSave.id) {
                 await updateDoc(doc(db, `users/${userId}/grimorio`, dataToSave.id), dataToSave);
@@ -245,7 +268,37 @@ export const RecipeFormModal: React.FC<RecipeFormModalProps> = ({ isOpen, onClos
                     details: `Coste €${safeCost.toFixed(2)} · ${lineItems.length} ingrediente(s)`,
                     entityId: docRef.id,
                 });
+                recetaId = docRef.id;
             }
+
+            // ── Relaciones con las cartas.
+            // Se hace aquí para que crear y asignar sean un solo gesto. Se
+            // sincroniza en los dos sentidos: se añade a las marcadas y se quita
+            // de las desmarcadas, para que el selector diga la verdad al reabrir.
+            if (recetaId) {
+                const yaEn = (menuCompleto || []).filter(m => m.recipeId === recetaId);
+                const actuales = new Set(yaEn.map(m => m.cartaId).filter(Boolean) as string[]);
+
+                for (const cartaId of cartasElegidas) {
+                    if (actuales.has(cartaId)) continue;
+                    await addToMenu({
+                        recipeId: recetaId,
+                        nombre: dataToSave.nombre || 'Sin nombre',
+                        precioVenta: dataToSave.precioVenta || 0,
+                        costSnapshot: safeCost,
+                        marginSnapshot: (dataToSave.precioVenta || 0) > 0
+                            ? (((dataToSave.precioVenta || 0) - safeCost) / (dataToSave.precioVenta || 1)) * 100
+                            : 0,
+                        cartaId,
+                    } as any);
+                }
+                for (const entrada of yaEn) {
+                    if (entrada.cartaId && !cartasElegidas.includes(entrada.cartaId)) {
+                        await removeFromMenu(entrada.id);
+                    }
+                }
+            }
+
             // Invalidate Cache
             console.log("🔄 Invalidando query 'recipes'...");
             await queryClient.invalidateQueries({ queryKey: ['recipes'] });
@@ -395,6 +448,50 @@ export const RecipeFormModal: React.FC<RecipeFormModalProps> = ({ isOpen, onClos
                                     </Select>
                                 </div>
                             </div>
+
+                            {/* Añadir a carta. Opcional a propósito: una receta puede
+                                vivir en el catálogo sin pertenecer a ninguna. */}
+                            {cartas.length > 0 && (
+                                <div className="space-y-1">
+                                    <label className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                                        Añadir a carta
+                                    </label>
+                                    <div className="flex flex-wrap gap-1.5">
+                                        {cartas.map(c => {
+                                            const elegida = cartasElegidas.includes(c.id);
+                                            return (
+                                                <button
+                                                    key={c.id}
+                                                    type="button"
+                                                    aria-pressed={elegida}
+                                                    onClick={() => setCartasElegidas(prev =>
+                                                        elegida ? prev.filter(x => x !== c.id) : [...prev, c.id])}
+                                                    className={`h-9 px-3 rounded-xl text-xs font-bold transition-colors ${elegida
+                                                        ? 'bg-teal-600 text-white'
+                                                        : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300'}`}
+                                                >
+                                                    {c.nombre}{c.estado === 'archivada' ? ' · archivada' : ''}
+                                                </button>
+                                            );
+                                        })}
+                                        {cartas.length > 1 && (
+                                            <button
+                                                type="button"
+                                                onClick={() => setCartasElegidas(
+                                                    cartasElegidas.length === cartas.length ? [] : cartas.map(c => c.id))}
+                                                className="h-9 px-3 rounded-xl text-xs font-bold bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300"
+                                            >
+                                                {cartasElegidas.length === cartas.length ? 'Ninguna' : 'Todas'}
+                                            </button>
+                                        )}
+                                    </div>
+                                    {cartasElegidas.length === 0 && (
+                                        <p className="text-[11px] text-slate-400">
+                                            Sin carta: quedará solo en el catálogo.
+                                        </p>
+                                    )}
+                                </div>
+                            )}
 
                             {/* Preparación */}
                             <div className="space-y-1">

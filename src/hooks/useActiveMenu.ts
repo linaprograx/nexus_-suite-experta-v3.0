@@ -52,7 +52,12 @@ export const useActiveMenu = () => {
         const clean = Object.fromEntries(Object.entries(entry).filter(([, v]) => v !== undefined));
         // Se sella a qué carta pertenece. Sin esto, al cambiar de carta la
         // receta añadida aparecería en todas.
-        await addDoc(collection(db, path(userId)), { ...clean, cartaId: cartaActiva?.id, addedAt: serverTimestamp() });
+        //
+        // Si la llamada trae `cartaId` explícito, manda ese: es lo que permite
+        // asignar una receta a VARIAS cartas al crearla, sin tener que ir
+        // cambiando cuál está activa.
+        const cartaId = (entry as any).cartaId ?? cartaActiva?.id;
+        await addDoc(collection(db, path(userId)), { ...clean, cartaId, addedAt: serverTimestamp() });
     }, [db, userId, cartaActiva?.id]);
 
     const removeFromMenu = useCallback(async (id: string) => {

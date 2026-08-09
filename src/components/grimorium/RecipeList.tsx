@@ -158,6 +158,26 @@ const RecipeCard = React.memo(({
   );
 });
 
+/**
+ * A qué grupo del catálogo pertenece una receta.
+ *
+ * Se deduce de `categorias`, que es donde el proyecto ya guardaba esta
+ * distinción: no se añade ningún campo nuevo ni se migra nada.
+ */
+const grupoDeReceta = (r: any): 'garnish' | 'subreceta' | 'receta' => {
+    const cats: string[] = r?.categorias || [];
+    if (cats.includes('Garnish')) return 'garnish';
+    if (cats.includes('Preparacion')) return 'subreceta';
+    return 'receta';
+};
+
+/** Orden de aparición: primero lo que se vende, después lo que lo compone. */
+const GRUPOS_CATALOGO = [
+    { id: 'receta' as const, titulo: 'Recetas' },
+    { id: 'subreceta' as const, titulo: 'Sub-recetas' },
+    { id: 'garnish' as const, titulo: 'Garnish' },
+];
+
 export const RecipeList: React.FC<RecipeListProps> = ({
   recipes,
   selectedRecipeId, // Viewing
@@ -307,20 +327,47 @@ export const RecipeList: React.FC<RecipeListProps> = ({
             <p className="text-sm text-slate-400 mt-1">Intenta con otros filtros o crea una nueva</p>
           </div>
         ) : (
-          <div className="grid grid-cols-2 gap-4 px-0.5 pb-20">
-            {uniqueRecipes.map((recipe) => (
-              <RecipeCard
-                key={recipe.id}
-                recipe={recipe}
-                isViewing={selectedRecipeId === recipe.id}
-                isSelected={selectedRecipeIds.includes(recipe.id)}
-                onSelect={onSelectRecipe}
-                onToggleSelection={onToggleSelection}
-                onDragStart={onDragStart}
-                allIngredients={allIngredients} // Pass it down
-                allRecipes={recipes}
-              />
-            ))}
+          <div className="pb-20">
+            {/* Tres grupos, un solo listado.
+                Sub-recetas y garnish compartían rejilla con los cócteles y no
+                había forma de saber qué se estaba mirando. Se separan por
+                jerarquía —un encabezado tenue y aire— sin cajas ni bordes: el
+                lenguaje visual de las tarjetas no cambia. Un grupo vacío no
+                aparece, así que quien no usa sub-recetas no ve nada nuevo. */}
+            {GRUPOS_CATALOGO.map(grupo => {
+              const delGrupo = uniqueRecipes.filter(r => grupoDeReceta(r) === grupo.id);
+              if (delGrupo.length === 0) return null;
+              const unico = delGrupo.length === uniqueRecipes.length;
+              return (
+                <section key={grupo.id} className={unico ? '' : 'mb-6 last:mb-0'}>
+                  {!unico && (
+                    <div className="flex items-baseline gap-2 px-1 mb-2.5">
+                      <h3 className="text-[11px] font-black uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500">
+                        {grupo.titulo}
+                      </h3>
+                      <span className="text-[11px] text-slate-300 dark:text-slate-600 tabular-nums">
+                        {delGrupo.length}
+                      </span>
+                    </div>
+                  )}
+                  <div className="grid grid-cols-2 gap-4 px-0.5">
+                    {delGrupo.map((recipe) => (
+                      <RecipeCard
+                        key={recipe.id}
+                        recipe={recipe}
+                        isViewing={selectedRecipeId === recipe.id}
+                        isSelected={selectedRecipeIds.includes(recipe.id)}
+                        onSelect={onSelectRecipe}
+                        onToggleSelection={onToggleSelection}
+                        onDragStart={onDragStart}
+                        allIngredients={allIngredients} // Pass it down
+                        allRecipes={recipes}
+                      />
+                    ))}
+                  </div>
+                </section>
+              );
+            })}
           </div>
         )}
       </div>
