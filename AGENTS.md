@@ -60,7 +60,8 @@ hazlo igualmente en cuanto puedas:
 | `docs/agents/AUDIT-GRIMORIO.md` | Auditoría funcional de Grimorio, con archivo:línea | Al cerrar hallazgos |
 | `docs/agents/PLAN-CARTAS.md` | Las cartas como entidad: entregas E1–E5 | Al avanzar en él |
 | `docs/agents/AUDIT-MOVIL.md` | Defectos vistos usando la app en el teléfono | Al cerrar hallazgos |
-| `docs/agents/PLAN-GRIMORIO-MERCADO.md` | Trabajo pendiente de Grimorio y Mercado | Al avanzar en él |
+| `docs/agents/PLAN-INVENTARIO-MERCADO.md` | **Plan canónico de Inventario y Mercado.** Manda sobre el orden de ejecución | Al cerrar una fase |
+| `docs/agents/PLAN-GRIMORIO-MERCADO.md` | Visión de producto de Grimorio y Mercado (el destino, no el orden) | Al avanzar en él |
 | `docs/agents/PLAN-CEREBRITY.md` | Cerebrity: poderes, contexto y **regla de gasto de API** | Al avanzar en él |
 | `docs/NEXUS_MASTER_VISION_v1.1.md` | Visión de producto del fundador | Casi nunca |
 

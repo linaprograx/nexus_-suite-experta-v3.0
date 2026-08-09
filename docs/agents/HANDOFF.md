@@ -17,6 +17,21 @@ receta por página. Las causas reales y las trampas de proceso están en
 `WORKLOG.md` — **léelas antes de tocar el exportador**, porque casi todo lo que
 parece un problema de diseño era en realidad una medida absoluta.
 
+## ⚠️ Estado a 2026-08-09 (tarde)
+
+**Bloque de Recetas CERRADO del todo.** Los cuatro criterios económicos sueltos
+están unificados: `Escandallo = Ficha = Análisis = Lista`. Desplegado a las dos
+ramas y verificado en producción (Birdie Juice: 1,42 € en las cuatro vistas).
+Commits `3c0171f`, `348c1ff`, `2e23e3f`.
+
+**Lo siguiente es `docs/agents/PLAN-INVENTARIO-MERCADO.md`**, que es ahora el
+plan canónico y **manda sobre el orden**. Empieza por su **Fase 0**, punto I1
+(unidades canónicas). Los puntos 1-4 de la lista de abajo quedan absorbidos
+por él.
+
+Pendiente del fundador: la **Parte IV** de su documento (del punto 35 en
+adelante, Configuración de Negocio) llegó cortada a media frase.
+
 ## Lo siguiente, en orden
 
 1. **Panel de Análisis** (`src/components/grimorium/RecipeFinancialDashboard.tsx`).
