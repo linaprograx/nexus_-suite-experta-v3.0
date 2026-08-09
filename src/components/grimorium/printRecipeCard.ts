@@ -187,7 +187,12 @@ export function printRecipeCards(
   .col-info { grid-column: 2; grid-row: 1; min-width: 0; }
   .col-escandallo { grid-column: 1 / -1; grid-row: 2; min-width: 0; }
   .head { display: flex; gap: 26px; align-items: center; border-bottom: 3px solid #0d9488; padding-bottom: 20px; margin-bottom: 22px; }
-  .col-foto img, .head img { width: 170px; height: 170px; object-fit: contain; border-radius: 18px; box-shadow: 0 8px 24px rgba(15,23,42,.16); flex-shrink: 0; }
+  /* Altura automática y NADA de object-fit: encajar una foto vertical dentro de
+     un cuadrado deja dos franjas del color del papel a los lados, que es el
+     recuadro blanco que rodeaba cada imagen. Fijamos solo la anchura y la foto
+     ocupa exactamente su propia área. */
+  .col-foto img, .head img { display: block; width: 170px; height: auto;
+                             border-radius: 10px; box-shadow: 0 8px 24px rgba(15,23,42,.16); flex-shrink: 0; }
   h1 { font-size: 34px; margin: 0 0 6px; letter-spacing: -.02em; }
   .cat { color: #64748b; font-size: 13px; text-transform: uppercase; letter-spacing: .08em; }
   .specs { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 20px; }

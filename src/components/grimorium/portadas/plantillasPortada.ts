@@ -175,8 +175,10 @@ const clubhouse: PlantillaPortada = {
   .col-foto { grid-row: 1 / span 2; }
   .col-escandallo { grid-column: 2; grid-row: 2; border-bottom: 1px solid #e6e1d5; padding-bottom: 18px; }
   .col-escandallo h2 { margin-top: 20px; }
-  .col-foto img { width: 300px; height: auto; max-height: 420px; object-fit: contain;
-                  border-radius: 4px; box-shadow: 0 12px 34px rgba(4,23,19,.24); background: #06231e; }
+  /* Sin max-height, sin object-fit y sin fondo: cualquiera de los tres vuelve a
+     dibujar un recuadro alrededor de una foto que no llene la caja. */
+  .col-foto img { display: block; width: 300px; height: auto;
+                  border-radius: 4px; box-shadow: 0 12px 34px rgba(4,23,19,.24); }
 
   .head { border-bottom: 0; padding-bottom: 0; }
   .col-info h1, .head h1 { font-size: 40px; line-height: 1.02; margin: 0 0 6px; color: #0a3730;
@@ -229,8 +231,43 @@ const clubhouse: PlantillaPortada = {
           font-size: 9px; letter-spacing: .12em; text-transform: uppercase; color: #b3ada0; }`,
 };
 
+const cartel: PlantillaPortada = {
+    id: 'cartel',
+    nombre: 'Cartel',
+    descripcion: 'El título a toda página, fondo profundo.',
+    css: `
+  .pc { page-break-after: always; break-after: page; position: relative;
+        min-height: 240mm; display: flex; flex-direction: column; justify-content: center;
+        background: #0f172a; color: #f8fafc; margin: 0; padding: 56px 44px; }
+  /* El navegador omite los fondos al imprimir salvo que se le pida. */
+  .pc { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .pc-pie { left: 44px; right: 44px; }
+  .pc-linea { width: 64px; height: 4px; background: #2dd4bf; margin-bottom: 28px; }
+  .pc-marca { font-size: 10px; letter-spacing: .28em; text-transform: uppercase; color: #5eead4; margin-bottom: 14px; }
+  .pc-titulo { font-size: 76px; line-height: .95; letter-spacing: -.02em; margin: 0 0 22px; text-transform: uppercase; }
+  .pc-sub { font-size: 16px; line-height: 1.65; color: #cbd5e1; max-width: 52ch; margin: 0; white-space: pre-wrap; }
+  .pc-pie { position: absolute; left: 48px; right: 48px; bottom: 54px;
+            display: flex; gap: 40px; border-top: 1px solid rgba(255,255,255,.18); padding-top: 16px; }
+  .pc-pie span { display: block; font-size: 9px; letter-spacing: .16em; text-transform: uppercase; color: #94a3b8; }
+  .pc-pie b { font-size: 17px; color: #f8fafc; font-weight: 600; }
+  .pc-logo { position: absolute; top: 54px; right: 48px; max-height: 56px; max-width: 140px; object-fit: contain; }`,
+    html: d => `
+  <section class="pc">
+    ${d.logo ? `<img class="pc-logo" src="${esc(d.logo)}" alt="">` : ''}
+    <div class="pc-linea"></div>
+    <div class="pc-marca">Carta · Nexus Suite</div>
+    <h1 class="pc-titulo">${esc(d.titulo)}</h1>
+    ${d.subtitulo ? `<p class="pc-sub">${esc(d.subtitulo)}</p>` : ''}
+    <div class="pc-pie">
+      <div><span>Recetas</span><b>${d.recetas}</b></div>
+      <div><span>Coste medio</span><b>${esc(d.costeMedio)}</b></div>
+      <div><span>Fecha</span><b>${esc(d.fecha || '')}</b></div>
+    </div>
+  </section>`,
+};
+
 /** Registro. Añadir una plantilla es añadirla aquí; el exportador no cambia. */
-export const PLANTILLAS_PORTADA: PlantillaPortada[] = [editorial, clubhouse];
+export const PLANTILLAS_PORTADA: PlantillaPortada[] = [editorial, clubhouse, cartel];
 
 export const PLANTILLA_POR_DEFECTO = 'editorial';
 
