@@ -150,7 +150,18 @@ export const StockInventoryPanel: React.FC<StockInventoryPanelProps> = ({
      *
      * También se corrige el rótulo. Esto mide **compras**, no el valor del
      * almacén: son cosas distintas y estaba etiquetado como si fueran la misma.
+     *
+     * Y respeta **el mismo filtro** que la cifra de arriba. Antes no: con el
+     * buscador en «Abso» la tarjeta enseñaba 91,89 € de valor filtrado junto a
+     * unas compras de todo el negocio. Dos ámbitos distintos pegados el uno al
+     * otro dentro de la misma tarjeta, sin nada que lo indicara.
      */
+    const idsVisibles = useMemo(
+        () => new Set(filteredStockItems.map(i => i.ingredientId)),
+        [filteredStockItems],
+    );
+    const hayFiltro = searchQuery.trim() !== '' || selectedCategory !== 'all';
+
     const inventoryTrend = useMemo(() => {
         const toMillis = (v: any): number => {
             if (!v) return 0;
@@ -167,6 +178,8 @@ export const StockInventoryPanel: React.FC<StockInventoryPanelProps> = ({
 
         let esteMes = 0, mesAnterior = 0;
         for (const p of (purchases || [])) {
+            // Mismo ámbito que la cifra de valor: solo lo que se está viendo.
+            if (!idsVisibles.has((p as any).ingredientId)) continue;
             // `||` y no `??`: hay compras guardadas con totalCost = 0 y precio
             // unitario real. Con `??` el cero se daba por bueno y nunca se
             // llegaba al respaldo, porque `??` solo cede ante null/undefined.
@@ -187,7 +200,7 @@ export const StockInventoryPanel: React.FC<StockInventoryPanelProps> = ({
             esteMes,
             hasData: true,
         };
-    }, [purchases]);
+    }, [purchases, idsVisibles]);
 
 
     const toggleSelection = (id: string) => {
@@ -352,8 +365,8 @@ export const StockInventoryPanel: React.FC<StockInventoryPanelProps> = ({
                         <div className="mt-2 flex justify-center">
                             <span className="text-[10px] font-bold bg-white/40 dark:bg-black/20 text-emerald-700 dark:text-emerald-300 px-3 py-1 rounded-full backdrop-blur-md">
                                 {inventoryTrend.hasData
-                                    ? `Compras: ${inventoryTrend.pct >= 0 ? '+' : ''}${inventoryTrend.pct.toFixed(0)}% vs mes anterior`
-                                    : `Compras del mes: €${inventoryTrend.esteMes.toFixed(0)}`}
+                                    ? `Compras${hayFiltro ? ' (filtrado)' : ''}: ${inventoryTrend.pct >= 0 ? '+' : ''}${inventoryTrend.pct.toFixed(0)}% vs mes anterior`
+                                    : `Compras del mes${hayFiltro ? ' (filtrado)' : ''}: €${inventoryTrend.esteMes.toFixed(2)}`}
                             </span>
                         </div>
                     </div>
