@@ -26,6 +26,26 @@ const ESTILO_RIESGO: Record<RiesgoFusion, { cls: string; texto: string }> = {
 
 const eur = (n: number) => `€${n.toFixed(2)}`;
 
+/** Búsqueda tolerante a mayúsculas y acentos, nunca una regla de identidad. */
+const normalizarBusqueda = (valor: string) => valor
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim();
+
+const coincideBusqueda = (grupo: GrupoCandidato, consulta: string) => {
+    const terminos = normalizarBusqueda(consulta).split(/\s+/).filter(Boolean);
+    if (terminos.length === 0) return true;
+
+    // Busca en todos los datos que ayudan a encontrar el grupo, pero no altera
+    // su riesgo ni convierte una coincidencia de texto en autoridad de fusión.
+    const corpus = normalizarBusqueda([...grupo.fichas, ...grupo.variantes]
+        .map(f => [f.nombre, f.id, f.categoria, f.familia, f.unidad, f.formato, ...f.proveedores].join(' '))
+        .join(' '));
+
+    return terminos.every(termino => corpus.includes(termino));
+};
+
 const Dato: React.FC<{ etiqueta: string; children: React.ReactNode }> = ({ etiqueta, children }) => (
     <div className="min-w-0">
         <span className="block text-[9px] uppercase tracking-wider text-slate-400">{etiqueta}</span>
@@ -162,6 +182,7 @@ export const IdentityReportModal: React.FC<{ onClose: () => void }> = ({ onClose
     const { purchaseHistory } = usePurchaseIngredient();
     const { movements } = useStockMovements();
     const { rules } = useStockRules();
+    const [busqueda, setBusqueda] = React.useState('');
 
     const stockItems = React.useMemo(
         () => buildCurrentStock(purchaseHistory || [], movements || []),
@@ -193,6 +214,11 @@ export const IdentityReportModal: React.FC<{ onClose: () => void }> = ({ onClose
             variantes: grupos.reduce((a, g) => a + g.variantes.length, 0),
         };
     }, [grupos]);
+
+    const gruposVisibles = React.useMemo(
+        () => grupos.filter(grupo => coincideBusqueda(grupo, busqueda)),
+        [grupos, busqueda],
+    );
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -238,12 +264,35 @@ export const IdentityReportModal: React.FC<{ onClose: () => void }> = ({ onClose
                         </div>
                     ) : (
                         <>
+                            <div className="sticky top-0 z-10 -mx-4 -mt-4 px-4 pt-4 pb-3 bg-white/95 dark:bg-slate-900/95 backdrop-blur-sm border-b border-slate-100 dark:border-slate-800">
+                                <div className="relative">
+                                    <Icon svg={ICONS.search} className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+                                    <input
+                                        type="search"
+                                        value={busqueda}
+                                        onChange={e => setBusqueda(e.target.value)}
+                                        placeholder="Buscar por producto, categoría, proveedor o ID…"
+                                        className="w-full h-10 pl-10 pr-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm text-slate-800 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-500/40 focus:border-sky-500"
+                                    />
+                                </div>
+                                {busqueda.trim() && (
+                                    <p className="mt-2 text-[10px] text-slate-500 dark:text-slate-400">
+                                        {gruposVisibles.length} de {grupos.length} grupos coinciden. La búsqueda no cambia la evaluación de riesgo.
+                                    </p>
+                                )}
+                            </div>
                             <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed pb-1">
                                 El parecido de nombre solo sirve para <strong>proponer</strong> candidatos. Los grupos
                                 marcados <strong>bloqueados</strong> tienen alguna palabra que los distingue y podrían
                                 ser productos diferentes: no se fusionan por parecido.
                             </p>
-                            {grupos.map(g => <Grupo key={g.clave + g.fichas[0].id} g={g} />)}
+                            {gruposVisibles.length > 0 ? (
+                                gruposVisibles.map(g => <Grupo key={g.clave + g.fichas[0].id} g={g} />)
+                            ) : (
+                                <p className="py-10 text-center text-sm text-slate-500 dark:text-slate-400">
+                                    No hay grupos que coincidan con esa búsqueda.
+                                </p>
+                            )}
                         </>
                     )}
                 </div>

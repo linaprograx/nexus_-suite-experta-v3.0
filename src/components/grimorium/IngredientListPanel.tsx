@@ -247,7 +247,7 @@ export const IngredientListPanel: React.FC<IngredientListPanelProps> = ({
         </div>
 
         {/* Filters & Actions */}
-        <div className="flex flex-wrap items-center gap-2 w-full text-xs relative z-50">
+        <div className="flex flex-wrap items-center gap-2 w-full text-xs relative z-10">
 
           {/* Custom Category Dropdown with Color Dots - FLEX 1 */}
           <div className="relative flex-1 min-w-[120px]" ref={dropdownRef}>
@@ -267,7 +267,7 @@ export const IngredientListPanel: React.FC<IngredientListPanelProps> = ({
             </button>
 
             {showCategoryDropdown && (
-              <div className="absolute top-full left-0 mt-2 w-full max-h-60 overflow-y-auto custom-scrollbar bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl z-[100] p-1">
+              <div className="absolute top-full left-0 mt-2 w-full max-h-60 overflow-y-auto custom-scrollbar bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl z-20 p-1">
                 <button
                   onClick={() => { onIngredientFilterChange('category', 'all'); setShowCategoryDropdown(false); }}
                   className="w-full text-left px-3 py-2 text-sm rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors flex items-center gap-2"

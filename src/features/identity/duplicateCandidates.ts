@@ -346,12 +346,28 @@ export const detectarCandidatos = (e: Entrada): GrupoCandidato[] => {
         const fichas = miembros.map(m => construirFicha(m.ing, e));
         const { riesgo, motivo } = evaluarRiesgo(fichas, miembros[0].tokens);
 
-        // El maestro propuesto es el que más historia tiene: más compras y más
-        // recetas dependiendo de él. Absorber hacia el que menos referencias
-        // tiene multiplicaría el trabajo de reconciliación.
-        const maestro = [...fichas].sort((a, b) =>
-            (b.compras + b.recetas.length * 3) - (a.compras + a.recetas.length * 3)
-        )[0].id;
+        // Para productos realmente iguales, el catálogo más barato es el
+        // maestro propuesto. La preferencia por proveedor se aplica después,
+        // al elegir una oferta del maestro: puede prevalecer por disponibilidad
+        // u otra decisión humana, pero no convierte el orden de las fichas en
+        // una política de precio. Sin precio comparable (o en empate), gana la
+        // ficha con más historia para minimizar las referencias a reconciliar.
+        const precioComparable = (f: FichaCandidata) =>
+            f.standardPrice && f.standardPrice > 0
+                ? f.standardPrice
+                : f.precioCompra && f.precioCompra > 0
+                    ? f.precioCompra
+                    : Number.POSITIVE_INFINITY;
+        const maestro = [...fichas].sort((a, b) => {
+            const precioA = precioComparable(a);
+            const precioB = precioComparable(b);
+            if (precioA !== precioB) {
+                // Infinity marca «sin precio»: cualquier precio real gana a
+                // ese caso, pero dos fichas sin precio siguen el desempate.
+                if (Number.isFinite(precioA) || Number.isFinite(precioB)) return precioA - precioB;
+            }
+            return (b.compras + b.recetas.length * 3) - (a.compras + a.recetas.length * 3);
+        })[0].id;
 
         grupos.push({
             clave,
