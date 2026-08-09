@@ -12,6 +12,24 @@ import { EnLaFranjaFija } from '../layout/FranjaFija';
 import { StockResolverPanel } from '../../components/stock/StockResolverPanel';
 import { useStockResolver } from '../../features/stock/hooks/useStockResolver';
 import { PhysicalCountModal } from './PhysicalCountModal';
+import { useStockRules } from '../../hooks/useStockRules';
+
+/** Estado de existencias de un ítem. `desconocido` es un estado de verdad. */
+type EstadoStock = 'ok' | 'bajo' | 'rotura' | 'desconocido';
+
+const COLOR_ESTADO: Record<EstadoStock, string> = {
+    ok: 'bg-emerald-400 shadow-[0_0_10px_rgba(52,211,153,0.6)]',
+    bajo: 'bg-amber-400 shadow-[0_0_10px_rgba(251,191,36,0.6)]',
+    rotura: 'bg-red-400 shadow-[0_0_10px_rgba(248,113,113,0.6)]',
+    desconocido: 'bg-slate-400/60',
+};
+
+const TITULO_ESTADO: Record<EstadoStock, string> = {
+    ok: 'Por encima del mínimo',
+    bajo: 'Por debajo del mínimo de su regla',
+    rotura: 'Sin existencias',
+    desconocido: 'Sin regla de stock: no hay mínimo con el que comparar',
+};
 
 interface StockInventoryPanelProps {
     stockItems: StockItem[];
@@ -40,6 +58,33 @@ export const StockInventoryPanel: React.FC<StockInventoryPanelProps> = ({
     const [mvType, setMvType] = useState<'consumption' | 'waste' | 'adjustment'>('consumption');
     const [showCount, setShowCount] = useState(false);
     const { db, userId } = useApp();
+
+    /**
+     * Semáforo de existencias, desde las reglas de stock del usuario.
+     *
+     * Antes era `quantityAvailable > 5 ? verde : rojo`: un cinco escrito a
+     * fuego, igual para todas las unidades. 3 botellas de mezcal salían en rojo
+     * y 6 kilos de patata en verde, así que prácticamente todo el inventario
+     * aparecía en rojo y el indicador dejaba de informar.
+     *
+     * Y mientras tanto `useStockRules` ya guardaba un mínimo por ingrediente,
+     * sin que esta pantalla lo consultara.
+     *
+     * Sin regla **no se inventa un umbral**: el estado es `desconocido` y se
+     * pinta neutro. Un semáforo que se moja sin saber es lo que nos trajo aquí.
+     * La ruptura (cantidad 0 o menos) sí es inequívoca en cualquier unidad.
+     */
+    const { rules: stockRules } = useStockRules();
+    const reglaPorIngrediente = useMemo(
+        () => new Map(stockRules.filter(r => r.active).map(r => [r.ingredientId, r])),
+        [stockRules],
+    );
+    const estadoDe = React.useCallback((item: StockItem): EstadoStock => {
+        if (!(item.quantityAvailable > 0)) return 'rotura';
+        const regla = reglaPorIngrediente.get(item.ingredientId);
+        if (!regla || typeof regla.minStock !== 'number') return 'desconocido';
+        return item.quantityAvailable < regla.minStock ? 'bajo' : 'ok';
+    }, [reglaPorIngrediente]);
     const queryClient = useQueryClient();
     const [internalSearchQuery, setInternalSearchQuery] = useState('');
     const searchQuery = externalSearchTerm !== undefined ? externalSearchTerm : internalSearchQuery;
@@ -384,7 +429,10 @@ export const StockInventoryPanel: React.FC<StockInventoryPanelProps> = ({
                                                 <Icon svg={ICONS.minus} className="w-4 h-4" />
                                             </button>
                                         )}
-                                        <div className={`w-3 h-3 rounded-full ${item.quantityAvailable > 5 ? 'bg-emerald-400 shadow-[0_0_10px_rgba(52,211,153,0.6)]' : 'bg-red-400 shadow-[0_0_10px_rgba(248,113,113,0.6)]'}`} />
+                                        <div
+                                            className={`w-3 h-3 rounded-full ${COLOR_ESTADO[estadoDe(item)]}`}
+                                            title={TITULO_ESTADO[estadoDe(item)]}
+                                        />
                                     </div>
                                 </div>
 
