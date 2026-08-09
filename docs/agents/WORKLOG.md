@@ -1,3 +1,62 @@
+# Worklog
+
+## 2026-08-09 · Claude Code · Cierre del exportador de Recetas
+
+Se da por cerrado Grimorio → Recetas. El exportador a PDF funciona en las tres
+plantillas: **Editorial**, **Clubhouse Premium** y **Cartel**, con portada en su
+hoja y una receta por página.
+
+**Las cuatro causas reales, por si vuelven a aparecer**
+
+1. **El documento no declaraba anchura de maquetación.** En un móvil se componía
+   a ~390px, la tabla se estrujaba y el resultado eran decenas de páginas. Lo
+   arregla `<meta name="viewport" content="width=794">` — 794px es A4 a 96 ppp.
+   Todo lo que se «arregló» antes de esto fue tratar síntomas.
+
+2. **Medidas absolutas en la composición de la ficha.** Una columna de foto de
+   `300px` fijos se comía casi todo el ancho al imprimir, y la tabla colapsaba a
+   una letra por línea. La regla: **proporciones con `minmax(0, …)`**, nunca
+   anchuras fijas.
+
+3. **Preparación, totales y pie iban DESPUÉS de la rejilla**, a ancho completo,
+   así que caían siempre en la hoja siguiente. Ahora `.ficha` entera es la
+   rejilla y `display: contents` disuelve el envoltorio `.ficha-top` para que
+   sus hijos sean elementos de esa misma cuadrícula, sin tocar el HTML común.
+
+4. **La altura de la portada NO se puede fijar en milímetros.** El área
+   imprimible real no es la teórica: Safari añade cabecera y pie propios (URL y
+   «Página n de m») que comen altura por encima del margen de `@page`, y esa
+   merma no es medible desde el CSS. Se probó 244mm y 228mm; las dos se
+   derramaban. La solución es `aspect-ratio: 1 / 1.33` — la portada mide en
+   proporción a su propio ancho y escala con la página.
+
+**Dos trampas de proceso que costaron horas**
+
+- **Producción se despliega desde `deploy/mobile-v1`, no desde
+  `feat/mobile-v1-unified`.** Dos iteraciones enteras fueron invisibles por
+  empujar solo a `feat/…`. Empujar SIEMPRE a ambas.
+- **Comillas invertidas dentro de los comentarios del CSS.** Terminan el literal
+  de plantilla y rompen el build de Vercel con `Expected "}" but found …`.
+  Ocurrió tres veces. La comprobación automática solo mira dentro de los bloques
+  CSS; el fallo estaba en el comentario de encima.
+
+**Pendiente inmediato, ya diagnosticado y sin implementar**
+
+- `RecipeFinancialDashboard.tsx` (panel de Análisis) **no usa
+  `calculateRecipeProfitability`**. Calcula el margen a mano como
+  `(precio − coste de ingredientes) / precio`, así que ignora merma, comisiones,
+  mano de obra, impuestos y estructura. El «margen medio» que muestra contradice
+  lo que dice la ficha. Además, los umbrales `70%` y `25%` están escritos a
+  fuego en vez de leer el objetivo de Economía.
+- `BusinessCogsPanel.tsx` sí usa compras reales, pero **no pasa `allRecipes`**,
+  así que no resuelve sub-recetas y su total queda por debajo del real.
+- Recetas con líneas que apuntan a un ingrediente inexistente: se imprimen como
+  «—» con coste 0,00 € (visto en *Water Hazard*, dos líneas).
+
+**Siguiente fase**: Inventario y Mercado, nunca auditados en profundidad.
+
+---
+
 # Diario de trabajo
 
 Memoria larga del proyecto. **Lo más reciente arriba.** Nunca se borra nada.
