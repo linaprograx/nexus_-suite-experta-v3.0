@@ -15,7 +15,7 @@ import { normalizeToBase } from '../../utils/packNormalization';
  * Nada de lo que hay aquí escribe en Firestore.
  */
 
-/** Palabras que no distinguen un producto de otro: formato, envase, relleno. */
+/** Palabras de envase y formato: nunca identifican nada. Se descartan. */
 const RUIDO = new Set([
     'de', 'del', 'la', 'el', 'los', 'las', 'y', 'con', 'sin', 'para',
     'cl', 'ml', 'l', 'lt', 'lts', 'litro', 'litros', 'g', 'gr', 'kg', 'kgs',
@@ -24,23 +24,64 @@ const RUIDO = new Set([
     'x', 'ud.', 'c', 'cc',
 ]);
 
+/**
+ * **Tipos de producto.** Describen la familia, no el producto.
+ *
+ * Se conservan en la clave —«LICOR CAFÉ» no es «SIROPE CAFÉ»— pero **no
+ * cuentan como identidad por sí solos**. Sin esta distinción, el detector
+ * proponía fusionar `LICOR` con `LICOR 43`, y sacaba como variantes cercanas
+ * a `LICOR AVALLEN`, `LICOR CAFE`, `LICOR ANCHO REYES` y a todo lo que llevara
+ * la palabra. Compartir la familia no es evidencia de ser el mismo producto.
+ */
+const GENERICOS = new Set([
+    'licor', 'vodka', 'whisky', 'whiskey', 'ron', 'rum', 'ginebra', 'gin',
+    'tequila', 'mezcal', 'raicilla', 'pisco', 'brandy', 'coñac', 'conac', 'cognac',
+    'vermut', 'vermouth', 'bitter', 'bitters', 'anis', 'orujo', 'cava', 'vino',
+    'cerveza', 'sidra', 'sake', 'destilado', 'destilados', 'aguardiente',
+    'zumo', 'jugo', 'sirope', 'jarabe', 'pure', 'nectar', 'refresco', 'tonica',
+    'agua', 'soda', 'gaseosa', 'concentrado', 'mixer', 'mixers',
+    'cafe', 'te', 'infusion', 'leche', 'crema', 'nata', 'azucar', 'sal',
+    'fruta', 'frutas', 'verdura', 'verduras', 'hortaliza', 'hortalizas',
+]);
+
 const sinAcentos = (s: string) =>
     s.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 
-/** Tokens que de verdad identifican al producto: sin ruido y sin números. */
+const esNumero = (t: string) => /^[0-9]+([.,][0-9]+)?$/.test(t) || /^[0-9]+(cl|ml|l|g|kg)$/.test(t);
+
+/**
+ * Tokens que identifican al producto.
+ *
+ * Los números se descartan porque casi siempre son formato («70», «0.7»,
+ * «700ml»)… **salvo cuando son lo único específico que hay**. En «LICOR 43» el
+ * 43 es la marca, y descartarlo dejaba el nombre reducido a «licor», idéntico
+ * al de un producto llamado simplemente «LICOR».
+ */
 export const tokensFuertes = (nombre: string): string[] => {
-    const limpio = sinAcentos((nombre || '').toLowerCase())
+    const brutos = sinAcentos((nombre || '').toLowerCase())
         .replace(/[^a-z0-9\s.]/g, ' ')
         .replace(/\s+/g, ' ')
-        .trim();
-    return limpio
+        .trim()
         .split(' ')
-        .filter(t => t.length > 1)
-        .filter(t => !RUIDO.has(t))
-        // Un número suelto (70, 0.7, 700) es formato, no identidad.
-        .filter(t => !/^[0-9]+([.,][0-9]+)?$/.test(t))
-        .filter(t => !/^[0-9]+(cl|ml|l|g|kg)$/.test(t));
+        .filter(t => t.length > 1 && !RUIDO.has(t));
+
+    const especificos = brutos.filter(t => !GENERICOS.has(t) && !esNumero(t));
+    const genericos = brutos.filter(t => GENERICOS.has(t));
+    const numeros = brutos.filter(t => esNumero(t));
+
+    // Sin nada específico, los números recuperan su papel identificador.
+    return especificos.length > 0
+        ? [...especificos, ...genericos]
+        : [...numeros, ...genericos];
 };
+
+/** ¿Este nombre dice algo más que su familia? Si no, no se agrupa con nadie. */
+export const tieneIdentidadPropia = (tokens: string[]): boolean =>
+    tokens.some(t => !GENERICOS.has(t));
+
+/** Tokens compartidos que de verdad significan algo (sin contar la familia). */
+const comunesEspecificos = (a: Set<string>, b: Set<string>): string[] =>
+    [...a].filter(t => b.has(t) && !GENERICOS.has(t));
 
 export type RiesgoFusion = 'BAJO' | 'MEDIO' | 'ALTO' | 'BLOQUEADO';
 
@@ -155,7 +196,18 @@ const construirFicha = (ing: Ingredient, e: Entrada): FichaCandidata => {
  */
 const evaluarRiesgo = (
     fichas: FichaCandidata[],
+    tokensNucleo: string[],
 ): { riesgo: RiesgoFusion; motivo: string } => {
+    // El núcleo exige el conjunto de palabras IDÉNTICO, así que dos fichas
+    // llamadas «LICOR CAFE» sí son candidatas. Pero si el nombre entero es
+    // genérico no describe un producto concreto, y eso pide ojo humano.
+    if (!tieneIdentidadPropia(tokensNucleo)) {
+        return {
+            riesgo: 'ALTO',
+            motivo: `El nombre está compuesto solo por palabras de familia (${tokensNucleo.join(', ')}), `
+                + 'sin marca ni variedad que distinga. Coinciden del todo, pero conviene mirarlo.',
+        };
+    }
     const categorias = new Set(fichas.map(f => f.categoria));
     if (categorias.size > 1) {
         return {
@@ -278,7 +330,9 @@ export const detectarCandidatos = (e: Entrada): GrupoCandidato[] => {
             for (const v of porToken.get(t) || []) {
                 if (v.clave === clave || vistas.has(v.ing.id)) continue;
                 const setV = new Set(v.tokens);
-                const comunes = [...setNucleo].filter(k => setV.has(k));
+                // La familia compartida NO cuenta: que dos cosas sean «licor» no
+                // las acerca. Hace falta al menos una palabra específica en común.
+                const comunes = comunesEspecificos(setNucleo, setV);
                 const distintos = [...setNucleo].filter(k => !setV.has(k)).length
                     + [...setV].filter(k => !setNucleo.has(k)).length;
                 // Cerca, pero no igual. Más de dos palabras de diferencia ya es otro producto.
@@ -290,7 +344,7 @@ export const detectarCandidatos = (e: Entrada): GrupoCandidato[] => {
         }
 
         const fichas = miembros.map(m => construirFicha(m.ing, e));
-        const { riesgo, motivo } = evaluarRiesgo(fichas);
+        const { riesgo, motivo } = evaluarRiesgo(fichas, miembros[0].tokens);
 
         // El maestro propuesto es el que más historia tiene: más compras y más
         // recetas dependiendo de él. Absorber hacia el que menos referencias
