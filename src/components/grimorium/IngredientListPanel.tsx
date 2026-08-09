@@ -59,6 +59,7 @@ export const IngredientListPanel: React.FC<IngredientListPanelProps> = ({
 }) => {
   const searchInputRef = useRef<HTMLInputElement>(null);
   const [showCategoryDropdown, setShowCategoryDropdown] = React.useState(false);
+  const [showProveedorDropdown, setShowProveedorDropdown] = React.useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   // Close dropdown when clicking outside
@@ -66,6 +67,7 @@ export const IngredientListPanel: React.FC<IngredientListPanelProps> = ({
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setShowCategoryDropdown(false);
+        setShowProveedorDropdown(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -82,6 +84,7 @@ export const IngredientListPanel: React.FC<IngredientListPanelProps> = ({
 
   // Providers State
   const [selectedProveedorId, setSelectedProveedorId] = React.useState<string>('all');
+  const proveedorSeleccionado = proveedores.find(proveedor => proveedor.id === selectedProveedorId);
 
   // Combined Filter Logic
   const filteredIngredients = React.useMemo(() => {
@@ -247,27 +250,40 @@ export const IngredientListPanel: React.FC<IngredientListPanelProps> = ({
         </div>
 
         {/* Filters & Actions */}
-        <div className="flex flex-wrap items-center gap-2 w-full text-xs relative z-10">
+        <div className="flex flex-nowrap items-center gap-2 w-full min-w-0 text-xs relative z-10">
 
-          {/* Custom Category Dropdown with Color Dots - FLEX 1 */}
-          <div className="relative flex-1 min-w-[120px]" ref={dropdownRef}>
-            <button
-              onClick={() => setShowCategoryDropdown(!showCategoryDropdown)}
-              className="h-10 pl-3 pr-8 bg-white/50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl text-sm flex items-center gap-2 w-full text-left relative hover:bg-white/80 transition-colors"
-            >
-              {ingredientFilters.category && ingredientFilters.category !== 'all' ? (
-                <>
-                  <div className={`w-2.5 h-2.5 rounded-full ${getCategoryColor(ingredientFilters.category)}`} />
-                  <span className="truncate max-w-[100px]">{ingredientFilters.category}</span>
-                </>
-              ) : (
-                <span className="text-slate-500">Categoría</span>
-              )}
-              <Icon svg={ICONS.chevronDown} className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-            </button>
+          {/* Los dos selectores comparten una sola capa desplegable: ambos
+              paneles ocupan el ancho completo entre sus bordes exteriores. */}
+          <div className="relative flex flex-1 min-w-0 gap-2" ref={dropdownRef}>
+            <div className="basis-0 flex-1 min-w-0">
+              <button
+                onClick={() => { setShowCategoryDropdown(v => !v); setShowProveedorDropdown(false); }}
+                className="h-10 pl-3 pr-8 bg-white/50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl text-sm flex items-center gap-2 w-full text-left relative hover:bg-white/80 transition-colors"
+              >
+                {ingredientFilters.category && ingredientFilters.category !== 'all' ? (
+                  <>
+                    <div className={`w-2.5 h-2.5 shrink-0 rounded-full ${getCategoryColor(ingredientFilters.category)}`} />
+                    <span className="truncate">{ingredientFilters.category}</span>
+                  </>
+                ) : (
+                  <span className="truncate text-slate-500">Categoría</span>
+                )}
+                <Icon svg={ICONS.chevronDown} className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+              </button>
+            </div>
+
+            <div className="basis-0 flex-1 min-w-0">
+              <button
+                onClick={() => { setShowProveedorDropdown(v => !v); setShowCategoryDropdown(false); }}
+                className="h-10 pl-3 pr-8 bg-white/50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl text-sm flex items-center gap-2 w-full text-left relative hover:bg-white/80 transition-colors"
+              >
+                <span className="truncate text-slate-700 dark:text-slate-200">{proveedorSeleccionado?.name || 'Todos los productos'}</span>
+                <Icon svg={ICONS.chevronDown} className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+              </button>
+            </div>
 
             {showCategoryDropdown && (
-              <div className="absolute top-full left-0 mt-2 w-full max-h-60 overflow-y-auto custom-scrollbar bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl z-20 p-1">
+              <div className="absolute top-full left-0 right-0 mt-2 max-h-60 overflow-y-auto custom-scrollbar bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl z-20 p-1">
                 <button
                   onClick={() => { onIngredientFilterChange('category', 'all'); setShowCategoryDropdown(false); }}
                   className="w-full text-left px-3 py-2 text-sm rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors flex items-center gap-2"
@@ -280,37 +296,37 @@ export const IngredientListPanel: React.FC<IngredientListPanelProps> = ({
                     onClick={() => { onIngredientFilterChange('category', cat); setShowCategoryDropdown(false); }}
                     className="w-full text-left px-3 py-2 text-sm rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors flex items-center gap-2"
                   >
-                    <div className={`w-2.5 h-2.5 rounded-full ${getCategoryColor(cat)}`} />
+                    <div className={`w-2.5 h-2.5 shrink-0 rounded-full ${getCategoryColor(cat)}`} />
                     <span className="truncate">{cat}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {showProveedorDropdown && (
+              <div className="absolute top-full left-0 right-0 mt-2 max-h-60 overflow-y-auto custom-scrollbar bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl z-20 p-1">
+                <button
+                  onClick={() => { setSelectedProveedorId('all'); setShowProveedorDropdown(false); }}
+                  className="w-full text-left px-3 py-2 text-sm rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                >
+                  Todos los productos
+                </button>
+                {proveedores.map(prov => (
+                  <button
+                    key={prov.id}
+                    onClick={() => { setSelectedProveedorId(prov.id); setShowProveedorDropdown(false); }}
+                    className="w-full text-left px-3 py-2 text-sm rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                  >
+                    {prov.name}
                   </button>
                 ))}
               </div>
             )}
           </div>
 
-          <div className="h-6 w-px bg-slate-300 dark:bg-slate-700 mx-1 hidden sm:block" />
-
-          {/* Provider Selector - FLEX 1 */}
-          <div className="relative group/prov flex-1 min-w-[120px]">
-            <select
-              className="h-10 pl-3 pr-8 w-full bg-white/20 hover:bg-white/30 backdrop-blur-xl rounded-xl text-slate-800 dark:text-slate-100 border-none focus:ring-2 focus:ring-emerald-500/50 transition-all cursor-pointer text-sm font-medium appearance-none"
-              value={selectedProveedorId}
-              onChange={(e) => setSelectedProveedorId(e.target.value)}
-            >
-              <option value="all" className="text-slate-800">Todos los productos</option>
-              {proveedores.map(prov => (
-                <option key={prov.id} value={prov.id} className="text-slate-800">{prov.name}</option>
-              ))}
-            </select>
-            {/* Custom Arrow because appearance-none removes default */}
-            <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-500 group-hover/prov:text-slate-800 dark:group-hover/prov:text-slate-200 transition-colors">
-              <Icon svg={ICONS.chevronDown} className="w-3 h-3" />
-            </div>
-          </div>
-
 
           {/* Small Actions */}
-          <div className="flex gap-1 items-center ml-1">
+          <div className="flex shrink-0 gap-1 items-center">
             <Button variant="outline" size="icon" onClick={onImportCSV} title="Importar CSV" className="border-slate-200 dark:border-slate-700 h-10 w-10">
               <Icon svg={ICONS.upload} className="w-4 h-4" />
             </Button>
@@ -322,9 +338,11 @@ export const IngredientListPanel: React.FC<IngredientListPanelProps> = ({
                     size="sm"
                     variant="ghost"
                     onClick={onBulkBuy}
-                    className="h-10 !bg-emerald-50 !text-emerald-700 border border-emerald-200 hover:!bg-emerald-600 hover:!text-white hover:border-emerald-600 transition-colors font-bold mr-1"
+                    title={`Comprar ${selectedIngredientIds.length} ingrediente(s)`}
+                    className="h-10 w-10 sm:w-auto sm:px-3 !bg-emerald-50 !text-emerald-700 border border-emerald-200 hover:!bg-emerald-600 hover:!text-white hover:border-emerald-600 transition-colors font-bold"
                   >
-                    Comprar ({selectedIngredientIds.length})
+                    <Icon svg={ICONS.shoppingCart} className="w-4 h-4 sm:hidden" />
+                    <span className="hidden sm:inline">Comprar ({selectedIngredientIds.length})</span>
                   </Button>
                 )}
 
