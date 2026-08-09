@@ -1,5 +1,37 @@
 # Worklog
 
+## 2026-08-10 · Codex · Mercado móvil, limpieza taxonómica e identidad visual
+
+**Mercado móvil.** Se corrigió la estructura de la fila de filtros y acciones:
+categoría, proveedor, importar, compra, borrar y alta se mantienen en una sola
+fila y se contraen proporcionalmente cuando aparece la selección. Los menús
+de categoría y proveedor se unificaron visualmente; el de categoría calcula su
+ancho a partir del contenido y el de proveedor quedó pendiente de una última
+validación de ancho en el dispositivo real.
+
+**Categorías.** Auditoría en producción: los rótulos vienen de datos reales,
+no de la interfaz. Se creó `normalizeIngredientCategories.ts`, una migración
+sin fuzzy matching, por coincidencia exacta y con batches de 450. Conserva el
+valor original en `categoriaAntesDeNormalizar` y excluye explícitamente los
+casos ambiguos. El panel Mercado muestra el número real de fichas afectadas:
+724. La herramienta se desplegó con el commit `2c17986`; la confirmación final
+en el navegador quedó pendiente del fundador, por lo que no se debe afirmar que
+la base de datos ya esté migrada.
+
+**Identidad de producto.** El fundador eligió el tercer grupo de bajo riesgo:
+dos fichas de Mezcal Aguerrido. Se documentó que el maestro debe ser el menor
+precio salvo preferencia o rotura de proveedor. Sigue pendiente ejecutar la
+operación de Fase D: copiar oferta a `supplierData`, asignar `masterProductId`,
+y verificar stock, valor, reglas y costes. No se han escrito datos de esa
+fusión.
+
+**Identidad visual.** El fundador entregó un nuevo logo circular multicolor.
+Se adopta como fuente `public/nexus-logo.png` y se regeneran los archivos que
+ya consumen navegador, iOS y PWA (`favicon-32.png`, `apple-touch-icon.png`,
+`icon-192.png`, `icon-512.png`). `NexusOrb` deja de dibujar el orbe CSS anterior
+para que acceso y barra lateral muestren exactamente el mismo activo. TypeScript
+y build han pasado; falta verificar el bundle servido tras el despliegue actual.
+
 ## 2026-08-09 · Claude Code · Cierre del exportador de Recetas
 
 Se da por cerrado Grimorio → Recetas. El exportador a PDF funciona en las tres
