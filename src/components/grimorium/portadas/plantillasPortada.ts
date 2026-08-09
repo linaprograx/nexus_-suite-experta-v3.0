@@ -126,8 +126,11 @@ const clubhouse: PlantillaPortada = {
      *   largo vuelve a ensancharla más allá de su columna.
      */
     css: `
+  /* border-box es obligatorio aquí: sin él el relleno SUMA a la altura y la
+     portada mide 279mm, cuando el área imprimible de un A4 con márgenes de
+     12mm son 273mm. Esos 6mm de más empujaban una página en blanco. */
   .cb { page-break-after: always; break-after: page; position: relative; overflow: hidden;
-        min-height: 244mm; padding: 78px 56px 56px;
+        box-sizing: border-box; min-height: 262mm; padding: 78px 56px 56px;
         display: flex; flex-direction: column; justify-content: center;
         background: linear-gradient(150deg, #0a3730 0%, #06231e 58%, #041713 100%); color: #f7f4ec;
         -webkit-print-color-adjust: exact; print-color-adjust: exact; }
@@ -171,13 +174,17 @@ const clubhouse: PlantillaPortada = {
      Abarcar las dos filas es lo que deja que la imagen sea alta sin fijarle una
      altura: crece hasta donde llegue el contenido de la derecha y nunca se
      recorta, así una receta de 8 filas y otra de 15 componen distinto. */
-  .ficha-top { grid-template-columns: 300px 1fr; gap: 30px; margin-bottom: 8px; }
+  /* Proporciones, NUNCA anchuras absolutas. Al imprimir, el ancho útil es menor
+     que el de pantalla: una columna de 300px fijos se comía casi todo y a la
+     tabla le quedaban unas decenas de píxeles, así que colapsaba a una letra
+     por línea. El minmax(0,…) es lo que permite que ambas columnas encojan. */
+  .ficha-top { grid-template-columns: minmax(0, 36%) minmax(0, 1fr); gap: 26px; margin-bottom: 8px; }
   .col-foto { grid-row: 1 / span 2; }
   .col-escandallo { grid-column: 2; grid-row: 2; border-bottom: 1px solid #e6e1d5; padding-bottom: 18px; }
   .col-escandallo h2 { margin-top: 20px; }
   /* Sin max-height, sin object-fit y sin fondo: cualquiera de los tres vuelve a
      dibujar un recuadro alrededor de una foto que no llene la caja. */
-  .col-foto img { display: block; width: 300px; height: auto;
+  .col-foto img { display: block; width: 100%; height: auto;
                   border-radius: 4px; box-shadow: 0 12px 34px rgba(4,23,19,.24); }
 
   .head { border-bottom: 0; padding-bottom: 0; }
