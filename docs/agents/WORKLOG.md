@@ -135,6 +135,113 @@ parte de lo que hay que arreglar allí **no necesita ejecutar nada**.
 Todo. Ni un defecto corregido: era el encargo. El orden está en `HANDOFF.md`,
 empezando por A1.
 
+## 2026-08-09 · Claude Code · Recetas cerrado, y los cimientos de Inventario
+
+Sesión larga. Dos bloques: cerrar Recetas de verdad y poner cimientos en
+Inventario/Mercado. Todo desplegado a las dos ramas y verificado en producción
+con la sesión del fundador.
+
+**Recetas: había CUATRO criterios económicos, no dos**
+
+El relevo anterior dejó anotado que el panel de Análisis no usaba
+`calculateRecipeProfitability`. Al mirarlo resultó que **la ficha tampoco**, ni
+la tarjeta de la lista. Cuatro sitios calculando margen de cuatro formas:
+
+| Dónde | Margen | Umbrales |
+|---|---|---|
+| Ficha | a mano, solo ingredientes | 75/67 de costFormatter |
+| Análisis | a mano, solo ingredientes | 70/25 a fuego |
+| Lista | campo guardado `costoReceta` | pricing ×3/×4/×5 |
+| Escandallo | motor | objetivo configurado |
+
+Los tres primeros migrados al motor. Con los ajustes por defecto las cifras no
+se mueven —el motor se reduce a la fórmula manual—, pero el fundador **tiene
+Economía configurada con ~10% de impuesto**, así que sí cambiaron: Birdie Juice
+pasó de 89,2% a 88,9% de margen y de 1,18 € a 1,42 € de coste, en las cuatro
+vistas a la vez.
+
+Dos cosas que NO se tocaron, y por qué: `costData` sigue siendo el coste de
+ingredientes porque lo consumen el desglose y el **exportador**; y
+`costSnapshot` de la carta activa sigue igual porque `menuDrift.ts:42` lo
+compara contra `calculateRecipeCost` — guardar ahí el coste servido habría
+mostrado toda la carta desviada de golpe sin que nada cambiara.
+
+**Inventario: cuatro cifras que mentían**
+
+- **I4** — Dashboard 39.471 € frente a Inventario 39.452,96 €. No era redondeo:
+  el Dashboard llamaba a `buildStockFromPurchases` a secas, **sin restar los
+  movimientos**. Enseñaba el almacén como si nunca se hubiera consumido nada.
+  Nueva `buildCurrentStock` como fuente única.
+- **I3** — «+0% vs mes anterior» calculaba `esteMes / TODO_EL_HISTÓRICO` y
+  encima lo etiquetaba bajo «Valor Inventario», cuando mide **compras**.
+- **I2** — el semáforo era `quantityAvailable > 5`, igual para toda unidad: 3
+  botellas de mezcal en rojo y 6 kilos de patata en verde. Ahora sale de
+  `useStockRules`, con un cuarto estado **desconocido** para los 824 ítems sin
+  regla. Sin regla no se inventa umbral.
+- **M1** — la causa de los pedidos y compras a 0 € no era que el precio se
+  perdiera: **nunca hubo precio y nadie lo decía**. `PurchaseModal` calculaba
+  `precioCompra || 0` sin permitir tocarlo. El fundador lo verificó comprando:
+  el valor de almacén subió exactamente 633,33 €, que es lo que había comprado.
+
+**Identidad de producto: el encargo era otro**
+
+El fundador pidió resolver que «una segunda compra cree otro producto».
+Auditando resultó que **eso no pasa**: `buildStockFromPurchases` agrupa estricto
+por `ingredientId` y no existe ningún `createInventoryItem()` — el inventario no
+se almacena, **se deriva**. Los duplicados están en el catálogo, de la
+importación CSV.
+
+Y la arquitectura maestro/ofertas **ya existía**: `Ingredient.id` es el maestro y
+`supplierData` el mapa de ofertas, con los campos rivales marcados `@deprecated`
+desde hace tiempo. No había que construirla: había que consumirla.
+
+> **El hallazgo que más condiciona lo que viene:** el «N opc.» de Mercado **no
+> lee `supplierData`** — recorre los documentos duplicados. Hoy **los duplicados
+> SON las ofertas**. Fusionarlos sin trasladar antes precio y formato a
+> `supplierData` destruiría la función multi-proveedor. La fusión no es un
+> borrado: es un traslado.
+
+Fases A (informe en seco), B (`masterProductId` + `proveedorPreferente`, sin
+consumidores) y C (consolidar en lectura) hechas. C se cerró con la prueba que
+la define: **sin ningún alias, la salida es idéntica byte a byte**. Verificado
+después en producción — Dashboard e Inventario coinciden y el delta cuadra
+exactamente con las compras del fundador.
+
+**Tres errores míos, corregidos el mismo día**
+
+1. El detector agrupaba a los parecidos con los idénticos, así que MANDARINA
+   contaminaba el grupo de los dos Absolut y **bloqueaba una fusión legítima**.
+   280 grupos y 270 bloqueos pasaron a 38 y 0.
+2. El contador «BLOQUEADOS» quedó a cero **por construcción** tras ese arreglo.
+   Un número que no puede cambiar no informa y tranquiliza en falso. Ahora
+   cuenta **variantes**.
+3. **`LICOR` y `LICOR 43` compartían clave** y estaban en el mismo núcleo,
+   propuestos para fusionar. Mi lista de ruido tenía palabras de envase pero no
+   **tipos de producto**, y los números se filtraban siempre — en «LICOR 43» el
+   43 es la marca. Nuevo conjunto `GENERICOS`: se conservan en la clave pero no
+   cuentan como identidad. Los nueve licores reales del catálogo dan ahora 0
+   grupos y 0 variantes.
+
+**Y uno que costaba dinero cada día**
+
+`onUpdateRules={(newRules) => newRules.forEach(saveStockRule)}`: guardar **una**
+regla reescribía **las 611**, una a una. `onSaveRule` ya persistía y
+`onDeleteRule` ya borraba; el volcado masivo no aportaba nada. Retirado.
+
+**Método que funcionó y conviene repetir**
+
+Verificar la matemática con datos **sintéticos** compilados con esbuild y
+ejecutados en node, sin tocar Firestore: 14 comprobaciones en la identidad, 11
+en la consolidación, 5 en el detector. Encontró el fallo de MANDARINA antes de
+que llegara a producción.
+
+**Pendiente**
+
+Todo lo de `HANDOFF.md`. Lo siguiente es la Fase D con **un solo grupo** de los
+16 de riesgo bajo, y necesita aprobación porque escribe en datos.
+
+---
+
 ## 2026-08-06 · Claude Code · La causa raíz del catálogo vacío y la franja fija
 
 **Lo importante de esta entrada: el `appId` con saltos de línea.** Si vuelve a

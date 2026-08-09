@@ -6,64 +6,30 @@
 
 ---
 
-**Última actualización:** 2026-08-09
-**Sesión anterior:** Claude Code — cierre de **Grimorio → Recetas**.
-**Estado:** árbol limpio, TypeScript 0 errores, build correcto, desplegado y
-verificado en producción leyendo el bundle servido.
+**Última actualización:** 2026-08-09 (noche)
+**Sesión anterior:** Claude Code
+**Estado:** árbol limpio, TypeScript 0 errores, build correcto, **todo
+desplegado a las dos ramas y verificado en producción con la sesión del
+fundador**.
 
-**Recetas se da por CERRADO.** El exportador a PDF funciona en las tres
-plantillas (Editorial, Clubhouse Premium, Cartel): portada en su hoja y una
-receta por página. Las causas reales y las trampas de proceso están en
-`WORKLOG.md` — **léelas antes de tocar el exportador**, porque casi todo lo que
-parece un problema de diseño era en realidad una medida absoluta.
+## Lo primero que tienes que entender
 
-## ⚠️ Estado a 2026-08-09 (tarde)
+**Recetas está CERRADO.** Los cuatro criterios económicos que había sueltos se
+unificaron hoy: `Escandallo = Ficha = Análisis = Lista`. No lo reabras.
 
-**Bloque de Recetas CERRADO del todo.** Los cuatro criterios económicos sueltos
-están unificados: `Escandallo = Ficha = Análisis = Lista`. Desplegado a las dos
-ramas y verificado en producción (Birdie Juice: 1,42 € en las cuatro vistas).
-Commits `3c0171f`, `348c1ff`, `2e23e3f`.
+**El plan canónico de Inventario y Mercado es
+`docs/agents/PLAN-INVENTARIO-MERCADO.md`.** Manda sobre el orden. Los otros
+documentos de plan describen el destino, no la secuencia.
 
-**Lo siguiente es `docs/agents/PLAN-INVENTARIO-MERCADO.md`**, que es ahora el
-plan canónico y **manda sobre el orden**. Empieza por su **Fase 0**, punto I1
-(unidades canónicas). Los puntos 1-4 de la lista de abajo quedan absorbidos
-por él.
+Y hay dos auditorías que **contradicen la intuición** y conviene leer antes de
+tocar nada:
 
-Pendiente del fundador: la **Parte IV** de su documento (del punto 35 en
-adelante, Configuración de Negocio) llegó cortada a media frase.
-
-## Lo siguiente, en orden
-
-1. **Panel de Análisis** (`src/components/grimorium/RecipeFinancialDashboard.tsx`).
-   Diagnosticado y SIN implementar. No usa `calculateRecipeProfitability`:
-   calcula el margen a mano como `(precio − coste de ingredientes) / precio`, así
-   que ignora merma, comisiones, mano de obra, impuestos y estructura. El margen
-   medio que muestra contradice el de la ficha. Los umbrales `70` y `25` están
-   escritos a fuego en vez de leer el objetivo de Economía. Cambio contenido: un
-   fichero, sin tocar maquetación.
-2. **`BusinessCogsPanel.tsx`**: usa compras reales, pero no pasa `allRecipes`, así
-   que no resuelve sub-recetas y su total queda por debajo del real.
-3. **Inventario y Mercado**, nunca auditados en profundidad. Mismo método que
-   funcionó en Recetas: auditoría primero, luego por gravedad.
-   `PLAN-GRIMORIO-MERCADO.md` tiene cuatro decisiones del fundador pendientes.
-4. Líneas de receta que apuntan a un ingrediente inexistente: se imprimen como
-   «—» con coste 0,00 € (visto en *Water Hazard*). Encaja con la revisión de
-   Inventario.
-
-## Regla de datos, no negociable
-
-Los datos son REALES y del negocio del fundador (~1.325 ingredientes, ~1.367
-productos). **No ejecutes acciones destructivas para verificar**: borrados,
-ajustes de stock, resolución de conflictos. Pídele un registro de pruebas o que
-lo ejecute él mientras observas. Hubo un susto de posible pérdida de recetas por
-no seguir esto.
-
-## Regla de despliegue, no negociable
-
-Producción se construye desde **`deploy/mobile-v1`**. Empujar solo a
-`feat/mobile-v1-unified` NO despliega nada: dos iteraciones enteras fueron
-invisibles por esto. Empuja siempre a las dos ramas y verifica leyendo el bundle
-servido, no fiándote del push.
+- **`AUDIT-IDENTIDAD-PRODUCTO.md`** — el flujo de compra **no** crea duplicados;
+  la arquitectura maestro/ofertas **ya existe** en el modelo; y los duplicados
+  del catálogo **son** hoy las ofertas de Mercado, así que fusionarlos sin
+  trasladar antes su precio a `supplierData` rompería el «N opc.».
+- **`AUDIT-24-PREGUNTAS.md`** — respuestas a las 24 preguntas del prompt maestro
+  del fundador, con qué estaba ya hecho y qué era nuevo.
 
 ## Dónde se trabaja
 
@@ -73,142 +39,122 @@ servido, no fiándote del push.
 | **Worktree** | `/Users/lianalviz/nexus-suite-mobile-v1` |
 | **Rama de producción** | `deploy/mobile-v1` |
 | **URL en producción** | `nexus-suite-experta-v3-0.vercel.app` |
-| **Servidor de desarrollo** | **puerto 3100** (nunca el 3000) |
+| **Servidor de desarrollo** | puerto asignado por `PORT`, respaldo 3100 |
 
-`node_modules` está instalado en este worktree. `.env` no se versiona: si
-Firebase informa de configuración incompleta, cópialo del checkout principal
-(`cp /Users/lianalviz/nexus_-suite-experta-v3.0/.env .env`).
-
-### Desplegar
-
-`deploy/mobile-v1` desciende de la rama de desarrollo; el despliegue es avance
-directo:
+### Desplegar — **a las DOS ramas, siempre**
 
 ```bash
+git push origin feat/mobile-v1-unified
 git checkout deploy/mobile-v1
 git merge --ff-only feat/mobile-v1-unified
 git push origin deploy/mobile-v1
 git checkout feat/mobile-v1-unified
 ```
 
-Cada push despliega solo. **El hash del bundle de Vercel NO coincide con el de
-tu build local** (compila por su cuenta), así que para saber si tu cambio ya
-está en vivo busca una cadena tuya dentro del JS servido, no el nombre del
-archivo:
+Empujar solo a `feat/…` **no despliega nada**. Y después **verifica leyendo el
+bundle servido**, no el push:
 
 ```bash
-until curl -s "https://nexus-suite-experta-v3-0.vercel.app/$(curl -s https://nexus-suite-experta-v3-0.vercel.app/ | grep -o 'assets/index-[^"]*\.js' | head -1)" | grep -q 'UNA_CADENA_DE_TU_CAMBIO'; do sleep 10; done
+curl -s "https://nexus-suite-experta-v3-0.vercel.app/$(curl -s https://nexus-suite-experta-v3-0.vercel.app/ | grep -o 'assets/index-[^"]*\.js' | head -1)" -o /tmp/prod.js && grep -c -F 'UNA_CADENA_TUYA' /tmp/prod.js
 ```
 
-Tarda entre 1 y 7 minutos. Y el navegador cachea: para ver el cambio hay que
-navegar con un parámetro distinto (`?v=8`), no basta con recargar.
+Tarda 1-7 minutos. **Vuelca el bundle a un fichero y haz grep sobre el
+fichero**: meter 4 MB de JS minificado en una variable de shell revienta zsh con
+`character not in range`. Y usa marcadores **solo ASCII** — un `·` en el patrón
+también lo rompe. Las dos cosas costaron diez minutos de falso negativo.
 
----
+## Reglas que no se negocian
 
-## ⚠️ ACCIÓN PENDIENTE DEL USUARIO — importante
+**Datos REALES** (~1.327 ítems, ~1.367 referencias). Ninguna acción destructiva
+para verificar: nada de borrados, ajustes de stock ni resolución de conflictos.
+Si hace falta probar algo que escribe, se lo pides al fundador o le pides
+permiso explícito. Abrir un modal y **cancelar** sí es aceptable.
 
-**La variable `VITE_FIREBASE_APP_ID` en Vercel contiene dos saltos de línea al
-final.** Se pegó así. El código ya la recorta
-(`src/config/firebaseConfig.ts`), de modo que la app funciona, **pero el valor
-sigue sucio en el panel de Vercel**. Conviene limpiarlo: cualquier sitio que
-lea la variable sin pasar por ese recorte volvería a romperse.
+**Migraciones**: informe en seco primero, aprobación después, y **las ejecuta el
+fundador**, no el agente.
 
-Por qué importaba tanto: `appId` no solo identifica la app, **forma parte de
-rutas de Firestore** (`artifacts/${appId}/users/...`). Con el salto de línea
-dentro, esas rutas apuntaban a una colección inexistente. Firestore **no da
-error** —una colección que no existe es simplemente una colección vacía—, así
-que el fallo se veía como "no hay datos". Fue la causa raíz de Mercado vacío,
-del catálogo vacío, del selector de ingredientes sin resultados y de los ~1300
-"conflictos de stock". Costó **tres diagnósticos equivocados** antes de dar con
-ella.
+**Motor económico**: `core/costing/costCalculator.ts` es la única fuente de
+coste y `profitabilityEngine.ts` la única de rentabilidad. Nada de fórmulas
+paralelas. `buildStockFromPurchases` **no se toca**: lo consume el motor de
+coste, y cambiar su agrupación movería el coste de todas las recetas.
 
----
+## Estado de las fases
 
-## Qué se hizo en esta sesión
+| Fase | Estado |
+|---|---|
+| Fase 0 · cimientos | `origen` en movimientos ✅ · I2 semáforo ✅ · I3 variación ✅ · I4 valor único ✅ · **I1 unidades pendiente** |
+| Identidad A · informe de duplicados | ✅ funcionando con datos reales |
+| Identidad B · `masterProductId` + `proveedorPreferente` | ✅ sin consumidores |
+| Identidad C · consolidar en lectura | ✅ verificado sin regresión |
+| **Identidad D · reconciliar** | ⬜ **siguiente**, requiere aprobación |
+| Fase 1 · pedido útil | M1 compra ✅ · **M1 hoja de pedido, M2 `providerId`, M3 cantidad pendientes** |
 
-Detalle y motivos en `WORKLOG.md`. Resumen:
+## ⏸️ Lo siguiente — EMPIEZA POR AQUÍ
 
-- **Causa raíz del `appId`** (arriba). Mercado pasó de vacío a **1367
-  productos**; el selector de ingredientes de recetas volvió a listar.
-- **Pizarrón**: el pellizco de dos dedos creaba nodos de texto; la fuente no
-  escalaba al redimensionar un texto suelto.
-- **Grimorio móvil**: la cabecera es ahora **una sola capa fija** que contiene
-  título, pestañas, iconos, buscador y filtros. Ver la decisión
-  *"Una franja fija es UNA capa"* en `CONTEXT.md` — **léela antes de tocarla**.
-- Pestaña de borde derecha que no abría nada; recuento de Mercado cortado a
-  "1…".
+1. **Fase D de identidad, un solo grupo.** Asignar un `masterProductId` real de
+   los **16 de riesgo BAJO** del informe y comprobar en la app que las fichas se
+   funden, el stock suma y el coste de las recetas no se mueve. **Escribe en
+   datos: necesita el visto bueno del fundador.** Se deshace quitando el campo.
+2. **I1 · unidades canónicas.** Informe en seco con diez columnas por ítem
+   (unidad actual, propuesta, factor, stock, coste actual, coste resultante,
+   recetas y sub-recetas afectadas, impacto, ambigüedades) y
+   `BLOQUEADO PARA REVISIÓN` en todo lo que no se pueda determinar **con
+   certeza**. No se infiere ningún valor. Desbloquea los grupos de riesgo MEDIO.
+3. **M2 · `providerId` en el pedido**, y leerlo al recibir en vez de volver a
+   deducirlo del ingrediente. Bloquea la agrupación de Inventario por proveedor.
+4. **M1 parte 2 · la hoja de pedido a 0 €** — misma raíz que la compra, pero en
+   bloque: avisar de cuántas líneas van sin precio antes de crear la hoja.
+5. **Importador: trocear el `writeBatch`.** `recipeImporter.importIngredientsFromCsv`
+   usa un solo batch y Firestore corta en 500 operaciones. El patrón correcto ya
+   está en `useOrders.createOrder` (`CHUNK_SIZE = 500`).
+6. **UX móvil** — conteo físico tapado por la franja fija; modal de proveedores
+   por detrás del gradiente (**stacking context, no un z-index a lo bruto**);
+   jerarquía de «Compra rápida» y de «Comparativa»; buscador y filtros para las
+   611 reglas.
 
-## ⏸️ Lo que queda — EMPIEZA POR AQUÍ
+## Decisiones tomadas por el fundador
 
-1. **`docs/agents/AUDIT-MOVIL.md` — A1, y hazlo ya.** Desactivar dos secciones
-   en Personal → Configuraciones deja al usuario **sin modo oscuro y sin cerrar
-   sesión**, sin forma de recuperarlos. La causa está confirmada leyendo el
-   código (`FloatingBottomNav.tsx:103-107` y `:144`): "Más" se trata como
-   desbordamiento y desaparece en cuanto los destinos caben en la barra, pero
-   los controles globales viven dentro de esa hoja. Es media hora de trabajo y
-   es lo único de la lista que deja funciones inalcanzables.
+- **Precio con varias ofertas:** manda el **proveedor preferente** aunque otro
+  sea más barato, y **se señala** la alternativa. Sin preferente, manda el más
+  barato y se avisa de configurarlo. Implementado en
+  `core/identity/offerSelection.ts`, **sin conectar al motor todavía**.
+- **Agrupación visual:** Inventario por **familia** (con conmutador a
+  proveedor); Mercado por **proveedor**. La búsqueda atraviesa las secciones
+  cerradas.
+- **Zero Waste** dejó de tener icono propio: es la tercera pestaña de
+  «Rentabilidad y producción».
 
-2. **A2** del mismo documento — el modal de edición de receta se abre detrás del
-   detalle porque `GrimoriumView.tsx:900` no limpia `selectedRecipeId`. Otra
-   sesión corta. Conviértelo en invariante ("una sola superficie modal a la
-   vez") o reaparecerá en ingredientes, stock y pedidos.
+## ⚠️ Acción pendiente del fundador
 
-3. **A3, A4, A5** — parpadeo al scrollear, lentitud de Inventario y el escalado
-   de texto en Pizarrón. Estos sí piden medir antes de tocar; el documento dice
-   qué medir en cada caso.
+`VITE_FIREBASE_APP_ID` en Vercel **sigue con dos saltos de línea al final**. El
+código lo recorta (`src/config/firebaseConfig.ts`) y la app funciona, pero el
+valor sigue sucio en el panel. Cualquier sitio que lea la variable sin pasar por
+ese recorte volvería a romperse. Fue la causa raíz de Mercado vacío y costó tres
+diagnósticos equivocados.
 
-4. **Verificación en iPhone real.** Sigue pendiente y ahora estorba más: A3, A4
-   y A6 no se pueden cerrar sin ella. `env(safe-area-inset-*)` vale 0 fuera de
-   un móvil y las barras de Safari se recogen al scrollear. Sin confirmar en
-   concreto: el pliegue del título (umbral de 64px y tolerancia de 6px al
-   temblor del dedo, en `useCabeceraPlegable.ts`).
+## Cómo NO repetir los errores de hoy
 
-5. **`docs/agents/PLAN-GRIMORIO-MERCADO.md`** — la Parte 1 (bugs de datos) está
-   **resuelta**; queda la **Parte 2**: convertir Mercado en catálogo de
-   proveedores de Madrid. Ampliado el 2026-08-08 con pedido ficticio, recetas
-   compartidas, reparto multi-proveedor, envío externo, facturas y guía de
-   primer uso. Sigue con **cuatro decisiones que tomar con el usuario** antes de
-   escribir una línea.
-
-6. **`docs/agents/PLAN-CEREBRITY.md`** — nuevo. Sus fases C1–C4 **no gastan
-   API** y se pueden intercalar cuando convenga. Lee la regla de gasto antes de
-   ejecutar nada allí.
-
-7. **Restos de Pizarrón** — B3, B6 y B7 en `AUDIT-PIZARRON.md`.
-
-8. **Infraestructura** (detalle en `CONTEXT.md`): desplegar el `ai-gateway`,
-   rotar claves de Gemini y Stripe, activar Stripe. El gateway bloquea la fase
-   C5 de Cerebrity.
+1. **Un contador que nunca puede cambiar no informa.** El «0 bloqueados» del
+   informe de duplicados era cero **por construcción** y tranquilizaba en falso.
+2. **`??` no es `||` cuando el cero es un valor posible.** Volvió a morder, esta
+   vez en el importe de compras.
+3. **Verifica la verificación.** Diez minutos perdidos con un bucle que fallaba
+   por un carácter no ASCII en el patrón, no por el despliegue.
+4. **Una heurística de nombres necesita saber qué palabras son familia.** Sin
+   eso, el detector proponía fusionar `LICOR` con `LICOR 43`.
 
 ## Código muerto localizado y NO retirado
 
-No se tocó por no mezclarlo con lo urgente. Verifica antes de borrar:
+Verifica antes de borrar:
 
+- `src/components/grimorium/RecipeCard.tsx` — **no lo importa nadie**; la
+  tarjeta real vive dentro de `RecipeList.tsx`.
 - `src/features/ingredients/useIngredients.ts` — duplicado de
-  `src/hooks/useIngredients.ts`. **No lo importa nadie.**
-- `RecipeToolbar.tsx` e `IngredientToolbar.tsx` — importados en
-  `GrimoriumView.tsx` y **nunca renderizados**.
-
-Son el quinto, sexto y séptimo caso del patrón de este proyecto:
+  `src/hooks/useIngredients.ts`.
+- `RecipeToolbar.tsx` e `IngredientToolbar.tsx` — importados y nunca
+  renderizados.
+- `src/views/UnleashView.tsx` + `src/views/unleash/` — no enrutado; su
+  `SynthesisView` tiene el resultado escrito a mano.
 
 > **Si algo parece una función y no responde, comprueba primero si está
-> conectado**, antes de darlo por roto y "arreglarlo".
-
-## ⚠️ Cómo NO repetir los errores de esta sesión
-
-Tres veces se rompió Grimorio entregando cambios que compilaban. Las causas,
-por orden de gravedad:
-
-1. **Un cambio "de móvil" que no estaba limitado a móvil.** Se limitó la
-   *posición* con `sticky lg:static` y se olvidó el *fondo*, que pintó un
-   bloque blanco sólido en escritorio. **Limita el componente entero, no una
-   propiedad.**
-2. **Reestructurar `StackedMobileShell`**, del que cuelgan las tres columnas de
-   Grimorio entero: rompe las tres pestañas a la vez. Añade props opcionales
-   apagadas por defecto; no reorganices su árbol.
-3. **Entregar sin mirar.** TypeScript y el build no ven un rectángulo blanco.
-   **Verifica en el navegador, midiendo el DOM**, antes de dar algo por hecho —
-   no después.
-
-Punto de retorno si el motor de Pizarrón se rompe: etiqueta
-**`pre-merge-frosty`**.
+> conectado**, antes de darlo por roto y «arreglarlo».

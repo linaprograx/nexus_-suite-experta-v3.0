@@ -800,6 +800,11 @@ const GrimoriumInner: React.FC<GrimoriumViewProps> = () => {
                                     )}
                                 </div>
                                 <div className="lg:flex-1 lg:overflow-y-auto custom-scrollbar lg:min-h-0">
+                                    {/* Sin `onUpdateRules` a propósito: reescribía las 611 reglas,
+                                        una a una, cada vez que se guardaba o borraba UNA.
+                                        `onSaveRule` ya persiste la regla y `onDeleteRule` ya la
+                                        borra; el volcado masivo no aportaba nada y costaba 611
+                                        escrituras en Firestore por clic. */}
                                     {activeLayer === 'composition' && (
                                         <StockRulesPanel
                                             allIngredients={allIngredients}
@@ -807,7 +812,6 @@ const GrimoriumInner: React.FC<GrimoriumViewProps> = () => {
                                             rules={stockRules}
                                             onSaveRule={(rule) => saveStockRule(rule)}
                                             onDeleteRule={(id) => deleteStockRule(id)}
-                                            onUpdateRules={(newRules) => newRules.forEach(saveStockRule)}
                                             onQuickBuy={startPurchase}
                                             onBulkOrder={(ingredients) => {
                                                 setBulkPurchaseTargets(ingredients);
