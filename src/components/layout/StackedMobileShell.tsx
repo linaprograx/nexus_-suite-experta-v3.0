@@ -166,18 +166,18 @@ export const StackedMobileShell: React.FC<StackedMobileShellProps> = ({
                 <button
                     onClick={() => setLeftOpen(true)}
                     aria-label={leftLabel}
-                    className="fixed left-0 top-1/2 -translate-y-1/2 z-40 w-11 h-28 flex items-center justify-start active:scale-95 transition-transform"
+                    className="fixed left-0 top-1/2 -translate-y-1/2 z-40 w-12 h-36 flex items-center justify-start active:scale-95 transition-transform"
                 >
-                    <span className={`w-2 h-24 rounded-r-full shadow-lg ring-1 ring-black/10 ${accentClass}`} />
+                    <span className={`w-[5px] h-32 rounded-r-full shadow-lg ring-1 ring-white/25 ${accentClass}`} />
                 </button>
             )}
             {hasRight && bothClosed && (
                 <button
                     onClick={() => setManualRightOpen(true)}
                     aria-label={rightLabel}
-                    className="fixed right-0 top-1/2 -translate-y-1/2 z-40 w-11 h-28 flex items-center justify-end active:scale-95 transition-transform"
+                    className="fixed right-0 top-1/2 -translate-y-1/2 z-40 w-12 h-36 flex items-center justify-end active:scale-95 transition-transform"
                 >
-                    <span className={`w-2 h-24 rounded-l-full shadow-lg ring-1 ring-black/10 ${accentClass}`} />
+                    <span className={`w-[5px] h-32 rounded-l-full shadow-lg ring-1 ring-white/25 ${accentClass}`} />
                 </button>
             )}
 

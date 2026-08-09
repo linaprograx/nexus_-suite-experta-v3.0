@@ -89,13 +89,10 @@ const cartel: PlantillaPortada = {
     css: `
   .pc { page-break-after: always; break-after: page; position: relative;
         min-height: 240mm; display: flex; flex-direction: column; justify-content: center;
-        background: #0f172a; color: #f8fafc; margin: -28px -24px 0; padding: 60px 48px; }
-  /* Al imprimir el relleno del cuerpo pasa a 12mm: el margen negativo debe
-     coincidir con ÉL, o la portada sale más ancha que el área imprimible y el
-     navegador empieza a paginar en horizontal. */
-  @media print { .pc { margin: -12mm -12mm 0; } }
+        background: #0f172a; color: #f8fafc; margin: 0; padding: 56px 44px; }
   /* El navegador omite los fondos al imprimir salvo que se le pida. */
   .pc { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .pc-pie { left: 44px; right: 44px; }
   .pc-linea { width: 64px; height: 4px; background: #2dd4bf; margin-bottom: 28px; }
   .pc-marca { font-size: 10px; letter-spacing: .28em; text-transform: uppercase; color: #5eead4; margin-bottom: 14px; }
   .pc-titulo { font-size: 76px; line-height: .95; letter-spacing: -.02em; margin: 0 0 22px; text-transform: uppercase; }
@@ -146,14 +143,17 @@ const clubhouse: PlantillaPortada = {
     nombre: 'Clubhouse Premium',
     descripcion: 'Verde profundo, dorado y fotografía protagonista.',
     css: `
+  /* SIN márgenes negativos.
+     Ir a sangre exigía un margen negativo igual al relleno del cuerpo, que
+     cambia entre pantalla (24px) e impresión (12mm). Cualquier desajuste deja la
+     portada más ancha que la página, y un desbordamiento horizontal hace que el
+     navegador pagine también de lado: de ahí las decenas de páginas. Un bloque
+     normal no puede desbordar, y el color sigue llenando la mancha. */
   .cb { page-break-after: always; break-after: page; position: relative; overflow: hidden;
-        min-height: 232mm; margin: -28px -24px 0; padding: 64px 48px 48px;
+        min-height: 225mm; margin: 0; padding: 56px 44px 44px;
         display: flex; flex-direction: column; justify-content: center;
         background: linear-gradient(150deg, #0a3730 0%, #06231e 58%, #041713 100%); color: #f7f4ec;
         -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-  /* Mismo motivo que en Cartel: el margen negativo se ajusta al relleno de
-     impresión para que la portada no desborde a lo ancho. */
-  @media print { .cb { margin: -12mm -12mm 0; } }
   .cb-marca { font-size: 10px; letter-spacing: .34em; text-transform: uppercase; color: #c9a227; margin-bottom: 26px; }
   .cb-titulo { margin: 0; text-transform: uppercase; letter-spacing: -.015em; line-height: .92;
                /* Fluido: un título largo encoge en vez de desbordar. */
@@ -161,7 +161,7 @@ const clubhouse: PlantillaPortada = {
   .cb-titulo .l2 { display: block; color: #c9a227; }
   .cb-filete { width: 118px; height: 2px; background: #c9a227; margin: 30px 0; }
   .cb-sub { font-size: 15px; line-height: 1.7; color: #cfe3dd; max-width: 54ch; margin: 0; white-space: pre-wrap; }
-  .cb-datos { position: absolute; left: 56px; right: 56px; bottom: 56px; display: flex; }
+  .cb-datos { position: absolute; left: 44px; right: 44px; bottom: 44px; display: flex; }
   .cb-datos > div { padding: 0 26px; border-left: 1px solid rgba(201,162,39,.38); }
   .cb-datos > div:first-child { padding-left: 0; border-left: 0; }
   .cb-datos span { display: block; font-size: 9px; letter-spacing: .18em; text-transform: uppercase; color: #c9a227; margin-bottom: 5px; }
@@ -191,16 +191,15 @@ const clubhouse: PlantillaPortada = {
     cssFicha: `
   body { color: #123; }
 
-  /* La FOTO es el elemento principal: ocupa la columna izquierda entera y el
-     escandallo se compone a su derecha, bajo las especificaciones.
-     grid-row: 1 / span 2 es lo que deja que la imagen sea alta sin obligar a
-     que todas las recetas midan lo mismo: crece hasta donde llegue el contenido
-     de la derecha, y nunca se recorta. */
-  .ficha-top { grid-template-columns: 300px 1fr; gap: 30px; margin-bottom: 8px; }
-  .col-foto { grid-row: 1 / span 2; }
-  .col-escandallo { grid-column: 2; grid-row: 2; }
-  .col-foto img { width: 300px; height: auto; max-height: 420px; object-fit: contain;
-                  border-radius: 4px; box-shadow: 0 12px 34px rgba(4,23,19,.24); background: #06231e; }
+  /* Disposición HEREDADA de la base: foto e identidad arriba, escandallo a
+     ancho completo debajo.
+     Se probó a colocar la foto en una columna alta con el escandallo a su
+     derecha y el PDF salía con decenas de páginas. La disposición base ya estaba
+     probada; el tema aporta color y tipografía, no una geometría distinta.
+     Se puede reintentar cuando la paginación esté verificada. */
+  .col-foto img { width: 240px; height: auto; max-height: 300px; object-fit: contain;
+                  border-radius: 4px; box-shadow: 0 10px 28px rgba(4,23,19,.22); background: #06231e; }
+
   .col-info h1, .head h1 { font-size: 40px; line-height: 1.02; margin: 0 0 6px; color: #0a3730; text-transform: uppercase;
              letter-spacing: -.01em; word-break: break-word; }
   .cat { font-size: 10px; letter-spacing: .2em; text-transform: uppercase; color: #c9a227; margin-bottom: 18px; }
