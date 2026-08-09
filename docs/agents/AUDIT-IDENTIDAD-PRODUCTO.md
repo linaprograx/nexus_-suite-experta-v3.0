@@ -202,11 +202,26 @@ Pedido explícitamente. Hoy funciona así:
 En una frase: **manda el precio del catálogo; las compras son respaldo, y el
 respaldo es media ponderada.**
 
-**Decisión separada que esto destapa, y que no tomo:** cuando dos alias se
-fusionen, el maestro tendrá varias ofertas y varios precios. ¿Qué precio manda
-para el escandallo — el del proveedor preferente, el más barato, la media
-ponderada de compras? Hoy manda «la primera entrada de `supplierData`», que es
-un accidente de orden. **Requiere tu decisión antes de fusionar nada.**
+### Qué precio manda con varias ofertas — **DECIDIDO 2026-08-09**
+
+Decisión del fundador:
+
+1. Manda el **proveedor preferente**, aunque otro sea más barato. La preferencia
+   no es solo precio: es plazo, trato, fiabilidad y mínimo de pedido.
+2. Si otro es más barato, **se señala** — sin cambiar nada por su cuenta.
+3. Sin preferente configurado, manda el **más barato**, y se avisa de que
+   conviene configurar uno.
+
+Implementado como función pura en `src/core/identity/offerSelection.ts`.
+**Todavía no lo consume el motor de coste**, y es deliberado: mientras las
+ofertas sigan viviendo como documentos duplicados, ningún maestro tiene varias
+entradas en `supplierData`, así que no habría nada entre lo que elegir.
+Conectarlo hoy sería tocar la fuente única de coste a cambio de nada. Se conecta
+en la **Fase D**, cuando la reconciliación empiece a poblar `supplierData`.
+
+Sustituye a lo que hay hoy: `getAnyPackPrice` cae en
+`Object.values(supplierData)[0]` —la primera clave del objeto— y solo si ningún
+campo heredado (`precioCompra`, `costo`…) tiene valor.
 
 ## 10. Datos que necesitan reconciliación
 
@@ -257,15 +272,18 @@ la heurística los acerca y la decisión es humana.
 - **Cierre:** el fundador ha leído la lista y sabe cuántos duplicados reales
   hay.
 
-### Fase B — La identidad existe pero no hace nada
+### Fase B — La identidad existe pero no hace nada  ✅ **HECHA 2026-08-09**
 
-- **Objetivo:** `masterProductId?: string` en `Ingredient` + helper
-  `resolverMaestro()`, **sin ningún consumidor todavía**.
-- **Archivos:** `types.ts`, nuevo `src/core/identity/masterProduct.ts`.
-- **Datos:** ninguno.
-- **Riesgo:** nulo — nada lo usa.
-- **Pruebas:** con el campo ausente, `resolverMaestro(id) === id` para todo.
-- **Cierre:** TypeScript en 0 y comportamiento idéntico al actual.
+- `masterProductId?` y `proveedorPreferente?` en `Ingredient` (`types.ts`).
+- `src/core/identity/masterProduct.ts`: `resolverMaestro`, `indicePorId`,
+  `aliasDe`. Resuelve cadenas de alias, con guarda anti-ciclos: ante un ciclo
+  devuelve el punto de partida en vez de colgarse.
+- `src/core/identity/offerSelection.ts`: la política de precio decidida arriba.
+- **Ningún consumidor.** El motor de coste, el stock y Mercado están intactos.
+- **Verificado con 14 comprobaciones**, entre ellas la que cierra la fase: sin
+  ningún alias asignado, `resolverMaestro(id) === id` para todo el catálogo, así
+  que el comportamiento es idéntico al de antes. Más ciclos, alias huérfanos,
+  cadenas de dos saltos y los cinco casos de la política de precio.
 
 ### Fase C — Consolidar en lectura
 

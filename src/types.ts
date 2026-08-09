@@ -122,6 +122,21 @@ export interface Ingredient {
     wastePercentage?: number;
 
     proveedores?: string[]; // List of Provider IDs
+
+    /**
+     * Si está presente, este documento es un ALIAS de otro producto maestro y
+     * sus existencias se consolidan en él. Ausente = es su propio maestro.
+     * Se resuelve EN LECTURA (`core/identity/masterProduct.ts`): los históricos
+     * siguen apuntando aquí, así que quitar el campo deshace la fusión.
+     */
+    masterProductId?: string;
+
+    /**
+     * Proveedor preferente para este producto. La preferencia pertenece a la
+     * relación producto ↔ oferta, nunca a la configuración global del negocio:
+     * se compra el Campari a uno y el limón a otro.
+     */
+    proveedorPreferente?: string;
     supplierData?: Record<string, {
         price: number;
         unit: string;
