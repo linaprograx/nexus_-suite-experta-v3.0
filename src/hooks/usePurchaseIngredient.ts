@@ -66,7 +66,7 @@ export const usePurchaseIngredient = () => {
         await addDoc(collection(db, `users/${userId}/purchases`), purchaseData);
     }, [db, userId]);
 
-    const confirmPurchase = useCallback(async (data: { quantity: number; totalCost: number; unit: string }) => {
+    const confirmPurchase = useCallback(async (data: { quantity: number; totalCost: number; unit: string; unitPrice?: number }) => {
         if (!purchaseTarget || !userId || !db) return;
 
         try {
@@ -77,7 +77,10 @@ export const usePurchaseIngredient = () => {
                 providerName: purchaseTarget.proveedor || purchaseTarget.proveedores?.[0] || 'Proveedor Desconocido',
                 unit: data.unit,
                 quantity: data.quantity,
-                unitPrice: purchaseTarget.precioCompra || 0,
+                // El precio que se guarda es **el que se confirmó en el diálogo**,
+                // no el del catálogo. Eran lo mismo mientras el diálogo no dejaba
+                // tocarlo; ahora sí, y el histórico debe registrar lo que se pagó.
+                unitPrice: data.unitPrice ?? purchaseTarget.precioCompra ?? 0,
                 totalCost: data.totalCost,
                 status: 'completed'
             });
