@@ -449,6 +449,17 @@ export const IngredientListPanel: React.FC<IngredientListPanelProps> = ({
                               <Icon svg={ICONS.users} className="w-2.5 h-2.5" /> {group.entries.length} opc.
                             </span>
                           )}
+                          {/* Nacido del alta exprés de una receta: datos aproximados.
+                              Sin esta marca, un precio estimado se confundiría con
+                              catálogo real en la pantalla donde se decide comprar. */}
+                          {group.entries.some(e => (e as any).pendienteRevision) && (
+                            <span
+                              title="Creado desde una receta con datos aproximados. Complétalo cuando puedas."
+                              className="px-1.5 py-0.5 rounded-[4px] bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 text-[9px] font-bold tracking-tight uppercase inline-flex items-center gap-1 border border-amber-200 dark:border-amber-800/40"
+                            >
+                              <Icon svg={ICONS.alertCircle} className="w-2.5 h-2.5" /> POR REVISAR
+                            </span>
+                          )}
                         </div>
                       </div>
 

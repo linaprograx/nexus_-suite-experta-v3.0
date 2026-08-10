@@ -132,6 +132,13 @@ export interface Ingredient {
     masterProductId?: string;
 
     /**
+     * Creado desde el alta exprés de una receta: datos aproximados, pendiente de
+     * completar. Lo que impide que un precio estimado se confunda con catálogo
+     * real. Ver `QuickIngredientModal`.
+     */
+    pendienteRevision?: boolean;
+
+    /**
      * Proveedor preferente para este producto. La preferencia pertenece a la
      * relación producto ↔ oferta, nunca a la configuración global del negocio:
      * se compra el Campari a uno y el limón a otro.

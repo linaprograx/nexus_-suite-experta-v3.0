@@ -8,6 +8,12 @@ interface AutocompleteProps {
   selectedId: string | null;
   onSelect: (id: string | null) => void;
   placeholder?: string;
+  /**
+   * Alta exprés desde el propio desplegable. Cuando la búsqueda no encuentra
+   * nada, el callejón sin salida («Sin resultados») pasa a ser una salida:
+   * crear el ingrediente ahí mismo y seguir con la receta.
+   */
+  onCrearRapido?: (nombre: string) => void;
 }
 
 /**
@@ -31,6 +37,7 @@ export const Autocomplete: React.FC<AutocompleteProps> = ({
   selectedId,
   onSelect,
   placeholder = 'Buscar...',
+  onCrearRapido,
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filteredItems, setFilteredItems] = useState<Ingredient[]>([]);
@@ -216,12 +223,30 @@ export const Autocomplete: React.FC<AutocompleteProps> = ({
                 onMouseEnter={() => setActiveIndex(index)}
                 className={`px-4 py-3 cursor-pointer text-sm leading-snug break-words text-slate-700 dark:text-slate-200 border-b border-slate-100 dark:border-slate-700/60 last:border-0 ${activeIndex === index ? 'bg-teal-50 dark:bg-teal-900/30 text-teal-700 dark:text-teal-300' : ''}`}
               >
-                {item.nombre}
+                <span className="flex items-center gap-2">
+                  <span className="flex-1 min-w-0">{item.nombre}</span>
+                  {(item as any).pendienteRevision && (
+                    <span className="shrink-0 text-[9px] font-bold uppercase px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400">
+                      por revisar
+                    </span>
+                  )}
+                </span>
               </li>
             ))
           ) : (
             <li className="px-4 py-2.5 text-sm text-slate-400">
               {items.length === 0 ? 'Cargando inventario…' : 'Sin resultados en el inventario'}
+            </li>
+          )}
+          {/* La salida del callejón: si no está en el catálogo, se crea aquí y
+              la receta puede continuar. Solo con algo escrito — ofrecerlo con
+              el campo vacío invitaría a crear ingredientes sin nombre. */}
+          {onCrearRapido && searchTerm.trim().length >= 2 && (
+            <li
+              onClick={() => { onCrearRapido(searchTerm.trim()); setIsOpen(false); }}
+              className="px-4 py-3 cursor-pointer text-sm font-bold text-amber-700 dark:text-amber-400 bg-amber-50/80 dark:bg-amber-900/20 border-t border-amber-200 dark:border-amber-900/40 sticky bottom-0"
+            >
+              + Crear «{searchTerm.trim()}» rápido
             </li>
           )}
         </ul>,

@@ -18,6 +18,8 @@ import { useApp } from '../../context/AppContext';
 import { calculateRecipeCost, recipeTotalVolume } from '../../core/costing/costCalculator';
 import { usePurchaseIngredient } from '../../hooks/usePurchaseIngredient';
 import { logActivity } from '../../core/actions/action.audit';
+import { QuickIngredientModal } from './QuickIngredientModal';
+import { useSuppliers } from '../../features/suppliers/hooks/useSuppliers';
 
 // Coctelería spec presets (values already supported by the Recipe type)
 const TECHNIQUES = ['Shake', 'Stir', 'Build', 'Blend', 'Throw', 'Muddle'];
@@ -35,7 +37,19 @@ interface RecipeFormModalProps {
 }
 
 export const RecipeFormModal: React.FC<RecipeFormModalProps> = ({ isOpen, onClose, db, userId, initialData, allIngredients, allRecipes = [] }) => {
-    const { storage } = useApp();
+    const { storage, appId } = useApp();
+    const { suppliers } = useSuppliers({ db, userId });
+
+    /**
+     * Alta exprés desde el buscador de ingredientes.
+     *
+     * `destino` recuerda a qué línea hay que enganchar el ingrediente recién
+     * creado: sin eso, el usuario lo crea y tiene que volver a buscarlo, que es
+     * justo la fricción que esto viene a quitar.
+     */
+    const [altaExpres, setAltaExpres] = React.useState<
+        { nombre: string; destino: { tipo: 'linea'; index: number } | { tipo: 'sub'; index: number; k: number } } | null
+    >(null);
     const queryClient = useQueryClient();
     const { purchaseHistory } = usePurchaseIngredient();
     const [recipe, setRecipe] = React.useState<Partial<Recipe>>({});
@@ -721,6 +735,7 @@ export const RecipeFormModal: React.FC<RecipeFormModalProps> = ({ isOpen, onClos
                                                                         selectedId={si.ingredientId}
                                                                         onSelect={(id) => updateSubItem(index, k, 'ingredientId', id)}
                                                                         placeholder="Busca ingrediente…"
+                                                                        onCrearRapido={(nombre) => setAltaExpres({ nombre, destino: { tipo: 'sub', index, k } })}
                                                                     />
                                                                 </div>
                                                                 <div className="w-12">
@@ -776,6 +791,7 @@ export const RecipeFormModal: React.FC<RecipeFormModalProps> = ({ isOpen, onClos
                                                     selectedId={item.ingredientId}
                                                     onSelect={(id) => updateLineItem(index, 'ingredientId', id)}
                                                     placeholder="Busca ingrediente…"
+                                                    onCrearRapido={(nombre) => setAltaExpres({ nombre, destino: { tipo: 'linea', index } })}
                                                 />
                                             </div>
                                             <div className="w-14">
@@ -881,6 +897,26 @@ export const RecipeFormModal: React.FC<RecipeFormModalProps> = ({ isOpen, onClos
                     })()}
                 </div>
             </div>
+
+            {/* Alta exprés. Se monta ENCIMA del formulario, no en su lugar: la
+                receta a medio escribir sigue viva detrás y no se pierde nada. */}
+            {altaExpres && db && userId && appId && (
+                <QuickIngredientModal
+                    isOpen
+                    onClose={() => setAltaExpres(null)}
+                    db={db}
+                    userId={userId}
+                    appId={appId}
+                    nombreInicial={altaExpres.nombre}
+                    suppliers={suppliers as any}
+                    onCreado={(id) => {
+                        const d = altaExpres.destino;
+                        if (d.tipo === 'linea') updateLineItem(d.index, 'ingredientId', id);
+                        else updateSubItem(d.index, d.k, 'ingredientId', id);
+                        setAltaExpres(null);
+                    }}
+                />
+            )}
         </div>
     );
 };
