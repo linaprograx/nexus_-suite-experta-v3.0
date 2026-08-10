@@ -9,6 +9,8 @@ import { normalizeIngredientPacks } from '../../services/migrations/normalizeIng
 import {
     normalizeIngredientCategories,
     previewIngredientCategoryNormalization,
+    previewCategoryRollback,
+    rollbackIngredientCategories,
 } from '../../services/migrations/normalizeIngredientCategories';
 
 interface MarketSidebarProps {
@@ -29,6 +31,7 @@ export const MarketSidebar: React.FC<MarketSidebarProps> = ({
     const [normalizeMsg, setNormalizeMsg] = useState<string | null>(null);
     const [normalizingCategories, setNormalizingCategories] = useState(false);
     const [categoryNormalizeMsg, setCategoryNormalizeMsg] = useState<string | null>(null);
+    const [revertingCategories, setRevertingCategories] = useState(false);
 
     const categoryPreview = useMemo(
         () => previewIngredientCategoryNormalization(allIngredients),
@@ -77,6 +80,46 @@ export const MarketSidebar: React.FC<MarketSidebarProps> = ({
             setCategoryNormalizeMsg('✗ Error al depurar categorías (ver consola)');
         } finally {
             setNormalizingCategories(false);
+        }
+    };
+
+    /**
+     * Deshacer la depuración. Existe porque guardar `categoriaAntesDeNormalizar`
+     * no es lo mismo que poder revertir: sin este botón, revertir 724 fichas
+     * exigía escribir el código después del susto.
+     */
+    const rollbackPreview = useMemo(
+        () => previewCategoryRollback(allIngredients as any),
+        [allIngredients],
+    );
+
+    const handleRollbackCategories = async () => {
+        if (!db || !userId || !appId || revertingCategories || rollbackPreview.revertibles === 0) return;
+
+        const detalle = rollbackPreview.porCambio
+            .slice(0, 8)
+            .map(c => `  ${c.actual} → ${c.anterior} (${c.count})`)
+            .join('\n');
+        const mensaje = [
+            `Devolver ${rollbackPreview.revertibles} fichas a su categoría anterior.`,
+            detalle,
+            rollbackPreview.porCambio.length > 8 ? `  …y ${rollbackPreview.porCambio.length - 8} cambios más` : '',
+            '',
+            'Solo se tocan las fichas que conservan el respaldo. ¿Revertir?',
+        ].filter(Boolean).join('\n');
+        if (!window.confirm(mensaje)) return;
+
+        setRevertingCategories(true);
+        setCategoryNormalizeMsg(null);
+        try {
+            const r = await rollbackIngredientCategories(db, appId, userId);
+            await queryClient.invalidateQueries({ queryKey: ['ingredients'] });
+            setCategoryNormalizeMsg(`✓ ${r.revertidas} fichas revertidas a su categoría anterior`);
+        } catch (error) {
+            console.error('[CATEGORY_ROLLBACK] fallo', error);
+            setCategoryNormalizeMsg('✗ Error al revertir (ver consola)');
+        } finally {
+            setRevertingCategories(false);
         }
     };
 
@@ -408,6 +451,19 @@ export const MarketSidebar: React.FC<MarketSidebarProps> = ({
                                             : 'Categorías depuradas'}
                                 </span>
                             </button>
+                            {rollbackPreview.revertibles > 0 && (
+                                <button
+                                    onClick={handleRollbackCategories}
+                                    disabled={revertingCategories}
+                                    title="Devuelve cada ficha a la categoría que tenía antes de depurar"
+                                    className="flex items-center justify-center gap-2 p-2 rounded-xl bg-white/40 hover:bg-amber-50 dark:bg-slate-700/40 dark:hover:bg-slate-700 border border-amber-200/60 dark:border-amber-500/20 transition-all disabled:opacity-60 disabled:cursor-wait"
+                                >
+                                    <Icon svg={ICONS.refresh} className={`w-3 h-3 text-amber-600 dark:text-amber-400 ${revertingCategories ? 'animate-spin' : ''}`} />
+                                    <span className="text-[11px] font-bold text-amber-700 dark:text-amber-400">
+                                        {revertingCategories ? 'Revirtiendo…' : `Deshacer (${rollbackPreview.revertibles})`}
+                                    </span>
+                                </button>
+                            )}
                             {categoryNormalizeMsg && (
                                 <p className="text-[10px] text-center text-slate-500 dark:text-slate-400 mt-1">{categoryNormalizeMsg}</p>
                             )}

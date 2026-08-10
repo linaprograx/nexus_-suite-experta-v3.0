@@ -346,28 +346,22 @@ export const detectarCandidatos = (e: Entrada): GrupoCandidato[] => {
         const fichas = miembros.map(m => construirFicha(m.ing, e));
         const { riesgo, motivo } = evaluarRiesgo(fichas, miembros[0].tokens);
 
-        // Para productos realmente iguales, el catálogo más barato es el
-        // maestro propuesto. La preferencia por proveedor se aplica después,
-        // al elegir una oferta del maestro: puede prevalecer por disponibilidad
-        // u otra decisión humana, pero no convierte el orden de las fichas en
-        // una política de precio. Sin precio comparable (o en empate), gana la
-        // ficha con más historia para minimizar las referencias a reconciliar.
-        const precioComparable = (f: FichaCandidata) =>
-            f.standardPrice && f.standardPrice > 0
-                ? f.standardPrice
-                : f.precioCompra && f.precioCompra > 0
-                    ? f.precioCompra
-                    : Number.POSITIVE_INFINITY;
-        const maestro = [...fichas].sort((a, b) => {
-            const precioA = precioComparable(a);
-            const precioB = precioComparable(b);
-            if (precioA !== precioB) {
-                // Infinity marca «sin precio»: cualquier precio real gana a
-                // ese caso, pero dos fichas sin precio siguen el desempate.
-                if (Number.isFinite(precioA) || Number.isFinite(precioB)) return precioA - precioB;
-            }
-            return (b.compras + b.recetas.length * 3) - (a.compras + a.recetas.length * 3);
-        })[0].id;
+        /**
+         * Maestro propuesto = **la ficha con más historia** (compras, y recetas
+         * con triple peso). Absorber hacia la que menos referencias tiene
+         * multiplicaría el trabajo de reconciliación.
+         *
+         * Deliberadamente **NO se elige por precio**. El maestro es una
+         * identidad, no una oferta: tras la fusión tendrá las dos ofertas en
+         * `supplierData`, y qué precio manda lo decide `offerSelection.ts`
+         * —proveedor preferente, y si no, el más barato—. Elegir el maestro
+         * por precio no cambia el precio resultante y sí empeora lo único que
+         * esta decisión gobierna de verdad: cuántos documentos quedan
+         * apuntando al alias.
+         */
+        const maestro = [...fichas].sort((a, b) =>
+            (b.compras + b.recetas.length * 3) - (a.compras + a.recetas.length * 3)
+        )[0].id;
 
         grupos.push({
             clave,
