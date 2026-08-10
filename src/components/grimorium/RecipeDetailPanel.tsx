@@ -13,6 +13,7 @@ import { printRecipeCard } from './printRecipeCard';
 import { useActiveMenu } from '../../hooks/useActiveMenu';
 import { formatCost, getMarginBgColor } from '../../core/costing/costFormatter';
 import { calculateRecipeProfitability } from '../../core/costing/profitabilityEngine';
+import { ingredientesSinVerificar } from '../../core/costing/costeEstimado';
 import { ETIQUETA_NIVEL } from '../../core/costing/businessCostSettings';
 import { useBusinessCostSettings } from '../../hooks/useBusinessCostSettings';
 
@@ -65,6 +66,9 @@ export const RecipeDetailPanel: React.FC<{
     );
   }
 
+  // De qué está hecho el número: si alguna línea depende de un ingrediente
+  // creado al vuelo, el coste es una estimación y hay que decirlo.
+  const sinVerificar = ingredientesSinVerificar(recipe, allIngredients, allRecipes);
   const margin = p.grossMarginPercentage;
   const nivel = ETIQUETA_NIVEL[p.nivel];
   const margenObjetivo = 100 - ajustes.targetBeverageCostPercentage;
@@ -162,9 +166,23 @@ export const RecipeDetailPanel: React.FC<{
           {/* Cost & Pricing Section */}
           <div>
             <h3 className="font-semibold text-slate-900 dark:text-white mb-3">Análisis de Costos y Precios</h3>
+            {sinVerificar.length > 0 && (
+              <p className="text-[11px] text-amber-700 dark:text-amber-400 bg-amber-50/70 dark:bg-amber-900/15 border border-amber-200 dark:border-amber-900/40 rounded-xl px-3 py-2 mb-3 leading-relaxed">
+                <strong>Coste estimado.</strong> Depende de {sinVerificar.length} ingrediente(s) creados
+                al vuelo y sin verificar: {sinVerificar.join(' · ')}. El margen y el precio sugerido
+                heredan esa estimación.
+              </p>
+            )}
             <div className="grid grid-cols-2 gap-3">
               <div className="bg-white/40 dark:bg-slate-800/40 rounded-xl p-3 border border-slate-100 dark:border-slate-800">
-                <p className="text-xs text-slate-500">Costo Total</p>
+                <p className="text-xs text-slate-500 flex items-center gap-1.5">
+                  Costo Total
+                  {sinVerificar.length > 0 && (
+                    <span className="text-[9px] font-black uppercase px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400">
+                      estimado
+                    </span>
+                  )}
+                </p>
                 <p className="text-xl font-bold">{formatCost(p.realServedCost)}</p>
                 {(recipe.porciones || 1) > 1 && (
                   <p className="text-[11px] text-slate-400 mt-0.5">{formatCost(p.realServedCost / (recipe.porciones || 1))} · {recipe.porciones} porciones</p>

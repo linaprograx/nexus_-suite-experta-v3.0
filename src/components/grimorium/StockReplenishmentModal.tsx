@@ -188,6 +188,13 @@ export const StockReplenishmentModal: React.FC<StockReplenishmentModalProps> = (
                                             </div>
                                             <div className="col-span-6 cursor-pointer" onClick={() => toggleSelection(ing.id)}>
                                                 <span className={`font-semibold ${isSelected ? 'text-indigo-700' : 'text-slate-700'}`}>{ing.nombre}</span>
+                                                {/* Se puede pedir, faltaría más — pero su importe es una
+                                                    estimación, y en una hoja de pedido eso hay que verlo. */}
+                                                {(ing as any).pendienteRevision && (
+                                                    <span className="ml-1.5 text-[9px] font-black uppercase px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400">
+                                                        precio estimado
+                                                    </span>
+                                                )}
                                             </div>
                                             <div className="col-span-3 flex justify-center items-center gap-1">
                                                 {isSelected && (

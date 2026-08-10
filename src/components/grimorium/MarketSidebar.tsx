@@ -229,6 +229,12 @@ export const MarketSidebar: React.FC<MarketSidebarProps> = ({
                 return;
             }
 
+            // Un ingrediente creado al vuelo NO compite por el mejor precio: su
+            // importe es una estimación tecleada para cerrar una receta, no una
+            // oferta. Dejarlo entrar aquí sería recomendar una compra por un
+            // número inventado, que es el peor sitio donde puede acabar.
+            if ((ing as any).pendienteRevision) return;
+
             // Lower threshold and use enhanced matching
             if (getMatchScore(ing.nombre) > 0) {
                 const providerName = ing.proveedores?.[0] || ing.proveedor || "Desconocido";

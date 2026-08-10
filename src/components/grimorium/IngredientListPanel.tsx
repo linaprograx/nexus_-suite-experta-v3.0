@@ -87,9 +87,26 @@ export const IngredientListPanel: React.FC<IngredientListPanelProps> = ({
   const [selectedProveedorId, setSelectedProveedorId] = React.useState<string>('all');
   const proveedorSeleccionado = proveedores.find(proveedor => proveedor.id === selectedProveedorId);
 
+  /**
+   * Filtro «Por revisar»: los ingredientes creados al vuelo desde una receta.
+   *
+   * Sin una forma de listarlos, la marca `pendienteRevision` solo servía para
+   * tropezarse con ellos de uno en uno. Esta es la lista de tareas de quien
+   * quiera dejar el catálogo limpio.
+   */
+  const [soloPorRevisar, setSoloPorRevisar] = React.useState(false);
+  const totalPorRevisar = React.useMemo(
+    () => ingredients.filter(i => (i as any).pendienteRevision).length,
+    [ingredients],
+  );
+
   // Combined Filter Logic
   const filteredIngredients = React.useMemo(() => {
     let result = ingredients;
+
+    if (soloPorRevisar) {
+      result = result.filter(ing => (ing as any).pendienteRevision);
+    }
 
     // A. Provider Filter (Simple Link Check)
     if (selectedProveedorId !== 'all') {
@@ -113,7 +130,7 @@ export const IngredientListPanel: React.FC<IngredientListPanelProps> = ({
     }
 
     return result;
-  }, [ingredients, selectedProveedorId, ingredientFilters.category, ingredientSearchTerm]);
+  }, [ingredients, selectedProveedorId, ingredientFilters.category, ingredientSearchTerm, soloPorRevisar]);
 
   // Phase 2.1.B+ - Aggregation Logic
   const aggregatedProducts = React.useMemo(() => {
@@ -276,6 +293,21 @@ export const IngredientListPanel: React.FC<IngredientListPanelProps> = ({
                 <Icon svg={ICONS.chevronDown} className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
               </button>
             </div>
+
+            {/* Solo aparece si hay algo que revisar: un filtro que siempre da
+                cero es un botón que estorba. */}
+            {totalPorRevisar > 0 && (
+              <button
+                onClick={() => setSoloPorRevisar(v => !v)}
+                title="Ingredientes creados desde una receta, con datos aproximados"
+                className={`h-10 shrink-0 px-3 rounded-xl border text-xs font-bold transition-colors flex items-center gap-1.5 ${soloPorRevisar
+                  ? 'bg-amber-500 border-amber-500 text-white'
+                  : 'bg-white/50 dark:bg-slate-800/50 border-amber-200 dark:border-amber-500/30 text-amber-700 dark:text-amber-400'}`}
+              >
+                <Icon svg={ICONS.alertCircle} className="w-3.5 h-3.5" />
+                {totalPorRevisar}
+              </button>
+            )}
 
             <div className="basis-0 flex-1 min-w-0">
               <button
@@ -467,6 +499,11 @@ export const IngredientListPanel: React.FC<IngredientListPanelProps> = ({
                       {(() => {
                         const supplierMap: Record<string, any> = {};
                         group.entries.forEach((entry, idx) => {
+                          // Los ingredientes creados al vuelo quedan fuera del motor de
+                          // señales: su precio es una estimación, y alimentar con él una
+                          // alerta de «ahorro» o de «subida de precio» produciría avisos
+                          // basados en un número que nadie ha comprobado.
+                          if ((entry as any).pendienteRevision) return;
                           supplierMap[entry.id || `iso_${idx}`] = {
                             price: entry.precioCompra || 0,
                             formatQty: (entry as any).cantidad || 1,
