@@ -2,6 +2,10 @@ import React from 'react';
 import { Icon } from '../../components/ui/Icon';
 import { ICONS } from '../../components/ui/icons';
 import { useIngredients } from '../../hooks/useIngredients';
+import { useApp } from '../../context/AppContext';
+import { useQueryClient } from '@tanstack/react-query';
+import { Ingredient } from '../../types';
+import { planificarFusion, ejecutarFusion, deshacerFusion } from './mergeMaster';
 import { useRecipes } from '../../hooks/useRecipes';
 import { usePurchaseIngredient } from '../../hooks/usePurchaseIngredient';
 import { useStockMovements } from '../../hooks/useStockMovements';
@@ -10,11 +14,17 @@ import { buildCurrentStock } from '../../utils/stockUtils';
 import { detectarCandidatos, GrupoCandidato, RiesgoFusion, FichaCandidata } from './duplicateCandidates';
 
 /**
- * Informe en seco de productos duplicados. **Fase A: no escribe nada.**
+ * Informe de productos duplicados, y punto de entrada de la fusión.
  *
- * No hay ningún botón de fusionar aquí, y es deliberado. Este panel solo
- * responde a «¿cuántos duplicados reales tengo y qué cuelga de cada uno?».
- * La fusión es la Fase D, va de una en una y con aprobación.
+ * Nació como informe en seco (Fase A) y sigue siéndolo mientras no toques
+ * nada: abrirlo no escribe. La fusión (Fase D) es una acción explícita **por
+ * grupo**, nunca en lote, y siempre detrás de una confirmación que enumera lo
+ * que se va a escribir: qué maestro, qué alias y qué ofertas se trasladan.
+ *
+ * Lo que la fusión hace y lo que NO hace:
+ *   - traslada la oferta del alias a `supplierData` del maestro;
+ *   - marca el alias con `masterProductId`;
+ *   - **no borra nada**, y se deshace con el botón de al lado.
  */
 
 const ESTILO_RIESGO: Record<RiesgoFusion, { cls: string; texto: string }> = {
@@ -103,9 +113,76 @@ const Ficha: React.FC<{ f: FichaCandidata; esMaestro: boolean }> = ({ f, esMaest
     </div>
 );
 
-const Grupo: React.FC<{ g: GrupoCandidato }> = ({ g }) => {
+const Grupo: React.FC<{
+    g: GrupoCandidato;
+    porId: Map<string, Ingredient>;
+    onFusionado: () => void;
+}> = ({ g, porId, onFusionado }) => {
     const [abierto, setAbierto] = React.useState(false);
+    const [trabajando, setTrabajando] = React.useState(false);
+    const [resultado, setResultado] = React.useState<string | null>(null);
+    const { db, appId, userId } = useApp();
     const estilo = ESTILO_RIESGO[g.riesgo];
+
+    const maestro = g.maestroPropuesto ? porId.get(g.maestroPropuesto) : undefined;
+    const alias = g.fichas.filter(f => f.id !== g.maestroPropuesto)
+        .map(f => porId.get(f.id)).filter(Boolean) as Ingredient[];
+    // Si los alias ya apuntan al maestro, el grupo está fusionado: se ofrece
+    // deshacer en vez de volver a fusionar.
+    const yaFusionado = alias.length > 0 && alias.every(a => a.masterProductId === g.maestroPropuesto);
+
+    const plan = React.useMemo(
+        () => (maestro && alias.length > 0 && !yaFusionado ? planificarFusion(maestro, alias) : null),
+        [maestro, alias, yaFusionado],
+    );
+
+    const fusionar = async () => {
+        if (!plan || !db || !appId || !userId || trabajando) return;
+        const detalle = [
+            `MAESTRO:  ${plan.maestroNombre}`,
+            `ALIAS:    ${plan.alias.map(a => a.nombre).join(', ')}`,
+            '',
+            plan.ofertas.length
+                ? `Se trasladan ${plan.ofertas.length} oferta(s) al maestro:\n`
+                  + plan.ofertas.map(o => `  · ${o.claveProveedor} → ${o.precio.toFixed(2)} € / ${o.unidad}`).join('\n')
+                : 'No hay ofertas que trasladar.',
+            '',
+            ...plan.advertencias.map(a => `AVISO: ${a}`),
+            '',
+            'El alias NO se borra: solo se marca. Se puede deshacer.',
+            '¿Fusionar?',
+        ].filter(Boolean).join('\n');
+        if (!window.confirm(detalle)) return;
+
+        setTrabajando(true);
+        setResultado(null);
+        try {
+            const r = await ejecutarFusion(db, appId, userId, plan);
+            setResultado(`✓ ${r.aliasMarcados} ficha(s) fusionada(s) · ${r.ofertasTrasladadas} oferta(s) trasladada(s)`);
+            onFusionado();
+        } catch (e) {
+            console.error('[FUSION] fallo', e);
+            setResultado('✗ Error al fusionar (ver consola)');
+        } finally {
+            setTrabajando(false);
+        }
+    };
+
+    const deshacer = async () => {
+        if (!db || !appId || !userId || trabajando) return;
+        if (!window.confirm(`Deshacer la fusión de ${alias.length} ficha(s). Volverán a aparecer por separado en Inventario. ¿Continuar?`)) return;
+        setTrabajando(true);
+        try {
+            const n = await deshacerFusion(db, appId, userId, alias.map(a => a.id));
+            setResultado(`✓ ${n} ficha(s) devuelta(s) a su identidad anterior`);
+            onFusionado();
+        } catch (e) {
+            console.error('[FUSION] fallo al deshacer', e);
+            setResultado('✗ Error al deshacer (ver consola)');
+        } finally {
+            setTrabajando(false);
+        }
+    };
 
     return (
         <div className="rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden">
@@ -170,6 +247,32 @@ const Grupo: React.FC<{ g: GrupoCandidato }> = ({ g }) => {
                             <p className="text-[11px] text-rose-600 dark:text-rose-400">{g.simulacion.motivo}</p>
                         )}
                     </div>
+
+                    {/* Acción. Un grupo por operación, y siempre con confirmación
+                        que enumera lo que se va a escribir. */}
+                    <div className="flex items-center gap-2">
+                        {yaFusionado ? (
+                            <button
+                                onClick={deshacer}
+                                disabled={trabajando}
+                                className="flex-1 h-9 rounded-xl border border-amber-300 dark:border-amber-500/30 bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 text-[11px] font-bold disabled:opacity-60"
+                            >
+                                {trabajando ? 'Deshaciendo…' : 'Deshacer fusión'}
+                            </button>
+                        ) : (
+                            <button
+                                onClick={fusionar}
+                                disabled={trabajando || !plan}
+                                title={plan ? 'Traslada las ofertas al maestro y marca los alias' : 'No hay maestro o alias resolubles'}
+                                className="flex-1 h-9 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-bold disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                            >
+                                {trabajando ? 'Fusionando…' : `Fusionar en «${g.fichas.find(f => f.id === g.maestroPropuesto)?.nombre ?? 'maestro'}»`}
+                            </button>
+                        )}
+                    </div>
+                    {resultado && (
+                        <p className="text-[11px] text-center text-slate-600 dark:text-slate-300">{resultado}</p>
+                    )}
                 </div>
             )}
         </div>
@@ -178,6 +281,16 @@ const Grupo: React.FC<{ g: GrupoCandidato }> = ({ g }) => {
 
 export const IdentityReportModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     const { ingredients: allIngredients } = useIngredients();
+    const queryClient = useQueryClient();
+    // Índice por id para que cada grupo pueda construir su plan de fusión con
+    // los documentos reales, no con la ficha resumida del informe.
+    const porId = React.useMemo(
+        () => new Map((allIngredients || []).filter(i => i?.id).map(i => [i.id, i])),
+        [allIngredients],
+    );
+    const refrescar = React.useCallback(() => {
+        queryClient.invalidateQueries({ queryKey: ['ingredients'] });
+    }, [queryClient]);
     const { recipes: allRecipes } = useRecipes();
     const { purchaseHistory } = usePurchaseIngredient();
     const { movements } = useStockMovements();
@@ -287,7 +400,7 @@ export const IdentityReportModal: React.FC<{ onClose: () => void }> = ({ onClose
                                 ser productos diferentes: no se fusionan por parecido.
                             </p>
                             {gruposVisibles.length > 0 ? (
-                                gruposVisibles.map(g => <Grupo key={g.clave + g.fichas[0].id} g={g} />)
+                                gruposVisibles.map(g => <Grupo key={g.clave + g.fichas[0].id} g={g} porId={porId} onFusionado={refrescar} />)
                             ) : (
                                 <p className="py-10 text-center text-sm text-slate-500 dark:text-slate-400">
                                     No hay grupos que coincidan con esa búsqueda.
