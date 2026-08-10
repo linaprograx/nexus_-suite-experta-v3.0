@@ -32,6 +32,9 @@ ya consumen navegador, iOS y PWA (`favicon-32.png`, `apple-touch-icon.png`,
 para que acceso y barra lateral muestren exactamente el mismo activo. TypeScript
 y build han pasado. Producción verificada por lectura del bundle servido
 (`nexus-logo.png`) y por los endpoints del manifiesto, icono PWA e icono Apple.
+Más tarde se reemplazó el activo fuente por la variante entregada con el símbolo
+más grande, manteniendo exactamente los mismos nombres y tamaños de salida para
+no invalidar el navegador, iOS ni instalaciones PWA ya existentes.
 
 ## 2026-08-09 · Claude Code · Cierre del exportador de Recetas
 
