@@ -41,7 +41,8 @@ conservaba blanco en la interfaz y rompía los fondos oscuros. Se generó una
 fuente con alfa real desde el nuevo espiral y se retiró el `rounded-full` /
 `object-cover` de `NexusOrb`, para no recortar las puntas del símbolo. El activo
 activo de barra lateral pasa a usar cian, azul, violeta, magenta y ámbar. Falta
-desplegar y verificar la versión transparente.
+desplegar y verificar la versión transparente. **Cerrado:** producción sirve un
+PNG con canal alfa y el bundle contiene la paleta multicolor de la barra lateral.
 
 ## 2026-08-09 · Claude Code · Cierre del exportador de Recetas
 
