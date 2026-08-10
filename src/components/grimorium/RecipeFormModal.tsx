@@ -67,7 +67,7 @@ export const RecipeFormModal: React.FC<RecipeFormModalProps> = ({ isOpen, onClos
      * de primavera a la vez.
      */
     const { cartas } = useCartas();
-    const { menuCompleto, addToMenu, removeFromMenu } = useActiveMenu();
+    const { menuCompleto, addToMenu, removeFromMenu, loading: cargandoMenu } = useActiveMenu();
     const [cartasElegidas, setCartasElegidas] = React.useState<string[]>([]);
 
     // Escape cierra. En escritorio se rellena un formulario largo con el teclado
@@ -91,12 +91,33 @@ export const RecipeFormModal: React.FC<RecipeFormModalProps> = ({ isOpen, onClos
     React.useEffect(() => {
         setRecipe(initialData || {});
         setLineItems((initialData?.ingredientes || []) as IngredientLineItem[]);
-        // Al editar, se marcan las cartas en las que ya está.
-        const id = initialData?.id;
-        setCartasElegidas(id
-            ? (menuCompleto || []).filter(m => m.recipeId === id && m.cartaId).map(m => m.cartaId as string)
-            : []);
+        cartasInicializadas.current = false;   // cada apertura vuelve a marcar
     }, [initialData]);
+
+    /**
+     * Marcar las cartas en las que la receta YA está.
+     *
+     * Esto vivía en el efecto de arriba, que solo depende de `initialData`. El
+     * problema: `menuCompleto` llega por snapshot y **casi siempre está vacío en
+     * el primer render**, así que se marcaba «ninguna carta» y el efecto no
+     * volvía a correr nunca. Al guardar, la sincronización en dos sentidos leía
+     * esa lista vacía y **sacaba la receta de todas sus cartas**. Silenciosa, y
+     * en cada edición.
+     *
+     * Ahora se espera a que el menú haya cargado, y se marca **una sola vez por
+     * apertura** para no pisar lo que el usuario acabe de tocar.
+     */
+    const cartasInicializadas = React.useRef(false);
+    React.useEffect(() => {
+        if (!isOpen || cartasInicializadas.current) return;
+        const id = initialData?.id;
+        if (!id) { setCartasElegidas([]); cartasInicializadas.current = true; return; }
+        if (cargandoMenu) return;   // sin datos todavía: no decidir nada
+        setCartasElegidas(
+            (menuCompleto || []).filter(m => m.recipeId === id && m.cartaId).map(m => m.cartaId as string),
+        );
+        cartasInicializadas.current = true;
+    }, [isOpen, initialData, menuCompleto, cargandoMenu]);
 
     const handleRecipeChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         setRecipe(prev => ({ ...prev, [e.target.name]: e.target.value }));
@@ -310,9 +331,15 @@ export const RecipeFormModal: React.FC<RecipeFormModalProps> = ({ isOpen, onClos
                         cartaId,
                     } as any);
                 }
-                for (const entrada of yaEn) {
-                    if (entrada.cartaId && !cartasElegidas.includes(entrada.cartaId)) {
-                        await removeFromMenu(entrada.id);
+                // Quitar de cartas SOLO si sabemos de cuáles partíamos. Sin el
+                // menú cargado o sin haber marcado las iniciales, «no está en la
+                // lista» no significa «el usuario la ha desmarcado»: significa
+                // que no lo sabemos. Y ante la duda no se borra una pertenencia.
+                if (!cargandoMenu && cartasInicializadas.current) {
+                    for (const entrada of yaEn) {
+                        if (entrada.cartaId && !cartasElegidas.includes(entrada.cartaId)) {
+                            await removeFromMenu(entrada.id);
+                        }
                     }
                 }
             }
