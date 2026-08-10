@@ -66,7 +66,7 @@ export const RecipeFormModal: React.FC<RecipeFormModalProps> = ({ isOpen, onClos
      * donde ya vivía: una misma receta puede estar en la carta de verano y en la
      * de primavera a la vez.
      */
-    const { cartas } = useCartas();
+    const { cartas, cartaActiva } = useCartas();
     const { menuCompleto, addToMenu, removeFromMenu, loading: cargandoMenu } = useActiveMenu();
     const [cartasElegidas, setCartasElegidas] = React.useState<string[]>([]);
 
@@ -467,7 +467,10 @@ export const RecipeFormModal: React.FC<RecipeFormModalProps> = ({ isOpen, onClos
                                     >
                                         <option value="Idea">Idea</option>
                                         <option value="En pruebas">En pruebas</option>
-                                        <option value="Terminado">En carta</option>
+                                        {/* Se llamaba «En carta» y no metía en ninguna carta: eso lo hace el
+                                            selector de abajo. Dos controles contiguos prometiendo lo
+                                            mismo, y solo uno cumpliendo. */}
+                                        <option value="Terminado">Terminada</option>
                                         <option value="Archivada">Archivada</option>
                                     </Select>
                                 </div>
@@ -501,6 +504,13 @@ export const RecipeFormModal: React.FC<RecipeFormModalProps> = ({ isOpen, onClos
                                     <label className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                                         Añadir a carta
                                     </label>
+                                    {/* Grimorio muestra la carta ACTIVA. Añadir a una archivada
+                                        funciona, pero no se ve por ningún lado, y eso se lee como
+                                        que el guardado no ha hecho nada. */}
+                                    <p className="text-[10px] text-slate-400 leading-snug">
+                                        Grimorio muestra la carta <strong>activa</strong>. Si la añades solo a una
+                                        archivada, no aparecerá en la vista de carta.
+                                    </p>
                                     <div className="flex flex-wrap gap-1.5">
                                         {cartas.map(c => {
                                             const elegida = cartasElegidas.includes(c.id);
@@ -515,7 +525,17 @@ export const RecipeFormModal: React.FC<RecipeFormModalProps> = ({ isOpen, onClos
                                                         ? 'bg-teal-600 text-white'
                                                         : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300'}`}
                                                 >
-                                                    {c.nombre}{c.estado === 'archivada' ? ' · archivada' : ''}
+                                                    {c.nombre}
+                                                    {c.estado === 'archivada' && (
+                                                        <span className={`ml-1.5 text-[9px] font-black uppercase ${elegida ? 'text-white/70' : 'text-amber-600 dark:text-amber-400'}`}>
+                                                            archivada
+                                                        </span>
+                                                    )}
+                                                    {c.id === cartaActiva?.id && (
+                                                        <span className={`ml-1.5 text-[9px] font-black uppercase ${elegida ? 'text-white/80' : 'text-emerald-600 dark:text-emerald-400'}`}>
+                                                            activa
+                                                        </span>
+                                                    )}
                                                 </button>
                                             );
                                         })}

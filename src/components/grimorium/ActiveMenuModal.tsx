@@ -112,6 +112,31 @@ export const ActiveMenuModal: React.FC<{
     const order: Record<string, number> = { critical: 0, review: 1, missing: 2, ok: 3 };
     const sorted = [...drifts].sort((a, b) => order[a.severity] - order[b.severity]);
 
+    /**
+     * La carta se lee por bloques: primero lo que lleva alcohol y después lo que
+     * no. Es como se sirve y como se imprime, así que es como debe verse aquí.
+     *
+     * El tipo ya se elige al crear la receta («Cóctel», «Mocktail»,
+     * «Preparacion», «Garnish»), así que no hay que clasificar nada a mano ni
+     * inventar un campo nuevo: se agrupa por lo que ya está guardado.
+     */
+    const BLOQUES: Array<{ clave: string; titulo: string; tipos: string[] }> = [
+        { clave: 'alcohol', titulo: 'Con alcohol', tipos: ['Coctel', 'Cóctel'] },
+        { clave: 'sin', titulo: 'Sin alcohol', tipos: ['Mocktail', 'Moctel'] },
+        { clave: 'otros', titulo: 'Otros', tipos: [] },
+    ];
+
+    const grupos = React.useMemo(() => {
+        const tipoDe = (d: MenuDrift) => {
+            const cats = d.recipe?.categorias || [];
+            for (const b of BLOQUES) if (b.tipos.some(t => cats.includes(t))) return b.clave;
+            return 'otros';
+        };
+        return BLOQUES
+            .map(b => ({ ...b, items: sorted.filter(d => tipoDe(d) === b.clave) }))
+            .filter(b => b.items.length > 0);
+    }, [sorted]);
+
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
             <div className="absolute inset-0 bg-slate-900/50 backdrop-blur-md" onClick={onClose} />
@@ -245,8 +270,20 @@ export const ActiveMenuModal: React.FC<{
                             <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">Añade recetas desde su ficha con “Añadir a carta”.</p>
                         </div>
                     ) : (
+                        <div className="space-y-4">
+                          {grupos.map(bloque => (
+                            <div key={bloque.clave}>
+                              {/* La cabecera solo aparece si hay más de un bloque:
+                                  con una sola familia, titularla es ruido. */}
+                              {grupos.length > 1 && (
+                                <div className="flex items-center gap-2 mb-2 px-1">
+                                  <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400">{bloque.titulo}</h4>
+                                  <span className="text-[10px] font-bold text-slate-400 tabular-nums">{bloque.items.length}</span>
+                                  <div className="flex-1 h-px bg-slate-200 dark:bg-slate-700/60" />
+                                </div>
+                              )}
                         <ul className="space-y-2">
-                            {sorted.map((d: MenuDrift) => {
+                            {bloque.items.map((d: MenuDrift) => {
                                 const s = SEV[d.severity];
                                 return (
                                     <li key={d.entry.id} className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800">
@@ -291,6 +328,9 @@ export const ActiveMenuModal: React.FC<{
                                 );
                             })}
                         </ul>
+                            </div>
+                          ))}
+                        </div>
                     )}
                 </div>
             </div>
