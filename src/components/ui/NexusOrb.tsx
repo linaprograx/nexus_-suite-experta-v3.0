@@ -28,7 +28,7 @@ export const NexusOrb: React.FC<NexusOrbProps> = ({ size = 40, className = '', g
                 src="/nexus-logo.png"
                 alt="Nexus"
                 draggable={false}
-                className="relative z-10 h-full w-full rounded-full object-cover ring-1 ring-white/20"
+                className="relative z-10 h-full w-full object-contain drop-shadow-[0_0_10px_rgba(34,211,238,0.38)]"
             />
         </div>
     );

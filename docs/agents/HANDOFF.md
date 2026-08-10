@@ -56,7 +56,7 @@ grep -c -F 'MARCADOR_ASCII' /tmp/prod.js
 | Identidad D | Pendiente: fundador eligió el grupo 3 (dos fichas de mezcal Aguerrido). No se ha escrito todavía. |
 | Mercado móvil | Hecho y desplegado: buscador, filtros y menús responsivos. Pendiente confirmar visualmente el ancho del menú de proveedores en todos los breakpoints. |
 | Depuración de categorías | Herramienta reversible desplegada en `2c17986`; previsualiza 724 fichas. Solo cambia `categoria` y guarda `categoriaAntesDeNormalizar`. Grupos ambiguos excluidos. La confirmación nativa quedó pendiente de aceptación del fundador. |
-| Identidad visual | Hecho y verificado en producción. El 2026-08-10 se sustituyó por la variante de encuadre mayor; `public/nexus-logo.png` alimenta login, barra lateral, favicon, Apple touch icon e iconos PWA. |
+| Identidad visual | En curso: se está sustituyendo por un PNG con alfa real, derivado del logotipo multicolor entregado. `NexusOrb` no debe volver a recortarlo ni añadir un fondo. La navegación activa usa el degradado cian → azul → violeta → magenta → ámbar del logotipo. |
 
 ## Categorías: alcance aprobado
 

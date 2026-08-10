@@ -25,9 +25,11 @@ const NavLink: React.FC<NavLinkProps> = ({ view, label, icon, currentPath, onNav
   // Tech Futurista Styles (Ultra Premium)
   const baseClasses = "group flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium transition-all duration-300 relative overflow-hidden";
 
-  const activeClasses =
-    "text-white bg-gradient-to-br from-amber-400 via-orange-500 to-rose-500 shadow-lg shadow-orange-500/30 " +
-    "border border-white/20 dark:border-white/30";
+  const activeClasses = "text-white border border-white/35";
+  const activeStyle = isActive ? {
+    background: 'linear-gradient(135deg, #10d7e8 0%, #087cff 29%, #7440eb 54%, #e918a1 77%, #ffb300 100%)',
+    boxShadow: '0 10px 22px rgba(8, 124, 255, 0.20), 0 5px 14px rgba(233, 24, 161, 0.18)',
+  } : undefined;
 
   const inactiveClasses =
     "text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 " +
@@ -37,6 +39,7 @@ const NavLink: React.FC<NavLinkProps> = ({ view, label, icon, currentPath, onNav
     <button
       onClick={() => onNavigate(path)}
       className={`${baseClasses} ${isActive ? activeClasses : inactiveClasses} ${isCollapsed ? 'justify-center' : ''}`}
+      style={activeStyle}
     >
       <Icon svg={icon} className={`h-5 w-5 flex-shrink-0 ${isActive ? 'text-slate-900 dark:text-white' : 'text-slate-500 dark:text-slate-500 group-hover:text-slate-900 dark:group-hover:text-slate-200'}`} />
       {!isCollapsed && <span className="truncate">{label}</span>}

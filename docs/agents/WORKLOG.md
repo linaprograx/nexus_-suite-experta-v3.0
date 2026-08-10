@@ -36,6 +36,13 @@ Más tarde se reemplazó el activo fuente por la variante entregada con el símb
 más grande, manteniendo exactamente los mismos nombres y tamaños de salida para
 no invalidar el navegador, iOS ni instalaciones PWA ya existentes.
 
+**Corrección de transparencia (en curso).** La versión cuadrada anterior
+conservaba blanco en la interfaz y rompía los fondos oscuros. Se generó una
+fuente con alfa real desde el nuevo espiral y se retiró el `rounded-full` /
+`object-cover` de `NexusOrb`, para no recortar las puntas del símbolo. El activo
+activo de barra lateral pasa a usar cian, azul, violeta, magenta y ámbar. Falta
+desplegar y verificar la versión transparente.
+
 ## 2026-08-09 · Claude Code · Cierre del exportador de Recetas
 
 Se da por cerrado Grimorio → Recetas. El exportador a PDF funciona en las tres
