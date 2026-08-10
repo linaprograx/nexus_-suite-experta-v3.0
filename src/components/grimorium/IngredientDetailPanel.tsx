@@ -15,6 +15,7 @@ import { AssistedInsightsInline } from '../common/AssistedInsightsInline';
 import { ActiveSuggestionInline } from '../common/ActiveSuggestionInline';
 import { useUserIntelProfile } from '../../features/learning/hooks/useUserIntelProfile';
 import { LearningEngine } from '../../core/learning/learning.engine';
+import { TOKENS_GENERICOS as WEAK_TOKENS, esTokenGenerico } from '../../core/identity/genericTokens';
 
 
 const FAMILY_BG_COLORS: { [key in AromaticFamily]: string } = {
@@ -100,8 +101,7 @@ export const IngredientDetailPanel: React.FC<IngredientDetailPanelProps> = ({
         if (!allIngredients || !ingredient || allIngredients.length === 0) return [];
         // ... (Same fuzzy matching logic as before) ...
         const STOP_WORDS = new Set(['el', 'la', 'los', 'las', 'de', 'del', 'en', 'y', 'o', 'con', 'sin', 'por', 'para', 'un', 'una']);
-        const WEAK_TOKENS = new Set(['vodka', 'ron', 'gin', 'ginebra', 'tequila', 'whisky', 'whiskey', 'brandy', 'licor', 'cerveza', 'vino', 'sirope', 'pure', 'zumo', 'jugo', 'refresco', 'agua', 'hoja', 'hojas']);
-
+    
         const getTokens = (str: string) => str.toLowerCase()
             .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
             .replace(/[^a-z0-9\s]/g, "")
@@ -115,8 +115,9 @@ export const IngredientDetailPanel: React.FC<IngredientDetailPanelProps> = ({
             const otherTokens = getTokens(other.nombre);
             if (otherTokens.length === 0) return false;
 
-            let hasStrongMatch = false;
+            let strongMatched = 0;
             let weakMatchCount = 0;
+            const strongTotal = targetTokens.filter(t => !esTokenGenerico(t)).length;
 
             targetTokens.forEach(tA => {
                 const isWeak = WEAK_TOKENS.has(tA);
@@ -129,13 +130,31 @@ export const IngredientDetailPanel: React.FC<IngredientDetailPanelProps> = ({
 
                 if (matched) {
                     if (isWeak) weakMatchCount++;
-                    else hasStrongMatch = true;
+                    else strongMatched++;
                 }
             });
 
             const targetHasStrongTokens = targetTokens.some(t => !WEAK_TOKENS.has(t));
-            if (!targetHasStrongTokens) return weakMatchCount > 0;
-            return hasStrongMatch;
+            // El objetivo solo dice su familia («MEZCAL CUPREATA»): cualquier
+            // coincidencia sería de familia, no de producto. Se exige que
+            // coincidan TODAS sus palabras y que el candidato no añada ninguna
+            // específica; si no, «MEZCAL» emparejaría con medio catálogo.
+            if (!targetHasStrongTokens) {
+                const candidatoEsEspecifico = otherTokens.some(t => !esTokenGenerico(t));
+                return weakMatchCount === targetTokens.length && !candidatoEsEspecifico;
+            }
+            // Simétrico: además de encontrar todas las palabras específicas del
+            // objetivo, el candidato no puede traer ninguna de más. Sin esto,
+            // «ABSOLUT MANDARINA» se ofrecía como alternativa de «ABSOLUT
+            // VODKA»: comparten la marca y «mandarina» pasaba desapercibida.
+            // Los números se ignoran: son formato («0,7 L»), no identidad.
+            const esFormato = (t: string) => /^[0-9]+([.,]?[0-9]+)?(cl|ml|l|g|kg|und|ud)?$/.test(t);
+            const sobra = otherTokens.some(tB =>
+                !esTokenGenerico(tB) && !esFormato(tB) &&
+                !targetTokens.some(tA => tA === tB
+                    || (tA.length > 3 && tB.length > 3 && (tA.includes(tB) || tB.includes(tA)))
+                    || (tA.length >= 3 && (tA.startsWith(tB) || tB.startsWith(tA)))));
+            return strongTotal > 0 && strongMatched === strongTotal && !sobra;
         }).sort((a, b) => (a.precioCompra || 9999) - (b.precioCompra || 9999));
     }, [ingredient, allIngredients]);
 

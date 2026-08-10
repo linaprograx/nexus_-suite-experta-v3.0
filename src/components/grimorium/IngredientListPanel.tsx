@@ -13,6 +13,7 @@ import { CatalogoItem } from '../../types';
 import { getCategoryColor } from '../../utils/categoryColors';
 import { evaluateMarketSignals } from '../../core/signals/signal.engine';
 import { Signal } from '../../core/signals/signal.types';
+import { TOKENS_GENERICOS as WEAK_TOKENS, esTokenGenerico } from '../../core/identity/genericTokens';
 
 
 interface IngredientListPanelProps {
@@ -128,7 +129,6 @@ export const IngredientListPanel: React.FC<IngredientListPanelProps> = ({
     // Helper: Tokenize a name
     // Helper: Tokenize a name
     const STOP_WORDS = new Set(['el', 'la', 'los', 'las', 'de', 'del', 'en', 'y', 'o', 'con', 'sin', 'por', 'para', 'un', 'una']);
-    const WEAK_TOKENS = new Set(['vodka', 'ron', 'gin', 'ginebra', 'tequila', 'whisky', 'whiskey', 'brandy', 'licor', 'cerveza', 'vino', 'sirope', 'pure', 'zumo', 'jugo', 'refresco', 'agua', 'hoja', 'hojas']);
 
     const getTokens = (str: string) => str.toLowerCase()
       .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
@@ -167,8 +167,13 @@ export const IngredientListPanel: React.FC<IngredientListPanelProps> = ({
 
       const targetHasStrongTokens = tokensA.some(t => !WEAK_TOKENS.has(t));
 
+      // El objetivo solo dice su familia («MEZCAL CUPREATA»): cualquier
+      // coincidencia sería de familia, no de producto. Se exige que
+      // coincidan TODAS sus palabras y que el candidato no añada ninguna
+      // específica; si no, «MEZCAL» emparejaría con medio catálogo.
       if (!targetHasStrongTokens) {
-        return weakMatchCount > 0;
+        const candidatoEsEspecifico = tokensB.some(t => !esTokenGenerico(t));
+        return weakMatchCount === tokensA.length && !candidatoEsEspecifico;
       }
 
       // Must have at least one strong match

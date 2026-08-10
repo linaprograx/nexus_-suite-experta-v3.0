@@ -1,6 +1,9 @@
 import { Ingredient, Recipe, StockRule, StockMovement, PurchaseEvent, IngredientLineItem } from '../../types';
 import { StockItem } from '../../utils/stockUtils';
 import { normalizeToBase } from '../../utils/packNormalization';
+// Vocabulario compartido: la misma lista la usan Mercado y los paneles de
+// ingrediente. Tenerla en cuatro sitios fue justo lo que dejó pasar «cupreata».
+import { TOKENS_GENERICOS as GENERICOS, esTokenGenerico } from '../../core/identity/genericTokens';
 
 /**
  * Detección de CANDIDATOS a producto duplicado. **Solo lectura, y solo
@@ -22,26 +25,6 @@ const RUIDO = new Set([
     'botella', 'botellas', 'bot', 'und', 'ud', 'uds', 'unidad', 'unidades',
     'pack', 'caja', 'cajas', 'bandeja', 'bj', 'pz', 'pza', 'mj', 'manojo',
     'x', 'ud.', 'c', 'cc',
-]);
-
-/**
- * **Tipos de producto.** Describen la familia, no el producto.
- *
- * Se conservan en la clave —«LICOR CAFÉ» no es «SIROPE CAFÉ»— pero **no
- * cuentan como identidad por sí solos**. Sin esta distinción, el detector
- * proponía fusionar `LICOR` con `LICOR 43`, y sacaba como variantes cercanas
- * a `LICOR AVALLEN`, `LICOR CAFE`, `LICOR ANCHO REYES` y a todo lo que llevara
- * la palabra. Compartir la familia no es evidencia de ser el mismo producto.
- */
-const GENERICOS = new Set([
-    'licor', 'vodka', 'whisky', 'whiskey', 'ron', 'rum', 'ginebra', 'gin',
-    'tequila', 'mezcal', 'raicilla', 'pisco', 'brandy', 'coñac', 'conac', 'cognac',
-    'vermut', 'vermouth', 'bitter', 'bitters', 'anis', 'orujo', 'cava', 'vino',
-    'cerveza', 'sidra', 'sake', 'destilado', 'destilados', 'aguardiente',
-    'zumo', 'jugo', 'sirope', 'jarabe', 'pure', 'nectar', 'refresco', 'tonica',
-    'agua', 'soda', 'gaseosa', 'concentrado', 'mixer', 'mixers',
-    'cafe', 'te', 'infusion', 'leche', 'crema', 'nata', 'azucar', 'sal',
-    'fruta', 'frutas', 'verdura', 'verduras', 'hortaliza', 'hortalizas',
 ]);
 
 const sinAcentos = (s: string) =>
