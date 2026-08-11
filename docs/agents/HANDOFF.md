@@ -87,26 +87,30 @@ grep -c -F 'TU_CADENA_VISIBLE' /tmp/prod.js   # marcador
 | Identidad A-C | Hecho y verificado sin regresión |
 | Identidad D | **Mecanismo listo y probado** (`mergeMaster`), botón en el informe. El fundador fusionó el grupo Aguerrido: 1327 → 1326 ítems con el valor intacto |
 | Ingrediente exprés | Hecho: alta desde la receta, marca `pendienteRevision`, fuera de automatismos, filtro en Mercado |
-| Fase 0 · cimientos | `origen` ✅ · I2 ✅ · I3 ✅ · I4 ✅ · **I1 informe ✅, corrección pendiente** |
+| Fase 0 · cimientos | `origen` ✅ · I2 ✅ · I3 ✅ · I4 ✅ · **I1 ✅ informe + corrección con deshacer** |
 | Fase 1 · pedido útil | M1 compra ✅ · **M1 hoja de pedido, M2 `providerId`, M3 cantidad pendientes** |
 
 ## ⏸️ Lo siguiente — EMPIEZA POR AQUÍ
 
-1. **I1 · el informe ya está; falta decidir qué se corrige.** Vive en
-   Mercado → panel lateral → **«Revisar Unidades»**. Solo lectura.
+1. **I1 · hecho. Queda que el fundador vaya confirmando formatos.**
+   Vive en Mercado → panel lateral → **«Revisar Unidades»**.
+
+   La primera lectura sobre datos reales: **27 fichas bloqueadas están dentro
+   de recetas**, con **€6.032,49** de inventario colgando de ellas. Casi todas
+   son `heredado`: 700 ml exactos sin nada que lo respalde. No son datos
+   corruptos, son datos que nunca se rellenaron — y el sistema acertó por
+   casualidad en unos (Chartreuse sí es de 700) y falló en otros (400 Conejos
+   es de 750) sin que nada los distinga.
+
+   Al desplegar cada ficha bloqueada hay un corrector: se elige el tamaño del
+   envase, se ve el cambio de coste **antes** de escribir, y queda
+   `formatoVerificado` con su botón de deshacer. **Una ficha por operación.**
 
    Ese botón antes decía «Normalizar Catálogo» y **ejecutaba la migración a
-   ciegas**: `normalizeIngredientPacks` resuelve el formato con
-   `resolveStandardPack`, que nunca falla y devuelve una botella de 700 ml
-   cuando no hay evidencia. Escribía ese número inventado en Firestore y con
-   él recalculaba `standardPrice`, que alimenta el coste de todas las recetas.
-   Encima prometía ser «reversible al reimportar»: **no hay deshacer**. La
-   migración sigue intacta en su módulo, sin ningún botón que la dispare.
-
-   Lo que el informe **no** hace todavía es corregir. Antes de escribir nada:
-   - decidir con el fundador qué se hace con cada familia de bloqueados;
-   - la corrección tiene que ser **por ficha**, con su deshacer, como la
-     fusión de identidad — no un botón de lote sobre 1.300 productos.
+   ciegas**: escribía la botella de 700 ml inventada en las 1.300 fichas y con
+   ella recalculaba `standardPrice`. Prometía ser «reversible al reimportar»:
+   **no hay deshacer**. La migración sigue en su módulo, sin botón que la
+   dispare, y así debe quedarse.
 
 2. **M2 · `providerId` en el pedido**, y leerlo al recibir en vez de deducirlo
    otra vez del ingrediente. Bloquea agrupar Inventario por proveedor.
