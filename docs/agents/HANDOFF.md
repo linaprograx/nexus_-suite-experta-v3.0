@@ -87,23 +87,26 @@ grep -c -F 'TU_CADENA_VISIBLE' /tmp/prod.js   # marcador
 | Identidad A-C | Hecho y verificado sin regresión |
 | Identidad D | **Mecanismo listo y probado** (`mergeMaster`), botón en el informe. El fundador fusionó el grupo Aguerrido: 1327 → 1326 ítems con el valor intacto |
 | Ingrediente exprés | Hecho: alta desde la receta, marca `pendienteRevision`, fuera de automatismos, filtro en Mercado |
-| Fase 0 · cimientos | `origen` ✅ · I2 ✅ · I3 ✅ · I4 ✅ · **I1 pendiente** |
+| Fase 0 · cimientos | `origen` ✅ · I2 ✅ · I3 ✅ · I4 ✅ · **I1 informe ✅, corrección pendiente** |
 | Fase 1 · pedido útil | M1 compra ✅ · **M1 hoja de pedido, M2 `providerId`, M3 cantidad pendientes** |
 
 ## ⏸️ Lo siguiente — EMPIEZA POR AQUÍ
 
-1. **I1 · unidades canónicas.** Es lo que desatasca el resto: sin él no se
-   pueden fusionar los grupos de riesgo medio ni sumar existencias con formatos
-   distintos, y es la raíz de los `5522.000 L` que se ven en Inventario.
+1. **I1 · el informe ya está; falta decidir qué se corrige.** Vive en
+   Mercado → panel lateral → **«Revisar Unidades»**. Solo lectura.
 
-   **Informe en seco primero**, con estas columnas por ítem: unidad actual ·
-   unidad propuesta · factor · stock afectado · coste actual · coste resultante
-   · recetas afectadas · sub-recetas afectadas · impacto económico ·
-   ambigüedades. Lo que no se pueda determinar **con certeza** sale
-   `BLOQUEADO PARA REVISIÓN`. **No se infiere ningún valor.**
+   Ese botón antes decía «Normalizar Catálogo» y **ejecutaba la migración a
+   ciegas**: `normalizeIngredientPacks` resuelve el formato con
+   `resolveStandardPack`, que nunca falla y devuelve una botella de 700 ml
+   cuando no hay evidencia. Escribía ese número inventado en Firestore y con
+   él recalculaba `standardPrice`, que alimenta el coste de todas las recetas.
+   Encima prometía ser «reversible al reimportar»: **no hay deshacer**. La
+   migración sigue intacta en su módulo, sin ningún botón que la dispare.
 
-   Como con los duplicados, el informe tiene que vivir **dentro de la app**: es
-   el único sitio con acceso autenticado a Firestore.
+   Lo que el informe **no** hace todavía es corregir. Antes de escribir nada:
+   - decidir con el fundador qué se hace con cada familia de bloqueados;
+   - la corrección tiene que ser **por ficha**, con su deshacer, como la
+     fusión de identidad — no un botón de lote sobre 1.300 productos.
 
 2. **M2 · `providerId` en el pedido**, y leerlo al recibir en vez de deducirlo
    otra vez del ingrediente. Bloquea agrupar Inventario por proveedor.
