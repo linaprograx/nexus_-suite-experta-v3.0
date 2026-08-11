@@ -279,42 +279,28 @@ export const MarketSidebar: React.FC<MarketSidebarProps> = ({
     return (
         <div className="h-full flex flex-col p-3 gap-4">
 
-            {/* 1. MARKET OVERVIEW — premium stat header */}
-            <div className="shrink-0 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-3xl p-0.5 shadow-premium">
-                <div className="bg-white/85 dark:bg-slate-900/85 rounded-[22px] p-4 backdrop-blur-xl relative overflow-hidden group">
-                    {/* Decorative */}
-                    <div className="absolute -right-8 -top-8 opacity-[0.06] group-hover:opacity-10 transition-opacity">
-                        <Icon svg={ICONS.layout} className="w-28 h-28" />
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-2 relative z-10 w-full">
-                        {/* Entry 1: Proveedores */}
-                        <div className="flex flex-col items-center justify-center py-1 min-w-0 border-r border-slate-200/70 dark:border-slate-700/50">
-                            <div className="flex items-center gap-1.5 mb-1.5 min-w-0 max-w-full">
-                                <div className="p-1.5 rounded-xl bg-gradient-to-br from-indigo-400 to-indigo-600 text-white shadow-sm shadow-indigo-500/30">
-                                    <Icon svg={ICONS.users} className="w-3.5 h-3.5" />
-                                </div>
-                                <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest truncate">Prov.</span>
-                            </div>
-                            <span className="text-xl xl:text-2xl font-black text-slate-800 dark:text-slate-100 tabular-nums leading-none max-w-full">
-                                {stats.totalSuppliers}
-                            </span>
-                        </div>
-
-                        {/* Entry 2: Productos */}
-                        <div className="flex flex-col items-center justify-center py-1 min-w-0">
-                            <div className="flex items-center gap-1.5 mb-1.5 min-w-0 max-w-full">
-                                <div className="p-1.5 rounded-xl bg-gradient-to-br from-emerald-400 to-teal-600 text-white shadow-sm shadow-emerald-500/30">
-                                    <Icon svg={ICONS.box} className="w-3.5 h-3.5" />
-                                </div>
-                                <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest truncate">Items</span>
-                            </div>
-                            <span className="text-xl xl:text-2xl font-black text-slate-800 dark:text-slate-100 tabular-nums leading-none max-w-full">
-                                {stats.totalProducts}
-                            </span>
-                        </div>
-                    </div>
+            {/* 1. CABECERA — el dato informa, el botón manda.
+                Estaba al revés: la tarjeta de cifras llevaba borde con degradado,
+                sombra premium e icono decorativo para decir «3 y 1380», mientras
+                «Nuevo Proveedor» era el tercero de tres botones iguales al fondo
+                de un scroll. Se leía como si contar proveedores fuese la función
+                del panel y darlos de alta un ajuste secundario. */}
+            <div className="shrink-0 space-y-2.5">
+                <div className="flex items-center justify-center gap-2 text-[11px] text-slate-500 dark:text-slate-400">
+                    <Icon svg={ICONS.users} className="w-3.5 h-3.5 text-indigo-400" />
+                    <span><strong className="font-bold tabular-nums text-slate-700 dark:text-slate-200">{stats.totalSuppliers}</strong> proveedores</span>
+                    <span className="text-slate-300 dark:text-slate-600">·</span>
+                    <Icon svg={ICONS.box} className="w-3.5 h-3.5 text-emerald-400" />
+                    <span><strong className="font-bold tabular-nums text-slate-700 dark:text-slate-200">{stats.totalProducts}</strong> referencias</span>
                 </div>
+
+                <button
+                    onClick={onNewSupplier}
+                    className="w-full h-12 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 text-white font-bold text-sm shadow-lg shadow-emerald-500/25 hover:shadow-emerald-500/40 hover:brightness-105 active:scale-[0.99] transition-all flex items-center justify-center gap-2"
+                >
+                    <Icon svg={ICONS.plus} className="w-4 h-4" />
+                    Nuevo Proveedor
+                </button>
             </div>
 
             {/* 2. MAIN CONTENT AREA (Scrollable) */}
@@ -430,18 +416,13 @@ export const MarketSidebar: React.FC<MarketSidebarProps> = ({
 
                     {/* ACTIONS SECTION (Inside Scroll View, at bottom) */}
                     <div className="pt-4 pb-2 mt-2 border-t border-dashed border-slate-200 dark:border-slate-700">
-                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3 text-center">Acciones Rápidas</p>
+                        {/* «Nuevo Proveedor» ya no está aquí: subió a la cabecera.
+                            Lo que queda son herramientas de mantenimiento, que se
+                            usan de vez en cuando y no compiten con la acción
+                            principal. El rótulo lo dice para que no parezcan
+                            atajos de uso diario. */}
+                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3 text-center">Mantenimiento</p>
                         <div className="grid grid-cols-1 gap-2">
-                            <button
-                                onClick={onNewSupplier}
-                                className="flex items-center justify-center gap-2 p-2.5 rounded-xl bg-white/50 hover:bg-indigo-50 dark:bg-slate-700/50 dark:hover:bg-slate-700 hover:border-indigo-200 border border-white/10 transition-all group"
-                            >
-                                <div className="w-6 h-6 rounded-full bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400 flex items-center justify-center group-hover:scale-110 transition-transform">
-                                    <Icon svg={ICONS.plus} className="w-3 h-3" />
-                                </div>
-                                <span className="text-xs font-bold text-slate-600 dark:text-slate-300">Nuevo Proveedor</span>
-                            </button>
-
                             <button
                                 onClick={() => setShowUnitAudit(true)}
                                 title="Informe de unidades: qué formato consta, cuál se está suponiendo y qué coste depende de ello"

@@ -3,7 +3,7 @@ import { useApp } from '../../context/AppContext';
 import { useSuppliers } from '../../features/suppliers/hooks/useSuppliers';
 import { useSupplierProducts } from '../../features/suppliers/hooks/useSupplierProducts';
 import { useIngredients } from '../../hooks/useIngredients'; // For checking global ingredients
-import { Modal } from '../ui/Modal';
+import { createPortal } from 'react-dom';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { Label } from '../ui/Label';
@@ -175,8 +175,22 @@ export const SuppliersManagerModal: React.FC<SuppliersManagerModalProps> = ({ is
         reader.readAsText(file);
     };
 
-    return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    /**
+     * Va a `document.body`, no donde está escrito.
+     *
+     * El armazón móvil pinta el contenido dentro de un `<div relative z-20>`, y
+     * eso **crea un contexto de apilamiento**: todo lo de dentro queda encerrado
+     * en el nivel 20 frente a sus hermanos, por muy alto que sea su propio
+     * z-index. Así que este modal, con `z-50`, seguía saliendo por detrás de la
+     * franja de Grimorio, que está en `z-30`. No era cuestión de subir el
+     * número: desde dentro de esa caja no hay número que valga.
+     *
+     * El portal lo saca de la caja. Es lo que ya hacía la primitiva `Modal`, de
+     * la que este componente se había separado —importaba `Modal` sin usarla y
+     * montaba su propio contenedor—, y de ahí venía la diferencia.
+     */
+    return createPortal(
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
             {/* Backdrop */}
             <div className="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity" onClick={onClose} />
 
@@ -196,9 +210,15 @@ export const SuppliersManagerModal: React.FC<SuppliersManagerModalProps> = ({ is
                     </div>
                 </div>
 
+                {/* Dos columnas en escritorio, UNA cada vez en móvil.
+                    Un tercio de 365 px son 120: las tarjetas salían cortadas por
+                    la mitad («BORDINOS» sin su categoría, «Catálogo» a medias) y
+                    el panel de detalle, vacío, se comía dos tercios de la
+                    pantalla para no decir nada. En móvil se ve la lista, y al
+                    tocar un proveedor su ficha la sustituye. */}
                 <div className="flex-1 overflow-hidden flex">
                     {/* Sidebar / List */}
-                    <div className={`w-1/3 border-r border-slate-200 dark:border-white/5 bg-slate-50 dark:bg-white/5 flex flex-col ${view === 'form' ? 'hidden md:flex' : 'flex'}`}>
+                    <div className={`w-full md:w-1/3 border-r border-slate-200 dark:border-white/5 bg-slate-50 dark:bg-white/5 flex-col ${view === 'list' ? 'flex' : 'hidden md:flex'}`}>
                         <div className="p-4 border-b border-slate-200 dark:border-white/5">
                             <Button className="w-full bg-emerald-500 hover:bg-emerald-600 text-white shadow-lg shadow-emerald-500/20" onClick={() => { setView('form'); setSelectedSupplier(null); }}>
                                 <Icon svg={ICONS.plus} className="mr-2 h-4 w-4" /> Nuevo Proveedor
@@ -225,7 +245,7 @@ export const SuppliersManagerModal: React.FC<SuppliersManagerModalProps> = ({ is
                     </div>
 
                     {/* Main Content Area */}
-                    <div className="flex-1 bg-white dark:bg-slate-950/30 flex flex-col overflow-hidden">
+                    <div className={`flex-1 bg-white dark:bg-slate-950/30 flex-col overflow-hidden ${view === 'list' ? 'hidden md:flex' : 'flex'}`}>
                         {view === 'form' ? (
                             <div className="p-8 max-w-xl mx-auto w-full animate-in slide-in-from-right-4">
                                 <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-6">Nuevo Proveedor</h3>
@@ -279,7 +299,18 @@ export const SuppliersManagerModal: React.FC<SuppliersManagerModalProps> = ({ is
                                 </div>
                             </div>
                         ) : selectedSupplier ? (
-                            <div className="p-8 flex flex-col h-full animate-in fade-in">
+                            <div className="p-5 md:p-8 flex flex-col h-full animate-in fade-in overflow-y-auto custom-scrollbar">
+                                {/* La vuelta a la lista. En escritorio la lista sigue
+                                    ahí al lado y no hace falta; en móvil la sustituye
+                                    esta ficha, así que sin esto sería un callejón sin
+                                    salida del que solo se sale cerrando el modal. */}
+                                <button
+                                    onClick={() => { setSelectedSupplier(null); setView('list'); }}
+                                    className="md:hidden self-start mb-4 flex items-center gap-1.5 text-xs font-bold text-slate-500 dark:text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors"
+                                >
+                                    <Icon svg={ICONS.chevronDown} className="w-4 h-4 rotate-90" />
+                                    Todos los proveedores
+                                </button>
                                 <div className="flex justify-between items-start mb-8">
                                     <div>
                                         <h2 className="text-3xl font-bold text-slate-900 dark:text-white mb-1">{selectedSupplier.name}</h2>
@@ -289,7 +320,12 @@ export const SuppliersManagerModal: React.FC<SuppliersManagerModalProps> = ({ is
                                             {selectedSupplier.phone && <span>📞 {selectedSupplier.phone}</span>}
                                         </div>
                                         {/* Extended supplier info (procurement data) */}
-                                        {(selectedSupplier.address || selectedSupplier.taxId || selectedSupplier.leadTimeDays != null || selectedSupplier.paymentTerms || (selectedSupplier.deliveryDays?.length)) && (
+                                        {/* `Boolean(...)` no es adorno. La condición acaba en
+                                            `deliveryDays?.length`, que con un array vacío vale 0:
+                                            en React `0 && <algo>` **pinta el cero**, y salía un «0»
+                                            suelto bajo el teléfono de todo proveedor sin datos
+                                            de compra. */}
+                                        {Boolean(selectedSupplier.address || selectedSupplier.taxId || selectedSupplier.leadTimeDays != null || selectedSupplier.paymentTerms || selectedSupplier.deliveryDays?.length) && (
                                             <div className="flex flex-wrap gap-2 mt-3">
                                                 {selectedSupplier.address && <span className="text-[11px] px-2 py-1 rounded-lg bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-slate-300">📍 {selectedSupplier.address}</span>}
                                                 {selectedSupplier.taxId && <span className="text-[11px] px-2 py-1 rounded-lg bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-slate-300">CIF {selectedSupplier.taxId}</span>}
@@ -352,6 +388,7 @@ export const SuppliersManagerModal: React.FC<SuppliersManagerModalProps> = ({ is
                     </div>
                 </div>
             </div>
-        </div>
+        </div>,
+        document.body,
     );
 };
