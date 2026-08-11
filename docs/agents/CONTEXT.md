@@ -245,6 +245,26 @@ ruta**.
 Costó tres diagnósticos equivocados: se atribuyó primero a latencia de red,
 después al `orderBy` de la consulta. Ninguno era.
 
+### La franja de Grimorio NO se pliega
+
+Todo lo que va del título a los filtros permanece fijo en las tres pestañas, y
+el listado pasa por detrás. **No hay pliegue al hacer scroll, y no debe
+reintroducirse.**
+
+El motivo es de uso, no de estética: pestañas, buscador y filtros se usan
+*mientras* se mira la lista, no antes de mirarla. Una cabecera que aparece y
+desaparece obliga a recuperarla para cada filtro, y convierte cada gesto en dos.
+
+Cómo se llegó aquí, que importa: había un pliegue, se rompió por accidente —el
+`WeakMap` que guardaba la última posición salía por el filtro de temblor
+**antes** de rellenarse, así que el delta era siempre 0 y no se plegaba nunca— y
+al ver el resultado el fundador prefirió la franja fija. Se adoptó como decisión
+y se retiró el mecanismo entero, en vez de dejar la app apoyada en un defecto.
+
+Se paga en pantalla y conviene saberlo: la franja ocupa ~330 px en un móvil. Si
+algún día estorba, la respuesta es **hacerla más baja** —título más pequeño,
+filtros en una fila— no volver a esconderla.
+
 ### Una franja fija es UNA capa, no dos alineadas
 
 La cabecera fija de Grimorio en móvil contiene **título, pestañas, iconos,

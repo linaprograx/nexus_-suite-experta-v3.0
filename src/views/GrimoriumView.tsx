@@ -32,7 +32,6 @@ import { IngredientListPanel } from '../components/grimorium/IngredientListPanel
 import { IngredientDetailPanel } from '../components/grimorium/IngredientDetailPanel';
 import { PremiumLayout } from '../components/layout/PremiumLayout';
 import { useDebounce } from '../hooks/useDebounce';
-import { useCabeceraPlegable } from '../hooks/useCabeceraPlegable';
 import { useCartas } from '../hooks/useCartas';
 import { useAlcanceCarta, fijarAlcanceCarta } from '../hooks/useAlcanceCarta';
 import { useActiveMenu } from '../hooks/useActiveMenu';
@@ -128,20 +127,27 @@ const GrimoriumInner: React.FC<GrimoriumViewProps> = () => {
     const { storage } = useApp();
     const [loading, setLoading] = React.useState(false);
     // Collapsing header on scroll (Grimorio only) — hysteresis to avoid flicker
-    const [headerCollapsed, setHeaderCollapsed] = React.useState(false);
-    // En móvil scrollea la página, no el shell, así que `handleMainScroll` no se
-    // dispara nunca ahí. Este hook escucha el contenedor real.
-    const cabeceraPlegada = useCabeceraPlegable();
-
+    /**
+     * LA FRANJA DE GRIMORIO NO SE PLIEGA. Decisión de diseño, 2026-08-11.
+     *
+     * Existía un pliegue del título al bajar. Se retira: en las tres pestañas,
+     * todo lo que va del título a los filtros permanece fijo, y el listado pasa
+     * por detrás.
+     *
+     * El motivo es de uso, no de estética: los controles de Grimorio —pestañas,
+     * buscador, filtros— se usan MIENTRAS se mira la lista, no antes. Una
+     * cabecera que aparece y desaparece obliga a recuperarla para cada filtro, y
+     * convierte cada gesto en dos.
+     *
+     * Se paga en pantalla, y conviene saberlo: la franja ocupa ~330 px en un
+     * móvil. Si algún día estorba, la respuesta es **hacerla más baja**, no
+     * volver a esconderla.
+     */
     // Las cartas. La migración adopta las entradas de menú anteriores a que la
     // carta existiera como entidad: no borra ni reescribe nada, solo les añade el
     // `cartaId` que les falta, y es idempotente.
     const { cartaActiva, migrarSiHaceFalta } = useCartas();
     React.useEffect(() => { migrarSiHaceFalta(); }, [migrarSiHaceFalta]);
-    const handleMainScroll = (e: React.UIEvent<HTMLDivElement>) => {
-        const t = (e.currentTarget as HTMLElement).scrollTop;
-        setHeaderCollapsed(prev => (t > 48 ? true : t < 16 ? false : prev));
-    };
 
     const [escandallatorSubTab, setEscandallatorSubTab] = React.useState<'calculator' | 'production'>('calculator');
 
@@ -678,7 +684,6 @@ const GrimoriumInner: React.FC<GrimoriumViewProps> = () => {
                     : viewMode === 'market' ? 'grid-cols-1 lg:grid-cols-[2fr_5fr_3fr]'
                         : undefined
             }
-            onMainScroll={viewMode === 'recipes' ? handleMainScroll : undefined}
             {...{
                 // On phones the detail column becomes a sheet that opens on selection
                 mobile: viewMode === 'recipes'
@@ -734,7 +739,7 @@ const GrimoriumInner: React.FC<GrimoriumViewProps> = () => {
                         },
             }}
             className=""
-            header={<GrimoriumToolbar collapsed={cabeceraPlegada || (viewMode === 'recipes' && headerCollapsed)} />}
+            header={<GrimoriumToolbar />}
             leftSidebar={
                 <>
                     {/* STANDARD SIDEBAR for Recipes */}
