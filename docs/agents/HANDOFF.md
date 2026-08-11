@@ -112,20 +112,17 @@ grep -c -F 'TU_CADENA_VISIBLE' /tmp/prod.js   # marcador
    **no hay deshacer**. La migración sigue en su módulo, sin botón que la
    dispare, y así debe quedarse.
 
-2. **⚠️ `proveedor` está obsoleto y el pedido sigue agrupando por él.**
-   Salió al hacer M2 y **no se ha tocado**, porque cambiarlo altera lo que se
-   ve en la hoja de reposición y eso es decisión del fundador.
+2. **⚠️ Quedan 264 referencias sin proveedor.** Salió al arreglar la
+   agrupación: la hoja de reposición agrupaba por `ing.proveedor`, obsoleto y
+   vacío en el catálogo real, así que **todo** caía en «Sin Proveedor
+   Asignado». Ahora la escalera vive en `proveedorDeIngrediente` y reparte:
 
-   En `types.ts`, `proveedor?: string` está marcado `@deprecated` a favor de
-   `proveedores?: string[]` + `proveedorPreferente`. Pero
-   `StockReplenishmentModal` agrupa por `ing.proveedor || 'unknown'`. Si el
-   catálogo real ya usa el modelo nuevo, **todo cae en «Sin Proveedor
-   Asignado»** y M2 no luce, porque no hay proveedor que guardar.
+   | IN VINO VERITAS | 626 | SIN PROVEEDOR ASIGNADO | 264 |
+   |---|---|---|---|
+   | FRUTAS ELOY | 484 | BORDINOS | 6 |
 
-   **Cómo comprobarlo sin tocar nada:** abrir la hoja de reposición. Si casi
-   todo aparece bajo «Sin Proveedor Asignado», es esto. La corrección sería
-   agrupar por `proveedorPreferente ?? proveedores[0] ?? proveedor`, y es un
-   cambio visible: enseñar antes/después.
+   Esas 264 no son un fallo del código: son fichas a las que nadie ha
+   asignado proveedor. Decisión del fundador si se completan.
 
 3. **M1 parte 2 · la hoja de pedido a 0 €** — misma raíz que la compra, pero en
    bloque: avisar de cuántas líneas van sin precio antes de crear la hoja.
