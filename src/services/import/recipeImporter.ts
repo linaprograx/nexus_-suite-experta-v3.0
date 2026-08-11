@@ -1,4 +1,5 @@
-import { collection, doc, writeBatch, serverTimestamp, Firestore } from 'firebase/firestore';
+import { collection, doc, serverTimestamp, Firestore } from 'firebase/firestore';
+import { EscrituraPorLotes } from '../firestore/escrituraPorLotes';
 import { FirebaseStorage } from 'firebase/storage';
 import { Recipe, Ingredient } from '../../types';
 import { parseMultipleRecipes } from '../../utils/recipeImporter';
@@ -64,10 +65,10 @@ export const recipeImporter = {
 
         if (newRecipes.length === 0) return 0;
 
-        const batch = writeBatch(db);
+        const lotes = new EscrituraPorLotes(db);
         const recipesCollection = collection(db, `users/${userId}/grimorio`);
-        newRecipes.forEach(recipe => batch.set(doc(recipesCollection), recipe));
-        await batch.commit();
+        for (const recipe of newRecipes) await lotes.set(doc(recipesCollection), recipe);
+        await lotes.cerrar();
 
         return newRecipes.length;
     },
@@ -87,10 +88,10 @@ export const recipeImporter = {
 
         if (newRecipes.length === 0) return 0;
 
-        const batch = writeBatch(db);
+        const lotes = new EscrituraPorLotes(db);
         const recipesCollection = collection(db, `users/${userId}/grimorio`);
-        newRecipes.forEach(recipe => batch.set(doc(recipesCollection), recipe));
-        await batch.commit();
+        for (const recipe of newRecipes) await lotes.set(doc(recipesCollection), recipe);
+        await lotes.cerrar();
 
         return newRecipes.length;
     },
@@ -135,7 +136,7 @@ export const recipeImporter = {
 
         const dataLines = looksLikeHeader ? lines.slice(1) : lines;
 
-        const batch = writeBatch(db);
+        const lotes = new EscrituraPorLotes(db);
         let count = 0;
         let updatedCount = 0;
         const existingMap = new Map(allIngredients.map(i => [i.nombre.toLowerCase().trim(), i]));
@@ -197,7 +198,7 @@ export const recipeImporter = {
                 }
 
                 if (needsUpdate) {
-                    batch.update(ingredientRef, updates);
+                    await lotes.update(ingredientRef, updates);
                     updatedCount++;
                 }
             } else {
@@ -222,11 +223,11 @@ export const recipeImporter = {
                 };
                 // Firestore rejects `undefined` — strip it
                 Object.keys(dataToSave).forEach(k => dataToSave[k] === undefined && delete dataToSave[k]);
-                batch.set(newDocRef, dataToSave);
+                await lotes.set(newDocRef, dataToSave);
                 count++;
             }
         }
-        await batch.commit();
+        await lotes.cerrar();
         return { created: count, updated: updatedCount };
     },
 
@@ -249,14 +250,14 @@ export const recipeImporter = {
 
         if (recipes.length === 0) return { recipesCount: 0, ingredientsCount: 0 };
 
-        const batch = writeBatch(db);
+        const lotes = new EscrituraPorLotes(db);
         const createdIngredientIds = new Map<string, string>(); // name -> id
 
         // 2. Create Missing Ingredients
         if (newIngredients.length > 0) {
             for (const name of newIngredients) {
                 const newDocRef = doc(collection(db, ingredientsColPath));
-                batch.set(newDocRef, {
+                await lotes.set(newDocRef, {
                     nombre: name,
                     categoria: 'Importado',
                     precioCompra: 0,
@@ -270,7 +271,9 @@ export const recipeImporter = {
 
         // 3. Create Recipes
         const recipesCollection = collection(db, `users/${userId}/grimorio`);
-        recipes.forEach(recipe => {
+        // `for…of` y no `forEach`: cada escritura puede confirmar un lote, y
+        // `forEach` no espera a la promesa que devuelve.
+        for (const recipe of recipes) {
             const newRecipeRef = doc(recipesCollection);
 
             // Link ingredients
@@ -282,15 +285,15 @@ export const recipeImporter = {
                 return line;
             });
 
-            batch.set(newRecipeRef, {
+            await lotes.set(newRecipeRef, {
                 ...recipe,
                 ingredientes: fixedIngredients,
                 createdAt: serverTimestamp(),
                 updatedAt: serverTimestamp()
             });
-        });
+        }
 
-        await batch.commit();
+        await lotes.cerrar();
         return { recipesCount: recipes.length, ingredientsCount: newIngredients.length };
     }
 };

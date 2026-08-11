@@ -12,7 +12,8 @@ import { ICONS } from '../ui/icons';
 import { Supplier } from '../../types';
 import { parseEuroNumber } from '../../utils/parseEuroNumber';
 import { CATEGORIAS_PROVEEDOR, leerCategorias, escribirCategorias, alternarCategoria } from '../../features/suppliers/categorias';
-import { collection, doc, writeBatch } from 'firebase/firestore';
+import { collection, doc } from 'firebase/firestore';
+import { EscrituraPorLotes, FalloEnLotes } from '../../services/firestore/escrituraPorLotes';
 
 const DELIVERY_DAYS = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
 
@@ -68,7 +69,11 @@ export const SuppliersManagerModal: React.FC<SuppliersManagerModalProps> = ({ is
             if (!text) return;
 
             const lines = text.split('\n').slice(1); // Skip header
-            const batch = writeBatch(db);
+            // Dos escrituras por linea del CSV —el producto del proveedor y su
+            // ingrediente global—, asi que un catalogo de 250 filas ya se pasaba
+            // del limite de 500 de un `writeBatch` y Firestore lo rechazaba
+            // entero, sin escribir nada.
+            const lotes = new EscrituraPorLotes(db);
             const supplierProductsRef = collection(db, `users/${userId}/suppliers/${supplier.id}/supplierProducts`);
             const globalIngredientsRef = collection(db, `artifacts/${appId}/users/${userId}/grimorio-ingredients`);
 
@@ -90,7 +95,7 @@ export const SuppliersManagerModal: React.FC<SuppliersManagerModalProps> = ({ is
 
                 // 1. Add to Supplier Products (Always separate)
                 const productDoc = doc(supplierProductsRef);
-                batch.set(productDoc, {
+                await lotes.set(productDoc, {
                     productId: productDoc.id,
                     productName: rawName,
                     price: rawPrice,
@@ -134,14 +139,14 @@ export const SuppliersManagerModal: React.FC<SuppliersManagerModalProps> = ({ is
                     }
 
                     if (needsUpdate) {
-                        batch.update(ingRef, updates);
+                        await lotes.update(ingRef, updates);
                         globalUpdatedCount++;
                     }
 
                 } else {
                     // Create New Global Ingredient
                     const ingDoc = doc(globalIngredientsRef);
-                    batch.set(ingDoc, {
+                    await lotes.set(ingDoc, {
                         nombre: rawName,
                         categoria: 'General', // Default
                         precioCompra: rawPrice,
@@ -163,11 +168,11 @@ export const SuppliersManagerModal: React.FC<SuppliersManagerModalProps> = ({ is
             }
 
             try {
-                await batch.commit();
+                await lotes.cerrar();
                 alert(`Catálogo importado:\n- ${addedCount} productos al catálogo de ${supplier.name}\n- ${globalCreatedCount} nuevos ingredientes creados\n- ${globalUpdatedCount} ingredientes existentes vinculados`);
             } catch (err) {
                 console.error(err);
-                alert("Error subiendo catálogo.");
+                alert(err instanceof FalloEnLotes ? err.message : "Error subiendo catálogo.");
             } finally {
                 setUploading(false);
                 if (fileInputRef.current) fileInputRef.current.value = '';

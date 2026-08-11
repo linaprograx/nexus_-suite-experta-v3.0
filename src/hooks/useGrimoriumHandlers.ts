@@ -3,6 +3,7 @@ import { Firestore, writeBatch, doc } from 'firebase/firestore';
 import { FirebaseStorage } from 'firebase/storage';
 import { QueryClient } from '@tanstack/react-query';
 import { Recipe, Ingredient } from '../types';
+import { FalloEnLotes } from '../services/firestore/escrituraPorLotes';
 
 interface UseGrimoriumHandlersProps {
     db: Firestore;
@@ -133,7 +134,15 @@ export const useGrimoriumHandlers = ({
             showToast(`Importación completada: ${created} nuevos, ${updated} actualizados.`, 'success');
         } catch (error) {
             console.error(error);
-            showToast("Error importando CSV de ingredientes.", 'error');
+            // Un fallo a mitad deja parte escrita, y eso hay que decirlo: sin el
+            // recuento, repetir la importación duplicaría lo que ya entró. El
+            // mensaje viene del propio error, que sabe cuántas confirmó.
+            if (error instanceof FalloEnLotes) {
+                if (error.escritas > 0) queryClient.invalidateQueries({ queryKey: ['ingredients'] });
+                showToast(error.message, 'error');
+            } else {
+                showToast("Error importando CSV de ingredientes.", 'error');
+            }
         } finally {
             setLoading(false);
             setShowCsvImportModal(false);
@@ -159,7 +168,15 @@ export const useGrimoriumHandlers = ({
             }
         } catch (error) {
             console.error("Error CSV Import:", error);
-            showToast("Error al importar el archivo CSV.", 'error');
+            if (error instanceof FalloEnLotes) {
+                if (error.escritas > 0) {
+                    queryClient.invalidateQueries({ queryKey: ['recipes'] });
+                    queryClient.invalidateQueries({ queryKey: ['ingredients'] });
+                }
+                showToast(error.message, 'error');
+            } else {
+                showToast("Error al importar el archivo CSV.", 'error');
+            }
         } finally {
             setLoading(false);
             setShowImportChoiceModal(false);
