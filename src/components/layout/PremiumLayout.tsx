@@ -145,6 +145,8 @@ export const PremiumLayout: React.FC<PremiumLayoutProps> = ({
         gridCols = 'grid-cols-1';
     }
 
+    // `data-columna-scroll` la marca como contenedor cuyo scroll SÍ pliega la
+    // cabecera. Ver `useCabeceraPlegable`.
     const columnClass = `h-full min-h-0 flex flex-col relative z-20 ${transparentColumns || layoutMode === 'zen' ? 'bg-transparent shadow-none border-0' : 'bg-transparent shadow-premium'} rounded-2xl ${(layoutMode === 'colegium' || layoutMode === 'zen') ? 'overflow-hidden' : 'overflow-y-auto'} ${layoutMode === 'zen' ? 'p-0' : 'p-6 lg:pb-2'} scrollbar-hide`;
 
     const isZen = layoutMode === 'zen';
@@ -168,18 +170,18 @@ export const PremiumLayout: React.FC<PremiumLayoutProps> = ({
             <div className={`flex-1 grid ${gridCols} gap-4 overflow-hidden ${isZen ? 'rounded-none border-0 bg-slate-50 dark:bg-slate-900' : backgroundMode === 'screen' ? 'p-4' : `rounded-3xl p-4 shadow-sm ring-1 ring-black/5 dark:ring-white/5 ${activeGradient}`} ${className}`}>
 
                 {/* Left Sidebar Column */}
-                <div className={columnClass} onScroll={onMainScroll}>
+                <div className={columnClass} data-columna-scroll="" onScroll={onMainScroll}>
                     {leftSidebar}
                 </div>
 
                 {/* Main Content Column */}
-                <div className={columnClass} onScroll={onMainScroll}>
+                <div className={columnClass} data-columna-scroll="" onScroll={onMainScroll}>
                     {mainContent}
                 </div>
 
                 {/* Right Sidebar Column */}
                 {layoutMode !== 'colegium' && (
-                    <div className={columnClass} onScroll={onMainScroll}>
+                    <div className={columnClass} data-columna-scroll="" onScroll={onMainScroll}>
                         {rightSidebar}
                     </div>
                 )}

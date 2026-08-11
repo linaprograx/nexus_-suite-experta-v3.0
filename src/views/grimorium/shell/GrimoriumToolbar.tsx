@@ -79,7 +79,18 @@ export const GrimoriumToolbar: React.FC<{ collapsed?: boolean }> = ({ collapsed 
     return (
         <div className="flex flex-col w-full">
             {/* 1. HEADER TITLE — collapses on scroll */}
-            <div className={`pl-2 z-10 text-white relative overflow-hidden transition-all duration-300 ease-out ${collapsed ? 'max-h-0 opacity-0 mb-0' : 'max-h-40 opacity-100 mb-2 lg:mb-6'}`}>
+            {/* Se animan SOLO opacidad y desplazamiento, que el compositor resuelve
+                sin tocar el diseño. Antes era `transition-all` sobre `max-height`
+                y `margin`: dos propiedades de layout animadas 60 veces por
+                segundo, dentro de una capa con `backdrop-blur` que además hay que
+                repintar en cada cuadro. De ahí el pliegue «a cuadros».
+
+                La altura sí cambia de golpe, y es deliberado: un reflujo único es
+                imperceptible, sesenta seguidos no. El fundido y el deslizamiento
+                son los que dan la sensación de fluidez. */}
+            <div
+                className={`pl-2 z-10 text-white relative overflow-hidden will-change-[opacity,transform] transition-[opacity,transform] duration-200 ease-out ${collapsed ? 'h-0 opacity-0 -translate-y-1.5 mb-0 pointer-events-none' : 'opacity-100 translate-y-0 mb-2 lg:mb-6'}`}
+            >
                 <h1 className="text-[2.25rem] lg:text-7xl font-black italic tracking-tighter leading-[0.8] mb-1 drop-shadow-xl"
                     style={{ fontFamily: 'Georgia, serif', textShadow: '0 4px 30px rgba(0,0,0,0.3)' }}>
                     Grimorio
