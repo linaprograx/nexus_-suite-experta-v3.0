@@ -145,12 +145,12 @@ export const PremiumLayout: React.FC<PremiumLayoutProps> = ({
         gridCols = 'grid-cols-1';
     }
 
-    const columnClass = `h-full min-h-0 flex flex-col relative z-20 ${transparentColumns || layoutMode === 'zen' ? 'bg-transparent shadow-none border-0' : 'bg-transparent shadow-premium'} rounded-2xl ${(layoutMode === 'colegium' || layoutMode === 'zen') ? 'overflow-hidden' : 'overflow-y-auto'} ${layoutMode === 'zen' ? 'p-0' : 'p-6'} scrollbar-hide`;
+    const columnClass = `h-full min-h-0 flex flex-col relative z-20 ${transparentColumns || layoutMode === 'zen' ? 'bg-transparent shadow-none border-0' : 'bg-transparent shadow-premium'} rounded-2xl ${(layoutMode === 'colegium' || layoutMode === 'zen') ? 'overflow-hidden' : 'overflow-y-auto'} ${layoutMode === 'zen' ? 'p-0' : 'p-6 lg:pb-2'} scrollbar-hide`;
 
     const isZen = layoutMode === 'zen';
 
     return (
-        <div id={id} className={`w-full flex flex-col ${isZen ? 'h-full p-0 py-6' : 'h-full px-4 lg:px-8 py-6'} ${className} relative`}>
+        <div id={id} className={`w-full flex flex-col ${isZen ? 'h-full p-0 py-6' : 'h-full px-4 lg:px-8 py-6 lg:pb-2'} ${className} relative`}>
 
             {/* Absolute Background for Screen Mode (Migrator Style) */}
             {backgroundMode === 'screen' && (

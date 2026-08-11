@@ -99,7 +99,15 @@ const fichaHtml = (recipe: Partial<Recipe>, cost: RecipeCostResult, allRecipes: 
     </div>
     <div class="col-info">
       <h1>${esc(recipe.nombre || 'Receta sin nombre')}</h1>
-      <div class="cat">${esc((recipe.categorias || []).join(' · '))}</div>
+      <div class="cat">${(recipe.categorias || []).map(c => {
+          // El tipo se contornea para que se lea de un vistazo cuál es cuál:
+          // en una carta impresa, distinguir un mocktail de un cóctel no puede
+          // depender de leer una línea gris entre otras iguales.
+          const cls = ['Mocktail', 'Moctel'].includes(c) ? 'tag tag-sin'
+                    : ['Coctel', 'Cóctel'].includes(c) ? 'tag tag-con'
+                    : '';
+          return cls ? `<span class="${cls}">${esc(c)}</span>` : `<span>${esc(c)}</span>`;
+      }).join(' <span class="sep">·</span> ')}</div>
       ${specsHtml ? `<div class="specs">${specsHtml}</div>` : ''}
     </div>
     <div class="col-escandallo">
@@ -210,6 +218,12 @@ export function printRecipeCards(
                              border-radius: 10px; box-shadow: 0 8px 24px rgba(15,23,42,.16); flex-shrink: 0; }
   h1 { font-size: 34px; margin: 0 0 6px; letter-spacing: -.02em; }
   .cat { color: #64748b; font-size: 13px; text-transform: uppercase; letter-spacing: .08em; }
+  .cat .sep { color: #cbd5e1; }
+  /* Contorno sutil, no relleno: en impresión un fondo sólido se come tinta y
+     compite con el título. El borde basta para separar de un vistazo. */
+  .cat .tag { display: inline-block; padding: 1px 7px; border-radius: 999px; border: 1px solid; font-weight: 700; }
+  .cat .tag-con { color: #92400e; border-color: #f59e0b; }
+  .cat .tag-sin { color: #065f46; border-color: #10b981; }
   .specs { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 20px; }
   .spec { border: 1px solid #e2e8f0; border-radius: 8px; padding: 6px 12px; }
   .spec .k { display: block; font-size: 9px; text-transform: uppercase; letter-spacing: .1em; color: #94a3b8; font-weight: 700; }

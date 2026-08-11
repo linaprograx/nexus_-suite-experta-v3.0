@@ -70,6 +70,18 @@ export const ActiveMenuModal: React.FC<{
             .map(m => allRecipes.find(r => r.id === m.recipeId))
             .filter((r): r is Recipe => !!r);
 
+        // Con alcohol primero, sin alcohol después: es el orden en que se lee una
+        // carta y el que ya se ve en pantalla. Se ordena de forma ESTABLE, así
+        // que dentro de cada bloque se respeta la secuencia que haya fijado el
+        // usuario en su carta.
+        const pesoTipo = (r: Recipe) => {
+            const c = r.categorias || [];
+            if (c.includes('Coctel') || c.includes('Cóctel')) return 0;
+            if (c.includes('Mocktail') || c.includes('Moctel')) return 1;
+            return 2;
+        };
+        recetas.sort((a, b) => pesoTipo(a) - pesoTipo(b));
+
         if (!recetas.length) { alert('La carta no tiene recetas que exportar.'); return; }
 
         // Si falta el nombre o el concepto se piden ahora, en vez de generar un
