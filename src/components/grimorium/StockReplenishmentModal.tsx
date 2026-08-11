@@ -98,6 +98,20 @@ export const StockReplenishmentModal: React.FC<StockReplenishmentModalProps> = (
         return groups;
     }, [ingredients, searchQuery, suppliers]);
 
+    /**
+     * Qué líneas seleccionadas no tienen precio de compra.
+     *
+     * Se mira `precioCompra` y no `standardPrice` a propósito: es exactamente el
+     * campo con el que la hoja calcula el importe. Avisar sobre otro sería
+     * avisar de algo distinto de lo que va a pasar.
+     */
+    const lineasSinPrecio = useMemo(
+        () => ingredients
+            .filter(ing => selectedIds.includes(ing.id) && !(Number(ing.precioCompra) > 0))
+            .map(ing => ({ id: ing.id, nombre: ing.nombre || 'Sin nombre' })),
+        [ingredients, selectedIds],
+    );
+
     const handleCreateOrders = () => {
         // Build Orders Grouped by Provider
         const ordersToCreate: { providerId: string; providerName: string; items: OrderItem[] }[] = [];
@@ -171,10 +185,15 @@ export const StockReplenishmentModal: React.FC<StockReplenishmentModalProps> = (
 
                             {/* Table Header */}
                             <div className="grid grid-cols-12 gap-2 p-2 text-[10px] uppercase font-bold text-slate-400 border-b border-slate-50">
+                                {/* En movil el coste necesita sitio: con 2 de 12 columnas
+                                    se queda en unos 56 px y «€11.00» no cabe, asi que el
+                                    importe salia cortado justo en la pantalla donde se
+                                    decide el pedido. Se lo quita al nombre, que ya va a
+                                    dos lineas sin problema. */}
                                 <div className="col-span-1 text-center">Sel.</div>
-                                <div className="col-span-6">Ingrediente</div>
+                                <div className="col-span-5 md:col-span-6">Ingrediente</div>
                                 <div className="col-span-3 text-center">Cantidad</div>
-                                <div className="col-span-2 text-right">Coste</div>
+                                <div className="col-span-3 md:col-span-2 text-right">Coste</div>
                             </div>
 
                             {/* Items */}
@@ -182,17 +201,21 @@ export const StockReplenishmentModal: React.FC<StockReplenishmentModalProps> = (
                                 {group.items.map(ing => {
                                     const isSelected = selectedIds.includes(ing.id);
                                     return (
-                                        <div key={ing.id} className={`grid grid-cols-12 gap-2 items-center p-2 text-xs transition-colors ${isSelected ? 'bg-indigo-50/30' : 'hover:bg-slate-50'}`}>
+                                        <div key={ing.id} className={`grid grid-cols-12 gap-1 md:gap-2 items-center p-2 text-xs transition-colors ${isSelected ? 'bg-indigo-50/30 dark:bg-indigo-500/10' : 'hover:bg-slate-50 dark:hover:bg-white/5'}`}>
                                             <div className="col-span-1 flex justify-center">
                                                 <input
                                                     type="checkbox"
                                                     checked={isSelected}
                                                     onChange={() => toggleSelection(ing.id)}
-                                                    className="rounded text-indigo-600 focus:ring-indigo-500 border-gray-300"
+                                                    className="rounded text-indigo-600 focus:ring-indigo-500 border-gray-300 dark:border-slate-600 dark:bg-slate-800"
                                                 />
                                             </div>
-                                            <div className="col-span-6 cursor-pointer" onClick={() => toggleSelection(ing.id)}>
-                                                <span className={`font-semibold ${isSelected ? 'text-indigo-700' : 'text-slate-700'}`}>{ing.nombre}</span>
+                                            <div className="col-span-5 md:col-span-6 min-w-0 cursor-pointer" onClick={() => toggleSelection(ing.id)}>
+                                                {/* Toda esta tabla estaba escrita solo para modo claro: fondo de
+                                                    fila, nombre y coste sin variante `dark:`. En oscuro quedaba
+                                                    texto oscuro sobre fondo oscuro, y el importe —lo unico que
+                                                    de verdad hay que leer aqui— era practicamente invisible. */}
+                                                <span className={`font-semibold ${isSelected ? 'text-indigo-700 dark:text-indigo-300' : 'text-slate-700 dark:text-slate-200'}`}>{ing.nombre}</span>
                                                 {/* Se puede pedir, faltaría más — pero su importe es una
                                                     estimación, y en una hoja de pedido eso hay que verlo. */}
                                                 {(ing as any).pendienteRevision && (
@@ -200,8 +223,14 @@ export const StockReplenishmentModal: React.FC<StockReplenishmentModalProps> = (
                                                         precio estimado
                                                     </span>
                                                 )}
+                                                {/* En movil la unidad no cabe junto a la cantidad
+                                                    —salia como «B…»— y sin ella no se sabe de que
+                                                    estas pidiendo uno. */}
+                                                <span className="md:hidden block text-[10px] text-slate-400 dark:text-slate-500 truncate">
+                                                    {ing.unidadCompra || 'Ud'}
+                                                </span>
                                             </div>
-                                            <div className="col-span-3 flex justify-center items-center gap-1">
+                                            <div className="col-span-3 min-w-0 flex justify-center items-center gap-1">
                                                 {isSelected && (
                                                     <>
                                                         <Input
@@ -209,13 +238,13 @@ export const StockReplenishmentModal: React.FC<StockReplenishmentModalProps> = (
                                                             min="0"
                                                             value={quantities[ing.id] || ''}
                                                             onChange={(e) => handleQuantityChange(ing.id, parseFloat(e.target.value))}
-                                                            className="h-6 w-16 text-center text-xs font-bold p-1"
+                                                            className="h-6 w-11 md:w-16 min-w-0 text-center text-xs font-bold p-1"
                                                         />
-                                                        <span className="text-[10px] text-slate-400">{ing.unidadCompra || 'Ud'}</span>
+                                                        <span className="hidden md:inline text-[10px] text-slate-400 dark:text-slate-500 truncate">{ing.unidadCompra || 'Ud'}</span>
                                                     </>
                                                 )}
                                             </div>
-                                            <div className="col-span-2 text-right font-mono text-slate-600">
+                                            <div className="col-span-3 md:col-span-2 min-w-0 text-right font-mono tabular-nums text-slate-600 dark:text-slate-200">
                                                 {isSelected ? `€${((quantities[ing.id] || 0) * (ing.precioCompra || 0)).toFixed(2)}` : '-'}
                                             </div>
                                         </div>
@@ -226,14 +255,39 @@ export const StockReplenishmentModal: React.FC<StockReplenishmentModalProps> = (
                     ))}
                 </div>
 
+                {/* M1 · Una hoja con líneas a cero no se le manda a nadie.
+                    El importe sale de `cantidad × precioCompra`, y una ficha sin
+                    precio aporta 0 sin decir nada: la hoja se genera, el total
+                    sale corto y no hay forma de saber por qué hasta abrirla línea
+                    a línea. Aquí se avisa ANTES, y se puede seguir igualmente —el
+                    aviso informa, no bloquea—. */}
+                {lineasSinPrecio.length > 0 && (
+                    <div className="mt-4 rounded-xl border border-amber-400/40 bg-amber-50 dark:bg-amber-900/20 p-3">
+                        <p className="text-xs font-bold text-amber-800 dark:text-amber-300">
+                            {lineasSinPrecio.length} de {selectedIds.length} línea{selectedIds.length === 1 ? '' : 's'} van sin precio
+                        </p>
+                        <p className="mt-1 text-[11px] leading-relaxed text-amber-700 dark:text-amber-400">
+                            Entrarán en la hoja valoradas a 0 €, así que el total no será el que
+                            pagues. Se puede generar igual y corregirlo al recibir.
+                        </p>
+                        <p className="mt-1.5 text-[11px] text-amber-700/80 dark:text-amber-400/80 break-words">
+                            {lineasSinPrecio.slice(0, 6).map(l => l.nombre).join(' · ')}
+                            {lineasSinPrecio.length > 6 && ` … y ${lineasSinPrecio.length - 6} más`}
+                        </p>
+                    </div>
+                )}
+
                 {/* Footer */}
-                <div className="border-t border-slate-100 dark:border-slate-800 pt-4 mt-4 flex justify-between items-center">
+                {/* Apilado en movil. En una fila de 365 px, «Generar Hojas de
+                    Pedido» se partia en cuatro lineas y el texto se salia del
+                    boton. */}
+                <div className="border-t border-slate-100 dark:border-slate-800 pt-4 mt-4 flex flex-col sm:flex-row gap-3 sm:justify-between sm:items-center">
                     <div className="text-xs text-slate-500">
                         {selectedIds.length} items seleccionados para pedido.
                     </div>
-                    <div className="flex gap-3">
-                        <Button variant="ghost" onClick={onClose}>Cancelar</Button>
-                        <Button onClick={handleCreateOrders} disabled={selectedIds.length === 0} className="bg-indigo-600 text-white">
+                    <div className="flex gap-2 sm:gap-3">
+                        <Button variant="ghost" onClick={onClose} className="flex-1 sm:flex-none">Cancelar</Button>
+                        <Button onClick={handleCreateOrders} disabled={selectedIds.length === 0} className="flex-1 sm:flex-none bg-indigo-600 text-white whitespace-nowrap">
                             Generar Hojas de Pedido
                         </Button>
                     </div>
