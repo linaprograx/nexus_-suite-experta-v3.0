@@ -161,17 +161,34 @@ interface Entrada {
 export const auditarUnidades = (e: Entrada): FilaUnidad[] => {
     const stockPorId = new Map(e.stockItems.map(s => [s.ingredientId, s]));
 
+    /**
+     * Qué recetas usan cada ingrediente, resuelto de una vez.
+     *
+     * Recorrer las recetas dentro del bucle de ingredientes son 1.300 × 30
+     * pasadas reconstruyendo las mismas listas de líneas. Aquí es al revés: se
+     * recorren las recetas una sola vez y se indexa por ingrediente.
+     */
+    const usoPorIngrediente = new Map<string, { recetas: string[]; subRecetas: string[] }>();
+    for (const r of e.recipes) {
+        const esPrep = r.categorias?.includes('Preparación') || r.categorias?.includes('Garnish');
+        const vistos = new Set<string>();
+        for (const linea of lineasDe(r)) {
+            const id = linea.ingredientId;
+            // Una receta que repite el mismo ingrediente en dos líneas se cuenta
+            // una vez: aquí interesa «qué recetas dependen de esta ficha».
+            if (!id || vistos.has(id)) continue;
+            vistos.add(id);
+            let uso = usoPorIngrediente.get(id);
+            if (!uso) { uso = { recetas: [], subRecetas: [] }; usoPorIngrediente.set(id, uso); }
+            (esPrep ? uso.subRecetas : uso.recetas).push(r.nombre);
+        }
+    }
+
     return e.ingredients.filter(i => i?.id).map(ing => {
         const { origen, unidad, cantidad } = resolverFormatoConOrigen(ing);
         const stock = stockPorId.get(ing.id);
 
-        const recetas: string[] = [];
-        const subRecetas: string[] = [];
-        for (const r of e.recipes) {
-            if (!lineasDe(r).some(l => l.ingredientId === ing.id)) continue;
-            const esPrep = r.categorias?.includes('Preparación') || r.categorias?.includes('Garnish');
-            (esPrep ? subRecetas : recetas).push(r.nombre);
-        }
+        const { recetas, subRecetas } = usoPorIngrediente.get(ing.id) ?? { recetas: [], subRecetas: [] };
 
         const precioPack = num((ing as any).precioCompra);
         const precioBaseActual = num(ing.standardPrice) || undefined;
