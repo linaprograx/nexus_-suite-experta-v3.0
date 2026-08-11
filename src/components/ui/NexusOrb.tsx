@@ -41,8 +41,23 @@ export const NexusOrb: React.FC<NexusOrbProps> = ({
         >
             {glow && cargada && (
                 <div
-                    className="absolute inset-0 rounded-full bg-fuchsia-500/20 group-hover:bg-cyan-400/30 transition-colors duration-700"
-                    style={{ filter: `blur(${Math.max(6, size * 0.4)}px)` }}
+                    className="absolute rounded-full transition-opacity duration-700 pointer-events-none"
+                    style={{
+                        // El halo con degradado radial, NO con `filter: blur()`.
+                        //
+                        // Un elemento con `filter` dentro de un ancestro con
+                        // `backdrop-filter` se pinta en WebKit como un
+                        // RECTÁNGULO opaco: es el cuadro que rodeaba al logo en
+                        // la pantalla de acceso, cuya tarjeta es de cristal
+                        // (`backdrop-blur-[24px]`). No era del PNG —sus esquinas
+                        // son transparentes y su silueta es un círculo— ni del
+                        // tamaño del desenfoque: era el propio filtro.
+                        //
+                        // Un degradado radial da el mismo halo suave sin filtro
+                        // alguno, así que el artefacto no puede reaparecer.
+                        inset: -size * 0.35,
+                        background: 'radial-gradient(circle closest-side, rgba(217,70,239,0.28), rgba(217,70,239,0.10) 55%, transparent 78%)',
+                    }}
                 />
             )}
             <img
@@ -56,7 +71,10 @@ export const NexusOrb: React.FC<NexusOrbProps> = ({
                 {...(prioritaria ? { fetchPriority: 'high' as const } : {})}
                 draggable={false}
                 onLoad={() => setCargada(true)}
-                className={`relative z-10 h-full w-full object-contain drop-shadow-[0_0_10px_rgba(34,211,238,0.38)] transition-opacity duration-300 ${cargada ? 'opacity-100' : 'opacity-0'}`}
+                // Sin `drop-shadow`: también es un `filter`, y sobre una tarjeta
+                // de cristal provoca el mismo rectángulo. El halo ya lo pone el
+                // degradado de detrás.
+                className={`relative z-10 h-full w-full object-contain transition-opacity duration-300 ${cargada ? 'opacity-100' : 'opacity-0'}`}
             />
         </div>
     );

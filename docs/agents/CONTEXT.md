@@ -245,6 +245,41 @@ ruta**.
 Costó tres diagnósticos equivocados: se atribuyó primero a latencia de red,
 después al `orderBy` de la consulta. Ninguno era.
 
+### Una lista de más de 15 elementos se agrupa y se pliega
+
+Regla de arquitectura, 2026-08-11. **Donde haya una lista de más de 15
+elementos, se separa por categoría o tipo, y cada grupo es un plegable.**
+
+El motivo es de uso, no de estética: en un móvil una lista larga y abierta no
+es «información disponible», es un muro que empuja fuera de la pantalla todo
+lo que viene después. Las 611 reglas de stock tapaban la sección entera de
+Proveedores, que quedaba a un scroll larguísimo sin que nada lo indicara.
+
+La pieza es `components/ui/Plegable.tsx`, con `UMBRAL_LISTA_LARGA`. Va plegada
+por defecto y el título lleva el recuento: quien no venga a eso sigue de largo,
+quien venga abre. Por debajo del umbral **no se agrupa** — partir ocho
+elementos en cuatro cajones no ordena nada, solo añade clics.
+
+Y **no se anima la altura**. Animar `max-height` obliga a recalcular la
+maquetación en cada cuadro y con listas largas se ve a saltos; es el mismo
+defecto que costó retirar el plegado de la cabecera. Solo gira el galón, que es
+una transformación.
+
+### El logo NO lleva filtros CSS
+
+`NexusOrb` no usa `filter` en ninguna forma: ni `blur()` para el halo, ni
+`drop-shadow` en la imagen, ni animaciones de `filter` a su alrededor.
+
+**Un elemento con `filter` dentro de un ancestro con `backdrop-filter` se pinta
+en WebKit como un rectángulo opaco.** Ése era el cuadro que rodeaba al logo en
+la pantalla de acceso, cuya tarjeta es de cristal (`backdrop-blur-[24px]`). No
+venía del PNG —sus esquinas son transparentes y su silueta es un círculo— sino
+del propio filtro. Y `blur(0px)`, que es lo que Framer Motion deja puesto al
+acabar una animación, **sigue contando como filtro**: el artefacto se quedaba
+para siempre.
+
+El halo se hace con un degradado radial, que no necesita filtro alguno.
+
 ### La franja de Grimorio NO se pliega
 
 Todo lo que va del título a los filtros permanece fijo en las tres pestañas, y

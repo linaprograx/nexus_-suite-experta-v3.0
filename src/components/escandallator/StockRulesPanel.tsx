@@ -7,6 +7,7 @@ import { Ingredient, StockRule } from '../../types';
 import { Modal } from '../ui/Modal';
 import { StockItem } from '../../types';
 import { StockRuleModal } from '../grimorium/StockRuleModal';
+import { Plegable, UMBRAL_LISTA_LARGA } from '../ui/Plegable';
 
 interface StockRulesPanelProps {
     allIngredients: Ingredient[];
@@ -35,6 +36,28 @@ export const StockRulesPanel: React.FC<StockRulesPanelProps> = ({
     onCheckAlert
 }) => {
     // Removed local rules state
+
+    /**
+     * Las reglas, agrupadas por la categoría del ingrediente al que apuntan.
+     *
+     * Por debajo del umbral se deja un solo grupo: partir ocho reglas en cuatro
+     * cajones no ordena nada, solo añade clics.
+     */
+    const gruposDeReglas = React.useMemo(() => {
+        if (rules.length <= UMBRAL_LISTA_LARGA) {
+            return [{ categoria: 'Reglas Activas', reglas: rules }];
+        }
+        const porId = new Map(allIngredients.map(i => [i.id, i]));
+        const mapa = new Map<string, StockRule[]>();
+        for (const r of rules) {
+            const cat = porId.get((r as any).ingredientId)?.categoria?.trim() || 'Sin categoría';
+            (mapa.get(cat) ?? mapa.set(cat, []).get(cat)!).push(r);
+        }
+        return [...mapa.entries()]
+            .map(([categoria, reglas]) => ({ categoria, reglas }))
+            // Los cajones más llenos primero: es donde está lo que se viene a ver.
+            .sort((a, b) => b.reglas.length - a.reglas.length || a.categoria.localeCompare(b.categoria));
+    }, [rules, allIngredients]);
 
     const [isRuleModalOpen, setIsRuleModalOpen] = useState(false);
     const [quickSearchQuery, setQuickSearchQuery] = useState('');
@@ -112,6 +135,34 @@ export const StockRulesPanel: React.FC<StockRulesPanelProps> = ({
             onUpdateRules(rules.filter(r => r.id !== id));
         }
     };
+
+    const filaDeRegla = (rule: StockRule, ultima: boolean) => (
+        <div
+            key={rule.id}
+            className={`flex items-center justify-between p-2 px-3 hover:bg-indigo-50/50 dark:hover:bg-indigo-900/10 group transition-colors cursor-pointer ${ultima ? '' : 'border-b border-slate-100 dark:border-slate-700/50'}`}
+            onClick={() => handleEditRuleClick(rule)}
+        >
+            <div className="flex-1 min-w-0 pr-3 flex items-center gap-2">
+                <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${rule.active ? 'bg-emerald-400' : 'bg-slate-300'}`}></div>
+                <span className="text-[11px] font-medium text-slate-700 dark:text-slate-300 truncate" title={rule.ingredientName}>{rule.ingredientName}</span>
+            </div>
+            <div className="flex items-center gap-3 shrink-0">
+                <div className="flex items-center gap-1 text-[10px] text-slate-400" title="Stock Mínimo">
+                    <span className="text-orange-400 font-bold">&lt;{rule.minStock}</span>
+                </div>
+                <div className="w-px h-3 bg-slate-200 dark:bg-slate-700"></div>
+                <div className="flex items-center gap-1 text-[10px] text-slate-400" title="Cantidad a Pedir">
+                    <span className="text-indigo-500 font-bold">+{rule.reorderQuantity}</span>
+                </div>
+                <button
+                    onClick={(e) => { e.stopPropagation(); handleDelete(rule.id); }}
+                    className="ml-1 text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all"
+                >
+                    <Icon svg={ICONS.trash} className="w-3 h-3" />
+                </button>
+            </div>
+        </div>
+    );
 
     return (
         <div className="h-full flex flex-col bg-transparent">
@@ -238,46 +289,34 @@ export const StockRulesPanel: React.FC<StockRulesPanelProps> = ({
 
                 <div className="w-full h-px bg-slate-200 dark:bg-slate-700/50"></div>
 
-                {/* 2. RULES LIST (COMPACT) */}
-                <div>
-                    <h4 className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Reglas Activas</h4>
-                    <div className="border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden bg-white/40 dark:bg-slate-800/40">
-                        {rules.map((rule, idx) => (
-                            <div
-                                key={rule.id}
-                                className={`flex items-center justify-between p-2 px-3 hover:bg-indigo-50/50 dark:hover:bg-indigo-900/10 group transition-colors cursor-pointer ${idx !== rules.length - 1 ? 'border-b border-slate-100 dark:border-slate-700/50' : ''}`}
-                                onClick={() => handleEditRuleClick(rule)}
-                            >
-                                <div className="flex-1 min-w-0 pr-3 flex items-center gap-2">
-                                    <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${rule.active ? 'bg-emerald-400' : 'bg-slate-300'}`}></div>
-                                    <span className="text-[11px] font-medium text-slate-700 dark:text-slate-300 truncate" title={rule.ingredientName}>{rule.ingredientName}</span>
-                                </div>
-
-                                <div className="flex items-center gap-3 shrink-0">
-                                    <div className="flex items-center gap-1 text-[10px] text-slate-400" title="Stock Mínimo">
-                                        <span className="text-orange-400 font-bold">&lt;{rule.minStock}</span>
-                                    </div>
-                                    <div className="w-px h-3 bg-slate-200 dark:bg-slate-700"></div>
-                                    <div className="flex items-center gap-1 text-[10px] text-slate-400" title="Cantidad a Pedir">
-                                        <span className="text-indigo-500 font-bold">+{rule.reorderQuantity}</span>
-                                    </div>
-
-                                    {/* Delete Action */}
-                                    <button
-                                        onClick={(e) => { e.stopPropagation(); handleDelete(rule.id); }}
-                                        className="ml-1 text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all"
-                                    >
-                                        <Icon svg={ICONS.trash} className="w-3 h-3" />
-                                    </button>
-                                </div>
+                {/* 2. REGLAS — plegadas, y agrupadas por categoría si son muchas.
+                    Abiertas de par en par empujaban la sección de Proveedores
+                    fuera de la pantalla: quedaba a un scroll largo de distancia
+                    sin que nada lo indicara. Ver la regla en `Plegable`. */}
+                <div className="space-y-2">
+                    {rules.length === 0 ? (
+                        <div className="rounded-xl border border-slate-200 dark:border-slate-700 p-4 text-center text-[10px] text-slate-400 italic">
+                            No hay reglas configuradas.
+                        </div>
+                    ) : gruposDeReglas.length === 1 ? (
+                        <Plegable titulo="Reglas Activas" insignia={rules.length}>
+                            {gruposDeReglas[0].reglas.map((r, i) => filaDeRegla(r, i === gruposDeReglas[0].reglas.length - 1))}
+                        </Plegable>
+                    ) : (
+                        // Dos niveles: el bloque entero se pliega —que es lo que
+                        // deja ver Proveedores de un vistazo— y dentro cada
+                        // categoría se abre por separado. Con 611 reglas, un
+                        // solo nivel seguía siendo un scroll de 49 filas.
+                        <Plegable titulo="Reglas Activas" insignia={rules.length}>
+                            <div className="p-2 space-y-1.5">
+                                {gruposDeReglas.map(g => (
+                                    <Plegable key={g.categoria} titulo={g.categoria} insignia={g.reglas.length}>
+                                        {g.reglas.map((r, i) => filaDeRegla(r, i === g.reglas.length - 1))}
+                                    </Plegable>
+                                ))}
                             </div>
-                        ))}
-                        {rules.length === 0 && (
-                            <div className="p-4 text-center text-[10px] text-slate-400 italic">
-                                No hay reglas configuradas.
-                            </div>
-                        )}
-                    </div>
+                        </Plegable>
+                    )}
                 </div>
 
                 {/* Contextual Help */}

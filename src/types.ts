@@ -184,7 +184,13 @@ export interface Supplier {
     email: string;
     address: string;
     taxId: string;
-    category: "Bebidas" | "Frutas" | "Lácteos" | "Secos" | "Otros";
+    /**
+     * Categorías del proveedor, separadas por coma («Alcoholes, Mixers»).
+     * Era una unión cerrada de cinco valores que los datos reales nunca
+     * respetaron —hay «FRUTERIA» y «ALCOHOL, MIXERS»—, así que el formulario
+     * escribía con `as any`. Las sugeridas viven en `features/suppliers/categorias.ts`.
+     */
+    category: string;
     deliveryDays: string[];
     leadTimeDays: number;
     paymentTerms: string;

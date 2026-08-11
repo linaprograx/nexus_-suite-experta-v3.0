@@ -88,18 +88,24 @@ export const AuthComponent = () => {
       {/* 1. CARD CONTAINER (Z-10) */}
       <AnimatePresence>
         {!success && (
+          /* Tampoco aquí hay `filter`, y este importaba más todavía: es el
+             ANCESTRO de la tarjeta de cristal. Un filtro en un ancestro cambia
+             de dónde muestrea un `backdrop-filter`, y al terminar la animación
+             se quedaba un `blur(0px)` permanente encima. Además, desenfocar una
+             tarjeta a pantalla completa en cada carga es caro en un móvil.
+             Opacidad, escala y desplazamiento van por compositor y dan la misma
+             entrada. */
           <motion.div
-            initial={{ opacity: 0, scale: 0.94, y: 30, filter: 'blur(20px)' }}
+            initial={{ opacity: 0, scale: 0.94, y: 30 }}
             animate={{
               opacity: 1,
               scale: 1,
               y: 0,
-              filter: 'blur(0px)',
               x: mousePos.x * 6,
               rotateX: -mousePos.y * 1,
               rotateY: mousePos.x * 1
             }}
-            exit={{ opacity: 0, scale: 0.98, filter: 'blur(40px)', transition: { duration: 0.6 } }}
+            exit={{ opacity: 0, scale: 0.98, transition: { duration: 0.6 } }}
             transition={{
               duration: 1.2,
               ease: [0.16, 1, 0.3, 1],
@@ -139,9 +145,15 @@ export const AuthComponent = () => {
                 <div className="relative pt-6 pb-5 px-4 sm:pt-12 sm:pb-10 sm:px-8 flex flex-col items-center z-20">
 
                   {/* ICON: Living Energy Sphere */}
+                  {/* Sin `filter` en la animación.
+                      Framer deja `filter: blur(0px)` puesto al terminar, y
+                      `blur(0px)` sigue siendo un filtro: dentro de esta tarjeta
+                      —que es `backdrop-blur-[24px]`— WebKit pinta ese elemento
+                      como un rectángulo, para siempre. Escala y opacidad dan la
+                      misma entrada y van por compositor. */}
                   <motion.div
-                    initial={{ scale: 0.5, opacity: 0, filter: 'blur(10px)' }}
-                    animate={{ scale: 1, opacity: 1, filter: 'blur(0px)' }}
+                    initial={{ scale: 0.5, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
                     transition={{ delay: 0.5, duration: 1.0, type: "spring" }}
                     className="relative mb-5 sm:mb-10 group"
                   >
