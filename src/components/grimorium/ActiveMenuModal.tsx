@@ -144,12 +144,46 @@ export const ActiveMenuModal: React.FC<{
                 {/* Header */}
                 <div className="relative px-5 py-4 shrink-0 bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-600 overflow-hidden flex items-center justify-between">
                     <div className="absolute -top-8 -right-8 w-40 h-40 bg-white/10 rounded-full blur-2xl pointer-events-none" />
-                    <div className="relative z-10 flex items-center gap-3">
-                        <span className="p-2 rounded-xl bg-white/20 backdrop-blur-sm text-white"><Icon svg={ICONS.book} className="w-5 h-5" /></span>
-                        <div>
-                            <h2 className="text-base font-bold text-white truncate">{nombre || 'Carta activa'}</h2>
+                    {/* La cabecera ES el conmutador de carta.
+                        Antes el nombre salía tres veces —cabecera, selector y campo de
+                        título—, tres cajas iguales sin decir cuál hacía qué. Ahora cada
+                        una tiene un papel visual distinto: aquí la IDENTIDAD (grande, y
+                        clicable si hay varias cartas), y abajo el nombre como CAMPO
+                        editable con su etiqueta. Un dato, dos papeles, cero repetición. */}
+                    <div className="relative z-10 flex items-center gap-3 min-w-0">
+                        <span className="p-2 rounded-xl bg-white/20 backdrop-blur-sm text-white shrink-0"><Icon svg={ICONS.book} className="w-5 h-5" /></span>
+                        <div className="min-w-0">
+                            {cartas.length > 1 && cartaActiva ? (
+                                <div className="relative inline-flex items-center gap-1 group/sw">
+                                    <h2 className="text-base font-bold text-white truncate max-w-[15rem]">{nombre || 'Carta activa'}</h2>
+                                    <Icon svg={ICONS.chevronDown} className="w-4 h-4 text-white/70 shrink-0" />
+                                    {/* El <select> nativo, transparente y encima del título:
+                                        conserva el desplegable del sistema —imprescindible en
+                                        móvil— sin pintar una segunda caja con el mismo texto. */}
+                                    <select
+                                        value={cartaActiva.id}
+                                        aria-label="Cambiar de carta"
+                                        onChange={async e => {
+                                            const destino = e.target.value;
+                                            if (destino === cartaActiva.id) return;
+                                            await actualizarCarta(cartaActiva.id, { estado: 'archivada' });
+                                            await actualizarCarta(destino, { estado: 'activa' });
+                                        }}
+                                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                    >
+                                        {cartas.map(c => (
+                                            <option key={c.id} value={c.id}>
+                                                {c.nombre}{c.estado === 'archivada' ? ' · archivada' : ''}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+                            ) : (
+                                <h2 className="text-base font-bold text-white truncate">{nombre || 'Carta activa'}</h2>
+                            )}
                             <p className="text-xs text-white/80">
                                 {sum.total} receta(s){sum.needsAttention > 0 ? ` · ${sum.needsAttention} requieren atención` : ' · todo al día'}
+                                {cartas.length > 1 && <span className="text-white/60"> · toca el título para cambiar</span>}
                             </p>
                         </div>
                     </div>
@@ -165,32 +199,21 @@ export const ActiveMenuModal: React.FC<{
                             hace un año. Cambiar de activa es archivar la actual y
                             activar otra: solo hay una activa a la vez, que es lo que
                             hace que «la carta» signifique algo sin ambigüedad. */}
-                        {cartas.length > 1 && (
-                            <select
-                                value={cartaActiva.id}
-                                onChange={async e => {
-                                    const destino = e.target.value;
-                                    if (destino === cartaActiva.id) return;
-                                    await actualizarCarta(cartaActiva.id, { estado: 'archivada' });
-                                    await actualizarCarta(destino, { estado: 'activa' });
-                                }}
-                                className="w-full h-10 px-3 rounded-xl text-sm font-bold bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-100"
-                            >
-                                {cartas.map(c => (
-                                    <option key={c.id} value={c.id}>
-                                        {c.nombre}{c.estado === 'archivada' ? ' · archivada' : ''}
-                                    </option>
-                                ))}
-                            </select>
-                        )}
-
-                        <input
-                            value={nombre}
-                            onChange={e => setNombre(e.target.value)}
-                            onBlur={() => guardar({ nombre: nombre.trim() || 'Carta sin título' })}
-                            placeholder="Nombre de la carta (ej. Drink Your Game)"
-                            className="w-full h-10 px-3 rounded-xl text-sm font-bold bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-100"
-                        />
+                        <div className="space-y-1">
+                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">
+                                Nombre de la carta
+                            </label>
+                            <input
+                                value={nombre}
+                                onChange={e => setNombre(e.target.value)}
+                                onBlur={() => guardar({ nombre: nombre.trim() || 'Carta sin título' })}
+                                placeholder="Ej. Drink Your Game"
+                                className="w-full h-10 px-3 rounded-xl text-sm font-semibold bg-transparent border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-100 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 outline-none transition-colors"
+                            />
+                        </div>
+                        <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 pt-1">
+                            Concepto
+                        </label>
                         <textarea
                             value={concepto}
                             onChange={e => setConcepto(e.target.value)}
