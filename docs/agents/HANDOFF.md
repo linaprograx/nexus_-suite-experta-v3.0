@@ -88,7 +88,7 @@ grep -c -F 'TU_CADENA_VISIBLE' /tmp/prod.js   # marcador
 | Identidad D | **Mecanismo listo y probado** (`mergeMaster`), botón en el informe. El fundador fusionó el grupo Aguerrido: 1327 → 1326 ítems con el valor intacto |
 | Ingrediente exprés | Hecho: alta desde la receta, marca `pendienteRevision`, fuera de automatismos, filtro en Mercado |
 | Fase 0 · cimientos | `origen` ✅ · I2 ✅ · I3 ✅ · I4 ✅ · **I1 ✅ informe + corrección con deshacer** |
-| Fase 1 · pedido útil | M1 compra ✅ · **M1 hoja de pedido, M2 `providerId`, M3 cantidad pendientes** |
+| Fase 1 · pedido útil | M1 compra ✅ · M2 ✅ · **M1 hoja de pedido y M3 cantidad pendientes** |
 
 ## ⏸️ Lo siguiente — EMPIEZA POR AQUÍ
 
@@ -112,8 +112,20 @@ grep -c -F 'TU_CADENA_VISIBLE' /tmp/prod.js   # marcador
    **no hay deshacer**. La migración sigue en su módulo, sin botón que la
    dispare, y así debe quedarse.
 
-2. **M2 · `providerId` en el pedido**, y leerlo al recibir en vez de deducirlo
-   otra vez del ingrediente. Bloquea agrupar Inventario por proveedor.
+2. **⚠️ `proveedor` está obsoleto y el pedido sigue agrupando por él.**
+   Salió al hacer M2 y **no se ha tocado**, porque cambiarlo altera lo que se
+   ve en la hoja de reposición y eso es decisión del fundador.
+
+   En `types.ts`, `proveedor?: string` está marcado `@deprecated` a favor de
+   `proveedores?: string[]` + `proveedorPreferente`. Pero
+   `StockReplenishmentModal` agrupa por `ing.proveedor || 'unknown'`. Si el
+   catálogo real ya usa el modelo nuevo, **todo cae en «Sin Proveedor
+   Asignado»** y M2 no luce, porque no hay proveedor que guardar.
+
+   **Cómo comprobarlo sin tocar nada:** abrir la hoja de reposición. Si casi
+   todo aparece bajo «Sin Proveedor Asignado», es esto. La corrección sería
+   agrupar por `proveedorPreferente ?? proveedores[0] ?? proveedor`, y es un
+   cambio visible: enseñar antes/después.
 
 3. **M1 parte 2 · la hoja de pedido a 0 €** — misma raíz que la compra, pero en
    bloque: avisar de cuántas líneas van sin precio antes de crear la hoja.
