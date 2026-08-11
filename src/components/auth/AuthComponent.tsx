@@ -135,8 +135,15 @@ export const AuthComponent = () => {
                 {/* Layer C: Refraction/Reflection */}
                 <div className="absolute inset-0 bg-gradient-to-b from-white/[0.04] to-transparent pointer-events-none" />
 
-                {/* Layer D: Diagonal Specular Streak */}
-                <div className="absolute -top-[50%] -left-[50%] w-[200%] h-[200%] bg-gradient-to-r from-transparent via-white/[0.03] to-transparent rotate-45 pointer-events-none blur-xl" />
+                {/* Layer D: Diagonal Specular Streak
+                    Sin `blur-xl`. Era el ultimo filtro que quedaba DENTRO de la
+                    tarjeta de cristal, y como es una banda enorme girada 45º, el
+                    rectangulo que WebKit pinta en su lugar cruzaba justo por el
+                    noroeste del logo: esa era la mancha oscura.
+                    El degradado ya es suave por si mismo —va de transparente a
+                    un 3% de blanco y vuelve—, asi que el desenfoque solo estaba
+                    suavizando algo que no tenia bordes. */}
+                <div className="absolute -top-[50%] -left-[50%] w-[200%] h-[200%] bg-gradient-to-r from-transparent via-white/[0.03] to-transparent rotate-45 pointer-events-none" />
 
                 {/* Layer E: Refined top edge highlight (single, warm) */}
                 <div className="absolute inset-x-8 top-0 h-px bg-gradient-to-r from-transparent via-white/25 to-transparent" />
@@ -260,12 +267,17 @@ export const AuthComponent = () => {
                       </motion.div>
                     )}
 
-                    {/* DARK BACKLIT GLASS BUTTON */}
+                    {/* DARK BACKLIT GLASS BUTTON
+                        Sin `brightness()` en el hover: es otro filtro dentro de
+                        la tarjeta de cristal, y basta con que Framer lo registre
+                        como propiedad animable para dejarlo puesto de base. El
+                        realce ya lo dan la escala y el `hover:` de las clases,
+                        que no necesitan filtro. */}
                     <motion.button
                       initial={{ opacity: 0, scale: 0.98 }}
                       animate={{ opacity: 1, scale: 1 }}
                       transition={{ delay: 1.0 }}
-                      whileHover={{ scale: 1.02, filter: 'brightness(1.2)' }}
+                      whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.97 }}
                       type="submit"
                       disabled={loading}
