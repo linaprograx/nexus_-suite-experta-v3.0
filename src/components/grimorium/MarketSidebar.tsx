@@ -3,9 +3,9 @@ import { useQueryClient } from '@tanstack/react-query';
 import { Ingredient } from '../../types';
 import { useSuppliers } from '../../features/suppliers/hooks/useSuppliers';
 import { useApp } from '../../context/AppContext';
+import { UnitAuditModal } from '../../features/units/UnitAuditModal';
 import { Icon } from '../ui/Icon';
 import { ICONS } from '../ui/icons';
-import { normalizeIngredientPacks } from '../../services/migrations/normalizeIngredientPacks';
 import { TOKENS_GENERICOS as WEAK_TOKENS, esTokenGenerico } from '../../core/identity/genericTokens';
 import {
     normalizeIngredientCategories,
@@ -28,8 +28,7 @@ export const MarketSidebar: React.FC<MarketSidebarProps> = ({
     const { db, userId, appId } = useApp();
     const { suppliers } = useSuppliers({ db, userId });
     const queryClient = useQueryClient();
-    const [normalizing, setNormalizing] = useState(false);
-    const [normalizeMsg, setNormalizeMsg] = useState<string | null>(null);
+    const [showUnitAudit, setShowUnitAudit] = useState(false);
     const [normalizingCategories, setNormalizingCategories] = useState(false);
     const [categoryNormalizeMsg, setCategoryNormalizeMsg] = useState<string | null>(null);
     const [revertingCategories, setRevertingCategories] = useState(false);
@@ -39,22 +38,20 @@ export const MarketSidebar: React.FC<MarketSidebarProps> = ({
         [allIngredients],
     );
 
-    const handleNormalizeCatalog = async () => {
-        if (!db || !userId || !appId || normalizing) return;
-        if (!window.confirm('Normalizar el formato de TODO el catálogo (700ml en vez de 0,7, etc.). Es seguro y reversible al reimportar. ¿Continuar?')) return;
-        setNormalizing(true);
-        setNormalizeMsg(null);
-        try {
-            const r = await normalizeIngredientPacks(db, appId, userId);
-            await queryClient.invalidateQueries({ queryKey: ['ingredients'] });
-            setNormalizeMsg(`✓ ${r.updated} normalizados · ${r.skipped} ya correctos${r.errors ? ` · ${r.errors} errores` : ''}`);
-        } catch (e) {
-            console.error('[MIGRATION] fallo', e);
-            setNormalizeMsg('✗ Error al normalizar (ver consola)');
-        } finally {
-            setNormalizing(false);
-        }
-    };
+    /**
+     * El botón ya no ejecuta la migración: abre el informe.
+     *
+     * Antes llamaba directo a `normalizeIngredientPacks`, que resuelve el
+     * formato con `resolveStandardPack` — y esa función **nunca falla**: cuando
+     * no encuentra evidencia devuelve una botella de 700 ml. Es decir, escribía
+     * en Firestore un formato inventado para cada producto sin datos, y con él
+     * recalculaba `standardPrice`, que es lo que alimenta el coste de todas las
+     * recetas. La confirmación además prometía que era «reversible al
+     * reimportar», cosa que no es cierta: no hay deshacer.
+     *
+     * La migración sigue existiendo intacta en `normalizeIngredientPacks`. Lo
+     * que cambia es el orden: primero el informe, después la decisión.
+     */
 
     const handleNormalizeCategories = async () => {
         if (!db || !userId || !appId || normalizingCategories || categoryPreview.affected === 0) return;
@@ -446,21 +443,17 @@ export const MarketSidebar: React.FC<MarketSidebarProps> = ({
                             </button>
 
                             <button
-                                onClick={handleNormalizeCatalog}
-                                disabled={normalizing}
-                                title="Recalcula el formato canónico (ml/g/und) de todos los productos para que el costeo sea exacto"
+                                onClick={() => setShowUnitAudit(true)}
+                                title="Informe de unidades: qué formato consta, cuál se está suponiendo y qué coste depende de ello"
                                 className="flex items-center justify-center gap-2 p-2.5 rounded-xl bg-white/50 hover:bg-emerald-50 dark:bg-slate-700/50 dark:hover:bg-slate-700 hover:border-emerald-200 border border-white/10 transition-all group disabled:opacity-60 disabled:cursor-wait"
                             >
-                                <div className={`w-6 h-6 rounded-full bg-emerald-100 dark:bg-emerald-900/50 text-emerald-600 dark:text-emerald-400 flex items-center justify-center transition-transform duration-500 ${normalizing ? 'animate-spin' : 'group-hover:rotate-180'}`}>
-                                    <Icon svg={ICONS.refreshCw} className="w-3 h-3" />
+                                <div className={`w-6 h-6 rounded-full bg-emerald-100 dark:bg-emerald-900/50 text-emerald-600 dark:text-emerald-400 flex items-center justify-center transition-transform duration-500 group-hover:rotate-180`}>
+                                    <Icon svg={ICONS.beaker} className="w-3 h-3" />
                                 </div>
                                 <span className="text-xs font-bold text-slate-600 dark:text-slate-300">
-                                    {normalizing ? 'Normalizando…' : 'Normalizar Catálogo'}
+                                    Revisar Unidades
                                 </span>
                             </button>
-                            {normalizeMsg && (
-                                <p className="text-[10px] text-center text-slate-500 dark:text-slate-400 mt-1">{normalizeMsg}</p>
-                            )}
 
                             <button
                                 onClick={handleNormalizeCategories}
@@ -500,6 +493,8 @@ export const MarketSidebar: React.FC<MarketSidebarProps> = ({
                 </div>
 
             </div>
+
+            {showUnitAudit && <UnitAuditModal onClose={() => setShowUnitAudit(false)} />}
         </div>
     );
 };
