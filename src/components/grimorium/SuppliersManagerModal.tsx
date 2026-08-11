@@ -247,7 +247,13 @@ export const SuppliersManagerModal: React.FC<SuppliersManagerModalProps> = ({ is
                     {/* Main Content Area */}
                     <div className={`flex-1 bg-white dark:bg-slate-950/30 flex-col overflow-hidden ${view === 'list' ? 'hidden md:flex' : 'flex'}`}>
                         {view === 'form' ? (
-                            <div className="p-8 max-w-xl mx-auto w-full animate-in slide-in-from-right-4">
+                            /* Con scroll propio. El panel padre es `overflow-hidden`
+                               y el modal mide 70vh: en un móvil el formulario se
+                               cortaba por «Días de entrega» y los botones de
+                               Cancelar y Guardar quedaban fuera de la pantalla, sin
+                               forma de alcanzarlos. Es decir, no se podía dar de
+                               alta un proveedor desde el teléfono. */
+                            <div className="p-5 md:p-8 max-w-xl mx-auto w-full h-full overflow-y-auto custom-scrollbar animate-in slide-in-from-right-4">
                                 <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-6">Nuevo Proveedor</h3>
                                 <div className="space-y-4">
                                     <div className="grid grid-cols-2 gap-4">

@@ -4,6 +4,7 @@ import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { Ingredient } from '../../types';
 import { Order } from '../../hooks/useOrders'; // Import Order type
+import { proveedorDeIngrediente } from '../../features/orders/resolverProveedor';
 
 interface OrderItem {
     ingredientId: string;
@@ -77,7 +78,11 @@ export const StockReplenishmentModal: React.FC<StockReplenishmentModalProps> = (
         const groups: Record<string, { providerName: string, items: Ingredient[] }> = {};
 
         filtered.forEach(ing => {
-            const pid = ing.proveedor || 'unknown';
+            // `ing.proveedor` está obsoleto y en el catálogo real viene vacío:
+            // agrupar por él metía TODO en «Sin Proveedor Asignado». La escalera
+            // completa vive en `proveedorDeIngrediente`, compartida con el
+            // receptor de pedidos.
+            const pid = proveedorDeIngrediente(ing) || 'unknown';
 
             // Apply supplier filter if provided
             if (filterSupplierId && pid !== filterSupplierId) return;

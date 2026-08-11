@@ -23,9 +23,46 @@ export interface ProveedorResuelto {
 /** Centinelas de «sin proveedor» que conviven en el código. Ninguno es un id real. */
 const SIN_PROVEEDOR = new Set(['', 'unknown', 'generic_provider']);
 
+const valido = (id?: string | null): id is string =>
+    typeof id === 'string' && id.trim() !== '' && !SIN_PROVEEDOR.has(id);
+
+/**
+ * A quién se le compra un producto, **según la ficha**.
+ *
+ * Un único sitio para esta pregunta. Antes cada parte miraba donde le parecía:
+ * la hoja de reposición leía `ing.proveedor`, que está marcado `@deprecated`
+ * desde que existen `proveedores[]` y `proveedorPreferente`. Como el catálogo
+ * real ya usa el modelo nuevo, ese campo viejo venía vacío y **todo el
+ * inventario caía en «Sin Proveedor Asignado»**: la agrupación por proveedor
+ * no agrupaba nada.
+ *
+ * El orden va de lo más explícito a lo más circunstancial:
+ *   1. el preferente, que es una decisión tomada a mano;
+ *   2. el primero de los asignados;
+ *   3. aquel del que consta una oferta real en `supplierData`;
+ *   4. el campo antiguo, que sigue vivo en fichas que nadie ha vuelto a tocar.
+ */
+export const proveedorDeIngrediente = (ing?: {
+    proveedorPreferente?: string;
+    proveedores?: string[];
+    supplierData?: Record<string, unknown>;
+    proveedor?: string;
+}): string | undefined => {
+    if (!ing) return undefined;
+    if (valido(ing.proveedorPreferente)) return ing.proveedorPreferente;
+
+    const asignado = (ing.proveedores || []).find(valido);
+    if (asignado) return asignado;
+
+    const conOferta = Object.keys(ing.supplierData || {}).find(valido);
+    if (conOferta) return conOferta;
+
+    return valido(ing.proveedor) ? ing.proveedor : undefined;
+};
+
 export const resolverProveedorDelPedido = (
     pedido: { providerId?: string; providerName?: string },
-    ingrediente: { proveedor?: string } | undefined,
+    ingrediente: Parameters<typeof proveedorDeIngrediente>[0],
     suppliers: Array<{ id: string; name: string }>,
 ): ProveedorResuelto => {
     const nombreDe = (id: string) => suppliers.find(s => s.id === id)?.name;
@@ -43,9 +80,11 @@ export const resolverProveedorDelPedido = (
         };
     }
 
-    // 2. Pedidos anteriores a M2: se deduce como se hacía entonces.
-    const delIngrediente = ingrediente?.proveedor;
-    if (delIngrediente && !SIN_PROVEEDOR.has(delIngrediente)) {
+    // 2. Pedidos anteriores a M2: no traen proveedor, así que se deduce de la
+    //    ficha. Por la misma escalera que usa la hoja de reposición, para que
+    //    no digan cosas distintas sobre el mismo producto.
+    const delIngrediente = proveedorDeIngrediente(ingrediente);
+    if (delIngrediente) {
         return {
             providerId: delIngrediente,
             providerName: nombreDe(delIngrediente) || 'Proveedor Desconocido',
