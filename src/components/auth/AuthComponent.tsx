@@ -145,7 +145,7 @@ export const AuthComponent = () => {
                     transition={{ delay: 0.5, duration: 1.0, type: "spring" }}
                     className="relative mb-5 sm:mb-10 group"
                   >
-                    <NexusOrb size={typeof window !== 'undefined' && window.innerWidth < 640 ? 52 : 72} />
+                    <NexusOrb size={typeof window !== 'undefined' && window.innerWidth < 640 ? 52 : 72} prioritaria />
                   </motion.div>
 
                   <motion.h1
