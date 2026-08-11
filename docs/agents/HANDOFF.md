@@ -136,6 +136,21 @@ grep -c -F 'TU_CADENA_VISIBLE' /tmp/prod.js   # marcador
    usa un solo batch y Firestore corta en 500. El patrón correcto ya está en
    `useOrders.createOrder`.
 
+## Pedido y aún no hecho
+
+- **Categoría de proveedor: barrita desplegable, no 19 fichas a la vista.**
+  Pedido el 2026-08-12. Ahora las 19 categorías ocupan una fila propia y
+  empujan el resto del formulario hacia abajo. Debe volver a la maqueta
+  anterior: **al lado de «Empresa / Nombre», una barrita** que al pulsarla
+  despliegue las opciones, permita marcar **varias**, y al cerrarse muestre
+  las elegidas. Multi-selección obligatoria: el catálogo real ya usa «ALCOHOL,
+  MIXERS». Las opciones y los ayudantes ya existen en
+  `features/suppliers/categorias.ts`; lo que falta es solo el control.
+
+- **Mercado: agrupar variantes en la búsqueda.** Buscar «absolut» debe dar UN
+  resultado con sus 10 opciones dentro, no diez resultados. El fundador pidió
+  hacerlo **quirúrgicamente** y ver el plan antes de tocar nada.
+
 ## Pendiente del fundador
 
 - **`VITE_FIREBASE_APP_ID` en Vercel sigue con dos saltos de línea al final.**
