@@ -7,6 +7,13 @@ import { usePurchaseIngredient } from '../../hooks/usePurchaseIngredient';
 import { useStockMovements } from '../../hooks/useStockMovements';
 import { buildCurrentStock } from '../../utils/stockUtils';
 import { auditarUnidades, resumirUnidades, FilaUnidad, VeredictoUnidad } from '../../core/costing/unitAudit';
+import { useApp } from '../../context/AppContext';
+import { useQueryClient } from '@tanstack/react-query';
+import { Ingredient } from '../../types';
+import {
+    planificarCorreccion, ejecutarCorreccion, deshacerCorreccion,
+    UNIDADES_BASE, UnidadBase, FORMATOS_HABITUALES,
+} from './fixUnit';
 
 /**
  * I1 — Informe de unidades canónicas. **En seco: abrirlo no escribe nada.**
@@ -33,6 +40,7 @@ const ESTILO: Record<VeredictoUnidad, { cls: string; texto: string }> = {
 
 /** En qué se ha basado la propuesta. Es lo que separa un dato de una suposición. */
 const ORIGEN: Record<string, string> = {
+    verificado: 'Confirmado a mano',
     explicito: 'La ficha ya trae cantidad y unidad canónicas',
     formato: 'Deducido de la unidad de compra',
     nombre: 'Deducido del nombre del producto',
@@ -51,7 +59,132 @@ const Celda: React.FC<{ etiqueta: string; children: React.ReactNode }> = ({ etiq
     </div>
 );
 
-const Fila: React.FC<{ fila: FilaUnidad }> = ({ fila }) => {
+/**
+ * El corrector de una ficha. **Una ficha por operación, nunca en lote.**
+ *
+ * Solo pregunta el tamaño del envase. El precio por unidad base no se teclea:
+ * sale del precio de compra dividido entre esa cantidad, con la merma
+ * aplicada, igual que en el resto del motor. Antes de escribir enseña el
+ * cambio de coste que va a provocar, y lo escrito se deshace.
+ */
+const Corrector: React.FC<{ ficha: Ingredient; onHecho: () => void }> = ({ ficha, onHecho }) => {
+    const { db, appId, userId } = useApp();
+    const [unidad, setUnidad] = React.useState<UnidadBase>(
+        (UNIDADES_BASE as readonly string[]).includes(ficha.standardUnit || '')
+            ? (ficha.standardUnit as UnidadBase) : 'ml',
+    );
+    const [cantidad, setCantidad] = React.useState<string>('');
+    const [guardando, setGuardando] = React.useState(false);
+    const [error, setError] = React.useState<string | null>(null);
+
+    const yaVerificada = (ficha as any).formatoVerificado === true;
+    const plan = React.useMemo(
+        () => planificarCorreccion(ficha, parseFloat(cantidad.replace(',', '.')) || 0, unidad),
+        [ficha, cantidad, unidad],
+    );
+
+    const escribir = async (accion: 'corregir' | 'deshacer') => {
+        if (!db || !appId || !userId) return;
+        setGuardando(true); setError(null);
+        try {
+            if (accion === 'corregir') await ejecutarCorreccion(db, appId, userId, plan);
+            else await deshacerCorreccion(db, appId, userId, ficha as any);
+            onHecho();
+        } catch (e: any) {
+            console.error('[I1] correccion', e);
+            setError(e?.message || 'No se pudo guardar.');
+        } finally {
+            setGuardando(false);
+        }
+    };
+
+    if (yaVerificada) {
+        return (
+            <div className="flex items-center justify-between gap-3 rounded-xl bg-emerald-500/5 border border-emerald-500/20 p-2.5">
+                <p className="text-[11px] text-emerald-700 dark:text-emerald-300">
+                    Formato confirmado a mano: <strong>{ficha.standardQuantity} {ficha.standardUnit}</strong>.
+                </p>
+                <button
+                    onClick={() => escribir('deshacer')}
+                    disabled={guardando}
+                    className="shrink-0 px-3 h-8 rounded-lg text-[11px] font-bold text-amber-700 dark:text-amber-400 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 transition-colors disabled:opacity-50"
+                >
+                    {guardando ? 'Deshaciendo…' : 'Deshacer'}
+                </button>
+            </div>
+        );
+    }
+
+    return (
+        <div className="rounded-xl bg-violet-500/5 border border-violet-500/20 p-2.5 space-y-2.5">
+            <p className="text-[11px] font-bold text-violet-800 dark:text-violet-300">
+                ¿De cuánto es este envase?
+            </p>
+
+            <div className="flex gap-1.5">
+                {UNIDADES_BASE.map(u => (
+                    <button
+                        key={u}
+                        onClick={() => setUnidad(u)}
+                        className={`px-2.5 h-7 rounded-lg text-[11px] font-bold uppercase transition-colors ${unidad === u
+                            ? 'bg-violet-600 text-white'
+                            : 'bg-white dark:bg-slate-800 text-slate-500 border border-slate-200 dark:border-slate-700'}`}
+                    >{u}</button>
+                ))}
+            </div>
+
+            <div className="flex flex-wrap gap-1.5">
+                {FORMATOS_HABITUALES[unidad].map(n => (
+                    <button
+                        key={n}
+                        onClick={() => setCantidad(String(n))}
+                        className={`px-2.5 h-8 rounded-lg text-[11px] font-bold transition-colors ${String(n) === cantidad
+                            ? 'bg-violet-600 text-white'
+                            : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:border-violet-400'}`}
+                    >{n}</button>
+                ))}
+                <input
+                    type="number"
+                    inputMode="decimal"
+                    value={cantidad}
+                    onChange={e => setCantidad(e.target.value)}
+                    placeholder="otro"
+                    className="w-20 h-8 px-2 rounded-lg text-[11px] font-bold border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-violet-500/40"
+                />
+            </div>
+
+            {plan.bloqueo ? (
+                cantidad.trim() !== '' && (
+                    <p className="text-[10px] text-rose-600 dark:text-rose-400 leading-relaxed">{plan.bloqueo}</p>
+                )
+            ) : (
+                <p className="text-[10px] text-slate-600 dark:text-slate-300 leading-relaxed">
+                    El coste pasaría de{' '}
+                    <strong>{plan.precioBaseAnterior ? `${eur(plan.precioBaseAnterior)}/${plan.unidadAnterior}` : 'sin coste'}</strong>
+                    {' '}a <strong>{eur(plan.precioBaseNuevo!)}/{plan.unidadNueva}</strong>
+                    {plan.impactoPct !== undefined && Math.abs(plan.impactoPct) >= 0.05 && (
+                        <span className={plan.impactoPct > 0 ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400'}>
+                            {' '}({plan.impactoPct > 0 ? '+' : ''}{plan.impactoPct.toFixed(1)}%)
+                        </span>
+                    )}
+                    {plan.merma > 0 && <span className="text-slate-400"> · merma {plan.merma}% incluida</span>}
+                </p>
+            )}
+
+            {error && <p className="text-[10px] text-rose-600 dark:text-rose-400">{error}</p>}
+
+            <button
+                onClick={() => escribir('corregir')}
+                disabled={guardando || !!plan.bloqueo}
+                className="w-full h-9 rounded-lg text-[11px] font-bold uppercase tracking-wider bg-violet-600 hover:bg-violet-700 text-white transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+                {guardando ? 'Guardando…' : 'Confirmar formato'}
+            </button>
+        </div>
+    );
+};
+
+const Fila: React.FC<{ fila: FilaUnidad; ficha?: Ingredient; onCambio: () => void }> = ({ fila, ficha, onCambio }) => {
     const [abierta, setAbierta] = React.useState(false);
     const estilo = ESTILO[fila.veredicto];
     const enRecetas = fila.recetas.length + fila.subRecetas.length;
@@ -119,6 +252,10 @@ const Fila: React.FC<{ fila: FilaUnidad }> = ({ fila }) => {
                             <strong>Afecta a:</strong> {[...fila.recetas, ...fila.subRecetas.map(s => `${s} (sub-receta)`)].join(' · ')}
                         </div>
                     )}
+
+                    {ficha && (fila.veredicto !== 'correcto' || (ficha as any).formatoVerificado) && (
+                        <Corrector ficha={ficha} onHecho={onCambio} />
+                    )}
                 </div>
             )}
         </div>
@@ -130,6 +267,12 @@ export const UnitAuditModal: React.FC<{ onClose: () => void }> = ({ onClose }) =
     const { recipes: allRecipes } = useRecipes();
     const { purchaseHistory } = usePurchaseIngredient();
     const { movements } = useStockMovements();
+
+    const queryClient = useQueryClient();
+    const porId = React.useMemo(
+        () => new Map((allIngredients || []).map(i => [i.id, i])),
+        [allIngredients],
+    );
 
     const [filtro, setFiltro] = React.useState<VeredictoUnidad | 'todos'>('BLOQUEADO');
     const [busqueda, setBusqueda] = React.useState('');
@@ -250,7 +393,14 @@ export const UnitAuditModal: React.FC<{ onClose: () => void }> = ({ onClose }) =
                                     <p className="text-sm text-slate-500 dark:text-slate-400">Nada que mostrar con este filtro.</p>
                                 </div>
                             ) : (
-                                visibles.map(f => <Fila key={f.id} fila={f} />)
+                                visibles.map(f => (
+                                    <Fila
+                                        key={f.id}
+                                        fila={f}
+                                        ficha={porId.get(f.id)}
+                                        onCambio={() => queryClient.invalidateQueries({ queryKey: ['ingredients'] })}
+                                    />
+                                ))
                             )}
 
                             {visibles.length === 300 && (

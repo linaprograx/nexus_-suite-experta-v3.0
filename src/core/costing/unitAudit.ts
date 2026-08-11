@@ -1,5 +1,6 @@
 import { Ingredient, Recipe, IngredientLineItem } from '../../types';
 import { normalizeToBase, parsePackFromText, sanePackSize } from '../../utils/packNormalization';
+import { calculateIngredientPrice } from '../../utils/costCalculator';
 
 /**
  * I1 — Auditoría de unidades. **Informe en seco: no escribe nada.**
@@ -25,6 +26,7 @@ import { normalizeToBase, parsePackFromText, sanePackSize } from '../../utils/pa
 
 /** De dónde sale el formato propuesto. Determina si se puede confiar en él. */
 export type OrigenFormato =
+    | 'verificado'     // una persona lo miró y lo confirmó: manda sobre todo lo demás
     | 'explicito'      // el documento ya trae cantidad + unidad canónicas
     | 'formato'        // parseado del texto de «unidad de compra» («0,700 L»)
     | 'nombre'         // parseado del nombre del producto («… 200 ML»)
@@ -95,7 +97,18 @@ export const resolverFormatoConOrigen = (ing: Partial<Ingredient>): {
     const nombreNorm = delNombre ? norm(delNombre.qty, delNombre.unit) : null;
 
     /**
-     * El valor guardado NO se cree a ciegas.
+     * La confirmación humana manda sobre cualquier deducción.
+     *
+     * Sin esto, una ficha corregida a mano volvería a salir bloqueada en
+     * cuanto se recargara el informe: su `unidadCompra` sigue diciendo lo
+     * mismo de siempre. Quien miró la botella sabe más que el parser.
+     */
+    if (guardado && (ing as any).formatoVerificado === true) {
+        return { origen: 'verificado', ...guardado };
+    }
+
+    /**
+     * El resto del valor guardado NO se cree a ciegas.
      *
      * `standardQuantity` pudo escribirlo `resolveStandardPack` en una pasada
      * anterior… incluyendo su valor por defecto. Un 700 guardado es
@@ -192,7 +205,11 @@ export const auditarUnidades = (e: Entrada): FilaUnidad[] => {
 
         const precioPack = num((ing as any).precioCompra);
         const precioBaseActual = num(ing.standardPrice) || undefined;
-        const precioBaseResultante = cantidad > 0 && precioPack > 0 ? precioPack / cantidad : undefined;
+        // Con la merma aplicada, igual que `standardPrice`. Dividir sin ella
+        // hacía que toda ficha con merma mostrase un impacto que no existe.
+        const merma = num((ing as any).merma ?? (ing as any).wastePercentage) || 0;
+        const precioBaseResultante = cantidad > 0 && precioPack > 0
+            ? calculateIngredientPrice(precioPack, cantidad, merma) : undefined;
         const impactoPct = precioBaseActual && precioBaseResultante
             ? ((precioBaseResultante - precioBaseActual) / precioBaseActual) * 100
             : undefined;
@@ -200,7 +217,12 @@ export const auditarUnidades = (e: Entrada): FilaUnidad[] => {
         let veredicto: VeredictoUnidad;
         let motivo: string;
 
-        if (origen === 'contradictorio') {
+        if (origen === 'verificado') {
+            // Una persona miró la botella. Eso cierra el caso, aunque las
+            // cifras derivadas no cuadren al céntimo con lo deducible.
+            veredicto = 'correcto';
+            motivo = 'Confirmado a mano. Se puede deshacer desde la ficha.';
+        } else if (origen === 'contradictorio') {
             veredicto = 'BLOQUEADO';
             motivo = `El documento guarda ${ing.standardQuantity} ${ing.standardUnit}, pero su unidad de `
                 + `compra dice «${(ing as any).unidadCompra}». No cuadran, y no hay forma de saber cuál `
