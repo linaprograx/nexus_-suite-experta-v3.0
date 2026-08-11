@@ -179,14 +179,30 @@ export const StockRulesPanel: React.FC<StockRulesPanelProps> = ({
 
             <div className="flex-1 overflow-y-auto custom-scrollbar px-3 pb-3 space-y-4">
 
-                {/* 0. QUICK BUY SEARCH */}
-                <div className="relative">
-                    {/* ... (Search unchanged) ... */}
+                {/* 0. COMPRA RÁPIDA
+                    La explicación vivía en un recuadro al final del panel, a un
+                    scroll de distancia de la barra que explicaba. Así no explica
+                    nada: para cuando se lee, ya has pasado por encima del campo
+                    sin saber para qué era —parecía un buscador más—.
+                    Ahora la etiqueta va dentro. El contorno es tenue a propósito:
+                    lo justo para que el bloque se lea como una herramienta y no
+                    como un campo suelto, sin competir con la alerta de stock
+                    crítico, que sí es una urgencia. */}
+                <div className="relative rounded-xl border border-indigo-200/70 dark:border-indigo-500/25 bg-indigo-50/40 dark:bg-indigo-900/10 p-2.5">
+                    <div className="flex items-start gap-2 mb-2">
+                        <Icon svg={ICONS.shoppingCart} className="w-3.5 h-3.5 text-indigo-500 shrink-0 mt-px" />
+                        <div className="min-w-0">
+                            <p className="text-[11px] font-bold text-indigo-800 dark:text-indigo-200 leading-none">Compra rápida</p>
+                            <p className="mt-1 text-[10px] leading-relaxed text-indigo-700/80 dark:text-indigo-300/80">
+                                Busca cualquier ingrediente del mercado y regístrale una compra al momento, sin crear una regla.
+                            </p>
+                        </div>
+                    </div>
                     <div className="relative">
                         <Icon svg={ICONS.search} className="absolute left-3 top-2.5 w-4 h-4 text-slate-400" />
                         <Input
-                            className="pl-9 bg-white/50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 h-9 text-xs"
-                            placeholder="Compra rápida…"
+                            className="pl-9 bg-white dark:bg-slate-800/70 border-indigo-200 dark:border-indigo-500/30 h-9 text-xs"
+                            placeholder="Escribe un ingrediente…"
                             value={quickSearchQuery}
                             onChange={(e) => setQuickSearchQuery(e.target.value)}
                         />
@@ -319,15 +335,6 @@ export const StockRulesPanel: React.FC<StockRulesPanelProps> = ({
                     )}
                 </div>
 
-                {/* Contextual Help */}
-                <div className="mt-4 p-3 bg-indigo-50/50 dark:bg-indigo-900/10 rounded-xl border border-indigo-100/50 dark:border-indigo-800/30">
-                    <div className="flex gap-2">
-                        <Icon svg={ICONS.info} className="w-4 h-4 text-indigo-500 shrink-0 mt-0.5" />
-                        <p className="text-[10px] text-indigo-800 dark:text-indigo-200 leading-relaxed font-medium">
-                            Busca ingredientes en el mercado (arriba) para compra rápida o configura reglas para automatizar pedidos.
-                        </p>
-                    </div>
-                </div>
             </div>
 
             {/* Modal for New Rule */}
