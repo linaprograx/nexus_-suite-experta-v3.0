@@ -81,6 +81,7 @@ import { GrimoriumShell } from './grimorium/shell/GrimoriumShell';
 import { useItemContext } from '../context/Grimorium/ItemContext';
 import { GrimoriumToolbar } from './grimorium/shell/GrimoriumToolbar';
 import { LayerPanel } from './grimorium/shell/LayerPanel';
+import { resolverProveedorDelPedido, precioUnitarioDeLinea } from '../features/orders/resolverProveedor';
 
 
 interface GrimoriumViewProps {
@@ -482,7 +483,11 @@ const GrimoriumInner: React.FC<GrimoriumViewProps> = () => {
                     estimatedCost: item.estimatedCost
                 }));
                 const orderName = `Pedido - ${group.providerName}`;
-                await createOrder(orderItems, orderName);
+                // El proveedor viaja como dato, no solo dentro del nombre.
+                await createOrder(orderItems, orderName, 'draft', {
+                    id: group.providerId,
+                    nombre: group.providerName,
+                });
             });
             await Promise.all(promises);
             setIsReplenishModalOpen(false);
@@ -510,8 +515,12 @@ const GrimoriumInner: React.FC<GrimoriumViewProps> = () => {
             const promises = order.items.map(async (item) => {
                 const ingredient = allIngredients.find(i => i.id === item.ingredientId);
                 if (ingredient) checkAndCreateRule(ingredient.id, ingredient.nombre);
-                const providerId = ingredient?.proveedor || 'generic_provider';
-                const providerName = suppliers.find(s => s.id === providerId)?.name || 'Proveedor Desconocido';
+
+                // Manda el proveedor con el que se hizo el pedido; los pedidos
+                // anteriores a M2 se siguen deduciendo como entonces. La regla
+                // vive en `resolverProveedorDelPedido`, con sus pruebas.
+                const { providerId, providerName } = resolverProveedorDelPedido(order, ingredient, suppliers);
+
                 await addPurchase({
                     ingredientId: item.ingredientId,
                     ingredientName: item.ingredientName,
@@ -519,7 +528,7 @@ const GrimoriumInner: React.FC<GrimoriumViewProps> = () => {
                     providerName: providerName,
                     unit: item.unit,
                     quantity: item.quantity,
-                    unitPrice: (item.estimatedCost / item.quantity) || 0,
+                    unitPrice: precioUnitarioDeLinea(item.estimatedCost, item.quantity),
                     totalCost: item.estimatedCost,
                     createdAt: new Date(),
                     status: 'completed'

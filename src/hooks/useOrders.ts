@@ -13,9 +13,17 @@ export interface OrderItem {
 
 export interface Order {
     id: string;
-    providerId: string; // Group orders by provider typically? Or mixed?
-    // If mixed, items need provider info. Let's assume mixed for now or user creates generic order.
-    // The previous mockup had "Order Sheet" which seemed mixed.
+    /**
+     * A quién se le pidió. **Opcional a propósito**: los pedidos creados antes
+     * de M2 no lo tienen, y al recibirlos hay que seguir deduciéndolo del
+     * ingrediente como se hacía entonces.
+     *
+     * Cuando está, manda. Es el dato de cuando se hizo el pedido, y no cambia
+     * porque después se le cambie el proveedor por defecto al ingrediente.
+     */
+    providerId?: string;
+    /** Nombre en el momento del pedido, para no depender de que el proveedor siga existiendo. */
+    providerName?: string;
     items: OrderItem[];
     totalEstimatedCost: number;
     // draft → sent (enviado al proveedor, sin tocar stock) → completed (recibido: crea compras y suma stock)
@@ -44,7 +52,20 @@ export const useOrders = () => {
         return () => unsubscribe();
     }, [db, userId]);
 
-    const createOrder = async (items: OrderItem[], name?: string, status: 'draft' | 'completed' = 'draft') => {
+    /**
+     * `proveedor` queda registrado en el pedido, no solo en su nombre.
+     *
+     * Antes se perdía: la hoja se agrupaba por proveedor y de esa agrupación
+     * solo sobrevivía el texto «Pedido - Fulano». Al recibir había que
+     * deducirlo otra vez del ingrediente, así que si entretanto le habías
+     * cambiado el proveedor por defecto, la compra se apuntaba al que no era.
+     */
+    const createOrder = async (
+        items: OrderItem[],
+        name?: string,
+        status: 'draft' | 'completed' = 'draft',
+        proveedor?: { id?: string; nombre?: string },
+    ) => {
         if (!userId || !db) return;
 
         // Chunk items to prevent document size limits (max 1MB per doc, safe limit ~500 items)
@@ -66,7 +87,14 @@ export const useOrders = () => {
                 totalEstimatedCost,
                 status: status,
                 createdAt: serverTimestamp(),
-                name: chunkName
+                name: chunkName,
+                // Solo si de verdad hay proveedor. «unknown» es el centinela que
+                // usa la hoja de reposición para «sin asignar»: guardarlo sería
+                // convertir una ausencia en un dato, y al recibir se atribuiría
+                // la compra a un proveedor que no existe.
+                ...(proveedor?.id && proveedor.id !== 'unknown'
+                    ? { providerId: proveedor.id, providerName: proveedor.nombre || '' }
+                    : {}),
             });
         });
 
