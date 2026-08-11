@@ -5,21 +5,20 @@
 
 ---
 
-**Última actualización:** 2026-08-10
-**Estado:** identidad visual desplegada y verificada en producción; TypeScript y
-build correctos. Los despliegues siguen siempre en `feat/mobile-v1-unified` y
-`deploy/mobile-v1`.
+**Última actualización:** 2026-08-11
+**Estado:** árbol limpio, TypeScript 0 errores, build correcto. `HEAD`,
+`deploy/mobile-v1` y ambas ramas en `origin` sincronizadas y desplegadas.
 
 ## Dónde se trabaja
 
 | | |
 |---|---|
 | Worktree | `/Users/lianalviz/nexus-suite-mobile-v1` |
-| Desarrollo | `feat/mobile-v1-unified` |
+| Desarrollo | `feat/mobile-v1-unified` ← trabaja aquí |
 | Producción | `deploy/mobile-v1` |
-| Producción URL | `https://nexus-suite-experta-v3-0.vercel.app` |
+| URL | `https://nexus-suite-experta-v3-0.vercel.app` |
 
-### Despliegue obligatorio
+### Desplegar — a las DOS ramas, siempre
 
 ```bash
 git push origin feat/mobile-v1-unified
@@ -29,63 +28,114 @@ git push origin deploy/mobile-v1
 git checkout feat/mobile-v1-unified
 ```
 
-Después, verificar el bundle servido. Volcarlo a fichero y usar marcadores
-ASCII:
+### Verificar el despliegue — tres condiciones, no una
+
+Esto costó **cuatro falsos positivos en un solo día**. Un marcador vale solo si
+cumple las tres:
+
+1. **El bundle se descargó**: vuélcalo a fichero y comprueba que pesa ~4 MB. Un
+   `curl` fallido deja el fichero vacío y cualquier `grep -c` da 0, que se lee
+   como «ya no está».
+2. **Cadena de control presente** (`Recetario Maestro`). Prueba que estás
+   leyendo la app y no una respuesta rara.
+3. **Solo entonces**, el marcador de tu cambio.
+
+Y el marcador **no puede ser**:
+- un nombre de variable o de prop → el minificador los renombra;
+- una cadena con tilde escrita sin tilde en el `grep`, ni con `·`;
+- una clase CSS de una rama que sigue existiendo aunque nadie la active;
+- un identificador que React ya incluye por su cuenta (`fetchPriority`).
+
+**Lo más fiable es el cambio de hash del bundle** más la cadena de control.
+Cadenas de texto visible al usuario son buenos marcadores; todo lo demás, no.
 
 ```bash
-curl -s "https://nexus-suite-experta-v3-0.vercel.app/$(curl -s https://nexus-suite-experta-v3-0.vercel.app/ | grep -o 'assets/index-[^\"]*\.js' | head -1)" -o /tmp/prod.js
-grep -c -F 'MARCADOR_ASCII' /tmp/prod.js
+JS=$(curl -s "$URL/?cb=$RANDOM" | grep -o 'assets/index-[^"]*\.js' | head -1)
+curl -s "$URL/$JS" -o /tmp/prod.js && wc -c < /tmp/prod.js
+grep -c -F 'Recetario Maestro' /tmp/prod.js   # control
+grep -c -F 'TU_CADENA_VISIBLE' /tmp/prod.js   # marcador
 ```
 
-## Reglas de seguridad activas
+## Reglas de seguridad, no negociables
 
-- Los datos son reales (~1.327 ítems y ~1.367 referencias). No borrar ni
-  ajustar stock para verificar nada.
-- `core/costing/` y Grimorio Recetas están cerrados. No tocar
-  `buildStockFromPurchases`.
-- En identidad, la similitud de nombres solo propone: el fundador decide cada
-  grupo. Un único grupo por operación.
-- Para una fusión: trasladar primero la oferta del alias a `supplierData` del
-  maestro; después escribir `masterProductId`. Nunca borrar el alias.
+- Datos **reales** (~1.327 ítems, ~1.367 referencias, 30 recetas). Ninguna
+  acción destructiva para verificar. Abrir un modal y **cancelar** sí vale.
+- Migraciones: informe en seco → aprobación → **las ejecuta el fundador**.
+- `core/costing/` y Grimorio Recetas están cerrados. **No tocar
+  `buildStockFromPurchases`**: lo consume el motor de coste.
+- Identidad: la similitud de nombres solo **propone**. Un grupo por operación.
+- Fusión: **primero** trasladar la oferta del alias a `supplierData` del
+  maestro, **después** escribir `masterProductId`. Nunca borrar el alias.
+
+## Decisiones de diseño vigentes
+
+- **La franja de Grimorio NO se pliega.** Todo lo que va del título a los
+  filtros queda fijo en las tres pestañas. Ver `CONTEXT.md`. Si algún día
+  estorba: hacerla **más baja**, no volver a esconderla.
+- **Precio con varias ofertas:** manda el proveedor preferente aunque otro sea
+  más barato, y se señala la alternativa. Sin preferente, el más barato y se
+  avisa. Implementado en `core/identity/offerSelection.ts`, **sin conectar** al
+  motor todavía.
+- **Agrupación visual:** Inventario por familia; Mercado por proveedor.
+- **Carta:** con alcohol primero, sin alcohol después, en pantalla y al exportar.
 
 ## Estado funcional
 
 | Bloque | Estado |
 |---|---|
-| Identidad A-C | Hecho y desplegado: informe, alias en lectura y consolidación visual sin históricos reescritos. |
-| Identidad D | Pendiente: fundador eligió el grupo 3 (dos fichas de mezcal Aguerrido). No se ha escrito todavía. |
-| Mercado móvil | Hecho y desplegado: buscador, filtros y menús responsivos. Pendiente confirmar visualmente el ancho del menú de proveedores en todos los breakpoints. |
-| Depuración de categorías | Herramienta reversible desplegada en `2c17986`; previsualiza 724 fichas. Solo cambia `categoria` y guarda `categoriaAntesDeNormalizar`. Grupos ambiguos excluidos. La confirmación nativa quedó pendiente de aceptación del fundador. |
-| Identidad visual | Hecho y verificado en producción: PNG con alfa real, sin fondo ni recorte en `NexusOrb`. La navegación activa usa el degradado cian → azul → violeta → magenta → ámbar del logotipo. |
+| Recetas | **Cerrado.** `Escandallo = Ficha = Análisis = Lista` |
+| Identidad A-C | Hecho y verificado sin regresión |
+| Identidad D | **Mecanismo listo y probado** (`mergeMaster`), botón en el informe. El fundador fusionó el grupo Aguerrido: 1327 → 1326 ítems con el valor intacto |
+| Ingrediente exprés | Hecho: alta desde la receta, marca `pendienteRevision`, fuera de automatismos, filtro en Mercado |
+| Fase 0 · cimientos | `origen` ✅ · I2 ✅ · I3 ✅ · I4 ✅ · **I1 pendiente** |
+| Fase 1 · pedido útil | M1 compra ✅ · **M1 hoja de pedido, M2 `providerId`, M3 cantidad pendientes** |
 
-## Categorías: alcance aprobado
+## ⏸️ Lo siguiente — EMPIEZA POR AQUÍ
 
-La herramienta solo normaliza coincidencias exactas: ortografía, plural,
-mayúsculas y etiquetas redundantes, por ejemplo `FRUTOS SECOS FRUTOS SECOS` →
-`Frutos secos` y `PATATAS, RAICES Y TUBERCULOS FRESCOS` → `Tubérculos frescos`.
-No toca `SEC`, `ESPECIALES KOPPER`, `ESPECIALES MINIS`, `Importado` ni posibles
-solapamientos semánticos. Su rollback se puede construir desde
-`categoriaAntesDeNormalizar`; no afecta a costes, stock, proveedores o recetas.
+1. **I1 · unidades canónicas.** Es lo que desatasca el resto: sin él no se
+   pueden fusionar los grupos de riesgo medio ni sumar existencias con formatos
+   distintos, y es la raíz de los `5522.000 L` que se ven en Inventario.
 
-## Identidad visual: contratos de archivos
+   **Informe en seco primero**, con estas columnas por ítem: unidad actual ·
+   unidad propuesta · factor · stock afectado · coste actual · coste resultante
+   · recetas afectadas · sub-recetas afectadas · impacto económico ·
+   ambigüedades. Lo que no se pueda determinar **con certeza** sale
+   `BLOQUEADO PARA REVISIÓN`. **No se infiere ningún valor.**
 
-Mantener estos nombres, porque ya son referencias públicas y de PWA:
+   Como con los duplicados, el informe tiene que vivir **dentro de la app**: es
+   el único sitio con acceso autenticado a Firestore.
 
-| Archivo | Consumidor |
-|---|---|
-| `public/nexus-logo.png` | Logo interno: acceso y barra lateral (`NexusOrb`). |
-| `public/favicon-32.png` | Pestaña del navegador. |
-| `public/apple-touch-icon.png` | Inicio de iOS/iPadOS. |
-| `public/icon-192.png` | Instalación PWA estándar. |
-| `public/icon-512.png` | Instalación PWA, máscara y app de escritorio instalada desde PWA. |
+2. **M2 · `providerId` en el pedido**, y leerlo al recibir en vez de deducirlo
+   otra vez del ingrediente. Bloquea agrupar Inventario por proveedor.
 
-No hay configuración Electron, Tauri ni Capacitor en el repositorio: la versión
-de escritorio actual usa el manifiesto PWA y por eso `icon-512.png` es el
-activo de escritorio relevante.
+3. **M1 parte 2 · la hoja de pedido a 0 €** — misma raíz que la compra, pero en
+   bloque: avisar de cuántas líneas van sin precio antes de crear la hoja.
 
-## Pendiente inmediato
+4. **Dos bugs de UX móvil reportados y abiertos:**
+   - el **conteo físico** deja filas tapadas detrás de la franja fija;
+   - el **modal de proveedores** queda por detrás del gradiente. Es un problema
+     de *stacking context*, **no** de subir el `z-index` a lo bruto.
 
-1. Si el fundador acepta la alerta de Mercado, verificar que el resultado
-   informe 724 fichas depuradas y que la lista muestre las categorías nuevas.
-2. Volver a Fase D de identidad solo con el grupo Aguerrido elegido; preparar
-   las dos escrituras y su verificación antes de ejecutarlas.
+5. **Importador: trocear el `writeBatch`.** `recipeImporter.importIngredientsFromCsv`
+   usa un solo batch y Firestore corta en 500. El patrón correcto ya está en
+   `useOrders.createOrder`.
+
+## Pendiente del fundador
+
+- **`VITE_FIREBASE_APP_ID` en Vercel sigue con dos saltos de línea al final.**
+  El código lo recorta y la app funciona, pero el valor sigue sucio. Fue la
+  causa raíz de Mercado vacío y costó tres diagnósticos equivocados.
+- **Depuración de categorías**: la herramienta está lista y previsualiza 724
+  fichas, con su botón de **deshacer**. Sin ejecutar.
+
+## Código muerto localizado y NO retirado
+
+- `src/components/grimorium/RecipeCard.tsx` — no lo importa nadie; la tarjeta
+  real vive dentro de `RecipeList.tsx`.
+- `src/features/ingredients/useIngredients.ts` — duplicado del de `hooks/`.
+- `RecipeToolbar.tsx` e `IngredientToolbar.tsx` — importados y nunca
+  renderizados.
+- `src/views/UnleashView.tsx` + `src/views/unleash/` — no enrutado.
+
+> **Si algo parece una función y no responde, comprueba primero si está
+> conectado**, antes de darlo por roto y «arreglarlo».

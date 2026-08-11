@@ -179,6 +179,92 @@ parte de lo que hay que arreglar allí **no necesita ejecutar nada**.
 Todo. Ni un defecto corregido: era el encargo. El orden está en `HANDOFF.md`,
 empezando por A1.
 
+## 2026-08-11 · Claude Code · Ingrediente exprés, integridad del precio y la franja fija
+
+Sesión larga, 15 commits. Lo que más vale para el futuro está al final, en los
+errores.
+
+**El ingrediente exprés, que era el bloqueo real del fundador**
+
+Estaba diseñando cartas y se topaba con que el ingrediente no existía en el
+catálogo: tenía que abandonar la receta a medio escribir, ir a Mercado, crearlo
+entero y volver — o cambiar la receta para usar lo que sí había. Ahora el «Sin
+resultados» del buscador ofrece crear ahí mismo, en un modal **encima** del
+formulario, con cuatro campos, y el ingrediente se engancha solo a la línea.
+
+Dos cosas que lo habrían roto: `useIngredients` es un `getDocs` **cacheado**,
+así que sin esperar al refetch la línea apuntaría a un id que aún no existe en
+`allIngredients` —campo vacío y coste 0—; y el alta pasa por
+`resolveStandardPack`, la misma normalización que el alta completa, para no
+colar texto libre en el catálogo por la puerta de atrás.
+
+**El precio estimado deja de disfrazarse de real**
+
+`pendienteRevision` era solo visual: el precio tecleado al vuelo entraba en
+escandallo, margen y valor de inventario igual que uno de catálogo. Ahora la
+ficha marca el coste como ESTIMADO y **nombra** de qué ingredientes depende
+(nuevo `costeEstimado.ts`, que expande sub-recetas referenciadas con guarda
+anti-ciclos), y esos ingredientes quedan fuera del «mejor precio» de Mercado y
+del motor de señales. En la hoja de pedido **sí** se pueden pedir —a veces es
+justo lo que falta— pero la línea lo dice.
+
+**Un tequila se ofrecía como el mejor precio de un mezcal**
+
+La ficha de AGUERRIDO, ANTONIO CUPREATA proponía comprar un TEQUILA CURADO
+CUPREATA a 32,20 € marcado como MEJOR PRECIO. La lista de palabras débiles
+estaba **copiada en cuatro sitios** y a ninguno le habían añadido `mezcal` ni
+las variedades de agave: bastaba compartir `cupreata` —una variedad, no un
+producto— para presentar dos cosas distintas como alternativas.
+
+Fuente única en `core/identity/genericTokens.ts`, y el emparejador endurecido en
+dos puntos: **todas** las palabras específicas del objetivo, y **ninguna de más**
+en el candidato. Fuera del vocabulario se quedan `reposado`, `añejo` y `blanco`:
+esas sí distinguen referencias reales de la misma marca.
+
+**Editar una receta la sacaba de su carta**
+
+Pérdida de datos silenciosa, en cada edición. El efecto que marcaba «las cartas
+en las que ya está» dependía solo de `initialData`, pero `menuCompleto` llega
+por snapshot y está vacío en el primer render: la lista quedaba a cero y el
+efecto no volvía a correr. Al guardar, la sincronización en dos sentidos leía
+esa lista vacía y quitaba la receta de todas sus cartas.
+
+Y el «Estado: En carta» resultó ser una etiqueta que mentía —era `Terminado`, y
+no metía en ninguna carta—, mientras el selector sí funcionaba pero el fundador
+estaba añadiendo a una carta **archivada**, que no se muestra.
+
+**Errores míos, que son lo que hay que leer**
+
+1. **Anuncié un arreglo que no era tal.** Dije haber hecho fluido el pliegue de
+   cabecera y en realidad **lo maté**: el `WeakMap` de posiciones salía por la
+   guarda de temblor *antes* de rellenarse, así que el delta era siempre 0. El
+   fundador vio el resultado, le gustó la franja fija, y se adoptó como decisión
+   —retirando el mecanismo entero— en vez de dejar la app apoyada en un defecto.
+
+2. **Cuatro falsos positivos verificando despliegues, en un solo día**: un
+   marcador que era nombre de variable (minificado), otro con tilde escrito sin
+   tilde, otro sobre un fichero descargado vacío, y otro (`fetchPriority`) que
+   React ya incluye. El procedimiento de tres condiciones está ahora en
+   `HANDOFF.md`. Decir «desplegado» sin comprobarlo es peor que no decir nada.
+
+3. **Toqué el trabajo del relevo anterior y encontré dos cosas**: el maestro
+   propuesto se había cambiado a «el más barato» —el maestro es una identidad,
+   no una oferta— y el logo pesaba **1,4 MB para pintarse a 40 px**. Revertido
+   lo primero, 19× más ligero lo segundo.
+
+**Y uno que costaba dinero cada día**
+
+`onUpdateRules` reescribía **las 611 reglas** cada vez que se guardaba o borraba
+una. No duplicaba datos, pero explicaba la lentitud del panel y se pagaba en
+cuota de Firestore.
+
+**Pendiente**
+
+I1 (unidades canónicas) es lo que desatasca el resto. Todo lo demás, en
+`HANDOFF.md`.
+
+---
+
 ## 2026-08-09 · Claude Code · Recetas cerrado, y los cimientos de Inventario
 
 Sesión larga. Dos bloques: cerrar Recetas de verdad y poner cimientos en
