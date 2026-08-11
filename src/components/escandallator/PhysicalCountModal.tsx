@@ -3,6 +3,7 @@ import { StockItem } from '../../types';
 import { Icon } from '../ui/Icon';
 import { ICONS } from '../ui/icons';
 import { Input } from '../ui/Input';
+import { CapaModal } from '../ui/CapaModal';
 
 export interface CountAdjustment {
     item: StockItem;
@@ -44,8 +45,7 @@ export const PhysicalCountModal: React.FC<{
     }, [counts, stockItems]);
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <div className="absolute inset-0 bg-slate-900/50 backdrop-blur-md" onClick={onClose} />
+        <CapaModal onFondoPulsado={onClose}>
             <div className="relative w-full max-w-lg max-h-[85vh] flex flex-col bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-200/60 dark:border-white/10 overflow-hidden">
                 {/* Header */}
                 <div className="px-5 py-4 shrink-0 bg-gradient-to-r from-sky-600 to-cyan-600 flex items-center justify-between">
@@ -117,6 +117,6 @@ export const PhysicalCountModal: React.FC<{
                     </div>
                 </div>
             </div>
-        </div>
+        </CapaModal>
     );
 };

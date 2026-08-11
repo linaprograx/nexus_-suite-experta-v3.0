@@ -149,8 +149,19 @@ export const StackedMobileShell: React.FC<StackedMobileShellProps> = ({
             {/* La cabecera fija ya no ocupa sitio en el flujo, así que el contenido
                 reserva su altura. Se usa la medida real publicada por la franja y no
                 un número escrito a mano, que se desfasaría al plegarse el título. */}
+            {/* `relative` SIN nivel, a propósito.
+                Con `z-20` esto era un CONTEXTO DE APILAMIENTO, y todo modal
+                pintado aquí dentro quedaba encerrado en el nivel 20 frente a
+                sus hermanos: un `fixed inset-0 z-50` seguía saliendo por debajo
+                de la franja, que está en `z-30`. Es el fallo que se diagnostica
+                mal, porque invita a subir el número, y desde dentro de la caja
+                no hay número que valga.
+                Sin nivel propio nada cambia de sitio —el fondo va en `z-0` y
+                antes en el DOM, la franja en `z-30`, las pestañas en `z-40`—
+                pero los modales dejan de estar atrapados, TODOS, en vez de uno
+                a uno. */}
             <div
-                className="grow px-3 pt-2 relative z-20 flex flex-col"
+                className="grow px-3 pt-2 relative flex flex-col"
                 style={headerGradient ? { paddingTop: 'var(--franja-alto, 0px)' } : undefined}
             >
                 {main}
