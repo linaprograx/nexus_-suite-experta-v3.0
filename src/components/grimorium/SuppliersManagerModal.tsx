@@ -11,7 +11,7 @@ import { Icon } from '../ui/Icon';
 import { ICONS } from '../ui/icons';
 import { Supplier } from '../../types';
 import { parseEuroNumber } from '../../utils/parseEuroNumber';
-import { CATEGORIAS_PROVEEDOR, leerCategorias, escribirCategorias, alternarCategoria } from '../../features/suppliers/categorias';
+import { SelectorCategorias } from '../../features/suppliers/SelectorCategorias';
 import { collection, doc } from 'firebase/firestore';
 import { EscrituraPorLotes, FalloEnLotes } from '../../services/firestore/escrituraPorLotes';
 
@@ -264,35 +264,19 @@ export const SuppliersManagerModal: React.FC<SuppliersManagerModalProps> = ({ is
                                 <div className="space-y-4">
                                     <div className="grid grid-cols-2 gap-4">
                                         <div className="space-y-1"><Label className="text-slate-500 dark:text-slate-400">Empresa / Nombre</Label><Input className="bg-slate-50 dark:bg-white/10 border-slate-200 dark:border-white/10 text-slate-800 dark:text-white" value={newSupplier.name} onChange={e => setNewSupplier({ ...newSupplier, name: e.target.value })} /></div>
-                                    </div>
                                         <div className="space-y-1">
                                             <Label className="text-slate-500 dark:text-slate-400">Categoría</Label>
-                                            {/* Fichas, no texto libre. Escribiendo a mano acababan
-                                                conviviendo «Fruteria», «FRUTERIA» y «frutas» como tres
-                                                categorías distintas. Se pueden marcar VARIAS porque el
-                                                catálogo real ya lo hace («ALCOHOL, MIXERS»), y se guardan
-                                                separadas por coma: el mismo formato de siempre, sin
-                                                migrar nada. */}
-                                            <div className="flex flex-wrap gap-1.5 pt-1">
-                                                {CATEGORIAS_PROVEEDOR.map(cat => {
-                                                    const puestas = leerCategorias(newSupplier.category);
-                                                    const activa = puestas.some(c => c.toLowerCase() === cat.toLowerCase());
-                                                    return (
-                                                        <button
-                                                            key={cat}
-                                                            type="button"
-                                                            onClick={() => setNewSupplier({
-                                                                ...newSupplier,
-                                                                category: escribirCategorias(alternarCategoria(puestas, cat)),
-                                                            })}
-                                                            className={`px-2.5 h-7 rounded-lg text-[11px] font-bold transition-colors ${activa
-                                                                ? 'bg-emerald-500 text-white'
-                                                                : 'bg-slate-100 dark:bg-white/10 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-white/20'}`}
-                                                        >{cat}</button>
-                                                    );
-                                                })}
-                                            </div>
+                                            {/* Barra desplegable, no 19 fichas a la vista: ocupaban
+                                                una fila entera y empujaban el resto del formulario
+                                                fuera de la pantalla. Marca VARIAS —el catálogo real ya
+                                                usa «ALCOHOL, MIXERS»— y se guardan separadas por coma,
+                                                el mismo formato de siempre, sin migrar nada. */}
+                                            <SelectorCategorias
+                                                valor={newSupplier.category}
+                                                onCambio={category => setNewSupplier({ ...newSupplier, category })}
+                                            />
                                         </div>
+                                    </div>
                                     <div className="grid grid-cols-2 gap-4">
                                         <div className="space-y-1"><Label className="text-slate-500 dark:text-slate-400">Contacto</Label><Input className="bg-slate-50 dark:bg-white/10 border-slate-200 dark:border-white/10 text-slate-800 dark:text-white" value={newSupplier.contactName} onChange={e => setNewSupplier({ ...newSupplier, contactName: e.target.value })} /></div>
                                         <div className="space-y-1"><Label className="text-slate-500 dark:text-slate-400">Teléfono</Label><Input className="bg-slate-50 dark:bg-white/10 border-slate-200 dark:border-white/10 text-slate-800 dark:text-white" value={newSupplier.phone} onChange={e => setNewSupplier({ ...newSupplier, phone: e.target.value })} /></div>
