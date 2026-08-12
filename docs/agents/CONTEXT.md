@@ -280,6 +280,36 @@ para siempre.
 
 El halo se hace con un degradado radial, que no necesita filtro alguno.
 
+**Y una advertencia sobre este mismo caso, que costó dos diagnósticos
+equivocados:** el rectángulo y la **mancha oscura del noroeste** eran dos
+problemas distintos. Lo de arriba explica el rectángulo. La mancha no era CSS:
+el logo original tiene separaciones **blancas** entre las palas que **se abren
+hacia fuera**, así que al recortarle el fondo se fueron con él. De 26.679
+píxeles transparentes, solo 3 quedan encerrados —comprobado con una inundación
+desde el borde—. Sobre blanco el logo se ve íntegro; sobre oscuro las
+separaciones dejan pasar el fondo.
+
+**No falta color, falta fondo, y ningún CSS lo arregla.** Si alguien vuelve a
+ver «manchas» en el logo sobre fondo oscuro: **medir el canal alfa antes de
+tocar una sola clase**.
+
+### Un modal va a `document.body`, siempre
+
+El armazón móvil pinta el contenido dentro de un `<div relative z-20>`, y eso
+**crea un contexto de apilamiento**: todo lo de dentro queda encerrado en el
+nivel 20 frente a sus hermanos, por muy alto que sea su z-index propio. Un
+`fixed inset-0 z-50` seguía saliendo por debajo de la franja, que está en
+`z-30`.
+
+Es la clase de fallo que se diagnostica mal, porque el síntoma —«el modal sale
+detrás»— invita a subir el número, y **desde dentro de la caja no hay número que
+valga**. Hay que salir de la caja.
+
+Se quitó el nivel de ese contenedor, así que hoy no hay caja. Aun así, los
+modales nuevos deben usar `components/ui/CapaModal.tsx` (o la primitiva
+`Modal`, que ya hace portal): si alguien vuelve a introducir un contexto de
+apilamiento por el camino, el portal los mantiene a salvo.
+
 ### La franja de Grimorio NO se pliega
 
 Todo lo que va del título a los filtros permanece fijo en las tres pestañas, y

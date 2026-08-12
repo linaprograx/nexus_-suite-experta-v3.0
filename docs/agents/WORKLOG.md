@@ -1,5 +1,93 @@
 # Worklog
 
+## 2026-08-12 · Claude · I1, M1, M2, troceado de escrituras y una tanda de UX móvil
+
+**I1 · unidades canónicas.** `resolveStandardPack` nunca falla: sin evidencia
+devuelve una botella de 700 ml, y ese número divide el precio del envase. Un
+producto de formato desconocido no aparecía como desconocido, aparecía como
+700 ml. `core/costing/unitAudit.ts` repite la resolución anotando de dónde sale
+cada cifra y bloquea cinco casos sin proponer valor: sin pista, unidad desnuda,
+**contradictorio** (la ficha guarda 700 ml y su unidad de compra dice
+`10813.000 L`), **heredado** (700 ml exactos sin nada que lo respalde) e
+impacto mayor del 500 %. La primera versión daba por buena la pareja canónica
+guardada y dejaba pasar el dato corrupto real como «correcto».
+
+Primera lectura sobre datos reales: **27 fichas bloqueadas dentro de recetas,
+€6.032,49 de inventario** colgando de ellas. Casi todas `heredado` — no son
+datos corruptos, son datos que nunca se rellenaron, y el sistema acertó por
+casualidad en unos (Chartreuse sí es de 700) y falló en otros (400 Conejos es
+de 750) sin nada que los distinga.
+
+La corrección es por ficha, con deshacer exacto (`formatoAntesDeCorregir`
+guarda los tres valores anteriores; si un campo estaba vacío se retira con
+`deleteField` en vez de escribir un cero) y marca `formatoVerificado`, sin la
+cual la auditoría volvería a bloquear la ficha en cada recarga. Sin precio de
+compra la corrección se bloquea sola: cambiar el formato no arreglaría el
+coste.
+
+El botón «Normalizar Catálogo» **ejecutaba esa migración a ciegas** y prometía
+ser «reversible al reimportar» sin que exista deshacer. Ahora abre el informe.
+La migración sigue intacta en su módulo, sin botón que la dispare.
+
+**M2 · el proveedor viaja en el pedido.** `providerId` estaba declarado en
+`Order` y no se escribía nunca. La hoja agrupaba por proveedor y solo
+sobrevivía el nombre dentro del texto «Pedido - Fulano»; al recibir se deducía
+otra vez del ingrediente, o sea que se respondía a «a quién le compras esto
+HOY» cuando la pregunta era «a quién le compraste ESTO». Dos centinelas
+distintos convivían (`unknown` en la hoja, `generic_provider` en el receptor):
+guardar el primero habría convertido una ausencia en un dato.
+
+Al arreglarlo salió lo de fondo: la hoja agrupaba por `ing.proveedor`, marcado
+`@deprecated`, vacío en el catálogo real, así que **todo** caía en «Sin
+Proveedor Asignado». `proveedorDeIngrediente` es ahora el único sitio que
+responde a esa pregunta, compartido por la hoja y el receptor. Medido: IN VINO
+VERITAS 626, FRUTAS ELOY 484, sin asignar 264, BORDINOS 6 — **1.116 de 1.380
+pasan a tener proveedor real**.
+
+**M1 parte 2 · líneas sin precio.** Medido primero: de 775 líneas
+seleccionadas, 40 salen a 0 € y 735 con precio, un 5 % que cuadra con el «39
+SIN PRECIO» del Dashboard. Los borradores del fundador a 0,00 € son de enero y
+no representaban el estado actual. Ahora se avisa antes de generar, con
+recuento y nombres; informa, no bloquea.
+
+**Troceado de escrituras.** Corrección de un diagnóstico previo: un
+`writeBatch` de más de 500 **no se pierde a medias**, Firestore rechaza el lote
+entero y no escribe nada. Con 1.380 referencias el CSV no dejaba el catálogo a
+medio hacer: no hacía nada. `services/firestore/escrituraPorLotes.ts` confirma
+cada 450 y —esto es lo que cambia— al trocear aparece un fallo parcial que
+antes era imposible, así que `FalloEnLotes` lleva dentro cuántas se
+confirmaron y la interfaz lo muestra. Cinco sitios convertidos; el peor era la
+subida de catálogo de proveedor, que escribe **dos** operaciones por línea y
+reventaba a las 250 filas.
+
+**Contexto de apilamiento.** El armazón móvil pintaba el contenido dentro de un
+`<div relative z-20>`, que es un contexto de apilamiento: todo modal quedaba
+encerrado en el nivel 20 y salía por debajo de la franja (`z-30`) por muy
+`z-50` que fuese. Había **doce ficheros** con ese patrón. Se quitó el nivel del
+contenedor: un cambio de una línea en vez de doce parches, y el fallo no puede
+reaparecer en el siguiente modal que alguien escriba.
+
+**El logo y los filtros.** Dos diagnósticos equivocados antes de acertar.
+Primero se culpó a los filtros CSS —un elemento con `filter` dentro de un
+ancestro con `backdrop-filter` se pinta en WebKit como un rectángulo, y eso
+**sí** era un fallo real, que se corrigió—; después al color del dibujo. La
+causa verdadera se encontró midiendo el canal alfa: el original tiene
+separaciones **blancas** entre las palas que **se abren hacia fuera**, así que
+al recortar el fondo se fueron con él. De 26.679 píxeles transparentes, solo 3
+quedan encerrados. Sobre blanco el logo se ve íntegro; sobre oscuro las
+separaciones dejan pasar el fondo. **No falta color, falta fondo**, y ningún
+CSS lo arregla. Parado a petición del fundador hasta que rehaga el fichero.
+
+**Otros.** Listas de más de 15 elementos agrupadas y plegadas (611 reglas → 49
+grupos, ver `CONTEXT.md`); categorías de proveedor con 19 opciones de
+hostelería y multi-selección en una barra desplegable; la explicación de
+compra rápida movida dentro de la barra que explica; tabla de la hoja de
+pedido con variantes `dark:` —estaba escrita solo para modo claro y el importe
+era invisible—; `unitPrice: Infinity` cuando la cantidad era 0 (`|| 0` no
+atrapa `Infinity`, solo `NaN`); un `0` suelto en la ficha de proveedor
+(`0 && <algo>` pinta el cero en React).
+
+
 ## 2026-08-10 · Codex · Mercado móvil, limpieza taxonómica e identidad visual
 
 **Mercado móvil.** Se corrigió la estructura de la fila de filtros y acciones:
