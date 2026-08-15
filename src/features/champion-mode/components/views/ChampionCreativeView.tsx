@@ -25,7 +25,7 @@ export const ChampionCreativeView: React.FC = () => {
             {/* COLUMN 1: INSPIRATION & MOOD */}
             <ChampionColumn
                 title="Inspiración"
-                accentColor="bg-violet-400/20 text-violet-200"
+                accentColor="bg-rose-400/20 text-rose-200"
                 scrollable
             >
                 <div className="p-4 space-y-6">
@@ -33,10 +33,10 @@ export const ChampionCreativeView: React.FC = () => {
                     <div>
                         <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">Paleta Cromática</h4>
                         <div className="grid grid-cols-4 gap-2">
-                            {['#1e293b', '#475569', '#94a3b8', '#cbd5e1', '#7c3aed', '#a78bfa', '#c4b5fd', '#ddd6fe'].map(color => (
+                            {['#1e293b', '#475569', '#94a3b8', '#cbd5e1', '#be123c', '#a78bfa', '#c4b5fd', '#ddd6fe'].map(color => (
                                 <div
                                     key={color}
-                                    className={`aspect-square rounded-lg shadow-sm cursor-pointer hover:scale-110 transition-transform ring-2 ${state.palette === color ? 'ring-violet-500 scale-105' : 'ring-white/10'}`}
+                                    className={`aspect-square rounded-lg shadow-sm cursor-pointer hover:scale-110 transition-transform ring-2 ${state.palette === color ? 'ring-rose-500 scale-105' : 'ring-white/10'}`}
                                     style={{ backgroundColor: color }}
                                     onClick={() => actions.setPalette(color)}
                                 />
@@ -54,11 +54,11 @@ export const ChampionCreativeView: React.FC = () => {
                                 return (
                                     <div
                                         key={ref}
-                                        className={`p-3 rounded-xl border shadow-sm flex items-center justify-between group cursor-pointer transition-all ${isActive ? 'bg-violet-500/20 border-violet-500/50' : 'bg-white/5 border-white/10 hover:border-violet-500/30'}`}
+                                        className={`p-3 rounded-xl border shadow-sm flex items-center justify-between group cursor-pointer transition-all ${isActive ? 'bg-rose-500/20 border-rose-500/50' : 'bg-white/5 border-white/10 hover:border-rose-500/30'}`}
                                         onClick={() => actions.toggleVisualRef(ref)}
                                     >
-                                        <span className={`text-xs font-bold ${isActive ? 'text-violet-300' : 'text-slate-400'}`}>{ref}</span>
-                                        <Icon svg={ICONS.image} className={`w-3 h-3 ${isActive ? 'text-violet-400' : 'text-slate-500'} group-hover:text-violet-400`} />
+                                        <span className={`text-xs font-bold ${isActive ? 'text-rose-300' : 'text-slate-400'}`}>{ref}</span>
+                                        <Icon svg={ICONS.image} className={`w-3 h-3 ${isActive ? 'text-rose-400' : 'text-slate-500'} group-hover:text-rose-400`} />
                                     </div>
                                 );
                             })}
@@ -66,7 +66,7 @@ export const ChampionCreativeView: React.FC = () => {
 
                         <div className="mt-4">
                             <button
-                                className="w-full py-3 border border-dashed border-slate-600/50 rounded-xl text-[10px] uppercase font-bold text-slate-500 hover:text-violet-300 hover:border-violet-500/50 transition-colors hover:bg-white/5 flex items-center justify-center gap-2"
+                                className="w-full py-3 border border-dashed border-slate-600/50 rounded-xl text-[10px] uppercase font-bold text-slate-500 hover:text-rose-300 hover:border-rose-500/50 transition-colors hover:bg-white/5 flex items-center justify-center gap-2"
                                 onClick={() => setIsAddingRef(true)}
                             >
                                 <Icon svg={ICONS.plus} className="w-3 h-3" />
@@ -84,7 +84,7 @@ export const ChampionCreativeView: React.FC = () => {
                     <div className="w-full max-w-sm bg-white/95 border border-white/60 rounded-[30px] shadow-2xl p-8 transform animate-in zoom-in-95 duration-200 backdrop-blur-xl relative z-10">
 
                         <div className="text-center mb-6">
-                            <div className="w-12 h-12 rounded-full bg-violet-100 flex items-center justify-center text-violet-600 border border-violet-200 shadow-sm mx-auto mb-3">
+                            <div className="w-12 h-12 rounded-full bg-rose-100 flex items-center justify-center text-rose-600 border border-rose-200 shadow-sm mx-auto mb-3">
                                 <Icon svg={ICONS.image} className="w-6 h-6" />
                             </div>
                             <h3 className="text-lg font-black text-slate-800 uppercase tracking-wider">Nueva Referencia</h3>
@@ -96,7 +96,7 @@ export const ChampionCreativeView: React.FC = () => {
                                 <input
                                     autoFocus
                                     type="text"
-                                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-4 text-slate-800 placeholder-slate-400 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 transition-all font-bold text-center"
+                                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-4 text-slate-800 placeholder-slate-400 text-sm focus:outline-none focus:ring-2 focus:ring-rose-500 transition-all font-bold text-center"
                                     placeholder="Ej: Neon Noir, Bauhaus, Vaporwave..."
                                     value={newRefText}
                                     onChange={e => setNewRefText(e.target.value)}
@@ -117,7 +117,7 @@ export const ChampionCreativeView: React.FC = () => {
                             </button>
                             <button
                                 onClick={handleAddRef}
-                                className="flex-1 py-3 rounded-xl bg-violet-600 hover:bg-violet-500 text-white text-xs font-bold uppercase tracking-wider shadow-lg shadow-violet-500/30 transition-all"
+                                className="flex-1 py-3 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold uppercase tracking-wider shadow-lg shadow-rose-500/30 transition-all"
                             >
                                 Añadir
                             </button>
@@ -130,7 +130,7 @@ export const ChampionCreativeView: React.FC = () => {
             {/* COLUMN 2: MAIN WORKSPACE (Existing Creative Panel) */}
             <ChampionColumn
                 title="Motor Creativo"
-                accentColor="bg-violet-600/20 text-violet-200"
+                accentColor="bg-rose-600/20 text-rose-200"
                 scrollable
             >
                 <div className="p-6">
@@ -185,7 +185,7 @@ export const ChampionCreativeView: React.FC = () => {
                             </div>
 
                             {/* SERVICE RITUAL - HERO */}
-                            <div className="bg-gradient-to-br from-fuchsia-600 to-violet-600 p-6 rounded-[24px] text-white shadow-lg shadow-fuchsia-500/20 relative overflow-hidden border border-white/20">
+                            <div className="bg-gradient-to-br from-fuchsia-600 to-rose-600 p-6 rounded-[24px] text-white shadow-lg shadow-fuchsia-500/20 relative overflow-hidden border border-white/20">
                                 <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10 mix-blend-overlay pointer-events-none" />
                                 <Icon svg={ICONS.sparkles} className="w-24 h-24 text-white/10 absolute -bottom-4 -right-4 rotate-12" />
 

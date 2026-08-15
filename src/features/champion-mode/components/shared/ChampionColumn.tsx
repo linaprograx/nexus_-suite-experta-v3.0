@@ -13,7 +13,7 @@ interface ChampionColumnProps {
 export const ChampionColumn: React.FC<ChampionColumnProps> = ({
     title,
     children,
-    accentColor = "bg-cyan-500",
+    accentColor = "bg-rose-500",
     scrollable = false,
     onDoubleClick,
     isFocused = false,
@@ -21,7 +21,7 @@ export const ChampionColumn: React.FC<ChampionColumnProps> = ({
 }) => (
     <div
         onDoubleClick={onDoubleClick}
-        className={`h-full flex flex-col overflow-hidden rounded-[30px] bg-transparent transition-all duration-500 ease-[cubic-bezier(0.18,0.89,0.32,1.28)] ${isFocused ? 'scale-[1.01] ring-2 ring-violet-400/30' : 'hover:scale-[1.005]'} ${className}`}
+        className={`h-full flex flex-col overflow-hidden rounded-[30px] bg-transparent transition-all duration-500 ease-[cubic-bezier(0.18,0.89,0.32,1.28)] ${isFocused ? 'scale-[1.01] ring-2 ring-rose-400/30' : 'hover:scale-[1.005]'} ${className}`}
     >
         <div className="px-6 py-5 flex justify-between items-center select-none cursor-pointer">
             <h3 className="font-bold text-slate-600 tracking-wider text-[0.95rem] flex items-center gap-3 uppercase">

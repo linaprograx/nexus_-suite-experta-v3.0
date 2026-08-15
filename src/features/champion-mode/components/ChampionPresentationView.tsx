@@ -29,7 +29,7 @@ export const ChampionPresentationView: React.FC = () => {
             : 'text-slate-400';
 
     return (
-        <div className="h-full overflow-y-auto custom-scrollbar bg-slate-950 rounded-[24px] relative text-slate-200 font-sans selection:bg-indigo-500/30">
+        <div className="h-full overflow-y-auto custom-scrollbar bg-slate-950 rounded-[24px] relative text-slate-200 font-sans selection:bg-rose-500/30">
             {/* Close Button */}
             <div className="absolute top-6 right-6 z-50">
                 <button
@@ -62,13 +62,13 @@ export const ChampionPresentationView: React.FC = () => {
                             <div className="absolute inset-0 bg-gradient-to-b from-slate-950/90 via-slate-950/40 to-slate-950" />
                         </>
                     ) : (
-                        <div className="absolute inset-0 bg-gradient-to-br from-indigo-900 via-slate-900 to-black opacity-50" />
+                        <div className="absolute inset-0 bg-gradient-to-br from-rose-900 via-slate-900 to-black opacity-50" />
                     )}
                 </div>
 
                 {/* Content */}
                 <div className="relative z-10 max-w-4xl mx-auto animate-in fade-in slide-in-from-bottom-8 duration-1000">
-                    <h3 className="text-xs font-bold text-indigo-400 uppercase tracking-[0.3em] mb-4 border border-indigo-500/30 inline-block px-4 py-1 rounded-full backdrop-blur-sm">
+                    <h3 className="text-xs font-bold text-rose-400 uppercase tracking-[0.3em] mb-4 border border-rose-500/30 inline-block px-4 py-1 rounded-full backdrop-blur-sm">
                         {state.brief.brand} • {state.brief.competitionType}
                     </h3>
                     <h1 className="text-6xl md:text-8xl font-black text-transparent bg-clip-text bg-gradient-to-br from-white via-slate-200 to-slate-500 mb-6 drop-shadow-lg font-serif tracking-tight leading-none">
@@ -86,7 +86,7 @@ export const ChampionPresentationView: React.FC = () => {
                 {/* LEFT: SPECS & FLAVOR (4 Cols) */}
                 <div className="lg:col-span-4 space-y-8 animate-in fade-in slide-in-from-bottom-8 duration-1000 delay-100">
                     {/* Flavor Profile Card */}
-                    <div className="bg-slate-900/50 backdrop-blur-xl border border-white/10 p-8 rounded-[32px] hover:border-indigo-500/30 transition-colors">
+                    <div className="bg-slate-900/50 backdrop-blur-xl border border-white/10 p-8 rounded-[32px] hover:border-rose-500/30 transition-colors">
                         <h4 className="text-xs font-bold text-white/40 uppercase tracking-widest mb-6 flex items-center gap-2">
                             <Icon svg={ICONS.chart} className="w-4 h-4" />
                             Perfil Sensorial
@@ -95,7 +95,7 @@ export const ChampionPresentationView: React.FC = () => {
                             {typeof proposal.flavorProfile === 'object' && proposal.flavorProfile ? (
                                 Object.entries(proposal.flavorProfile).map(([key, val]) => (
                                     <div key={key} className="flex justify-between items-center pb-2 border-b border-white/5">
-                                        <span className="text-[10px] font-bold text-indigo-400 uppercase">{key}</span>
+                                        <span className="text-[10px] font-bold text-rose-400 uppercase">{key}</span>
                                         <span className="text-sm font-medium text-slate-200">{val as string}</span>
                                     </div>
                                 ))
@@ -106,7 +106,7 @@ export const ChampionPresentationView: React.FC = () => {
                     </div>
 
                     {/* Glassware & Garnish */}
-                    <div className="bg-slate-900/50 backdrop-blur-xl border border-white/10 p-8 rounded-[32px] hover:border-indigo-500/30 transition-colors">
+                    <div className="bg-slate-900/50 backdrop-blur-xl border border-white/10 p-8 rounded-[32px] hover:border-rose-500/30 transition-colors">
                         <div className="mb-6">
                             <h4 className="text-[10px] font-bold text-white/40 uppercase tracking-widest mb-2">Cristalería</h4>
                             <p className="text-lg font-serif text-white">{proposal.glassware || "N/A"}</p>
@@ -128,7 +128,7 @@ export const ChampionPresentationView: React.FC = () => {
                 {/* CENTER: RECIPE & TECHNIQUE (5 Cols) */}
                 <div className="lg:col-span-5 space-y-8 animate-in fade-in slide-in-from-bottom-8 duration-1000 delay-200">
                     <div className="bg-white/5 backdrop-blur-xl border border-white/10 p-8 md:p-10 rounded-[32px] relative overflow-hidden">
-                        <div className="absolute top-0 right-0 p-32 bg-indigo-500/10 blur-[100px] rounded-full pointer-events-none" />
+                        <div className="absolute top-0 right-0 p-32 bg-rose-500/10 blur-[100px] rounded-full pointer-events-none" />
 
                         <h4 className="text-xs font-bold text-white/40 uppercase tracking-widest mb-8 text-center">La Fórmula Maestra</h4>
 
@@ -139,7 +139,7 @@ export const ChampionPresentationView: React.FC = () => {
                                     <span className="text-xl md:text-2xl font-serif text-slate-200 group-hover:text-white transition-colors">
                                         {item.ingredient}
                                     </span>
-                                    <span className="text-md font-mono font-bold text-indigo-400">
+                                    <span className="text-md font-mono font-bold text-rose-400">
                                         {item.amount}
                                     </span>
                                 </li>
@@ -149,7 +149,7 @@ export const ChampionPresentationView: React.FC = () => {
                         {/* Complex Preparations (Sub-recipes) */}
                         {proposal.complexPreparations && proposal.complexPreparations.length > 0 && (
                             <div className="mb-10 relative z-10 bg-black/20 p-6 rounded-2xl border border-white/5">
-                                <h5 className="text-[10px] font-bold text-indigo-300 uppercase tracking-wider mb-4 border-b border-white/5 pb-2">
+                                <h5 className="text-[10px] font-bold text-rose-300 uppercase tracking-wider mb-4 border-b border-white/5 pb-2">
                                     Elaboraciones Complejas
                                 </h5>
                                 <div className="space-y-6">
@@ -182,8 +182,8 @@ export const ChampionPresentationView: React.FC = () => {
                 <div className="lg:col-span-3 space-y-8 animate-in fade-in slide-in-from-bottom-8 duration-1000 delay-300">
                     {/* Ritual Card */}
                     <div className="bg-slate-900 border border-slate-800 p-8 rounded-[32px] relative overflow-hidden group h-full">
-                        <div className="absolute inset-0 bg-gradient-to-br from-purple-900/20 to-indigo-900/20 opacity-0 group-hover:opacity-100 transition-opacity duration-1000" />
-                        <h4 className="text-xs font-bold text-purple-400 uppercase tracking-widest mb-4 relative z-10">Ritual de Servicio</h4>
+                        <div className="absolute inset-0 bg-gradient-to-br from-rose-900/20 to-rose-900/20 opacity-0 group-hover:opacity-100 transition-opacity duration-1000" />
+                        <h4 className="text-xs font-bold text-rose-400 uppercase tracking-widest mb-4 relative z-10">Ritual de Servicio</h4>
                         <p className="text-sm text-slate-300 leading-loose relative z-10 italic">
                             "{proposal.ritual}"
                         </p>
@@ -195,14 +195,14 @@ export const ChampionPresentationView: React.FC = () => {
             {/* JURY VERDICT (Full Width Bottom) */}
             {aiEvaluation && (
                 <div className="max-w-[90rem] mx-auto p-8 md:p-12 pt-0 animate-in fade-in slide-in-from-bottom-8 duration-1000 delay-500">
-                    <div className="bg-gradient-to-r from-indigo-950/80 to-slate-900/80 backdrop-blur-xl border border-indigo-500/20 p-10 rounded-[40px] relative overflow-hidden shadow-2xl">
+                    <div className="bg-gradient-to-r from-rose-950/80 to-slate-900/80 backdrop-blur-xl border border-rose-500/20 p-10 rounded-[40px] relative overflow-hidden shadow-2xl">
                         {/* Background Glow */}
-                        <div className="absolute -left-20 -bottom-20 w-64 h-64 bg-indigo-600/20 blur-[100px] rounded-full pointer-events-none" />
+                        <div className="absolute -left-20 -bottom-20 w-64 h-64 bg-rose-600/20 blur-[100px] rounded-full pointer-events-none" />
 
                         <div className="relative z-10 flex flex-col md:flex-row items-center gap-12">
                             {/* Score & Verdict */}
                             <div className="text-center md:text-left shrink-0">
-                                <h4 className="text-[10px] font-bold text-indigo-300 uppercase tracking-widest mb-2">Veredicto Oficial</h4>
+                                <h4 className="text-[10px] font-bold text-rose-300 uppercase tracking-widest mb-2">Veredicto Oficial</h4>
                                 <div className="flex items-center gap-4 justify-center md:justify-start mb-2">
                                     <span className="text-6xl font-black text-white tracking-tighter">{aiEvaluation.overallScore}</span>
                                     <div className="flex flex-col text-left">
@@ -224,8 +224,8 @@ export const ChampionPresentationView: React.FC = () => {
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                                     {aiEvaluation.feedback && aiEvaluation.feedback.slice(0, 3).map((f: string, i: number) => (
                                         <div key={i} className="bg-white/5 border border-white/5 p-4 rounded-2xl flex gap-3 items-start">
-                                            <div className="w-6 h-6 rounded-full bg-indigo-500/20 flex items-center justify-center shrink-0 mt-0.5">
-                                                <span className="text-[10px] font-bold text-indigo-300">{i + 1}</span>
+                                            <div className="w-6 h-6 rounded-full bg-rose-500/20 flex items-center justify-center shrink-0 mt-0.5">
+                                                <span className="text-[10px] font-bold text-rose-300">{i + 1}</span>
                                             </div>
                                             <p className="text-xs text-slate-300 leading-relaxed">
                                                 {f}

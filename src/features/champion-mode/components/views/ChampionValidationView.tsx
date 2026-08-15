@@ -104,7 +104,7 @@ export const ChampionValidationView: React.FC = () => {
                                     {/* Creative Judge */}
                                     <div className="bg-white/5 p-3 rounded-xl border border-white/10 shadow-sm hover:bg-white/10 transition-colors">
                                         <div className="flex justify-between items-center mb-1">
-                                            <span className="text-[10px] font-bold text-violet-400 uppercase">Juez Creativo</span>
+                                            <span className="text-[10px] font-bold text-rose-400 uppercase">Juez Creativo</span>
                                             <span className="text-[10px] font-bold text-white">{aiEvaluation.juryBreakdown.creative.score}/100</span>
                                         </div>
                                         <p className="text-xs text-slate-300 italic">"{aiEvaluation.juryBreakdown.creative.comment}"</p>
@@ -154,7 +154,7 @@ export const ChampionValidationView: React.FC = () => {
                                                 state.juryDifficulty === level
                                                     ? level === 'World Class'
                                                         ? 'bg-amber-500 text-white shadow-md'
-                                                        : 'bg-violet-600 text-white shadow-md'
+                                                        : 'bg-rose-600 text-white shadow-md'
                                                     : 'text-slate-500 hover:text-slate-300'
                                             }`}
                                         >
@@ -176,7 +176,7 @@ export const ChampionValidationView: React.FC = () => {
                                 disabled={!proposal || isRunning}
                                 className={`w-full py-4 rounded-2xl text-sm font-black uppercase tracking-widest transition-all flex items-center justify-center gap-3 ${
                                     proposal && !isRunning
-                                        ? 'bg-violet-600 hover:bg-violet-500 text-white shadow-xl shadow-violet-900/50 hover:scale-[1.02] active:scale-[0.98]'
+                                        ? 'bg-rose-600 hover:bg-rose-500 text-white shadow-xl shadow-rose-900/50 hover:scale-[1.02] active:scale-[0.98]'
                                         : 'bg-white/5 border border-white/10 text-slate-600 cursor-not-allowed'
                                 }`}
                             >
@@ -217,7 +217,7 @@ export const ChampionValidationView: React.FC = () => {
                                 {/* Visual Placeholder for Radar Chart */}
                                 <div className="w-40 h-40 mx-auto bg-slate-800/50 rounded-full border border-white/10 relative flex items-center justify-center shadow-lg backdrop-blur-sm">
                                     <div className="w-24 h-24 bg-fuchsia-500/10 rounded-full absolute animate-pulse" />
-                                    <div className="w-24 h-24 bg-cyan-500/10 rounded-full absolute border border-cyan-500/30" style={{ transform: 'scale(1.2) rotate(45deg)' }} />
+                                    <div className="w-24 h-24 bg-rose-500/10 rounded-full absolute border border-rose-500/30" style={{ transform: 'scale(1.2) rotate(45deg)' }} />
                                     <span className="text-[10px] font-bold text-slate-400 tracking-widest">BRANDFIT ™</span>
                                 </div>
                             </div>

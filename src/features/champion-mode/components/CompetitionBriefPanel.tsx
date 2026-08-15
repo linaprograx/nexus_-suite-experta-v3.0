@@ -39,17 +39,17 @@ export const CompetitionBriefPanel: React.FC = () => {
             {/* Sponsor Section */}
             <div className="relative z-30">
                 <h3 className="text-[0.65rem] font-bold text-slate-400 uppercase tracking-[2px] mb-3 flex items-center gap-2">
-                    <Icon svg={ICONS.book} className="w-3 h-3 text-cyan-500" />
+                    <Icon svg={ICONS.book} className="w-3 h-3 text-rose-500" />
                     MARCA SPONSOR
                 </h3>
 
                 <div className="relative">
                     <button
                         onClick={() => setIsOpen(!isOpen)}
-                        className="w-full bg-white/70 border border-white/40 rounded-[16px] p-4 flex items-center justify-between shadow-sm hover:shadow-lg hover:border-cyan-400/50 transition-all group backdrop-blur-md"
+                        className="w-full bg-white/70 border border-white/40 rounded-[16px] p-4 flex items-center justify-between shadow-sm hover:shadow-lg hover:border-rose-400/50 transition-all group backdrop-blur-md"
                     >
                         <span className="font-bold text-slate-800 text-sm">{brief.brand}</span>
-                        <div className={`text-slate-500 group-hover:text-cyan-600 transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`}>
+                        <div className={`text-slate-500 group-hover:text-rose-600 transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`}>
                             <Icon svg={ICONS.chevronDown} className="w-4 h-4" />
                         </div>
                     </button>
@@ -60,7 +60,7 @@ export const CompetitionBriefPanel: React.FC = () => {
                                 <div key={b} className="flex items-center hover:bg-slate-100/50 border-b border-slate-200/50 last:border-0 group/item">
                                     <button
                                         onClick={() => { actions.setBrief({ brand: b }); setIsOpen(false); }}
-                                        className={`flex-1 text-left px-4 py-3 text-xs font-bold transition-colors flex items-center justify-between ${brief.brand === b ? 'text-cyan-700 bg-cyan-50' : 'text-slate-600 group-hover/item:text-slate-900'}`}
+                                        className={`flex-1 text-left px-4 py-3 text-xs font-bold transition-colors flex items-center justify-between ${brief.brand === b ? 'text-rose-700 bg-rose-50' : 'text-slate-600 group-hover/item:text-slate-900'}`}
                                     >
                                         {b}
                                         {brief.brand === b && <Icon svg={ICONS.check} className="w-3 h-3" />}
@@ -77,7 +77,7 @@ export const CompetitionBriefPanel: React.FC = () => {
                             <div className="p-2 border-t border-slate-200/50 bg-slate-50/50">
                                 <button
                                     onClick={() => { setIsOpen(false); setShowBrandModal(true); }}
-                                    className="w-full py-2 border border-dashed border-slate-300 text-slate-500 rounded-lg text-[10px] font-bold uppercase hover:border-cyan-400/50 hover:text-cyan-600 transition-colors flex items-center justify-center gap-2"
+                                    className="w-full py-2 border border-dashed border-slate-300 text-slate-500 rounded-lg text-[10px] font-bold uppercase hover:border-rose-400/50 hover:text-rose-600 transition-colors flex items-center justify-center gap-2"
                                 >
                                     <Icon svg={ICONS.plus} className="w-3 h-3" />
                                     Añadir Marca
@@ -99,7 +99,7 @@ export const CompetitionBriefPanel: React.FC = () => {
                         <button
                             key={t}
                             onClick={() => actions.setBrief({ competitionType: t })}
-                            className={`px-3 py-2 rounded-xl text-[10px] font-bold border transition-all ${brief.competitionType === t ? 'bg-cyan-100 border-cyan-300 text-cyan-800 shadow-sm' : 'bg-white/40 border-white/60 text-slate-600 hover:border-cyan-300/50 hover:text-cyan-700 hover:bg-white/60'}`}
+                            className={`px-3 py-2 rounded-xl text-[10px] font-bold border transition-all ${brief.competitionType === t ? 'bg-rose-100 border-rose-300 text-rose-800 shadow-sm' : 'bg-white/40 border-white/60 text-slate-600 hover:border-rose-300/50 hover:text-rose-700 hover:bg-white/60'}`}
                         >
                             {t}
                         </button>
@@ -158,7 +158,7 @@ export const CompetitionBriefPanel: React.FC = () => {
                 />
                 <button
                     onClick={handleUploadClick}
-                    className="w-full py-4 border border-dashed border-slate-300/50 bg-white/40 hover:bg-white/70 hover:border-cyan-400/50 rounded-[18px] text-[10px] font-bold text-slate-500 hover:text-cyan-700 hover:shadow-lg transition-all flex items-center justify-center gap-2 group uppercase tracking-widest backdrop-blur-sm"
+                    className="w-full py-4 border border-dashed border-slate-300/50 bg-white/40 hover:bg-white/70 hover:border-rose-400/50 rounded-[18px] text-[10px] font-bold text-slate-500 hover:text-rose-700 hover:shadow-lg transition-all flex items-center justify-center gap-2 group uppercase tracking-widest backdrop-blur-sm"
                 >
                     <Icon svg={ICONS.upload} className="w-4 h-4 group-hover:-translate-y-1 transition-transform duration-300" />
                     Subir Bases (PDF)

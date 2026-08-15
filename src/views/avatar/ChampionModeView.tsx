@@ -51,19 +51,19 @@ export const ChampionModeView: React.FC = () => {
                                 <div className={`
                                     w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-bold border transition-all duration-300
                                     ${isActive
-                                        ? 'bg-violet-600 border-violet-600 text-white shadow-lg shadow-violet-500/30 scale-110'
+                                        ? 'bg-rose-600 border-rose-600 text-white shadow-lg shadow-rose-500/30 scale-110'
                                         : isCompleted
-                                        ? 'bg-violet-900/60 border-violet-700/60 text-violet-300'
-                                        : 'bg-white/10 border-white/20 text-slate-400 group-hover:border-violet-400/50 group-hover:text-violet-300'}
+                                        ? 'bg-rose-900/60 border-rose-700/60 text-rose-300'
+                                        : 'bg-white/10 border-white/20 text-slate-400 group-hover:border-rose-400/50 group-hover:text-rose-300'}
                                 `}>
                                     {isCompleted ? '✓' : i + 1}
                                 </div>
 
-                                <span className={`text-[10px] uppercase font-bold tracking-wider transition-colors duration-300 ${isActive ? 'inline' : 'hidden lg:inline'} ${isActive ? 'text-violet-300' : isCompleted ? 'text-violet-500' : 'text-slate-500 group-hover:text-violet-400'}`}>
+                                <span className={`text-[10px] uppercase font-bold tracking-wider transition-colors duration-300 ${isActive ? 'inline' : 'hidden lg:inline'} ${isActive ? 'text-rose-300' : isCompleted ? 'text-rose-500' : 'text-slate-500 group-hover:text-rose-400'}`}>
                                     {step}
                                 </span>
 
-                                {i < 3 && <div className={`w-3 lg:w-8 h-[1px] transition-colors duration-300 ${isCompleted ? 'bg-violet-700' : 'bg-white/10'}`} />}
+                                {i < 3 && <div className={`w-3 lg:w-8 h-[1px] transition-colors duration-300 ${isCompleted ? 'bg-rose-700' : 'bg-white/10'}`} />}
                             </div>
                         );
                     })}

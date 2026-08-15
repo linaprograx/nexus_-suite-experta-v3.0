@@ -25,7 +25,7 @@ export const ChampionIntroBanner: React.FC = () => {
                             <span className="text-[9px] bg-white/10 text-white/70 px-2 py-0.5 rounded-full uppercase tracking-wider font-medium">BETA</span>
                         </h3>
                         <p className="text-xs text-slate-400 leading-relaxed max-w-3xl">
-                            Simulacro completo de competición en 4 fases: <span className="text-cyan-400 font-bold">Briefing</span> (Reglas), <span className="text-violet-400 font-bold">Creatividad</span> (Diseño), <span className="text-emerald-400 font-bold">Validación</span> (Jurado) y <span className="text-indigo-400 font-bold">Plan</span> (Presentación). Navega secuencialmente para asegurar la victoria.
+                            Simulacro completo de competición en 4 fases: <span className="text-rose-400 font-bold">Briefing</span> (Reglas), <span className="text-rose-400 font-bold">Creatividad</span> (Diseño), <span className="text-emerald-400 font-bold">Validación</span> (Jurado) y <span className="text-rose-400 font-bold">Plan</span> (Presentación). Navega secuencialmente para asegurar la victoria.
                         </p>
                     </div>
 

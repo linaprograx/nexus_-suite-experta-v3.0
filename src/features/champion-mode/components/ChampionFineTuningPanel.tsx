@@ -66,7 +66,7 @@ export const ChampionFineTuningPanel: React.FC = () => {
                                     </div>
                                     <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
                                         <div
-                                            className="h-full bg-gradient-to-r from-fuchsia-500 to-indigo-500 rounded-full transition-all duration-1000 ease-out"
+                                            className="h-full bg-gradient-to-r from-fuchsia-500 to-rose-500 rounded-full transition-all duration-1000 ease-out"
                                             style={{ width: `${score}%` }}
                                         />
                                     </div>
@@ -100,7 +100,7 @@ export const ChampionFineTuningPanel: React.FC = () => {
                 <div className="bg-slate-50 rounded-[22px] border border-slate-100 p-4 animate-in fade-in slide-in-from-bottom-4 duration-700">
                     <h4 className="text-[0.65rem] font-bold text-slate-400 uppercase tracking-[1px] mb-3 flex justify-between">
                         Story Summary
-                        <button onClick={handleCopyPitch} className="text-indigo-500 hover:text-indigo-700 flex items-center gap-1 transition-colors">
+                        <button onClick={handleCopyPitch} className="text-rose-500 hover:text-rose-700 flex items-center gap-1 transition-colors">
                             <Icon svg={ICONS.copy} className="w-3 h-3" />
                             <span className="text-[9px]">Copiar Pitch</span>
                         </button>

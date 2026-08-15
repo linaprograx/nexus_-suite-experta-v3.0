@@ -20,9 +20,9 @@ export const ChampionCreativePanel: React.FC = () => {
         <div className="flex flex-col gap-6 relative font-sans max-w-2xl mx-auto w-full pb-8">
 
             {/* Inspiration Input Card */}
-            <div className="relative bg-white/[0.04] p-6 rounded-[24px] border border-white/10 shrink-0 transition-all hover:border-violet-500/30 duration-300">
+            <div className="relative bg-white/[0.04] p-6 rounded-[24px] border border-white/10 shrink-0 transition-all hover:border-rose-500/30 duration-300">
                 <div className="flex items-center justify-between mb-6">
-                    <h2 className="text-xs font-black text-violet-500 uppercase tracking-[0.2em] flex items-center gap-2">
+                    <h2 className="text-xs font-black text-rose-500 uppercase tracking-[0.2em] flex items-center gap-2">
                         <Icon svg={ICONS.sparkles} className="w-4 h-4" />
                         Motor Creativo
                     </h2>
@@ -35,7 +35,7 @@ export const ChampionCreativePanel: React.FC = () => {
                             value={state.concept}
                             onChange={(e) => actions.setConcept(e.target.value)}
                             placeholder="Describe tu visión (ej: Un martini inspirado en la lluvia de Tokio...)"
-                            className="w-full h-32 bg-white/5 border border-white/10 rounded-[16px] p-4 text-sm font-medium text-slate-200 placeholder-slate-600 focus:ring-2 focus:ring-violet-500/30 focus:border-violet-500/50 outline-none resize-none transition-all"
+                            className="w-full h-32 bg-white/5 border border-white/10 rounded-[16px] p-4 text-sm font-medium text-slate-200 placeholder-slate-600 focus:ring-2 focus:ring-rose-500/30 focus:border-rose-500/50 outline-none resize-none transition-all"
                         />
                     </div>
 
@@ -59,8 +59,8 @@ export const ChampionCreativePanel: React.FC = () => {
                                         className={`
                                             px-5 py-2 rounded-full text-[11px] font-bold transition-all transform hover:scale-105 active:scale-95 border
                                             ${isActive
-                                                ? 'bg-violet-600 border-violet-600 text-white shadow-lg shadow-violet-500/30'
-                                                : 'bg-white border-slate-200 text-slate-500 hover:border-violet-300 hover:text-violet-600'}
+                                                ? 'bg-rose-600 border-rose-600 text-white shadow-lg shadow-rose-500/30'
+                                                : 'bg-white border-slate-200 text-slate-500 hover:border-rose-300 hover:text-rose-600'}
                                         `}
                                     >
                                         {tag}
@@ -70,11 +70,11 @@ export const ChampionCreativePanel: React.FC = () => {
                         </div>
 
                         {/* Dynamic Story Prompt (AI Hint) */}
-                        <div className="mt-4 p-3 bg-violet-50/50 rounded-xl border border-violet-100 flex gap-3 animate-in fade-in duration-500">
+                        <div className="mt-4 p-3 bg-rose-50/50 rounded-xl border border-rose-100 flex gap-3 animate-in fade-in duration-500">
                             <div className="bg-white p-1.5 rounded-lg shadow-sm h-fit">
                                 <Icon svg={ICONS.sparkles} className="w-3 h-3 text-fuchsia-500" />
                             </div>
-                            <p className="text-[10px] font-medium text-violet-800 leading-relaxed opacity-80">
+                            <p className="text-[10px] font-medium text-rose-800 leading-relaxed opacity-80">
                                 {state.brief.brand === 'Nexus Spirits'
                                     ? `Nexus Spirits busca innovación tecnológica en cada sorbo. ¿Cómo integra ${state.brief.competitionType} la ciencia?`
                                     : state.brief.brand === 'Aether Gin'
@@ -98,7 +98,7 @@ export const ChampionCreativePanel: React.FC = () => {
                     actions.generateProposal();
                 }}
                 disabled={state.isGenerating}
-                className="w-full py-5 bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 text-white font-black tracking-widest rounded-[24px] shadow-xl shadow-violet-500/20 transition-all flex items-center justify-center gap-3 transform active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed group z-20 hover:-translate-y-1"
+                className="w-full py-5 bg-gradient-to-r from-rose-600 to-fuchsia-600 hover:from-rose-500 hover:to-fuchsia-500 text-white font-black tracking-widest rounded-[24px] shadow-xl shadow-rose-500/20 transition-all flex items-center justify-center gap-3 transform active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed group z-20 hover:-translate-y-1"
             >
                 <Icon svg={ICONS.wand} className={`w-5 h-5 ${state.isGenerating ? 'animate-spin' : 'group-hover:rotate-12 transition-transform'}`} />
                 {state.isGenerating ? 'DISEÑANDO EXPERIENCIA...' : 'GENERAR PROPUESTA'}
@@ -112,11 +112,11 @@ export const ChampionCreativePanel: React.FC = () => {
                     {state.isGenerating && (
                         <div className="absolute inset-0 z-50 bg-white/90 backdrop-blur-sm flex flex-col items-center justify-center text-center animate-in fade-in duration-300">
                             <div className="relative mb-6">
-                                <div className="absolute inset-0 bg-violet-500 blur-2xl opacity-20 animate-pulse" />
-                                <Icon svg={ICONS.sparkles} className="w-16 h-16 text-violet-600 animate-[spin_3s_linear_infinite]" />
+                                <div className="absolute inset-0 bg-rose-500 blur-2xl opacity-20 animate-pulse" />
+                                <Icon svg={ICONS.sparkles} className="w-16 h-16 text-rose-600 animate-[spin_3s_linear_infinite]" />
                                 <Icon svg={ICONS.wand} className="w-8 h-8 text-fuchsia-500 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 animate-bounce" />
                             </div>
-                            <h3 className="text-lg font-black text-transparent bg-clip-text bg-gradient-to-r from-violet-600 to-fuchsia-600 uppercase tracking-widest mb-2 animate-pulse">
+                            <h3 className="text-lg font-black text-transparent bg-clip-text bg-gradient-to-r from-rose-600 to-fuchsia-600 uppercase tracking-widest mb-2 animate-pulse">
                                 Creando Magia...
                             </h3>
                             <p className="text-xs text-slate-400 font-medium max-w-[200px] leading-relaxed">
@@ -126,15 +126,15 @@ export const ChampionCreativePanel: React.FC = () => {
                     )}
 
                     {/* Glow Pulse Background */}
-                    <div className="absolute inset-0 bg-gradient-to-br from-violet-500/5 to-fuchsia-500/5 pointer-events-none" />
-                    <div className="absolute -top-20 -right-20 w-64 h-64 bg-violet-500/10 blur-[80px] rounded-full animate-pulse" />
+                    <div className="absolute inset-0 bg-gradient-to-br from-rose-500/5 to-fuchsia-500/5 pointer-events-none" />
+                    <div className="absolute -top-20 -right-20 w-64 h-64 bg-rose-500/10 blur-[80px] rounded-full animate-pulse" />
 
                     <div className="p-8 pb-4 border-b border-slate-100 flex justify-between items-start relative z-10">
                         <div>
                             <span className="inline-block text-[10px] font-black uppercase px-3 py-1.5 rounded-full mb-4 shadow-sm bg-emerald-50 text-emerald-600">
                                 Propuesta Finalizada
                             </span>
-                            <h1 className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-violet-600 via-fuchsia-600 to-indigo-600 leading-tight drop-shadow-sm mb-2">
+                            <h1 className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-rose-600 via-fuchsia-600 to-rose-600 leading-tight drop-shadow-sm mb-2">
                                 {state.proposal ? state.proposal.title : '...'}
                             </h1>
                             {state.proposal && (state.proposal.shortIntro || state.proposal.description) && (
@@ -148,7 +148,7 @@ export const ChampionCreativePanel: React.FC = () => {
                                 soundEngine.playClickSoft();
                                 actions.generateProposal();
                             }}
-                            className="p-3 bg-slate-50 hover:bg-slate-100 rounded-full text-slate-400 hover:text-violet-500 transition-colors"
+                            className="p-3 bg-slate-50 hover:bg-slate-100 rounded-full text-slate-400 hover:text-rose-500 transition-colors"
                         >
                             <Icon svg={ICONS.refresh} className="w-4 h-4" />
                         </button>
@@ -157,7 +157,7 @@ export const ChampionCreativePanel: React.FC = () => {
                     <div className="p-8 pt-6 flex-1 relative z-10">
                         {state.proposal ? (
                             <div className="animate-in fade-in duration-500 space-y-8">
-                                <p className="text-base font-medium text-slate-500 italic leading-relaxed border-l-4 border-violet-200 pl-6">
+                                <p className="text-base font-medium text-slate-500 italic leading-relaxed border-l-4 border-rose-200 pl-6">
                                     "{state.proposal.description}"
                                 </p>
 
@@ -187,7 +187,7 @@ export const ChampionCreativePanel: React.FC = () => {
                                                 style={{ animationDelay: `${idx * 100}ms` }}
                                             >
                                                 <span className="text-sm font-bold text-slate-700">{item.ingredient}</span>
-                                                <span className="font-mono font-bold text-violet-600 bg-white px-3 py-1 rounded shadow-sm text-xs border border-violet-100">{item.amount}</span>
+                                                <span className="font-mono font-bold text-rose-600 bg-white px-3 py-1 rounded shadow-sm text-xs border border-rose-100">{item.amount}</span>
                                             </div>
                                         ))}
                                     </div>
@@ -210,13 +210,13 @@ export const ChampionCreativePanel: React.FC = () => {
                                         </h4>
                                         <div className="space-y-4">
                                             {state.proposal.complexPreparations.map((prep: any, idx: number) => (
-                                                <div key={idx} className="bg-white p-5 rounded-[20px] border border-slate-100 shadow-sm hover:border-violet-200 transition-colors">
+                                                <div key={idx} className="bg-white p-5 rounded-[20px] border border-slate-100 shadow-sm hover:border-rose-200 transition-colors">
                                                     <div className="flex justify-between items-center mb-2">
-                                                        <span className="text-xs font-black text-violet-600 uppercase tracking-wide">{prep.name}</span>
+                                                        <span className="text-xs font-black text-rose-600 uppercase tracking-wide">{prep.name}</span>
                                                         <span className="text-[10px] font-mono font-bold bg-slate-100 text-slate-500 px-2 py-1 rounded-full">{prep.yield || "1 batch"}</span>
                                                     </div>
                                                     <p className="text-[11px] text-slate-500 mb-2"><span className="font-bold text-slate-700">Ingredientes:</span> {prep.ingredients}</p>
-                                                    <p className="text-[11px] text-slate-600 italic border-l-2 border-violet-100 pl-3 leading-relaxed">{prep.method}</p>
+                                                    <p className="text-[11px] text-slate-600 italic border-l-2 border-rose-100 pl-3 leading-relaxed">{prep.method}</p>
                                                 </div>
                                             ))}
                                         </div>

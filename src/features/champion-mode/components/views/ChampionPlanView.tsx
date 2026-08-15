@@ -61,7 +61,7 @@ export const ChampionPlanView: React.FC = () => {
             {/* COLUMN 1: OPTIMIZATION CHECKLIST */}
             <ChampionColumn
                 title="Checklist Final"
-                accentColor="bg-violet-500/60 text-violet-200"
+                accentColor="bg-rose-500/60 text-rose-200"
                 scrollable
             >
                 <div className="p-6 space-y-4">
@@ -71,7 +71,7 @@ export const ChampionPlanView: React.FC = () => {
                         <button
                             onClick={() => actions.generateChecklist()}
                             disabled={!!!!(state.statusMessage && state.statusMessage.includes('logística'))}
-                            className="mb-4 w-full py-3 bg-violet-500/10 border border-violet-500/20 text-violet-300 text-xs font-black uppercase tracking-wider rounded-xl hover:bg-violet-500/20 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                            className="mb-4 w-full py-3 bg-rose-500/10 border border-rose-500/20 text-rose-300 text-xs font-black uppercase tracking-wider rounded-xl hover:bg-rose-500/20 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
                         >
                             {state.statusMessage && state.statusMessage.includes('logística') ? (
                                 <>
@@ -89,10 +89,10 @@ export const ChampionPlanView: React.FC = () => {
 
                     <div className="space-y-2">
                         {localChecklist.map((item) => (
-                            <div key={item.id} className="flex items-center gap-3 p-3 bg-white/5 rounded-xl border border-white/10 group hover:border-violet-500/30 transition-colors">
+                            <div key={item.id} className="flex items-center gap-3 p-3 bg-white/5 rounded-xl border border-white/10 group hover:border-rose-500/30 transition-colors">
                                 <div
                                     onClick={() => toggleCheck(item.id)}
-                                    className={`w-5 h-5 rounded-md border-2 cursor-pointer flex items-center justify-center transition-colors flex-shrink-0 ${item.checked ? 'bg-violet-600 border-violet-600' : 'border-slate-600 hover:border-violet-400'}`}
+                                    className={`w-5 h-5 rounded-md border-2 cursor-pointer flex items-center justify-center transition-colors flex-shrink-0 ${item.checked ? 'bg-rose-600 border-rose-600' : 'border-slate-600 hover:border-rose-400'}`}
                                 >
                                     {item.checked && <Icon svg={ICONS.check} className="w-3 h-3 text-white" />}
                                 </div>
@@ -134,7 +134,7 @@ export const ChampionPlanView: React.FC = () => {
             {/* COLUMN 2: Q&A SIMULATOR */}
             <ChampionColumn
                 title="Simulación de Preguntas"
-                accentColor="bg-violet-400/60 text-violet-200"
+                accentColor="bg-rose-400/60 text-rose-200"
                 scrollable
             >
                 <div className="p-6 h-full flex flex-col">
@@ -143,7 +143,7 @@ export const ChampionPlanView: React.FC = () => {
                         <button
                             onClick={() => actions.generateQuestions()}
                             disabled={!!!!(state.statusMessage && state.statusMessage.includes('preparando preg'))}
-                            className="mb-4 w-full py-2 bg-violet-500/10 border border-violet-500/20 text-violet-300 text-xs font-bold rounded-xl hover:bg-violet-500/20 flex items-center justify-center gap-2 disabled:opacity-50 transition-all"
+                            className="mb-4 w-full py-2 bg-rose-500/10 border border-rose-500/20 text-rose-300 text-xs font-bold rounded-xl hover:bg-rose-500/20 flex items-center justify-center gap-2 disabled:opacity-50 transition-all"
                         >
                             {state.statusMessage && state.statusMessage.includes('preparando preg') ? (
                                 <>
@@ -167,13 +167,13 @@ export const ChampionPlanView: React.FC = () => {
                         </div>
 
                         {/* User Answer Area */}
-                        <div className="bg-violet-500/10 p-4 rounded-xl rounded-tr-none border border-violet-500/20 ml-auto max-w-[90%] relative">
-                            <div className="absolute -top-3 -right-3 w-8 h-8 bg-violet-600 rounded-full border-2 border-slate-900 flex items-center justify-center">
+                        <div className="bg-rose-500/10 p-4 rounded-xl rounded-tr-none border border-rose-500/20 ml-auto max-w-[90%] relative">
+                            <div className="absolute -top-3 -right-3 w-8 h-8 bg-rose-600 rounded-full border-2 border-slate-900 flex items-center justify-center">
                                 <Icon svg={ICONS.user} className="w-4 h-4 text-white" />
                             </div>
-                            <p className="text-xs text-violet-400 font-bold mb-1 text-right uppercase tracking-wider mr-4">Tu Respuesta</p>
+                            <p className="text-xs text-rose-400 font-bold mb-1 text-right uppercase tracking-wider mr-4">Tu Respuesta</p>
                             <textarea
-                                className="w-full bg-transparent border-none p-0 text-sm text-violet-100 placeholder-violet-600 focus:ring-0 resize-none h-20"
+                                className="w-full bg-transparent border-none p-0 text-sm text-rose-100 placeholder-rose-600 focus:ring-0 resize-none h-20"
                                 placeholder="Escribe tu defensa aquí..."
                                 value={userAnswer}
                                 onChange={(e) => setUserAnswer(e.target.value)}
@@ -199,7 +199,7 @@ export const ChampionPlanView: React.FC = () => {
                         <button
                             onClick={handleSubmitAnswer}
                             disabled={!userAnswer || !!(state.qaFeedback && state.qaFeedback.question === currentQuestion) || !!state.statusMessage?.includes('Evaluando')}
-                            className="flex-1 py-3 bg-violet-600 text-white rounded-xl text-xs font-bold uppercase tracking-wider hover:bg-violet-500 transition-colors shadow-lg shadow-violet-900/30 disabled:opacity-50 disabled:shadow-none flex items-center justify-center gap-2"
+                            className="flex-1 py-3 bg-rose-600 text-white rounded-xl text-xs font-bold uppercase tracking-wider hover:bg-rose-500 transition-colors shadow-lg shadow-rose-900/30 disabled:opacity-50 disabled:shadow-none flex items-center justify-center gap-2"
                         >
                             {state.statusMessage && state.statusMessage.includes('Evaluando') ? (
                                 <>
@@ -212,7 +212,7 @@ export const ChampionPlanView: React.FC = () => {
                         </button>
                         <button
                             onClick={handleNextQuestion}
-                            className="px-4 py-3 bg-white/5 border border-white/10 text-slate-400 rounded-xl text-xs font-bold hover:border-violet-500/40 hover:text-violet-300 transition-colors"
+                            className="px-4 py-3 bg-white/5 border border-white/10 text-slate-400 rounded-xl text-xs font-bold hover:border-rose-500/40 hover:text-rose-300 transition-colors"
                         >
                             <Icon svg={ICONS.refresh} className="w-4 h-4" />
                         </button>
@@ -223,17 +223,17 @@ export const ChampionPlanView: React.FC = () => {
             {/* COLUMN 3: LAUNCH PAD */}
             <ChampionColumn
                 title="El Escenario"
-                accentColor="bg-violet-600"
+                accentColor="bg-rose-600"
                 scrollable
             >
                 <div className="h-full flex flex-col items-center justify-center p-6 text-center relative overflow-hidden min-h-[400px] gap-4">
-                    <div className="absolute inset-0 bg-gradient-to-t from-violet-500/5 to-transparent pointer-events-none" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-rose-500/5 to-transparent pointer-events-none" />
 
                     {/* Icon */}
-                    <div className="w-24 h-24 rounded-full bg-violet-500/10 border-2 border-violet-500/30 flex items-center justify-center relative">
-                        <div className="absolute inset-0 rounded-full border border-violet-400/20 animate-[spin_12s_linear_infinite]" />
+                    <div className="w-24 h-24 rounded-full bg-rose-500/10 border-2 border-rose-500/30 flex items-center justify-center relative">
+                        <div className="absolute inset-0 rounded-full border border-rose-400/20 animate-[spin_12s_linear_infinite]" />
                         <span className="text-4xl">🏆</span>
-                        <div className="absolute -bottom-2 px-3 py-0.5 bg-violet-600 text-white text-[9px] font-bold rounded-full uppercase tracking-wider">
+                        <div className="absolute -bottom-2 px-3 py-0.5 bg-rose-600 text-white text-[9px] font-bold rounded-full uppercase tracking-wider">
                             Ready
                         </div>
                     </div>
@@ -249,21 +249,21 @@ export const ChampionPlanView: React.FC = () => {
                     <div className="w-full space-y-2 z-10">
                         <button
                             onClick={() => actions.setViewMode('PRESENTATION')}
-                            className="w-full py-3.5 bg-violet-600 hover:bg-violet-500 text-white rounded-xl font-black text-xs uppercase tracking-widest shadow-xl shadow-violet-900/40 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-2"
+                            className="w-full py-3.5 bg-rose-600 hover:bg-rose-500 text-white rounded-xl font-black text-xs uppercase tracking-widest shadow-xl shadow-rose-900/40 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-2"
                         >
                             🎬 Iniciar Presentación
                         </button>
                         <button
                             onClick={() => actions.saveToGrimorium()}
                             disabled={!!!state.proposal}
-                            className="w-full py-3 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-violet-500/40 text-slate-300 hover:text-white rounded-xl font-bold text-xs uppercase tracking-widest transition-all disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                            className="w-full py-3 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-rose-500/40 text-slate-300 hover:text-white rounded-xl font-bold text-xs uppercase tracking-widest transition-all disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                         >
                             📖 Guardar en Grimorium
                         </button>
                         <button
                             onClick={() => actions.createTrainingPlan()}
                             disabled={!!!state.proposal}
-                            className="w-full py-3 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-violet-500/40 text-slate-300 hover:text-white rounded-xl font-bold text-xs uppercase tracking-widest transition-all disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                            className="w-full py-3 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-rose-500/40 text-slate-300 hover:text-white rounded-xl font-bold text-xs uppercase tracking-widest transition-all disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                         >
                             📋 Crear Plan en Pizarrón
                         </button>
@@ -271,7 +271,7 @@ export const ChampionPlanView: React.FC = () => {
 
                     {/* Status message */}
                     {state.statusMessage && (
-                        <p className="text-[10px] text-violet-300 animate-pulse">{state.statusMessage}</p>
+                        <p className="text-[10px] text-rose-300 animate-pulse">{state.statusMessage}</p>
                     )}
                 </div>
             </ChampionColumn>

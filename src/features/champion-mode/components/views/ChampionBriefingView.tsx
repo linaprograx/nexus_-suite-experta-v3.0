@@ -27,7 +27,7 @@ export const ChampionBriefingView: React.FC = () => {
             {/* COLUMN 1: CONTEXT & INPUTS */}
             <ChampionColumn
                 title="Contexto Competitivo"
-                accentColor="bg-cyan-500/20 text-cyan-200"
+                accentColor="bg-rose-500/20 text-rose-200"
                 scrollable
             >
                 <div className="p-4 h-full">
@@ -101,24 +101,24 @@ export const ChampionBriefingView: React.FC = () => {
             {/* COLUMN 3: STRATEGIC AI DIRECTOR */}
             <ChampionColumn
                 title="Estrategia Ganadora"
-                accentColor="bg-violet-500/20 text-violet-200"
+                accentColor="bg-rose-500/20 text-rose-200"
                 scrollable
             >
                 <div className="p-4 h-full flex flex-col">
-                    <div className="bg-white/80 rounded-[24px] p-6 border border-violet-200/50 flex-1 relative overflow-hidden group min-h-[300px] shadow-sm backdrop-blur-md">
-                        <div className="absolute top-0 right-0 w-32 h-32 bg-violet-500/10 rounded-full blur-3xl -mr-10 -mt-10 pointer-events-none" />
+                    <div className="bg-white/80 rounded-[24px] p-6 border border-rose-200/50 flex-1 relative overflow-hidden group min-h-[300px] shadow-sm backdrop-blur-md">
+                        <div className="absolute top-0 right-0 w-32 h-32 bg-rose-500/10 rounded-full blur-3xl -mr-10 -mt-10 pointer-events-none" />
 
                         <div className="relative z-10 flex flex-col h-full">
                             <div className="flex items-center gap-3 mb-6">
-                                <div className="w-10 h-10 rounded-full bg-violet-100 shadow-sm flex items-center justify-center text-violet-600 border border-violet-200">
+                                <div className="w-10 h-10 rounded-full bg-rose-100 shadow-sm flex items-center justify-center text-rose-600 border border-rose-200">
                                     <Icon svg={ICONS.brain} className="w-5 h-5" />
                                 </div>
                                 <div>
-                                    <h4 className="text-xs font-bold text-violet-800 uppercase tracking-widest">Director Creativo</h4>
-                                    <p className="text-[10px] text-violet-500 font-medium">Análisis de Oportunidad</p>
+                                    <h4 className="text-xs font-bold text-rose-800 uppercase tracking-widest">Director Creativo</h4>
+                                    <p className="text-[10px] text-rose-500 font-medium">Análisis de Oportunidad</p>
                                 </div>
                                 <button
-                                    className="ml-auto p-2 bg-white rounded-full text-violet-400 hover:text-violet-600 hover:bg-violet-50 shadow-sm transition-colors border border-violet-100"
+                                    className="ml-auto p-2 bg-white rounded-full text-rose-400 hover:text-rose-600 hover:bg-rose-50 shadow-sm transition-colors border border-rose-100"
                                     title="Regenerar Estrategia"
                                     onClick={() => actions.generateTacticalHint()}
                                 >
@@ -132,18 +132,18 @@ export const ChampionBriefingView: React.FC = () => {
                                 </p>
 
                                 {state.tacticalHint ? (
-                                    <div className="p-4 bg-violet-50 rounded-xl text-xs text-violet-800 animate-in fade-in slide-in-from-bottom-2 border border-violet-100">
-                                        <p className="font-bold mb-1 text-violet-600">💡 Hint Táctico:</p>
+                                    <div className="p-4 bg-rose-50 rounded-xl text-xs text-rose-800 animate-in fade-in slide-in-from-bottom-2 border border-rose-100">
+                                        <p className="font-bold mb-1 text-rose-600">💡 Hint Táctico:</p>
                                         "{state.tacticalHint}"
                                     </div>
                                 ) : (
                                     <ul className="space-y-3 mt-4">
                                         <li className="flex gap-3 text-xs text-slate-500 bg-white/60 p-3 rounded-lg border border-white/50 shadow-sm">
-                                            <div className="w-1.5 h-1.5 rounded-full bg-violet-400 mt-1.5 shrink-0" />
+                                            <div className="w-1.5 h-1.5 rounded-full bg-rose-400 mt-1.5 shrink-0" />
                                             <span>Innovación técnica sobre la narrativa tradicional. Evita clichés.</span>
                                         </li>
                                         <li className="flex gap-3 text-xs text-slate-500 bg-white/60 p-3 rounded-lg border border-white/50 shadow-sm">
-                                            <div className="w-1.5 h-1.5 rounded-full bg-violet-400 mt-1.5 shrink-0" />
+                                            <div className="w-1.5 h-1.5 rounded-full bg-rose-400 mt-1.5 shrink-0" />
                                             <span>Uso disruptivo del ingrediente base.</span>
                                         </li>
                                     </ul>
@@ -153,7 +153,7 @@ export const ChampionBriefingView: React.FC = () => {
                             <button
                                 onClick={() => actions.generateTacticalHint()}
                                 disabled={state.statusMessage?.includes('Analizando')}
-                                className="w-full mt-6 py-3 bg-violet-600/90 text-white rounded-xl text-xs font-bold uppercase tracking-wider hover:bg-violet-500 transition-colors shadow-lg shadow-violet-900/50 disabled:opacity-50 disabled:cursor-not-allowed border border-white/10"
+                                className="w-full mt-6 py-3 bg-rose-600/90 text-white rounded-xl text-xs font-bold uppercase tracking-wider hover:bg-rose-500 transition-colors shadow-lg shadow-rose-900/50 disabled:opacity-50 disabled:cursor-not-allowed border border-white/10"
                             >
                                 {state.statusMessage?.includes('Analizando') ? 'Analizando...' : 'Generar Hint Táctico'}
                             </button>
