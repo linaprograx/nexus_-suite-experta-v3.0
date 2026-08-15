@@ -15,6 +15,7 @@ import { evaluateMarketSignals } from '../../core/signals/signal.engine';
 import { Signal } from '../../core/signals/signal.types';
 import { buscar } from '../../core/search/buscador';
 import { agruparProductos } from '../../core/identity/agruparProductos';
+import { opcionesDelGrupo } from '../../core/identity/opcionesDeCompra';
 
 
 interface IngredientListPanelProps {
@@ -83,6 +84,15 @@ export const IngredientListPanel: React.FC<IngredientListPanelProps> = ({
   // Providers Hook
   const { db, userId } = useApp();
   const { suppliers: proveedores } = useSuppliers({ db, userId });
+
+  // Un grupo abierto a la vez: varios desplegados a la vez convierten la lista
+  // en un muro y se pierde justamente la comparación que se venía a hacer.
+  const [grupoAbierto, setGrupoAbierto] = React.useState<string | null>(null);
+
+  const nombreProveedor = React.useCallback(
+    (id: string | null) => (id && proveedores.find(p => p.id === id)?.name) || 'Sin proveedor',
+    [proveedores],
+  );
 
   // Providers State
   const [selectedProveedorId, setSelectedProveedorId] = React.useState<string>('all');
@@ -338,6 +348,9 @@ export const IngredientListPanel: React.FC<IngredientListPanelProps> = ({
               const primaryEntry = sortedEntries[0];
               const ing = primaryEntry;
 
+              const oferta = opcionesDelGrupo(group.entries);
+              const abierto = grupoAbierto === group.id;
+
               const isSelected = selectedIngredientIds.includes(ing.id);
               const isViewing = viewingIngredientId === ing.id;
               const categoryColor = getCategoryColor(ing.categoria || 'General');
@@ -377,10 +390,20 @@ export const IngredientListPanel: React.FC<IngredientListPanelProps> = ({
                               <Icon svg={ICONS.alertCircle} className="w-2.5 h-2.5" /> AGOTADO
                             </span>
                           )}
-                          {group.entries.length > 1 && (
-                            <span className="px-1.5 py-0.5 rounded-[4px] bg-slate-100 dark:bg-slate-800 text-slate-500 text-[9px] font-medium inline-flex items-center gap-1 border border-slate-200 dark:border-slate-700">
-                              <Icon svg={ICONS.users} className="w-2.5 h-2.5" /> {group.entries.length} opc.
-                            </span>
+                          {oferta.opciones.length > 1 && (
+                            <button
+                              type="button"
+                              // El clic no debe seleccionar la ficha: abrir las
+                              // opciones es mirar, no elegir.
+                              onClick={(e) => { e.stopPropagation(); setGrupoAbierto(abierto ? null : group.id); }}
+                              aria-expanded={abierto}
+                              className={`px-1.5 py-0.5 rounded-[4px] text-[9px] font-bold inline-flex items-center gap-1 border transition-colors ${abierto
+                                ? 'bg-emerald-500 text-white border-emerald-500'
+                                : 'bg-slate-100 dark:bg-slate-800 text-slate-500 border-slate-200 dark:border-slate-700 hover:border-emerald-400'}`}
+                            >
+                              <Icon svg={ICONS.users} className="w-2.5 h-2.5" /> {oferta.opciones.length} opc.
+                              <Icon svg={ICONS.chevronDown} className={`w-2.5 h-2.5 transition-transform ${abierto ? 'rotate-180' : ''}`} />
+                            </button>
                           )}
                           {/* Nacido del alta exprés de una receta: datos aproximados.
                               Sin esta marca, un precio estimado se confundiría con
@@ -395,6 +418,54 @@ export const IngredientListPanel: React.FC<IngredientListPanelProps> = ({
                           )}
                         </div>
                       </div>
+
+                      {/* Las opciones de compra del grupo. Antes la insignia solo
+                          decía cuántas había; para verlas tocaba abrir la ficha de
+                          una de ellas y las demás no aparecían por ningún lado. */}
+                      {abierto && (
+                        <div className="mt-2 rounded-xl border border-emerald-500/25 bg-emerald-50/40 dark:bg-emerald-900/10 divide-y divide-emerald-500/15" onClick={(e) => e.stopPropagation()}>
+                          {oferta.opciones.map((op, i) => {
+                            const manda = oferta.elegida
+                              && op.fichaId === oferta.elegida.fichaId
+                              && op.proveedorId === oferta.elegida.proveedorId;
+                            return (
+                              <div key={`${op.fichaId}-${op.proveedorId}-${i}`} className="flex items-center gap-2 px-2.5 py-2">
+                                <div className="min-w-0 flex-1">
+                                  <div className="flex items-center gap-1.5 min-w-0">
+                                    <span className="text-[11px] font-bold text-slate-700 dark:text-slate-200 truncate">
+                                      {nombreProveedor(op.proveedorId)}
+                                    </span>
+                                    {manda && (
+                                      <span className="shrink-0 px-1 py-px rounded bg-emerald-500 text-white text-[8px] font-black uppercase tracking-wider">
+                                        {oferta.motivo === 'preferente' ? 'Preferente' : 'Mejor precio'}
+                                      </span>
+                                    )}
+                                  </div>
+                                  <div className="text-[10px] text-slate-400 truncate">{op.fichaNombre}</div>
+                                </div>
+                                <div className="shrink-0 text-right">
+                                  <div className="text-xs font-bold text-slate-700 dark:text-slate-200 tabular-nums">€{op.precio.toFixed(2)}</div>
+                                  <div className="text-[9px] text-slate-400">{op.formato}</div>
+                                </div>
+                              </div>
+                            );
+                          })}
+
+                          {oferta.motivo === 'sin-comparar' && (
+                            <p className="px-2.5 py-2 text-[10px] leading-relaxed text-amber-700 dark:text-amber-400">
+                              Estos formatos no se pueden comparar entre sí, así que no se
+                              señala ninguno como el más barato: decirlo mal sería peor que
+                              no decirlo. Confirma sus formatos en «Revisar Unidades».
+                            </p>
+                          )}
+                          {oferta.alternativaMasBarata && (
+                            <p className="px-2.5 py-2 text-[10px] leading-relaxed text-amber-700 dark:text-amber-400">
+                              Manda tu proveedor preferente. Hay otro más barato:
+                              {' '}<strong>{nombreProveedor(oferta.alternativaMasBarata.opcion.proveedorId)}</strong>.
+                            </p>
+                          )}
+                        </div>
+                      )}
 
                       {/* Bottom: Signal Engine Output (Moved here for space) */}
                       {(() => {
