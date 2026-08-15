@@ -46,6 +46,7 @@ import { useStockRules } from '../hooks/useStockRules';
 
 import { buildCurrentStock } from '../utils/stockUtils';
 import { resolverMaestro, indicePorId } from '../core/identity/masterProduct';
+import { colapsarAlias } from '../core/identity/colapsarAlias';
 import { useStockMovements } from '../hooks/useStockMovements';
 import { calculateEscandallo } from '../core/finance/cost.engine';
 import { useEscandallator } from '../hooks/useEscandallator';
@@ -232,13 +233,28 @@ const GrimoriumInner: React.FC<GrimoriumViewProps> = () => {
     const [selectedStockItemId, setSelectedStockItemId] = React.useState<string | null>(null); // New state for Stock Selection
 
     // Filtered ingredients (simple filter by search) - MUST be after ingredientSearch declaration
+    /**
+     * Mercado · Fase 1 — los alias ya fusionados no vuelven a ser fila.
+     *
+     * El filtro por texto no cambia; lo que cambia es que, después de filtrar,
+     * una ficha con `masterProductId` se sustituye por su maestro. Sustituir y
+     * no descartar: si buscas el nombre del alias, el maestro puede no
+     * coincidir con esa búsqueda, y descartarlo dejaría el resultado vacío
+     * habiendo escrito un nombre que existe.
+     *
+     * Se colapsa aquí y no dentro del panel porque este es el único sitio con
+     * el catálogo entero: para resolver la cadena de un alias hacen falta
+     * documentos que el filtro pudo dejar fuera.
+     */
     const filteredIngredients = React.useMemo(() => {
-        if (!ingredientSearch) return allIngredients;
         const search = ingredientSearch.toLowerCase();
-        return allIngredients.filter(ing =>
-            ing.nombre.toLowerCase().includes(search) ||
-            ing.categoria?.toLowerCase().includes(search)
-        );
+        const coincidentes = !ingredientSearch
+            ? allIngredients
+            : allIngredients.filter(ing =>
+                ing.nombre.toLowerCase().includes(search) ||
+                ing.categoria?.toLowerCase().includes(search)
+            );
+        return colapsarAlias(coincidentes, allIngredients).filas;
     }, [allIngredients, ingredientSearch]);
 
     // Compute selected items from IDs
