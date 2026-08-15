@@ -13,8 +13,8 @@ import { CatalogoItem } from '../../types';
 import { getCategoryColor } from '../../utils/categoryColors';
 import { evaluateMarketSignals } from '../../core/signals/signal.engine';
 import { Signal } from '../../core/signals/signal.types';
-import { TOKENS_GENERICOS as WEAK_TOKENS, esTokenGenerico } from '../../core/identity/genericTokens';
 import { buscar } from '../../core/search/buscador';
+import { agruparProductos } from '../../core/identity/agruparProductos';
 
 
 interface IngredientListPanelProps {
@@ -131,121 +131,23 @@ export const IngredientListPanel: React.FC<IngredientListPanelProps> = ({
     return result;
   }, [ingredients, selectedProveedorId, ingredientFilters.category, ingredientSearchTerm, soloPorRevisar]);
 
-  // Phase 2.1.B+ - Aggregation Logic
-  const aggregatedProducts = React.useMemo(() => {
-    const map = new Map<string, {
-      id: string;
-      name: string;
-      category: string;
-      entries: Ingredient[];
-      minPrice: number;
-      maxPrice: number;
-    }>();
-
-    // Helper: Tokenize a name
-    // Helper: Tokenize a name
-    const STOP_WORDS = new Set(['el', 'la', 'los', 'las', 'de', 'del', 'en', 'y', 'o', 'con', 'sin', 'por', 'para', 'un', 'una']);
-
-    const getTokens = (str: string) => str.toLowerCase()
-      .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
-      .replace(/[^a-z0-9\s]/g, "") // remove special chars
-      .split(/\s+/)
-      .filter(t => t.length >= 2 && !STOP_WORDS.has(t)); // Allow 2 chars but filter
-
-    // Helper: Check if two sets of tokens match
-    const doTokensMatch = (tokensA: string[], tokensB: string[]) => {
-      // If either has no tokens, no match
-      if (tokensA.length === 0 || tokensB.length === 0) return false;
-
-      let hasStrongMatch = false;
-      let weakMatchCount = 0;
-
-      tokensA.forEach(tA => {
-        const isWeak = WEAK_TOKENS.has(tA);
-        // Check if tA matches any in tokensB
-        const matched = tokensB.some(tB => {
-          // Exact match
-          if (tA === tB) return true;
-          // Prefix match
-          if (tA.length >= 3 && (tA.startsWith(tB) || tB.startsWith(tA))) return true;
-          // Containment: ONLY if token > 3 chars
-          if (tA.length > 3 && tB.length > 3) {
-            return tA.includes(tB) || tB.includes(tA);
-          }
-          return false;
-        });
-
-        if (matched) {
-          if (isWeak) weakMatchCount++;
-          else hasStrongMatch = true;
-        }
-      });
-
-      const targetHasStrongTokens = tokensA.some(t => !WEAK_TOKENS.has(t));
-
-      // El objetivo solo dice su familia («MEZCAL CUPREATA»): cualquier
-      // coincidencia sería de familia, no de producto. Se exige que
-      // coincidan TODAS sus palabras y que el candidato no añada ninguna
-      // específica; si no, «MEZCAL» emparejaría con medio catálogo.
-      if (!targetHasStrongTokens) {
-        const candidatoEsEspecifico = tokensB.some(t => !esTokenGenerico(t));
-        return weakMatchCount === tokensA.length && !candidatoEsEspecifico;
-      }
-
-      // Must have at least one strong match
-      return hasStrongMatch;
-    };
-
-    filteredIngredients.forEach(ing => {
-      // We need to find if this ingredient belongs to an EXISTING group
-      // This is O(N^2) effectively, but N is small (filtered ingredients)
-
-      const currentTokens = getTokens(ing.nombre);
-      let foundKey: string | undefined;
-
-      // Try to match against existing groups
-      for (const [key, group] of map.entries()) {
-        // Check against group name (primary)
-        const groupTokens = getTokens(group.name);
-        if (doTokensMatch(currentTokens, groupTokens)) {
-          foundKey = key;
-          break;
-        }
-        // Or check against any entry in the group (transitive)
-        // (Skipped for performance, usually group name is representative)
-      }
-
-      if (foundKey) {
-        const group = map.get(foundKey)!;
-        group.entries.push(ing);
-        // Update stats
-        if (ing.precioCompra && ing.precioCompra > 0) {
-          group.minPrice = Math.min(group.minPrice, ing.precioCompra);
-          group.maxPrice = Math.max(group.maxPrice, ing.precioCompra);
-        }
-        // Update group name if current is longer/better? No, keep first found.
-      } else {
-        // Create new group
-        const key = ing.id; // Use ID as key since we don't have a canonical name
-        map.set(key, {
-          id: ing.id,
-          name: ing.nombre,
-          category: ing.categoria || 'General',
-          entries: [ing],
-          minPrice: ing.precioCompra || Infinity,
-          maxPrice: ing.precioCompra || -Infinity
-        });
-        // Fix infinity if no price
-        if (!ing.precioCompra) {
-          const g = map.get(key)!;
-          g.minPrice = Infinity;
-          g.maxPrice = -Infinity;
-        }
-      }
-    });
-
-    return Array.from(map.values());
-  }, [filteredIngredients]);
+  /**
+   * Agrupado por identidad, no por parecido.
+   *
+   * Aquí vivía un emparejador propio que se conformaba con UNA palabra fuerte
+   * en común y comparaba cada ficha solo contra el nombre de la primera del
+   * grupo —la comprobación transitiva estaba omitida «por rendimiento»—, así
+   * que el resultado dependía del orden. Metía en un mismo cajón a
+   * «AGUERRIDO, ANTONIO», «AGUERRIDO, BENIGNO» y «AGUERRIDO, TOMAS», que son
+   * tres mezcales distintos, y enseñaba uno.
+   *
+   * Ahora usa la regla que ya estaba aprobada para el detector de duplicados:
+   * conjunto IDÉNTICO de palabras fuertes. Ver `core/identity/agruparProductos`.
+   */
+  const aggregatedProducts = React.useMemo(
+    () => agruparProductos(filteredIngredients),
+    [filteredIngredients],
+  );
 
 
   return (
@@ -514,8 +416,8 @@ export const IngredientListPanel: React.FC<IngredientListPanelProps> = ({
                         const signals = evaluateMarketSignals({
                           product: {
                             id: group.id,
-                            name: group.name,
-                            category: group.category,
+                            name: group.nombre,
+                            category: group.categoria,
                             supplierData: supplierMap,
                             referencePrice: ing.costo || null,
                             referenceSupplierId: null,
