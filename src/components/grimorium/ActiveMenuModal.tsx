@@ -10,6 +10,9 @@ import { computeMenuDrift, summarizeDrift, MenuDrift } from '../../utils/menuDri
 import { printRecipeCards } from './printRecipeCard';
 import { PLANTILLAS_PORTADA, PLANTILLA_POR_DEFECTO } from './portadas/plantillasPortada';
 import { calculateRecipeCost } from '../../core/costing/costCalculator';
+import { cartaASheet } from '../../core/export/cartaASheet';
+import { exportarCartaASheets } from '../../services/google/sheetsCliente';
+import { useApp } from '../../context/AppContext';
 
 const SEV: Record<string, { label: string; cls: string; dot: string }> = {
     ok: { label: 'Al día', cls: 'text-emerald-600 dark:text-emerald-400', dot: 'bg-emerald-500' },
@@ -52,7 +55,14 @@ export const ActiveMenuModal: React.FC<{
      * Exporta la carta entera: portada + una ficha por cóctel, con el mismo
      * diseño que la ficha suelta. Usa el mismo motor, que ahora recibe una lista.
      */
-    const exportarCarta = () => {
+    /**
+     * Las recetas de la carta, ordenadas como toca. **Compartida por las dos
+     * exportaciones**: si cada una montara su lista, acabarían diciendo cosas
+     * distintas sobre la misma carta.
+     *
+     * Devuelve `null` cuando no hay nada que exportar, ya avisado.
+     */
+    const prepararRecetas = (): Recipe[] | null => {
         // El orden de la carta manda sobre el del catálogo.
         // Lo que el usuario ve como secuencia de su carta es lo que recibe
         // impreso; si no ha ordenado nada, se respeta el orden de las entradas.
@@ -82,7 +92,13 @@ export const ActiveMenuModal: React.FC<{
         };
         recetas.sort((a, b) => pesoTipo(a) - pesoTipo(b));
 
-        if (!recetas.length) { alert('La carta no tiene recetas que exportar.'); return; }
+        if (!recetas.length) { alert('La carta no tiene recetas que exportar.'); return null; }
+        return recetas;
+    };
+
+    const exportarCarta = () => {
+        const recetas = prepararRecetas();
+        if (!recetas) return;
 
         // Si falta el nombre o el concepto se piden ahora, en vez de generar un
         // recetario sin portada. Se guardan, para no volver a preguntar.
@@ -104,6 +120,40 @@ export const ActiveMenuModal: React.FC<{
             { nombre: n, concepto: c, fecha: cartaActiva?.fecha, plantilla },
         );
     };
+
+    /**
+     * La misma carta, a una hoja de cálculo.
+     *
+     * No sustituye a la impresa: la impresa es para verla, la hoja para
+     * trabajarla —cambiar un precio, reordenar, compartirla con quien no tiene
+     * la app—. Reutiliza `prepararRecetas`, porque duplicar el orden y el
+     * coste haría que las dos exportaciones dijeran cosas distintas.
+     */
+    const exportarASheets = async () => {
+        if (!auth) { alert('Sesión no inicializada.'); return; }
+        const recetas = prepararRecetas();
+        if (!recetas) return;
+
+        const n = nombre.trim() || 'Carta';
+        setExportando(true);
+        try {
+            const hoja = cartaASheet(
+                recetas.map(r => ({ recipe: r, coste: calculateRecipeCost(r, allIngredients, undefined, allRecipes).costoTotal })),
+                { nombre: n, concepto: concepto.trim(), fecha: cartaActiva?.fecha, acento: '#0d9488' },
+            );
+            const url = await exportarCartaASheets(auth, hoja);
+            // Se abre en otra pestaña en vez de navegar: quien exporta suele
+            // querer seguir en la carta.
+            window.open(url, '_blank', 'noopener');
+        } catch (e: any) {
+            console.error('[Sheets]', e);
+            alert(e?.message || 'No se pudo exportar a Sheets.');
+        } finally {
+            setExportando(false);
+        }
+    };
+    const { auth } = useApp();
+    const [exportando, setExportando] = React.useState(false);
     const { recipes: allRecipes } = useRecipes();
     const { ingredients: allIngredients } = useIngredients();
 
@@ -269,6 +319,18 @@ export const ActiveMenuModal: React.FC<{
                                 className="shrink-0 h-10 px-3 rounded-xl bg-teal-600 hover:bg-teal-500 text-white text-xs font-bold uppercase tracking-wider flex items-center gap-2"
                             >
                                 <Icon svg={ICONS.book} className="w-4 h-4" /> Exportar
+                            </button>
+                            {/* La hoja de cálculo va aparte del exportar de siempre, no
+                                en su lugar: la impresa es para verla, la hoja para
+                                trabajarla. Sustituir una por otra sería quitarle algo. */}
+                            <button
+                                onClick={exportarASheets}
+                                disabled={exportando}
+                                title="Crea la carta como hoja de cálculo en tu Drive, editable"
+                                className="shrink-0 h-10 px-3 rounded-xl bg-white dark:bg-slate-800 border border-teal-600/40 text-teal-700 dark:text-teal-300 hover:bg-teal-50 dark:hover:bg-slate-700 text-xs font-bold uppercase tracking-wider flex items-center gap-2 disabled:opacity-60 disabled:cursor-wait"
+                            >
+                                <Icon svg={ICONS.grid} className="w-4 h-4" />
+                                {exportando ? 'Creando…' : 'A Sheets'}
                             </button>
                         </div>
                     </div>

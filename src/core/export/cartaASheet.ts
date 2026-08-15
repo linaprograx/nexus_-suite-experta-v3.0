@@ -31,7 +31,7 @@ export interface FilaCarta {
     margen: string;
 }
 
-export type TipoFila = 'titulo' | 'concepto' | 'seccion' | 'cabecera' | 'coctel' | 'vacia';
+export type TipoFila = 'portada' | 'titulo' | 'concepto' | 'seccion' | 'cabecera' | 'coctel' | 'vacia';
 
 export interface LineaHoja {
     tipo: TipoFila;
@@ -39,6 +39,8 @@ export interface LineaHoja {
 }
 
 export interface HojaCarta {
+    /** Cuántas filas ocupa la banda de portada, para combinarlas en una sola. */
+    filasDePortada: number;
     titulo: string;
     lineas: LineaHoja[];
     /** Color de acento, para las cabeceras. Sale de la plantilla de la carta. */
@@ -47,7 +49,23 @@ export interface HojaCarta {
     anchos: number[];
 }
 
-export const CABECERAS = ['Cóctel', 'Descripción', 'Ingredientes', 'PVP', 'Coste', 'Margen'];
+export const CABECERAS = ['Cóctel', 'Descripción', 'Ingredientes', 'PVP', 'Coste', 'Margen', 'Coste / Beneficio'];
+
+/**
+ * El grafiquito de cada fila es un **SPARKLINE**, no un gráfico de verdad.
+ *
+ * En Sheets los gráficos son **objetos flotantes** que se colocan encima de la
+ * cuadrícula, no dentro de una celda. Un pastel por cóctel serían doce objetos
+ * sueltos que se descolocan en cuanto ordenas, filtras o insertas una fila —
+ * exactamente lo que arruina una hoja que existe para editarse.
+ *
+ * `SPARKLINE` sí vive dentro de la celda, y además es **fórmula**: si cambias
+ * el precio, la barra se redibuja sola. Se pinta apilada —coste a la izquierda,
+ * beneficio a la derecha— que es la lectura que se buscaba.
+ */
+const sparkline = (filaHoja: number): string =>
+    `=IF(D${filaHoja}="";"";SPARKLINE({E${filaHoja}\\D${filaHoja}-E${filaHoja}};`
+    + `{"charttype"\\"bar";"color1"\\"#c0392b";"color2"\\"#0d9488";"max"\\D${filaHoja}}))`;
 
 const eur = (n: number) => Math.round(n * 100) / 100;
 
@@ -83,9 +101,17 @@ export const cartaASheet = (
 ): HojaCarta => {
     const lineas: LineaHoja[] = [];
 
-    lineas.push({ tipo: 'titulo', celdas: [meta.nombre] });
-    if (meta.concepto?.trim()) lineas.push({ tipo: 'concepto', celdas: [meta.concepto.trim()] });
-    if (meta.fecha) lineas.push({ tipo: 'concepto', celdas: [meta.fecha] });
+    /**
+     * La portada: cuatro filas combinadas de lado a lado, con fondo y
+     * tipografía grande. Una hoja no puede llevar la portada de la carta
+     * impresa, pero sí puede abrir con una banda que se lea como una portada en
+     * vez de con un texto suelto en A1.
+     */
+    const FILAS_PORTADA = 4;
+    lineas.push({ tipo: 'portada', celdas: [meta.nombre] });
+    lineas.push({ tipo: 'portada', celdas: [meta.concepto?.trim() || ''] });
+    lineas.push({ tipo: 'portada', celdas: [meta.fecha || ''] });
+    lineas.push({ tipo: 'portada', celdas: [''] });
     lineas.push({ tipo: 'vacia', celdas: [] });
 
     const conAlcohol = entradas.filter(e => !esSinAlcohol(e.recipe));
@@ -97,6 +123,8 @@ export const cartaASheet = (
         lineas.push({ tipo: 'cabecera', celdas: [...CABECERAS] });
         for (const { recipe, coste } of lista) {
             const pvp = Number((recipe as any).precioVenta) || 0;
+            // +1 porque las hojas empiezan a contar en 1, no en 0.
+            const filaHoja = lineas.length + 1;
             lineas.push({
                 tipo: 'coctel',
                 celdas: [
@@ -106,6 +134,7 @@ export const cartaASheet = (
                     pvp > 0 ? eur(pvp) : '',
                     coste > 0 ? eur(coste) : '',
                     margen(pvp, coste),
+                    sparkline(filaHoja),
                 ],
             });
         }
@@ -119,10 +148,11 @@ export const cartaASheet = (
     bloque('SIN ALCOHOL', sinAlcohol);
 
     return {
+        filasDePortada: FILAS_PORTADA,
         titulo: meta.nombre || 'Carta',
         lineas,
         acento: meta.acento || '#0d9488',
-        anchos: [200, 320, 320, 90, 90, 90],
+        anchos: [200, 300, 300, 80, 80, 80, 150],
     };
 };
 
