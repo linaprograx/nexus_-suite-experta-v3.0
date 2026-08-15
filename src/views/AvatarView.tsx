@@ -95,7 +95,7 @@ const AvatarView: React.FC<AvatarViewProps> = () => {
                     <button
                         onClick={() => setActiveTab('core')}
                         className={`shrink-0 snap-start rounded-full transition-all duration-300 px-4 lg:px-8 h-10 lg:py-3 text-[10px] lg:text-xs font-black uppercase tracking-wider lg:tracking-widest border ${activeTab === 'core'
-                            ? 'bg-indigo-600 border-indigo-500 text-white shadow-lg shadow-indigo-900/40 scale-105'
+                            ? 'bg-rose-600 border-rose-500 text-white shadow-lg shadow-rose-900/40 scale-105'
                             : 'bg-white/10 border-white/20 text-white/70 hover:bg-white/20'
                             }`}
                     >
@@ -115,7 +115,7 @@ const AvatarView: React.FC<AvatarViewProps> = () => {
                     <button
                         onClick={() => setActiveTab('champion')}
                         className={`shrink-0 snap-start rounded-full transition-all duration-300 px-4 lg:px-8 h-10 lg:py-3 text-[10px] lg:text-xs font-black uppercase tracking-wider lg:tracking-widest border ${activeTab === 'champion'
-                            ? 'bg-violet-600 border-violet-500 text-white shadow-lg shadow-violet-900/40 scale-105'
+                            ? 'bg-rose-600 border-rose-500 text-white shadow-lg shadow-rose-900/40 scale-105'
                             : 'bg-white/10 border-white/20 text-white/70 hover:bg-white/20'
                             }`}
                     >

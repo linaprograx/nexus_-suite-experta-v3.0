@@ -9,13 +9,13 @@ export const ChampionIntroBanner: React.FC = () => {
 
     return (
         <div className="w-full max-w-7xl mx-auto mb-6 relative z-40 animate-in fade-in slide-in-from-top-4 duration-700">
-            <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 rounded-2xl p-1 shadow-lg border border-slate-700/50 relative overflow-hidden">
+            <div className="bg-gradient-to-r from-[#2a0d14] via-[#3d1119] to-[#2a0d14] rounded-2xl p-1 shadow-lg border border-rose-500/25 relative overflow-hidden">
                 {/* Decoration */}
-                <div className="absolute top-0 right-0 w-64 h-full bg-gradient-to-l from-violet-500/10 to-transparent pointer-events-none" />
-                <div className="absolute -left-10 -bottom-10 w-32 h-32 bg-cyan-500/10 blur-3xl rounded-full pointer-events-none" />
+                <div className="absolute top-0 right-0 w-64 h-full bg-gradient-to-l from-rose-500/15 to-transparent pointer-events-none" />
+                <div className="absolute -left-10 -bottom-10 w-32 h-32 bg-rose-500/15 blur-3xl rounded-full pointer-events-none" />
 
-                <div className="bg-slate-900/50 backdrop-blur-sm rounded-xl p-4 flex items-start md:items-center gap-5 relative z-10">
-                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-cyan-500 to-violet-500 flex items-center justify-center shrink-0 shadow-lg shadow-violet-500/20">
+                <div className="bg-[#1a0509]/50 backdrop-blur-sm rounded-xl p-4 flex items-start md:items-center gap-5 relative z-10">
+                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-rose-500 to-rose-700 flex items-center justify-center shrink-0 shadow-lg shadow-rose-500/30">
                         <Icon svg={ICONS.star} className="w-5 h-5 text-white" />
                     </div>
 

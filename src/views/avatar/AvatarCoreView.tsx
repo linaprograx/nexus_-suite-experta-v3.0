@@ -53,30 +53,30 @@ const AvatarCard: React.FC<AvatarCardProps> = ({ type, description, isActive, is
                 ${isLatent
                     ? 'cursor-default opacity-50 bg-slate-100 dark:bg-white/[0.02] border border-slate-200 dark:border-white/10'
                     : isActive
-                        ? 'cursor-pointer border border-indigo-400 dark:border-indigo-500/50 bg-white dark:bg-[#0f1322] shadow-[0_0_40px_rgba(99,102,241,0.25)] dark:shadow-[0_0_40px_rgba(99,102,241,0.35)] scale-[1.02] z-10'
-                        : 'cursor-pointer bg-white dark:bg-white/[0.03] border border-slate-200 dark:border-white/10 shadow-sm hover:shadow-md dark:hover:bg-white/[0.06] dark:hover:border-white/20 hover:border-indigo-200 hover:shadow-indigo-100 dark:hover:shadow-xl hover:scale-[1.01]'
+                        ? 'cursor-pointer border border-rose-400 dark:border-rose-500/50 bg-white dark:bg-[#0f1322] shadow-[0_0_40px_rgba(225,29,72,0.25)] dark:shadow-[0_0_40px_rgba(225,29,72,0.35)] scale-[1.02] z-10'
+                        : 'cursor-pointer bg-white dark:bg-white/[0.03] border border-slate-200 dark:border-white/10 shadow-sm hover:shadow-md dark:hover:bg-white/[0.06] dark:hover:border-white/20 hover:border-rose-200 hover:shadow-rose-100 dark:hover:shadow-xl hover:scale-[1.01]'
                 }
             `}
         >
-            {isActive && <div className="absolute -top-20 -right-20 w-48 h-48 bg-indigo-500/15 blur-[80px] rounded-full pointer-events-none" />}
+            {isActive && <div className="absolute -top-20 -right-20 w-48 h-48 bg-rose-500/15 blur-[80px] rounded-full pointer-events-none" />}
 
             <div className="relative z-10 h-full flex flex-col justify-between">
                 {/* Top row: emoji + badges */}
                 <div className="flex justify-between items-start">
                     <div className={`w-11 h-11 rounded-xl flex items-center justify-center text-xl transition-all duration-300 ${isActive
-                        ? 'bg-gradient-to-br from-indigo-600 to-indigo-800 shadow-lg shadow-indigo-500/40'
+                        ? 'bg-gradient-to-br from-rose-600 to-rose-800 shadow-lg shadow-rose-500/40'
                         : isLatent
                             ? 'bg-slate-200 dark:bg-white/5'
-                            : 'bg-slate-100 dark:bg-white/5 group-hover:bg-indigo-50 dark:group-hover:bg-white/10'
+                            : 'bg-slate-100 dark:bg-white/5 group-hover:bg-rose-50 dark:group-hover:bg-white/10'
                         }`}>
                         {isLatent ? <Icon svg={ICONS.lock} className="w-4 h-4 text-slate-400 dark:text-slate-600" /> : displayEmoji}
                     </div>
 
                     <div className="flex flex-col items-end gap-1.5">
                         {isActive && (
-                            <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-indigo-500/20 border border-indigo-500/30">
-                                <div className="w-1.5 h-1.5 rounded-full bg-indigo-500 dark:bg-indigo-400 animate-pulse" />
-                                <span className="text-[9px] font-bold uppercase tracking-widest text-indigo-700 dark:text-indigo-200">Activo</span>
+                            <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-rose-500/20 border border-rose-500/30">
+                                <div className="w-1.5 h-1.5 rounded-full bg-rose-500 dark:bg-rose-400 animate-pulse" />
+                                <span className="text-[9px] font-bold uppercase tracking-widest text-rose-700 dark:text-rose-200">Activo</span>
                             </div>
                         )}
                         {isLatent && (
@@ -85,7 +85,7 @@ const AvatarCard: React.FC<AvatarCardProps> = ({ type, description, isActive, is
                             </div>
                         )}
                         <div className={`px-2 py-0.5 rounded-full border ${isActive
-                            ? 'bg-indigo-50 dark:bg-indigo-950/50 border-indigo-200 dark:border-indigo-500/30 text-indigo-600 dark:text-indigo-300'
+                            ? 'bg-rose-50 dark:bg-rose-950/50 border-rose-200 dark:border-rose-500/30 text-rose-600 dark:text-rose-300'
                             : 'bg-slate-100 dark:bg-black/20 border-slate-200 dark:border-white/5 text-slate-500'}`}>
                             <span className="text-[9px] font-bold uppercase tracking-widest">{membershipTier}</span>
                         </div>
@@ -117,12 +117,12 @@ const AvatarCard: React.FC<AvatarCardProps> = ({ type, description, isActive, is
                     ) : isActive ? (
                         <button
                             onClick={(e) => { e.stopPropagation(); onConfigure(); }}
-                            className="w-full py-2.5 bg-gradient-to-r from-indigo-600 to-indigo-700 text-white rounded-xl text-[10px] uppercase tracking-widest font-bold shadow-lg shadow-indigo-500/30 hover:shadow-indigo-500/40 hover:scale-[1.02] transition-all"
+                            className="w-full py-2.5 bg-gradient-to-r from-rose-600 to-rose-700 text-white rounded-xl text-[10px] uppercase tracking-widest font-bold shadow-lg shadow-rose-500/30 hover:shadow-rose-500/40 hover:scale-[1.02] transition-all"
                         >
                             Configurar
                         </button>
                     ) : (
-                        <button className="w-full py-2 rounded-xl bg-slate-50 dark:bg-white/5 text-slate-600 dark:text-slate-400 text-[10px] uppercase tracking-widest font-bold hover:bg-indigo-50 dark:hover:bg-white/10 hover:text-indigo-600 dark:hover:text-white transition-all border border-slate-200 dark:border-white/5">
+                        <button className="w-full py-2 rounded-xl bg-slate-50 dark:bg-white/5 text-slate-600 dark:text-slate-400 text-[10px] uppercase tracking-widest font-bold hover:bg-rose-50 dark:hover:bg-white/10 hover:text-rose-600 dark:hover:text-white transition-all border border-slate-200 dark:border-white/5">
                             Manifestar
                         </button>
                     )}
@@ -179,19 +179,19 @@ const AvatarOrchestrator: React.FC<ConfigModalProps> = ({ onClose, avatarType, m
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <div className="absolute inset-0 bg-slate-950/90 backdrop-blur-2xl" onClick={onClose} />
-            <div className="relative w-full max-w-5xl bg-[#0B0F19] border border-white/10 rounded-[32px] overflow-hidden shadow-2xl animate-in fade-in zoom-in-95 duration-300 flex flex-col max-h-[90vh]">
+            <div className="absolute inset-0 bg-[#1a0509]/90 backdrop-blur-2xl" onClick={onClose} />
+            <div className="relative w-full max-w-5xl bg-[#170A10] border border-white/10 rounded-[32px] overflow-hidden shadow-2xl animate-in fade-in zoom-in-95 duration-300 flex flex-col max-h-[90vh]">
 
                 {/* Live Preview Header */}
                 <div className="p-6 border-b border-white/5 bg-gradient-to-b from-white/[0.03] to-transparent flex justify-between items-center">
                     <div className="flex items-center gap-5">
                         {/* Live emoji preview */}
-                        <div className="w-16 h-16 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-3xl shadow-inner transition-all duration-300">
+                        <div className="w-16 h-16 rounded-2xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center text-3xl shadow-inner transition-all duration-300">
                             {config.emoji}
                         </div>
                         <div>
                             <div className="flex items-center gap-2 mb-1.5">
-                                <span className="px-2 py-0.5 rounded bg-indigo-900/50 border border-indigo-500/30 text-[9px] text-indigo-300 uppercase tracking-widest font-bold">{membershipTier}</span>
+                                <span className="px-2 py-0.5 rounded bg-rose-900/50 border border-rose-500/30 text-[9px] text-rose-300 uppercase tracking-widest font-bold">{membershipTier}</span>
                                 <span className="text-[9px] text-slate-500 uppercase tracking-widest">·</span>
                                 <span className="text-[9px] text-slate-500 uppercase tracking-widest">{avatarType}</span>
                             </div>
@@ -217,7 +217,7 @@ const AvatarOrchestrator: React.FC<ConfigModalProps> = ({ onClose, avatarType, m
                         <div className="space-y-8">
                             {/* 1. Identidad */}
                             <section>
-                                <h4 className="text-[10px] font-bold text-indigo-400 uppercase tracking-widest mb-4 flex items-center gap-2 border-b border-white/5 pb-2">
+                                <h4 className="text-[10px] font-bold text-rose-400 uppercase tracking-widest mb-4 flex items-center gap-2 border-b border-white/5 pb-2">
                                     <Icon svg={ICONS.trendingUp} className="w-3.5 h-3.5 text-emerald-400" /> 1. Identidad Cognitiva
                                 </h4>
                                 <div className="space-y-4">
@@ -228,7 +228,7 @@ const AvatarOrchestrator: React.FC<ConfigModalProps> = ({ onClose, avatarType, m
                                             value={config.name}
                                             onChange={e => setConfig({ ...config, name: e.target.value })}
                                             placeholder={avatarType}
-                                            className="w-full bg-white/[0.03] border border-white/10 rounded-xl px-4 py-2.5 text-white placeholder-slate-600 focus:outline-none focus:border-indigo-500/50 transition-colors text-sm"
+                                            className="w-full bg-white/[0.03] border border-white/10 rounded-xl px-4 py-2.5 text-white placeholder-slate-600 focus:outline-none focus:border-rose-500/50 transition-colors text-sm"
                                         />
                                     </div>
                                     <div>
@@ -237,7 +237,7 @@ const AvatarOrchestrator: React.FC<ConfigModalProps> = ({ onClose, avatarType, m
                                         <div className="flex gap-1 mb-2">
                                             {(Object.keys(EMOJI_GROUPS) as (keyof typeof EMOJI_GROUPS)[]).map(g => (
                                                 <button key={g} onClick={() => setEmojiGroup(g)}
-                                                    className={`px-2.5 py-1 rounded text-[9px] font-bold uppercase tracking-widest transition-all ${emojiGroup === g ? 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/30' : 'text-slate-500 hover:text-slate-300'}`}>
+                                                    className={`px-2.5 py-1 rounded text-[9px] font-bold uppercase tracking-widest transition-all ${emojiGroup === g ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30' : 'text-slate-500 hover:text-slate-300'}`}>
                                                     {g}
                                                 </button>
                                             ))}
@@ -245,7 +245,7 @@ const AvatarOrchestrator: React.FC<ConfigModalProps> = ({ onClose, avatarType, m
                                         <div className="flex flex-wrap gap-1.5 mb-2">
                                             {EMOJI_GROUPS[emojiGroup].map(emoji => (
                                                 <button key={emoji} onClick={() => setConfig({ ...config, emoji })}
-                                                    className={`w-9 h-9 rounded-lg flex items-center justify-center text-lg transition-all ${config.emoji === emoji ? 'bg-indigo-500/20 border border-indigo-500/50 scale-110' : 'bg-white/5 border border-white/5 hover:bg-white/10'}`}>
+                                                    className={`w-9 h-9 rounded-lg flex items-center justify-center text-lg transition-all ${config.emoji === emoji ? 'bg-rose-500/20 border border-rose-500/50 scale-110' : 'bg-white/5 border border-white/5 hover:bg-white/10'}`}>
                                                     {emoji}
                                                 </button>
                                             ))}
@@ -257,12 +257,12 @@ const AvatarOrchestrator: React.FC<ConfigModalProps> = ({ onClose, avatarType, m
                                                 value={customEmoji}
                                                 onChange={e => setCustomEmoji(e.target.value)}
                                                 placeholder="Escribe cualquier emoji..."
-                                                className="flex-1 bg-white/[0.03] border border-white/10 rounded-lg px-3 py-1.5 text-white text-xs placeholder-slate-600 focus:outline-none focus:border-indigo-500/50 transition-colors"
+                                                className="flex-1 bg-white/[0.03] border border-white/10 rounded-lg px-3 py-1.5 text-white text-xs placeholder-slate-600 focus:outline-none focus:border-rose-500/50 transition-colors"
                                                 maxLength={4}
                                             />
                                             <button
                                                 onClick={() => { if (customEmoji) { setConfig({ ...config, emoji: customEmoji }); setCustomEmoji(''); } }}
-                                                className="px-3 py-1.5 rounded-lg bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 text-xs font-bold hover:bg-indigo-500/20 transition-all"
+                                                className="px-3 py-1.5 rounded-lg bg-rose-500/10 border border-rose-500/20 text-rose-300 text-xs font-bold hover:bg-rose-500/20 transition-all"
                                             >
                                                 Usar
                                             </button>
@@ -273,7 +273,7 @@ const AvatarOrchestrator: React.FC<ConfigModalProps> = ({ onClose, avatarType, m
 
                             {/* 2. Perfil Cognitivo */}
                             <section>
-                                <h4 className="text-[10px] font-bold text-indigo-400 uppercase tracking-widest mb-4 flex items-center gap-2 border-b border-white/5 pb-2">
+                                <h4 className="text-[10px] font-bold text-rose-400 uppercase tracking-widest mb-4 flex items-center gap-2 border-b border-white/5 pb-2">
                                     <Icon svg={ICONS.search} className="w-3.5 h-3.5" /> 2. Perfil Cognitivo
                                 </h4>
                                 <div className="space-y-4">
@@ -307,7 +307,7 @@ const AvatarOrchestrator: React.FC<ConfigModalProps> = ({ onClose, avatarType, m
                         <div className="space-y-8">
                             {/* 3. Principios — now fully interactive with names */}
                             <section>
-                                <h4 className="text-[10px] font-bold text-indigo-400 uppercase tracking-widest mb-4 flex items-center gap-2 border-b border-white/5 pb-2">
+                                <h4 className="text-[10px] font-bold text-rose-400 uppercase tracking-widest mb-4 flex items-center gap-2 border-b border-white/5 pb-2">
                                     <Icon svg={ICONS.trendingUp} className="w-3.5 h-3.5 text-emerald-400" /> 3. Principios Mentales
                                 </h4>
                                 <div className="space-y-2">
@@ -334,7 +334,7 @@ const AvatarOrchestrator: React.FC<ConfigModalProps> = ({ onClose, avatarType, m
 
                             {/* 4. Competición */}
                             <section>
-                                <h4 className="text-[10px] font-bold text-indigo-400 uppercase tracking-widest mb-4 flex items-center gap-2 border-b border-white/5 pb-2">
+                                <h4 className="text-[10px] font-bold text-rose-400 uppercase tracking-widest mb-4 flex items-center gap-2 border-b border-white/5 pb-2">
                                     <Icon svg={ICONS.star} className={`w-3.5 h-3.5 ${config.competitionMode ? 'text-amber-400' : 'text-slate-600'}`} /> 4. Competición
                                 </h4>
                                 <div
@@ -354,14 +354,14 @@ const AvatarOrchestrator: React.FC<ConfigModalProps> = ({ onClose, avatarType, m
                     </div>
                 </div>
 
-                <div className="p-5 border-t border-white/5 flex justify-between items-center bg-[#0B0F19]">
+                <div className="p-5 border-t border-white/5 flex justify-between items-center bg-[#170A10]">
                     <div className="flex items-center gap-2 text-slate-600 text-xs">
                         <Icon svg={ICONS.lock} className="w-3 h-3" />
                         <span>Guardado en Firestore al confirmar.</span>
                     </div>
                     <div className="flex gap-3">
                         <button onClick={onClose} className="px-5 py-2.5 text-xs font-bold text-slate-400 uppercase tracking-widest hover:text-white transition-colors">Descartar</button>
-                        <button onClick={handleSave} className="px-7 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold uppercase tracking-widest shadow-lg shadow-indigo-900/40 transition-all hover:scale-[1.02]">Guardar Avatar</button>
+                        <button onClick={handleSave} className="px-7 py-2.5 bg-rose-600 hover:bg-rose-500 text-white rounded-xl text-xs font-bold uppercase tracking-widest shadow-lg shadow-rose-900/40 transition-all hover:scale-[1.02]">Guardar Avatar</button>
                     </div>
                 </div>
             </div>
@@ -429,12 +429,12 @@ const ConsciousnessMap: React.FC<{ onClose: () => void, currentPlan: PlanTier }>
      */
     return (
         <CapaModal onFondoPulsado={onClose} fondo={false}>
-            <div className="absolute inset-0 bg-slate-950/90 backdrop-blur-3xl transition-opacity" onClick={onClose} />
-            <div className="relative max-w-6xl w-full bg-[#0B0F19] border border-white/10 rounded-[40px] p-0 shadow-2xl overflow-hidden h-auto max-h-[90dvh] flex flex-col">
-                <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-indigo-500/5 blur-[150px] rounded-full pointer-events-none" />
+            <div className="absolute inset-0 bg-[#1a0509]/90 backdrop-blur-3xl transition-opacity" onClick={onClose} />
+            <div className="relative max-w-6xl w-full bg-[#170A10] border border-white/10 rounded-[40px] p-0 shadow-2xl overflow-hidden h-auto max-h-[90dvh] flex flex-col">
+                <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-rose-500/5 blur-[150px] rounded-full pointer-events-none" />
 
                 <div className="p-8 pb-4 relative z-10 text-center flex-shrink-0">
-                    <span className="text-[10px] font-bold text-indigo-500 uppercase tracking-[0.3em] mb-4 block">Mapa de Evolución</span>
+                    <span className="text-[10px] font-bold text-rose-500 uppercase tracking-[0.3em] mb-4 block">Mapa de Evolución</span>
                     <h2 className="text-4xl font-serif text-white mb-4">Estados de Consciencia</h2>
                 </div>
 
@@ -454,35 +454,35 @@ const ConsciousnessMap: React.FC<{ onClose: () => void, currentPlan: PlanTier }>
                                     <div className={`relative w-full h-full transition-all duration-700 preserve-3d ${isFlipped ? 'rotate-y-180' : ''}`}>
                                         {/* Front Face */}
                                         <div className={`absolute inset-0 backface-hidden p-6 rounded-3xl border flex flex-col justify-between items-center text-center transition-all duration-500 ${isCurrent
-                                            ? 'bg-[#0f1322] border-indigo-500/50 shadow-[0_0_50px_rgba(99,102,241,0.2)] z-10'
+                                            ? 'bg-[#0f1322] border-rose-500/50 shadow-[0_0_50px_rgba(225,29,72,0.2)] z-10'
                                             : 'bg-white/[0.02] border-white/5 opacity-80 hover:opacity-100 hover:bg-white/[0.04] hover:border-white/20'
                                             }`}>
-                                            {isCurrent && <div className="absolute inset-0 rounded-3xl shadow-[0_0_80px_rgba(99,102,241,0.25)] pointer-events-none" />}
+                                            {isCurrent && <div className="absolute inset-0 rounded-3xl shadow-[0_0_80px_rgba(225,29,72,0.25)] pointer-events-none" />}
                                             <div className="w-full">
-                                                <span className={`text-[10px] font-bold uppercase tracking-widest mb-4 block ${isCurrent ? 'text-indigo-400' : 'text-slate-600'}`}>
+                                                <span className={`text-[10px] font-bold uppercase tracking-widest mb-4 block ${isCurrent ? 'text-rose-400' : 'text-slate-600'}`}>
                                                     Fase {i + 1}
                                                 </span>
                                                 <h3 className={`text-2xl font-serif mb-4 leading-tight ${isCurrent ? 'text-white' : 'text-slate-400 group-hover:text-white'}`}>
                                                     {state.name}
                                                 </h3>
-                                                <div className={`w-12 h-1 bg-gradient-to-r mx-auto rounded-full mb-6 ${isCurrent ? 'from-indigo-500 to-indigo-300' : 'from-slate-700 to-slate-800'}`} />
+                                                <div className={`w-12 h-1 bg-gradient-to-r mx-auto rounded-full mb-6 ${isCurrent ? 'from-rose-500 to-rose-300' : 'from-slate-700 to-slate-800'}`} />
                                                 <p className="text-xs text-slate-500 leading-relaxed font-light line-clamp-5">
                                                     {state.desc}
                                                 </p>
                                             </div>
                                             <div className="w-full border-t border-white/5 pt-4">
-                                                <p className={`text-xl font-mono mb-2 ${isCurrent ? 'text-indigo-200' : 'text-slate-600'}`}><Icon svg={ICONS.star} className={`w-4 h-4 ${isCurrent ? 'text-amber-400' : 'text-slate-600'}`} />{state.feat}</p>
-                                                <span className="text-[9px] uppercase tracking-widest text-indigo-400 flex items-center justify-center gap-1 opacity-100 group-hover:text-white transition-colors">
+                                                <p className={`text-xl font-mono mb-2 ${isCurrent ? 'text-rose-200' : 'text-slate-600'}`}><Icon svg={ICONS.star} className={`w-4 h-4 ${isCurrent ? 'text-amber-400' : 'text-slate-600'}`} />{state.feat}</p>
+                                                <span className="text-[9px] uppercase tracking-widest text-rose-400 flex items-center justify-center gap-1 opacity-100 group-hover:text-white transition-colors">
                                                     Ver Detalles <Icon svg={ICONS.chevronRight} className="w-3 h-3" />
                                                 </span>
                                             </div>
                                         </div>
 
                                         {/* Back Face */}
-                                        <div className={`absolute inset-0 backface-hidden rotate-y-180 rounded-3xl border flex flex-col bg-[#141824] overflow-hidden ${isCurrent ? 'border-indigo-500/50' : 'border-white/10'
+                                        <div className={`absolute inset-0 backface-hidden rotate-y-180 rounded-3xl border flex flex-col bg-[#141824] overflow-hidden ${isCurrent ? 'border-rose-500/50' : 'border-white/10'
                                             }`}>
                                             <div className="p-4 border-b border-white/5 flex justify-between items-center bg-[#141824] z-10">
-                                                <span className={`text-[10px] font-bold uppercase tracking-widest ${isCurrent ? 'text-indigo-400' : 'text-slate-500'}`}>{state.name}</span>
+                                                <span className={`text-[10px] font-bold uppercase tracking-widest ${isCurrent ? 'text-rose-400' : 'text-slate-500'}`}>{state.name}</span>
                                                 <button className="text-[10px] text-slate-500 hover:text-white uppercase tracking-widest">Volver</button>
                                             </div>
 
@@ -495,7 +495,7 @@ const ConsciousnessMap: React.FC<{ onClose: () => void, currentPlan: PlanTier }>
                                                     <ul className="space-y-1.5">
                                                         {state.unlocks.map((u, idx) => (
                                                             <li key={idx} className="text-[10px] text-slate-400 flex items-start gap-2">
-                                                                <span className="text-indigo-500 mt-0.5">•</span> {u}
+                                                                <span className="text-rose-500 mt-0.5">•</span> {u}
                                                             </li>
                                                         ))}
                                                     </ul>
@@ -510,12 +510,12 @@ const ConsciousnessMap: React.FC<{ onClose: () => void, currentPlan: PlanTier }>
 
                                             <div className="p-4 border-t border-white/5 bg-[#141824] z-10">
                                                 {status === 'CURRENT' && (
-                                                    <button className="w-full py-3 rounded-lg bg-indigo-500/20 border border-indigo-500/40 text-indigo-300 text-[10px] font-bold uppercase tracking-widest cursor-default">
+                                                    <button className="w-full py-3 rounded-lg bg-rose-500/20 border border-rose-500/40 text-rose-300 text-[10px] font-bold uppercase tracking-widest cursor-default">
                                                         Estado Actual
                                                     </button>
                                                 )}
                                                 {status === 'FUTURE' && (
-                                                    <button className="w-full py-3 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-[10px] font-bold uppercase tracking-widest shadow-lg shadow-indigo-900/40 transition-all hover:scale-[1.02]">
+                                                    <button className="w-full py-3 rounded-lg bg-rose-600 hover:bg-rose-500 text-white text-[10px] font-bold uppercase tracking-widest shadow-lg shadow-rose-900/40 transition-all hover:scale-[1.02]">
                                                         Ascender
                                                     </button>
                                                 )}
@@ -619,16 +619,16 @@ export const AvatarCoreView: React.FC = () => {
                 <div className="fixed bottom-[calc(60px_+_env(safe-area-inset-bottom)_+_0.75rem)] lg:bottom-12 left-0 w-full flex justify-center z-20 pointer-events-none animate-in fade-in slide-in-from-bottom-12 duration-1000 delay-500">
                     <button
                         onClick={() => setShowMap(true)}
-                        className="pointer-events-auto flex items-center gap-3 lg:gap-8 px-4 lg:px-8 py-2 rounded-full bg-slate-950/60 backdrop-blur-2xl border border-white/10 shadow-[0_20px_50px_-12px_rgba(0,0,0,0.8)] hover:bg-slate-950/80 transition-all hover:scale-[1.02] hover:border-white/20 hover:shadow-indigo-500/20 group hover:animate-pulse-slow"
+                        className="pointer-events-auto flex items-center gap-3 lg:gap-8 px-4 lg:px-8 py-2 rounded-full bg-slate-950/60 backdrop-blur-2xl border border-white/10 shadow-[0_20px_50px_-12px_rgba(0,0,0,0.8)] hover:bg-slate-950/80 transition-all hover:scale-[1.02] hover:border-white/20 hover:shadow-rose-500/20 group hover:animate-pulse-slow"
                     >
-                        <div className="flex flex-col text-right group-hover:text-indigo-200 transition-colors">
+                        <div className="flex flex-col text-right group-hover:text-rose-200 transition-colors">
                             <span className="text-[9px] text-slate-500 uppercase tracking-widest font-bold mb-0.5">Estado de Consciencia</span>
                             <span className="text-base text-white font-serif tracking-wide">{narrativeTier}</span>
                         </div>
 
-                        <div className="w-px h-8 bg-gradient-to-b from-transparent via-white/20 to-transparent group-hover:via-indigo-400/50 transition-colors" />
+                        <div className="w-px h-8 bg-gradient-to-b from-transparent via-white/20 to-transparent group-hover:via-rose-400/50 transition-colors" />
 
-                        <div className="flex flex-col text-left group-hover:text-indigo-200 transition-colors">
+                        <div className="flex flex-col text-left group-hover:text-rose-200 transition-colors">
                             <span className="text-[9px] text-slate-500 uppercase tracking-widest font-bold mb-0.5">Capacidad de Manifestación</span>
                             <div className="flex items-center gap-2">
                                 <span className="text-base text-white font-mono">{unlockedSlots >= 99 ? '∞' : unlockedSlots}</span>
@@ -653,10 +653,10 @@ export const AvatarCoreView: React.FC = () => {
                 {/* Create Avatar Modal */}
                 {showMap && modalMode === 'create' && (
                     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-                        <div className="absolute inset-0 bg-slate-950/90 backdrop-blur-3xl" onClick={() => setShowMap(false)} />
-                        <div className="relative max-w-4xl w-full bg-[#0B0F19] border border-white/10 rounded-[40px] p-8 shadow-2xl">
+                        <div className="absolute inset-0 bg-[#1a0509]/90 backdrop-blur-3xl" onClick={() => setShowMap(false)} />
+                        <div className="relative max-w-4xl w-full bg-[#170A10] border border-white/10 rounded-[40px] p-8 shadow-2xl">
                             <div className="text-center mb-8">
-                                <span className="text-[10px] font-bold text-indigo-500 uppercase tracking-[0.3em] mb-4 block">Nueva Manifestación</span>
+                                <span className="text-[10px] font-bold text-rose-500 uppercase tracking-[0.3em] mb-4 block">Nueva Manifestación</span>
                                 <h2 className="text-4xl font-serif text-white mb-4">Selecciona un Rol</h2>
                                 <p className="text-slate-400">Define la identidad profesional de tu nueva manifestación cognitiva</p>
                             </div>
@@ -680,12 +680,12 @@ export const AvatarCoreView: React.FC = () => {
                                             disabled={exists}
                                             className={`p-6 rounded-2xl border transition-all ${exists
                                                 ? 'border-white/5 bg-white/[0.02] opacity-40 cursor-not-allowed'
-                                                : 'border-indigo-500/30 bg-indigo-500/5 hover:bg-indigo-500/10 hover:border-indigo-500/50 cursor-pointer hover:scale-105'
+                                                : 'border-rose-500/30 bg-rose-500/5 hover:bg-rose-500/10 hover:border-rose-500/50 cursor-pointer hover:scale-105'
                                                 }`}
                                         >
                                             <div className="text-4xl mb-3">{avatarConfigs[type].emoji}</div>
                                             <div className="text-sm font-bold text-white mb-1">{type}</div>
-                                            {exists && <div className="text-[10px] text-indigo-400 uppercase tracking-wider">Ya existe</div>}
+                                            {exists && <div className="text-[10px] text-rose-400 uppercase tracking-wider">Ya existe</div>}
                                         </button>
                                     );
                                 })}
@@ -706,7 +706,7 @@ export const AvatarCoreView: React.FC = () => {
                     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
                         <div className="absolute inset-0 bg-slate-950/80 backdrop-blur-xl" onClick={() => setErrorMessage(null)} />
                         <div className="relative bg-gradient-to-br from-slate-900/90 to-slate-800/90 backdrop-blur-2xl border border-white/20 rounded-3xl p-8 shadow-[0_20px_80px_-12px_rgba(0,0,0,0.8)] max-w-md w-full animate-in zoom-in-95 fade-in duration-300">
-                            <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/10 to-rose-500/10 rounded-3xl" />
+                            <div className="absolute inset-0 bg-gradient-to-br from-rose-500/10 to-rose-500/10 rounded-3xl" />
                             <div className="relative z-10">
                                 <div className="w-16 h-16 rounded-full bg-rose-500/20 flex items-center justify-center mx-auto mb-6">
                                     <Icon svg={ICONS.alertCircle} className="w-8 h-8 text-rose-400" />
@@ -715,7 +715,7 @@ export const AvatarCoreView: React.FC = () => {
                                 <p className="text-slate-300 text-center mb-6 leading-relaxed">{errorMessage}</p>
                                 <button
                                     onClick={() => setErrorMessage(null)}
-                                    className="w-full py-3 rounded-xl bg-gradient-to-r from-indigo-600 to-indigo-500 hover:from-indigo-500 hover:to-indigo-400 text-white font-medium transition-all shadow-lg hover:shadow-indigo-500/50"
+                                    className="w-full py-3 rounded-xl bg-gradient-to-r from-rose-600 to-rose-500 hover:from-rose-500 hover:to-rose-400 text-white font-medium transition-all shadow-lg hover:shadow-rose-500/50"
                                 >
                                     Aceptar
                                 </button>
