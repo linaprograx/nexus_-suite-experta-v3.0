@@ -104,43 +104,43 @@ Las tres primeras están explicadas a fondo en `CONTEXT.md`.
 
 ## ⏸️ Lo siguiente — EMPIEZA POR AQUÍ
 
-### Mercado · agrupar variantes. Plan aprobado, Fase 1 sin empezar
+### Mercado · Fases 1, 2a y 2b HECHAS. Falta 3 y 4
 
-Buscar «absolut» debe dar **un** resultado con sus opciones dentro. Investigado
-el 12-08; **el plan está aprobado y la Fase 1 no se ha tocado todavía.**
+**Lo que se encontró y ya está corregido.** Mercado no es que no agrupara:
+agrupaba mal, con un emparejador propio ajeno al sistema de identidad.
 
-**Lo que se encontró, y cambia el enunciado:** Mercado **ya agrupa**
-(`aggregatedProducts` en `IngredientListPanel`). No falta la función, falla la
-que hay, y falla de tres maneras:
+- **Fase 1 ✅** `core/identity/colapsarAlias.ts`. Los alias con
+  `masterProductId` dejan de ser fila. Dos trampas resueltas: buscar por el
+  nombre del alias **sustituye** por el maestro en vez de descartar (si no, la
+  búsqueda salía vacía habiendo escrito un nombre que existe); y un maestro
+  borrado dejaría la ficha invisible, así que se comprueba que exista.
+- **Fase 2a ✅** `core/search/buscador.ts`. Buscar era un `includes`: «vodka
+  absolut» daba **cero** resultados y «limon» no encontraba «LIMÓN». Ahora
+  normaliza, exige TODOS los términos (cada palabra estrecha), acepta prefijo
+  de palabra y ordena por relevancia. `IngredientListPanel` volvía a filtrar
+  por su cuenta con el `includes` viejo y anulaba la mejora: ya usa el mismo.
+- **Fase 2b ✅** `core/identity/agruparProductos.ts`. El emparejador viejo se
+  conformaba con **una** palabra fuerte en común, así que metía a AGUERRIDO
+  ANTONIO, BENIGNO y TOMAS en un solo grupo y enseñaba uno: **tres mezcales
+  distintos, uno visible**. La alerta de stock crítico apuntaba a un producto
+  que el buscador no mostraba. Ahora rige el conjunto **idéntico** de palabras
+  fuertes, la regla ya aprobada en `duplicateCandidates`.
 
-1. **Compara contra el nombre del grupo, no contra sus miembros.** El código
-   omite la comprobación transitiva «por rendimiento», así que el agrupado
-   **depende del orden**: dos fichas que se parecen a una tercera pero no entre
-   sí acaban separadas.
-2. **Es un segundo motor de parecido**, ajeno al de identidad. Usa prefijo
-   (≥3 letras) y *substring* (>3). Es la familia de reglas que metió MANDARINA
-   en el grupo Absolut y que se corrigió en `duplicateCandidates` exigiendo
-   **conjuntos idénticos de palabras fuertes**. Esa corrección **no existe
-   aquí**: hoy Mercado puede estar juntando cosas distintas sin avisar.
-3. **Ignora `masterProductId`.** Los alias que el fundador ya fusionó **siguen
-   apareciendo como fila propia**.
+**Verificación pendiente del fundador:** buscar «aguerrido» debe devolver
+**tres** filas, no una. En general saldrán **más filas** que antes, y es lo
+correcto.
 
-Además: el precio mostrado es siempre el más barato, ignorando
-`offerSelection.ts`; y el algoritmo es O(N²) con la tokenización dentro del
-bucle (~950.000 comparaciones sin término de búsqueda).
+**Lo que queda:**
 
-**Las cuatro fases, en orden:**
-
-1. **Colapsar lo ya decidido.** Los alias con `masterProductId` dejan de ser
-   fila y pasan a ser una opción dentro de su maestro. Riesgo cero: no es
-   parecido, es una decisión humana ya tomada, reversible quitando el campo.
-2. **Un solo motor de identidad.** Sustituir `doTokensMatch` por la regla de
-   `duplicateCandidates`. **Aviso: saldrán MÁS filas, no menos**, porque lo que
-   hoy se agrupa por prefijo dejará de agruparse. Es correcto, pero es visible:
-   **enseñar antes/después sobre datos reales antes de dejarlo**.
-3. **La ficha del grupo.** Una fila por producto con «N opciones» desplegable:
-   proveedor, precio, formato, y cuál manda según `offerSelection`.
-4. **Rendimiento.** Índice por clave en lugar de comparar contra todos.
+- **Fase 3 · la ficha del grupo.** Una fila por producto con «N opciones»
+  desplegable: proveedor, precio, formato, y cuál manda según
+  `offerSelection.ts` —preferente primero, señalando la alternativa más
+  barata—. Hoy la fila enseña la entrada más barata y el resto no se ve.
+- **Fase 4 · rendimiento.** El agrupado ya no es O(N²) (es un índice por
+  clave), pero conviene medir el buscador con 1.380 fichas en un móvil.
+- **Reutilizar el buscador.** El fundador lo pidió explícitamente: «donde
+  quiera que aparezca un buscador». Quedan sin migrar el de Recetas, el de
+  compra rápida y el de la hoja de reposición.
 
 ### Después de Mercado
 
