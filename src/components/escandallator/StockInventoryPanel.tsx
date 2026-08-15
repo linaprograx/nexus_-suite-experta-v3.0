@@ -278,7 +278,7 @@ export const StockInventoryPanel: React.FC<StockInventoryPanelProps> = ({
                             <button
                                 onClick={() => setShowCount(true)}
                                 title="Conteo físico de inventario"
-                                className="h-10 px-3 shrink-0 bg-sky-500/10 text-sky-600 dark:text-sky-400 hover:bg-sky-500 hover:text-white border border-sky-500/20 rounded-xl flex items-center gap-2 text-sm font-bold transition-all"
+                                className="h-10 px-3 shrink-0 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500 hover:text-white border border-emerald-500/20 rounded-xl flex items-center gap-2 text-sm font-bold transition-all"
                             >
                                 <Icon svg={ICONS.list} className="w-4 h-4" />
                                 <span className="hidden sm:inline">Conteo</span>

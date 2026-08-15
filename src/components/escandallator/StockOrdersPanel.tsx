@@ -85,7 +85,7 @@ export const StockOrdersPanel: React.FC<StockOrdersPanelProps> = ({
     const renderOrderCard = (order: Order, mode: 'draft' | 'sent') => (
         <div
             key={order.id}
-            className={`bg-white/60 dark:bg-slate-800/60 backdrop-blur-md rounded-xl border p-3 shadow-sm relative group transition-all ${mode === 'sent' ? 'border-amber-200 dark:border-amber-900/40' : 'border-indigo-100 dark:border-indigo-900/30 cursor-pointer hover:border-indigo-300'}`}
+            className={`bg-white/60 dark:bg-slate-800/60 backdrop-blur-md rounded-xl border p-3 shadow-sm relative group transition-all ${mode === 'sent' ? 'border-amber-200 dark:border-amber-900/40' : 'border-emerald-100 dark:border-emerald-900/30 cursor-pointer hover:border-emerald-300'}`}
             onClick={() => mode === 'draft' && onEditOrder && onEditOrder(order)}
         >
             <div className="flex justify-between items-start mb-2">
@@ -100,7 +100,7 @@ export const StockOrdersPanel: React.FC<StockOrdersPanelProps> = ({
                     </div>
                     <span className="text-[10px] text-slate-500">{order.createdAt instanceof Date ? order.createdAt.toLocaleDateString() : 'Fecha desc.'}</span>
                 </div>
-                <span className="text-xs font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/20 px-2 py-0.5 rounded-full border border-indigo-100">
+                <span className="text-xs font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20 px-2 py-0.5 rounded-full border border-emerald-100">
                     €{order.totalEstimatedCost.toFixed(2)}
                 </span>
             </div>
@@ -119,7 +119,7 @@ export const StockOrdersPanel: React.FC<StockOrdersPanelProps> = ({
                     <Button
                         size="sm"
                         onClick={(e) => { e.stopPropagation(); onSendOrder(order); }}
-                        className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] h-7"
+                        className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] h-7"
                     >
                         <Icon svg={ICONS.send} className="w-3 h-3 mr-1" />
                         Enviar Pedido
@@ -139,7 +139,7 @@ export const StockOrdersPanel: React.FC<StockOrdersPanelProps> = ({
                         e.stopPropagation();
                         handleDownloadCSV({ providerName: order.name || 'Pedido', items: order.items, totalValue: order.totalEstimatedCost });
                     }}
-                    className="p-1.5 text-slate-400 hover:text-indigo-600 transition-colors"
+                    className="p-1.5 text-slate-400 hover:text-emerald-600 transition-colors"
                     title="Descargar CSV"
                 >
                     <Icon svg={ICONS.fileText} className="w-4 h-4" />
@@ -165,7 +165,7 @@ export const StockOrdersPanel: React.FC<StockOrdersPanelProps> = ({
                         Gestión Pedidos
                     </h3>
                     {onCreateOrder && (
-                        <Button size="sm" onClick={onCreateOrder} className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs h-8 px-3 rounded-lg shadow-sm">
+                        <Button size="sm" onClick={onCreateOrder} className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs h-8 px-3 rounded-lg shadow-sm">
                             <Icon svg={ICONS.plus} className="w-3 h-3 mr-1.5" />
                             Nuevo
                         </Button>
