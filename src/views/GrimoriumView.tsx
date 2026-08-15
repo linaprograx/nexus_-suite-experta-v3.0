@@ -1193,6 +1193,8 @@ const GrimoriumInner: React.FC<GrimoriumViewProps> = () => {
                 ingredients={allIngredients}
                 onConfirm={handleConfirmReplenish}
                 suppliers={suppliers}
+                reglas={stockRules}
+                stockItems={calculatedStockItems}
                 initialOrder={editingOrder}
             />
 

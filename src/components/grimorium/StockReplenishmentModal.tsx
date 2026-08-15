@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
@@ -6,6 +6,7 @@ import { Ingredient } from '../../types';
 import { Order } from '../../hooks/useOrders'; // Import Order type
 import { proveedorDeIngrediente } from '../../features/orders/resolverProveedor';
 import { buscar } from '../../core/search/buscador';
+import { sugerirCantidad, indiceDeReglas, ReglaStock } from '../../core/orders/cantidadSugerida';
 
 interface OrderItem {
     ingredientId: string;
@@ -22,6 +23,10 @@ interface StockReplenishmentModalProps {
     ingredients: Ingredient[];
     onConfirm: (orders: { providerId: string; providerName: string; items: OrderItem[] }[]) => void;
     suppliers: any[];
+    /** Reglas de stock: de ahí sale la cantidad propuesta de cada línea. */
+    reglas?: ReglaStock[];
+    /** Existencias actuales, para calcular lo que falta hasta el mínimo. */
+    stockItems?: Array<{ ingredientId: string; quantityAvailable: number }>;
     initialOrder?: Order | null;
     filterSupplierId?: string | null; // Added filter
 }
@@ -32,6 +37,8 @@ export const StockReplenishmentModal: React.FC<StockReplenishmentModalProps> = (
     ingredients = [],
     onConfirm,
     suppliers = [],
+    reglas = [],
+    stockItems = [],
     initialOrder,
     filterSupplierId
 }) => {
@@ -60,11 +67,26 @@ export const StockReplenishmentModal: React.FC<StockReplenishmentModalProps> = (
         }
     }, [isOpen, initialOrder]);
 
+    const reglasPorId = useMemo(() => indiceDeReglas(reglas), [reglas]);
+    const stockPorId = useMemo(
+        () => new Map(stockItems.map(s => [s.ingredientId, s.quantityAvailable])),
+        [stockItems],
+    );
+
+    /** La cantidad propuesta de una línea, con su porqué. */
+    const sugerenciaDe = useCallback(
+        (id: string) => sugerirCantidad(reglasPorId.get(id), stockPorId.get(id)),
+        [reglasPorId, stockPorId],
+    );
+
     // Derived Logic
     const toggleSelection = (id: string) => {
         setSelectedIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
+        // Ya no nace en 1 a secas: nace en lo que dice la regla del producto, o
+        // en lo que falta hasta su mínimo. Un pedido de trescientas líneas no
+        // se teclea a mano, así que si nace en 1 se envía en 1.
         if (!selectedIds.includes(id) && !quantities[id]) {
-            setQuantities(prev => ({ ...prev, [id]: 1 })); // Default quantity
+            setQuantities(prev => ({ ...prev, [id]: sugerenciaDe(id).cantidad }));
         }
     };
 
@@ -230,6 +252,18 @@ export const StockReplenishmentModal: React.FC<StockReplenishmentModalProps> = (
                                                 <span className="md:hidden block text-[10px] text-slate-400 dark:text-slate-500 truncate">
                                                     {ing.unidadCompra || 'Ud'}
                                                 </span>
+                                                {/* El numero propuesto no aparece solo: si no se
+                                                    dice de donde sale, o no se toca por
+                                                    desconfianza o se acepta sin mirarlo. */}
+                                                {isSelected && (() => {
+                                                    const sug = sugerenciaDe(ing.id);
+                                                    if (sug.motivo === 'defecto') return null;
+                                                    return (
+                                                        <span className="block text-[10px] text-indigo-500 dark:text-indigo-400 truncate">
+                                                            {sug.explicacion}
+                                                        </span>
+                                                    );
+                                                })()}
                                             </div>
                                             <div className="col-span-3 min-w-0 flex justify-center items-center gap-1">
                                                 {isSelected && (
