@@ -953,3 +953,51 @@ Firebase). Y M3: Avatar, Cerebrity, Colegium, densidad de Inventario/Mercado.
 
 Ver commits `e0fe91a` (M0 — escala fluida y hook responsive) y `184b853`
 (M1 — las tres columnas pasan a ser tres estados).
+
+---
+
+## 2026-08-16 · Claude Code · La carta a Google Sheets
+
+**Qué se hizo**
+
+Botón «A Sheets» en la modal de carta (Grimorio → Recetas → Carta). Crea la
+carta como hoja de cálculo en el Drive del fundador: banda de portada de cuatro
+filas combinadas a todo lo ancho, secciones con color, anchos de columna, euros
+como número —sumables— y una barra coste/beneficio por cóctel.
+
+- `src/core/export/cartaASheet.ts` — el modelo, puro. No habla con Google.
+- `src/services/google/sheetsCliente.ts` — permiso y llamadas a la API.
+- `ActiveMenuModal.tsx` — `prepararRecetas()` extraída y **compartida** por las
+  dos exportaciones.
+
+**Decisiones que conviene no deshacer**
+
+- **Va al lado de «Exportar», no en su lugar.** La impresa es para verla, la
+  hoja para trabajarla. Son las dos mitades, no dos versiones de lo mismo.
+- **`drive.file`, no `drive`.** Solo da acceso a los ficheros que crea esta app.
+  El permiso se pide al pulsar el botón, no al entrar, y el token no se guarda.
+- **SPARKLINE y no un gráfico.** En Sheets los gráficos son objetos flotantes
+  sobre la cuadrícula: doce pasteles se descolocarían en cuanto ordenas o
+  insertas una fila, que es justo lo que arruina una hoja hecha para editarse.
+  SPARKLINE vive dentro de la celda y es fórmula: cambias el precio y la barra
+  se redibuja sola.
+- **`valueInputOption=USER_ENTERED`.** Con `RAW`, la fórmula entraría como texto
+  y se vería escrita en la celda.
+- **Un cóctel sin PVP deja el precio y el margen vacíos.** Nunca un 0 ni un
+  margen inventado.
+
+**Verificado**
+
+`tsc` y `build` limpios; el botón renderiza en la modal con la carta real (12
+recetas); el modelo probado con datos reales — cada fórmula apunta a **su
+propia** fila, y *Mulligan*, sin PVP, sale con precio y margen vacíos. Bundle
+desplegado comprobado: `A Sheets`, `SPARKLINE`, `drive.file` y `Coste /
+Beneficio` están en `/assets/index-CKhZbBFo.js`.
+
+**NO verificado, y por qué**
+
+La llamada a Google. Exige conceder acceso al Drive con la cuenta del fundador,
+y este agente no introduce credenciales. Además falta **habilitar la API de
+Sheets y declarar el ámbito en Google Cloud**: hasta que eso se haga, el botón
+devolverá un error de permiso. El código lo detecta y lo dice con esas palabras
+en vez de soltar el error crudo de Google.

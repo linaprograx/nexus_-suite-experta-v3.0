@@ -160,25 +160,26 @@ que estaba invisible, y un duplicado que el informe de identidad puede fusionar.
 
 ## Pedido y aún no hecho
 
-- **Exportar la carta también a Sheets, editable allí.** Pedido el 2026-08-12.
-  Hoy Recetas → Carta → Exportar produce un diseño cerrado. El fundador quiere
-  poder **volcarlo a Google Sheets conservando el diseño** y seguir editándolo
-  dentro de Sheets.
-
-  Antes de prometer nada hay que resolver una tensión de fondo: una hoja de
-  cálculo **no reproduce un diseño**, reproduce celdas. Lo que sí se puede es
-  volcar el CONTENIDO estructurado —secciones, cócteles, precios, orden— con
-  formato de hoja (anchos, negritas, colores de cabecera, congelar filas), que
-  es editable de verdad; o generar un PDF/imagen y **adjuntarlo**, que conserva
-  el diseño pero no se edita. Conviene enseñarle las dos y que elija, en vez de
-  intentar lo primero y entregar algo que no se parece a su carta.
-
-  Técnicamente hace falta OAuth de Google con permiso de Sheets: es una
-  integración nueva, no un botón. Ya existe `exportToCSV`, que es el punto de
-  partida barato (CSV se abre en Sheets, sin diseño ni permisos).
+- **Un pastel 3D flotante para el total de la carta** (coste total contra
+  margen total). Ofrecido y no elegido. Por fila no se hace, y el motivo está
+  en `cartaASheet.ts`: los gráficos de Sheets flotan sobre la cuadrícula, así
+  que doce se descolocarían al ordenar. Uno solo, arriba, sí aguanta.
+- **Dashboard y Pizarrón**: sus colores de sección (`#4f46e5` y `#475569`)
+  siguen siendo **propuestas**. Los demás están verificados contra la pantalla.
+- **Tres modales de Avatar** siguen con el patrón crudo `fixed inset-0 z-50` en
+  vez de `CapaModal`. Funcionan hoy; se caerán detrás en cuanto un ancestro
+  cree contexto de apilamiento.
 
 ## Pendiente del fundador
 
+- **Habilitar la API de Google Sheets** en su proyecto de Google Cloud y
+  declarar el ámbito `drive.file` en la pantalla de consentimiento. **Sin esto
+  el botón «A Sheets» dará error de permiso**, por muy bien escrito que esté el
+  código: no es algo que pueda hacer el código ni el agente. Es el único paso
+  que falta para que la exportación funcione.
+- **Probar «A Sheets»** una vez habilitado (Grimorio → Recetas → Carta). El
+  agente no puede: exige conceder acceso al Drive con su cuenta, y no introduce
+  credenciales. Lo verificado es el modelo de la hoja y que el botón renderiza.
 - **Confirmar formatos en «Revisar Unidades»** (Mercado → panel lateral). 27
   bloqueadas están dentro de recetas, con €6.032,49 detrás. Confirmar 700 en
   una que ya está en 700 no cambia ningún coste: la pasa de suposición a dato,
