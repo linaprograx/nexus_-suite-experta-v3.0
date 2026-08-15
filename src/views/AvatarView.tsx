@@ -5,6 +5,7 @@ import AvatarInsightsView from './avatar/AvatarInsightsView';
 import DigitalBarView from './avatar/DigitalBarView';
 import ChampionModeView from './avatar/ChampionModeView';
 import { useAvatarCognition } from '../hooks/useAvatarCognition';
+import { usarAcentoDeSeccion } from '../store/acentoStore';
 // import { Button } from '../components/ui/Button'; // Removed in favor of native button for styling control
 
 interface AvatarViewProps {
@@ -38,6 +39,10 @@ const AvatarView: React.FC<AvatarViewProps> = () => {
      * de verdad se mira; el degradado dice a qué SECCIÓN has entrado.
      */
     const COLOR_AVATAR = '#e11d48';
+
+    // Se publica igual que en CerebrIty, para que todo lo que quiera ir a juego
+    // —barra lateral incluida— lea el mismo valor y no una copia suya.
+    usarAcentoDeSeccion(COLOR_AVATAR);
 
     const getGradientStyle = () => ({
         background: `linear-gradient(180deg, ${COLOR_AVATAR} 0%, rgba(225, 29, 72, 0.8) 20%, rgba(225, 29, 72, 0) 40%)`,

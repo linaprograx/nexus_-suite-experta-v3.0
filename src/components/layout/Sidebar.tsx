@@ -7,6 +7,7 @@ import { ICONS } from '../ui/icons';
 import { Button } from '../ui/Button';
 import { NexusOrb } from '../ui/NexusOrb';
 import { APP_SECTIONS, colorDeRuta } from '../../config/appSections';
+import { useAcento } from '../../store/acentoStore';
 import { useSectionsStore } from '../../store/sectionsStore';
 
 interface NavLinkProps {
@@ -54,7 +55,16 @@ const NavLink: React.FC<NavLinkProps> = ({ view, label, icon, currentPath, onNav
    * hacen el trabajo de la barrita —el ojo sigue teniendo su ancla en el borde
    * izquierdo— pero sin ningún borde: el paso de color a nada es continuo.
    */
-  const color = colorDeRuta(path);
+  /**
+   * El acento vigente manda sobre el color fijo de la sección.
+   *
+   * CerebrIty cambia de identidad en cada pestaña, y la barra está fuera de esa
+   * vista: sin esto, se quedaría en el magenta de Synthesis mientras miras
+   * Trends en naranja. Solo aplica al elemento activo; los demás no pintan
+   * degradado, así que su color da igual.
+   */
+  const acentoVigente = useAcento();
+  const color = (isActive && acentoVigente) || colorDeRuta(path);
 
   const baseClasses = "group relative flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium transition-all duration-300 overflow-hidden";
 

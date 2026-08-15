@@ -25,6 +25,7 @@ import CriticView from './unleash/CriticView';
 import { motion } from 'framer-motion';
 import { useUIStore } from '../store/uiStore';
 import { useApp } from '../context/AppContext';
+import { usarAcentoDeSeccion } from '../store/acentoStore';
 
 // Define SaveModal before it is used or move to separate file. 
 // Ideally it should be at top or hoisted.
@@ -92,6 +93,30 @@ import { usePizarronData } from '../hooks/usePizarronData';
 interface CerebrityViewProps {
   // No persistent props needed as they are stored in Zustand or Auth context
 }
+
+/**
+ * El color de cada pestaña, en UN solo sitio.
+ *
+ * Estaba escrito como una escalera de ternarios dentro del `style` del fondo.
+ * Mientras solo lo usara ese fondo daba igual; en cuanto la barra lateral tiene
+ * que ir a juego, dos copias del mismo color se desincronizan a la primera.
+ */
+const COLOR_POR_PESTANA: Record<string, string> = {
+    creativity: '#FF00CC',  // Synthesis
+    makeMenu: '#84CC16',    // Make Menu
+    critic: '#06b6d4',      // Critic
+    lab: '#8b5cf6',         // The Lab
+    trends: '#F59E0B',      // Trends
+};
+const COLOR_CEREBRITY_POR_DEFECTO = '#F59E0B';
+
+const rgbDe = (hex: string) => {
+    const n = parseInt(hex.replace('#', ''), 16);
+    return `${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}`;
+};
+
+const degradadoDePestana = (color: string) =>
+    `linear-gradient(180deg, ${color} 0%, rgba(${rgbDe(color)}, 0.4) 30%, rgba(${rgbDe(color)}, 0) 45%)`;
 
 const CerebrityView: React.FC<CerebrityViewProps> = () => {
   const { db, userId, storage, appId } = useApp();
@@ -776,6 +801,11 @@ const CerebrityView: React.FC<CerebrityViewProps> = () => {
   const isSingleColumn = activeTab === 'makeMenu' || activeTab === 'critic';
 
   // El color del módulo tiñe el agarre de las hojas y las pestañas de borde.
+  // La pestaña activa manda: se publica para que la barra lateral —que está
+  // fuera de esta vista— pueda ir del mismo color.
+  const colorPestana = COLOR_POR_PESTANA[activeTab] || COLOR_CEREBRITY_POR_DEFECTO;
+  usarAcentoDeSeccion(colorPestana);
+
   const accentClass = activeTab === 'creativity' ? 'bg-fuchsia-500'
     : activeTab === 'lab' ? 'bg-violet-500'
       : 'bg-cyan-500';
@@ -810,17 +840,7 @@ const CerebrityView: React.FC<CerebrityViewProps> = () => {
       {/* Vibrant Gradient Background (Mobile Style) - First Child = Behind */}
       <div
         className="fixed lg:absolute inset-x-0 top-0 h-[100dvh] lg:h-full pointer-events-none transition-all duration-700 ease-in-out rounded-3xl z-0"
-        style={{
-          background: activeTab === 'creativity'
-            ? 'linear-gradient(180deg, #FF00CC 0%, rgba(255, 0, 204, 0.4) 30%, rgba(255, 0, 204, 0) 45%)'
-            : activeTab === 'makeMenu'
-              ? 'linear-gradient(180deg, #84CC16 0%, rgba(132, 204, 22, 0.4) 30%, rgba(132, 204, 22, 0) 45%)'
-              : activeTab === 'critic'
-                ? 'linear-gradient(180deg, #06b6d4 0%, rgba(6, 182, 212, 0.4) 30%, rgba(6, 182, 212, 0) 45%)'
-                : activeTab === 'lab'
-                  ? 'linear-gradient(180deg, #8b5cf6 0%, rgba(139, 92, 246, 0.4) 30%, rgba(139, 92, 246, 0) 45%)'
-                  : 'linear-gradient(180deg, #F59E0B 0%, rgba(245, 158, 11, 0.4) 30%, rgba(245, 158, 11, 0) 45%)'
-        }}
+        style={{ background: degradadoDePestana(colorPestana) }}
       />
 
       {/* Mobile-Style Header (Desktop Adapted) - z-10 to stay on top */}
