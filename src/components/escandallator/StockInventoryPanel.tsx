@@ -13,6 +13,7 @@ import { StockResolverPanel } from '../../components/stock/StockResolverPanel';
 import { useStockResolver } from '../../features/stock/hooks/useStockResolver';
 import { PhysicalCountModal } from './PhysicalCountModal';
 import { useStockRules } from '../../hooks/useStockRules';
+import { buscar } from '../../core/search/buscador';
 
 /** Estado de existencias de un ítem. `desconocido` es un estado de verdad. */
 type EstadoStock = 'ok' | 'bajo' | 'rotura' | 'desconocido';
@@ -128,11 +129,12 @@ export const StockInventoryPanel: React.FC<StockInventoryPanelProps> = ({
     const selectedCategory = externalCategory !== undefined ? externalCategory : internalSelectedCategory;
 
     const filteredStockItems = useMemo(() => {
-        return enrichedStockItems.filter(item => {
-            const matchesSearch = item.ingredientName.toLowerCase().includes(searchQuery.toLowerCase());
-            const matchesCategory = selectedCategory === 'all' || item.category === selectedCategory;
-            return matchesSearch && matchesCategory;
-        });
+        // Primero la categoría, después la búsqueda: `buscar` ordena por
+        // relevancia y filtrar por detrás desharía ese orden.
+        const porCategoria = selectedCategory === 'all'
+            ? enrichedStockItems
+            : enrichedStockItems.filter(item => item.category === selectedCategory);
+        return buscar(porCategoria, searchQuery, { camposDe: item => [item.ingredientName, item.category] });
     }, [enrichedStockItems, searchQuery, selectedCategory]);
 
     // Recalculate metrics based on FILTERED items

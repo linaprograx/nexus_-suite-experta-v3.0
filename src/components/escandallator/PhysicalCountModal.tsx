@@ -4,6 +4,7 @@ import { Icon } from '../ui/Icon';
 import { ICONS } from '../ui/icons';
 import { Input } from '../ui/Input';
 import { CapaModal } from '../ui/CapaModal';
+import { buscar } from '../../core/search/buscador';
 
 export interface CountAdjustment {
     item: StockItem;
@@ -25,10 +26,11 @@ export const PhysicalCountModal: React.FC<{
     const [search, setSearch] = React.useState('');
 
     const items = React.useMemo(() => {
-        const q = search.trim().toLowerCase();
-        return [...stockItems]
-            .filter(i => !q || i.ingredientName.toLowerCase().includes(q))
-            .sort((a, b) => a.ingredientName.localeCompare(b.ingredientName));
+        // Alfabético y no por relevancia: en un conteo físico se recorre la
+        // lista entera con las botellas delante, y el orden tiene que ser
+        // estable para no perder el sitio.
+        const encontrados = buscar(stockItems, search, { camposDe: i => [i.ingredientName] });
+        return [...encontrados].sort((a, b) => a.ingredientName.localeCompare(b.ingredientName));
     }, [stockItems, search]);
 
     const adjustments: CountAdjustment[] = React.useMemo(() => {

@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react';
 import { Recipe, Ingredient } from '../../types';
 import { grimoriumService } from './grimoriumService';
 import { Firestore } from 'firebase/firestore';
+import { buscar } from '../../core/search/buscador';
 
 interface UseGrimoriumProps {
     db: Firestore;
@@ -40,7 +41,10 @@ export const useGrimorium = ({ db, userId, allRecipes, allIngredients }: UseGrim
                 }
                 if ((recipe as any).garnish) haystack.push((recipe as any).garnish);
                 if ((recipe as any).preparacion) haystack.push((recipe as any).preparacion);
-                matchesSearch = haystack.join(' ').toLowerCase().includes(q);
+                // El mismo buscador que Mercado: sin acentos, sin depender del
+                // orden de las palabras y exigiendo todas. Antes «gin limon» no
+                // encontraba una receta con «Limón» y «Gin» en ese otro orden.
+                matchesSearch = buscar([{ h: haystack.join(' ') }], q, { camposDe: x => [x.h] }).length > 0;
             }
             const matchesCategory = selectedCategory === 'Todas' ||
                 (recipe.categorias && recipe.categorias.includes(selectedCategory));

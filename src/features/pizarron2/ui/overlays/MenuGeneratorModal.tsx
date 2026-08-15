@@ -5,6 +5,7 @@ import { pizarronStore } from '../../state/store';
 import { useRecipes } from '../../../../hooks/useRecipes';
 import { makeMenuService } from '../../../../services/makeMenuService';
 import { LuMenu, LuSearch, LuCheck, LuX, LuLoader } from 'react-icons/lu';
+import { buscar } from '../../../../core/search/buscador';
 
 export const MenuGeneratorModal: React.FC = () => {
     const show = pizarronStore.useSelector(s => s.uiFlags.showMenuGenerator);
@@ -16,9 +17,7 @@ export const MenuGeneratorModal: React.FC = () => {
 
     if (!show) return null;
 
-    const filteredRecipes = allRecipes.filter(r =>
-        r.nombre.toLowerCase().includes(search.toLowerCase())
-    );
+    const filteredRecipes = buscar(allRecipes, search, { camposDe: r => [r.nombre] });
 
     const toggleRecipe = (id: string) => {
         setSelectedIds(prev =>

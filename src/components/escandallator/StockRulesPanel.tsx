@@ -8,6 +8,7 @@ import { Modal } from '../ui/Modal';
 import { StockItem } from '../../types';
 import { StockRuleModal } from '../grimorium/StockRuleModal';
 import { Plegable, UMBRAL_LISTA_LARGA } from '../ui/Plegable';
+import { buscar } from '../../core/search/buscador';
 
 interface StockRulesPanelProps {
     allIngredients: Ingredient[];
@@ -88,7 +89,9 @@ export const StockRulesPanel: React.FC<StockRulesPanelProps> = ({
 
     const filteredQuickSearch = useMemo(() => {
         if (!quickSearchQuery) return [];
-        return allIngredients.filter(i => i.nombre.toLowerCase().includes(quickSearchQuery.toLowerCase()));
+        // Mismo buscador que Mercado, y ordenado por relevancia: en una compra
+        // rápida lo que se busca suele estar en las dos primeras sugerencias.
+        return buscar(allIngredients, quickSearchQuery, { camposDe: i => [i.nombre, i.categoria] });
     }, [allIngredients, quickSearchQuery]);
 
     const lowStockAlerts = useMemo(() => {

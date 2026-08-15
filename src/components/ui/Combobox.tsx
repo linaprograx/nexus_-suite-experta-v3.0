@@ -1,6 +1,7 @@
 import React from 'react';
 import { Input } from './Input';
 import { Ingredient, Recipe } from '../../types';
+import { buscar } from '../../core/search/buscador';
 
 export const Combobox: React.FC<{
     items: (Ingredient | Recipe)[];
@@ -23,7 +24,7 @@ export const Combobox: React.FC<{
 
     const filteredItems = React.useMemo(() => {
         if (!search) return [];
-        return items.filter(item => item.nombre.toLowerCase().includes(search.toLowerCase()));
+        return buscar(items, search, { camposDe: item => [item.nombre] });
     }, [search, items]);
     
     return (

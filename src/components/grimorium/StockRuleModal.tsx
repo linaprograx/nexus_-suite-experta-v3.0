@@ -5,6 +5,7 @@ import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { Ingredient, StockRule } from '../../types';
 import { Modal } from '../ui/Modal';
+import { buscar } from '../../core/search/buscador';
 
 interface StockRuleModalProps {
     isOpen: boolean;
@@ -42,9 +43,7 @@ export const StockRuleModal: React.FC<StockRuleModalProps> = ({
 
     const filteredIngredients = useMemo(() => {
         if (!searchQuery) return [];
-        return allIngredients.filter(i =>
-            i.nombre.toLowerCase().includes(searchQuery.toLowerCase())
-        );
+        return buscar(allIngredients, searchQuery, { camposDe: i => [i.nombre, i.categoria] });
     }, [allIngredients, searchQuery]);
 
     const handleSave = () => {

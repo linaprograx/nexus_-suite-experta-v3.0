@@ -5,6 +5,7 @@ import { Input } from '../ui/Input';
 import { Ingredient } from '../../types';
 import { Order } from '../../hooks/useOrders'; // Import Order type
 import { proveedorDeIngrediente } from '../../features/orders/resolverProveedor';
+import { buscar } from '../../core/search/buscador';
 
 interface OrderItem {
     ingredientId: string;
@@ -73,7 +74,7 @@ export const StockReplenishmentModal: React.FC<StockReplenishmentModalProps> = (
 
     // Grouping Logic
     const groupedIngredients = useMemo(() => {
-        const filtered = ingredients.filter(i => i.nombre.toLowerCase().includes(searchQuery.toLowerCase()));
+        const filtered = buscar(ingredients, searchQuery, { camposDe: i => [i.nombre, i.categoria] });
 
         const groups: Record<string, { providerName: string, items: Ingredient[] }> = {};
 
