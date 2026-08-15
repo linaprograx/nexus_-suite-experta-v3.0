@@ -158,6 +158,25 @@ que estaba invisible, y un duplicado que el informe de identidad puede fusionar.
 - **264 referencias sin proveedor.** No es un fallo del código: son fichas sin
   asignar. Decisión del fundador.
 
+## Pedido y aún no hecho
+
+- **Exportar la carta también a Sheets, editable allí.** Pedido el 2026-08-12.
+  Hoy Recetas → Carta → Exportar produce un diseño cerrado. El fundador quiere
+  poder **volcarlo a Google Sheets conservando el diseño** y seguir editándolo
+  dentro de Sheets.
+
+  Antes de prometer nada hay que resolver una tensión de fondo: una hoja de
+  cálculo **no reproduce un diseño**, reproduce celdas. Lo que sí se puede es
+  volcar el CONTENIDO estructurado —secciones, cócteles, precios, orden— con
+  formato de hoja (anchos, negritas, colores de cabecera, congelar filas), que
+  es editable de verdad; o generar un PDF/imagen y **adjuntarlo**, que conserva
+  el diseño pero no se edita. Conviene enseñarle las dos y que elija, en vez de
+  intentar lo primero y entregar algo que no se parece a su carta.
+
+  Técnicamente hace falta OAuth de Google con permiso de Sheets: es una
+  integración nueva, no un botón. Ya existe `exportToCSV`, que es el punto de
+  partida barato (CSV se abre en Sheets, sin diseño ni permisos).
+
 ## Pendiente del fundador
 
 - **Confirmar formatos en «Revisar Unidades»** (Mercado → panel lateral). 27

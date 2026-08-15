@@ -25,17 +25,23 @@ const AvatarView: React.FC<AvatarViewProps> = () => {
         }
     }, [showManagerTabs, activeTab]);
 
-    // Vertical Gradients (Top-to-Bottom) applied to the OUTER wrapper
-    const getGradientStyle = () => {
-        switch (activeTab) {
-            case 'core': return { background: 'linear-gradient(180deg, #000000 0%, rgba(0, 0, 0, 0.8) 20%, rgba(0,0,0,0) 40%)' };
-            case 'intelligence': return { background: 'linear-gradient(180deg, #e11d48 0%, rgba(225, 29, 72, 0.8) 20%, rgba(225, 29, 72, 0) 40%)' };
-            case 'insights': return { background: 'linear-gradient(180deg, #FB923C 0%, rgba(251, 146, 60, 0.8) 20%, rgba(0,0,0,0) 40%)' };
-            case 'digital-bar': return { background: 'linear-gradient(180deg, #22D3EE 0%, rgba(34, 211, 238, 0.8) 20%, rgba(0,0,0,0) 40%)' };
-            case 'champion': return { background: 'linear-gradient(180deg, #6d28d9 0%, rgba(109, 40, 217, 0.7) 20%, rgba(0,0,0,0) 45%)' };
-            default: return { background: 'none' };
-        }
-    };
+    /**
+     * UN SOLO degradado para toda la sección, el rojo de «Inteligencia».
+     *
+     * Cada pestaña tenía el suyo —negro, rojo, naranja, cian, violeta— y el
+     * resultado era que Avatar no tenía color: tenía cinco. Con el resaltado de
+     * la barra lateral llevando ahora el color de cada sección, eso dejaba a
+     * Avatar sin poder coincidir con nada.
+     *
+     * `#e11d48` es el que ya usaba «Inteligencia», elegido por el fundador. Las
+     * pestañas se distinguen por su rótulo y su píldora activa, que es lo que
+     * de verdad se mira; el degradado dice a qué SECCIÓN has entrado.
+     */
+    const COLOR_AVATAR = '#e11d48';
+
+    const getGradientStyle = () => ({
+        background: `linear-gradient(180deg, ${COLOR_AVATAR} 0%, rgba(225, 29, 72, 0.8) 20%, rgba(225, 29, 72, 0) 40%)`,
+    });
 
     // Determine current page title/subtitle based on active tab
     const getPageHeaderInfo = () => {

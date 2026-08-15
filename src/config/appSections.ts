@@ -27,13 +27,14 @@ export interface AppSection {
      *
      * - **Grimorio** usa `gradientTheme="emerald"` → verde. Verificado.
      * - **Colegium** usa `gradientTheme="colegium"` → `#1e3a8a`. Verificado.
-     * - **Las otras cuatro NO declaran ninguno** y caen en el `indigo` por
-     *   defecto de `PremiumLayout`. Por eso Pizarrón y Avatar se veían con el
-     *   mismo resaltado: es que sus páginas son del mismo color.
+     * - **CerebrIty** toma el magenta de la cabecera de Synthesis, `#FF00CC`.
+     *   Verificado contra `CerebrityView`.
+     * - **Avatar** toma el rojo de su pestaña «Inteligencia», `#e11d48`, que
+     *   ahora es el único de esa sección. Verificado contra `AvatarView`.
      *
-     * Los cuatro restantes son una **propuesta**, no un dato: colores de la
-     * paleta que ya usa `gradients` en `PremiumLayout`, elegidos para que se
-     * distingan entre sí. Se cambian aquí, en un sitio.
+     * Quedan **dos propuestas**: Dashboard y Pizarrón, que no declaran color
+     * propio y caen en el `indigo` por defecto de `PremiumLayout`. Se cambian
+     * aquí, en un sitio.
      */
     color: string;
 }
@@ -43,11 +44,11 @@ export const APP_SECTIONS: AppSection[] = [
     { id: 'dashboard', label: 'Dashboard', icon: ICONS.grid, path: '/', locked: true, color: '#4f46e5' },
     // VERIFICADO: la vista declara `gradientTheme="emerald"`
     { id: 'grimorium', label: 'Grimorium', icon: ICONS.book, path: '/grimorium', locked: true, color: '#059669' },
-    // propuesto
-    { id: 'cerebrIty', label: 'CerebrIty', icon: ICONS.brain, path: '/cerebrIty', color: '#7c3aed' },
+    // VERIFICADO: es el magenta de la cabecera de Synthesis en `CerebrityView`
+    { id: 'cerebrIty', label: 'CerebrIty', icon: ICONS.brain, path: '/cerebrIty', color: '#FF00CC' },
     // propuesto — su fondo real es `slate-950`, de ahí el gris azulado
     { id: 'pizarron', label: 'Pizarrón', icon: ICONS.layoutGrid, path: '/pizarron', color: '#475569' },
-    // propuesto
+    // VERIFICADO: Avatar unifica sus pestañas en el rojo de «Inteligencia»
     { id: 'avatar', label: 'Avatar', icon: ICONS.radar, path: '/avatar', color: '#e11d48' },
     // VERIFICADO: la vista declara `gradientTheme="colegium"` → azul marino
     { id: 'colegium', label: 'Colegium', icon: ICONS.school, path: '/colegium', color: '#1e3a8a' },
