@@ -43,18 +43,26 @@ const NavLink: React.FC<NavLinkProps> = ({ view, label, icon, currentPath, onNav
    * como un haz, se lee como una mancha. En horizontal tiene 200 px para
    * desvanecerse de verdad.
    *
-   * La barrita sólida de la izquierda es la que hace el trabajo de «estás
-   * aquí»: en una lista vertical el ojo recorre el borde izquierdo, así que es
-   * la señal más rápida que existe. El degradado solo la acompaña.
+   * ## Un solo degradado, sin barrita aparte
+   *
+   * La primera versión ponía una barrita sólida de 3 px a la izquierda y el
+   * degradado detrás. Se veían como **dos cosas**: un borde duro y, pegada, una
+   * mancha que no casaba con él. El corte se notaba justo donde no debía.
+   *
+   * Ahora es un único degradado que **empieza en el color puro** y decae hasta
+   * desaparecer antes de la mitad. Los primeros píxeles a plena saturación
+   * hacen el trabajo de la barrita —el ojo sigue teniendo su ancla en el borde
+   * izquierdo— pero sin ningún borde: el paso de color a nada es continuo.
    */
   const color = colorDeRuta(path);
 
   const baseClasses = "group relative flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium transition-all duration-300 overflow-hidden";
 
   const activeStyle = isActive ? {
-    // De color a transparente antes de la mitad: el resto de la fila queda
-    // limpio y el texto no compite con el fondo.
-    background: `linear-gradient(to right, ${color}38 0%, ${color}1c 35%, transparent 70%)`,
+    // Muchas paradas y juntas al principio: así el color cae deprisa desde el
+    // borde sin que se vea ni una sola frontera. Con dos paradas, el ojo
+    // encuentra la línea; con seis, no hay línea que encontrar.
+    background: `linear-gradient(90deg, ${color} 0%, ${color}d9 3%, ${color}8c 10%, ${color}4d 22%, ${color}21 36%, ${color}0a 46%, transparent 56%)`,
   } : undefined;
 
   const activeClasses = "text-slate-900 dark:text-white";
@@ -68,14 +76,6 @@ const NavLink: React.FC<NavLinkProps> = ({ view, label, icon, currentPath, onNav
       className={`${baseClasses} ${isActive ? activeClasses : inactiveClasses} ${isCollapsed ? 'justify-center' : ''}`}
       style={activeStyle}
     >
-      {/* El raíl: 3 px, a plena saturación, de arriba abajo de la fila. */}
-      {isActive && (
-        <span
-          aria-hidden
-          className="absolute left-0 top-1 bottom-1 w-[3px] rounded-full"
-          style={{ background: color }}
-        />
-      )}
       {/* El icono toma el color de la sección a plena saturación: refuerza la
           barrita sin necesidad de más relleno. Va envuelto porque `Icon` no
           acepta `style`; el SVG hereda `currentColor`. */}

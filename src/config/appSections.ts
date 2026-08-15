@@ -17,21 +17,40 @@ export interface AppSection {
     /**
      * Color de la sección, en hexadecimal.
      *
-     * **No es una paleta nueva**: son los mismos valores que ya usaba la barra
-     * inferior de móvil (`SECTION_ACCENT`). Vivían allí dentro, así que la
-     * barra lateral no podía usarlos y el escritorio acabó con un arcoíris
-     * fijo para todo. Ahora la fuente es esta, y la barra inferior la consume.
+     * ## Cuidado con este campo: solo dos valores están verificados
+     *
+     * Al montarlo se tomaron los colores de `SECTION_ACCENT`, el mapa que vivía
+     * dentro de la barra inferior de móvil, **dándolos por buenos**. No lo
+     * eran: ponía Colegium en naranja cuando Colegium es azul marino.
+     *
+     * Lo que de verdad declara cada vista es esto:
+     *
+     * - **Grimorio** usa `gradientTheme="emerald"` → verde. Verificado.
+     * - **Colegium** usa `gradientTheme="colegium"` → `#1e3a8a`. Verificado.
+     * - **Las otras cuatro NO declaran ninguno** y caen en el `indigo` por
+     *   defecto de `PremiumLayout`. Por eso Pizarrón y Avatar se veían con el
+     *   mismo resaltado: es que sus páginas son del mismo color.
+     *
+     * Los cuatro restantes son una **propuesta**, no un dato: colores de la
+     * paleta que ya usa `gradients` en `PremiumLayout`, elegidos para que se
+     * distingan entre sí. Se cambian aquí, en un sitio.
      */
     color: string;
 }
 
 export const APP_SECTIONS: AppSection[] = [
-    { id: 'dashboard', label: 'Dashboard', icon: ICONS.grid, path: '/', locked: true, color: '#0ea5e9' },
-    { id: 'grimorium', label: 'Grimorium', icon: ICONS.book, path: '/grimorium', locked: true, color: '#10b981' },
-    { id: 'cerebrIty', label: 'CerebrIty', icon: ICONS.brain, path: '/cerebrIty', color: '#ec4899' },
-    { id: 'pizarron', label: 'Pizarrón', icon: ICONS.layoutGrid, path: '/pizarron', color: '#6366f1' },
-    { id: 'avatar', label: 'Avatar', icon: ICONS.radar, path: '/avatar', color: '#8b5cf6' },
-    { id: 'colegium', label: 'Colegium', icon: ICONS.school, path: '/colegium', color: '#f59e0b' },
+    // propuesto
+    { id: 'dashboard', label: 'Dashboard', icon: ICONS.grid, path: '/', locked: true, color: '#4f46e5' },
+    // VERIFICADO: la vista declara `gradientTheme="emerald"`
+    { id: 'grimorium', label: 'Grimorium', icon: ICONS.book, path: '/grimorium', locked: true, color: '#059669' },
+    // propuesto
+    { id: 'cerebrIty', label: 'CerebrIty', icon: ICONS.brain, path: '/cerebrIty', color: '#7c3aed' },
+    // propuesto — su fondo real es `slate-950`, de ahí el gris azulado
+    { id: 'pizarron', label: 'Pizarrón', icon: ICONS.layoutGrid, path: '/pizarron', color: '#475569' },
+    // propuesto
+    { id: 'avatar', label: 'Avatar', icon: ICONS.radar, path: '/avatar', color: '#e11d48' },
+    // VERIFICADO: la vista declara `gradientTheme="colegium"` → azul marino
+    { id: 'colegium', label: 'Colegium', icon: ICONS.school, path: '/colegium', color: '#1e3a8a' },
 ];
 
 /** El color de una sección a partir de su ruta. Indigo si no se reconoce. */
