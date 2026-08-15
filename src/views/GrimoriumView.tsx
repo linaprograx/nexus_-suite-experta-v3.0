@@ -247,12 +247,22 @@ const GrimoriumInner: React.FC<GrimoriumViewProps> = () => {
      * el catálogo entero: para resolver la cadena de un alias hacen falta
      * documentos que el filtro pudo dejar fuera.
      */
+    /**
+     * El término amortiguado, no el crudo.
+     *
+     * `useDebounce` ya estaba escrito y **nadie lo usaba en este camino**: se
+     * declaraba más abajo, después de este `useMemo`, así que ni siquiera se
+     * podía referenciar. Cada letra tecleada recalculaba el catálogo entero y
+     * repintaba hasta 1.380 tarjetas.
+     */
+    const busquedaAmortiguada = useDebounce(ingredientSearch, 250);
+
     const filteredIngredients = React.useMemo(() => {
-        const coincidentes = buscar(allIngredients, ingredientSearch, {
+        const coincidentes = buscar(allIngredients, busquedaAmortiguada, {
             camposDe: ing => [ing.nombre, ing.categoria],
         });
         return colapsarAlias(coincidentes, allIngredients).filas;
-    }, [allIngredients, ingredientSearch]);
+    }, [allIngredients, busquedaAmortiguada]);
 
     // Compute selected items from IDs
     const selectedRecipe = React.useMemo(() => {
@@ -322,7 +332,6 @@ const GrimoriumInner: React.FC<GrimoriumViewProps> = () => {
     const [batchResult, setBatchResult] = React.useState<any>(null);
 
     const debouncedRecipeSearch = useDebounce(searchQuery, 300);
-    const debouncedIngredientSearch = useDebounce(ingredientSearch, 300);
     const ingredientsColPath = `artifacts/${appId}/users/${userId}/grimorio-ingredients`;
 
     // Purchase Logic

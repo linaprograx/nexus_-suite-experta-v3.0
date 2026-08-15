@@ -89,6 +89,8 @@ export const IngredientListPanel: React.FC<IngredientListPanelProps> = ({
   // en un muro y se pierde justamente la comparación que se venía a hacer.
   const [grupoAbierto, setGrupoAbierto] = React.useState<string | null>(null);
 
+
+
   const nombreProveedor = React.useCallback(
     (id: string | null) => (id && proveedores.find(p => p.id === id)?.name) || 'Sin proveedor',
     [proveedores],
@@ -157,6 +159,26 @@ export const IngredientListPanel: React.FC<IngredientListPanelProps> = ({
   const aggregatedProducts = React.useMemo(
     () => agruparProductos(filteredIngredients),
     [filteredIngredients],
+  );
+
+  /**
+   * Cuántas tarjetas se pintan. Medido en el navegador con el catálogo real:
+   * una sola pulsación de tecla bloqueaba el hilo **414 ms** pintando 1.380
+   * tarjetas, de los cuales solo 30 ms eran buscar y agrupar. El coste no
+   * estaba en el cálculo, estaba en construir un catálogo entero que nadie va
+   * a recorrer con el dedo.
+   *
+   * No es esconder: el contador dice cuántas hay y el botón trae más. Y ahora
+   * que el buscador encuentra de verdad, a un producto se llega escribiendo,
+   * no bajando mil fichas.
+   */
+  const POR_PAGINA = 60;
+  const [visibles, setVisibles] = React.useState(POR_PAGINA);
+  React.useEffect(() => { setVisibles(POR_PAGINA); }, [ingredientSearchTerm, selectedProveedorId, ingredientFilters.category, soloPorRevisar]);
+
+  const gruposVisibles = React.useMemo(
+    () => aggregatedProducts.slice(0, visibles),
+    [aggregatedProducts, visibles],
   );
 
 
@@ -337,7 +359,7 @@ export const IngredientListPanel: React.FC<IngredientListPanelProps> = ({
             className="grid gap-2 lg:gap-4 pb-20"
             style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))' }}
           >
-            {aggregatedProducts.map((group) => {
+            {gruposVisibles.map((group) => {
               // Find "best" or primary entry to display
               // Prioritize entries WITH price, then by price ascending
               const sortedEntries = [...group.entries].sort((a, b) => {
@@ -450,6 +472,7 @@ export const IngredientListPanel: React.FC<IngredientListPanelProps> = ({
                               </div>
                             );
                           })}
+
 
                           {oferta.motivo === 'sin-comparar' && (
                             <p className="px-2.5 py-2 text-[10px] leading-relaxed text-amber-700 dark:text-amber-400">
@@ -575,6 +598,15 @@ export const IngredientListPanel: React.FC<IngredientListPanelProps> = ({
                 </div>
               );
             })}
+            {aggregatedProducts.length > gruposVisibles.length && (
+              <button
+                type="button"
+                onClick={() => setVisibles(v => v + POR_PAGINA)}
+                className="w-full py-3 rounded-xl border border-dashed border-slate-300 dark:border-slate-700 text-xs font-bold text-slate-500 dark:text-slate-400 hover:border-emerald-400 hover:text-emerald-600 transition-colors"
+              >
+                Mostrar más — {gruposVisibles.length} de {aggregatedProducts.length}
+              </button>
+            )}
           </div>
         )}
         <div className="h-12" /> {/* Bottom spacer for FAB */}
