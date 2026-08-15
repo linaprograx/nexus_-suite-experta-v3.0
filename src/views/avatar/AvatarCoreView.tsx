@@ -4,6 +4,7 @@ import { ICONS } from '../../components/ui/icons';
 import { useApp } from '../../context/AppContext';
 import { PlanTier } from '../../core/product/plans.types';
 import { useAvatarCognition, AvatarType, AvatarConfig, Tone, ResearchAxis } from '../../hooks/useAvatarCognition';
+import { CapaModal } from '../../components/ui/CapaModal';
 
 // --- Constants ---
 const getNarrativeTier = (plan: PlanTier): string => {
@@ -420,8 +421,14 @@ const ConsciousnessMap: React.FC<{ onClose: () => void, currentPlan: PlanTier }>
         }
     ];
 
+    /**
+     * A `document.body`. Con `fixed inset-0 z-50` a secas se abría **por debajo
+     * de la barra lateral**: un z-index solo compite dentro de su contexto de
+     * apilamiento, y desde dentro de la vista no hay número que gane. Cierra al
+     * pulsar fuera, que es lo que uno intenta primero.
+     */
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <CapaModal onFondoPulsado={onClose} fondo={false}>
             <div className="absolute inset-0 bg-slate-950/90 backdrop-blur-3xl transition-opacity" onClick={onClose} />
             <div className="relative max-w-6xl w-full bg-[#0B0F19] border border-white/10 rounded-[40px] p-0 shadow-2xl overflow-hidden h-auto max-h-[90dvh] flex flex-col">
                 <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-indigo-500/5 blur-[150px] rounded-full pointer-events-none" />
@@ -532,7 +539,7 @@ const ConsciousnessMap: React.FC<{ onClose: () => void, currentPlan: PlanTier }>
                     </button>
                 </div>
             </div>
-        </div>
+        </CapaModal>
     );
 }
 
