@@ -6,7 +6,7 @@ import { Icon } from '../ui/Icon';
 import { ICONS } from '../ui/icons';
 import { Button } from '../ui/Button';
 import { NexusOrb } from '../ui/NexusOrb';
-import { APP_SECTIONS } from '../../config/appSections';
+import { APP_SECTIONS, colorDeRuta } from '../../config/appSections';
 import { useSectionsStore } from '../../store/sectionsStore';
 
 interface NavLinkProps {
@@ -22,15 +22,42 @@ const NavLink: React.FC<NavLinkProps> = ({ view, label, icon, currentPath, onNav
   const path = view === 'dashboard' ? '/' : `/${view}`;
   const isActive = currentPath === path || (path !== '/' && currentPath.startsWith(path));
 
-  // Tech Futurista Styles (Ultra Premium)
-  const baseClasses = "group flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium transition-all duration-300 relative overflow-hidden";
+  /**
+   * El resaltado lleva el COLOR DE LA SECCIÓN, no el arcoíris del logo.
+   *
+   * Antes todo elemento activo se rellenaba con el degradado de la marca. Eso
+   * tenía dos problemas: el color no decía **cuál** de las secciones estabas
+   * mirando —todas se veían igual—, y convertía cada fila activa en un
+   * mini-logo, que diluye la marca en vez de reforzarla. Un logo funciona
+   * porque aparece en un sitio.
+   *
+   * Ahora el verde es Grimorio y el rosa es CerebrIty, y son los mismos
+   * valores que usa la barra inferior de móvil, así que las dos navegaciones
+   * dicen lo mismo.
+   *
+   * ## Por qué el degradado va en HORIZONTAL
+   *
+   * Las cabeceras de sección desvanecen de arriba abajo, y ahí funciona porque
+   * miden 200 px o más. Una fila de esta barra mide 38: repartir un degradado
+   * en vertical sobre 38 px son tres o cuatro píxeles por parada, y no se lee
+   * como un haz, se lee como una mancha. En horizontal tiene 200 px para
+   * desvanecerse de verdad.
+   *
+   * La barrita sólida de la izquierda es la que hace el trabajo de «estás
+   * aquí»: en una lista vertical el ojo recorre el borde izquierdo, así que es
+   * la señal más rápida que existe. El degradado solo la acompaña.
+   */
+  const color = colorDeRuta(path);
 
-  const activeClasses = "text-white border border-white/35";
+  const baseClasses = "group relative flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium transition-all duration-300 overflow-hidden";
+
   const activeStyle = isActive ? {
-    background: 'linear-gradient(135deg, #10d7e8 0%, #087cff 29%, #7440eb 54%, #e918a1 77%, #ffb300 100%)',
-    boxShadow: '0 10px 22px rgba(8, 124, 255, 0.20), 0 5px 14px rgba(233, 24, 161, 0.18)',
+    // De color a transparente antes de la mitad: el resto de la fila queda
+    // limpio y el texto no compite con el fondo.
+    background: `linear-gradient(to right, ${color}38 0%, ${color}1c 35%, transparent 70%)`,
   } : undefined;
 
+  const activeClasses = "text-slate-900 dark:text-white";
   const inactiveClasses =
     "text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 " +
     "hover:bg-slate-100/50 dark:hover:bg-white/5 transition-colors";
@@ -41,9 +68,21 @@ const NavLink: React.FC<NavLinkProps> = ({ view, label, icon, currentPath, onNav
       className={`${baseClasses} ${isActive ? activeClasses : inactiveClasses} ${isCollapsed ? 'justify-center' : ''}`}
       style={activeStyle}
     >
-      <Icon svg={icon} className={`h-5 w-5 flex-shrink-0 ${isActive ? 'text-slate-900 dark:text-white' : 'text-slate-500 dark:text-slate-500 group-hover:text-slate-900 dark:group-hover:text-slate-200'}`} />
+      {/* El raíl: 3 px, a plena saturación, de arriba abajo de la fila. */}
+      {isActive && (
+        <span
+          aria-hidden
+          className="absolute left-0 top-1 bottom-1 w-[3px] rounded-full"
+          style={{ background: color }}
+        />
+      )}
+      {/* El icono toma el color de la sección a plena saturación: refuerza la
+          barrita sin necesidad de más relleno. Va envuelto porque `Icon` no
+          acepta `style`; el SVG hereda `currentColor`. */}
+      <span className="flex-shrink-0" style={isActive ? { color } : undefined}>
+        <Icon svg={icon} className={`h-5 w-5 transition-colors ${isActive ? '' : 'text-slate-500 dark:text-slate-500 group-hover:text-slate-900 dark:group-hover:text-slate-200'}`} />
+      </span>
       {!isCollapsed && <span className="truncate">{label}</span>}
-      {isActive && <div className="absolute inset-0 bg-white/10 blur-sm rounded-xl pointer-events-none hidden dark:block" />}
     </button>
   );
 };

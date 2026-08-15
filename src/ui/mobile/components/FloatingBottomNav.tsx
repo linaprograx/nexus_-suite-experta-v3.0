@@ -20,19 +20,18 @@ export const BOTTOM_NAV_HEIGHT = 60;
  */
 const MAX_SLOTS = 5;
 
-/** Per-section accent, so the active tab tells you where you are by colour. */
+/**
+ * El acento de cada sección. Vivía aquí dentro, así que la barra lateral no
+ * podía usarlo y el escritorio acabó resaltando todo con el mismo arcoíris.
+ * Ahora sale de `APP_SECTIONS`, que es la fuente única.
+ */
 const SECTION_ACCENT: Record<string, string> = {
-    dashboard: '#0ea5e9',
-    grimorium: '#10b981',
-    cerebrIty: '#ec4899',
-    pizarron: '#6366f1',
-    avatar: '#8b5cf6',
-    colegium: '#f59e0b',
+    ...Object.fromEntries(APP_SECTIONS.map(s => [s.id, s.color])),
     personal: '#64748b',
 };
 
 const PERSONAL: AppSection = {
-    id: 'personal', label: 'Perfil', icon: ICONS.user, path: '/personal', locked: true,
+    id: 'personal', label: 'Perfil', icon: ICONS.user, path: '/personal', locked: true, color: '#64748b',
 };
 
 interface NavButtonProps {
@@ -143,7 +142,7 @@ const FloatingBottomNav: React.FC = () => {
 
                     {overflow.length > 0 && (
                         <NavButton
-                            section={{ id: 'more', label: 'Más', icon: ICONS.menu, path: '#' }}
+                            section={{ id: 'more', label: 'Más', icon: ICONS.menu, path: '#', color: '#64748b' }}
                             active={overflowActive}
                             onClick={() => setMoreOpen(true)}
                         />
