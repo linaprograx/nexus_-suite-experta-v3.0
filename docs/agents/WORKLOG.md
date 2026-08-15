@@ -78,6 +78,51 @@ quedan encerrados. Sobre blanco el logo se ve íntegro; sobre oscuro las
 separaciones dejan pasar el fondo. **No falta color, falta fondo**, y ningún
 CSS lo arregla. Parado a petición del fundador hasta que rehaga el fichero.
 
+**Mercado · buscar y agrupar, las cuatro fases.** El enunciado era «que buscar
+absolut dé un resultado con sus opciones dentro». Al investigarlo cambió: no
+faltaba el agrupado, **el que había estaba mal**, y además hacía dos trabajos
+distintos con la misma herramienta.
+
+Ejecutando el emparejador real de Mercado contra el catálogo del fundador,
+AGUERRIDO ANTONIO, BENIGNO y TOMAS caían en un mismo grupo —comparten la
+palabra «aguerrido» y bastaba **una** coincidencia fuerte—, así que de tres
+mezcales distintos se veía uno. Hasta el punto de que la alerta de stock
+crítico apuntaba a un producto que el buscador no mostraba. Encima comparaba
+cada ficha solo contra el nombre de la primera del grupo, con la comprobación
+transitiva omitida «por rendimiento»: el resultado dependía del orden.
+
+Se separaron los dos trabajos. **Encontrar** (`core/search/buscador.ts`):
+normalizar, exigir todos los términos, prefijo de palabra y orden por
+relevancia; «vodka absolut» daba cero resultados y «limon» no encontraba
+«LIMÓN». **Agrupar** (`core/identity/agruparProductos.ts`): conjunto idéntico
+de palabras fuertes, la regla ya aprobada en `duplicateCandidates`,
+deliberadamente conservadora —prefiere separar de más a juntar de menos,
+porque juntar esconde producto y falsea la comparativa—. Y `colapsarAlias.ts`
+para respetar por fin las fusiones ya hechas.
+
+`opcionesDeCompra.ts` despliega las opciones de cada grupo y conecta la
+política de precio del 09-08, que llevaba desde entonces sin consumir. Con un
+cuidado que el catálogo real exige: **dos precios de formatos distintos no se
+comparan**. Conviven opciones a «€68,50 / 0.700 L» y «€77,80 / UND»; solo
+compite el precio por unidad base, y si no coinciden se listan todas sin
+coronar a ninguna. Al probarlo apareció que AGUERRIDO, TOMAS CUPREATA tiene dos
+fichas del mismo proveedor a 89,50 y 68,50 €, ambas de 700 ml.
+
+**Rendimiento, medido antes de tocar.** 414 ms de bloqueo por tecla con 1.380
+tarjetas en el DOM, de los cuales solo 30 ms eran buscar y agrupar: el cuello
+de botella era pintar un catálogo entero que nadie recorre con el dedo. No se
+optimizó el algoritmo. Se conectó `useDebounce` —que ya estaba escrito y no se
+usaba en ese camino porque se declaraba después del cálculo que lo
+necesitaba— y se pasó a pintar 60 tarjetas con «Mostrar más». 37–56 ms y un
+94 % menos de nodos. Se descartó una medición de 6.000 ms por ser un fallo del
+propio sondeo: mejor sin dato que con un dato falso.
+
+Por último, el buscador se llevó a los ocho sitios que tenían el suyo, como
+pidió el fundador. Al migrar tres de ellos se sustituyó el predicado del filtro
+por `true` en lugar de aplicar `buscar`, lo que **elimina** el filtro en vez de
+mejorarlo; TypeScript lo acepta porque `true` es un booleano válido, y se
+detectó revisando el resultado, no compilando.
+
 **Otros.** Listas de más de 15 elementos agrupadas y plegadas (611 reglas → 49
 grupos, ver `CONTEXT.md`); categorías de proveedor con 19 opciones de
 hostelería y multi-selección en una barra desplegable; la explicación de

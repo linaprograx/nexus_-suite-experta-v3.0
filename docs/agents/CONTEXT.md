@@ -293,6 +293,57 @@ separaciones dejan pasar el fondo.
 ver «manchas» en el logo sobre fondo oscuro: **medir el canal alfa antes de
 tocar una sola clase**.
 
+### Buscar y agrupar son dos trabajos distintos
+
+**Buscar** no descarta: si algo coincide, sale, ordenado por relevancia.
+**Agrupar** solo junta lo que es el mismo producto, y por identidad explícita,
+nunca por parecido de nombres.
+
+Mercado los hacía con la misma herramienta y salía mal por los dos lados: un
+emparejador que se conformaba con **una** palabra fuerte en común metía tres
+mezcales distintos en una fila y enseñaba uno, mientras el «buscador» era un
+`includes` que devolvía cero para «vodka absolut».
+
+Un buscador que esconde resultados es peor que uno que ordena mal. **Todo
+buscador de la app usa `core/search/buscador.ts`** —hay ocho— y todo agrupado
+de producto usa `core/identity/agruparProductos.ts`, cuya regla es el conjunto
+**idéntico** de palabras fuertes: prefiere separar de más a juntar de menos,
+porque juntar dos productos distintos los esconde y falsea la comparativa de
+precios, mientras que separar dos fichas del mismo producto solo deja una fila
+de más que el informe de duplicados ya propone fusionar.
+
+Y al comparar precios: **dos formatos distintos no se comparan**. Solo compite
+el precio por unidad base; si no coinciden, se listan todos y no se corona a
+ninguno. Decirlo mal es peor que no decirlo.
+
+### Antes de optimizar, medir
+
+En Mercado, teclear una letra bloqueaba el hilo **414 ms**. La sospecha era el
+buscador sobre 1.380 fichas. Medido: **30 ms** eran buscar, colapsar alias y
+agrupar; los otros 384 eran pintar 1.380 tarjetas que nadie recorre con el
+dedo.
+
+No se tocó ningún algoritmo. Se conectó un `useDebounce` que ya estaba escrito
+y sin usar, y se pasó a pintar 60 tarjetas con un «Mostrar más» que dice
+cuántas hay. Resultado: 37–56 ms y un 94 % menos de nodos.
+
+**Corolario:** si una medición da un número absurdo, sospecha del instrumento
+antes que de la app. Aquí un sondeo dio 6.000 ms y era el propio sondeo
+agotándose; se descartó en vez de reportarlo.
+
+### Compilar no es verificar
+
+`tsc` en verde no dice que el código haga lo que debía. Dos casos del 12-08:
+
+- al migrar tres buscadores se sustituyó el predicado del filtro por `true`, lo
+  que **elimina** el filtro en vez de mejorarlo. TypeScript lo acepta sin una
+  queja: `true` es un booleano perfectamente válido;
+- un desplegable nuevo compilaba y reventaba la app al abrirlo (era HMR
+  obsoleto, pero solo se supo probándolo).
+
+Lo que sí lo detecta es mirar el resultado: en pantalla si hay sesión, y si no,
+renderizando el componente aislado o ejercitando el módulo con datos de prueba.
+
 ### Un modal va a `document.body`, siempre
 
 El armazón móvil pinta el contenido dentro de un `<div relative z-20>`, y eso

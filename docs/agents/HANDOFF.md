@@ -87,7 +87,8 @@ Las tres primeras están explicadas a fondo en `CONTEXT.md`.
   nuevos; la primitiva `Modal` ya lo hacía.
 - **Precio con varias ofertas:** manda el proveedor preferente aunque otro sea
   más barato, y se señala la alternativa. Sin preferente, el más barato y se
-  avisa. Implementado en `core/identity/offerSelection.ts`, **sin conectar**.
+  avisa. `core/identity/offerSelection.ts`, **conectado** en Mercado a través
+  de `opcionesDeCompra.ts`. El motor de coste sigue sin usarlo.
 - **Agrupación visual:** Inventario por familia; Mercado por proveedor.
 - **Carta:** con alcohol primero, sin alcohol después, en pantalla y al exportar.
 
@@ -101,46 +102,49 @@ Las tres primeras están explicadas a fondo en `CONTEXT.md`.
 | Fase 0 · cimientos | `origen` ✅ · I1 ✅ · I2 ✅ · I3 ✅ · I4 ✅ |
 | Fase 1 · pedido útil | M1 compra ✅ · M1 hoja ✅ · M2 ✅ · **M3 cantidad pendiente** |
 | Escrituras en lote | ✅ `services/firestore/escrituraPorLotes.ts`, cinco sitios convertidos |
+| Mercado · buscar y agrupar | ✅ Fases 1–4. Un solo buscador en los ocho sitios |
 
 ## ⏸️ Lo siguiente — EMPIEZA POR AQUÍ
 
-### Mercado · Fases 1, 2a y 2b HECHAS. Falta 3 y 4
+### Mercado · CERRADO. Las cuatro fases
 
-**Lo que se encontró y ya está corregido.** Mercado no es que no agrupara:
-agrupaba mal, con un emparejador propio ajeno al sistema de identidad.
+Mercado no es que no agrupara: **agrupaba mal**, con un emparejador propio
+ajeno al sistema de identidad, y buscaba con un `includes`.
 
 - **Fase 1 ✅** `core/identity/colapsarAlias.ts`. Los alias con
-  `masterProductId` dejan de ser fila. Dos trampas resueltas: buscar por el
-  nombre del alias **sustituye** por el maestro en vez de descartar (si no, la
-  búsqueda salía vacía habiendo escrito un nombre que existe); y un maestro
-  borrado dejaría la ficha invisible, así que se comprueba que exista.
-- **Fase 2a ✅** `core/search/buscador.ts`. Buscar era un `includes`: «vodka
-  absolut» daba **cero** resultados y «limon» no encontraba «LIMÓN». Ahora
-  normaliza, exige TODOS los términos (cada palabra estrecha), acepta prefijo
-  de palabra y ordena por relevancia. `IngredientListPanel` volvía a filtrar
-  por su cuenta con el `includes` viejo y anulaba la mejora: ya usa el mismo.
+  `masterProductId` dejan de ser fila. Dos trampas: buscar por el nombre del
+  alias **sustituye** por el maestro en vez de descartar (descartarlo dejaba la
+  búsqueda vacía habiendo escrito un nombre que existe), y un maestro borrado
+  habría hecho desaparecer la ficha, así que se comprueba que exista.
+- **Fase 2a ✅** `core/search/buscador.ts`. «vodka absolut» daba **cero**
+  resultados y «limon» no encontraba «LIMÓN». Ahora normaliza, exige TODOS los
+  términos, acepta prefijo de palabra y ordena por relevancia.
 - **Fase 2b ✅** `core/identity/agruparProductos.ts`. El emparejador viejo se
-  conformaba con **una** palabra fuerte en común, así que metía a AGUERRIDO
-  ANTONIO, BENIGNO y TOMAS en un solo grupo y enseñaba uno: **tres mezcales
-  distintos, uno visible**. La alerta de stock crítico apuntaba a un producto
-  que el buscador no mostraba. Ahora rige el conjunto **idéntico** de palabras
-  fuertes, la regla ya aprobada en `duplicateCandidates`.
+  conformaba con **una** palabra fuerte común: metía AGUERRIDO ANTONIO, BENIGNO
+  y TOMAS en un grupo y enseñaba uno. **Tres mezcales, uno visible**, y la
+  alerta de stock crítico señalaba un producto que el buscador no mostraba.
+  Ahora rige el conjunto **idéntico** de palabras fuertes.
+- **Fase 3 ✅** `core/identity/opcionesDeCompra.ts`. La insignia «N opc.» se
+  despliega: proveedor, ficha, precio y formato, con la que manda marcada.
+  Conecta por fin `offerSelection` —preferente aunque sea más caro, señalando
+  la alternativa—. **Y no compara lo incomparable**: solo compite el precio por
+  unidad base; si los formatos no coinciden (0.700 L frente a UND), se listan
+  todas y **no se corona a ninguna**.
+- **Fase 4 ✅** Medido antes de tocar: 414 ms de bloqueo por tecla con 1.380
+  tarjetas, de los cuales **solo 30 ms eran buscar y agrupar**. El cuello de
+  botella era pintar el catálogo entero. Se conectó `useDebounce` —que ya
+  estaba escrito y sin usar— y se pintan 60 tarjetas con «Mostrar más».
+  Resultado: **37–56 ms y un 94 % menos de nodos**.
+- **El buscador, en los ocho sitios ✅** Recetas, compra rápida, hoja de
+  reposición, Inventario, conteo físico, modal de reglas, generador de carta y
+  `Combobox` (la primitiva compartida). Dos decisiones no mecánicas:
+  Inventario filtra por categoría **antes** de buscar, para no deshacer el
+  orden por relevancia; y el conteo físico busca pero ordena **alfabéticamente**,
+  porque ahí se recorre la lista con las botellas delante.
 
-**Verificación pendiente del fundador:** buscar «aguerrido» debe devolver
-**tres** filas, no una. En general saldrán **más filas** que antes, y es lo
-correcto.
-
-**Lo que queda:**
-
-- **Fase 3 · la ficha del grupo.** Una fila por producto con «N opciones»
-  desplegable: proveedor, precio, formato, y cuál manda según
-  `offerSelection.ts` —preferente primero, señalando la alternativa más
-  barata—. Hoy la fila enseña la entrada más barata y el resto no se ve.
-- **Fase 4 · rendimiento.** El agrupado ya no es O(N²) (es un índice por
-  clave), pero conviene medir el buscador con 1.380 fichas en un móvil.
-- **Reutilizar el buscador.** El fundador lo pidió explícitamente: «donde
-  quiera que aparezca un buscador». Quedan sin migrar el de Recetas, el de
-  compra rápida y el de la hoja de reposición.
+**Hallazgo para el fundador:** AGUERRIDO, TOMAS CUPREATA tiene dos fichas del
+**mismo proveedor** a €89,50 y €68,50, ambas en 700 ml. Un 24 % de diferencia
+que estaba invisible, y un duplicado que el informe de identidad puede fusionar.
 
 ### Después de Mercado
 
