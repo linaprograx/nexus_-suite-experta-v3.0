@@ -47,6 +47,7 @@ import { useStockRules } from '../hooks/useStockRules';
 import { buildCurrentStock } from '../utils/stockUtils';
 import { resolverMaestro, indicePorId } from '../core/identity/masterProduct';
 import { colapsarAlias } from '../core/identity/colapsarAlias';
+import { buscar } from '../core/search/buscador';
 import { useStockMovements } from '../hooks/useStockMovements';
 import { calculateEscandallo } from '../core/finance/cost.engine';
 import { useEscandallator } from '../hooks/useEscandallator';
@@ -247,13 +248,9 @@ const GrimoriumInner: React.FC<GrimoriumViewProps> = () => {
      * documentos que el filtro pudo dejar fuera.
      */
     const filteredIngredients = React.useMemo(() => {
-        const search = ingredientSearch.toLowerCase();
-        const coincidentes = !ingredientSearch
-            ? allIngredients
-            : allIngredients.filter(ing =>
-                ing.nombre.toLowerCase().includes(search) ||
-                ing.categoria?.toLowerCase().includes(search)
-            );
+        const coincidentes = buscar(allIngredients, ingredientSearch, {
+            camposDe: ing => [ing.nombre, ing.categoria],
+        });
         return colapsarAlias(coincidentes, allIngredients).filas;
     }, [allIngredients, ingredientSearch]);
 

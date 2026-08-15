@@ -14,6 +14,7 @@ import { getCategoryColor } from '../../utils/categoryColors';
 import { evaluateMarketSignals } from '../../core/signals/signal.engine';
 import { Signal } from '../../core/signals/signal.types';
 import { TOKENS_GENERICOS as WEAK_TOKENS, esTokenGenerico } from '../../core/identity/genericTokens';
+import { buscar } from '../../core/search/buscador';
 
 
 interface IngredientListPanelProps {
@@ -120,14 +121,12 @@ export const IngredientListPanel: React.FC<IngredientListPanelProps> = ({
       result = result.filter(ing => ing.categoria === ingredientFilters.category);
     }
 
-    // C. Search Term Filter
-    if (ingredientSearchTerm) {
-      const lowerCaseSearchTerm = ingredientSearchTerm.toLowerCase();
-      result = result.filter(ing =>
-        ing.nombre.toLowerCase().includes(lowerCaseSearchTerm) ||
-        (ing.categoria || '').toLowerCase().includes(lowerCaseSearchTerm)
-      );
-    }
+    // C. Búsqueda. El mismo buscador que usa la vista, no un `includes` propio:
+    // este panel filtraba OTRA VEZ por su cuenta, así que su versión pobre
+    // anulaba la buena —«vodka absolut» pasaba el primer filtro y moría aquí—.
+    result = buscar(result, ingredientSearchTerm || '', {
+      camposDe: ing => [ing.nombre, ing.categoria],
+    });
 
     return result;
   }, [ingredients, selectedProveedorId, ingredientFilters.category, ingredientSearchTerm, soloPorRevisar]);
