@@ -76,8 +76,14 @@ const explicarErrorDeAuth = (e: any): string => {
         case 'auth/popup-closed-by-user':
         case 'auth/cancelled-popup-request':
             return 'Se cerró la ventana de Google sin dar permiso.';
-        case 'auth/unauthorized-domain':
-            return `Este dominio no está autorizado en Firebase. Añádelo en Authentication → Settings → Authorized domains. [${codigo}]`;
+        case 'auth/unauthorized-domain': {
+            // El dominio EXACTO, para poder copiarlo. Decir «añade el dominio»
+            // sin decir cuál obliga a adivinar, y en Vercel conviven la url de
+            // producción, las de rama y las de cada despliegue: no da igual.
+            const dominio = typeof window !== 'undefined' ? window.location.hostname : '(desconocido)';
+            return `El dominio «${dominio}» no está autorizado en Firebase. `
+                + `Añádelo tal cual en Firebase Console → Authentication → Settings → Authorized domains. [${codigo}]`;
+        }
         case 'auth/user-mismatch':
             return `Has elegido una cuenta de Google distinta a la que tienes abierta en Nexus. Entra con la misma. [${codigo}]`;
         case 'auth/operation-not-supported-in-this-environment':
