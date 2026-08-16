@@ -74,7 +74,11 @@ eq('«Beneficio Neto» apunta al margen',
 eq('las cantidades van normalizadas a unidad base: 6 cl → 60 ml',
     v.find(r => r[0] === 'RON BLANCO')?.slice(1, 3), [60, 'ml']);
 eq('el precio se busca en Materia Prima, no se escribe a fuego',
-    /VLOOKUP\(\$A\d+;'Materia Prima'!\$A:\$D;4;FALSE\)/.test(String(v.find(r => r[0] === 'RON BLANCO')?.[3])), true);
+    /VLOOKUP\(\$A\d+;'Materia Prima'!\$A:\$B;2;FALSE\)/.test(String(v.find(r => r[0] === 'RON BLANCO')?.[3])), true);
+// Un precio por MILILITRO con formato de moneda sale «€0,01» en todo: no
+// distingue un ron de un zumo. Se enseña por litro/kilo, como la plantilla.
+eq('  y es el precio por litro/kilo, no por mililitro',
+    String(v.find(r => r[0] === 'RON BLANCO')?.[4]).includes('*0,001*'), true);
 eq('hay marcos alrededor de los bloques', (h.bordes || []).length >= 3, true);
 eq('y hueco rotulado para el método y la foto',
     [buscar('MÉTODO Y DESCRIPCIÓN') > 0, enCol('FOTO', 4) > 0], [true, true]);
@@ -143,7 +147,8 @@ const lineaSub = conSub.valores[filaSub - 1];
 // sub-preparación estaba SOLO a la derecha y no era línea de la ficha.
 eq('la sub-preparación aparece en la tabla del cóctel', filaSub > 0, true);
 eq('  con lo que se usa y su unidad', [lineaSub[1], lineaSub[2]], [20, 'ml']);
-eq('  y su coste por unidad sale del lote', /=L\d+\/1000/.test(String(lineaSub[3])), true);
+eq('  y su coste por unidad sale del lote, también por litro/kilo',
+    /=L\d+\*1000\/1000/.test(String(lineaSub[3])), true);
 eq('  con su nota remitiendo al detalle', String(lineaSub[5]).includes('detalle a la derecha'), true);
 
 const filaTotal = conSub.valores.findIndex(r => String(r[3]) === 'COSTE TOTAL') + 1;

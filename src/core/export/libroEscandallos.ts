@@ -139,7 +139,13 @@ const ACENTO = NAVY;
  * Es exactamente el mismo problema que el separador de argumentos, y la misma
  * lección: dentro de una fórmula no se escriben números de JavaScript.
  */
-export const numeroEnFormula = (n: number): string => String(n).replace('.', ',');
+export const numeroEnFormula = (n: number): string => {
+    // `String(0.000001)` da «1e-6», y eso dentro de una fórmula no es un número:
+    // es basura. Con multiplicadores pequeños —un gramo de algo que se compra
+    // por unidades— se llega ahí enseguida.
+    const texto = Math.abs(n) < 1e-4 && n !== 0 ? n.toFixed(12).replace(/0+$/, '') : String(n);
+    return texto.replace('.', ',');
+};
 
 const num = (v: any): number => {
     const n = Number(v);
@@ -292,6 +298,8 @@ interface FilaLinea {
     factor: number;
     /** Hay ficha, pero sus unidades no permiten costear la línea. */
     sinPrecio: boolean;
+    /** Unidad en la que está el precio del ingrediente: decide el ×1000. */
+    basePrecio: string;
     nota: string;
 }
 
@@ -317,6 +325,7 @@ const normalizarLinea = (l: IngredientLineItem, porId: Map<string, Ingredient>):
         unidadBase: norm.base === 'unknown' ? (l.unidad || '') : norm.base,
         huerfana: !ing,
         factor: eq ? eq.factor : 1,
+        basePrecio: eq ? eq.base : '',
         // Sin equivalencia no se puede costear la línea sin inventar: se dice.
         sinPrecio: !!ing && !eq,
         nota: eq?.nota || '',
@@ -330,6 +339,12 @@ const normalizarLinea = (l: IngredientLineItem, porId: Map<string, Ingredient>):
  * aplicado a la cantidad— para que la celda siga diciendo lo que dice la
  * receta: «50 g», no «0,5 und». La nota explica la conversión cuando la hay.
  */
+/**
+ * De precio por unidad base a precio por Kg/L: mil unidades base hacen un litro
+ * o un kilo. Las unidades sueltas no se dividen.
+ */
+const porMil = (base: string) => (base === 'und' || base === '' ? 1 : 1000);
+
 const filaDeIngrediente = (d: FilaLinea, f: number): Celda[] => {
     if (d.huerfana) {
         return [d.nombre, d.cantidadBase, d.unidadBase, '', '', 'Sin ficha en el catálogo: no se puede enlazar su precio.'];
@@ -337,10 +352,23 @@ const filaDeIngrediente = (d: FilaLinea, f: number): Celda[] => {
     if (d.sinPrecio) {
         return [d.nombre, d.cantidadBase, d.unidadBase, '', '', 'Su ficha no tiene precio o su formato no permite costear esta cantidad.'];
     }
-    const busca = `=IFERROR(VLOOKUP($A${f};'${paraFormula(MATERIA)}'!$A:$D;4;FALSE);"")`;
-    const coste = d.factor === 1
+    /**
+     * Se busca la columna **2** de Materia Prima: el precio en la unidad que lee
+     * una persona —€/L, €/kg, €/und— y no el de por mililitro.
+     *
+     * La columna del por-base seguía siendo correcta, pero con formato de moneda
+     * a dos decimales **todo salía «€0,01» o «€0,02»**: un precio por mililitro
+     * redondeado a céntimos no distingue un ron de un zumo. La plantilla del
+     * fundador enseña 37,94 €/L, que es lo que un humano compara.
+     *
+     * El multiplicador absorbe la conversión: el factor que reconcilia unidades,
+     * partido por los mil que separan el mililitro del litro.
+     */
+    const mult = d.factor / porMil(d.basePrecio);
+    const busca = `=IFERROR(VLOOKUP($A${f};'${paraFormula(MATERIA)}'!$A:$B;2;FALSE);"")`;
+    const coste = mult === 1
         ? `=IF(D${f}="";"";B${f}*D${f})`
-        : `=IF(D${f}="";"";B${f}*${numeroEnFormula(d.factor)}*D${f})`;
+        : `=IF(D${f}="";"";B${f}*${numeroEnFormula(mult)}*D${f})`;
     return [d.nombre, d.cantidadBase, d.unidadBase, busca, coste, d.nota];
 };
 
@@ -565,10 +593,10 @@ export const hojaDeCoctel = (
             // referencias van a esas columnas y no a las de la ficha.
             g.fila(fl, COL_SUB, [
                 celdas[0], celdas[1], celdas[2],
-                x.huerfana || x.sinPrecio ? '' : `=IFERROR(VLOOKUP($H${fl};'${paraFormula(MATERIA)}'!$A:$D;4;FALSE);"")`,
-                x.huerfana || x.sinPrecio ? '' : (x.factor === 1
+                x.huerfana || x.sinPrecio ? '' : `=IFERROR(VLOOKUP($H${fl};'${paraFormula(MATERIA)}'!$A:$B;2;FALSE);"")`,
+                x.huerfana || x.sinPrecio ? '' : ((x.factor / porMil(x.basePrecio)) === 1
                     ? `=IF(K${fl}="";"";I${fl}*K${fl})`
-                    : `=IF(K${fl}="";"";I${fl}*${numeroEnFormula(x.factor)}*K${fl})`),
+                    : `=IF(K${fl}="";"";I${fl}*${numeroEnFormula(x.factor / porMil(x.basePrecio))}*K${fl})`),
                 celdas[5],
             ]);
             if (i % 2 === 1) bandas.push({ fila: fl - 1, col: COL_SUB, cols: 6, color: CLARO, negrita: false, tamano: 10 });
@@ -591,15 +619,17 @@ export const hojaDeCoctel = (
     // Ahora que se conocen las filas de cada lote, se escriben sus líneas.
     subPreparadas.forEach((sp, i) => {
         const fl = filaSubEnFicha + i;
+        // También por litro/kilo, para que la columna diga lo mismo en todas
+        // sus filas: el coste del lote repartido entre su rendimiento, por mil.
         const porUnidad = sp.rendimiento > 0
-            ? `=L${sp.filaLote}/${numeroEnFormula(sp.rendimiento)}`
+            ? `=L${sp.filaLote}*1000/${numeroEnFormula(sp.rendimiento)}`
             : '';
         g.fila(fl, 0, [
             sp.nombre,
             sp.usado,
             sp.unidadUso,
             porUnidad,
-            porUnidad ? `=IF(D${fl}="";"";B${fl}*D${fl})` : '',
+            porUnidad ? `=IF(D${fl}="";"";B${fl}*D${fl}/1000)` : '',
             `Sub-preparación · rinde ${sp.rendimiento || '?'} ${sp.unidadLote} · detalle a la derecha`,
         ]);
     });
