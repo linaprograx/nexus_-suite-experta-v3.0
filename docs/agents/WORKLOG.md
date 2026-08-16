@@ -1302,3 +1302,48 @@ propio dominio. Está en «Pendiente del fundador», para antes de producción.
 **Y la fila de botones de la carta**: los cinco controles no caben en línea en
 un móvil y «A Sheets» acababa solo abajo, como si fuera otra cosa. Dos filas con
 intención: lo que la carta **es**, y lo que se **hace** con ella.
+
+---
+
+## 2026-08-16 · Claude Code · El libro de escandallos en Sheets
+
+Un solo botón «A Sheets» crea un libro: **Resumen · una pestaña por cóctel ·
+Materia Prima**, todo enlazado por fórmulas. La ficha replica la plantilla del
+fundador (bandas azul marino, filas alternas, marcos, cabeceras a dos líneas,
+pastel 3D, recuadros de método y foto).
+
+### Las cinco trampas de Google, y por qué cuesta verlas
+
+Ninguna avisa al romperse. Todas devuelven **algo con buena pinta**:
+
+| Trampa | Qué pasaba | Cómo se caza ahora |
+|---|---|---|
+| Separador de argumentos | El libro se crea en `en_US` y las fórmulas con `;` entran como TEXTO | `locale: 'es_ES'` explícito |
+| **Punto decimal** | `B23*0.001*D23` → `#ERROR!` en toda la fila | `numeroEnFormula` + prueba que recorre la hoja |
+| Notación exponencial | `String(0.000001)` = «1e-6», basura dentro de una fórmula | `numeroEnFormula` no la produce |
+| **Columnas ocultas** | Un gráfico **descarta** por defecto filas y columnas ocultas → «Añade una serie» | `hiddenDimensionStrategy: 'SHOW_ALL'` |
+| **Cabecera implícita** | La primera fila del rango se toma como título → pastel de una porción al 100 % | Los datos no empiezan en la fila 1, con prueba |
+
+> **La regla:** una fórmula generada no se da por buena porque compile. Se mira
+> la cuadrícula antes de subirla, y cada trampa se deja con una prueba detrás.
+
+### Errores de cálculo, no de formato
+
+- **Un cóctel de 42,92 €.** «50 g de VAINILLA EN RAMA × 2,17 €» — pero ese 2,17
+  es por **rama**, no por gramo. La hoja usaba una versión simplificada de la
+  reconciliación de unidades del motor. Ahora esos cuatro casos son
+  `equivalenciaDeLinea`, **compartida** por el motor y la hoja. Verificado con
+  una sonda temporal: cero diferencias sobre el catálogo real.
+- **La ficha no cuadraba con su total**: el despiece de cada sub-preparación
+  estaba a la derecha pero la línea no estaba en la tabla. Ahora es una fila más.
+- **El precio salía «€0,01» en todo**: era por mililitro, redondeado a céntimos.
+  Ahora por litro/kilo, como la plantilla.
+- **La portada del Resumen se comía el concepto y la fecha**: `MERGE_ALL` se
+  queda solo con la celda de arriba a la izquierda.
+
+### Pendiente
+
+- La foto hay que insertarla a mano: la API no sube imágenes. El hueco queda
+  rotulado con la instrucción dentro.
+- El arreglo de raíz del permiso de Google en la app instalada (ver «Pendiente
+  del fundador»).
