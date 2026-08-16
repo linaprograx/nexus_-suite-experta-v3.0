@@ -329,6 +329,9 @@ export const exportarLibroASheets = async (auth: Auth, libro: LibroEscandallo): 
                     rowCount: Math.max(h.valores.length + 20, 60),
                     columnCount: Math.max(h.anchos.length + 2, 8),
                     ...(h.filaCongelada ? { frozenRowCount: h.filaCongelada } : {}),
+                    // Sin cuadrícula, como la plantilla: los bloques se leen por
+                    // sus marcos, y las líneas grises de fondo los ensucian.
+                    ...(h.ocultarCuadricula ? { hideGridlines: true } : {}),
                 },
             },
         })),
@@ -395,6 +398,7 @@ export const exportarLibroASheets = async (auth: Auth, libro: LibroEscandallo): 
                         userEnteredFormat: {
                             backgroundColor: rgb(b.color),
                             verticalAlignment: 'MIDDLE',
+                            wrapStrategy: 'WRAP',
                             textFormat: {
                                 bold: b.negrita !== false,
                                 fontSize: b.tamano || 10,
@@ -402,7 +406,7 @@ export const exportarLibroASheets = async (auth: Auth, libro: LibroEscandallo): 
                             },
                         },
                     },
-                    fields: 'userEnteredFormat(backgroundColor,verticalAlignment,textFormat)',
+                    fields: 'userEnteredFormat(backgroundColor,verticalAlignment,textFormat,wrapStrategy)',
                 },
             });
         }
@@ -424,6 +428,47 @@ export const exportarLibroASheets = async (auth: Auth, libro: LibroEscandallo): 
         };
         formato(h.moneda, '€#,##0.00', 'CURRENCY');
         formato(h.porcentaje, '0.0%', 'PERCENT');
+
+        // Los marcos de cada bloque. Es lo que da a la plantilla su aspecto de
+        // ficha y no de listado: cada cosa dentro de su recuadro.
+        for (const b of (h.bordes || [])) {
+            const linea = { style: 'SOLID', color: rgb('#9DB0D4') };
+            peticiones.push({
+                updateBorders: {
+                    range: {
+                        sheetId,
+                        startRowIndex: b.fila, endRowIndex: b.fila + b.filas,
+                        startColumnIndex: b.col, endColumnIndex: b.col + b.cols,
+                    },
+                    top: linea, bottom: linea, left: linea, right: linea,
+                    ...(b.interior ? { innerHorizontal: linea, innerVertical: linea } : {}),
+                },
+            });
+        }
+
+        for (const a of (h.alturas || [])) {
+            peticiones.push({
+                updateDimensionProperties: {
+                    range: { sheetId, dimension: 'ROWS', startIndex: a.fila, endIndex: a.fila + 1 },
+                    properties: { pixelSize: a.px },
+                    fields: 'pixelSize',
+                },
+            });
+        }
+
+        for (const c of (h.centradas || [])) {
+            peticiones.push({
+                repeatCell: {
+                    range: {
+                        sheetId,
+                        startRowIndex: c.fila, endRowIndex: c.fila + c.filas,
+                        startColumnIndex: c.col, endColumnIndex: c.col + c.cols,
+                    },
+                    cell: { userEnteredFormat: { horizontalAlignment: 'CENTER' } },
+                    fields: 'userEnteredFormat.horizontalAlignment',
+                },
+            });
+        }
 
         /**
          * Las zonas bloqueadas de la plantilla del fundador.
@@ -464,8 +509,9 @@ export const exportarLibroASheets = async (auth: Auth, libro: LibroEscandallo): 
                         spec: {
                             title: 'Coste / Beneficio',
                             pieChart: {
-                                legendPosition: 'RIGHT_LEGEND',
+                                legendPosition: 'BOTTOM_LEGEND',
                                 threeDimensional: true,
+                                pieHole: 0,
                                 domain: { sourceRange: { sources: [{ sheetId, startRowIndex: g.filaDatos, endRowIndex: g.filaDatos + 2, startColumnIndex: g.colDatos, endColumnIndex: g.colDatos + 1 }] } },
                                 series: { sourceRange: { sources: [{ sheetId, startRowIndex: g.filaDatos, endRowIndex: g.filaDatos + 2, startColumnIndex: g.colDatos + 1, endColumnIndex: g.colDatos + 2 }] } },
                             },
@@ -473,7 +519,8 @@ export const exportarLibroASheets = async (auth: Auth, libro: LibroEscandallo): 
                         position: {
                             overlayPosition: {
                                 anchorCell: { sheetId, rowIndex: g.anclaFila, columnIndex: g.anclaCol },
-                                widthPixels: 320, heightPixels: 220,
+                                widthPixels: 330, heightPixels: 210,
+                                offsetXPixels: 8, offsetYPixels: 4,
                             },
                         },
                     },

@@ -80,6 +80,13 @@ export interface HojaLibro {
      * y los precios de Materia Prima.
      */
     protegidos?: Array<{ fila: number; filas: number; col: number; cols: number; motivo: string }>;
+    /** Marcos alrededor de un bloque, como los recuadros de la plantilla. */
+    bordes?: Array<{ fila: number; filas: number; col: number; cols: number; interior?: boolean }>;
+    /** Filas con altura propia: la banda del negocio, el recuadro de la foto. */
+    alturas?: Array<{ fila: number; px: number }>;
+    /** Celdas centradas, para las bandas de título. */
+    centradas?: RangoFormato[];
+    ocultarCuadricula?: boolean;
 }
 
 export interface LibroEscandallo {
@@ -105,8 +112,30 @@ export const AJUSTES_LIBRO_POR_DEFECTO: AjustesLibro = {
 };
 
 const MATERIA = 'Materia Prima';
-const ACENTO = '#0d9488';
-const GRIS = '#f1f5f9';
+
+/**
+ * La paleta de la plantilla del fundador: azul marino para las bandas, azul
+ * claro para las celdas de valor, blanco de fondo. Se copia a propósito — la
+ * ficha tiene que reconocerse como suya.
+ */
+const NAVY = '#1F3864';
+const NAVY2 = '#2E5496';
+const CABECERA = '#8EA9DB';
+const CLARO = '#D9E2F3';
+const GRIS = '#F2F2F2';
+const ACENTO = NAVY;
+
+/**
+ * Un número **para meter dentro de una fórmula** en una hoja en español.
+ *
+ * El libro se crea con `locale: es_ES`, donde el separador decimal es la coma.
+ * Escribir `0.001` dentro de una fórmula la rompe entera: `#ERROR!`. Y no se ve
+ * venir, porque en el código el número es perfectamente válido.
+ *
+ * Es exactamente el mismo problema que el separador de argumentos, y la misma
+ * lección: dentro de una fórmula no se escriben números de JavaScript.
+ */
+export const numeroEnFormula = (n: number): string => String(n).replace('.', ',');
 
 const num = (v: any): number => {
     const n = Number(v);
@@ -307,127 +336,162 @@ const filaDeIngrediente = (d: FilaLinea, f: number): Celda[] => {
     const busca = `=IFERROR(VLOOKUP($A${f};'${paraFormula(MATERIA)}'!$A:$D;4;FALSE);"")`;
     const coste = d.factor === 1
         ? `=IF(D${f}="";"";B${f}*D${f})`
-        : `=IF(D${f}="";"";B${f}*${d.factor}*D${f})`;
+        : `=IF(D${f}="";"";B${f}*${numeroEnFormula(d.factor)}*D${f})`;
     return [d.nombre, d.cantidadBase, d.unidadBase, busca, coste, d.nota];
 };
 
 /**
- * Una pestaña de cóctel.
+ * Una pestaña de cóctel, con el diseño de la plantilla del fundador.
  *
- * Todo lo que se puede calcular, se calcula en la hoja. El precio de cada
- * ingrediente se busca en Materia Prima con `BUSCARV`, así que tocar allí un
- * precio mueve esta ficha, el total, el porcentaje de coste y el gráfico.
+ * ## Por qué una rejilla y no una lista de filas
+ *
+ * La plantilla coloca las **sub-preparaciones a la derecha**, no debajo, y eso
+ * no se puede construir empujando filas: hace falta poder escribir en la fila 7
+ * columna A y en la fila 7 columna H sin que una decida el ancho de la otra.
+ * Así que se escribe sobre una rejilla dispersa y se materializa al final.
+ *
+ * ## El reparto
+ *
+ * Columnas A–F: la ficha —economía, gráfico, ingredientes, método y foto—.
+ * Columnas H–M: las sub-preparaciones, cada una con su título y su total.
  */
+class Rejilla {
+    private celdas = new Map<string, Celda>();
+    private maxFila = 0;
+    poner(fila: number, col: number, valor: Celda) {
+        this.celdas.set(`${fila}|${col}`, valor);
+        if (fila > this.maxFila) this.maxFila = fila;
+    }
+    fila(fila: number, col: number, valores: Celda[]) {
+        valores.forEach((v, i) => this.poner(fila, col + i, v));
+    }
+    materializar(cols: number): Celda[][] {
+        const salida: Celda[][] = [];
+        for (let f = 1; f <= this.maxFila; f++) {
+            const linea: Celda[] = [];
+            for (let c = 0; c < cols; c++) linea.push(this.celdas.get(`${f}|${c}`) ?? '');
+            salida.push(linea);
+        }
+        return salida;
+    }
+}
+
+const COLS = 13;                 // A..M
+const COL_SUB = 7;               // H
+
 export const hojaDeCoctel = (
     receta: Partial<Recipe>,
     catalogo: Ingredient[],
     ajustes: AjustesLibro,
     titulo: string,
+    negocio = 'NEXUS',
 ): HojaLibro => {
     const porId = indicePorId(catalogo);
     const lineas = lineasDe(receta);
-    const directas = lineas.filter(l => !esBloque(l)).map(l => normalizarLinea(l, porId));
+    // Una línea sin nombre y sin ficha no es un ingrediente: es un hueco que
+    // quedó en la receta. Pintarla como «Sin nombre · 0 g» ensucia la ficha y
+    // no informa de nada.
+    const util = (l: FilaLinea) => !!(l.nombre && l.nombre !== 'Sin nombre') || l.cantidadBase > 0;
+    const directas = lineas.filter(l => !esBloque(l)).map(l => normalizarLinea(l, porId)).filter(util);
     const bloques = lineas.filter(esBloque);
 
-    const pvp = num((receta as any).precioVenta);
-    const valores: Celda[][] = [];
+    const g = new Rejilla();
     const bandas: Banda[] = [];
     const moneda: RangoFormato[] = [];
     const porcentaje: RangoFormato[] = [];
     const protegidos: HojaLibro['protegidos'] = [];
+    const bordes: HojaLibro['bordes'] = [];
+    const centradas: RangoFormato[] = [];
+    const alturas: Array<{ fila: number; px: number }> = [];
 
-    const fila = () => valores.length + 1;   // fila 1-indexada de la PRÓXIMA que se empuje
+    const banda = (fila: number, col: number, cols: number, color: string, opts: Partial<Banda> = {}) =>
+        bandas.push({ fila: fila - 1, col, cols, color, textoBlanco: true, negrita: true, ...opts });
 
-    // ── Cabecera. «NEXUS» en A1 y en gris: Sheets no tiene marcas de agua de
-    //    verdad, así que es una celda. Fingir lo contrario sería peor.
-    valores.push(['NEXUS', '', '', '', '', '']);
-    valores.push([receta.nombre || 'Sin nombre', '', '', '', '', '']);
-    bandas.push({ fila: 1, color: ACENTO, textoBlanco: true, negrita: true, tamano: 18, cols: 6, combinar: true });
-    valores.push([(receta.categorias || []).join(' · ') || 'Ficha de escandallo', '', '', '', '', '']);
-    bandas.push({ fila: 2, color: '#e2e8f0', tamano: 9, cols: 6, combinar: true });
-    valores.push([]);
+    // ── 1. La marca del negocio, arriba y a todo lo ancho.
+    g.poner(1, 0, negocio);
+    banda(1, 0, COLS, CABECERA, { tamano: 20, combinar: true });
+    centradas.push({ fila: 0, filas: 1, col: 0, cols: COLS });
+    alturas.push({ fila: 0, px: 46 });
 
-    // ── Dos bloques en la misma banda, cada uno en su sitio: la economía a la
-    //    izquierda y el reparto —lo que alimenta el gráfico— a la derecha.
-    //    Antes compartían filas sin rótulo y las etiquetas «Coste/Beneficio»
-    //    aparecían flotando en medio de la ficha sin decir de qué eran.
-    const filaSeccion = fila();
-    valores.push(['ECONOMÍA', '', '', 'REPARTO', '', '']);
-    bandas.push({ fila: filaSeccion - 1, color: '#334155', textoBlanco: true, negrita: true, cols: 3, combinar: true });
-    bandas.push({ fila: filaSeccion - 1, col: 3, cols: 3, color: '#334155', textoBlanco: true, negrita: true, combinar: true });
+    // ── 2. El nombre del cóctel, resaltado.
+    g.poner(3, 0, receta.nombre || 'Sin nombre');
+    banda(3, 0, 6, NAVY, { tamano: 16, combinar: true });
+    centradas.push({ fila: 2, filas: 1, col: 0, cols: 6 });
+    alturas.push({ fila: 2, px: 34 });
 
-    const filaPVP = fila();
-    valores.push(['PVP al público', pvp || '', '', 'Coste', '', '']);
-    const filaTasa = fila();
-    valores.push(['Impuesto de venta', ajustes.tasaVenta, '', 'Beneficio', '', '']);
-    const filaNeto = fila();
-    valores.push([
-        'PV neto',
-        ajustes.precioIncluyeImpuestos
-            ? `=IF(B${filaPVP}="";"";B${filaPVP}/(1+B${filaTasa}))`
-            : `=IF(B${filaPVP}="";"";B${filaPVP})`,
-        '', '', '', '',
-    ]);
-    const filaCoste = fila();
-    valores.push(['Coste de receta', 0, '', '', '', '']);
-    const filaMargen = fila();
-    valores.push(['Margen bruto', `=IF(B${filaNeto}="";"";B${filaNeto}-B${filaCoste})`, '', '', '', '']);
-    const filaPct = fila();
-    valores.push(['% de coste', `=IF(B${filaNeto}="";"";B${filaCoste}/B${filaNeto})`, '', '', '', '']);
+    // ── 3. Economía. Etiqueta en azul marino, valor en azul claro, como la
+    //       plantilla: se ve de un vistazo qué se escribe y qué se calcula.
+    const eco: Array<[string, Celda, 'eur' | 'pct']> = [
+        ['PRECIO DE VENTA AL PÚBLICO', num((receta as any).precioVenta) || '', 'eur'],
+        ['IMPUESTOS %', ajustes.tasaVenta, 'pct'],
+        ['PRECIO DE VENTA NETO', ajustes.precioIncluyeImpuestos ? '=IF(B5="";"";B5/(1+B6))' : '=B5', 'eur'],
+    ];
+    let f = 5;
+    const filaPVP = f;
+    eco.forEach(([etiqueta, valor, tipo], i) => {
+        g.fila(f + i, 0, [etiqueta, valor]);
+        banda(f + i, 0, 1, NAVY, { tamano: 9 });
+        bandas.push({ fila: f + i - 1, col: 1, cols: 1, color: CLARO, negrita: false, tamano: 10 });
+        (tipo === 'eur' ? moneda : porcentaje).push({ fila: f + i - 1, filas: 1, col: 1, cols: 1 });
+    });
+    const filaNeto = f + 2;
 
-    // El gráfico se alimenta de estas dos celdas, y ahora apuntan a lo que
-    // dicen: coste y margen, no a la fila de al lado.
-    valores[filaPVP - 1][4] = `=B${filaCoste}`;
-    valores[filaTasa - 1][4] = `=B${filaMargen}`;
-
-    moneda.push({ fila: filaPVP - 1, filas: 1, col: 1, cols: 1 });
-    moneda.push({ fila: filaNeto - 1, filas: 3, col: 1, cols: 1 });
-    moneda.push({ fila: filaPVP - 1, filas: 2, col: 4, cols: 1 });
-    porcentaje.push({ fila: filaTasa - 1, filas: 1, col: 1, cols: 1 });
-    porcentaje.push({ fila: filaPct - 1, filas: 1, col: 1, cols: 1 });
-    // Calculadas: PV neto, coste, margen y %. El PVP y el impuesto se tocan.
-    protegidos.push({ fila: filaNeto - 1, filas: 4, col: 1, cols: 1, motivo: 'Calculado por fórmula' });
-    protegidos.push({ fila: filaPVP - 1, filas: 2, col: 4, cols: 1, motivo: 'Calculado por fórmula' });
+    f = 9;
+    const filaCoste = f, filaPct = f + 1, filaMargen = f + 2;
+    const eco2: Array<[string, Celda, 'eur' | 'pct']> = [
+        ['COSTO TOTAL DE LA RECETA', 0, 'eur'],
+        ['% COSTO DE LA RECETA', `=IF(B${filaNeto}="";"";B${filaCoste}/B${filaNeto})`, 'pct'],
+        ['MARGEN DE BENEFICIO NETO', `=IF(B${filaNeto}="";"";B${filaNeto}-B${filaCoste})`, 'eur'],
+    ];
+    eco2.forEach(([etiqueta, valor, tipo], i) => {
+        g.fila(f + i, 0, [etiqueta, valor]);
+        banda(f + i, 0, 1, NAVY, { tamano: 9 });
+        bandas.push({ fila: f + i - 1, col: 1, cols: 1, color: CLARO, negrita: false, tamano: 10 });
+        (tipo === 'eur' ? moneda : porcentaje).push({ fila: f + i - 1, filas: 1, col: 1, cols: 1 });
+    });
+    protegidos.push({ fila: filaNeto - 1, filas: 1, col: 1, cols: 1, motivo: 'Calculado' });
+    protegidos.push({ fila: filaCoste - 1, filas: 3, col: 1, cols: 1, motivo: 'Calculado' });
+    bordes.push({ fila: filaPVP - 1, filas: 7, col: 0, cols: 2, interior: true });
 
     if (ajustes.mermaReceta > 0) {
-        const f = fila();
-        valores.push(['Merma de receta (Nexus)', ajustes.mermaReceta / 100, '', '', '', '']);
-        porcentaje.push({ fila: f - 1, filas: 1, col: 1, cols: 1 });
+        g.fila(12, 0, ['MERMA DE RECETA (NEXUS)', ajustes.mermaReceta / 100]);
+        banda(12, 0, 1, NAVY2, { tamano: 9 });
+        porcentaje.push({ fila: 11, filas: 1, col: 1, cols: 1 });
     }
 
-    valores.push([]);
+    // ── 4. Los dos datos del gráfico, pegados a él y fuera del bloque de
+    //       economía: antes flotaban en medio de la ficha sin decir de qué eran.
+    g.fila(filaPVP, 3, ['Coste Total', `=B${filaCoste}`]);
+    g.fila(filaPVP + 1, 3, ['Beneficio Neto', `=B${filaMargen}`]);
+    moneda.push({ fila: filaPVP - 1, filas: 2, col: 4, cols: 1 });
+    protegidos.push({ fila: filaPVP - 1, filas: 2, col: 4, cols: 1, motivo: 'Datos del gráfico' });
 
-    // ── Ingredientes.
-    const filaTituloIng = fila();
-    valores.push(['INGREDIENTES', '', '', '', '', '']);
-    bandas.push({ fila: filaTituloIng - 1, color: '#334155', textoBlanco: true, negrita: true, cols: 6, combinar: true });
+    // ── 5. Ingredientes. Cabecera de dos líneas, como la plantilla.
+    const filaCab = 14;
+    g.fila(filaCab, 0, ['Nombre del producto', 'Cantidad\nGramos/ml', 'Unidad', 'Coste\nKg/Lt/und', 'Coste Total', 'Nota']);
+    banda(filaCab, 0, 6, NAVY2, { tamano: 10 });
+    centradas.push({ fila: filaCab - 1, filas: 1, col: 1, cols: 4 });
+    alturas.push({ fila: filaCab - 1, px: 34 });
 
-    const filaCabecera = fila();
-    valores.push(['Ingrediente', 'Cantidad', 'Unidad', 'Coste unitario', 'Coste', 'Nota']);
-    bandas.push({ fila: filaCabecera - 1, color: GRIS, negrita: true, cols: 6 });
+    const primera = filaCab + 1;
+    directas.forEach((d, i) => {
+        const fl = primera + i;
+        g.fila(fl, 0, filaDeIngrediente(d, fl));
+        if (i % 2 === 1) bandas.push({ fila: fl - 1, col: 0, cols: 6, color: CLARO, negrita: false, tamano: 10 });
+    });
+    const ultima = primera + Math.max(directas.length, 1) - 1;
+    const filaTotal = ultima + 1;
+    g.fila(filaTotal, 3, ['COSTE TOTAL', `=SUM(E${primera}:E${ultima})`]);
+    banda(filaTotal, 0, 6, NAVY, { tamano: 11 });
+    moneda.push({ fila: primera - 1, filas: directas.length + 1, col: 3, cols: 2 });
+    protegidos.push({ fila: primera - 1, filas: directas.length + 1, col: 3, cols: 2, motivo: 'Calculado' });
+    bordes.push({ fila: filaCab - 1, filas: filaTotal - filaCab + 1, col: 0, cols: 6, interior: true });
 
-    const primeraLinea = fila();
-    for (const d of directas) valores.push(filaDeIngrediente(d, fila()));
-    const ultimaLinea = valores.length;
-    const filaTotalDirecto = fila();
-    valores.push(['', '', '', 'Total ingredientes', `=SUM(E${primeraLinea}:E${ultimaLinea})`, '']);
-    bandas.push({ fila: filaTotalDirecto - 1, color: ACENTO, textoBlanco: true, negrita: true, cols: 6 });
-    moneda.push({ fila: primeraLinea - 1, filas: (ultimaLinea - primeraLinea + 2), col: 3, cols: 2 });
-    if (directas.length) {
-        protegidos.push({ fila: primeraLinea - 1, filas: directas.length + 1, col: 3, cols: 2, motivo: 'Calculado por fórmula' });
-    }
-
-    // ── Sub-recetas.
-    const totalesBloques: string[] = [];
+    // ── 6. Sub-preparaciones, en la columna de la derecha.
+    const totales: string[] = [];
+    let fs = 5;
     for (const b of bloques) {
-        valores.push([]);
-        const sub = (b.subItems || []).map(l => normalizarLinea(l, porId));
-
-        // El rendimiento sale de `recipeTotalVolume`, la MISMA función con la
-        // que Nexus prorratea. Suma las cantidades normalizadas aunque mezclen
-        // gramos y mililitros —el motor asume densidad 1 en todas partes—, así
-        // que aquí no se etiqueta con una unidad concreta: decir «1000 g» de un
-        // lote que son 500 g y 500 ml sería inventarse la mitad.
+        const sub = (b.subItems || []).map(l => normalizarLinea(l, porId)).filter(util);
         const rendimiento = redondear(recipeTotalVolume({ ingredientes: b.subItems || [] } as any), 3);
         const unidades = Array.from(new Set(sub.map(x => x.unidadBase))).filter(Boolean);
         const unidadLote = unidades.length === 1 ? unidades[0] : 'ml/g';
@@ -435,48 +499,75 @@ export const hojaDeCoctel = (
         const usado = usoNorm.base === 'unknown' ? num(b.cantidad) : redondear(usoNorm.qty, 3);
         const unidadUso = usoNorm.base === 'unknown' ? (b.unidad || '') : usoNorm.base;
 
-        const filaTitulo = fila();
-        valores.push([`${b.nombre || 'Sub-receta'}`, `rinde ${rendimiento || '?'} ${unidadLote}`, '', '', '', '']);
-        bandas.push({ fila: filaTitulo - 1, color: '#475569', textoBlanco: true, negrita: true, cols: 6 });
+        g.poner(fs, COL_SUB, `${(b.nombre || 'SUB-PREPARACIÓN').toUpperCase()} (${rendimiento || '?'} ${unidadLote})`);
+        banda(fs, COL_SUB, 6, NAVY, { tamano: 11, combinar: true });
+        centradas.push({ fila: fs - 1, filas: 1, col: COL_SUB, cols: 6 });
 
-        const filaCab = fila();
-        valores.push(['Ingrediente', 'Cantidad', 'Unidad', 'Coste unitario', 'Coste', 'Nota']);
-        bandas.push({ fila: filaCab - 1, color: GRIS, negrita: true, cols: 6 });
+        const cabSub = fs + 1;
+        g.fila(cabSub, COL_SUB, ['Nombre del producto', 'Cantidad\nGramos/ml', 'Unidad', 'Coste\nKg/Lt/und', 'Coste Total', 'Nota']);
+        banda(cabSub, COL_SUB, 6, NAVY2, { tamano: 10 });
+        alturas.push({ fila: cabSub - 1, px: 34 });
 
-        const desde = fila();
-        for (const x of sub) valores.push(filaDeIngrediente(x, fila()));
-        const hasta = valores.length;
-        const filaLote = fila();
-        valores.push(['', '', '', 'Coste del lote', `=SUM(E${desde}:E${hasta})`, '']);
+        const desde = cabSub + 1;
+        sub.forEach((x, i) => {
+            const fl = desde + i;
+            const celdas = filaDeIngrediente(x, fl);
+            // Las fórmulas de la sub-tabla viven en H..M, así que sus
+            // referencias van a esas columnas y no a las de la ficha.
+            g.fila(fl, COL_SUB, [
+                celdas[0], celdas[1], celdas[2],
+                x.huerfana || x.sinPrecio ? '' : `=IFERROR(VLOOKUP($H${fl};'${paraFormula(MATERIA)}'!$A:$D;4;FALSE);"")`,
+                x.huerfana || x.sinPrecio ? '' : (x.factor === 1
+                    ? `=IF(K${fl}="";"";I${fl}*K${fl})`
+                    : `=IF(K${fl}="";"";I${fl}*${numeroEnFormula(x.factor)}*K${fl})`),
+                celdas[5],
+            ]);
+            if (i % 2 === 1) bandas.push({ fila: fl - 1, col: COL_SUB, cols: 6, color: CLARO, negrita: false, tamano: 10 });
+        });
+        const hastaSub = desde + Math.max(sub.length, 1) - 1;
+        const filaLote = hastaSub + 1;
+        g.fila(filaLote, COL_SUB + 3, ['COSTE TOTAL', `=SUM(L${desde}:L${hastaSub})`]);
+        banda(filaLote, COL_SUB, 6, NAVY, { tamano: 11 });
 
-        const filaProrrateo = fila();
-        // El prorrateo, auditable de un vistazo, y la explicación en la columna
-        // de notas — no en la de importes, donde antes había un «de 1000» que
-        // era texto dentro de una columna de moneda.
-        valores.push([
+        const filaUso = filaLote + 1;
+        g.fila(filaUso, COL_SUB, [
             'Usado en la receta', usado, unidadUso, '',
-            rendimiento > 0 ? `=E${filaLote}*${usado}/${rendimiento}` : '',
+            rendimiento > 0 ? `=L${filaLote}*${numeroEnFormula(usado)}/${numeroEnFormula(rendimiento)}` : '',
             `Coste del lote × ${usado} ÷ ${rendimiento || '?'}`,
         ]);
-        bandas.push({ fila: filaProrrateo - 1, color: '#475569', textoBlanco: true, negrita: true, cols: 6 });
-        moneda.push({ fila: desde - 1, filas: hasta - desde + 3, col: 3, cols: 2 });
-        protegidos.push({ fila: desde - 1, filas: sub.length + 2, col: 3, cols: 2, motivo: 'Calculado por fórmula' });
-        totalesBloques.push(`E${filaProrrateo}`);
+        banda(filaUso, COL_SUB, 6, NAVY2, { tamano: 10 });
+        moneda.push({ fila: desde - 1, filas: sub.length + 2, col: COL_SUB + 3, cols: 2 });
+        protegidos.push({ fila: desde - 1, filas: sub.length + 2, col: COL_SUB + 3, cols: 2, motivo: 'Calculado' });
+        bordes.push({ fila: fs - 1, filas: filaUso - fs + 1, col: COL_SUB, cols: 6, interior: true });
+
+        totales.push(`L${filaUso}`);
+        fs = filaUso + 3;
     }
 
-    valores[filaCoste - 1][1] = totalesBloques.length
-        ? `=E${filaTotalDirecto}+${totalesBloques.join('+')}`
-        : `=E${filaTotalDirecto}`;
+    g.poner(filaCoste, 1, totales.length ? `=E${filaTotal}+${totales.join('+')}` : `=E${filaTotal}`);
+
+    // ── 7. Método y foto, con su recuadro. Las imágenes no se pueden subir por
+    //       esta vía, así que el hueco queda hecho y rotulado: es mejor un
+    //       marco que espera una foto que un espacio en blanco sin explicar.
+    const filaMetodo = Math.max(filaTotal + 2, fs);
+    g.poner(filaMetodo, 0, 'MÉTODO Y DESCRIPCIÓN');
+    banda(filaMetodo, 0, 4, NAVY2, { tamano: 10, combinar: true });
+    g.poner(filaMetodo + 1, 0, (receta as any).descripcion || (receta as any).preparacion || 'Escribe aquí el método de elaboración.');
+    bordes.push({ fila: filaMetodo, filas: 9, col: 0, cols: 4 });
+    alturas.push({ fila: filaMetodo, px: 150 });
+
+    g.poner(filaMetodo, 4, 'FOTO');
+    banda(filaMetodo, 4, 2, NAVY2, { tamano: 10, combinar: true });
+    g.poner(filaMetodo + 1, 4, 'Inserta la foto aquí: Insertar → Imagen → Imagen en la celda.');
+    bordes.push({ fila: filaMetodo, filas: 9, col: 4, cols: 2 });
 
     return {
         titulo,
-        valores,
-        anchos: [250, 100, 80, 120, 110, 300],
-        bandas,
-        moneda,
-        porcentaje,
-        protegidos,
-        grafico: { filaDatos: filaPVP - 1, colDatos: 3, anclaFila: filaSeccion + 1, anclaCol: 6 },
+        valores: g.materializar(COLS),
+        anchos: [230, 95, 65, 95, 95, 210, 22, 210, 95, 65, 95, 95, 190],
+        bandas, moneda, porcentaje, protegidos, bordes, centradas, alturas,
+        ocultarCuadricula: true,
+        grafico: { filaDatos: filaPVP - 1, colDatos: 3, anclaFila: filaPVP + 1, anclaCol: 3 },
     };
 };
 
