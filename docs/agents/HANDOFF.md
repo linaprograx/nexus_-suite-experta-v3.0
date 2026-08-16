@@ -176,6 +176,22 @@ que estaba invisible, y un duplicado que el informe de identidad puede fusionar.
 
 ## Pendiente del fundador
 
+- **Que exportar a Sheets no pida permiso cada vez.** Pedido el 2026-08-16.
+  Hoy el token de Drive **no se guarda a propósito** —caduca en una hora y así
+  no queda un permiso de Drive durmiendo en el navegador— pero eso obliga a
+  pasar por la ventana de Google en cada exportación.
+
+  Lo que hay que decidir antes de tocarlo: **dónde vive el token**. Guardarlo en
+  el navegador es cómodo y es exactamente lo que se evitó. La vía limpia es un
+  *refresh token* en el servidor —el gateway que ya existe para El Vigía— de
+  modo que la app pida el permiso **una vez** y después el servidor renueve el
+  acceso sin volver a molestar. Eso convierte esto en trabajo de backend, no de
+  la app, y va con su propia decisión de seguridad.
+
+  Se junta de forma natural con el otro pendiente de Google: servir
+  `/__/auth/*` desde el propio dominio. Los dos tocan el arranque de sesión.
+
+
 - **El arreglo de raíz del «A Sheets» en la app instalada.** Decidido el
   2026-08-16: de momento el aviso; **antes de producción**, servir `/__/auth/*`
   desde el propio dominio con una redirección en `vercel.json` y dejar de pasar
