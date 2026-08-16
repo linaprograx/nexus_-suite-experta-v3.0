@@ -1,5 +1,5 @@
 import { Ingredient } from '../../types';
-import { proveedorDeIngrediente } from '../../features/orders/resolverProveedor';
+import { ofertasDeProducto } from '../ofertas/oferta';
 
 /**
  * Las opciones de compra de un grupo de producto, y cuál manda.
@@ -64,50 +64,30 @@ const formatoDe = (ing: Ingredient): string => {
     return (ing as any).unidadCompra || ing.unidad || '—';
 };
 
-/** Aplana un grupo en opciones de compra reales. */
+/**
+ * Aplana un grupo en opciones de compra reales.
+ *
+ * **Las opciones las construye `core/ofertas/oferta.ts`, y no este fichero.**
+ * Antes se montaban aquí, y con dos defectos: el precio por unidad base salía
+ * de la ficha *antes* del bucle y se copiaba a todas sus ofertas, así que al
+ * coronar «mejor precio» se comparaban números idénticos y ganaba la primera de
+ * la lista. Una corona arbitraria se lee como una recomendación, que es peor que
+ * no decir nada. Y el mismo proveedor no podía tener dos formatos.
+ *
+ * La decisión —preferente, más barato, o no coronar a nadie— **no ha cambiado**:
+ * es la de siempre, ahora aplicada sobre números que significan algo.
+ */
 export const opcionesDelGrupo = (entries: Ingredient[]): OfertaDelGrupo => {
-    const opciones: OpcionCompra[] = [];
-
-    for (const ing of entries) {
-        if (!ing?.id) continue;
-        const precioBase = num(ing.standardPrice) || null;
-        const base = {
-            fichaId: ing.id,
-            fichaNombre: ing.nombre || 'Sin nombre',
-            formato: formatoDe(ing),
-            precioBase,
-            unidadBase: ing.standardUnit,
-        };
-
-        const ofertas = Object.entries((ing as any).supplierData || {})
-            .map(([proveedorId, d]: [string, any]) => ({ proveedorId, precio: num(d?.price) }))
-            .filter(o => o.precio > 0);
-
-        if (ofertas.length > 0) {
-            for (const o of ofertas) {
-                opciones.push({
-                    ...base,
-                    proveedorId: o.proveedorId,
-                    precio: o.precio,
-                    esPreferente: !!ing.proveedorPreferente && o.proveedorId === ing.proveedorPreferente,
-                });
-            }
-            continue;
-        }
-
-        // Sin ofertas por proveedor, la ficha misma es una opción: su precio de
-        // compra y el proveedor que le corresponda por la escalera de siempre.
-        const precio = num((ing as any).precioCompra);
-        if (precio > 0) {
-            const proveedorId = proveedorDeIngrediente(ing as any) ?? null;
-            opciones.push({
-                ...base,
-                proveedorId,
-                precio,
-                esPreferente: !!ing.proveedorPreferente && proveedorId === ing.proveedorPreferente,
-            });
-        }
-    }
+    const opciones: OpcionCompra[] = ofertasDeProducto(entries || []).map(o => ({
+        fichaId: o.fichaId,
+        fichaNombre: o.fichaNombre,
+        proveedorId: o.proveedorId,
+        precio: o.precio,
+        formato: o.formatoLegible,
+        precioBase: o.precioPorBase,
+        unidadBase: o.formatoUnidad,
+        esPreferente: o.esPreferente,
+    }));
 
     if (opciones.length === 0) {
         return { opciones: [], elegida: null, motivo: 'sin-ofertas', faltaPreferente: false, formatosDispares: false };

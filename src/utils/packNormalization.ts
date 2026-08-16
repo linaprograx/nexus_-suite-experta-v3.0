@@ -84,12 +84,26 @@ export const normalizeToBase = (
 export const parsePackFromText = (text: string): { qty: number; unit: string } | null => {
     const n = (text || '').toLowerCase().replace(',', '.');
 
-    // qty + explicit unit (volume/weight)
-    let m = n.match(/([\d.]+)\s*(ml|cl|lt|l|kg|gr|g)\b/);
+    // qty + explicit unit (volume/weight).
+    // `grs`, `gramos` y `kgs` entran aquí porque el catálogo real los escribe
+    // así: «ALGA ... SALAZON 200 GRS», «CAVIAR ... BANDEJA 100 GRS». Sin ellos
+    // pasaban dos cosas, las dos malas y ninguna visible:
+    //   · 200 y 500 caían en la lista de tamaños de botella y se leían como
+    //     MILILITROS — número bueno, unidad equivocada;
+    //   · 100 y 400 no caían en ninguna parte y `resolveStandardPack` aplicaba
+    //     su valor por defecto de 700 ml, así que una bandeja de 100 g salía
+    //     costando como si trajera 700: SIETE VECES más barata de lo real.
+    // El orden importa: las formas largas van antes que las cortas, o `g`
+    // consumiría la `g` de `grs` y dejaría la `rs` colgando.
+    let m = n.match(/([\d.]+)\s*(ml|cl|lt|l|kgs|kg|gramos|gramo|grs|gr|g)\b/);
     if (m) {
         const q = parseFloat(m[1]);
         const u = m[2];
-        return { qty: q, unit: u === 'lt' ? 'l' : u === 'gr' ? 'g' : u };
+        const unidad = u === 'lt' ? 'l'
+            : u === 'kgs' ? 'kg'
+            : (u === 'gr' || u === 'grs' || u === 'gramo' || u === 'gramos') ? 'g'
+            : u;
+        return { qty: q, unit: unidad };
     }
     // qty + count unit
     m = n.match(/([\d.]+)\s*(uds|unidades|und|ud|pieza|caja)\b/);
