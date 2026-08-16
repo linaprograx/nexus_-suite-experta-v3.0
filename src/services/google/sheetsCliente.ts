@@ -1,4 +1,4 @@
-import { Auth, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
+import { Auth, GoogleAuthProvider, signInWithPopup, reauthenticateWithPopup } from 'firebase/auth';
 import { HojaCarta, CABECERAS } from '../../core/export/cartaASheet';
 
 /**
@@ -59,6 +59,40 @@ export class ErrorSheets extends Error {
 }
 
 /**
+ * Traducción de los errores de Firebase que pueden salir aquí, **con el código
+ * siempre a la vista**.
+ *
+ * La primera versión los resumía todos en «No se pudo pedir permiso a Google»,
+ * y eso es exactamente lo que no hay que hacer: se tragaba el único dato que
+ * permite arreglarlo. Un mensaje que no se puede accionar no es un mensaje.
+ */
+const explicarErrorDeAuth = (e: any): string => {
+    const codigo = e?.code || 'sin-codigo';
+    const detalle = e?.message ? ` · ${e.message}` : '';
+
+    switch (codigo) {
+        case 'auth/popup-blocked':
+            return 'El navegador bloqueó la ventana de Google. Permite las ventanas emergentes para este sitio e inténtalo otra vez.';
+        case 'auth/popup-closed-by-user':
+        case 'auth/cancelled-popup-request':
+            return 'Se cerró la ventana de Google sin dar permiso.';
+        case 'auth/unauthorized-domain':
+            return `Este dominio no está autorizado en Firebase. Añádelo en Authentication → Settings → Authorized domains. [${codigo}]`;
+        case 'auth/user-mismatch':
+            return `Has elegido una cuenta de Google distinta a la que tienes abierta en Nexus. Entra con la misma. [${codigo}]`;
+        case 'auth/operation-not-supported-in-this-environment':
+            return `Este navegador no admite el flujo de ventana emergente. Prueba en Safari o Chrome normales, sin modo privado. [${codigo}]`;
+        case 'auth/internal-error':
+            return `Google devolvió un error interno. Suele ser la API de Sheets sin habilitar, o el ámbito sin declarar en la pantalla de consentimiento. [${codigo}]${detalle}`;
+        case 'auth/admin-restricted-operation':
+            return `La cuenta tiene restringida esta operación. Si el proyecto está en modo Prueba, añádete en Usuarios de prueba. [${codigo}]`;
+        default:
+            // El código, literal. Es lo que hace falta para arreglarlo.
+            return `Google rechazó la petición de permiso. [${codigo}]${detalle}`;
+    }
+};
+
+/**
  * Pide permiso y devuelve el token.
  *
  * Es un `signInWithPopup` aunque el usuario ya esté dentro: es la forma de
@@ -83,17 +117,28 @@ export const pedirPermisoDrive = async (auth: Auth): Promise<string> => {
     // Sin esto, Google reutiliza la sesión y puede no devolver el token nuevo.
     proveedor.setCustomParameters({ prompt: 'consent' });
 
+    /**
+     * Con el usuario ya dentro se **reautentica**, no se vuelve a entrar.
+     *
+     * `signInWithPopup` inicia una sesión nueva: es la herramienta de «entrar»,
+     * y aquí ya se ha entrado. Lo que se quiere es añadirle un permiso al
+     * usuario que hay, que es literalmente lo que hace
+     * `reauthenticateWithPopup` — y devuelve la misma credencial con el token,
+     * sin tocar la sesión. Se deja `signInWithPopup` solo para el caso de que
+     * no haya nadie dentro, donde sí es lo correcto.
+     */
+    const usuario = auth.currentUser;
+
     let resultado;
     try {
-        resultado = await signInWithPopup(auth, proveedor);
+        resultado = usuario
+            ? await reauthenticateWithPopup(usuario, proveedor)
+            : await signInWithPopup(auth, proveedor);
     } catch (e: any) {
-        if (e?.code === 'auth/popup-blocked') {
-            throw new ErrorSheets('El navegador bloqueó la ventana de Google. Permite las ventanas emergentes para este sitio e inténtalo otra vez.', e);
-        }
-        if (e?.code === 'auth/popup-closed-by-user' || e?.code === 'auth/cancelled-popup-request') {
-            throw new ErrorSheets('Se cerró la ventana de Google sin dar permiso.', e);
-        }
-        throw new ErrorSheets('No se pudo pedir permiso a Google.', e);
+        // El código, siempre en la consola: el mensaje de pantalla es para el
+        // usuario, esto es para poder arreglarlo.
+        console.error('[Sheets] permiso rechazado', e?.code, e);
+        throw new ErrorSheets(explicarErrorDeAuth(e), e);
     }
 
     const token = GoogleAuthProvider.credentialFromResult(resultado)?.accessToken;
