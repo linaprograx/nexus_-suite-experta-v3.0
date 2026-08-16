@@ -247,7 +247,15 @@ const getAnyPackPrice = (ing: any): number => {
 // Resolves an ingredient's price PER BASE UNIT (€/ml, €/g, €/und), applying
 // waste/merma. Reads price from any known field and infers pack size from the
 // name when not stored explicitly.
-const resolvePricePerBase = (ingredient: Ingredient): { pricePerBase: number; base: 'ml' | 'g' | 'und' } | null => {
+/**
+ * EXPORTADA a propósito. La usa la exportación de escandallos a Sheets para
+ * escribir en «Materia Prima» **exactamente el mismo precio** que usa este
+ * motor: ya ajustado por merma, y por unidad base.
+ *
+ * Copiarla allí habría creado una segunda fórmula de coste, que es lo único que
+ * este proyecto no se puede permitir. Si esta cambia, la hoja cambia con ella.
+ */
+export const resolvePricePerBase = (ingredient: Ingredient): { pricePerBase: number; base: 'ml' | 'g' | 'und' } | null => {
     const ing = ingredient as any;
     const waste = (ing.merma ?? ing.wastePercentage ?? 0);
     const yieldFactor = Math.max(0.01, 1 - waste / 100);

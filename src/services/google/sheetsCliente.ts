@@ -1,5 +1,6 @@
 import { Auth, GoogleAuthProvider, signInWithPopup, reauthenticateWithPopup } from 'firebase/auth';
 import { HojaCarta, CABECERAS } from '../../core/export/cartaASheet';
+import { LibroEscandallo } from '../../core/export/libroEscandallos';
 
 /**
  * Crea la carta como hoja de cálculo en el Drive del usuario.
@@ -182,7 +183,10 @@ export const exportarCartaASheets = async (auth: Auth, hoja: HojaCarta): Promise
     const token = await pedirPermisoDrive(auth);
 
     const creada = await api(token, 'https://sheets.googleapis.com/v4/spreadsheets', {
-        properties: { title: hoja.titulo },
+        // `locale` explícito: sin él Google crea el libro en en_US, donde el
+        // separador de argumentos es la coma, y las fórmulas SPARKLINE de más
+        // abajo —escritas con «;»— entrarían como TEXTO, en silencio.
+        properties: { title: hoja.titulo, locale: 'es_ES' },
         sheets: [{
             properties: {
                 title: 'Carta',
@@ -296,6 +300,168 @@ export const exportarCartaASheets = async (auth: Auth, hoja: HojaCarta): Promise
     });
 
     await api(token, `https://sheets.googleapis.com/v4/spreadsheets/${idHoja}:batchUpdate`, { requests: peticiones });
+
+    return url;
+};
+
+/**
+ * Sube un **libro de escandallos**: portada, una pestaña por cóctel y Materia
+ * Prima, con las fórmulas vivas que las enlazan.
+ *
+ * ## El idioma de las fórmulas
+ *
+ * El libro se crea con `locale: 'es_ES'`. Sin fijarlo, Google lo crea en
+ * `en_US`, donde el separador de argumentos es la coma — y **todas las
+ * fórmulas entrarían como texto**, en silencio. Un libro entero de celdas que
+ * enseñan su propia fórmula en vez de su resultado.
+ */
+export const exportarLibroASheets = async (auth: Auth, libro: LibroEscandallo): Promise<string> => {
+    const token = await pedirPermisoDrive(auth);
+
+    const creada = await api(token, 'https://sheets.googleapis.com/v4/spreadsheets', {
+        properties: { title: libro.titulo, locale: 'es_ES' },
+        sheets: libro.hojas.map((h, i) => ({
+            properties: {
+                sheetId: i,
+                index: i,
+                title: h.titulo,
+                gridProperties: {
+                    rowCount: Math.max(h.valores.length + 20, 60),
+                    columnCount: Math.max(h.anchos.length + 2, 8),
+                    ...(h.filaCongelada ? { frozenRowCount: h.filaCongelada } : {}),
+                },
+            },
+        })),
+    });
+
+    const idHoja: string = creada.spreadsheetId;
+    const url: string = creada.spreadsheetUrl;
+
+    // Los valores de todas las pestañas, en una sola llamada. `USER_ENTERED`
+    // para que las fórmulas entren como fórmulas y no como texto.
+    await api(
+        token,
+        `https://sheets.googleapis.com/v4/spreadsheets/${idHoja}/values:batchUpdate`,
+        {
+            valueInputOption: 'USER_ENTERED',
+            data: libro.hojas.map(h => ({
+                range: `'${h.titulo.replace(/'/g, "''")}'!A1`,
+                values: h.valores.map(fila => {
+                    const f = [...fila];
+                    while (f.length < h.anchos.length) f.push('');
+                    return f;
+                }),
+            })),
+        },
+        'POST',
+    );
+
+    const peticiones: any[] = [];
+
+    libro.hojas.forEach((h, sheetId) => {
+        // La marca, en A1 y en gris: Sheets no tiene marcas de agua de verdad,
+        // así que es una celda. Decirlo es mejor que fingir que es otra cosa.
+        peticiones.push({
+            repeatCell: {
+                range: { sheetId, startRowIndex: 0, endRowIndex: 1, startColumnIndex: 0, endColumnIndex: 1 },
+                cell: { userEnteredFormat: { textFormat: { foregroundColor: rgb('#cbd5e1'), bold: true, fontSize: 9 } } },
+                fields: 'userEnteredFormat.textFormat',
+            },
+        });
+
+        h.anchos.forEach((px, i) => {
+            peticiones.push({
+                updateDimensionProperties: {
+                    range: { sheetId, dimension: 'COLUMNS', startIndex: i, endIndex: i + 1 },
+                    properties: { pixelSize: px },
+                    fields: 'pixelSize',
+                },
+            });
+        });
+
+        for (const b of h.bandas) {
+            const rango = {
+                sheetId,
+                startRowIndex: b.fila,
+                endRowIndex: b.fila + (b.filas || 1),
+                startColumnIndex: b.col || 0,
+                endColumnIndex: (b.col || 0) + (b.cols || h.anchos.length),
+            };
+            if (b.combinar) peticiones.push({ mergeCells: { range: rango, mergeType: 'MERGE_ALL' } });
+            peticiones.push({
+                repeatCell: {
+                    range: rango,
+                    cell: {
+                        userEnteredFormat: {
+                            backgroundColor: rgb(b.color),
+                            verticalAlignment: 'MIDDLE',
+                            textFormat: {
+                                bold: b.negrita !== false,
+                                fontSize: b.tamano || 10,
+                                ...(b.textoBlanco ? { foregroundColor: { red: 1, green: 1, blue: 1 } } : {}),
+                            },
+                        },
+                    },
+                    fields: 'userEnteredFormat(backgroundColor,verticalAlignment,textFormat)',
+                },
+            });
+        }
+
+        const formato = (rangos: typeof h.moneda, patron: string, tipo: string) => {
+            for (const r of rangos) {
+                peticiones.push({
+                    repeatCell: {
+                        range: {
+                            sheetId,
+                            startRowIndex: r.fila, endRowIndex: r.fila + r.filas,
+                            startColumnIndex: r.col, endColumnIndex: r.col + r.cols,
+                        },
+                        cell: { userEnteredFormat: { numberFormat: { type: tipo, pattern: patron }, horizontalAlignment: 'RIGHT' } },
+                        fields: 'userEnteredFormat(numberFormat,horizontalAlignment)',
+                    },
+                });
+            }
+        };
+        formato(h.moneda, '€#,##0.00', 'CURRENCY');
+        formato(h.porcentaje, '0.0%', 'PERCENT');
+
+        // El pastel 3D de la plantilla del fundador: coste contra beneficio.
+        // Aquí sí procede que sea un objeto flotante — en una ficha por pestaña
+        // no hay nada que ordenar que pueda descolocarlo.
+        if (h.grafico) {
+            const g = h.grafico;
+            peticiones.push({
+                addChart: {
+                    chart: {
+                        spec: {
+                            title: 'Coste / Beneficio',
+                            pieChart: {
+                                legendPosition: 'RIGHT_LEGEND',
+                                threeDimensional: true,
+                                domain: { sourceRange: { sources: [{ sheetId, startRowIndex: g.filaDatos, endRowIndex: g.filaDatos + 2, startColumnIndex: g.colDatos, endColumnIndex: g.colDatos + 1 }] } },
+                                series: { sourceRange: { sources: [{ sheetId, startRowIndex: g.filaDatos, endRowIndex: g.filaDatos + 2, startColumnIndex: g.colDatos + 1, endColumnIndex: g.colDatos + 2 }] } },
+                            },
+                        },
+                        position: {
+                            overlayPosition: {
+                                anchorCell: { sheetId, rowIndex: g.anclaFila, columnIndex: g.anclaCol },
+                                widthPixels: 320, heightPixels: 220,
+                            },
+                        },
+                    },
+                },
+            });
+        }
+    });
+
+    // Se trocea: una petición con centenares de bloques puede pasarse del
+    // tamaño admitido, y entonces no entra NADA. Ver `escrituraPorLotes.ts`.
+    const TAMANO = 120;
+    for (let i = 0; i < peticiones.length; i += TAMANO) {
+        await api(token, `https://sheets.googleapis.com/v4/spreadsheets/${idHoja}:batchUpdate`, {
+            requests: peticiones.slice(i, i + TAMANO),
+        });
+    }
 
     return url;
 };

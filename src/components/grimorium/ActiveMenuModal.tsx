@@ -11,7 +11,9 @@ import { printRecipeCards } from './printRecipeCard';
 import { PLANTILLAS_PORTADA, PLANTILLA_POR_DEFECTO } from './portadas/plantillasPortada';
 import { calculateRecipeCost } from '../../core/costing/costCalculator';
 import { cartaASheet } from '../../core/export/cartaASheet';
-import { exportarCartaASheets, esAppInstalada } from '../../services/google/sheetsCliente';
+import { exportarCartaASheets, exportarLibroASheets, esAppInstalada } from '../../services/google/sheetsCliente';
+import { construirLibro } from '../../core/export/libroEscandallos';
+import { useBusinessCostSettings } from '../../hooks/useBusinessCostSettings';
 import { useApp } from '../../context/AppContext';
 
 const SEV: Record<string, { label: string; cls: string; dot: string }> = {
@@ -165,10 +167,45 @@ export const ActiveMenuModal: React.FC<{
             setExportando(false);
         }
     };
+    /**
+     * El libro de escandallos: portada, una pestaña por cóctel y Materia Prima.
+     *
+     * Comparte `prepararRecetas` con las otras dos exportaciones, y los ajustes
+     * salen de Negocio → Costes: el impuesto de venta se escribe **una vez** y
+     * las doce fichas lo usan, en vez de repetirlo a mano en cada una.
+     */
+    const exportarEscandallos = async () => {
+        if (!auth) { setAvisoSheets('Sesión no inicializada.'); return; }
+        setAvisoSheets(null);
+        setHojaCreada(null);
+        const recetas = prepararRecetas();
+        if (!recetas) return;
+
+        const n = nombre.trim() || 'Carta';
+        setExportando(true);
+        try {
+            const libro = construirLibro(recetas, allIngredients, {
+                tasaVenta: Number(ajustesCoste?.taxRateVenta) || 0,
+                precioIncluyeImpuestos: ajustesCoste?.precioIncluyeImpuestos !== false,
+                mermaReceta: Number(ajustesCoste?.porcentajeMermaDefault) || 0,
+                moneda: ajustesCoste?.moneda || 'EUR',
+            }, { nombre: n, concepto: concepto.trim(), fecha: cartaActiva?.fecha });
+
+            const url = await exportarLibroASheets(auth, libro);
+            setHojaCreada({ url, nombre: `${n} · escandallos` });
+        } catch (e: any) {
+            console.error('[Escandallos]', e);
+            setAvisoSheets(e?.message || 'No se pudo crear el libro de escandallos.');
+        } finally {
+            setExportando(false);
+        }
+    };
+
     const { auth } = useApp();
     const [exportando, setExportando] = React.useState(false);
     const [avisoSheets, setAvisoSheets] = React.useState<string | null>(null);
     const [hojaCreada, setHojaCreada] = React.useState<{ url: string; nombre: string } | null>(null);
+    const { ajustes: ajustesCoste } = useBusinessCostSettings();
     const { recipes: allRecipes } = useRecipes();
     const { ingredients: allIngredients } = useIngredients();
 
@@ -356,6 +393,18 @@ export const ActiveMenuModal: React.FC<{
                             >
                                 <Icon svg={ICONS.grid} className="w-4 h-4" />
                                 {exportando ? 'Creando…' : 'A Sheets'}
+                            </button>
+                            {/* El libro de escandallos es la tercera cosa, no una
+                                variante de las otras dos: la carta es para verla,
+                                la hoja para leerla y esto para trabajar los costes. */}
+                            <button
+                                onClick={exportarEscandallos}
+                                disabled={exportando}
+                                title="Un libro de Sheets con una pestaña por cóctel, Materia Prima y todo enlazado por fórmulas"
+                                className="col-span-2 sm:col-span-1 w-full sm:w-auto h-10 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 dark:bg-slate-700 dark:hover:bg-slate-600 text-white text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-wait"
+                            >
+                                <Icon svg={ICONS.chart} className="w-4 h-4" />
+                                {exportando ? 'Creando…' : 'Escandallos'}
                             </button>
                         </div>
 
