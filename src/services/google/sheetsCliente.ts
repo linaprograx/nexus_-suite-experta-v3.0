@@ -24,6 +24,33 @@ import { HojaCarta, CABECERAS } from '../../core/export/cartaASheet';
 
 const AMBITO = 'https://www.googleapis.com/auth/drive.file';
 
+/**
+ * Si Nexus se está ejecutando como **app instalada** (standalone).
+ *
+ * Importa porque decide si el permiso de Google se puede pedir siquiera.
+ * `signInWithPopup` abre `…/__/auth/handler?authType=signInViaPopup`, y esa
+ * página no navega a ninguna parte: su único trabajo es cargarse y devolverle
+ * el resultado a **la ventana que la abrió**, por `window.opener`.
+ *
+ * Dentro de una app instalada, el sistema manda ese enlace al navegador
+ * **como aplicación aparte**, sin vínculo con quien lo abrió. Así que la página
+ * carga, busca a su llamante, no lo encuentra, y se queda esperando para
+ * siempre. No falla: espera una respuesta que no puede llegar.
+ *
+ * No es configuración de Google ni del proyecto. Es que el flujo de ventana
+ * emergente **no puede funcionar** ahí dentro, por diseño.
+ *
+ * El arreglo de raíz es servir `/__/auth/*` desde el propio dominio en vez de
+ * desde `firebaseapp.com`, y usar redirección. Toca el arranque de sesión de
+ * todo el mundo, así que va aparte y con su verificación.
+ */
+export const esAppInstalada = (): boolean => {
+    if (typeof window === 'undefined') return false;
+    const standalone = window.matchMedia?.('(display-mode: standalone)').matches === true;
+    const iosStandalone = (window.navigator as any)?.standalone === true;
+    return standalone || iosStandalone;
+};
+
 export class ErrorSheets extends Error {
     constructor(mensaje: string, public readonly causa?: unknown) {
         super(mensaje);
@@ -41,6 +68,16 @@ export class ErrorSheets extends Error {
  * en el navegador.
  */
 export const pedirPermisoDrive = async (auth: Auth): Promise<string> => {
+    // Se comprueba ANTES de abrir nada: abrir una ventana que va a quedarse
+    // cargando para siempre es peor que no abrirla, porque parece que funciona.
+    if (esAppInstalada()) {
+        throw new ErrorSheets(
+            'Desde la app instalada, Google no puede devolver el permiso: abre la ventana en el navegador '
+            + 'del móvil, como aplicación aparte, y desde ahí no hay forma de contestarle a Nexus. '
+            + 'Haz esta exportación desde el navegador.',
+        );
+    }
+
     const proveedor = new GoogleAuthProvider();
     proveedor.addScope(AMBITO);
     // Sin esto, Google reutiliza la sesión y puede no devolver el token nuevo.

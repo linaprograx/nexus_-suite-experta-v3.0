@@ -11,7 +11,7 @@ import { printRecipeCards } from './printRecipeCard';
 import { PLANTILLAS_PORTADA, PLANTILLA_POR_DEFECTO } from './portadas/plantillasPortada';
 import { calculateRecipeCost } from '../../core/costing/costCalculator';
 import { cartaASheet } from '../../core/export/cartaASheet';
-import { exportarCartaASheets } from '../../services/google/sheetsCliente';
+import { exportarCartaASheets, esAppInstalada } from '../../services/google/sheetsCliente';
 import { useApp } from '../../context/AppContext';
 
 const SEV: Record<string, { label: string; cls: string; dot: string }> = {
@@ -130,7 +130,8 @@ export const ActiveMenuModal: React.FC<{
      * coste haría que las dos exportaciones dijeran cosas distintas.
      */
     const exportarASheets = async () => {
-        if (!auth) { alert('Sesión no inicializada.'); return; }
+        if (!auth) { setAvisoSheets('Sesión no inicializada.'); return; }
+        setAvisoSheets(null);
         const recetas = prepararRecetas();
         if (!recetas) return;
 
@@ -147,13 +148,16 @@ export const ActiveMenuModal: React.FC<{
             window.open(url, '_blank', 'noopener');
         } catch (e: any) {
             console.error('[Sheets]', e);
-            alert(e?.message || 'No se pudo exportar a Sheets.');
+            // En pantalla y no en un `alert`: el aviso de la app instalada hay
+            // que poder leerlo con calma, y lleva una acción detrás.
+            setAvisoSheets(e?.message || 'No se pudo exportar a Sheets.');
         } finally {
             setExportando(false);
         }
     };
     const { auth } = useApp();
     const [exportando, setExportando] = React.useState(false);
+    const [avisoSheets, setAvisoSheets] = React.useState<string | null>(null);
     const { recipes: allRecipes } = useRecipes();
     const { ingredients: allIngredients } = useIngredients();
 
@@ -284,6 +288,13 @@ export const ActiveMenuModal: React.FC<{
                             placeholder="Concepto del menú: de qué va, frases gancho, cómo se presenta…"
                             className="w-full px-3 py-2 rounded-xl text-sm resize-none bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200"
                         />
+                        {/* Dos filas, no una que desborda.
+                            En el móvil los cinco controles no caben en línea, y
+                            envolviendo dejaban «A Sheets» solo abajo, como si
+                            fuera otra cosa. Arriba lo que la carta ES —fecha,
+                            nueva, plantilla—; abajo lo que se HACE con ella, los
+                            dos exportar a mitad y mitad para que los dos caigan
+                            bajo el pulgar. En escritorio vuelven a la derecha. */}
                         <div className="flex flex-wrap gap-2">
                             <input
                                 type="date"
@@ -314,9 +325,12 @@ export const ActiveMenuModal: React.FC<{
                                     <option key={p.id} value={p.id}>{p.nombre}</option>
                                 ))}
                             </select>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-2 sm:flex sm:justify-end">
                             <button
                                 onClick={exportarCarta}
-                                className="shrink-0 h-10 px-3 rounded-xl bg-teal-600 hover:bg-teal-500 text-white text-xs font-bold uppercase tracking-wider flex items-center gap-2"
+                                className="w-full sm:w-auto h-10 px-3 rounded-xl bg-teal-600 hover:bg-teal-500 text-white text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2"
                             >
                                 <Icon svg={ICONS.book} className="w-4 h-4" /> Exportar
                             </button>
@@ -327,12 +341,32 @@ export const ActiveMenuModal: React.FC<{
                                 onClick={exportarASheets}
                                 disabled={exportando}
                                 title="Crea la carta como hoja de cálculo en tu Drive, editable"
-                                className="shrink-0 h-10 px-3 rounded-xl bg-white dark:bg-slate-800 border border-teal-600/40 text-teal-700 dark:text-teal-300 hover:bg-teal-50 dark:hover:bg-slate-700 text-xs font-bold uppercase tracking-wider flex items-center gap-2 disabled:opacity-60 disabled:cursor-wait"
+                                className="w-full sm:w-auto h-10 px-3 rounded-xl bg-white dark:bg-slate-800 border border-teal-600/40 text-teal-700 dark:text-teal-300 hover:bg-teal-50 dark:hover:bg-slate-700 text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-wait"
                             >
                                 <Icon svg={ICONS.grid} className="w-4 h-4" />
                                 {exportando ? 'Creando…' : 'A Sheets'}
                             </button>
                         </div>
+
+                        {avisoSheets && (
+                            <div className="rounded-xl border border-amber-200 dark:border-amber-800/40 bg-amber-50 dark:bg-amber-900/15 p-3">
+                                <p className="text-[11px] leading-relaxed text-amber-800 dark:text-amber-300">{avisoSheets}</p>
+                                {esAppInstalada() && (
+                                    <button
+                                        onClick={() => window.open(window.location.origin, '_blank', 'noopener')}
+                                        className="mt-2 h-9 px-3 rounded-lg bg-amber-600 hover:bg-amber-500 text-white text-[11px] font-bold uppercase tracking-wider"
+                                    >
+                                        Abrir Nexus en el navegador
+                                    </button>
+                                )}
+                                <button
+                                    onClick={() => setAvisoSheets(null)}
+                                    className="mt-2 ml-2 h-9 px-3 rounded-lg text-[11px] font-bold uppercase tracking-wider text-amber-700 dark:text-amber-400"
+                                >
+                                    Entendido
+                                </button>
+                            </div>
+                        )}
                     </div>
                 )}
 
