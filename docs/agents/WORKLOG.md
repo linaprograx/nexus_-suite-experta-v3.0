@@ -1233,3 +1233,40 @@ válidas, con «Almacen» marcada como columna sin usar.
 > ranking sin la única bajada, un coste que dejó de seguir a su producto. Por eso
 > cada cambio va con una medición del antes y del después sobre los datos
 > reales, y no con un «compila y parece que va».
+
+---
+
+## 2026-08-16 · Claude Code · Punto 17 · la oferta como entidad
+
+**Qué se hizo**: `core/ofertas/oferta.ts`. Una oferta es **un producto, a un
+proveedor, en un formato, a un precio**. Clave `proveedorId::700ml`; las claves
+antiguas (id a secas) se siguen leyendo como «ese proveedor, en el formato de la
+ficha». Ninguna migración.
+
+**Los dos defectos que salieron al implementar el ejemplo del fundador**
+
+1. **El mismo proveedor no podía tener dos formatos.** Con la clave antigua, los
+   tres tamaños de ABSOLUT no cabían: la última escritura pisaba a las otras.
+2. **El precio por unidad base se calculaba por ficha, no por oferta.** Al
+   coronar «mejor precio» entre ofertas de la misma ficha se comparaban números
+   idénticos y ganaba la primera de la lista. Una corona arbitraria se lee como
+   una recomendación, que es peor que no decir nada.
+
+**Y un tercero, del mismo tipo, encontrado mirando la pantalla**
+
+`parsePackFromText` no entendía «GRS», que es como el catálogo real escribe los
+gramos. «200 GRS» se leía como 200 **ml** —unidad equivocada, número bueno— y
+«100 GRS» no se leía en absoluto, así que caía en el formato por defecto de
+700 ml: una bandeja de 100 g costando como si trajera 700, **siete veces más
+barata de lo real**. Los múltiplos de 100 «bonitos» (200, 500) se salvaban por
+accidente, porque coinciden con tamaños de botella.
+
+**Lo que este arreglo NO arregla**
+
+Las fichas con la unidad ya **guardada** mal en `standardUnit` la conservan: el
+dato persistido manda sobre el recién leído. Hay **53 fichas con gramos en el
+nombre** y al menos dos con mililitros guardados. Eso es una migración, y es del
+fundador — es exactamente para lo que existe «Revisar Unidades».
+
+**Verificado**: 33 pruebas nuevas; los ocho casos reales de formato; y las 32
+recetas medidas antes y después, **sin un solo cambio de coste**.
