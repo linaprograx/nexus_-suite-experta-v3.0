@@ -1,6 +1,6 @@
 import { Recipe, Ingredient, IngredientLineItem } from '../../types';
 import { HojaCarta } from './cartaASheet';
-import { resolvePricePerBase, recipeTotalVolume } from '../costing/costCalculator';
+import { resolvePricePerBase, recipeTotalVolume, equivalenciaDeLinea } from '../costing/costCalculator';
 import { normalizeToBase } from '../../utils/packNormalization';
 import { indicePorId, resolverMaestro } from '../identity/masterProduct';
 
@@ -255,18 +255,60 @@ interface FilaLinea {
     unidadBase: string;
     /** Sin ingrediente en el catálogo: no se puede enlazar y se dice. */
     huerfana: boolean;
+    /** Cuántas unidades de precio equivale una unidad de la receta. */
+    factor: number;
+    /** Hay ficha, pero sus unidades no permiten costear la línea. */
+    sinPrecio: boolean;
+    nota: string;
 }
 
 const normalizarLinea = (l: IngredientLineItem, porId: Map<string, Ingredient>): FilaLinea => {
     const maestro = l.ingredientId ? resolverMaestro(l.ingredientId, porId) : '';
     const ing = maestro ? porId.get(maestro) : undefined;
     const norm = normalizeToBase(num(l.cantidad), l.unidad || 'ml');
+
+    /**
+     * El factor que reconcilia las unidades, **traído del motor**.
+     *
+     * La primera versión escribía `cantidad × precio` a secas, y eso solo vale
+     * cuando la receta y el precio están en la misma unidad. «50 g de VAINILLA
+     * EN RAMA» con un precio de 2,17 € **por rama** salía a 108,50 €, y de ahí
+     * un cóctel de 42,92 €. El motor ya sabía convertir; lo que faltaba era que
+     * la hoja usara su misma cuenta en vez de una versión simplificada.
+     */
+    const eq = ing ? equivalenciaDeLinea(l, ing) : null;
+
     return {
         nombre: ing?.nombre || l.nombre || 'Sin nombre',
         cantidadBase: norm.base === 'unknown' ? num(l.cantidad) : redondear(norm.qty, 3),
         unidadBase: norm.base === 'unknown' ? (l.unidad || '') : norm.base,
         huerfana: !ing,
+        factor: eq ? eq.factor : 1,
+        // Sin equivalencia no se puede costear la línea sin inventar: se dice.
+        sinPrecio: !!ing && !eq,
+        nota: eq?.nota || '',
     };
+};
+
+/**
+ * Una línea de ingrediente, con su fórmula.
+ *
+ * `factor` es lo que reconcilia las unidades. Va escrito en la fórmula —y no
+ * aplicado a la cantidad— para que la celda siga diciendo lo que dice la
+ * receta: «50 g», no «0,5 und». La nota explica la conversión cuando la hay.
+ */
+const filaDeIngrediente = (d: FilaLinea, f: number): Celda[] => {
+    if (d.huerfana) {
+        return [d.nombre, d.cantidadBase, d.unidadBase, '', '', 'Sin ficha en el catálogo: no se puede enlazar su precio.'];
+    }
+    if (d.sinPrecio) {
+        return [d.nombre, d.cantidadBase, d.unidadBase, '', '', 'Su ficha no tiene precio o su formato no permite costear esta cantidad.'];
+    }
+    const busca = `=IFERROR(VLOOKUP($A${f};'${paraFormula(MATERIA)}'!$A:$D;4;FALSE);"")`;
+    const coste = d.factor === 1
+        ? `=IF(D${f}="";"";B${f}*D${f})`
+        : `=IF(D${f}="";"";B${f}*${d.factor}*D${f})`;
+    return [d.nombre, d.cantidadBase, d.unidadBase, busca, coste, d.nota];
 };
 
 /**
@@ -365,17 +407,7 @@ export const hojaDeCoctel = (
     bandas.push({ fila: filaCabecera - 1, color: GRIS, negrita: true, cols: 6 });
 
     const primeraLinea = fila();
-    for (const d of directas) {
-        const f = fila();
-        valores.push([
-            d.nombre,
-            d.cantidadBase,
-            d.unidadBase,
-            d.huerfana ? '' : `=IFERROR(VLOOKUP($A${f};'${paraFormula(MATERIA)}'!$A:$D;4;FALSE);"")`,
-            d.huerfana ? '' : `=IF(D${f}="";"";B${f}*D${f})`,
-            d.huerfana ? 'Sin ficha en el catálogo: no se puede enlazar su precio.' : '',
-        ]);
-    }
+    for (const d of directas) valores.push(filaDeIngrediente(d, fila()));
     const ultimaLinea = valores.length;
     const filaTotalDirecto = fila();
     valores.push(['', '', '', 'Total ingredientes', `=SUM(E${primeraLinea}:E${ultimaLinea})`, '']);
@@ -412,15 +444,7 @@ export const hojaDeCoctel = (
         bandas.push({ fila: filaCab - 1, color: GRIS, negrita: true, cols: 6 });
 
         const desde = fila();
-        for (const x of sub) {
-            const f = fila();
-            valores.push([
-                x.nombre, x.cantidadBase, x.unidadBase,
-                x.huerfana ? '' : `=IFERROR(VLOOKUP($A${f};'${paraFormula(MATERIA)}'!$A:$D;4;FALSE);"")`,
-                x.huerfana ? '' : `=IF(D${f}="";"";B${f}*D${f})`,
-                x.huerfana ? 'Sin ficha en el catálogo.' : '',
-            ]);
-        }
+        for (const x of sub) valores.push(filaDeIngrediente(x, fila()));
         const hasta = valores.length;
         const filaLote = fila();
         valores.push(['', '', '', 'Coste del lote', `=SUM(E${desde}:E${hasta})`, '']);

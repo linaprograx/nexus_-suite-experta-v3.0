@@ -86,6 +86,59 @@ export const enrichIngredientsWithPurchases = (
     });
 };
 
+/**
+ * Cuánto de un ingrediente consume una línea, **expresado en la unidad en la
+ * que está su precio**. Es la pieza que reconcilia las unidades.
+ *
+ * Sin esto, «50 g de VAINILLA EN RAMA» a un precio de 2,17 € **por unidad** se
+ * calculaba como 50 × 2,17 = 108,50 €. Con la conversión, 50 g de un envase de
+ * 100 g son 0,5 unidades: 1,09 €.
+ *
+ * Los cuatro casos son los que el motor ya aplicaba; lo único nuevo es que
+ * ahora viven en una función con nombre, para que **la exportación a Sheets use
+ * exactamente la misma** en vez de una versión simplificada suya. Esa versión
+ * simplificada —multiplicar cantidad por precio y ya— es la que produjo un
+ * cóctel de 42,92 €.
+ *
+ * Devuelve también el `factor`: cuántas unidades de precio equivale una unidad
+ * de la receta. La hoja lo necesita para escribir una fórmula que siga siendo
+ * correcta si alguien cambia la cantidad.
+ */
+export const equivalenciaDeLinea = (
+    lineItem: { cantidad?: number; unidad?: string },
+    ingredient: Ingredient,
+): { cantidad: number; precioPorBase: number; base: 'ml' | 'g' | 'und'; factor: number; nota?: string } | null => {
+    const priceInfo = resolvePricePerBase(ingredient);
+    const usageNorm = normalizeToBase(lineItem.cantidad || 0, lineItem.unidad || 'und');
+    if (!priceInfo || usageNorm.base === 'unknown') return null;
+
+    const salida = (cantidad: number, factor: number, nota?: string) =>
+        ({ cantidad, precioPorBase: priceInfo.pricePerBase, base: priceInfo.base, factor, nota });
+
+    if (priceInfo.base === usageNorm.base) return salida(usageNorm.qty, 1);
+
+    // Densidad ≈ 1: 1 ml ≈ 1 g. La misma suposición que hace todo el motor.
+    if ((priceInfo.base === 'g' && usageNorm.base === 'ml') || (priceInfo.base === 'ml' && usageNorm.base === 'g')) {
+        return salida(usageNorm.qty, 1, 'Se asume densidad 1: 1 ml ≈ 1 g.');
+    }
+
+    // Se compra por unidades y se usa por volumen o peso.
+    if (priceInfo.base === 'und' && (usageNorm.base === 'ml' || usageNorm.base === 'g')) {
+        const size = guessUnitSize(ingredient.nombre);
+        if (!(size > 0)) return null;
+        return salida(usageNorm.qty / size, 1 / size, `Se compra por unidades de ~${size} ${usageNorm.base}.`);
+    }
+
+    // Se compra por volumen o peso y se usa «por unidad».
+    if ((priceInfo.base === 'ml' || priceInfo.base === 'g') && usageNorm.base === 'und') {
+        const size = guessUnitSize(ingredient.nombre);
+        if (!(size > 0)) return null;
+        return salida(usageNorm.qty * size, size, `Se estima 1 unidad ≈ ${size} ${priceInfo.base}.`);
+    }
+
+    return null;
+};
+
 export const calculateRecipeCost = (
     recipe: Partial<Recipe>,
     allIngredients: Ingredient[],
@@ -178,28 +231,9 @@ export const calculateRecipeCost = (
         let itemCost = 0;
 
         if (ingredient) {
-            const priceInfo = resolvePricePerBase(ingredient);
-            const usageNorm = normalizeToBase(lineItem.cantidad || 0, lineItem.unidad || 'und');
+            const eq = equivalenciaDeLinea(lineItem, ingredient);
+            if (eq) itemCost = eq.cantidad * eq.precioPorBase;
 
-            if (priceInfo && usageNorm.base !== 'unknown') {
-                if (priceInfo.base === usageNorm.base) {
-                    itemCost = usageNorm.qty * priceInfo.pricePerBase;
-                } else if (
-                    (priceInfo.base === 'g' && usageNorm.base === 'ml') ||
-                    (priceInfo.base === 'ml' && usageNorm.base === 'g')
-                ) {
-                    // Liquid density ≈ 1 (1 ml ≈ 1 g)
-                    itemCost = usageNorm.qty * priceInfo.pricePerBase;
-                } else if (priceInfo.base === 'und' && (usageNorm.base === 'ml' || usageNorm.base === 'g')) {
-                    // Sold per unit/bottle but used by volume/weight
-                    const size = guessUnitSize(ingredient.nombre);
-                    itemCost = (usageNorm.qty / size) * priceInfo.pricePerBase;
-                } else if ((priceInfo.base === 'ml' || priceInfo.base === 'g') && usageNorm.base === 'und') {
-                    // Sold by volume/weight but used "per unit" — assume 1 und ≈ guessed size
-                    const size = guessUnitSize(ingredient.nombre);
-                    itemCost = usageNorm.qty * size * priceInfo.pricePerBase;
-                }
-            }
         }
 
         costoPorIngrediente.push({ ...lineItem, costo: itemCost });
