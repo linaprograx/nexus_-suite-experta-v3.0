@@ -1001,3 +1001,52 @@ y este agente no introduce credenciales. Además falta **habilitar la API de
 Sheets y declarar el ámbito en Google Cloud**: hasta que eso se haga, el botón
 devolverá un error de permiso. El código lo detecta y lo dice con esas palabras
 en vez de soltar el error crudo de Google.
+
+---
+
+## 2026-08-16 · Claude Code · Techo de stock — la Fase 1 queda cerrada
+
+**Qué se hizo**
+
+`useStockRules` solo sabía de **mínimo** y de **cantidad a pedir**. Con eso se
+avisa de lo que falta pero **no de lo que sobra**, y sobrar también cuesta: es
+capital parado, y en producto fresco es merma esperando a ocurrir.
+
+- `src/core/stock/nivelDeStock.ts` — el nivel, puro y compartido.
+- `maxStock?` opcional en `StockRule`.
+- Tercer campo en la modal de reglas, con su validación al escribir.
+- Sección «Sobrestock» en Reglas & Alertas, en azul.
+- `sugerirCantidad` recorta la propuesta a lo que cabe bajo el techo.
+
+**Decisiones que conviene no deshacer**
+
+- **Sin techo declarado no hay sobrestock.** Las 611 reglas de hoy no tienen
+  `maxStock`. Si «sin máximo» valiera cero, el inventario entero habría salido
+  sobrestockado el día del despliegue. Ausente = «no lo he decidido».
+- **Sobrar no es una urgencia, así que no se pinta como tal.** Rojo = no puedes
+  servir. Ámbar = te vas a quedar sin. Azul = dinero parado. Darle color de
+  alarma le robaría atención a los dos que sí obligan a moverse hoy.
+- **Un máximo por debajo del mínimo se rechaza donde se escribe**, no se
+  invierte en silencio: eso sería inventar la intención del usuario.
+- **El techo recorta la propuesta, nunca la línea.** Si ya estás en el máximo se
+  propone 1 y se explica; no se deja la casilla a cero ni se impide escribir.
+  Quien tiene una fiesta el sábado sabe algo que la regla no sabe.
+- **La sección de sobrestock no lleva botón de acción.** La respuesta a «tengo
+  de más» no es comprar ni tirar: es dejar de pedirlo, y de eso ya se encarga
+  el recorte de la cantidad sugerida.
+
+**Verificado**
+
+27 pruebas de comportamiento en verde, entre ellas la que importa: **una regla
+sin `maxStock` devuelve exactamente lo de antes**. En pantalla, con datos
+reales: los tres campos, el aviso de contradicción con el guardado bloqueado, y
+el semáforo del inventario intacto — 1.326 fichas, 610 verdes, 716 sin regla,
+ningún azul porque todavía nadie tiene techo. La sección de sobrestock se montó
+**en aislado** con datos inventados (+5 Bot, +22,5 Kg) para no escribir una
+regla en el catálogo real; la sonda se borró después.
+
+**Cómo se verificó una sección que no se puede provocar sin escribir datos**
+
+Se montó `StockRulesPanel` solo, en una página aparte servida por Vite, con
+reglas y stock de mentira. Es la salida cuando la única forma de ver algo en la
+app sería tocar datos del negocio. La sonda vive lo que dura la comprobación.

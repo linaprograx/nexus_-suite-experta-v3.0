@@ -100,7 +100,7 @@ Las tres primeras están explicadas a fondo en `CONTEXT.md`.
 | Identidad A–D | Hecho. El fundador fusionó el grupo Aguerrido: 1327 → 1326 ítems con el valor intacto |
 | Ingrediente exprés | Hecho: `pendienteRevision`, fuera de automatismos, filtro en Mercado |
 | Fase 0 · cimientos | `origen` ✅ · I1 ✅ · I2 ✅ · I3 ✅ · I4 ✅ |
-| Fase 1 · pedido útil | M1 compra ✅ · M1 hoja ✅ · M2 ✅ · M3 cantidad ✅ · **falta punto 3, stock máximo** |
+| Fase 1 · pedido útil | **CERRADA.** M1 compra ✅ · M1 hoja ✅ · M2 ✅ · M3 cantidad ✅ · punto 3 techo ✅ |
 | Escrituras en lote | ✅ `services/firestore/escrituraPorLotes.ts`, cinco sitios convertidos |
 | Mercado · buscar y agrupar | ✅ Fases 1–4. Un solo buscador en los ocho sitios |
 
