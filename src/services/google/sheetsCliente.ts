@@ -467,6 +467,22 @@ export const exportarLibroASheets = async (auth: Auth, libro: LibroEscandallo): 
             });
         }
 
+        // El texto, dentro de su celda. Sheets lo desborda sobre las de al lado
+        // si no se le dice, y ahí es donde las notas pisaban al bloque vecino.
+        for (const a of (h.ajustarTexto || [])) {
+            peticiones.push({
+                repeatCell: {
+                    range: {
+                        sheetId,
+                        startRowIndex: a.fila, endRowIndex: a.fila + a.filas,
+                        startColumnIndex: a.col, endColumnIndex: a.col + a.cols,
+                    },
+                    cell: { userEnteredFormat: { wrapStrategy: 'WRAP', verticalAlignment: 'MIDDLE' } },
+                    fields: 'userEnteredFormat(wrapStrategy,verticalAlignment)',
+                },
+            });
+        }
+
         for (const c of (h.centradas || [])) {
             peticiones.push({
                 repeatCell: {

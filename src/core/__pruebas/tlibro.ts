@@ -162,6 +162,14 @@ eq('las fórmulas del despiece apuntan a SUS columnas',
 eq('ninguna fórmula lleva punto decimal', conPuntoDecimal(conSub), []);
 
 console.log('\n— El gráfico —');
+// La primera fila de un rango la toma Google como CABECERA. Con los datos en la
+// fila 1 se comía «Coste Total» y el pastel salía de un solo color, al 100 % de
+// beneficio. Esta prueba falla si alguien los vuelve a subir ahí.
+eq('los datos del gráfico NO empiezan en la fila 1', (conSub.grafico?.filaDatos ?? 0) > 0, true);
+eq('y sus dos filas son datos, no una cabecera',
+    [String(conSub.valores[(conSub.grafico!.filaDatos)][13]), String(conSub.valores[(conSub.grafico!.filaDatos) + 1][13])],
+    ['Coste Total', 'Beneficio Neto']);
+eq('las notas se ajustan a su celda, no se desbordan', (conSub.ajustarTexto || []).length >= 2, true);
 eq('sus datos viven fuera de la ficha', conSub.grafico?.colDatos, 13);
 eq('  en columnas que se ocultan', (conSub.columnasOcultas || []).length, 1);
 eq('  y no se repiten dentro del cuadro',

@@ -71,6 +71,8 @@ export interface HojaLibro {
     grafico?: { filaDatos: number; colDatos: number; anclaFila: number; anclaCol: number; ancho?: number; alto?: number };
     /** Columnas de servicio que no se enseñan: los datos del gráfico. */
     columnasOcultas?: Array<{ desde: number; hasta: number }>;
+    /** Rangos cuyo texto se ajusta a la celda en vez de desbordarse. */
+    ajustarTexto?: RangoFormato[];
     filaCongelada?: number;
     /**
      * Lo que NO se toca: las celdas calculadas.
@@ -380,6 +382,7 @@ class Rejilla {
 
 const COL_SUB = 7;               // H
 const COL_DATOS = 13;            // N y O: fuera de la ficha, y ocultas
+const FILA_DATOS = 5;            // NO la 1: ver el comentario de más abajo
 /**
  * Cuántas columnas materializa la rejilla. **Tiene que llegar hasta las de
  * servicio**: con 13 se cortaba justo antes de la N, así que las dos celdas del
@@ -476,8 +479,12 @@ export const hojaDeCoctel = (
      * su hueco. Se van a dos columnas que después se ocultan, y el gráfico se
      * queda con todo el recuadro.
      */
-    g.fila(1, COL_DATOS, ['Coste Total', `=B${filaCoste}`]);
-    g.fila(2, COL_DATOS, ['Beneficio Neto', `=B${filaMargen}`]);
+    // **No en la fila 1.** Google toma la primera fila del rango de un gráfico
+    // como cabecera: puestos ahí, se comía «Coste Total» y el pastel se quedaba
+    // con una sola porción, el beneficio, al 100 %. Empezando más abajo, las dos
+    // filas son datos y el rango no puede confundirse con una tabla con título.
+    g.fila(FILA_DATOS, COL_DATOS, ['Coste Total', `=B${filaCoste}`]);
+    g.fila(FILA_DATOS + 1, COL_DATOS, ['Beneficio Neto', `=B${filaMargen}`]);
 
     // ── 5. Ingredientes. Cabecera de dos líneas, como la plantilla.
     const filaCab = 14;
@@ -621,6 +628,20 @@ export const hojaDeCoctel = (
         valores: g.materializar(COLS),
         anchos: [230, 95, 65, 95, 95, 210, 22, 210, 95, 65, 95, 95, 190, 100, 100],
         bandas, moneda, porcentaje, protegidos, bordes, centradas, alturas,
+        /**
+         * Las notas y los nombres largos, dentro de su celda.
+         *
+         * Sheets desborda el texto sobre las celdas vacías de al lado si no se
+         * le dice lo contrario, y por eso «Sub-preparación · rinde 130 ml/g ·
+         * detalle a la derecha» se metía encima del bloque de la derecha. Cada
+         * cosa en su sitio empieza por que no se salga del suyo.
+         */
+        ajustarTexto: [
+            { fila: 0, filas: g.materializar(COLS).length, col: 0, cols: 1 },
+            { fila: 0, filas: g.materializar(COLS).length, col: 5, cols: 1 },
+            { fila: 0, filas: g.materializar(COLS).length, col: COL_SUB, cols: 1 },
+            { fila: 0, filas: g.materializar(COLS).length, col: COL_SUB + 5, cols: 1 },
+        ],
         ocultarCuadricula: true,
         columnasOcultas: [{ desde: COL_DATOS, hasta: COL_DATOS + 2 }],
         // Anclado en la esquina del recuadro y dimensionado para llenarlo.
@@ -630,7 +651,7 @@ export const hojaDeCoctel = (
          * pestaña quedara un poco corrido: un objeto flotante no se alinea solo,
          * hay que darle la medida de su hueco.
          */
-        grafico: { filaDatos: 0, colDatos: COL_DATOS, anclaFila: 3, anclaCol: 3, ancho: 400, alto: 220 },
+        grafico: { filaDatos: FILA_DATOS - 1, colDatos: COL_DATOS, anclaFila: 3, anclaCol: 3, ancho: 400, alto: 220 },
     };
 };
 
