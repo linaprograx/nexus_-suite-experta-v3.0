@@ -100,7 +100,7 @@ Las tres primeras están explicadas a fondo en `CONTEXT.md`.
 | Identidad A–D | Hecho. El fundador fusionó el grupo Aguerrido: 1327 → 1326 ítems con el valor intacto |
 | Ingrediente exprés | Hecho: `pendienteRevision`, fuera de automatismos, filtro en Mercado |
 | Fase 0 · cimientos | `origen` ✅ · I1 ✅ · I2 ✅ · I3 ✅ · I4 ✅ |
-| Fase 1 · pedido útil | M1 compra ✅ · M1 hoja ✅ · M2 ✅ · **M3 cantidad pendiente** |
+| Fase 1 · pedido útil | M1 compra ✅ · M1 hoja ✅ · M2 ✅ · M3 cantidad ✅ · **falta punto 3, stock máximo** |
 | Escrituras en lote | ✅ `services/firestore/escrituraPorLotes.ts`, cinco sitios convertidos |
 | Mercado · buscar y agrupar | ✅ Fases 1–4. Un solo buscador en los ocho sitios |
 
@@ -148,13 +148,15 @@ que estaba invisible, y un duplicado que el informe de identidad puede fusionar.
 
 ### Después de Mercado
 
-- **M3 · cantidad en el pedido**, lo último de la Fase 1.
-- **Selector de la barra lateral.** El fundador propuso dos opciones y se le
-  recomendó la suya nº 2 —degradado del color de la sección, no el arcoíris del
-  logo— **con una corrección**: en una fila de 38 px un desvanecido vertical se
-  lee como una mancha, así que va **de izquierda a derecha**, anclado por una
-  barrita sólida de 3 px en el borde izquierdo. Los degradados por sección ya
-  existen en `PremiumLayout` (`gradients`). **Sin visto bueno todavía.**
+- **Punto 3 · stock máximo y sobrestock**, lo único que queda de la Fase 1.
+  `useStockRules` solo sabe de mínimo y de cantidad de reposición: no hay techo,
+  así que no se puede avisar de que sobra producto. Es barato, no depende de
+  nada y alimenta las alertas de la Fase 4. Con anulación manual: nada de
+  bloqueos absurdos.
+- **Selector de la barra lateral ✅.** Degradado horizontal del color de la
+  sección. La barrita sólida de 3 px que se propuso **se retiró**: el fundador
+  vio el corte entre la barra y el degradado. Es un solo degradado de siete
+  paradas, sin raíl.
 - **264 referencias sin proveedor.** No es un fallo del código: son fichas sin
   asignar. Decisión del fundador.
 
