@@ -6,6 +6,7 @@ import {
     parsePackFromText as parsePackFromName,
     sanePackSize as sanePackSizeShared,
 } from '../../utils/packNormalization';
+import { indicePorId, resolverMaestro } from '../identity/masterProduct';
 
 export interface CostedIngredient extends IngredientLineItem {
     costo: number;
@@ -109,6 +110,25 @@ export const calculateRecipeCost = (
         if (ing.nombre) byName.set(ing.nombre.trim().toLowerCase(), ing);
     }
 
+    /**
+     * Índice para resolver el producto maestro.
+     *
+     * Antes esto buscaba `ingredients.find(i => i.id === lineItem.ingredientId)`
+     * a secas. Como fusionar **no borra** el documento absorbido, la receta lo
+     * encontraba igual y seguía costeando desde el alias: no se rompía, se
+     * separaba en silencio. El día que se actualizara el precio en el maestro
+     * —el único que Mercado enseña— la receta se quedaba con el viejo y nada se
+     * quejaba. Un número tranquilo y equivocado, que es la peor clase.
+     *
+     * Con el catálogo sin alias, `resolverMaestro` devuelve el mismo id que
+     * recibe: el resultado es idéntico al de antes, ficha por ficha.
+     *
+     * **El alias sigue siendo un camino válido de entrada**, no un error: la
+     * receta que apunta a él es correcta. Lo que cambia es de dónde sale el
+     * precio, que pasa a ser el del producto, no el de una de sus fichas.
+     */
+    const porId = indicePorId(ingredients);
+
     const costoPorIngrediente: CostedIngredient[] = [];
     let costoTotal = 0;
 
@@ -146,7 +166,10 @@ export const calculateRecipeCost = (
 
         // Match by id first, then fall back to name (fixes legacy/imported recipes)
         let ingredient = lineItem.ingredientId
-            ? ingredients.find(i => i.id === lineItem.ingredientId)
+            ? porId.get(resolverMaestro(lineItem.ingredientId, porId))
+              // Si el id no está en el catálogo, no se pierde la línea: se
+              // intenta tal cual antes de caer al nombre.
+              || ingredients.find(i => i.id === lineItem.ingredientId)
             : undefined;
         if (!ingredient && lineItem.nombre) {
             ingredient = byName.get(lineItem.nombre.trim().toLowerCase());
