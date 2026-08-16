@@ -624,7 +624,13 @@ export const hojaDeCoctel = (
         ocultarCuadricula: true,
         columnasOcultas: [{ desde: COL_DATOS, hasta: COL_DATOS + 2 }],
         // Anclado en la esquina del recuadro y dimensionado para llenarlo.
-        grafico: { filaDatos: 0, colDatos: COL_DATOS, anclaFila: 3, anclaCol: 3, ancho: 430, alto: 250 },
+        /**
+         * El gráfico ocupa **exactamente** las columnas D, E y F (95 + 95 + 210
+         * = 400 px) desde la fila 4. Medirlo a ojo era lo que hacía que en cada
+         * pestaña quedara un poco corrido: un objeto flotante no se alinea solo,
+         * hay que darle la medida de su hueco.
+         */
+        grafico: { filaDatos: 0, colDatos: COL_DATOS, anclaFila: 3, anclaCol: 3, ancho: 400, alto: 220 },
     };
 };
 

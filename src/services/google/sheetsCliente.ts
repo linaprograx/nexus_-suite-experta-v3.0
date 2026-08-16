@@ -519,6 +519,18 @@ export const exportarLibroASheets = async (auth: Auth, libro: LibroEscandallo): 
                     chart: {
                         spec: {
                             title: 'Coste / Beneficio',
+                            /**
+                             * **Sin esto el gráfico sale vacío.**
+                             *
+                             * Sus dos celdas viven en columnas ocultas —para que
+                             * el pastel llene el recuadro sin repetir el mismo
+                             * número al lado— y Google, por defecto, **descarta
+                             * las filas y columnas ocultas** al leer la fuente de
+                             * un gráfico. El resultado es un «Añade una serie
+                             * para empezar a visualizar tus datos» sobre unos
+                             * datos que están ahí.
+                             */
+                            hiddenDimensionStrategy: 'SHOW_ALL',
                             pieChart: {
                                 legendPosition: 'BOTTOM_LEGEND',
                                 threeDimensional: true,
@@ -530,8 +542,12 @@ export const exportarLibroASheets = async (auth: Auth, libro: LibroEscandallo): 
                         position: {
                             overlayPosition: {
                                 anchorCell: { sheetId, rowIndex: g.anclaFila, columnIndex: g.anclaCol },
+                                // Sin desplazamiento: el gráfico arranca justo en
+                                // la esquina de su celda ancla y mide lo que miden
+                                // las columnas que ocupa. Con un `offset` de por
+                                // medio, cada pestaña lo colocaba un poco distinto.
                                 widthPixels: g.ancho || 330, heightPixels: g.alto || 210,
-                                offsetXPixels: 4, offsetYPixels: 4,
+                                offsetXPixels: 0, offsetYPixels: 0,
                             },
                         },
                     },

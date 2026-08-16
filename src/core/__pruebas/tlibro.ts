@@ -166,7 +166,12 @@ eq('sus datos viven fuera de la ficha', conSub.grafico?.colDatos, 13);
 eq('  en columnas que se ocultan', (conSub.columnasOcultas || []).length, 1);
 eq('  y no se repiten dentro del cuadro',
     conSub.valores.slice(3, 12).filter(r => String(r[3]) === 'Coste Total').length, 0);
-eq('el gráfico ocupa el recuadro entero', [conSub.grafico?.ancho, conSub.grafico?.alto], [430, 250]);
+// Las columnas D+E+F miden 95+95+210 = 400 px. El gráfico mide su hueco, no una
+// cifra puesta a ojo: es lo que hacía que en cada pestaña quedara corrido.
+const anchos = hojaDeCoctel(receta(), catalogo, AJUSTES_LIBRO_POR_DEFECTO, 'X').anchos;
+eq('el gráfico mide exactamente las columnas que ocupa',
+    conSub.grafico?.ancho, anchos[3] + anchos[4] + anchos[5]);
+eq('y arranca en la columna D, fila 4', [conSub.grafico?.anclaCol, conSub.grafico?.anclaFila], [3, 3]);
 
 console.log('\n— El libro entero —');
 const recetasLibro = [receta(), receta({ id: 'b', nombre: 'MOJITO' })];
