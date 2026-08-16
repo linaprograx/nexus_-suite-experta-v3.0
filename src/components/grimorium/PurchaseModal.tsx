@@ -4,6 +4,7 @@ import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { Label } from '../ui/Label';
 import { Ingredient } from '../../types';
+import { proveedorDeIngrediente } from '../../features/orders/resolverProveedor';
 
 interface PurchaseModalProps {
     isOpen: boolean;
@@ -45,11 +46,18 @@ export const PurchaseModal: React.FC<PurchaseModalProps> = ({
     }, [isOpen, ingredient]);
 
     // Resolve Supplier Name (Moved up safely)
+    /**
+     * A quién se le compra esto, por la escalera de M2.
+     *
+     * Leía `ingredient.proveedor` a secas, que está `@deprecated` y **viene
+     * vacío en el catálogo real**: la modal de compra decía «Sin Proveedor»
+     * para casi todo, y con ese nombre se registraba la compra.
+     */
     const supplierName = React.useMemo(() => {
-        if (!ingredient?.proveedor) return 'Sin Proveedor';
-        const sup = suppliers.find(s => s.id === ingredient.proveedor);
-        return sup ? sup.name : ingredient.proveedor;
-    }, [ingredient?.proveedor, suppliers]);
+        const id = ingredient ? proveedorDeIngrediente(ingredient as any) : null;
+        if (!id) return 'Sin Proveedor';
+        return suppliers.find(s => s.id === id)?.name || id;
+    }, [ingredient, suppliers]);
 
     if (!ingredient) return null;
 

@@ -16,6 +16,7 @@ import { ActiveSuggestionInline } from '../common/ActiveSuggestionInline';
 import { useUserIntelProfile } from '../../features/learning/hooks/useUserIntelProfile';
 import { LearningEngine } from '../../core/learning/learning.engine';
 import { TOKENS_GENERICOS as WEAK_TOKENS, esTokenGenerico } from '../../core/identity/genericTokens';
+import { proveedorDeIngrediente } from '../../features/orders/resolverProveedor';
 
 
 const FAMILY_BG_COLORS: { [key in AromaticFamily]: string } = {
@@ -255,9 +256,14 @@ export const IngredientDetailPanel: React.FC<IngredientDetailPanelProps> = ({
                         </h3>
                         <div className="space-y-3">
                             {siblings.length > 0 ? siblings.map((sib, idx) => {
-                                const providerName = sib.proveedores && sib.proveedores.length > 0
-                                    ? suppliers.find(s => s.id === sib.proveedores![0])?.name || sib.proveedor || 'Desconocido'
-                                    : sib.proveedor || 'Desconocido';
+                                // Por la escalera de M2: mira el preferente, luego
+                                // `proveedores[]` y solo al final el campo viejo, que
+                                // en el catálogo real está vacío y dejaba a casi
+                                // todas las fichas hermanas como «Desconocido».
+                                const provId = proveedorDeIngrediente(sib as any);
+                                const providerName = provId
+                                    ? suppliers.find(s => s.id === provId)?.name || provId
+                                    : 'Desconocido';
 
                                 const isCurrent = sib.id === ingredient.id;
 

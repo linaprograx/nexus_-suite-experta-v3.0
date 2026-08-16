@@ -11,6 +11,8 @@ import { useSupplierProducts } from '../../features/suppliers/hooks/useSupplierP
 import { useApp } from '../../context/AppContext';
 import { CatalogoItem } from '../../types';
 import { getCategoryColor } from '../../utils/categoryColors';
+import { fijarProveedorPreferente } from '../../features/suppliers/proveedorPreferente';
+import { useQueryClient } from '@tanstack/react-query';
 import { evaluateMarketSignals } from '../../core/signals/signal.engine';
 import { Signal } from '../../core/signals/signal.types';
 import { buscar } from '../../core/search/buscador';
@@ -82,12 +84,31 @@ export const IngredientListPanel: React.FC<IngredientListPanelProps> = ({
   const uniqueCategories = availableCategories.sort();
 
   // Providers Hook
-  const { db, userId } = useApp();
+  const { db, userId, appId } = useApp();
   const { suppliers: proveedores } = useSuppliers({ db, userId });
 
   // Un grupo abierto a la vez: varios desplegados a la vez convierten la lista
   // en un muro y se pierde justamente la comparación que se venía a hacer.
   const [grupoAbierto, setGrupoAbierto] = React.useState<string | null>(null);
+
+  const queryClient = useQueryClient();
+
+  /**
+   * Marca —o desmarca— el proveedor preferente de una ficha.
+   *
+   * Se puede quitar: sin eso, marcar uno por error deja el producto atado a él
+   * para siempre, y en silencio, porque la oferta más barata seguiría saliendo
+   * como alternativa sin que se entienda por qué no gana.
+   */
+  const marcarPreferente = React.useCallback(async (fichaId: string, proveedorId: string, yaEsPreferente: boolean) => {
+    if (!db || !appId || !userId) return;
+    try {
+      await fijarProveedorPreferente(db, appId, userId, fichaId, yaEsPreferente ? null : proveedorId);
+      queryClient.invalidateQueries({ queryKey: ['ingredients'] });
+    } catch (e) {
+      console.error('[preferente] no se pudo guardar', e);
+    }
+  }, [db, appId, userId, queryClient]);
 
 
 
@@ -469,6 +490,23 @@ export const IngredientListPanel: React.FC<IngredientListPanelProps> = ({
                                   <div className="text-xs font-bold text-slate-700 dark:text-slate-200 tabular-nums">€{op.precio.toFixed(2)}</div>
                                   <div className="text-[9px] text-slate-400">{op.formato}</div>
                                 </div>
+                                {/* Punto 19: aquí es donde se elige.
+                                    `proveedorPreferente` se leía en seis sitios y no
+                                    se escribía en ninguno: la política existía y era
+                                    inalcanzable. Y este es el sitio, porque es donde
+                                    se están comparando las opciones. */}
+                                {op.proveedorId && (
+                                  <button
+                                    type="button"
+                                    onClick={(e) => { e.stopPropagation(); marcarPreferente(op.fichaId, op.proveedorId!, op.esPreferente); }}
+                                    title={op.esPreferente ? 'Quitar como preferente' : 'Comprar siempre a este proveedor'}
+                                    className={`shrink-0 px-1.5 h-6 rounded-md text-[9px] font-bold uppercase tracking-wider border transition-colors ${op.esPreferente
+                                      ? 'bg-emerald-500 text-white border-emerald-500'
+                                      : 'bg-white dark:bg-slate-800 text-slate-400 border-slate-200 dark:border-slate-700 hover:border-emerald-400 hover:text-emerald-600'}`}
+                                  >
+                                    {op.esPreferente ? '★' : '☆'}
+                                  </button>
+                                )}
                               </div>
                             );
                           })}
