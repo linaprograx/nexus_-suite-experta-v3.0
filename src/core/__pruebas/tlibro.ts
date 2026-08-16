@@ -113,8 +113,18 @@ const conHueco = hojaDeCoctel(receta({
         { nombre: '', cantidad: 0, unidad: 'g' },
     ],
 }), catalogo, AJUSTES_LIBRO_POR_DEFECTO, 'X');
-eq('un hueco de la receta no sale como «Sin nombre · 0 g»',
-    conHueco.valores.filter(r => String(r[0]) === 'Sin nombre').length, 0);
+eq('un hueco vacío de la receta no se pinta',
+    conHueco.valores.filter(r => String(r[0]).includes('sin nombre')).length, 0);
+
+// Una línea sin nombre PERO con cantidad sí es un dato: está incompleta en la
+// receta y hay que poder verlo, no esconderlo bajo un «Sin nombre» que parece
+// un fallo de la exportación.
+const conMedia = hojaDeCoctel(receta({
+    ingredientes: [{ nombre: '', cantidad: 5, unidad: 'g' }],
+}), catalogo, AJUSTES_LIBRO_POR_DEFECTO, 'X');
+eq('una línea sin nombre pero con cantidad se rotula como lo que es',
+    conMedia.valores.find(r => String(r[0]).includes('sin nombre'))?.[0],
+    '(línea sin nombre en la receta)');
 
 console.log('\n— Un ingrediente que no está en el catálogo —');
 const huerfana = hojaDeCoctel(

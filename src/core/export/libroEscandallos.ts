@@ -320,7 +320,12 @@ const normalizarLinea = (l: IngredientLineItem, porId: Map<string, Ingredient>):
     const eq = ing ? equivalenciaDeLinea(l, ing) : null;
 
     return {
-        nombre: ing?.nombre || l.nombre || 'Sin nombre',
+        /**
+         * «Sin nombre» no dice nada: parece un fallo de la exportación cuando lo
+         * que hay es una línea incompleta en la receta. Si al menos trae
+         * cantidad, se rotula como lo que es y se puede ir a arreglarla.
+         */
+        nombre: ing?.nombre || l.nombre || '(línea sin nombre en la receta)',
         cantidadBase: norm.base === 'unknown' ? num(l.cantidad) : redondear(norm.qty, 3),
         unidadBase: norm.base === 'unknown' ? (l.unidad || '') : norm.base,
         huerfana: !ing,
@@ -430,7 +435,7 @@ export const hojaDeCoctel = (
     // Una línea sin nombre y sin ficha no es un ingrediente: es un hueco que
     // quedó en la receta. Pintarla como «Sin nombre · 0 g» ensucia la ficha y
     // no informa de nada.
-    const util = (l: FilaLinea) => !!(l.nombre && l.nombre !== 'Sin nombre') || l.cantidadBase > 0;
+    const util = (l: FilaLinea) => !l.nombre.startsWith('(línea sin nombre') || l.cantidadBase > 0;
     const directas = lineas.filter(l => !esBloque(l)).map(l => normalizarLinea(l, porId)).filter(util);
     const bloques = lineas.filter(esBloque);
 
