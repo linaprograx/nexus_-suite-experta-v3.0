@@ -16,6 +16,21 @@ export const GrimoriumToolbar: React.FC = () => {
     const [showMenu, setShowMenu] = useState(false);
     const [showDuplicados, setShowDuplicados] = useState(false);
 
+    /**
+     * El rótulo, por pestaña.
+     *
+     * Decía «Recetario Maestro» también en Inventario y en Mercado, que no son
+     * un recetario. Un rótulo que no cambia con la pantalla deja de leerse, y
+     * mientras tanto miente en dos de cada tres.
+     */
+    const rotuloDe = (mode: GrimoriumViewMode) => {
+        switch (mode) {
+            case 'recipes': return 'Recetario Maestro';
+            case 'stock': return 'Existencias y Reglas';
+            case 'market': return 'Catálogo y Proveedores';
+        }
+    };
+
     // Color Mapping for Text matching the old bg classes
     const getColorStyle = (mode: GrimoriumViewMode) => {
         switch (mode) {
@@ -88,7 +103,7 @@ export const GrimoriumToolbar: React.FC = () => {
                     Grimorio
                 </h1>
                 <p className="text-sm lg:text-xl font-bold tracking-widest uppercase opacity-90 pl-1">
-                    Recetario Maestro
+                    {rotuloDe(viewMode)}
                 </p>
             </div>
 

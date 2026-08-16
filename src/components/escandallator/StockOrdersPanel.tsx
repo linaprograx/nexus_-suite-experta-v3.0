@@ -24,6 +24,151 @@ interface OrderGroup {
     lastDate: Date;
 }
 
+
+/** Cuántas líneas se ven sin desplegar. Suficiente para reconocer el pedido. */
+const LINEAS_VISIBLES = 6;
+
+/**
+ * Una lista larga sin barra de desplazamiento propia.
+ *
+ * Las líneas de un pedido vivían en una caja de 96 px con su propio scroll,
+ * dentro de un panel que también scrollea. Revisar un pedido de 300 líneas por
+ * esa ventana era inviable, y una rueda dentro de otra siempre mueve la que no
+ * querías — en el historial, además, el botón de borrar una línea quedaba
+ * escondido tras ese scroll interior.
+ *
+ * Aquí se ven las primeras y el resto se despliega **hacia abajo**, que es donde
+ * el panel ya sabe desplazarse. Ver «Una lista de más de 15 elementos se agrupa
+ * y se pliega» en CONTEXT.md.
+ */
+function ListaConMas<T>({ items, pinta, visibles = LINEAS_VISIBLES }: {
+    items: T[];
+    pinta: (item: T, idx: number) => React.ReactNode;
+    visibles?: number;
+}) {
+    const [abierta, setAbierta] = React.useState(false);
+    const restantes = items.length - visibles;
+
+    return (
+        <>
+            {(abierta ? items : items.slice(0, visibles)).map(pinta)}
+            {restantes > 0 && (
+                <button
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); setAbierta(a => !a); }}
+                    aria-expanded={abierta}
+                    className="w-full mt-1 py-1 text-[10px] font-bold uppercase tracking-wider text-emerald-600 hover:text-emerald-700 dark:text-emerald-400 flex items-center justify-center gap-1"
+                >
+                    <Icon svg={ICONS.chevronDown} className={`w-3 h-3 transition-transform ${abierta ? 'rotate-180' : ''}`} />
+                    {abierta ? 'Ver menos' : `Ver las ${restantes} restantes`}
+                </button>
+            )}
+        </>
+    );
+}
+
+/**
+ * Una tarjeta de pedido.
+ *
+ * Era una función de render dentro del panel. Ahora es un componente porque
+ * **cada pedido necesita recordar si sus líneas están desplegadas**, y una
+ * función de render no puede tener estado propio: o lo compartían todos los
+ * pedidos, o había que subir un mapa de identificadores al panel para algo que
+ * solo le importa a la tarjeta.
+ */
+const TarjetaPedido: React.FC<{
+    order: Order;
+    mode: 'draft' | 'sent';
+    onSendOrder: (order: Order) => void;
+    onReceiveOrder: (order: Order) => void;
+    onDeleteOrder: (orderId: string) => void;
+    onEditOrder?: (order: Order) => void;
+    onDescargarCSV: (data: { providerName: string; items: any[]; totalValue: number }) => void;
+}> = ({ order, mode, onSendOrder, onReceiveOrder, onDeleteOrder, onEditOrder, onDescargarCSV }) => {
+    return (
+        <div
+            className={`bg-white/60 dark:bg-slate-800/60 backdrop-blur-md rounded-xl border p-3 shadow-sm relative group transition-all ${mode === 'sent' ? 'border-amber-200 dark:border-amber-900/40' : 'border-emerald-100 dark:border-emerald-900/30 cursor-pointer hover:border-emerald-300'}`}
+            onClick={() => mode === 'draft' && onEditOrder && onEditOrder(order)}
+        >
+            <div className="flex justify-between items-start mb-2">
+                <div>
+                    <div className="flex items-center gap-2">
+                        <span className="font-bold text-slate-800 dark:text-slate-200 text-sm">{order.name || 'Pedido'}</span>
+                        {mode === 'sent' && (
+                            <span className="text-[9px] font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded-full flex items-center gap-1">
+                                <Icon svg={ICONS.clock} className="w-2.5 h-2.5" /> En camino
+                            </span>
+                        )}
+                    </div>
+                    <span className="text-[10px] text-slate-500">{order.createdAt instanceof Date ? order.createdAt.toLocaleDateString() : 'Fecha desc.'}</span>
+                </div>
+                <span className="text-xs font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20 px-2 py-0.5 rounded-full border border-emerald-100">
+                    €{order.totalEstimatedCost.toFixed(2)}
+                </span>
+            </div>
+
+            {/* Las líneas, sin scroll propio.
+                Vivían en una caja de 96 px con su propia barra, dentro de un
+                panel que también scrollea: revisar un pedido de 300 líneas por
+                esa ventana era inviable, y una rueda dentro de otra siempre
+                mueve la que no querías. Ahora se ven las primeras y el resto se
+                despliega hacia abajo, que es donde el panel ya sabe desplazarse.
+                Ver «Una lista de más de 15 elementos se agrupa y se pliega» en
+                CONTEXT.md. */}
+            <div className="mb-3 bg-slate-50/50 dark:bg-slate-900/50 rounded p-2">
+                <ListaConMas
+                    items={order.items}
+                    pinta={(item, idx) => (
+                        <div key={idx} className="flex justify-between gap-2 text-[10px] text-slate-600 dark:text-slate-400 border-b border-slate-100 dark:border-slate-800 last:border-0 py-1">
+                            <span className="min-w-0 truncate">{item.ingredientName}</span>
+                            <span className="shrink-0 tabular-nums">x{item.quantity} {item.unit}</span>
+                        </div>
+                    )}
+                />
+            </div>
+
+            <div className="flex gap-2 mt-2">
+                {mode === 'draft' ? (
+                    <Button
+                        size="sm"
+                        onClick={(e) => { e.stopPropagation(); onSendOrder(order); }}
+                        className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] h-7"
+                    >
+                        <Icon svg={ICONS.send} className="w-3 h-3 mr-1" />
+                        Enviar Pedido
+                    </Button>
+                ) : (
+                    <Button
+                        size="sm"
+                        onClick={(e) => { e.stopPropagation(); onReceiveOrder(order); }}
+                        className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] h-7"
+                    >
+                        <Icon svg={ICONS.check} className="w-3 h-3 mr-1" />
+                        Marcar Recibido
+                    </Button>
+                )}
+                <button
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        onDescargarCSV({ providerName: order.name || 'Pedido', items: order.items, totalValue: order.totalEstimatedCost });
+                    }}
+                    className="p-1.5 text-slate-400 hover:text-emerald-600 transition-colors"
+                    title="Descargar CSV"
+                >
+                    <Icon svg={ICONS.fileText} className="w-4 h-4" />
+                </button>
+                <button
+                    onClick={(e) => { e.stopPropagation(); onDeleteOrder(order.id); }}
+                    className="p-1.5 text-slate-400 hover:text-red-500 transition-colors"
+                    title="Eliminar Pedido"
+                >
+                    <Icon svg={ICONS.trash} className="w-4 h-4" />
+                </button>
+            </div>
+        </div>
+    );
+};
+
 export const StockOrdersPanel: React.FC<StockOrdersPanelProps> = ({
     purchases,
     orders = [],
@@ -83,77 +228,18 @@ export const StockOrdersPanel: React.FC<StockOrdersPanelProps> = ({
     const sentOrders = orders.filter(o => o.status === 'sent');
 
     const renderOrderCard = (order: Order, mode: 'draft' | 'sent') => (
-        <div
+        <TarjetaPedido
             key={order.id}
-            className={`bg-white/60 dark:bg-slate-800/60 backdrop-blur-md rounded-xl border p-3 shadow-sm relative group transition-all ${mode === 'sent' ? 'border-amber-200 dark:border-amber-900/40' : 'border-emerald-100 dark:border-emerald-900/30 cursor-pointer hover:border-emerald-300'}`}
-            onClick={() => mode === 'draft' && onEditOrder && onEditOrder(order)}
-        >
-            <div className="flex justify-between items-start mb-2">
-                <div>
-                    <div className="flex items-center gap-2">
-                        <span className="font-bold text-slate-800 dark:text-slate-200 text-sm">{order.name || 'Pedido'}</span>
-                        {mode === 'sent' && (
-                            <span className="text-[9px] font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded-full flex items-center gap-1">
-                                <Icon svg={ICONS.clock} className="w-2.5 h-2.5" /> En camino
-                            </span>
-                        )}
-                    </div>
-                    <span className="text-[10px] text-slate-500">{order.createdAt instanceof Date ? order.createdAt.toLocaleDateString() : 'Fecha desc.'}</span>
-                </div>
-                <span className="text-xs font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20 px-2 py-0.5 rounded-full border border-emerald-100">
-                    €{order.totalEstimatedCost.toFixed(2)}
-                </span>
-            </div>
-
-            <div className="mb-3 max-h-24 overflow-y-auto custom-scrollbar bg-slate-50/50 dark:bg-slate-900/50 rounded p-2">
-                {order.items.map((item, idx) => (
-                    <div key={idx} className="flex justify-between text-[10px] text-slate-600 dark:text-slate-400 border-b border-slate-100 last:border-0 py-1">
-                        <span>{item.ingredientName}</span>
-                        <span>x{item.quantity} {item.unit}</span>
-                    </div>
-                ))}
-            </div>
-
-            <div className="flex gap-2 mt-2">
-                {mode === 'draft' ? (
-                    <Button
-                        size="sm"
-                        onClick={(e) => { e.stopPropagation(); onSendOrder(order); }}
-                        className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] h-7"
-                    >
-                        <Icon svg={ICONS.send} className="w-3 h-3 mr-1" />
-                        Enviar Pedido
-                    </Button>
-                ) : (
-                    <Button
-                        size="sm"
-                        onClick={(e) => { e.stopPropagation(); onReceiveOrder(order); }}
-                        className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] h-7"
-                    >
-                        <Icon svg={ICONS.check} className="w-3 h-3 mr-1" />
-                        Marcar Recibido
-                    </Button>
-                )}
-                <button
-                    onClick={(e) => {
-                        e.stopPropagation();
-                        handleDownloadCSV({ providerName: order.name || 'Pedido', items: order.items, totalValue: order.totalEstimatedCost });
-                    }}
-                    className="p-1.5 text-slate-400 hover:text-emerald-600 transition-colors"
-                    title="Descargar CSV"
-                >
-                    <Icon svg={ICONS.fileText} className="w-4 h-4" />
-                </button>
-                <button
-                    onClick={(e) => { e.stopPropagation(); onDeleteOrder(order.id); }}
-                    className="p-1.5 text-slate-400 hover:text-red-500 transition-colors"
-                    title="Eliminar Pedido"
-                >
-                    <Icon svg={ICONS.trash} className="w-4 h-4" />
-                </button>
-            </div>
-        </div>
+            order={order}
+            mode={mode}
+            onSendOrder={onSendOrder}
+            onReceiveOrder={onReceiveOrder}
+            onDeleteOrder={onDeleteOrder}
+            onEditOrder={onEditOrder}
+            onDescargarCSV={handleDownloadCSV}
+        />
     );
+
 
     return (
         <div className="h-full flex flex-col bg-white/40 dark:bg-slate-900/40 backdrop-blur-xl border border-white/30 dark:border-white/5 rounded-3xl overflow-hidden shadow-premium">
@@ -243,8 +329,8 @@ export const StockOrdersPanel: React.FC<StockOrdersPanelProps> = ({
                                         </div>
                                     </div>
                                     <div className="p-2 space-y-2">
-                                        <div className="max-h-32 overflow-y-auto custom-scrollbar">
-                                            {order.items.map(item => (
+                                        <div>
+                                            <ListaConMas items={order.items} pinta={(item) => (
                                                 <div key={item.id} className="flex justify-between items-center text-[10px] text-slate-600 dark:text-slate-400 border-b border-slate-100 dark:border-slate-800 last:border-0 py-1 group/item">
                                                     <div className="flex-1 truncate pr-2">
                                                         <span className="font-medium text-slate-700 dark:text-slate-300">{item.ingredientName}</span>
@@ -262,7 +348,7 @@ export const StockOrdersPanel: React.FC<StockOrdersPanelProps> = ({
                                                         )}
                                                     </div>
                                                 </div>
-                                            ))}
+                                            )} />
                                         </div>
                                         <div className="flex justify-between items-center pt-2 border-t border-slate-100 dark:border-slate-700">
                                             <span className="text-[10px] text-slate-500">{order.items.length} items</span>

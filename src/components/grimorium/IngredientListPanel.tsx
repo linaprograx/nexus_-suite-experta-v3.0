@@ -586,8 +586,19 @@ export const IngredientListPanel: React.FC<IngredientListPanelProps> = ({
                     </div>
                   </div>
 
-                  {/* Category Color Bar */}
-                  <div className={`h-1.5 w-full ${categoryColor} opacity-80`} title={ing.categoria} />
+                  {/* La categoría, escrita.
+                      Era una franja de color con la categoría en un `title`: en el
+                      teléfono no hay ratón, así que era un color sin leyenda. Y el
+                      color tampoco la identificaba con ratón — sale de un hash
+                      sobre 17 colores, y con 724 categorías se repite unas 43
+                      veces cada uno. El color agrupa la vista; quien dice qué es
+                      esto es el texto. */}
+                  <div className={`flex items-center gap-1.5 px-2.5 py-1 border-t ${isViewing ? 'border-white/20' : 'border-slate-100 dark:border-slate-800/60'}`}>
+                      <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${categoryColor}`} />
+                      <span className={`text-[9px] uppercase tracking-wider font-semibold truncate ${isViewing ? 'text-emerald-100' : 'text-slate-400'}`}>
+                          {ing.categoria || 'Sin categoría'}
+                      </span>
+                  </div>
 
                   {/* Viewing Indicator */}
                   {isViewing && (
