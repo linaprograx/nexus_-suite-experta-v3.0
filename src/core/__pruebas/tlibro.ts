@@ -65,12 +65,11 @@ eq('el bloque económico usa los rótulos de la plantilla',
 // Que las dos celdas del gráfico apunten a lo que su etiqueta dice. En una
 // versión anterior «Coste» apuntaba al margen: el pastel enseñaba otro número
 // y con la etiqueta correcta al lado, así que parecía bien.
-const filaCosteTotal = enCol('Coste Total', 3);
-const filaBeneficio = enCol('Beneficio Neto', 3);
+const D = 13;  // columna N, oculta
 eq('«Coste Total» del gráfico apunta al coste de receta',
-    v[filaCosteTotal - 1][4], `=B${buscar('COSTO TOTAL DE LA RECETA')}`);
+    [v[enCol('Coste Total', D) - 1][D + 1]], [`=B${buscar('COSTO TOTAL DE LA RECETA')}`]);
 eq('«Beneficio Neto» apunta al margen',
-    v[filaBeneficio - 1][4], `=B${buscar('MARGEN DE BENEFICIO NETO')}`);
+    [v[enCol('Beneficio Neto', D) - 1][D + 1]], [`=B${buscar('MARGEN DE BENEFICIO NETO')}`]);
 
 eq('las cantidades van normalizadas a unidad base: 6 cl → 60 ml',
     v.find(r => r[0] === 'RON BLANCO')?.slice(1, 3), [60, 'ml']);
@@ -122,7 +121,7 @@ const fila = huerfana.valores.find(r => r[0] === 'FANTASMA')!;
 eq('no se inventa un precio', [fila[3], fila[4]], ['', '']);
 eq('  y se dice por qué', String(fila[5]).includes('Sin ficha'), true);
 
-console.log('\n— Sub-preparaciones, en su columna de la derecha —');
+console.log('\n— La sub-preparación es una LÍNEA de la ficha, y su detalle va a la derecha —');
 const conSub = hojaDeCoctel(receta({
     ingredientes: [
         { ingredientId: 'r1', nombre: 'RON BLANCO', cantidad: 50, unidad: 'ml' },
@@ -137,27 +136,37 @@ const conSub = hojaDeCoctel(receta({
 }), catalogo, AJUSTES_LIBRO_POR_DEFECTO, 'X');
 
 const COL = 7;  // H
-const enSub = (t: string) => conSub.valores.findIndex(r => String(r[COL]) === t) + 1;
+const filaSub = conSub.valores.findIndex(r => String(r[0]) === 'SIROPE') + 1;
+const lineaSub = conSub.valores[filaSub - 1];
+
+// Esto es lo que faltaba: el cóctel no cuadraba con su propio total porque la
+// sub-preparación estaba SOLO a la derecha y no era línea de la ficha.
+eq('la sub-preparación aparece en la tabla del cóctel', filaSub > 0, true);
+eq('  con lo que se usa y su unidad', [lineaSub[1], lineaSub[2]], [20, 'ml']);
+eq('  y su coste por unidad sale del lote', /=L\d+\/1000/.test(String(lineaSub[3])), true);
+eq('  con su nota remitiendo al detalle', String(lineaSub[5]).includes('detalle a la derecha'), true);
+
+const filaTotal = conSub.valores.findIndex(r => String(r[3]) === 'COSTE TOTAL') + 1;
+eq('el total de la tabla la incluye', String(conSub.valores[filaTotal - 1][4]).includes(`E${filaSub}`), true);
+const costeReceta = conSub.valores.find(r => r[0] === 'COSTO TOTAL DE LA RECETA');
+eq('y el coste de receta es ese total, sin sumandos aparte', costeReceta?.[1], `=E${filaTotal}`);
+
 const titSub = conSub.valores.find(r => String(r[COL]).startsWith('SIROPE'));
+eq('el despiece va a la derecha con su rendimiento', titSub?.[COL], 'SIROPE (1000 ml/g)');
+// 500 g + 500 ml: Nexus los suma (densidad 1) pero la etiqueta no puede decir
+// «1000 g», porque la mitad no lo es.
+eq('el bloque de la derecha ya no repite la línea «usado»',
+    conSub.valores.filter(r => String(r[COL]) === 'Usado en la receta').length, 0);
+eq('las fórmulas del despiece apuntan a SUS columnas',
+    /VLOOKUP\(\$H\d+;/.test(String(conSub.valores.find(r => String(r[COL]) === 'AZUCAR')?.[COL + 3])), true);
+eq('ninguna fórmula lleva punto decimal', conPuntoDecimal(conSub), []);
 
-eq('la sub-preparación va a la derecha, no debajo', !!titSub, true);
-// 500 g + 500 ml: Nexus los suma (asume densidad 1) pero la etiqueta NO puede
-// decir «1000 g», porque la mitad no lo es.
-eq('el rendimiento no se etiqueta con una unidad que no es', titSub?.[COL], 'SIROPE (1000 ml/g)');
-
-const filaUso = enSub('Usado en la receta');
-const uso = conSub.valores[filaUso - 1];
-eq('lo usado lleva SU unidad, la de la línea', [uso[COL + 1], uso[COL + 2]], [20, 'ml']);
-eq('la explicación del prorrateo va en Notas, no en la columna de importes',
-    [String(uso[COL + 3]), String(uso[COL + 5])], ['', 'Coste del lote × 20 ÷ 1000']);
-eq('se prorratea por lo usado', /=L\d+\*20\/1000/.test(String(uso[COL + 4])), true);
-
-const costeSub = conSub.valores.find(r => r[0] === 'COSTO TOTAL DE LA RECETA');
-eq('el coste de receta suma directos MÁS la sub-preparación prorrateada',
-    /=E\d+\+L\d+/.test(String(costeSub?.[1])), true);
-eq('las fórmulas de la sub-tabla apuntan a SUS columnas, no a las de la ficha',
-    /VLOOKUP\(\$H\d+;/.test(String(conSub.valores[enSub('AZUCAR') - 1][COL + 3])), true);
-eq('y ninguna lleva punto decimal', conPuntoDecimal(conSub), []);
+console.log('\n— El gráfico —');
+eq('sus datos viven fuera de la ficha', conSub.grafico?.colDatos, 13);
+eq('  en columnas que se ocultan', (conSub.columnasOcultas || []).length, 1);
+eq('  y no se repiten dentro del cuadro',
+    conSub.valores.slice(3, 12).filter(r => String(r[3]) === 'Coste Total').length, 0);
+eq('el gráfico ocupa el recuadro entero', [conSub.grafico?.ancho, conSub.grafico?.alto], [430, 250]);
 
 console.log('\n— El libro entero —');
 const recetasLibro = [receta(), receta({ id: 'b', nombre: 'MOJITO' })];

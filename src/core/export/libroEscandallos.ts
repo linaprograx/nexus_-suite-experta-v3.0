@@ -68,7 +68,9 @@ export interface HojaLibro {
     moneda: RangoFormato[];
     porcentaje: RangoFormato[];
     /** Rango de 2×2 (etiqueta, valor) que alimenta el gráfico de tarta. */
-    grafico?: { filaDatos: number; colDatos: number; anclaFila: number; anclaCol: number };
+    grafico?: { filaDatos: number; colDatos: number; anclaFila: number; anclaCol: number; ancho?: number; alto?: number };
+    /** Columnas de servicio que no se enseñan: los datos del gráfico. */
+    columnasOcultas?: Array<{ desde: number; hasta: number }>;
     filaCongelada?: number;
     /**
      * Lo que NO se toca: las celdas calculadas.
@@ -376,8 +378,14 @@ class Rejilla {
     }
 }
 
-const COLS = 13;                 // A..M
 const COL_SUB = 7;               // H
+const COL_DATOS = 13;            // N y O: fuera de la ficha, y ocultas
+/**
+ * Cuántas columnas materializa la rejilla. **Tiene que llegar hasta las de
+ * servicio**: con 13 se cortaba justo antes de la N, así que las dos celdas del
+ * gráfico se perdían al construir la matriz y el pastel se quedaba sin datos.
+ */
+const COLS = COL_DATOS + 2;      // A..O
 
 export const hojaDeCoctel = (
     receta: Partial<Recipe>,
@@ -459,12 +467,17 @@ export const hojaDeCoctel = (
         porcentaje.push({ fila: 11, filas: 1, col: 1, cols: 1 });
     }
 
-    // ── 4. Los dos datos del gráfico, pegados a él y fuera del bloque de
-    //       economía: antes flotaban en medio de la ficha sin decir de qué eran.
-    g.fila(filaPVP, 3, ['Coste Total', `=B${filaCoste}`]);
-    g.fila(filaPVP + 1, 3, ['Beneficio Neto', `=B${filaMargen}`]);
-    moneda.push({ fila: filaPVP - 1, filas: 2, col: 4, cols: 1 });
-    protegidos.push({ fila: filaPVP - 1, filas: 2, col: 4, cols: 1, motivo: 'Datos del gráfico' });
+    /**
+     * Los dos datos que alimentan el gráfico, **fuera de la vista**.
+     *
+     * Estaban en medio del cuadro, y ahí sobran: al pasar el ratón por encima
+     * del pastel Google ya enseña la etiqueta y el importe. Teniéndolos escritos
+     * al lado, el mismo número aparecía dos veces y el gráfico no podía ocupar
+     * su hueco. Se van a dos columnas que después se ocultan, y el gráfico se
+     * queda con todo el recuadro.
+     */
+    g.fila(1, COL_DATOS, ['Coste Total', `=B${filaCoste}`]);
+    g.fila(2, COL_DATOS, ['Beneficio Neto', `=B${filaMargen}`]);
 
     // ── 5. Ingredientes. Cabecera de dos líneas, como la plantilla.
     const filaCab = 14;
@@ -473,13 +486,49 @@ export const hojaDeCoctel = (
     centradas.push({ fila: filaCab - 1, filas: 1, col: 1, cols: 4 });
     alturas.push({ fila: filaCab - 1, px: 34 });
 
+    /**
+     * Las sub-preparaciones se resuelven **antes** de pintar la tabla, porque
+     * cada una es también **una línea de la ficha**.
+     *
+     * Es como está en la plantilla del fundador, y es lo correcto: «Cordial de
+     * frambuesa y romero · 60 ml · 0,42 €» es un ingrediente del cóctel como
+     * cualquier otro; lo que va a la derecha es su despiece, no su sustituto.
+     * Antes el detalle estaba a la derecha y la línea no estaba en ninguna
+     * parte, así que la ficha no cuadraba con su propio total.
+     */
+    const subPreparadas = bloques.map(b => {
+        const sub = (b.subItems || []).map(l => normalizarLinea(l, porId)).filter(util);
+        const rendimiento = redondear(recipeTotalVolume({ ingredientes: b.subItems || [] } as any), 3);
+        const unidades = Array.from(new Set(sub.map(x => x.unidadBase))).filter(Boolean);
+        const usoNorm = normalizeToBase(num(b.cantidad), b.unidad || 'ml');
+        return {
+            nombre: (b.nombre || 'Sub-preparación'),
+            sub,
+            rendimiento,
+            unidadLote: unidades.length === 1 ? unidades[0] : 'ml/g',
+            usado: usoNorm.base === 'unknown' ? num(b.cantidad) : redondear(usoNorm.qty, 3),
+            unidadUso: usoNorm.base === 'unknown' ? (b.unidad || '') : usoNorm.base,
+            filaLote: 0,   // se rellena al pintar el bloque de la derecha
+        };
+    });
+
     const primera = filaCab + 1;
     directas.forEach((d, i) => {
         const fl = primera + i;
         g.fila(fl, 0, filaDeIngrediente(d, fl));
         if (i % 2 === 1) bandas.push({ fila: fl - 1, col: 0, cols: 6, color: CLARO, negrita: false, tamano: 10 });
     });
-    const ultima = primera + Math.max(directas.length, 1) - 1;
+
+    // Una línea por sub-preparación, con su coste por unidad traído del lote.
+    const filaSubEnFicha = primera + directas.length;
+    subPreparadas.forEach((sp, i) => {
+        const fl = filaSubEnFicha + i;
+        if ((directas.length + i) % 2 === 1) {
+            bandas.push({ fila: fl - 1, col: 0, cols: 6, color: CLARO, negrita: false, tamano: 10 });
+        }
+    });
+
+    const ultima = primera + Math.max(directas.length + subPreparadas.length, 1) - 1;
     const filaTotal = ultima + 1;
     g.fila(filaTotal, 3, ['COSTE TOTAL', `=SUM(E${primera}:E${ultima})`]);
     banda(filaTotal, 0, 6, NAVY, { tamano: 11 });
@@ -488,18 +537,11 @@ export const hojaDeCoctel = (
     bordes.push({ fila: filaCab - 1, filas: filaTotal - filaCab + 1, col: 0, cols: 6, interior: true });
 
     // ── 6. Sub-preparaciones, en la columna de la derecha.
-    const totales: string[] = [];
     let fs = 5;
-    for (const b of bloques) {
-        const sub = (b.subItems || []).map(l => normalizarLinea(l, porId)).filter(util);
-        const rendimiento = redondear(recipeTotalVolume({ ingredientes: b.subItems || [] } as any), 3);
-        const unidades = Array.from(new Set(sub.map(x => x.unidadBase))).filter(Boolean);
-        const unidadLote = unidades.length === 1 ? unidades[0] : 'ml/g';
-        const usoNorm = normalizeToBase(num(b.cantidad), b.unidad || 'ml');
-        const usado = usoNorm.base === 'unknown' ? num(b.cantidad) : redondear(usoNorm.qty, 3);
-        const unidadUso = usoNorm.base === 'unknown' ? (b.unidad || '') : usoNorm.base;
+    for (const sp of subPreparadas) {
+        const { sub, rendimiento, unidadLote } = sp;
 
-        g.poner(fs, COL_SUB, `${(b.nombre || 'SUB-PREPARACIÓN').toUpperCase()} (${rendimiento || '?'} ${unidadLote})`);
+        g.poner(fs, COL_SUB, `${sp.nombre.toUpperCase()} (${rendimiento || '?'} ${unidadLote})`);
         banda(fs, COL_SUB, 6, NAVY, { tamano: 11, combinar: true });
         centradas.push({ fila: fs - 1, filas: 1, col: COL_SUB, cols: 6 });
 
@@ -528,23 +570,36 @@ export const hojaDeCoctel = (
         const filaLote = hastaSub + 1;
         g.fila(filaLote, COL_SUB + 3, ['COSTE TOTAL', `=SUM(L${desde}:L${hastaSub})`]);
         banda(filaLote, COL_SUB, 6, NAVY, { tamano: 11 });
+        moneda.push({ fila: desde - 1, filas: sub.length + 1, col: COL_SUB + 3, cols: 2 });
+        protegidos.push({ fila: desde - 1, filas: sub.length + 1, col: COL_SUB + 3, cols: 2, motivo: 'Calculado' });
+        bordes.push({ fila: fs - 1, filas: filaLote - fs + 1, col: COL_SUB, cols: 6, interior: true });
 
-        const filaUso = filaLote + 1;
-        g.fila(filaUso, COL_SUB, [
-            'Usado en la receta', usado, unidadUso, '',
-            rendimiento > 0 ? `=L${filaLote}*${numeroEnFormula(usado)}/${numeroEnFormula(rendimiento)}` : '',
-            `Coste del lote × ${usado} ÷ ${rendimiento || '?'}`,
-        ]);
-        banda(filaUso, COL_SUB, 6, NAVY2, { tamano: 10 });
-        moneda.push({ fila: desde - 1, filas: sub.length + 2, col: COL_SUB + 3, cols: 2 });
-        protegidos.push({ fila: desde - 1, filas: sub.length + 2, col: COL_SUB + 3, cols: 2, motivo: 'Calculado' });
-        bordes.push({ fila: fs - 1, filas: filaUso - fs + 1, col: COL_SUB, cols: 6, interior: true });
-
-        totales.push(`L${filaUso}`);
-        fs = filaUso + 3;
+        // La fila «usado» ya no vive aquí: es una línea de la ficha, a la
+        // izquierda. Aquí queda el despiece y su coste de lote, que es lo que
+        // esa línea consulta.
+        sp.filaLote = filaLote;
+        fs = filaLote + 3;
     }
 
-    g.poner(filaCoste, 1, totales.length ? `=E${filaTotal}+${totales.join('+')}` : `=E${filaTotal}`);
+    // Ahora que se conocen las filas de cada lote, se escriben sus líneas.
+    subPreparadas.forEach((sp, i) => {
+        const fl = filaSubEnFicha + i;
+        const porUnidad = sp.rendimiento > 0
+            ? `=L${sp.filaLote}/${numeroEnFormula(sp.rendimiento)}`
+            : '';
+        g.fila(fl, 0, [
+            sp.nombre,
+            sp.usado,
+            sp.unidadUso,
+            porUnidad,
+            porUnidad ? `=IF(D${fl}="";"";B${fl}*D${fl})` : '',
+            `Sub-preparación · rinde ${sp.rendimiento || '?'} ${sp.unidadLote} · detalle a la derecha`,
+        ]);
+    });
+
+    // El coste de receta es el total de la tabla, sin sumandos aparte: las
+    // sub-preparaciones ya son filas suyas.
+    g.poner(filaCoste, 1, `=E${filaTotal}`);
 
     // ── 7. Método y foto, con su recuadro. Las imágenes no se pueden subir por
     //       esta vía, así que el hueco queda hecho y rotulado: es mejor un
@@ -564,10 +619,12 @@ export const hojaDeCoctel = (
     return {
         titulo,
         valores: g.materializar(COLS),
-        anchos: [230, 95, 65, 95, 95, 210, 22, 210, 95, 65, 95, 95, 190],
+        anchos: [230, 95, 65, 95, 95, 210, 22, 210, 95, 65, 95, 95, 190, 100, 100],
         bandas, moneda, porcentaje, protegidos, bordes, centradas, alturas,
         ocultarCuadricula: true,
-        grafico: { filaDatos: filaPVP - 1, colDatos: 3, anclaFila: filaPVP + 1, anclaCol: 3 },
+        columnasOcultas: [{ desde: COL_DATOS, hasta: COL_DATOS + 2 }],
+        // Anclado en la esquina del recuadro y dimensionado para llenarlo.
+        grafico: { filaDatos: 0, colDatos: COL_DATOS, anclaFila: 3, anclaCol: 3, ancho: 430, alto: 250 },
     };
 };
 

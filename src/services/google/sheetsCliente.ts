@@ -446,6 +446,17 @@ export const exportarLibroASheets = async (auth: Auth, libro: LibroEscandallo): 
             });
         }
 
+        // Las columnas de servicio del gráfico: existen, pero no se ven.
+        for (const c of (h.columnasOcultas || [])) {
+            peticiones.push({
+                updateDimensionProperties: {
+                    range: { sheetId, dimension: 'COLUMNS', startIndex: c.desde, endIndex: c.hasta },
+                    properties: { hiddenByUser: true },
+                    fields: 'hiddenByUser',
+                },
+            });
+        }
+
         for (const a of (h.alturas || [])) {
             peticiones.push({
                 updateDimensionProperties: {
@@ -519,8 +530,8 @@ export const exportarLibroASheets = async (auth: Auth, libro: LibroEscandallo): 
                         position: {
                             overlayPosition: {
                                 anchorCell: { sheetId, rowIndex: g.anclaFila, columnIndex: g.anclaCol },
-                                widthPixels: 330, heightPixels: 210,
-                                offsetXPixels: 8, offsetYPixels: 4,
+                                widthPixels: g.ancho || 330, heightPixels: g.alto || 210,
+                                offsetXPixels: 4, offsetYPixels: 4,
                             },
                         },
                     },
