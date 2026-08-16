@@ -103,6 +103,7 @@ Las tres primeras están explicadas a fondo en `CONTEXT.md`.
 | Fase 1 · pedido útil | **CERRADA.** M1 compra ✅ · M1 hoja ✅ · M2 ✅ · M3 cantidad ✅ · punto 3 techo ✅ |
 | Escrituras en lote | ✅ `services/firestore/escrituraPorLotes.ts`, cinco sitios convertidos |
 | Mercado · buscar y agrupar | ✅ Fases 1–4. Un solo buscador en los ocho sitios |
+| Fase 2 · navegación | **CERRADA.** Plegables ✅ · M5 ✅ · M6 ✅ · T1 ✅ |
 
 ## ⏸️ Lo siguiente — EMPIEZA POR AQUÍ
 

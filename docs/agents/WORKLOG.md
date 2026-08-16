@@ -1050,3 +1050,33 @@ regla en el catálogo real; la sonda se borró después.
 Se montó `StockRulesPanel` solo, en una página aparte servida por Vite, con
 reglas y stock de mentira. Es la salida cuando la única forma de ver algo en la
 app sería tocar datos del negocio. La sonda vive lo que dura la comprobación.
+
+---
+
+## 2026-08-16 · Claude Code · T1, M5 y M6 — la Fase 2 queda cerrada
+
+- **T1** · el rótulo decía «Recetario Maestro» también en Inventario y en
+  Mercado, que no son un recetario. Ahora cambia con la pestaña.
+- **M5** · la categoría era una franja de color con el nombre en un `title`: en
+  el teléfono no hay ratón. Y con ratón tampoco identificaba nada — el color
+  sale de un hash sobre 17 colores y hay 724 categorías, así que **cada color
+  se repite unas 43 veces**. Iba a arreglarse «poniendo leyenda al color»; el
+  color no tenía nada que explicar. Ahora la categoría va escrita y el color
+  queda como punto de agrupación visual.
+- **M6** · las líneas de cada pedido vivían en una caja de 96 px con su propia
+  barra dentro de un panel que también scrollea (128 px en el historial, para
+  grupos de 582 líneas). Una rueda dentro de otra siempre mueve la que no
+  querías, y el borrar de cada línea del historial quedaba escondido detrás de
+  ese scroll. Ahora se ven seis y el resto se despliega hacia abajo.
+
+**Lo que se aprendió**
+
+`renderOrderCard` era una **función de render**, no un componente: no podía
+tener estado, así que «¿está desplegado este pedido?» no tenía dónde vivir.
+Convertida en `TarjetaPedido`. El patrón «ver N más» quedó en `ListaConMas`
+para no acabar con dos comportamientos distintos para lo mismo.
+
+**Verificado** en pantalla con datos reales: los tres rótulos; 60 fichas de
+Mercado con categoría escrita y ninguna franja ciega; y FRUTAS ELOY con 6 de
+582 líneas, que al desplegar pinta las 582 con el contenedor en
+`overflow: visible` y sin altura máxima.
