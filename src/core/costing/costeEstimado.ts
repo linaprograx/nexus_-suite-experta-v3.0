@@ -1,4 +1,5 @@
 import { Recipe, Ingredient, IngredientLineItem } from '../../types';
+import { indicePorId, resolverMaestro } from '../identity/masterProduct';
 
 /**
  * ¿El coste de esta receta se apoya en datos sin verificar?
@@ -54,12 +55,14 @@ export const ingredientesSinVerificar = (
     const lineas: IngredientLineItem[] = [];
     recorrerLineas(recipe, allRecipes, new Set(), lineas);
 
-    const porId = new Map(allIngredients.filter(i => i?.id).map(i => [i.id, i]));
+    // Por el maestro: si la receta apunta a una ficha absorbida, lo que decide
+    // si el coste es estimado es el producto del que sale el precio.
+    const porId = indicePorId(allIngredients);
     const nombres = new Set<string>();
 
     for (const l of lineas) {
         if (!l?.ingredientId) continue;
-        const ing = porId.get(l.ingredientId);
+        const ing = porId.get(resolverMaestro(l.ingredientId, porId)) || porId.get(l.ingredientId);
         if (ing?.pendienteRevision) nombres.add(ing.nombre || 'Sin nombre');
     }
     return Array.from(nombres);

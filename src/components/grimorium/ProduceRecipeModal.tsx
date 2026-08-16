@@ -4,6 +4,7 @@ import { Icon } from '../ui/Icon';
 import { ICONS } from '../ui/icons';
 import { Input } from '../ui/Input';
 import { computeRecipeDepletion, DepletionLine } from '../../utils/recipeDepletion';
+import { indicePorId, resolverMaestro } from '../../core/identity/masterProduct';
 
 /**
  * Automatic stock depletion from a recipe: the user says how many servings were
@@ -29,9 +30,17 @@ export const ProduceRecipeModal: React.FC<{
     const ok = lines.filter(l => l.resolved && l.quantity > 0);
     const failed = lines.filter(l => !l.resolved);
 
-    // Warn when a deduction would leave stock negative
+    // Warn when a deduction would leave stock negative.
+    // Por maestro: el stock está consolidado ahí, así que cruzar por el id de
+    // la línea daba «no tienes suficiente» de un producto lleno.
+    const porIdIng = React.useMemo(() => indicePorId(allIngredients), [allIngredients]);
+    const existencias = (id: string) => {
+        const m = resolverMaestro(id, porIdIng);
+        return stockItems.find(si => si.ingredientId === m)
+            || stockItems.find(si => si.ingredientId === id);
+    };
     const shortages = ok.filter(l => {
-        const s = stockItems.find(si => si.ingredientId === l.ingredientId);
+        const s = existencias(l.ingredientId);
         return s ? l.quantity > s.quantityAvailable : false;
     });
 
@@ -78,7 +87,7 @@ export const ProduceRecipeModal: React.FC<{
                     ) : (
                         <ul className="space-y-1.5">
                             {ok.map(l => {
-                                const s = stockItems.find(si => si.ingredientId === l.ingredientId);
+                                const s = existencias(l.ingredientId);
                                 const short = s ? l.quantity > s.quantityAvailable : false;
                                 return (
                                     <li key={l.ingredientId} className="flex items-center justify-between gap-3 p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800">

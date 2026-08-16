@@ -137,7 +137,18 @@ export const consolidarPorMaestro = (
 
     const salida: StockItem[] = [];
     for (const [maestroId, filas] of porMaestro.entries()) {
-        if (filas.length === 1) { salida.push(filas[0]); continue; }
+        if (filas.length === 1) {
+            // **Se re-etiqueta aunque sea una sola fila.** Antes se devolvía tal
+            // cual, así que un alias sin compras en su maestro conservaba su
+            // propio id y todo lo que buscara «las existencias del maestro»
+            // —una regla de stock, un semáforo, un consumo— no encontraba nada.
+            // Consolidar significa que el producto tiene UN id, tenga una ficha
+            // o cinco.
+            salida.push(filas[0].ingredientId === maestroId
+                ? filas[0]
+                : { ...filas[0], ingredientId: maestroId });
+            continue;
+        }
 
         const unidades = new Set(filas.map(f => (f.unit || '').trim().toLowerCase()));
         if (unidades.size > 1) {
@@ -171,14 +182,36 @@ export const consolidarPorMaestro = (
 /**
  * Existencias actuales. `resolverMaestro` es **opcional**: sin él, el resultado
  * es exactamente el de antes de que existiera la identidad maestra.
+ *
+ * ## El orden importa, y antes estaba al revés
+ *
+ * Se aplicaban los movimientos y **después** se consolidaba. Como
+ * `applyMovementsToStock` resta buscando una fila con el id EXACTO del
+ * movimiento, un consumo anotado sobre el maestro cuando todas las compras
+ * estaban sobre el alias no encontraba fila que restar **y se perdía en
+ * silencio**: el almacén se quedaba diciendo que hay algo que ya se gastó.
+ *
+ * Ahora se consolida primero y los movimientos se resuelven al maestro antes de
+ * restar, así que da igual sobre qué ficha del producto se anotara el consumo.
+ *
+ * Sobre los datos de hoy el resultado es idéntico —los movimientos existentes
+ * están anotados sobre la misma ficha que sus compras—, y se comprobó midiendo
+ * el valor del almacén antes y después. Lo que cambia es que deja de haber una
+ * forma de perder consumo sin que nada avise.
  */
 export const buildCurrentStock = (
     purchases: PurchaseEvent[],
     movements: StockMovement[] = [],
     resolverMaestro?: (ingredientId: string) => string,
 ): StockItem[] => {
-    const base = applyMovementsToStock(buildStockFromPurchases(purchases), movements);
-    return resolverMaestro ? consolidarPorMaestro(base, resolverMaestro) : base;
+    const compras = buildStockFromPurchases(purchases);
+    if (!resolverMaestro) return applyMovementsToStock(compras, movements);
+
+    const consolidado = consolidarPorMaestro(compras, resolverMaestro);
+    const movimientosAlMaestro = (movements || []).map(m => (
+        m?.ingredientId ? { ...m, ingredientId: resolverMaestro(m.ingredientId) } : m
+    ));
+    return applyMovementsToStock(consolidado, movimientosAlMaestro);
 };
 
 export const calculateInventoryMetrics = (stock: StockItem[]) => {

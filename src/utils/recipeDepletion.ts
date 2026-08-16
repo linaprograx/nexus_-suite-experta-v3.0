@@ -1,6 +1,7 @@
 import { Recipe, Ingredient, IngredientLineItem, StockItem } from '../types';
 import { normalizeToBase, BaseUnit } from './packNormalization';
 import { recipeTotalVolume } from '../core/costing/costCalculator';
+import { indicePorId, resolverMaestro } from '../core/identity/masterProduct';
 
 export interface DepletionLine {
     ingredientId: string;
@@ -168,10 +169,24 @@ export const computeRecipeDepletion = (
         recipe.id ? new Set([recipe.id]) : new Set()
     );
 
+    /**
+     * Las existencias vienen consolidadas en el producto maestro, así que una
+     * línea de receta que apunte a una ficha absorbida no encontraba stock y
+     * salía como «Sin stock registrado» teniendo el almacén lleno.
+     *
+     * **El id que se emite NO cambia**, y es deliberado: el movimiento se anota
+     * sobre la ficha que la receta nombra, y `buildCurrentStock` ya lo resuelve
+     * al maestro al leerlo. Reescribirlo aquí sería decidir por el histórico.
+     */
+    const porIdIng = indicePorId(allIngredients);
+    const maestroDe = (id: string) => resolverMaestro(id, porIdIng);
+
     const out: DepletionLine[] = [];
     for (const u of Array.from(usages.values())) {
         const ing = allIngredients.find(i => i.id === u.ingredientId);
-        const stock = stockItems.find(s => s.ingredientId === u.ingredientId);
+        const idMaestro = maestroDe(u.ingredientId);
+        const stock = stockItems.find(s => s.ingredientId === idMaestro)
+            || stockItems.find(s => s.ingredientId === u.ingredientId);
         const name = ing?.nombre || u.name || 'Ingrediente';
 
         if (!stock) {
