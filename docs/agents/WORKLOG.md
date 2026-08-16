@@ -1270,3 +1270,35 @@ fundador — es exactamente para lo que existe «Revisar Unidades».
 
 **Verificado**: 33 pruebas nuevas; los ocho casos reales de formato; y las 32
 recetas medidas antes y después, **sin un solo cambio de coste**.
+
+---
+
+## 2026-08-16 · Claude Code · Por qué «A Sheets» se quedaba cargando
+
+**El síntoma**: pulsar el botón desde el móvil abría el navegador externo y ahí
+se quedaba, sin llegar nunca a pedir las credenciales.
+
+**La causa, reproducida**. El botón abre
+`…/__/auth/handler?authType=signInViaPopup&scopes=…drive.file`. Esa página **no
+navega a ninguna parte**: su trabajo es cargarse y devolverle el permiso a la
+ventana que la abrió, por `window.opener`.
+
+Nexus está instalada como app (`"display": "standalone"` en el manifiesto), y
+cuando una app instalada abre un enlace, el sistema lo manda al navegador **como
+aplicación aparte**, sin vínculo con quien lo abrió. La página cargaba, buscaba
+a su llamante, no lo encontraba y se quedaba esperando. **No fallaba: esperaba
+una respuesta que no podía llegar.**
+
+> `signInWithPopup` **no puede funcionar** dentro de una app instalada. No es
+> configuración de Google ni del proyecto: es el flujo el que no encaja.
+
+**Lo que se hizo** (elección del fundador): comprobarlo **antes de abrir nada** —
+abrir una ventana que va a quedarse cargando es peor que no abrirla, porque
+parece que funciona— y explicarlo en pantalla con una salida.
+
+**Lo que queda pendiente**: el arreglo de raíz, servir `/__/auth/*` desde el
+propio dominio. Está en «Pendiente del fundador», para antes de producción.
+
+**Y la fila de botones de la carta**: los cinco controles no caben en línea en
+un móvil y «A Sheets» acababa solo abajo, como si fuera otra cosa. Dos filas con
+intención: lo que la carta **es**, y lo que se **hace** con ella.

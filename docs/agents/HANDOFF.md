@@ -176,6 +176,14 @@ que estaba invisible, y un duplicado que el informe de identidad puede fusionar.
 
 ## Pendiente del fundador
 
+- **El arreglo de raíz del «A Sheets» en la app instalada.** Decidido el
+  2026-08-16: de momento el aviso; **antes de producción**, servir `/__/auth/*`
+  desde el propio dominio con una redirección en `vercel.json` y dejar de pasar
+  por `firebaseapp.com`. Arregla la exportación dentro de la app instalada y de
+  paso el login por redirección que se abandonó por roto. Toca el arranque de
+  sesión de todos, así que va con su verificación y es reversible quitando la
+  redirección.
+
 - **Habilitar la API de Google Sheets** en su proyecto de Google Cloud y
   declarar el ámbito `drive.file` en la pantalla de consentimiento. **Sin esto
   el botón «A Sheets» dará error de permiso**, por muy bien escrito que esté el
