@@ -1166,3 +1166,70 @@ Barrido de **todos** los sitios que cruzan por `ingredientId`. Tabla completa:
 > Y antes de dar por buena una lectura que use un `ingredientId`, la pregunta es
 > siempre la misma: **¿esto resuelve el maestro?** El daño de no hacerlo no
 > aparece como un error, aparece como un número tranquilo y equivocado.
+
+---
+
+## 2026-08-16 · Claude Code · Fase 3 en marcha — cinco etapas seguidas
+
+Sesión autónoma pedida por el fundador. Ruta fijada antes de empezar y ejecutada
+en orden; cada etapa verificada antes de pasar a la siguiente.
+
+### 1 · El motor de coste resuelve el maestro *(aprobado explícitamente)*
+
+Última lectura con el id crudo. Como fusionar no borra el documento absorbido,
+la receta lo encontraba y seguía costeando desde el alias: no se rompía, se
+separaba en silencio.
+
+**Medición antes/después sobre las 32 recetas reales: ninguna cambia.** Era lo
+esperado —alias y maestro tienen hoy el mismo precio efectivo— y por eso había
+que medirlo en vez de suponerlo: el objetivo era cerrar la divergencia futura.
+
+### 2 · La auditoría de alias, y dos hallazgos que no se buscaban
+
+- **Se podía perder consumo sin que nada avisara**: los movimientos se aplicaban
+  antes de consolidar, y `applyMovementsToStock` resta por id exacto.
+- **`consolidarPorMaestro` no re-etiquetaba los grupos de una sola fila.** Era el
+  origen de casi todo: cuatro síntomas, una causa.
+
+### 3 · Taxonomía — y un número del plan que estaba mal
+
+**No son 724 categorías: son 67.** El 724 era el número de *fichas* de la
+depuración y se copió mal en dos sitios; yo lo repetí en el commit de M5.
+Corregido en los tres.
+
+Y las 67 no son un caos: **llevan la familia escrita dentro** («ALGAS FRESCOS»,
+«ESPECIALES MINIS»). Así que no hay que reclasificar nada a mano — la taxonomía
+ya estaba ahí, apretada en una cadena porque no había dónde ponerla.
+
+Resultado: **20 familias**, 8 categorías que sobran, 4 que no son categorías
+sino estados (IMPORTADO, POR REVISAR, SEC, PAJITA).
+
+### 4 · Histórico de precios, sin colección nueva
+
+Cada compra ya era una observación con fecha y proveedor, y `purchases` no se
+sobrescribe. Faltaba leerlo como serie.
+
+**El panel destapó su propio fallo**: decía «1 ha bajado» arriba y «ninguno se ha
+movido» abajo. Una variación de 0 % está *definida*, así que los 125 estables
+entraban en el ranking y al cortar por arriba **expulsaban a la única bajada**.
+Ahora cabecera y lista comparten umbral, para que no puedan discrepar.
+
+Hallazgo real: AGUERRIDO, BENIGNO CUPREATA CAPON **−36,9 %** (108,50 € → 68,50 €).
+
+### 5 · Lector de catálogos de proveedor, sin botón de importar
+
+Lee y no escribe. **El botón va detrás de que el fundador vea la pantalla con un
+fichero suyo**: escribir sobre 1.326 fichas no se estrena a ciegas.
+
+Verificado contra el catálogo real: 3 suben, 1 baja, 2 iguales, 2 nuevas y 2 no
+válidas, con «Almacen» marcada como columna sin usar.
+
+---
+
+**Lo que se repitió en las cinco etapas, y conviene recordar**
+
+> El daño de estos fallos nunca aparecía como un error. Aparecía como **un
+> número tranquilo y equivocado**: una alerta de stock de un producto lleno, un
+> ranking sin la única bajada, un coste que dejó de seguir a su producto. Por eso
+> cada cambio va con una medición del antes y del después sobre los datos
+> reales, y no con un «compila y parece que va».
