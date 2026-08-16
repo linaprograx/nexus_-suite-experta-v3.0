@@ -1347,3 +1347,32 @@ Ninguna avisa al romperse. Todas devuelven **algo con buena pinta**:
   rotulado con la instrucción dentro.
 - El arreglo de raíz del permiso de Google en la app instalada (ver «Pendiente
   del fundador»).
+
+---
+
+## 2026-08-16 · Claude Code · Puntos 19 y 20
+
+Los dos resultaron ser **el mismo fallo repetido**: varias formas de responder a
+«¿quién me surte esto?», y cada pantalla eligiendo una.
+
+**19 · El preferente ya se puede elegir.** `proveedorPreferente` se leía en seis
+sitios y **no se escribía en ninguno**: la política existía y era inalcanzable.
+Ahora hay una estrella en cada opción del desplegable «N opc.», que es donde se
+comparan los precios. Marca y desmarca — sin poder quitarlo, un preferente
+puesto por error ata el producto para siempre y en silencio.
+
+De paso, cuatro lecturas del `ing.proveedor` obsoleto —vacío en el catálogo
+real— que daban números falsos: el **mapa de riesgo de proveedor único daba cero
+fuentes para casi todo el inventario**, `PurchaseModal` decía «Sin Proveedor» y
+registraba la compra con ese nombre, y `IngredientDetailPanel` dejaba las fichas
+hermanas en «Desconocido». Todas pasan ya por la escalera de M2 o por el modelo
+de oferta.
+
+**20 · El catálogo de un proveedor, completo.** El filtro miraba solo
+`ing.proveedores`, ignorando las claves de `supplierData` —donde vive el
+catálogo con su precio y su formato— y el preferente. Pedir «lo de BORDINOS»
+devolvía una lista incompleta **sin decir que lo estaba**: no parece un fallo,
+parece que ese proveedor vende menos cosas.
+
+> **El patrón, otra vez:** un dato con tres representaciones y cada consumidor
+> leyendo la que le tocó cuando se escribió. No falla — responde de menos.

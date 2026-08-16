@@ -104,6 +104,7 @@ Las tres primeras están explicadas a fondo en `CONTEXT.md`.
 | Escrituras en lote | ✅ `services/firestore/escrituraPorLotes.ts`, cinco sitios convertidos |
 | Mercado · buscar y agrupar | ✅ Fases 1–4. Un solo buscador en los ocho sitios |
 | Fase 2 · navegación | **CERRADA.** Plegables ✅ · M5 ✅ · M6 ✅ · T1 ✅ |
+| Puntos 19 y 20 | **CERRADOS.** Preferente elegible desde Mercado · filtro por proveedor completo |
 | Fase 3 · modelo canónico | **EN MARCHA.** Decisiones ✅ · alias resueltos en toda la app ✅ · taxonomía ✅ · precios ✅ · lector de catálogos ✅ (sin escribir) |
 
 ## ⏸️ Lo siguiente — EMPIEZA POR AQUÍ
