@@ -12,6 +12,7 @@ import { useApp } from '../../context/AppContext';
 import { CatalogoItem } from '../../types';
 import { getCategoryColor } from '../../utils/categoryColors';
 import { fijarProveedorPreferente } from '../../features/suppliers/proveedorPreferente';
+import { fichaTieneProveedor } from '../../core/ofertas/oferta';
 import { useQueryClient } from '@tanstack/react-query';
 import { evaluateMarketSignals } from '../../core/signals/signal.engine';
 import { Signal } from '../../core/signals/signal.types';
@@ -143,10 +144,13 @@ export const IngredientListPanel: React.FC<IngredientListPanelProps> = ({
     }
 
     // A. Provider Filter (Simple Link Check)
+    // Punto 20: el catálogo de un proveedor, completo.
+    // Preguntaba solo por `ing.proveedores`, que es una de las TRES formas en
+    // que un producto queda ligado a un proveedor —faltaban las claves de
+    // `supplierData`, donde vive el catálogo de verdad, y el preferente—, así
+    // que la lista salía incompleta sin avisar de que lo estaba.
     if (selectedProveedorId !== 'all') {
-      result = result.filter(ing => {
-        return ing.proveedores?.includes(selectedProveedorId);
-      });
+      result = result.filter(ing => fichaTieneProveedor(ing, selectedProveedorId));
     }
 
     // B. Category Filter

@@ -214,3 +214,20 @@ export const proveedoresDeFicha = (ing: Ingredient): number => {
     }
     return ids.size;
 };
+
+/**
+ * Si un proveedor surte esta ficha, **mirando sus ofertas**.
+ *
+ * El filtro por proveedor de Mercado preguntaba `ing.proveedores?.includes(id)`,
+ * y ese array es solo una de las tres formas en que un producto queda ligado a
+ * un proveedor: están también las claves de `supplierData` —donde vive el
+ * catálogo de verdad— y el preferente. Así que filtrar por un proveedor dejaba
+ * fuera productos que ese proveedor sí vende: el catálogo de un proveedor salía
+ * incompleto sin decir que lo estaba.
+ */
+export const fichaTieneProveedor = (ing: Ingredient, proveedorId: string): boolean => {
+    if (!proveedorId) return true;
+    if (ing?.proveedorPreferente === proveedorId) return true;
+    if (ing?.proveedores?.includes(proveedorId)) return true;
+    return ofertasDeFicha(ing).some(o => o.proveedorId === proveedorId);
+};
