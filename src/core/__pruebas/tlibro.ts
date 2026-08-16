@@ -188,7 +188,8 @@ eq('y arranca en la columna D, fila 4', [conSub.grafico?.anclaCol, conSub.grafic
 
 console.log('\n— El libro entero —');
 const recetasLibro = [receta(), receta({ id: 'b', nombre: 'MOJITO' })];
-const cartaDemo = cartaASheet(recetasLibro.map(r => ({ recipe: r, coste: 1 })), { nombre: 'MI CARTA' });
+const cartaDemo = cartaASheet(recetasLibro.map(r => ({ recipe: r, coste: 1 })),
+    { nombre: 'MI CARTA', concepto: 'algo', fecha: '2026-08-16' });
 const libro = construirLibro(recetasLibro, catalogo, AJUSTES_LIBRO_POR_DEFECTO,
     { nombre: 'MI CARTA', concepto: 'algo', fecha: '2026-08-16' }, cartaDemo);
 eq('resumen + 2 cócteles + materia prima', libro.hojas.map(x => x.titulo), ['Resumen', 'DAIQUIRI', 'MOJITO', 'Materia Prima']);
@@ -199,6 +200,17 @@ console.log('\n— Sin datos no revienta —');
 eq('una carta vacía da resumen y materia prima',
     construirLibro([], catalogo, AJUSTES_LIBRO_POR_DEFECTO, { nombre: 'X' }, cartaASheet([], { nombre: 'X' })).hojas.length, 2);
 eq('una receta sin ingredientes tampoco', hojaDeCoctel({ nombre: 'V', ingredientes: [] } as any, catalogo, AJUSTES_LIBRO_POR_DEFECTO, 'V').valores.length > 0, true);
+
+
+console.log('\n— La portada del Resumen no se come el concepto ni la fecha —');
+// `MERGE_ALL` se queda SOLO con la celda de arriba a la izquierda. Fusionando
+// las cuatro filas de portada en una, el concepto y la fecha desaparecían.
+const resumen = libro.hojas[0];
+const bandasPortada = resumen.bandas.filter(b => b.fila < 4 && b.combinar);
+eq('cada fila de portada se combina por separado', bandasPortada.length, 4);
+eq('  y ninguna abarca más de una fila', bandasPortada.every(b => (b.filas || 1) === 1), true);
+eq('el concepto sigue en su fila', resumen.valores[1][0], 'algo');
+eq('y la fecha en la suya', resumen.valores[2][0], '2026-08-16');
 
 console.log(f ? `\n${f} FALLOS\n` : '\nTodo correcto\n');
 process.exit(f ? 1 : 0);

@@ -721,10 +721,23 @@ export const hojaResumen = (
         valores.push(celdas);
     });
 
-    bandas.unshift({
-        fila: 0, filas: carta.filasDePortada, color: carta.acento || ACENTO,
-        textoBlanco: true, negrita: true, tamano: 22, cols: 8, combinar: true,
-    });
+    /**
+     * La portada, **fila a fila**.
+     *
+     * Antes se fusionaban las cuatro en una sola celda, y `MERGE_ALL` se queda
+     * solo con el valor de arriba a la izquierda: el concepto de la carta y su
+     * fecha desaparecían sin dejar rastro. Cada fila se combina a lo ancho, que
+     * es lo que se quería —una banda de lado a lado— sin comerse las de abajo.
+     */
+    const anchoPortada = (carta.anchos.length || 7) + 1;
+    for (let i = 0; i < carta.filasDePortada; i++) {
+        bandas.unshift({
+            fila: i, filas: 1, color: carta.acento || ACENTO,
+            textoBlanco: true, negrita: i === 0,
+            tamano: i === 0 ? 22 : 11,
+            cols: anchoPortada, combinar: true,
+        });
+    }
     moneda.push({ fila: carta.filasDePortada, filas: carta.lineas.length, col: 3, cols: 2 });
 
     return {
