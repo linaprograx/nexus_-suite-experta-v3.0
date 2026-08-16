@@ -2,13 +2,10 @@ import React from 'react';
 import { Icon } from '../ui/Icon';
 import { ICONS } from '../ui/icons';
 import { Ingredient } from '../../types';
+import { proveedoresDeFicha } from '../../core/ofertas/oferta';
 
 /** Number of distinct supply sources an ingredient has. */
-const sourceCount = (ing: Ingredient): number => {
-    if (ing.supplierData && Object.keys(ing.supplierData).length) return Object.keys(ing.supplierData).length;
-    if (ing.proveedores && ing.proveedores.length) return ing.proveedores.length;
-    return ing.proveedor ? 1 : 0;
-};
+const sourceCount = proveedoresDeFicha;
 
 /**
  * #17 · Single-supplier risk map (read-only): aggregates the per-ingredient

@@ -1,6 +1,7 @@
 import { Recipe, Ingredient } from '../types';
 import { MenuEntry } from '../hooks/useActiveMenu';
 import { computeMenuDrift, summarizeDrift } from './menuDrift';
+import { proveedoresDeFicha } from '../core/ofertas/oferta';
 
 export interface GrimorioAlert {
     id: string;            // stable id → dedupes in the notifications collection
@@ -10,11 +11,7 @@ export interface GrimorioAlert {
     link: string;          // route to open
 }
 
-const sourceCount = (ing: Ingredient): number => {
-    if (ing.supplierData && Object.keys(ing.supplierData).length) return Object.keys(ing.supplierData).length;
-    if (ing.proveedores && ing.proveedores.length) return ing.proveedores.length;
-    return ing.proveedor ? 1 : 0;
-};
+const sourceCount = proveedoresDeFicha;
 
 const isOrphan = (r: Recipe): boolean => {
     const lines = (r.ingredientes as any[]) || [];

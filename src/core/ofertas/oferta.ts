@@ -194,3 +194,23 @@ export const sonComparables = (ofertas: Oferta[]): boolean => {
     const conPrecio = (ofertas || []).filter(o => o.precioPorBase !== null);
     return conPrecio.length > 0 && new Set(conPrecio.map(o => o.formatoUnidad)).size === 1;
 };
+
+/**
+ * Cuántos **proveedores distintos** surten un producto.
+ *
+ * Se cuentan proveedores, no ofertas: tres formatos del mismo proveedor son una
+ * sola dependencia, y el riesgo que mide esto es quedarse sin quien te lo venda.
+ *
+ * Sustituye a dos copias de un `sourceCount` que vivían en `grimorioAlerts.ts` y
+ * en `SupplierRiskPanel.tsx`, y que caían en `ing.proveedor` —el campo marcado
+ * `@deprecated`, vacío en el catálogo real— así que daban **cero** para casi
+ * todo. Es el mismo fallo que M2 arregló en la hoja de reposición: un contador
+ * que no cuenta no avisa de que no cuenta.
+ */
+export const proveedoresDeFicha = (ing: Ingredient): number => {
+    const ids = new Set<string>();
+    for (const o of ofertasDeFicha(ing)) {
+        if (o.proveedorId) ids.add(o.proveedorId);
+    }
+    return ids.size;
+};

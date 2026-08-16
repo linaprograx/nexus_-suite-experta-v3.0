@@ -1,4 +1,4 @@
-import { ofertasDeFicha, ofertasDeProducto, masBarataComparable, sonComparables, claveDeOferta, partirClave } from '../ofertas/oferta';
+import { ofertasDeFicha, ofertasDeProducto, masBarataComparable, sonComparables, claveDeOferta, partirClave, proveedoresDeFicha } from '../ofertas/oferta';
 
 let f = 0;
 const eq = (t: string, r: any, e: any) => {
@@ -85,6 +85,16 @@ eq('  y compiten entre sí', masBarataComparable(todas)?.proveedorId, 'p2');
 console.log('\n— Datos que no valen —');
 eq('precio 0 no es una oferta', ofertasDeFicha(ficha({ supplierData: { p1: { price: 0 } } })).length, 0);
 eq('una ficha sin id no da nada', ofertasDeFicha({ nombre: 'X' } as any).length, 0);
+
+
+console.log('\n— Cuántos proveedores surten un producto —');
+eq('tres formatos del MISMO proveedor son una sola dependencia', proveedoresDeFicha(tresTamanos), 1);
+eq('dos proveedores distintos son dos', proveedoresDeFicha(conPreferente), 2);
+// El contador antiguo caía en `ing.proveedor`, obsoleto y vacío en el catálogo
+// real, así que daba CERO para casi todo: un riesgo de proveedor único que no
+// avisaba de nada.
+eq('una ficha del modelo nuevo ya no cuenta cero', proveedoresDeFicha(soloFicha), 1);
+eq('sin ofertas, cero de verdad', proveedoresDeFicha(ficha({})), 0);
 
 console.log(f ? `\n${f} FALLOS\n` : '\nTodo correcto\n');
 process.exit(f ? 1 : 0);
