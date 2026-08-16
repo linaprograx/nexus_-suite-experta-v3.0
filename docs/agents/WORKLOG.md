@@ -1059,8 +1059,10 @@ app sería tocar datos del negocio. La sonda vive lo que dura la comprobación.
   Mercado, que no son un recetario. Ahora cambia con la pestaña.
 - **M5** · la categoría era una franja de color con el nombre en un `title`: en
   el teléfono no hay ratón. Y con ratón tampoco identificaba nada — el color
-  sale de un hash sobre 17 colores y hay 724 categorías, así que **cada color
-  se repite unas 43 veces**. Iba a arreglarse «poniendo leyenda al color»; el
+  sale de un hash sobre 17 colores y hay 67 categorías, así que **cada color
+  se repite unas cuatro veces**. (Aquí se escribió «724 categorías»: era el
+  número de FICHAS de la depuración, no de categorías. Corregido el 2026-08-16
+  al contarlas.) Iba a arreglarse «poniendo leyenda al color»; el
   color no tenía nada que explicar. Ahora la categoría va escrita y el color
   queda como punto de agrupación visual.
 - **M6** · las líneas de cada pedido vivían en una caja de 96 px con su propia

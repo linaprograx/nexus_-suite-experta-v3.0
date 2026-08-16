@@ -6,6 +6,7 @@ import { IntelPreferencesPanel } from '../../../features/learning/components/Int
 import { AuditLogModal } from '../../../components/grimorium/AuditLogModal';
 import { ActiveMenuModal } from '../../../components/grimorium/ActiveMenuModal';
 import { IdentityReportModal } from '../../../features/identity/IdentityReportModal';
+import { TaxonomiaReportModal } from '../../../features/taxonomia/TaxonomiaReportModal';
 import { fijarAlcanceCarta } from '../../../hooks/useAlcanceCarta';
 
 // Toolbar for Grimorium View (Recipes, Stock, Market)
@@ -15,6 +16,7 @@ export const GrimoriumToolbar: React.FC = () => {
     const [showAuditLog, setShowAuditLog] = useState(false);
     const [showMenu, setShowMenu] = useState(false);
     const [showDuplicados, setShowDuplicados] = useState(false);
+    const [showTaxonomia, setShowTaxonomia] = useState(false);
 
     /**
      * El rótulo, por pestaña.
@@ -146,6 +148,18 @@ export const GrimoriumToolbar: React.FC = () => {
                         iconClass="text-emerald-300"
                         title="Carta activa — recetas publicadas y su desviación de coste"
                     />
+                    {/* Solo en Mercado: la taxonomía es del catálogo, y en
+                        Recetas o Inventario sería un icono que no lleva a nada
+                        de lo que hay en pantalla. */}
+                    {viewMode === 'market' && (
+                        <ActionButton
+                            onClick={() => setShowTaxonomia(true)}
+                            icon={ICONS.grid}
+                            label="Familias"
+                            iconClass="text-teal-300"
+                            title="Taxonomía — a qué familia va cada categoría, y cuáles dicen lo mismo"
+                        />
+                    )}
                     <ActionButton
                         onClick={() => setShowDuplicados(true)}
                         icon={ICONS.copy}
@@ -173,6 +187,7 @@ export const GrimoriumToolbar: React.FC = () => {
             {showIntelPanel && <IntelPreferencesPanel onClose={() => setShowIntelPanel(false)} />}
             {showAuditLog && <AuditLogModal onClose={() => setShowAuditLog(false)} />}
             {showDuplicados && <IdentityReportModal onClose={() => setShowDuplicados(false)} />}
+            {showTaxonomia && <TaxonomiaReportModal onClose={() => setShowTaxonomia(false)} />}
             {showMenu && (
                 <ActiveMenuModal
                     onClose={() => {

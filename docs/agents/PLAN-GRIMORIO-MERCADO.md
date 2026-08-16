@@ -113,7 +113,8 @@ no se guarda hoy no se recupera mañana: sin histórico no hay Fase 5.
 **4. Taxonomía — familia → subfamilia, más etiquetas transversales.** Dos
 niveles (Destilados → Mezcal) y etiquetas cruzadas (frío/seco, con alcohol,
 alérgenos, formato). **Las etiquetas son la parte que importa**: obligar a
-elegir un solo cajón por producto es exactamente lo que produjo 724 categorías.
+elegir un solo cajón por producto es exactamente lo que produjo que «FRUTAS
+CITRICOS» y «FRUTAS Y CÍTRICOS» convivan como categorías distintas.
 
 Restricciones que siguen en pie: `src/core/costing/costCalculator.ts` es la
 fuente única de coste y `src/utils/packNormalization.ts` la de unidades y
