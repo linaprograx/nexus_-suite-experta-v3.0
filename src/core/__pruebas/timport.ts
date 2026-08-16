@@ -38,7 +38,11 @@ eq('lee todas las filas de datos', r.resumen.total, 6);
 eq('«VODKA ABSOLUT» casa con «ABSOLUT VODKA»', r.lineas[0].ingredienteNombre, 'ABSOLUT VODKA');
 eq('  y detecta la subida', [r.lineas[0].estado, r.lineas[0].variacionPct], ['sube', 10]);
 eq('mismo precio → igual', r.lineas[1].estado, 'igual');
-eq('bajada', [r.lineas[2].estado, r.lineas[2].variacionPct], ['baja', -20.8]);
+// RON BLANCO: la ficha no declara formato, así que `resolveStandardPack` cae en
+// su valor por defecto (botella de 700 ml) → 12,00 € / 0,7 L = 17,14 €/L. La
+// línea trae 1 L a 9,50 €. La bajada real por litro es del 44,6 %, no del 20,8 %
+// que salía comparando etiquetas: 12 € y 9,50 € no son cantidades del mismo tamaño.
+eq('la bajada se mide por litro, no por etiqueta', [r.lineas[2].estado, r.lineas[2].variacionPct], ['baja', -44.6]);
 eq('lo que no casa exacto entra como NUEVO', r.lineas[3].estado, 'nuevo');
 eq('sin nombre → inválida', r.lineas[4].estado, 'invalida');
 eq('precio negativo → inválida', r.lineas[5].estado, 'invalida');
@@ -64,5 +68,34 @@ eq('una columna desconocida se marca, no se adivina',
 
 console.log('\n— Cada estado lleva su motivo —');
 eq('ninguna línea sin explicación', r.lineas.every(l=>l.motivo.length>0), true);
+
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Comparación por unidad base — decisión del fundador del 2026-08-16
+// ─────────────────────────────────────────────────────────────────────────────
+console.log('\n— Tres tamaños del mismo producto —');
+const cat2:any[]=[
+  // Ficha actual: 1 L a 15 € → 15 €/L.
+  { id:'v1', nombre:'ABSOLUT VODKA', precioCompra:15, unidadCompra:'1 L', unidad:'L', cantidad:1 },
+];
+const csv2=[
+  'Producto;Precio;Formato',
+  'ABSOLUT VODKA;10,00;0,750 L',   // 13,33 €/L → BAJA aunque la etiqueta diga 10 < 15
+  'ABSOLUT VODKA;25,00;3 L',       // 8,33 €/L → BAJA aunque la etiqueta diga 25 > 15
+].join('\n');
+const r2 = leerCatalogo(csv2, cat2);
+eq('750 ml a 10 € es MÁS BARATO que 1 L a 15 €', r2.lineas[0].estado, 'baja');
+eq('3 L a 25 € también, aunque la etiqueta sea el doble', r2.lineas[1].estado, 'baja');
+eq('  y el 3 L es el que más baja', (r2.lineas[1].variacionPct||0) < (r2.lineas[0].variacionPct||0), true);
+eq('el motivo habla por litro, no por etiqueta', /por litro/.test(r2.lineas[1].motivo), true);
+
+console.log('\n— Lo que NO se compara —');
+const cat3:any[]=[{ id:'k1', nombre:'HARINA', precioCompra:2, unidadCompra:'1 kg', unidad:'kg', cantidad:1 }];
+const r3 = leerCatalogo('Producto;Precio;Formato\nHARINA;3,00;1 L', cat3);
+eq('kg contra litros no se compara', r3.lineas[0].estado, 'coincide');
+eq('  y se dice por qué', /no se pueden comparar/.test(r3.lineas[0].motivo), true);
+eq('el precio por base se calcula y se puede enseñar', typeof r2.lineas[0].precioPorBase, 'number');
+eq('y el formato legible también', r2.lineas[1].formatoLegible, '3 L');
 
 console.log(f?`\n${f} FALLOS\n`:'\nTodo correcto\n'); process.exit(f?1:0);

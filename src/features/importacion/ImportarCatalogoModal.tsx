@@ -56,8 +56,18 @@ const Fila: React.FC<{ l: LineaCatalogo }> = ({ l }) => {
                     <p className="text-[10px] text-slate-500 leading-relaxed">
                         <span className="text-slate-400">fila {l.fila} · </span>{l.motivo}
                     </p>
-                    {l.formatoQty !== undefined && (
-                        <p className="text-[10px] text-slate-400">Formato leído: {l.formatoQty} {l.formatoUnidad}</p>
+                    {/* El precio por unidad es el que decide: 3 L a 25 € es más
+                        barato que 750 ml a 10 €, y la etiqueta dice lo contrario. */}
+                    {l.precioPorBase !== undefined && (
+                        <p className="text-[10px] text-slate-400">
+                            {l.formatoLegible && <>Formato <strong>{l.formatoLegible}</strong> · </>}
+                            <strong className="text-slate-500 dark:text-slate-300">
+                                {(l.precioPorBase * 1000).toFixed(2)} € por {l.unidadBase === 'und' ? 'unidad' : l.unidadBase === 'g' ? 'kg' : 'litro'}
+                            </strong>
+                            {l.precioPorBaseActual !== undefined && (
+                                <> · hoy {(l.precioPorBaseActual * 1000).toFixed(2)} €</>
+                            )}
+                        </p>
                     )}
                 </div>
             </div>
@@ -134,6 +144,8 @@ export const ImportarCatalogoModal: React.FC<{ onClose: () => void }> = ({ onClo
                             El emparejado usa el mismo criterio de identidad que el resto de la app: <strong>las mismas
                             palabras exactas</strong>. Lo que no case entra como nuevo — un parecido del 90 % no es un
                             producto, y «ABSOLUT VODKA» y «ABSOLUT MANDARINA» comparten casi todo.
+                            {' '}Y los precios se comparan <strong>por unidad base</strong>, no por la etiqueta: un
+                            formato de 3 L a 25 € es más barato que uno de 750 ml a 10 €.
                         </p>
                     </div>
 

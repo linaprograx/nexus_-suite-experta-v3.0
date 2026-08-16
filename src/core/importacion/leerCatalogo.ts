@@ -1,5 +1,5 @@
 import { Ingredient } from '../../types';
-import { parsePackFromText } from '../../utils/packNormalization';
+import { parsePackFromText, resolveStandardPack, formatPackDisplay, BaseUnit } from '../../utils/packNormalization';
 import { tokensFuertes } from '../../features/identity/duplicateCandidates';
 import { indicePorId, resolverMaestro } from '../identity/masterProduct';
 
@@ -26,6 +26,25 @@ import { indicePorId, resolverMaestro } from '../identity/masterProduct';
  *
  * **No decide el precio.** Marca qué precio cambiaría y en cuánto; aplicarlo es
  * otra decisión, y el histórico dirá lo que pasó.
+ *
+ * ## Qué precio manda, decidido por el fundador el 2026-08-16
+ *
+ * **Ninguno sobrescribe a otro.** Un catálogo trae el mismo producto en varios
+ * formatos —ABSOLUT 750 ml a 10 €, 1 L a 15 €, 3 L a 25 €— y eso no son tres
+ * productos ni un precio con tres valores: son **tres ofertas del mismo
+ * producto**. Cada `(proveedor, formato)` es su propia oferta y se guarda
+ * aparte; el precio que usa el coste sale de la oferta elegida, que ya decide
+ * `opcionesDeCompra` con la política `offerSelection`.
+ *
+ * Y para poder elegir hay que comparar **por unidad base**, no por el precio de
+ * la etiqueta: esos tres formatos salen a 13,33 · 15,00 · 8,33 €/L, así que el
+ * más caro de etiqueta es el más barato de contenido. Comparar los 10 € con los
+ * 25 € diría exactamente lo contrario de la verdad.
+ *
+ * El cálculo va por `resolveStandardPack`, que es la fuente única de formatos.
+ * Cuando no se puede resolver el formato **no se compara**: se dice. Es la misma
+ * regla que en `opcionesDeCompra` («no se corona a ninguna») y en el histórico
+ * de precios, y por el mismo motivo.
  */
 
 export type EstadoLinea = 'nuevo' | 'coincide' | 'sube' | 'baja' | 'igual' | 'invalida';
@@ -39,12 +58,19 @@ export interface LineaCatalogo {
     formatoQty?: number;
     formatoUnidad?: string;
     referencia?: string;
+    /** Precio por unidad base (€/ml, €/g, €/und). El único comparable. */
+    precioPorBase?: number;
+    unidadBase?: BaseUnit;
+    /** Formato ya resuelto, para enseñarlo: «0,7 L», «1 kg». */
+    formatoLegible?: string;
     /** La ficha del catálogo con la que casa, si casa. */
     ingredienteId?: string;
     ingredienteNombre?: string;
     estado: EstadoLinea;
     /** Precio actual de la ficha, para poder comparar sin ir a buscarlo. */
     precioActual?: number;
+    /** El de la ficha, también por unidad base: comparar peras con peras. */
+    precioPorBaseActual?: number;
     variacionPct?: number;
     /** Por qué está en ese estado. Nunca un estado sin explicación. */
     motivo: string;
@@ -199,6 +225,15 @@ export const leerCatalogo = (
         // «RON 0,70 L» lo lleva escrito. Siempre con `parsePackFromText`.
         const pack = parsePackFromText(textoUnidad) || parsePackFromText(nombre);
 
+        // El formato canónico y, con él, el precio por unidad base: es lo único
+        // que permite decir cuál de tres tamaños sale mejor.
+        const std = (textoUnidad || nombre)
+            ? resolveStandardPack({ name: nombre, unitText: textoUnidad || undefined })
+            : undefined;
+        const precioPorBase = (precio !== undefined && std && std.standardQuantity > 0)
+            ? precio / std.standardQuantity
+            : undefined;
+
         const base: LineaCatalogo = {
             fila,
             nombre: nombre.trim(),
@@ -206,6 +241,9 @@ export const leerCatalogo = (
             unidad: textoUnidad || undefined,
             formatoQty: pack?.qty,
             formatoUnidad: pack?.unit,
+            precioPorBase,
+            unidadBase: std?.standardUnit,
+            formatoLegible: std ? formatPackDisplay(std.standardQuantity, std.standardUnit) : undefined,
             referencia: indice.referencia !== undefined ? campos[indice.referencia] || undefined : undefined,
             estado: 'nuevo',
             motivo: '',
@@ -230,7 +268,28 @@ export const leerCatalogo = (
         }
 
         const precioActual = Number((ficha as any).precioCompra) || undefined;
-        const comun = { ...base, ingredienteId: ficha.id, ingredienteNombre: ficha.nombre, precioActual };
+
+        // El precio por unidad base de la ficha. Se prefiere `standardPrice`,
+        // que es el que ya usa `opcionesDeCompra`; si no está, se deriva de su
+        // formato con la misma función. Nunca se calcula «a ojo» aquí.
+        const stdFicha = resolveStandardPack({
+            name: ficha.nombre,
+            unitText: (ficha as any).unidadCompra || ficha.unidad,
+            explicitQty: Number((ficha as any).cantidad) || undefined,
+            explicitUnit: (ficha as any).unidadCompra || ficha.unidad,
+        });
+        const precioPorBaseActual = Number((ficha as any).standardPrice)
+            || (precioActual !== undefined && stdFicha.standardQuantity > 0
+                ? precioActual / stdFicha.standardQuantity
+                : undefined);
+
+        const comun = {
+            ...base,
+            ingredienteId: ficha.id,
+            ingredienteNombre: ficha.nombre,
+            precioActual,
+            precioPorBaseActual,
+        };
 
         if (precio === undefined) {
             lineas.push({ ...comun, estado: 'coincide', motivo: 'Casa con una ficha existente, pero la línea no trae precio: no cambiaría nada.' });
@@ -241,16 +300,33 @@ export const leerCatalogo = (
             continue;
         }
 
-        const variacionPct = precioActual > 0
-            ? Math.round(((precio - precioActual) / precioActual) * 1000) / 10
-            : undefined;
+        // **Se compara por unidad base, no por el precio de la etiqueta.** Un
+        // formato de 3 L a 25 € es más barato que uno de 750 ml a 10 €, y
+        // comparar 25 con 10 diría lo contrario de la verdad.
+        const comparable = precioPorBase !== undefined
+            && precioPorBaseActual !== undefined
+            && precioPorBaseActual > 0
+            && base.unidadBase === stdFicha.standardUnit;
 
-        if (Math.abs(precio - precioActual) < 0.005) {
-            lineas.push({ ...comun, estado: 'igual', variacionPct: 0, motivo: 'Mismo precio que ya tienes.' });
-        } else if (precio > precioActual) {
-            lineas.push({ ...comun, estado: 'sube', variacionPct, motivo: `Sube de ${precioActual.toFixed(2)} € a ${precio.toFixed(2)} €.` });
+        if (!comparable) {
+            lineas.push({
+                ...comun, estado: 'coincide',
+                motivo: base.unidadBase && base.unidadBase !== stdFicha.standardUnit
+                    ? `Casa con la ficha, pero el formato del fichero está en ${base.unidadBase} y el de tu ficha en ${stdFicha.standardUnit}: no se pueden comparar sin confundir formato con precio.`
+                    : 'Casa con la ficha, pero no se ha podido resolver el formato de una de las dos: sin formato no hay precio por unidad que comparar.',
+            });
+            continue;
+        }
+
+        const variacionPct = Math.round(((precioPorBase! - precioPorBaseActual!) / precioPorBaseActual!) * 1000) / 10;
+        const porUnidad = `${base.formatoLegible || ''} · ${(precioPorBaseActual! * 1000).toFixed(2)} → ${(precioPorBase! * 1000).toFixed(2)} € por ${base.unidadBase === 'und' ? 'unidad' : base.unidadBase === 'g' ? 'kg' : 'litro'}`;
+
+        if (Math.abs(variacionPct) < 0.05) {
+            lineas.push({ ...comun, estado: 'igual', variacionPct: 0, motivo: `Mismo precio por unidad que ya tienes (${porUnidad}).` });
+        } else if (variacionPct > 0) {
+            lineas.push({ ...comun, estado: 'sube', variacionPct, motivo: `Sube: ${porUnidad}.` });
         } else {
-            lineas.push({ ...comun, estado: 'baja', variacionPct, motivo: `Baja de ${precioActual.toFixed(2)} € a ${precio.toFixed(2)} €.` });
+            lineas.push({ ...comun, estado: 'baja', variacionPct, motivo: `Baja: ${porUnidad}.` });
         }
     }
 
