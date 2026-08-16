@@ -8,6 +8,7 @@ import { ActiveMenuModal } from '../../../components/grimorium/ActiveMenuModal';
 import { IdentityReportModal } from '../../../features/identity/IdentityReportModal';
 import { TaxonomiaReportModal } from '../../../features/taxonomia/TaxonomiaReportModal';
 import { PreciosReportModal } from '../../../features/precios/PreciosReportModal';
+import { ImportarCatalogoModal } from '../../../features/importacion/ImportarCatalogoModal';
 import { fijarAlcanceCarta } from '../../../hooks/useAlcanceCarta';
 
 // Toolbar for Grimorium View (Recipes, Stock, Market)
@@ -19,6 +20,7 @@ export const GrimoriumToolbar: React.FC = () => {
     const [showDuplicados, setShowDuplicados] = useState(false);
     const [showTaxonomia, setShowTaxonomia] = useState(false);
     const [showPrecios, setShowPrecios] = useState(false);
+    const [showImportar, setShowImportar] = useState(false);
 
     /**
      * El rótulo, por pestaña.
@@ -171,6 +173,15 @@ export const GrimoriumToolbar: React.FC = () => {
                             title="Histórico de precios — qué ha subido, qué ha bajado y qué pagas de más"
                         />
                     )}
+                    {viewMode === 'market' && (
+                        <ActionButton
+                            onClick={() => setShowImportar(true)}
+                            icon={ICONS.fileText}
+                            label="Importar"
+                            iconClass="text-sky-300"
+                            title="Catálogo de proveedor — lectura en seco, no importa nada"
+                        />
+                    )}
                     <ActionButton
                         onClick={() => setShowDuplicados(true)}
                         icon={ICONS.copy}
@@ -200,6 +211,7 @@ export const GrimoriumToolbar: React.FC = () => {
             {showDuplicados && <IdentityReportModal onClose={() => setShowDuplicados(false)} />}
             {showTaxonomia && <TaxonomiaReportModal onClose={() => setShowTaxonomia(false)} />}
             {showPrecios && <PreciosReportModal onClose={() => setShowPrecios(false)} />}
+            {showImportar && <ImportarCatalogoModal onClose={() => setShowImportar(false)} />}
             {showMenu && (
                 <ActiveMenuModal
                     onClose={() => {
