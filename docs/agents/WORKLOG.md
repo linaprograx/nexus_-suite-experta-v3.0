@@ -1125,3 +1125,42 @@ fusionara todo hoy. El informe lo dice ahora por grupo, antes de tocar nada.
 **Pendiente y NO hecho a propósito**: resolver `masterProductId` en
 `costCalculator`. Es el motor económico y no se toca sin aprobación del
 fundador.
+
+---
+
+## 2026-08-16 · Claude Code · Auditoría de alias cerrada
+
+Barrido de **todos** los sitios que cruzan por `ingredientId`. Tabla completa:
+
+| Camino | Resuelve el maestro | Nota |
+|---|---|---|
+| `buildCurrentStock` (existencias) | ✅ | **Orden corregido**: consolidar y luego restar |
+| `consolidarPorMaestro` | ✅ | **Re-etiqueta también un grupo de una sola fila** |
+| `costCalculator` (coste de receta) | ✅ | Aprobado por el fundador |
+| `costeEstimado` (aviso de dato aproximado) | ✅ | |
+| `recipeDepletion` (producir una receta) | ✅ en la lectura | El id **emitido** no cambia, a propósito |
+| `ProduceRecipeModal` (aviso de faltante) | ✅ | |
+| Reglas de stock, semáforo, sobrestock, Dashboard | ✅ | `core/stock/reglasPorProducto.ts` |
+| Mercado (colapso de alias) | ✅ | `colapsarAlias.ts` |
+| `duplicateCandidates` | n/a | Su trabajo es mirar fichas, no productos |
+| `useStockResolver` | n/a | Repara compras huérfanas: ahí el id crudo es el dato |
+| Pizarrón, importador de CSV de recetas | n/a | No cruzan con existencias |
+
+**Los dos hallazgos que no se buscaban**
+
+1. **Se podía perder consumo sin que nada avisara.** Los movimientos se
+   aplicaban antes de consolidar, y `applyMovementsToStock` resta buscando una
+   fila con el id exacto: un consumo anotado sobre el maestro con las compras
+   sobre el alias no encontraba nada que restar. El almacén seguía diciendo que
+   hay algo que ya se gastó.
+2. **`consolidarPorMaestro` no re-etiquetaba los grupos de una sola fila.** Era
+   el origen de casi todo lo demás: un alias sin compras en su maestro conserva
+   su id, así que cualquiera que preguntara por «las existencias del maestro»
+   se iba de vacío. Los síntomas eran cuatro; la causa, una.
+
+**La regla que queda**
+
+> Consolidar significa que el producto tiene **un** id, tenga una ficha o cinco.
+> Y antes de dar por buena una lectura que use un `ingredientId`, la pregunta es
+> siempre la misma: **¿esto resuelve el maestro?** El daño de no hacerlo no
+> aparece como un error, aparece como un número tranquilo y equivocado.
