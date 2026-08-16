@@ -239,6 +239,12 @@ export interface StockRule {
     ingredientId: string;
     ingredientName: string;
     minStock: number;
+    /**
+     * Techo, opcional. Ausente significa «no lo he decidido», NO cero: las 611
+     * reglas que ya existen no lo tienen, y tratarlo como cero pondría el
+     * inventario entero en sobrestock. Ver `core/stock/nivelDeStock.ts`.
+     */
+    maxStock?: number;
     reorderQuantity: number;
     active: boolean;
     providerId?: string;

@@ -9,6 +9,7 @@ import { StockItem } from '../../types';
 import { StockRuleModal } from '../grimorium/StockRuleModal';
 import { Plegable, UMBRAL_LISTA_LARGA } from '../ui/Plegable';
 import { buscar } from '../../core/search/buscador';
+import { nivelDeStock } from '../../core/stock/nivelDeStock';
 
 interface StockRulesPanelProps {
     allIngredients: Ingredient[];
@@ -115,6 +116,32 @@ export const StockRulesPanel: React.FC<StockRulesPanelProps> = ({
         }).filter(Boolean) as { rule: StockRule, item: any }[];
     }, [rules, stockItems]);
 
+    /**
+     * Lo que sobra. Simétrico a `lowStockAlerts`, y separado a propósito.
+     *
+     * Sin esta lista el techo no serviría de nada: pones un máximo y lo único
+     * que cambia es un punto azul perdido entre 1.326 fichas. Aquí se lee de
+     * un vistazo cuánto capital hay parado y en qué.
+     *
+     * Solo aparece si alguien ha declarado un techo. Hoy no lo tiene ninguna
+     * de las 611 reglas, así que la sección no existe hasta que sirva.
+     */
+    const sobrestock = useMemo(() => {
+        return rules.map(rule => {
+            const stockItem = stockItems.find(i => i.ingredientId === rule.ingredientId);
+            const quantity = stockItem ? stockItem.quantityAvailable : 0;
+            const nivel = nivelDeStock(rule, quantity);
+            if (nivel.nivel !== 'sobrestock') return null;
+            return {
+                rule,
+                nombre: stockItem?.ingredientName || rule.ingredientName || 'Desconocido',
+                unidad: stockItem?.unit || 'Und',
+                cantidad: quantity,
+                exceso: nivel.exceso || 0,
+            };
+        }).filter(Boolean) as { rule: StockRule; nombre: string; unidad: string; cantidad: number; exceso: number }[];
+    }, [rules, stockItems]);
+
     const handleSaveRule = (newRuleObj: StockRule) => {
         const newRulesList = [...rules];
 
@@ -153,6 +180,16 @@ export const StockRulesPanel: React.FC<StockRulesPanelProps> = ({
                 <div className="flex items-center gap-1 text-[10px] text-slate-400" title="Stock Mínimo">
                     <span className="text-orange-400 font-bold">&lt;{rule.minStock}</span>
                 </div>
+                {/* El techo solo aparece si existe. Un «>—» en 611 filas sería
+                    ruido, y ninguna de ellas tiene máximo todavía. */}
+                {rule.maxStock ? (
+                    <>
+                        <div className="w-px h-3 bg-slate-200 dark:bg-slate-700"></div>
+                        <div className="flex items-center gap-1 text-[10px] text-slate-400" title="Stock Máximo">
+                            <span className="text-sky-500 font-bold">&gt;{rule.maxStock}</span>
+                        </div>
+                    </>
+                ) : null}
                 <div className="w-px h-3 bg-slate-200 dark:bg-slate-700"></div>
                 <div className="flex items-center gap-1 text-[10px] text-slate-400" title="Cantidad a Pedir">
                     <span className="text-indigo-500 font-bold">+{rule.reorderQuantity}</span>
@@ -302,6 +339,30 @@ export const StockRulesPanel: React.FC<StockRulesPanelProps> = ({
                         <div>
                             <p className="text-xs font-bold text-emerald-700 dark:text-emerald-300">Todo en orden</p>
                             <p className="text-[10px] text-emerald-600/70">Niveles de stock saludables</p>
+                        </div>
+                    </div>
+                )}
+
+                {/* Azul, no rojo ni ámbar: sobrar no impide servir a nadie, es
+                    dinero parado. Ver el porqué en `core/stock/nivelDeStock.ts`.
+                    Y sin botón de acción: la acción de «tengo de más» no es
+                    comprar ni tirar, es dejar de pedirlo, y eso ya lo hace el
+                    recorte de la cantidad sugerida. */}
+                {sobrestock.length > 0 && (
+                    <div className="p-2 bg-sky-50/50 dark:bg-sky-900/10 border border-sky-100 dark:border-sky-800/30 rounded-xl">
+                        <div className="flex items-center gap-2 mb-2 px-1">
+                            <Icon svg={ICONS.alertCircle} className="w-3 h-3 text-sky-500" />
+                            <h4 className="text-[10px] font-bold text-sky-600 uppercase tracking-wider">Sobrestock ({sobrestock.length})</h4>
+                        </div>
+                        <div className="space-y-1 max-h-40 overflow-y-auto custom-scrollbar">
+                            {sobrestock.map(s => (
+                                <div key={s.rule.id} className="flex items-center justify-between gap-2 px-1.5 py-1 rounded-lg hover:bg-sky-100/50 dark:hover:bg-sky-900/20">
+                                    <span className="text-[11px] font-medium text-slate-700 dark:text-slate-300 truncate" title={s.nombre}>{s.nombre}</span>
+                                    <span className="shrink-0 text-[10px] font-mono text-sky-600 dark:text-sky-400" title={`Tienes ${s.cantidad} ${s.unidad} y tu máximo es ${s.rule.maxStock}`}>
+                                        +{s.exceso} {s.unidad}
+                                    </span>
+                                </div>
+                            ))}
                         </div>
                     </div>
                 )}

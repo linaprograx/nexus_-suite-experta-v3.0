@@ -6,6 +6,7 @@ import { Input } from '../ui/Input';
 import { Ingredient, StockRule } from '../../types';
 import { Modal } from '../ui/Modal';
 import { buscar } from '../../core/search/buscador';
+import { maximoValido } from '../../core/stock/nivelDeStock';
 
 interface StockRuleModalProps {
     isOpen: boolean;
@@ -24,17 +25,17 @@ export const StockRuleModal: React.FC<StockRuleModalProps> = ({
 }) => {
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedIngredients, setSelectedIngredients] = useState<Ingredient[]>([]);
-    const [newRule, setNewRule] = useState<{ minStock: number; reorderQuantity: number }>({ minStock: 0, reorderQuantity: 0 });
+    const [newRule, setNewRule] = useState<{ minStock: number; maxStock: number; reorderQuantity: number }>({ minStock: 0, maxStock: 0, reorderQuantity: 0 });
 
     // Reset or Load Initial State
     useEffect(() => {
         if (isOpen) {
             if (initialRule) {
-                setNewRule({ minStock: initialRule.minStock, reorderQuantity: initialRule.reorderQuantity });
+                setNewRule({ minStock: initialRule.minStock, maxStock: initialRule.maxStock || 0, reorderQuantity: initialRule.reorderQuantity });
                 const ing = allIngredients.find(i => i.id === initialRule.ingredientId);
                 if (ing) setSelectedIngredients([ing]);
             } else {
-                setNewRule({ minStock: 0, reorderQuantity: 0 });
+                setNewRule({ minStock: 0, maxStock: 0, reorderQuantity: 0 });
                 setSelectedIngredients([]);
             }
             setSearchQuery('');
@@ -56,6 +57,10 @@ export const StockRuleModal: React.FC<StockRuleModalProps> = ({
                 reorderQuantity: newRule.reorderQuantity || 1,
                 active: true
             };
+            // El techo solo se guarda si se ha escrito. Guardar un 0 sería
+            // declarar «el máximo es cero», que es justo lo contrario de
+            // «no he puesto máximo».
+            if (newRule.maxStock > 0) ruleObj.maxStock = newRule.maxStock;
             onSaveRule(ruleObj);
         });
         onClose();
@@ -121,7 +126,7 @@ export const StockRuleModal: React.FC<StockRuleModalProps> = ({
                     )}
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-3 gap-3">
                     <div>
                         <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Stock Mínimo</label>
                         <Input
@@ -132,6 +137,18 @@ export const StockRuleModal: React.FC<StockRuleModalProps> = ({
                             onChange={(e) => setNewRule(prev => ({ ...prev, minStock: parseFloat(e.target.value) || 0 }))}
                         />
                         <p className="text-[10px] text-slate-400 mt-1">Alerta si baja de esto</p>
+                    </div>
+                    <div>
+                        <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Stock Máximo</label>
+                        <Input
+                            type="number"
+                            min={0}
+                            step="any"
+                            placeholder="—"
+                            value={newRule.maxStock || ''}
+                            onChange={(e) => setNewRule(prev => ({ ...prev, maxStock: parseFloat(e.target.value) || 0 }))}
+                        />
+                        <p className="text-[10px] text-slate-400 mt-1">Opcional: avisa si sobra</p>
                     </div>
                     <div>
                         <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Pedido Auto</label>
@@ -146,9 +163,19 @@ export const StockRuleModal: React.FC<StockRuleModalProps> = ({
                     </div>
                 </div>
 
+                {/* Se dice al escribirlo, que es donde se puede corregir. Con un
+                    máximo por debajo del mínimo la misma cantidad estaría a la
+                    vez baja y sobrada: no hay estado cierto que mostrar. */}
+                {!maximoValido(newRule.minStock, newRule.maxStock) && (
+                    <p className="text-xs text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900 rounded-lg px-3 py-2">
+                        El máximo ({newRule.maxStock}) tiene que ser mayor que el mínimo ({newRule.minStock}).
+                        Tal cual, la misma cantidad estaría a la vez por debajo y por encima.
+                    </p>
+                )}
+
                 <div className="pt-4 flex justify-end gap-2">
                     <Button variant="ghost" onClick={onClose}>Cancelar</Button>
-                    <Button onClick={handleSave} disabled={selectedIngredients.length === 0 || !newRule.minStock || !newRule.reorderQuantity} className="bg-indigo-600 hover:bg-indigo-700 text-white">
+                    <Button onClick={handleSave} disabled={selectedIngredients.length === 0 || !newRule.minStock || !newRule.reorderQuantity || !maximoValido(newRule.minStock, newRule.maxStock)} className="bg-indigo-600 hover:bg-indigo-700 text-white">
                         {initialRule ? 'Actualizar Regla' : 'Guardar Regla'}
                     </Button>
                 </div>

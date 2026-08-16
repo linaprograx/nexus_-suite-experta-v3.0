@@ -14,22 +14,23 @@ import { useStockResolver } from '../../features/stock/hooks/useStockResolver';
 import { PhysicalCountModal } from './PhysicalCountModal';
 import { useStockRules } from '../../hooks/useStockRules';
 import { buscar } from '../../core/search/buscador';
+import { nivelDeStock, NivelStock } from '../../core/stock/nivelDeStock';
 
-/** Estado de existencias de un ítem. `desconocido` es un estado de verdad. */
-type EstadoStock = 'ok' | 'bajo' | 'rotura' | 'desconocido';
-
-const COLOR_ESTADO: Record<EstadoStock, string> = {
+/**
+ * El color de cada nivel. El texto lo pone `nivelDeStock`, que es quien sabe
+ * contra qué número se ha comparado.
+ *
+ * **Sobrestock va en azul a propósito.** Rojo es «no puedes servir» y ámbar es
+ * «te vas a quedar sin»: los dos obligan a moverse hoy. Tener de más no impide
+ * servir a nadie —es dinero parado— y darle un color de alarma le robaría
+ * atención a los dos que sí la necesitan.
+ */
+const COLOR_NIVEL: Record<NivelStock, string> = {
     ok: 'bg-emerald-400 shadow-[0_0_10px_rgba(52,211,153,0.6)]',
     bajo: 'bg-amber-400 shadow-[0_0_10px_rgba(251,191,36,0.6)]',
     rotura: 'bg-red-400 shadow-[0_0_10px_rgba(248,113,113,0.6)]',
+    sobrestock: 'bg-sky-400 shadow-[0_0_10px_rgba(56,189,248,0.6)]',
     desconocido: 'bg-slate-400/60',
-};
-
-const TITULO_ESTADO: Record<EstadoStock, string> = {
-    ok: 'Por encima del mínimo',
-    bajo: 'Por debajo del mínimo de su regla',
-    rotura: 'Sin existencias',
-    desconocido: 'Sin regla de stock: no hay mínimo con el que comparar',
 };
 
 interface StockInventoryPanelProps {
@@ -80,12 +81,10 @@ export const StockInventoryPanel: React.FC<StockInventoryPanelProps> = ({
         () => new Map(stockRules.filter(r => r.active).map(r => [r.ingredientId, r])),
         [stockRules],
     );
-    const estadoDe = React.useCallback((item: StockItem): EstadoStock => {
-        if (!(item.quantityAvailable > 0)) return 'rotura';
-        const regla = reglaPorIngrediente.get(item.ingredientId);
-        if (!regla || typeof regla.minStock !== 'number') return 'desconocido';
-        return item.quantityAvailable < regla.minStock ? 'bajo' : 'ok';
-    }, [reglaPorIngrediente]);
+    const estadoDe = React.useCallback(
+        (item: StockItem) => nivelDeStock(reglaPorIngrediente.get(item.ingredientId), item.quantityAvailable),
+        [reglaPorIngrediente],
+    );
     const queryClient = useQueryClient();
     const [internalSearchQuery, setInternalSearchQuery] = useState('');
     const searchQuery = externalSearchTerm !== undefined ? externalSearchTerm : internalSearchQuery;
@@ -449,8 +448,8 @@ export const StockInventoryPanel: React.FC<StockInventoryPanelProps> = ({
                                             </button>
                                         )}
                                         <div
-                                            className={`w-3 h-3 rounded-full ${COLOR_ESTADO[estadoDe(item)]}`}
-                                            title={TITULO_ESTADO[estadoDe(item)]}
+                                            className={`w-3 h-3 rounded-full ${COLOR_NIVEL[estadoDe(item).nivel]}`}
+                                            title={estadoDe(item).titulo}
                                         />
                                     </div>
                                 </div>
