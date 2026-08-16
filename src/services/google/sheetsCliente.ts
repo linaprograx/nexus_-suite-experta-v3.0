@@ -425,6 +425,34 @@ export const exportarLibroASheets = async (auth: Auth, libro: LibroEscandallo): 
         formato(h.moneda, '€#,##0.00', 'CURRENCY');
         formato(h.porcentaje, '0.0%', 'PERCENT');
 
+        /**
+         * Las zonas bloqueadas de la plantilla del fundador.
+         *
+         * En una hoja viva, escribir un número encima de una fórmula la destruye
+         * sin avisar, y a partir de ahí esa celda miente para siempre — y encima
+         * parece que funciona. Se protege lo calculado; lo que se toca a mano
+         * —el PVP, las cantidades, los precios de Materia Prima— queda abierto.
+         *
+         * `warningOnly`: avisa y deja seguir. Bloquear del todo obligaría a
+         * gestionar permisos de una hoja que es del propio usuario, y él es el
+         * dueño: el objetivo es que no lo haga sin darse cuenta, no impedírselo.
+         */
+        for (const p of (h.protegidos || [])) {
+            peticiones.push({
+                addProtectedRange: {
+                    protectedRange: {
+                        range: {
+                            sheetId,
+                            startRowIndex: p.fila, endRowIndex: p.fila + p.filas,
+                            startColumnIndex: p.col, endColumnIndex: p.col + p.cols,
+                        },
+                        description: p.motivo,
+                        warningOnly: true,
+                    },
+                },
+            });
+        }
+
         // El pastel 3D de la plantilla del fundador: coste contra beneficio.
         // Aquí sí procede que sea un objeto flotante — en una ficha por pestaña
         // no hay nada que ordenar que pueda descolocarlo.

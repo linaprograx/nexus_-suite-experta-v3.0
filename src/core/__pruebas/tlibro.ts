@@ -1,6 +1,7 @@
 import {
     construirLibro, construirMateriaPrima, hojaDeCoctel, nombreDePestana, AJUSTES_LIBRO_POR_DEFECTO,
 } from '../export/libroEscandallos';
+import { cartaASheet } from '../export/cartaASheet';
 
 let f = 0;
 const eq = (t: string, r: any, e: any) => {
@@ -56,12 +57,19 @@ const v = h.valores;
 eq('la marca va en A1', v[0][0], 'NEXUS');
 eq('el nombre en la banda', v[1][0], 'DAIQUIRI');
 
-// LO CRÍTICO: la portada referencia filas fijas. Si el diseño cambia y esto no,
-// la portada apunta a la celda equivocada y NADIE se entera.
-eq('fila 4 = PVP', v[3][0], 'PVP al público');
-eq('fila 7 = Coste de receta', v[6][0], 'Coste de receta');
-eq('fila 8 = Margen bruto', v[7][0], 'Margen bruto');
-eq('fila 9 = % de coste', v[8][0], '% de coste');
+// El bloque económico, cada cosa en su fila. Y sobre todo: que las dos celdas
+// que alimentan el gráfico apunten a lo que su etiqueta dice. En la primera
+// versión «Coste» apuntaba al margen y «Beneficio» al porcentaje, así que el
+// pastel enseñaba dos números que no eran esos y parecía correcto.
+const etiqueta = (t: string) => v.findIndex(r => r[0] === t) + 1;
+eq('economía y reparto tienen su rótulo', [v[4][0], v[4][3]], ['ECONOMÍA', 'REPARTO']);
+eq('«Coste» del gráfico apunta a la fila del coste', v[5][4], `=B${etiqueta('Coste de receta')}`);
+eq('«Beneficio» del gráfico apunta a la fila del margen', v[6][4], `=B${etiqueta('Margen bruto')}`);
+eq('el PV neto sale del PVP y el impuesto',
+    /=IF\(B\d+="";"";B\d+\/\(1\+B\d+\)\)/.test(String(v[etiqueta('PV neto') - 1][1])), true);
+eq('el % de coste divide coste entre PV neto',
+    String(v[etiqueta('% de coste') - 1][1]).includes(`B${etiqueta('Coste de receta')}/B${etiqueta('PV neto')}`), true);
+eq('se protege lo calculado, no lo que se toca a mano', (h.protegidos || []).length > 0, true);
 
 eq('las cantidades van normalizadas a unidad base: 6 cl → 60 ml',
     v.find(r => r[0] === 'RON BLANCO')?.slice(1, 3), [60, 'ml']);
@@ -93,24 +101,31 @@ const conSub = hojaDeCoctel(receta({
         },
     ],
 }), catalogo, AJUSTES_LIBRO_POR_DEFECTO, 'X');
-const tit = conSub.valores.find(r => String(r[0]).startsWith('SIROPE'));
-eq('la sub-receta lleva su rendimiento en el título', String(tit?.[0]).includes('rinde 1000'), true);
+const tit = conSub.valores.find(r => String(r[0]) === 'SIROPE');
+// 500 g + 500 ml: Nexus los suma (asume densidad 1) pero la etiqueta NO puede
+// decir «1000 g», porque la mitad no lo es.
+eq('el rendimiento no se etiqueta con una unidad que no es', tit?.[1], 'rinde 1000 ml/g');
+const uso = conSub.valores.find(r => r[0] === 'Usado en la receta');
+eq('lo usado lleva SU unidad, la de la línea', [uso?.[1], uso?.[2]], [20, 'ml']);
+eq('la explicación del prorrateo va en Notas, no en la columna de importes',
+    [String(uso?.[3]), String(uso?.[5])], ['', 'Coste del lote × 20 ÷ 1000']);
 const prorrateo = conSub.valores.find(r => r[0] === 'Usado en la receta');
 eq('se prorratea por lo usado', /=E\d+\*20\/1000/.test(String(prorrateo?.[4])), true);
-const coste = conSub.valores[6];
-eq('el coste de receta suma directos MÁS la sub-receta prorrateada', /=E\d+\+E\d+/.test(String(coste[1])), true);
+const costeSub = conSub.valores.find(r => r[0] === 'Coste de receta');
+eq('el coste de receta suma directos MÁS la sub-receta prorrateada', /=E\d+\+E\d+/.test(String(costeSub?.[1])), true);
 
 console.log('\n— El libro entero —');
-const libro = construirLibro([receta(), receta({ id: 'b', nombre: 'MOJITO' })], catalogo, AJUSTES_LIBRO_POR_DEFECTO,
-    { nombre: 'MI CARTA', concepto: 'algo', fecha: '2026-08-16' });
-eq('portada + 2 cócteles + materia prima', libro.hojas.map(x => x.titulo), ['Carta', 'DAIQUIRI', 'MOJITO', 'Materia Prima']);
-eq('la portada trae el coste de cada pestaña por fórmula',
-    libro.hojas[0].valores.find(r => r[0] === 'DAIQUIRI')?.[2], "='DAIQUIRI'!B7");
-eq('y esa fila 7 es de verdad el coste',
-    libro.hojas[1].valores[6][0], 'Coste de receta');
+const recetasLibro = [receta(), receta({ id: 'b', nombre: 'MOJITO' })];
+const cartaDemo = cartaASheet(recetasLibro.map(r => ({ recipe: r, coste: 1 })), { nombre: 'MI CARTA' });
+const libro = construirLibro(recetasLibro, catalogo, AJUSTES_LIBRO_POR_DEFECTO,
+    { nombre: 'MI CARTA', concepto: 'algo', fecha: '2026-08-16' }, cartaDemo);
+eq('resumen + 2 cócteles + materia prima', libro.hojas.map(x => x.titulo), ['Resumen', 'DAIQUIRI', 'MOJITO', 'Materia Prima']);
+eq('el resumen enlaza con la ficha de cada cóctel',
+    /HYPERLINK\("#gid=1";"Ver ficha"\)/.test(String(libro.hojas[0].valores.find(r => r[0] === 'DAIQUIRI')?.[7])), true);
 
 console.log('\n— Sin datos no revienta —');
-eq('una carta vacía da portada y materia prima', construirLibro([], catalogo, AJUSTES_LIBRO_POR_DEFECTO, { nombre: 'X' }).hojas.length, 2);
+eq('una carta vacía da resumen y materia prima',
+    construirLibro([], catalogo, AJUSTES_LIBRO_POR_DEFECTO, { nombre: 'X' }, cartaASheet([], { nombre: 'X' })).hojas.length, 2);
 eq('una receta sin ingredientes tampoco', hojaDeCoctel({ nombre: 'V', ingredientes: [] } as any, catalogo, AJUSTES_LIBRO_POR_DEFECTO, 'V').valores.length > 0, true);
 
 console.log(f ? `\n${f} FALLOS\n` : '\nTodo correcto\n');

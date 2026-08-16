@@ -1,5 +1,6 @@
 import { Recipe, Ingredient, IngredientLineItem } from '../../types';
-import { resolvePricePerBase } from '../costing/costCalculator';
+import { HojaCarta } from './cartaASheet';
+import { resolvePricePerBase, recipeTotalVolume } from '../costing/costCalculator';
 import { normalizeToBase } from '../../utils/packNormalization';
 import { indicePorId, resolverMaestro } from '../identity/masterProduct';
 
@@ -69,6 +70,16 @@ export interface HojaLibro {
     /** Rango de 2×2 (etiqueta, valor) que alimenta el gráfico de tarta. */
     grafico?: { filaDatos: number; colDatos: number; anclaFila: number; anclaCol: number };
     filaCongelada?: number;
+    /**
+     * Lo que NO se toca: las celdas calculadas.
+     *
+     * La plantilla del fundador tiene sus zonas bloqueadas, y con razón — en una
+     * hoja viva, escribir un número encima de una fórmula la destruye sin
+     * avisar, y a partir de ahí esa celda miente para siempre. Se protege lo
+     * calculado y se deja abierto lo que se toca a mano: el PVP, las cantidades
+     * y los precios de Materia Prima.
+     */
+    protegidos?: Array<{ fila: number; filas: number; col: number; cols: number; motivo: string }>;
 }
 
 export interface LibroEscandallo {
@@ -281,20 +292,33 @@ export const hojaDeCoctel = (
     const bandas: Banda[] = [];
     const moneda: RangoFormato[] = [];
     const porcentaje: RangoFormato[] = [];
+    const protegidos: HojaLibro['protegidos'] = [];
 
-    // ── Cabecera. «NEXUS» arriba a la izquierda, en gris: Sheets no tiene
-    //    marcas de agua de verdad, así que es una celda, no un fondo.
+    const fila = () => valores.length + 1;   // fila 1-indexada de la PRÓXIMA que se empuje
+
+    // ── Cabecera. «NEXUS» en A1 y en gris: Sheets no tiene marcas de agua de
+    //    verdad, así que es una celda. Fingir lo contrario sería peor.
     valores.push(['NEXUS', '', '', '', '', '']);
     valores.push([receta.nombre || 'Sin nombre', '', '', '', '', '']);
     bandas.push({ fila: 1, color: ACENTO, textoBlanco: true, negrita: true, tamano: 18, cols: 6, combinar: true });
+    valores.push([(receta.categorias || []).join(' · ') || 'Ficha de escandallo', '', '', '', '', '']);
+    bandas.push({ fila: 2, color: '#e2e8f0', tamano: 9, cols: 6, combinar: true });
     valores.push([]);
 
-    // ── Bloque económico. Las filas se numeran para poder referenciarlas.
-    const filaPVP = valores.length + 1;
-    valores.push(['PVP al público', pvp || '', '', 'Coste', `=B${filaPVP + 4}`, '']);
-    const filaTasa = valores.length + 1;
-    valores.push(['Impuesto de venta', ajustes.tasaVenta, '', 'Beneficio', `=B${filaPVP + 5}`, '']);
-    const filaNeto = valores.length + 1;
+    // ── Dos bloques en la misma banda, cada uno en su sitio: la economía a la
+    //    izquierda y el reparto —lo que alimenta el gráfico— a la derecha.
+    //    Antes compartían filas sin rótulo y las etiquetas «Coste/Beneficio»
+    //    aparecían flotando en medio de la ficha sin decir de qué eran.
+    const filaSeccion = fila();
+    valores.push(['ECONOMÍA', '', '', 'REPARTO', '', '']);
+    bandas.push({ fila: filaSeccion - 1, color: '#334155', textoBlanco: true, negrita: true, cols: 3, combinar: true });
+    bandas.push({ fila: filaSeccion - 1, col: 3, cols: 3, color: '#334155', textoBlanco: true, negrita: true, combinar: true });
+
+    const filaPVP = fila();
+    valores.push(['PVP al público', pvp || '', '', 'Coste', '', '']);
+    const filaTasa = fila();
+    valores.push(['Impuesto de venta', ajustes.tasaVenta, '', 'Beneficio', '', '']);
+    const filaNeto = fila();
     valores.push([
         'PV neto',
         ajustes.precioIncluyeImpuestos
@@ -302,35 +326,47 @@ export const hojaDeCoctel = (
             : `=IF(B${filaPVP}="";"";B${filaPVP})`,
         '', '', '', '',
     ]);
-
-    const filaCoste = valores.length + 1;
-    valores.push(['Coste de receta', 0, '', '', '', '']);      // se rellena al final
-    const filaMargen = valores.length + 1;
-    valores.push([`Margen bruto`, `=IF(B${filaNeto}="";"";B${filaNeto}-B${filaCoste})`, '', '', '', '']);
-    const filaPct = valores.length + 1;
+    const filaCoste = fila();
+    valores.push(['Coste de receta', 0, '', '', '', '']);
+    const filaMargen = fila();
+    valores.push(['Margen bruto', `=IF(B${filaNeto}="";"";B${filaNeto}-B${filaCoste})`, '', '', '', '']);
+    const filaPct = fila();
     valores.push(['% de coste', `=IF(B${filaNeto}="";"";B${filaCoste}/B${filaNeto})`, '', '', '', '']);
+
+    // El gráfico se alimenta de estas dos celdas, y ahora apuntan a lo que
+    // dicen: coste y margen, no a la fila de al lado.
+    valores[filaPVP - 1][4] = `=B${filaCoste}`;
+    valores[filaTasa - 1][4] = `=B${filaMargen}`;
 
     moneda.push({ fila: filaPVP - 1, filas: 1, col: 1, cols: 1 });
     moneda.push({ fila: filaNeto - 1, filas: 3, col: 1, cols: 1 });
     moneda.push({ fila: filaPVP - 1, filas: 2, col: 4, cols: 1 });
     porcentaje.push({ fila: filaTasa - 1, filas: 1, col: 1, cols: 1 });
     porcentaje.push({ fila: filaPct - 1, filas: 1, col: 1, cols: 1 });
+    // Calculadas: PV neto, coste, margen y %. El PVP y el impuesto se tocan.
+    protegidos.push({ fila: filaNeto - 1, filas: 4, col: 1, cols: 1, motivo: 'Calculado por fórmula' });
+    protegidos.push({ fila: filaPVP - 1, filas: 2, col: 4, cols: 1, motivo: 'Calculado por fórmula' });
 
     if (ajustes.mermaReceta > 0) {
+        const f = fila();
         valores.push(['Merma de receta (Nexus)', ajustes.mermaReceta / 100, '', '', '', '']);
-        porcentaje.push({ fila: valores.length - 1, filas: 1, col: 1, cols: 1 });
+        porcentaje.push({ fila: f - 1, filas: 1, col: 1, cols: 1 });
     }
 
     valores.push([]);
 
     // ── Ingredientes.
-    const filaCabecera = valores.length + 1;
+    const filaTituloIng = fila();
+    valores.push(['INGREDIENTES', '', '', '', '', '']);
+    bandas.push({ fila: filaTituloIng - 1, color: '#334155', textoBlanco: true, negrita: true, cols: 6, combinar: true });
+
+    const filaCabecera = fila();
     valores.push(['Ingrediente', 'Cantidad', 'Unidad', 'Coste unitario', 'Coste', 'Nota']);
     bandas.push({ fila: filaCabecera - 1, color: GRIS, negrita: true, cols: 6 });
 
-    const primeraLinea = valores.length + 1;
+    const primeraLinea = fila();
     for (const d of directas) {
-        const f = valores.length + 1;
+        const f = fila();
         valores.push([
             d.nombre,
             d.cantidadBase,
@@ -341,57 +377,69 @@ export const hojaDeCoctel = (
         ]);
     }
     const ultimaLinea = valores.length;
-    const filaTotalDirecto = valores.length + 1;
+    const filaTotalDirecto = fila();
     valores.push(['', '', '', 'Total ingredientes', `=SUM(E${primeraLinea}:E${ultimaLinea})`, '']);
     bandas.push({ fila: filaTotalDirecto - 1, color: ACENTO, textoBlanco: true, negrita: true, cols: 6 });
     moneda.push({ fila: primeraLinea - 1, filas: (ultimaLinea - primeraLinea + 2), col: 3, cols: 2 });
+    if (directas.length) {
+        protegidos.push({ fila: primeraLinea - 1, filas: directas.length + 1, col: 3, cols: 2, motivo: 'Calculado por fórmula' });
+    }
 
-    // ── Sub-recetas: cada una con su rendimiento, su tabla y su prorrateo.
+    // ── Sub-recetas.
     const totalesBloques: string[] = [];
     for (const b of bloques) {
         valores.push([]);
         const sub = (b.subItems || []).map(l => normalizarLinea(l, porId));
-        const usadoNorm = normalizeToBase(num(b.cantidad), b.unidad || 'ml');
-        const usado = usadoNorm.base === 'unknown' ? num(b.cantidad) : redondear(usadoNorm.qty, 3);
-        const rendimiento = sub.reduce((a, s) => a + s.cantidadBase, 0);
 
-        const filaTitulo = valores.length + 1;
-        valores.push([`${b.nombre || 'Sub-receta'} · rinde ${rendimiento || '?'} ${sub[0]?.unidadBase || ''}`, '', '', '', '', '']);
-        bandas.push({ fila: filaTitulo - 1, color: '#334155', textoBlanco: true, negrita: true, cols: 6, combinar: true });
+        // El rendimiento sale de `recipeTotalVolume`, la MISMA función con la
+        // que Nexus prorratea. Suma las cantidades normalizadas aunque mezclen
+        // gramos y mililitros —el motor asume densidad 1 en todas partes—, así
+        // que aquí no se etiqueta con una unidad concreta: decir «1000 g» de un
+        // lote que son 500 g y 500 ml sería inventarse la mitad.
+        const rendimiento = redondear(recipeTotalVolume({ ingredientes: b.subItems || [] } as any), 3);
+        const unidades = Array.from(new Set(sub.map(x => x.unidadBase))).filter(Boolean);
+        const unidadLote = unidades.length === 1 ? unidades[0] : 'ml/g';
+        const usoNorm = normalizeToBase(num(b.cantidad), b.unidad || 'ml');
+        const usado = usoNorm.base === 'unknown' ? num(b.cantidad) : redondear(usoNorm.qty, 3);
+        const unidadUso = usoNorm.base === 'unknown' ? (b.unidad || '') : usoNorm.base;
 
-        const filaCab = valores.length + 1;
-        valores.push(['Ingrediente', 'Cantidad', 'Unidad', 'Coste unitario', 'Coste', '']);
+        const filaTitulo = fila();
+        valores.push([`${b.nombre || 'Sub-receta'}`, `rinde ${rendimiento || '?'} ${unidadLote}`, '', '', '', '']);
+        bandas.push({ fila: filaTitulo - 1, color: '#475569', textoBlanco: true, negrita: true, cols: 6 });
+
+        const filaCab = fila();
+        valores.push(['Ingrediente', 'Cantidad', 'Unidad', 'Coste unitario', 'Coste', 'Nota']);
         bandas.push({ fila: filaCab - 1, color: GRIS, negrita: true, cols: 6 });
 
-        const desde = valores.length + 1;
-        for (const s of sub) {
-            const f = valores.length + 1;
+        const desde = fila();
+        for (const x of sub) {
+            const f = fila();
             valores.push([
-                s.nombre, s.cantidadBase, s.unidadBase,
-                s.huerfana ? '' : `=IFERROR(VLOOKUP($A${f};'${paraFormula(MATERIA)}'!$A:$D;4;FALSE);"")`,
-                s.huerfana ? '' : `=IF(D${f}="";"";B${f}*D${f})`,
-                s.huerfana ? 'Sin ficha en el catálogo.' : '',
+                x.nombre, x.cantidadBase, x.unidadBase,
+                x.huerfana ? '' : `=IFERROR(VLOOKUP($A${f};'${paraFormula(MATERIA)}'!$A:$D;4;FALSE);"")`,
+                x.huerfana ? '' : `=IF(D${f}="";"";B${f}*D${f})`,
+                x.huerfana ? 'Sin ficha en el catálogo.' : '',
             ]);
         }
         const hasta = valores.length;
-        const filaLote = valores.length + 1;
+        const filaLote = fila();
         valores.push(['', '', '', 'Coste del lote', `=SUM(E${desde}:E${hasta})`, '']);
 
-        const filaProrrateo = valores.length + 1;
-        // El prorrateo, escrito para que se pueda auditar: lo que cuesta el lote,
-        // por la parte que esta receta usa.
+        const filaProrrateo = fila();
+        // El prorrateo, auditable de un vistazo, y la explicación en la columna
+        // de notas — no en la de importes, donde antes había un «de 1000» que
+        // era texto dentro de una columna de moneda.
         valores.push([
-            `Usado en la receta`, usado, sub[0]?.unidadBase || '',
-            `de ${rendimiento || '?'}`,
+            'Usado en la receta', usado, unidadUso, '',
             rendimiento > 0 ? `=E${filaLote}*${usado}/${rendimiento}` : '',
-            '',
+            `Coste del lote × ${usado} ÷ ${rendimiento || '?'}`,
         ]);
-        bandas.push({ fila: filaProrrateo - 1, color: '#334155', textoBlanco: true, negrita: true, cols: 6 });
+        bandas.push({ fila: filaProrrateo - 1, color: '#475569', textoBlanco: true, negrita: true, cols: 6 });
         moneda.push({ fila: desde - 1, filas: hasta - desde + 3, col: 3, cols: 2 });
+        protegidos.push({ fila: desde - 1, filas: sub.length + 2, col: 3, cols: 2, motivo: 'Calculado por fórmula' });
         totalesBloques.push(`E${filaProrrateo}`);
     }
 
-    // El coste de receta: los ingredientes directos más cada sub-receta prorrateada.
     valores[filaCoste - 1][1] = totalesBloques.length
         ? `=E${filaTotalDirecto}+${totalesBloques.join('+')}`
         : `=E${filaTotalDirecto}`;
@@ -399,82 +447,99 @@ export const hojaDeCoctel = (
     return {
         titulo,
         valores,
-        anchos: [260, 90, 70, 120, 100, 260],
+        anchos: [250, 100, 80, 120, 110, 300],
         bandas,
         moneda,
         porcentaje,
-        grafico: { filaDatos: filaPVP - 1, colDatos: 3, anclaFila: 2, anclaCol: 6 },
+        protegidos,
+        grafico: { filaDatos: filaPVP - 1, colDatos: 3, anclaFila: filaSeccion + 1, anclaCol: 6 },
     };
 };
 
-/** La portada: cada cóctel con su fila, y todo traído por fórmula de su pestaña. */
-export const hojaPortada = (
-    meta: { nombre: string; concepto?: string; fecha?: string },
-    pestanas: Array<{ titulo: string; filaPVP: number; filaCoste: number; filaMargen: number; filaPct: number }>,
+/**
+ * La pestaña **Resumen**: el diseño de carta que ya existía, reutilizado.
+ *
+ * No se ha rehecho: se adapta `cartaASheet`, que ya estaba escrito y probado —
+ * portada, secciones CON/SIN ALCOHOL, columnas y la barra de coste/beneficio en
+ * cada fila. Rehacerlo aquí habría dejado dos diseños de la misma carta que se
+ * separarían al primer cambio.
+ *
+ * Lo único que se añade es la columna que faltaba cuando la carta vivía sola:
+ * **un enlace a la pestaña de cada cóctel**.
+ */
+export const hojaResumen = (
+    carta: HojaCarta,
+    enlaces: Map<string, string>,
 ): HojaLibro => {
-    const valores: Celda[][] = [
-        ['NEXUS', '', '', '', ''],
-        [meta.nombre || 'Carta', '', '', '', ''],
-        [meta.concepto || '', '', '', '', ''],
-        [meta.fecha || '', '', '', '', ''],
-        [],
-        ['Cóctel', 'PVP', 'Coste', 'Margen', '% coste'],
-    ];
+    const valores: Celda[][] = [];
+    const bandas: Banda[] = [];
+    const moneda: RangoFormato[] = [];
 
-    for (const p of pestanas) {
-        const q = `'${paraFormula(p.titulo)}'`;
-        valores.push([
-            p.titulo,
-            `=${q}!B${p.filaPVP}`,
-            `=${q}!B${p.filaCoste}`,
-            `=${q}!B${p.filaMargen}`,
-            `=${q}!B${p.filaPct}`,
-        ]);
-    }
+    carta.lineas.forEach((l, i) => {
+        const celdas: Celda[] = [...l.celdas];
+        if (l.tipo === 'cabecera') {
+            celdas.push('Ficha');
+            bandas.push({ fila: i, color: GRIS, negrita: true, cols: celdas.length });
+        } else if (l.tipo === 'seccion') {
+            bandas.push({ fila: i, color: carta.acento || ACENTO, textoBlanco: true, negrita: true, cols: 7, combinar: true });
+        } else if (l.tipo === 'coctel') {
+            const nombre = String(l.celdas[0] || '');
+            const pestana = enlaces.get(nombre);
+            // Un enlace a su ficha. Sin esto, con catorce pestañas hay que
+            // buscar a mano la del cóctel que se está mirando.
+            celdas.push(pestana ? `=HYPERLINK("#gid=${pestana}";"Ver ficha")` : '');
+        }
+        valores.push(celdas);
+    });
 
-    const desde = 7;
-    const hasta = 6 + pestanas.length;
-    valores.push(['TOTAL', `=SUM(B${desde}:B${hasta})`, `=SUM(C${desde}:C${hasta})`, `=SUM(D${desde}:D${hasta})`, '']);
+    bandas.unshift({
+        fila: 0, filas: carta.filasDePortada, color: carta.acento || ACENTO,
+        textoBlanco: true, negrita: true, tamano: 22, cols: 8, combinar: true,
+    });
+    moneda.push({ fila: carta.filasDePortada, filas: carta.lineas.length, col: 3, cols: 2 });
 
     return {
-        titulo: 'Carta',
+        titulo: 'Resumen',
         valores,
-        anchos: [280, 100, 100, 100, 90],
-        bandas: [
-            { fila: 1, color: ACENTO, textoBlanco: true, negrita: true, tamano: 20, cols: 5, combinar: true },
-            { fila: 5, color: GRIS, negrita: true, cols: 5 },
-            { fila: 6 + pestanas.length, color: ACENTO, textoBlanco: true, negrita: true, cols: 5 },
-        ],
-        moneda: [{ fila: 6, filas: pestanas.length + 1, col: 1, cols: 3 }],
-        porcentaje: [{ fila: 6, filas: pestanas.length, col: 4, cols: 1 }],
-        filaCongelada: 6,
+        anchos: [...carta.anchos, 90],
+        bandas,
+        moneda,
+        porcentaje: [],
+        filaCongelada: carta.filasDePortada,
     };
 };
 
-/** El libro entero. */
+/**
+ * El libro entero: **Resumen · una pestaña por cóctel · Materia Prima**.
+ *
+ * Un solo botón, tres cosas en el mismo sitio. Tenerlos separados obligaba a
+ * elegir entre «la carta» y «los escandallos» antes de saber cuál se quería, y
+ * eran dos ficheros distintos en el Drive para una misma carta.
+ */
 export const construirLibro = (
     recetas: Partial<Recipe>[],
     catalogo: Ingredient[],
     ajustes: AjustesLibro,
     meta: { nombre: string; concepto?: string; fecha?: string },
+    carta: HojaCarta,
 ): LibroEscandallo => {
-    const usados = new Set<string>(['carta', MATERIA.toLowerCase()]);
+    const usados = new Set<string>(['resumen', MATERIA.toLowerCase()]);
     const hojasCoctel: HojaLibro[] = [];
-    const resumen: Array<{ titulo: string; filaPVP: number; filaCoste: number; filaMargen: number; filaPct: number }> = [];
+    const enlaces = new Map<string, string>();
 
-    for (const r of recetas) {
+    recetas.forEach((r, i) => {
         const titulo = nombreDePestana(r.nombre || 'Sin nombre', usados);
-        const hoja = hojaDeCoctel(r, catalogo, ajustes, titulo);
-        hojasCoctel.push(hoja);
-        // Las filas del bloque económico son fijas por construcción: 4ª a 9ª.
-        resumen.push({ titulo, filaPVP: 4, filaCoste: 7, filaMargen: 8, filaPct: 9 });
-    }
+        hojasCoctel.push(hojaDeCoctel(r, catalogo, ajustes, titulo));
+        // El gid de cada pestaña es su índice: Resumen es 0, los cócteles van
+        // detrás. Se fija al crear el libro, así que el enlace es estable.
+        enlaces.set(r.nombre || 'Sin nombre', String(i + 1));
+    });
 
     const materia = construirMateriaPrima(recetas, catalogo);
 
     return {
         titulo: `${meta.nombre || 'Carta'} · escandallos`,
         acento: ACENTO,
-        hojas: [hojaPortada(meta, resumen), ...hojasCoctel, hojaMateriaPrima(materia)],
+        hojas: [hojaResumen(carta, enlaces), ...hojasCoctel, hojaMateriaPrima(materia)],
     };
 };

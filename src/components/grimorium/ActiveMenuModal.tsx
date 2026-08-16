@@ -11,7 +11,7 @@ import { printRecipeCards } from './printRecipeCard';
 import { PLANTILLAS_PORTADA, PLANTILLA_POR_DEFECTO } from './portadas/plantillasPortada';
 import { calculateRecipeCost } from '../../core/costing/costCalculator';
 import { cartaASheet } from '../../core/export/cartaASheet';
-import { exportarCartaASheets, exportarLibroASheets, esAppInstalada } from '../../services/google/sheetsCliente';
+import { exportarLibroASheets, esAppInstalada } from '../../services/google/sheetsCliente';
 import { construirLibro } from '../../core/export/libroEscandallos';
 import { useBusinessCostSettings } from '../../hooks/useBusinessCostSettings';
 import { useApp } from '../../context/AppContext';
@@ -131,6 +131,13 @@ export const ActiveMenuModal: React.FC<{
      * la app—. Reutiliza `prepararRecetas`, porque duplicar el orden y el
      * coste haría que las dos exportaciones dijeran cosas distintas.
      */
+    /**
+     * El libro de escandallos: portada, una pestaña por cóctel y Materia Prima.
+     *
+     * Comparte `prepararRecetas` con las otras dos exportaciones, y los ajustes
+     * salen de Negocio → Costes: el impuesto de venta se escribe **una vez** y
+     * las doce fichas lo usan, en vez de repetirlo a mano en cada una.
+     */
     const exportarASheets = async () => {
         if (!auth) { setAvisoSheets('Sesión no inicializada.'); return; }
         setAvisoSheets(null);
@@ -141,61 +148,26 @@ export const ActiveMenuModal: React.FC<{
         const n = nombre.trim() || 'Carta';
         setExportando(true);
         try {
-            const hoja = cartaASheet(
-                recetas.map(r => ({ recipe: r, coste: calculateRecipeCost(r, allIngredients, undefined, allRecipes).costoTotal })),
-                { nombre: n, concepto: concepto.trim(), fecha: cartaActiva?.fecha, acento: '#0d9488' },
-            );
-            const url = await exportarCartaASheets(auth, hoja);
-            /**
-             * Se enseña el enlace; **no se abre solo**.
-             *
-             * Abrirlo con `window.open` después de un `await` es lo que hacía
-             * que no pasara nada: para entonces ya no estamos dentro del clic
-             * del usuario, y el navegador lo bloquea sin decir palabra. La hoja
-             * se creaba —el trabajo salía bien— y el único indicio se perdía.
-             *
-             * Un enlace que el usuario pulsa nunca lo bloquea nadie, y además
-             * le deja decidir si quiere salir de la carta o no.
-             */
-            setHojaCreada({ url, nombre: n });
-        } catch (e: any) {
-            console.error('[Sheets]', e);
-            // En pantalla y no en un `alert`: el aviso de la app instalada hay
-            // que poder leerlo con calma, y lleva una acción detrás.
-            setAvisoSheets(e?.message || 'No se pudo exportar a Sheets.');
-        } finally {
-            setExportando(false);
-        }
-    };
-    /**
-     * El libro de escandallos: portada, una pestaña por cóctel y Materia Prima.
-     *
-     * Comparte `prepararRecetas` con las otras dos exportaciones, y los ajustes
-     * salen de Negocio → Costes: el impuesto de venta se escribe **una vez** y
-     * las doce fichas lo usan, en vez de repetirlo a mano en cada una.
-     */
-    const exportarEscandallos = async () => {
-        if (!auth) { setAvisoSheets('Sesión no inicializada.'); return; }
-        setAvisoSheets(null);
-        setHojaCreada(null);
-        const recetas = prepararRecetas();
-        if (!recetas) return;
+            const entradas = recetas.map(r => ({
+                recipe: r,
+                coste: calculateRecipeCost(r, allIngredients, undefined, allRecipes).costoTotal,
+            }));
+            const carta = cartaASheet(entradas, {
+                nombre: n, concepto: concepto.trim(), fecha: cartaActiva?.fecha, acento: '#0d9488',
+            });
 
-        const n = nombre.trim() || 'Carta';
-        setExportando(true);
-        try {
             const libro = construirLibro(recetas, allIngredients, {
                 tasaVenta: Number(ajustesCoste?.taxRateVenta) || 0,
                 precioIncluyeImpuestos: ajustesCoste?.precioIncluyeImpuestos !== false,
                 mermaReceta: Number(ajustesCoste?.porcentajeMermaDefault) || 0,
                 moneda: ajustesCoste?.moneda || 'EUR',
-            }, { nombre: n, concepto: concepto.trim(), fecha: cartaActiva?.fecha });
+            }, { nombre: n, concepto: concepto.trim(), fecha: cartaActiva?.fecha }, carta);
 
             const url = await exportarLibroASheets(auth, libro);
             setHojaCreada({ url, nombre: `${n} · escandallos` });
         } catch (e: any) {
             console.error('[Escandallos]', e);
-            setAvisoSheets(e?.message || 'No se pudo crear el libro de escandallos.');
+            setAvisoSheets(e?.message || 'No se pudo crear el libro en Sheets.');
         } finally {
             setExportando(false);
         }
@@ -382,29 +354,19 @@ export const ActiveMenuModal: React.FC<{
                             >
                                 <Icon svg={ICONS.book} className="w-4 h-4" /> Exportar
                             </button>
-                            {/* La hoja de cálculo va aparte del exportar de siempre, no
-                                en su lugar: la impresa es para verla, la hoja para
-                                trabajarla. Sustituir una por otra sería quitarle algo. */}
+                            {/* Una sola exportación a Sheets. Antes eran dos botones —la
+                                carta y los escandallos— y había que elegir antes de
+                                saber cuál se quería, además de dejar dos ficheros
+                                distintos en el Drive para la misma carta. Ahora es un
+                                libro: Resumen, una pestaña por cóctel y Materia Prima. */}
                             <button
                                 onClick={exportarASheets}
                                 disabled={exportando}
-                                title="Crea la carta como hoja de cálculo en tu Drive, editable"
+                                title="Un libro de Sheets: resumen de la carta, una pestaña por cóctel y Materia Prima, todo enlazado por fórmulas"
                                 className="w-full sm:w-auto h-10 px-3 rounded-xl bg-white dark:bg-slate-800 border border-teal-600/40 text-teal-700 dark:text-teal-300 hover:bg-teal-50 dark:hover:bg-slate-700 text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-wait"
                             >
                                 <Icon svg={ICONS.grid} className="w-4 h-4" />
                                 {exportando ? 'Creando…' : 'A Sheets'}
-                            </button>
-                            {/* El libro de escandallos es la tercera cosa, no una
-                                variante de las otras dos: la carta es para verla,
-                                la hoja para leerla y esto para trabajar los costes. */}
-                            <button
-                                onClick={exportarEscandallos}
-                                disabled={exportando}
-                                title="Un libro de Sheets con una pestaña por cóctel, Materia Prima y todo enlazado por fórmulas"
-                                className="col-span-2 sm:col-span-1 w-full sm:w-auto h-10 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 dark:bg-slate-700 dark:hover:bg-slate-600 text-white text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-wait"
-                            >
-                                <Icon svg={ICONS.chart} className="w-4 h-4" />
-                                {exportando ? 'Creando…' : 'Escandallos'}
                             </button>
                         </div>
 
