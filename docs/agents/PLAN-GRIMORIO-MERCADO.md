@@ -88,24 +88,37 @@ me falta" no tiene de dónde); el envío externo necesita que la cesta ya sepa
 partirse por proveedor; y la contabilidad necesita facturas, que solo existen si
 antes hubo pedido real.
 
-## Decisiones bloqueantes del catálogo global ⬜ PENDIENTE
+## Decisiones del catálogo global ✅ TOMADAS (2026-08-16)
 
-Antes de implementar Mercado-catálogos hay que acordar:
+Las cuatro las decidió el fundador. **Son de arquitectura: no se cambian sobre
+la marcha.** Si algo obliga a replantear una, se para y se le pregunta.
 
-1. **Entrada y extracción:** PDF/Excel/CSV publicado, scraping autorizado o
-   carga manual; propietario de la extracción y frecuencia de actualización.
-   No existe instalada la skill `csv-inventario-app` citada en la nota previa.
-2. **Taxonomía:** familia → subfamilia, más etiquetas transversales necesarias
-   (frío/seco, alcohólico, formato, alérgenos, etc.).
-3. **Visibilidad:** catálogo global leído por todas las cuentas, o copia por
-   usuario; cambia reglas Firestore, coste de lectura, actualizaciones y borrado.
-4. **Precio:** precio vigente con fecha, o histórico inmutable por proveedor y
-   referencia. La recomendación a validar es histórico por observación de
-   precio, manteniendo una proyección vigente para consulta.
+**1. Entrada — ficheros que manda el proveedor.** PDF, Excel o CSV, subidos por
+el fundador cuando llegan. **No hay scraping.** Se descartó a propósito: exige
+autorización por escrito de cada proveedor y se rompe cada vez que cambian su
+web, así que convierte una función en mantenimiento perpetuo. La carga manual
+ficha a ficha tampoco es viable con 1.325 ingredientes.
 
-Restricciones: `src/core/costing/costCalculator.ts` sigue siendo la fuente única
-de coste y `src/utils/packNormalization.ts` la de unidades/formato. Cualquier
-importación debe pasar por ellas; no crear una calculadora o normalizador paralelo.
+**2. Visibilidad — un catálogo global que todas las cuentas leen.** No una copia
+por usuario. Se actualiza una vez y no se desincroniza; el coste de lectura es
+una fracción. La consecuencia que hay que respetar: **nadie edita el catálogo
+global desde la app**. Los precios negociados de cada bar viven aparte, como
+capa propia sobre la referencia compartida — no sobrescribiéndola.
+
+**3. Precio — histórico completo, nunca se borra.** Cada precio observado queda
+con su fecha, y aparte se mantiene una proyección vigente para consultar. Ocupa
+más, y es el precio de poder decir «esto ha subido un 24 % desde marzo». Lo que
+no se guarda hoy no se recupera mañana: sin histórico no hay Fase 5.
+
+**4. Taxonomía — familia → subfamilia, más etiquetas transversales.** Dos
+niveles (Destilados → Mezcal) y etiquetas cruzadas (frío/seco, con alcohol,
+alérgenos, formato). **Las etiquetas son la parte que importa**: obligar a
+elegir un solo cajón por producto es exactamente lo que produjo 724 categorías.
+
+Restricciones que siguen en pie: `src/core/costing/costCalculator.ts` es la
+fuente única de coste y `src/utils/packNormalization.ts` la de unidades y
+formato. Cualquier importación pasa por ellas; no se crea una calculadora ni un
+normalizador paralelo.
 
 ## Roadmap transversal por entregas
 
