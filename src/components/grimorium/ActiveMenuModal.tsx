@@ -132,6 +132,7 @@ export const ActiveMenuModal: React.FC<{
     const exportarASheets = async () => {
         if (!auth) { setAvisoSheets('Sesión no inicializada.'); return; }
         setAvisoSheets(null);
+        setHojaCreada(null);
         const recetas = prepararRecetas();
         if (!recetas) return;
 
@@ -143,9 +144,18 @@ export const ActiveMenuModal: React.FC<{
                 { nombre: n, concepto: concepto.trim(), fecha: cartaActiva?.fecha, acento: '#0d9488' },
             );
             const url = await exportarCartaASheets(auth, hoja);
-            // Se abre en otra pestaña en vez de navegar: quien exporta suele
-            // querer seguir en la carta.
-            window.open(url, '_blank', 'noopener');
+            /**
+             * Se enseña el enlace; **no se abre solo**.
+             *
+             * Abrirlo con `window.open` después de un `await` es lo que hacía
+             * que no pasara nada: para entonces ya no estamos dentro del clic
+             * del usuario, y el navegador lo bloquea sin decir palabra. La hoja
+             * se creaba —el trabajo salía bien— y el único indicio se perdía.
+             *
+             * Un enlace que el usuario pulsa nunca lo bloquea nadie, y además
+             * le deja decidir si quiere salir de la carta o no.
+             */
+            setHojaCreada({ url, nombre: n });
         } catch (e: any) {
             console.error('[Sheets]', e);
             // En pantalla y no en un `alert`: el aviso de la app instalada hay
@@ -158,6 +168,7 @@ export const ActiveMenuModal: React.FC<{
     const { auth } = useApp();
     const [exportando, setExportando] = React.useState(false);
     const [avisoSheets, setAvisoSheets] = React.useState<string | null>(null);
+    const [hojaCreada, setHojaCreada] = React.useState<{ url: string; nombre: string } | null>(null);
     const { recipes: allRecipes } = useRecipes();
     const { ingredients: allIngredients } = useIngredients();
 
@@ -347,6 +358,46 @@ export const ActiveMenuModal: React.FC<{
                                 {exportando ? 'Creando…' : 'A Sheets'}
                             </button>
                         </div>
+
+                        {hojaCreada && (
+                            <div className="rounded-xl border border-emerald-200 dark:border-emerald-800/40 bg-emerald-50 dark:bg-emerald-900/15 p-3">
+                                <div className="flex items-start gap-2">
+                                    <Icon svg={ICONS.check} className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                                    <div className="min-w-0 flex-1">
+                                        <p className="text-[11px] font-bold text-emerald-800 dark:text-emerald-300">
+                                            «{hojaCreada.nombre}» está en tu Drive
+                                        </p>
+                                        <p className="text-[10px] text-emerald-700/80 dark:text-emerald-400/80 leading-relaxed">
+                                            Se ha creado como hoja de cálculo, editable. El enlace se queda aquí hasta que cierres la carta.
+                                        </p>
+                                    </div>
+                                </div>
+                                <div className="flex flex-wrap gap-2 mt-2">
+                                    {/* Un enlace que pulsa el usuario nunca lo bloquea el navegador,
+                                        al contrario que un `window.open` después de esperar. */}
+                                    <a
+                                        href={hojaCreada.url}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="h-9 px-3 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-bold uppercase tracking-wider flex items-center gap-2"
+                                    >
+                                        <Icon svg={ICONS.grid} className="w-3.5 h-3.5" /> Ver en Sheets
+                                    </a>
+                                    <button
+                                        onClick={() => navigator.clipboard?.writeText(hojaCreada.url)}
+                                        className="h-9 px-3 rounded-lg border border-emerald-300 dark:border-emerald-700 text-emerald-700 dark:text-emerald-400 text-[11px] font-bold uppercase tracking-wider"
+                                    >
+                                        Copiar enlace
+                                    </button>
+                                    <button
+                                        onClick={() => setHojaCreada(null)}
+                                        className="h-9 px-3 rounded-lg text-[11px] font-bold uppercase tracking-wider text-emerald-700/70 dark:text-emerald-400/70"
+                                    >
+                                        Ocultar
+                                    </button>
+                                </div>
+                            </div>
+                        )}
 
                         {avisoSheets && (
                             <div className="rounded-xl border border-amber-200 dark:border-amber-800/40 bg-amber-50 dark:bg-amber-900/15 p-3">
