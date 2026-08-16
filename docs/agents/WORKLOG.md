@@ -1080,3 +1080,48 @@ para no acabar con dos comportamientos distintos para lo mismo.
 Mercado con categoría escrita y ninguna franja ciega; y FRUTAS ELOY con 6 de
 582 líneas, que al desplegar pinta las 582 con el contenedor en
 `overflow: visible` y sin altura máxima.
+
+---
+
+## 2026-08-16 · Claude Code · Fase 3 · el informe en seco, y una alerta falsa viva
+
+**Lo que se buscaba**: cumplir la condición 2 de las cinco del punto 17 —
+*informe en seco completo antes de escribir un solo documento*.
+
+**Lo que se encontró por el camino**: un fallo **ya en producción**.
+
+AGUERRIDO, BENIGNO CUPREATA CAPON aparecía en «STOCK CRÍTICO (1)» con **0 Und**
+y un «→ Pedir 1», mientras su propia ficha declaraba **3 und**. El Dashboard
+contaba ese mismo producto en «1 STOCK BAJO». La alerta pedía comprar algo que
+estaba lleno, y llevaba ahí desde que se fusionó el grupo Aguerrido.
+
+**La causa: media app resolvía el alias y la otra media no.**
+`buildCurrentStock` consolida existencias en el maestro; el cruce con las reglas
+se hacía por el id crudo. Cuatro sitios con el mismo error: semáforo del
+inventario, alerta de crítico, sobrestock y contador del Dashboard. Ahora todos
+pasan por `core/stock/reglasPorProducto.ts`.
+
+**La lección, que vale más que el arreglo**
+
+Una fusión correcta —que no borra nada y se puede deshacer— **igualmente parte
+la app en dos** si solo la mitad de las lecturas resuelve el alias. El daño no
+aparece como un error: aparece como un número tranquilo y equivocado. Antes de
+fusionar nada más hay que preguntar, por cada sitio que use un `ingredientId`:
+**¿esto resuelve el maestro?**
+
+Inventario hecho a fecha de hoy:
+
+| Camino | ¿Resuelve el maestro? |
+|---|---|
+| `buildCurrentStock` (existencias) | Sí |
+| Mercado (colapso de alias) | Sí |
+| Reglas de stock, semáforo, Dashboard | Sí, **desde este commit** |
+| `costCalculator.ts:149` (coste de receta) | **NO** — 1 receta afectada hoy |
+
+**El informe en seco**, medido sobre los 40 grupos del catálogo real: **1
+receta** y **17 reglas en 15 grupos** quedarían colgando de un alias si se
+fusionara todo hoy. El informe lo dice ahora por grupo, antes de tocar nada.
+
+**Pendiente y NO hecho a propósito**: resolver `masterProductId` en
+`costCalculator`. Es el motor económico y no se toca sin aprobación del
+fundador.
