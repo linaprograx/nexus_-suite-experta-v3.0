@@ -54,9 +54,12 @@ export const useDashboardMetrics = ({
         const productsWithoutPrice = allIngredients.filter(i => !hasPrice(i)).length;
 
         // Low-stock alerts: rules whose available quantity is below the minimum
+        // Por maestro: el stock ya está consolidado ahí arriba, así que cruzar
+        // por el id crudo dejaba a cero toda regla escrita sobre un alias y
+        // contaba como crítico un producto lleno.
         const stockById = new Map(stock.map(s => [s.ingredientId, s]));
         const lowStockCount = stockRules.filter(r => {
-            const qty = stockById.get(r.ingredientId)?.quantityAvailable ?? 0;
+            const qty = stockById.get(resolverMaestro(r.ingredientId, porId))?.quantityAvailable ?? 0;
             return r.active && qty < r.minStock;
         }).length;
 

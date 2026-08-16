@@ -12,6 +12,7 @@ import { useStockMovements } from '../../hooks/useStockMovements';
 import { useStockRules } from '../../hooks/useStockRules';
 import { buildCurrentStock } from '../../utils/stockUtils';
 import { detectarCandidatos, GrupoCandidato, RiesgoFusion, FichaCandidata } from './duplicateCandidates';
+import { indicesDeImpacto, impactoDeFusion, IndicesImpacto } from '../../core/identity/impactoDeFusion';
 
 /**
  * Informe de productos duplicados, y punto de entrada de la fusión.
@@ -116,8 +117,9 @@ const Ficha: React.FC<{ f: FichaCandidata; esMaestro: boolean }> = ({ f, esMaest
 const Grupo: React.FC<{
     g: GrupoCandidato;
     porId: Map<string, Ingredient>;
+    indices: IndicesImpacto;
     onFusionado: () => void;
-}> = ({ g, porId, onFusionado }) => {
+}> = ({ g, porId, indices, onFusionado }) => {
     const [abierto, setAbierto] = React.useState(false);
     const [trabajando, setTrabajando] = React.useState(false);
     const [resultado, setResultado] = React.useState<string | null>(null);
@@ -130,6 +132,11 @@ const Grupo: React.FC<{
     // Si los alias ya apuntan al maestro, el grupo está fusionado: se ofrece
     // deshacer en vez de volver a fusionar.
     const yaFusionado = alias.length > 0 && alias.every(a => a.masterProductId === g.maestroPropuesto);
+
+    const impacto = React.useMemo(
+        () => impactoDeFusion(g.fichas, g.maestroPropuesto || g.fichas[0]?.id, indices),
+        [g.fichas, g.maestroPropuesto, indices],
+    );
 
     const plan = React.useMemo(
         () => (maestro && alias.length > 0 && !yaFusionado ? planificarFusion(maestro, alias) : null),
@@ -234,6 +241,56 @@ const Grupo: React.FC<{
                         </div>
                     )}
 
+                    {/* Lo que cuelga de cada ficha. La condición 2 de las cinco
+                        del punto 17: informe en seco ANTES de escribir. */}
+                    <div className="rounded-xl border border-slate-200 dark:border-slate-700 p-2.5">
+                        <span className="block text-[9px] uppercase tracking-wider text-slate-400 mb-1.5">
+                            Qué arrastra cada ficha
+                        </span>
+                        <div className="space-y-1.5">
+                            {impacto.fichas.map(f => (
+                                <div key={f.id} className="text-[11px]">
+                                    <div className="flex items-baseline gap-2">
+                                        <span className={`font-bold truncate ${f.id === g.maestroPropuesto ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-700 dark:text-slate-200'}`}>
+                                            {f.id === g.maestroPropuesto ? '★ ' : ''}{f.nombre}
+                                        </span>
+                                        <span className="text-slate-400 tabular-nums shrink-0">
+                                            {f.limpia
+                                                ? 'nada colgando'
+                                                : [f.recetas.length && `${f.recetas.length} receta(s)`,
+                                                   f.reglas && `${f.reglas} regla(s)`,
+                                                   f.compras && `${f.compras} compra(s)`,
+                                                   f.movimientos && `${f.movimientos} movimiento(s)`]
+                                                  .filter(Boolean).join(' · ')}
+                                        </span>
+                                    </div>
+                                    {f.recetas.length > 0 && (
+                                        <p className="text-[10px] text-slate-500 truncate" title={f.recetas.join(' · ')}>
+                                            {f.recetas.join(' · ')}
+                                        </p>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+
+                        {/* Los dos avisos que este informe existe para dar. Ver el
+                            porqué medido en `core/identity/impactoDeFusion.ts`. */}
+                        {impacto.recetasEnAlias > 0 && (
+                            <p className="mt-2 text-[10px] leading-relaxed text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/40 rounded-lg px-2 py-1.5">
+                                <strong>{impacto.recetasEnAlias} receta(s)</strong> quedarían costeando desde una ficha
+                                absorbida. No se rompen —el documento no se borra— pero dejarían de seguir al maestro:
+                                si actualizas el precio en el maestro, esas recetas se quedan con el viejo.
+                            </p>
+                        )}
+                        {impacto.reglasEnAlias > 0 && (
+                            <p className="mt-1.5 text-[10px] leading-relaxed text-rose-700 dark:text-rose-400 bg-rose-50 dark:bg-rose-900/20 border border-rose-200 dark:border-rose-800/40 rounded-lg px-2 py-1.5">
+                                <strong>{impacto.reglasEnAlias} regla(s) de stock</strong> se quedarían vigilando una ficha
+                                sin existencias: el stock se consolida en el maestro y la regla no lo sigue, así que
+                                daría stock crítico permanente sobre un producto lleno. Muévelas al maestro antes.
+                            </p>
+                        )}
+                    </div>
+
                     <div className="rounded-xl border border-slate-200 dark:border-slate-700 p-2.5">
                         <span className="block text-[9px] uppercase tracking-wider text-slate-400 mb-1">
                             Simulación de fusión
@@ -300,6 +357,20 @@ export const IdentityReportModal: React.FC<{ onClose: () => void }> = ({ onClose
     const stockItems = React.useMemo(
         () => buildCurrentStock(purchaseHistory || [], movements || []),
         [purchaseHistory, movements],
+    );
+
+    /**
+     * Los índices de impacto, calculados una vez. Recorrer las recetas por cada
+     * ficha de cada grupo sería el mismo trabajo repetido cientos de veces.
+     */
+    const indices = React.useMemo(
+        () => indicesDeImpacto({
+            recetas: allRecipes || [],
+            reglas: rules || [],
+            compras: purchaseHistory || [],
+            movimientos: movements || [],
+        }),
+        [allRecipes, rules, purchaseHistory, movements],
     );
 
     const grupos = React.useMemo(() => {
@@ -400,7 +471,7 @@ export const IdentityReportModal: React.FC<{ onClose: () => void }> = ({ onClose
                                 ser productos diferentes: no se fusionan por parecido.
                             </p>
                             {gruposVisibles.length > 0 ? (
-                                gruposVisibles.map(g => <Grupo key={g.clave + g.fichas[0].id} g={g} porId={porId} onFusionado={refrescar} />)
+                                gruposVisibles.map(g => <Grupo key={g.clave + g.fichas[0].id} g={g} porId={porId} indices={indices} onFusionado={refrescar} />)
                             ) : (
                                 <p className="py-10 text-center text-sm text-slate-500 dark:text-slate-400">
                                     No hay grupos que coincidan con esa búsqueda.

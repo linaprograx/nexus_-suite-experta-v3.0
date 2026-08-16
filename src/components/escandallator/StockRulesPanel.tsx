@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { ICONS } from '../ui/icons';
 import { Icon } from '../ui/Icon';
 import { Button } from '../ui/Button';
@@ -10,6 +10,7 @@ import { StockRuleModal } from '../grimorium/StockRuleModal';
 import { Plegable, UMBRAL_LISTA_LARGA } from '../ui/Plegable';
 import { buscar } from '../../core/search/buscador';
 import { nivelDeStock } from '../../core/stock/nivelDeStock';
+import { maestroDeRegla } from '../../core/stock/reglasPorProducto';
 
 interface StockRulesPanelProps {
     allIngredients: Ingredient[];
@@ -95,9 +96,22 @@ export const StockRulesPanel: React.FC<StockRulesPanelProps> = ({
         return buscar(allIngredients, quickSearchQuery, { camposDe: i => [i.nombre, i.categoria] });
     }, [allIngredients, quickSearchQuery]);
 
+    /**
+     * Las existencias de una regla, resolviendo el maestro.
+     *
+     * Cruzar por el id crudo hacía que una regla sobre una ficha fusionada
+     * encontrara cero y gritara stock crítico sobre un producto lleno. Estaba
+     * pasando de verdad. Ver `core/stock/reglasPorProducto.ts`.
+     */
+    const existenciasDe = useCallback((rule: StockRule) => {
+        const maestro = maestroDeRegla(rule, allIngredients || []);
+        return stockItems.find(i => i.ingredientId === maestro)
+            || stockItems.find(i => i.ingredientId === rule.ingredientId);
+    }, [stockItems, allIngredients]);
+
     const lowStockAlerts = useMemo(() => {
         return rules.map(rule => {
-            const stockItem = stockItems.find(i => i.ingredientId === rule.ingredientId);
+            const stockItem = existenciasDe(rule);
             const quantity = stockItem ? stockItem.quantityAvailable : 0;
 
             if (quantity < rule.minStock) {
@@ -114,7 +128,7 @@ export const StockRulesPanel: React.FC<StockRulesPanelProps> = ({
             }
             return null;
         }).filter(Boolean) as { rule: StockRule, item: any }[];
-    }, [rules, stockItems]);
+    }, [rules, existenciasDe]);
 
     /**
      * Lo que sobra. Simétrico a `lowStockAlerts`, y separado a propósito.
@@ -128,7 +142,7 @@ export const StockRulesPanel: React.FC<StockRulesPanelProps> = ({
      */
     const sobrestock = useMemo(() => {
         return rules.map(rule => {
-            const stockItem = stockItems.find(i => i.ingredientId === rule.ingredientId);
+            const stockItem = existenciasDe(rule);
             const quantity = stockItem ? stockItem.quantityAvailable : 0;
             const nivel = nivelDeStock(rule, quantity);
             if (nivel.nivel !== 'sobrestock') return null;
@@ -140,7 +154,7 @@ export const StockRulesPanel: React.FC<StockRulesPanelProps> = ({
                 exceso: nivel.exceso || 0,
             };
         }).filter(Boolean) as { rule: StockRule; nombre: string; unidad: string; cantidad: number; exceso: number }[];
-    }, [rules, stockItems]);
+    }, [rules, existenciasDe]);
 
     const handleSaveRule = (newRuleObj: StockRule) => {
         const newRulesList = [...rules];

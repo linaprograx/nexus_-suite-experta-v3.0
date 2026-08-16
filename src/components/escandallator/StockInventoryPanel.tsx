@@ -15,6 +15,7 @@ import { PhysicalCountModal } from './PhysicalCountModal';
 import { useStockRules } from '../../hooks/useStockRules';
 import { buscar } from '../../core/search/buscador';
 import { nivelDeStock, NivelStock } from '../../core/stock/nivelDeStock';
+import { reglasPorMaestro } from '../../core/stock/reglasPorProducto';
 
 /**
  * El color de cada nivel. El texto lo pone `nivelDeStock`, que es quien sabe
@@ -77,9 +78,12 @@ export const StockInventoryPanel: React.FC<StockInventoryPanelProps> = ({
      * La ruptura (cantidad 0 o menos) sí es inequívoca en cualquier unidad.
      */
     const { rules: stockRules } = useStockRules();
+    // Por maestro, no por el id crudo: las existencias ya vienen consolidadas
+    // en el maestro, así que una regla sobre un alias no encontraba las suyas.
+    // Ver `core/stock/reglasPorProducto.ts`.
     const reglaPorIngrediente = useMemo(
-        () => new Map(stockRules.filter(r => r.active).map(r => [r.ingredientId, r])),
-        [stockRules],
+        () => reglasPorMaestro(stockRules.filter(r => r.active), allIngredients || []),
+        [stockRules, allIngredients],
     );
     const estadoDe = React.useCallback(
         (item: StockItem) => nivelDeStock(reglaPorIngrediente.get(item.ingredientId), item.quantityAvailable),
