@@ -7,6 +7,7 @@ import { AuditLogModal } from '../../../components/grimorium/AuditLogModal';
 import { ActiveMenuModal } from '../../../components/grimorium/ActiveMenuModal';
 import { IdentityReportModal } from '../../../features/identity/IdentityReportModal';
 import { TaxonomiaReportModal } from '../../../features/taxonomia/TaxonomiaReportModal';
+import { PreciosReportModal } from '../../../features/precios/PreciosReportModal';
 import { fijarAlcanceCarta } from '../../../hooks/useAlcanceCarta';
 
 // Toolbar for Grimorium View (Recipes, Stock, Market)
@@ -17,6 +18,7 @@ export const GrimoriumToolbar: React.FC = () => {
     const [showMenu, setShowMenu] = useState(false);
     const [showDuplicados, setShowDuplicados] = useState(false);
     const [showTaxonomia, setShowTaxonomia] = useState(false);
+    const [showPrecios, setShowPrecios] = useState(false);
 
     /**
      * El rótulo, por pestaña.
@@ -160,6 +162,15 @@ export const GrimoriumToolbar: React.FC = () => {
                             title="Taxonomía — a qué familia va cada categoría, y cuáles dicen lo mismo"
                         />
                     )}
+                    {viewMode === 'market' && (
+                        <ActionButton
+                            onClick={() => setShowPrecios(true)}
+                            icon={ICONS.trendingUp}
+                            label="Precios"
+                            iconClass="text-amber-300"
+                            title="Histórico de precios — qué ha subido, qué ha bajado y qué pagas de más"
+                        />
+                    )}
                     <ActionButton
                         onClick={() => setShowDuplicados(true)}
                         icon={ICONS.copy}
@@ -188,6 +199,7 @@ export const GrimoriumToolbar: React.FC = () => {
             {showAuditLog && <AuditLogModal onClose={() => setShowAuditLog(false)} />}
             {showDuplicados && <IdentityReportModal onClose={() => setShowDuplicados(false)} />}
             {showTaxonomia && <TaxonomiaReportModal onClose={() => setShowTaxonomia(false)} />}
+            {showPrecios && <PreciosReportModal onClose={() => setShowPrecios(false)} />}
             {showMenu && (
                 <ActiveMenuModal
                     onClose={() => {
