@@ -66,10 +66,10 @@ implementación; **«parcial»**, que existe la pieza pero no el flujo completo.
 |---|---|---|---|
 | 14-15 | Mercado como fuente de verdad, sin ERP | parcial | transversal |
 | 16 | Base de datos de proveedores | parcial — el CRUD ya guarda dirección, CIF, plazo de entrega y condiciones de pago | 3 |
-| 17 | **Producto maestro ↔ Oferta** | falta — hoy son documentos de ingrediente distintos agrupados **por nombre** en la vista («N opc.») | **3** |
+| 17 | **Producto maestro ↔ Oferta** | **hecho** (2026-08-16) — `core/ofertas/oferta.ts`: una oferta es proveedor + formato + precio, clave `prov::700ml`, las antiguas se siguen leyendo | ✅ |
 | 18 | Agrupación visual | falta | 2 |
-| 19 | Proveedor preferente y alternativos | parcial — conviven `ing.proveedor` (uno) e `ing.proveedores[]` (varios) | 3 |
-| 20 | Catálogos dentro de Mercado | parcial | 3 |
+| 19 | Proveedor preferente y alternativos | **hecho** (2026-08-16) — se elige con la estrella del desplegable «N opc.»; las cuatro lecturas del `ing.proveedor` obsoleto, unificadas | ✅ |
+| 20 | Catálogos dentro de Mercado | **hecho** (2026-08-16) — el filtro por proveedor mira las tres vías (`supplierData`, `proveedores[]`, preferente) | ✅ |
 | 21 | Flujo necesidad → pedido | **ya está** | — |
 | 22 | Consolidación por proveedor | **ya está** — agrupa por `ing.proveedor` y crea una hoja por proveedor | — |
 | 23 | Control humano antes del envío | **ya está** — borrador → enviar es explícito | — |
