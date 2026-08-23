@@ -46,7 +46,7 @@ implementación; **«parcial»**, que existe la pieza pero no el flujo completo.
 
 | # | Punto | Estado | Fase |
 |---|---|---|---|
-| 1 | Jerarquía visual plegable | falta | 2 |
+| 1 | Jerarquía visual plegable | **hecho** (2026-08-23) — `core/agrupacion/secciones.ts` + `ui/ListaEnSecciones`. Inventario por familia con conmutador a proveedor; lo plegado no se monta | ✅ |
 | 2 | Regla de stock al primer ingreso real | **ya está** — `checkAndCreateRule` se llama en las **tres** rutas: compra directa (`GrimoriumView.tsx:1139`), compra múltiple (`:429`) y recepción de pedido (`:497`) | — |
 | 3 | Stock **máximo** / sobrestock | falta — `useStockRules` es solo «min stock + reorder qty» | **1** |
 | 4 | Motor de inteligencia de consumo | falta, y **bloqueado**: no hay consumo real | 5 |
@@ -67,7 +67,7 @@ implementación; **«parcial»**, que existe la pieza pero no el flujo completo.
 | 14-15 | Mercado como fuente de verdad, sin ERP | parcial | transversal |
 | 16 | Base de datos de proveedores | **hecho** (2026-08-16) — plazo, días de reparto y condiciones de pago se ven en el desplegable de opciones, donde se decide | ✅ |
 | 17 | **Producto maestro ↔ Oferta** | **hecho** (2026-08-16) — `core/ofertas/oferta.ts`: una oferta es proveedor + formato + precio, clave `prov::700ml`, las antiguas se siguen leyendo | ✅ |
-| 18 | Agrupación visual | falta | 2 |
+| 18 | Agrupación visual | **hecho** (2026-08-23) — Mercado por proveedor. Un producto sale en cada proveedor que lo vende y el total se cuenta aparte; buscar abre solas las secciones con resultados | ✅ |
 | 19 | Proveedor preferente y alternativos | **hecho** (2026-08-16) — se elige con la estrella del desplegable «N opc.»; las cuatro lecturas del `ing.proveedor` obsoleto, unificadas | ✅ |
 | 20 | Catálogos dentro de Mercado | **hecho** (2026-08-16) — el filtro por proveedor mira las tres vías (`supplierData`, `proveedores[]`, preferente) | ✅ |
 | 21 | Flujo necesidad → pedido | **ya está** | — |
@@ -262,8 +262,9 @@ Sin esto, cada función nueva hereda el error.
 
 ### Fase 2 — Navegación
 
-10. **Secciones plegables** (puntos 1 y 18) con la resolución de arriba. Cierra
-    **I5** y buena parte de **A4** de `AUDIT-MOVIL.md`.
+10. **Secciones plegables** (puntos 1 y 18) ✅ **HECHO 2026-08-23**. Con la
+    resolución de arriba. Cierra **I5** y buena parte de **A4** de
+    `AUDIT-MOVIL.md`: abrir WHISKY monta 27 tarjetas donde se pintaban 1.326.
 11. **M5, M6, T1** y el repaso de la hoja de pedido.
 
 ### Fase 3 — Modelo canónico · *aquí se juega el proyecto*
