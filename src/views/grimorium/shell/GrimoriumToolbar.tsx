@@ -11,6 +11,7 @@ import { PreciosReportModal } from '../../../features/precios/PreciosReportModal
 import { ImportarCatalogoModal } from '../../../features/importacion/ImportarCatalogoModal';
 import { CentroDeAlertasModal } from '../../../features/alertas/CentroDeAlertasModal';
 import { fijarAlcanceCarta } from '../../../hooks/useAlcanceCarta';
+import { HERRAMIENTAS_POR_PESTANA } from './herramientasPorPestana';
 
 // Toolbar for Grimorium View (Recipes, Stock, Market)
 export const GrimoriumToolbar: React.FC = () => {
@@ -75,6 +76,13 @@ export const GrimoriumToolbar: React.FC = () => {
     };
 
     /**
+     * En qué pestaña vive cada herramienta, y por qué. Ver
+     * `herramientasPorPestana.ts`: el mapa vive fuera para que una prueba
+     * pueda fijarlo.
+     */
+    const aqui = (id: string) => HERRAMIENTAS_POR_PESTANA[id].includes(viewMode);
+
+    /**
      * Secondary actions. Icon-only below lg — five labelled pills cannot fit on a
      * phone, and the old single scrolling strip solved that by pushing the three
      * primary tabs off-screen, which hid navigation behind a sideways swipe.
@@ -86,10 +94,10 @@ export const GrimoriumToolbar: React.FC = () => {
             onClick={onClick}
             title={title}
             aria-label={label}
-            className="shrink-0 h-10 px-3 lg:px-4 rounded-full bg-white/10 text-white hover:bg-white/20 border border-white/10 transition-all duration-300 flex items-center gap-2 text-xs font-bold uppercase tracking-wider"
+            className="min-w-0 h-10 px-3 lg:px-4 rounded-full bg-white/10 text-white hover:bg-white/20 border border-white/10 transition-all duration-300 flex items-center gap-2 text-xs font-bold uppercase tracking-wider"
         >
-            <Icon svg={icon} className={`w-4 h-4 ${iconClass}`} />
-            <span className="hidden lg:inline">{label}</span>
+            <Icon svg={icon} className={`w-4 h-4 shrink-0 ${iconClass}`} />
+            <span className="hidden lg:inline truncate">{label}</span>
         </button>
     );
 
@@ -122,7 +130,7 @@ export const GrimoriumToolbar: React.FC = () => {
                 icons. Previously both shared one overflow-x-auto strip, which meant
                 switching to Inventario required discovering a sideways swipe. */}
             {/* Dos filas SIEMPRE, también en escritorio.
-                Con nueve herramientas en la misma línea que las tres pestañas,
+                Con todas las herramientas en la misma línea que las tres pestañas,
                 la barra se estiraba más allá del ancho de la pantalla y
                 aparecía un scroll horizontal: la navegación principal se salía
                 por la derecha. En móvil ya estaban en dos filas y se veía bien;
@@ -138,15 +146,21 @@ export const GrimoriumToolbar: React.FC = () => {
 
                 {/* Secondary: tools. Spread edge to edge on mobile so every target
                     lands under a thumb; right-aligned and labelled on desktop. */}
-                {/* `flex-wrap`: si no caben, bajan de línea. Nunca desbordan. */}
-                <div className="flex flex-wrap items-center gap-1.5 w-full lg:gap-2 min-w-0">
-                    <ActionButton
-                        onClick={() => setShowIntelPanel(true)}
-                        icon={ICONS.sparkles}
-                        label="IA"
-                        iconClass="text-amber-300"
-                        title="Inteligencia Activa — preferencias del asistente"
-                    />
+                {/* `flex-nowrap`: la fila NO se parte. Con cinco herramientas
+                    caben con holgura incluso con el menú lateral abierto, y si
+                    alguna vez apretara, lo que cede es el rótulo (`truncate`),
+                    no la línea. Un botón descolgado abajo parece otra fila de
+                    navegación y no lo es. */}
+                <div className="flex flex-nowrap items-center gap-1.5 w-full lg:gap-2 min-w-0">
+                    {aqui('ia') && (
+                        <ActionButton
+                            onClick={() => setShowIntelPanel(true)}
+                            icon={ICONS.sparkles}
+                            label="IA"
+                            iconClass="text-amber-300"
+                            title="Inteligencia Activa — preferencias del asistente"
+                        />
+                    )}
                     {/* En las tres pestañas: lo que necesita atención no depende
                         de dónde estés mirando. */}
                     <ActionButton
@@ -163,17 +177,19 @@ export const GrimoriumToolbar: React.FC = () => {
                         iconClass="text-sky-300"
                         title="Historial de acciones del asistente"
                     />
-                    <ActionButton
-                        onClick={() => setShowMenu(true)}
-                        icon={ICONS.book}
-                        label="Carta"
-                        iconClass="text-emerald-300"
-                        title="Carta activa — recetas publicadas y su desviación de coste"
-                    />
+                    {aqui('carta') && (
+                        <ActionButton
+                            onClick={() => setShowMenu(true)}
+                            icon={ICONS.book}
+                            label="Carta"
+                            iconClass="text-emerald-300"
+                            title="Carta activa — recetas publicadas y su desviación de coste"
+                        />
+                    )}
                     {/* Solo en Mercado: la taxonomía es del catálogo, y en
                         Recetas o Inventario sería un icono que no lleva a nada
                         de lo que hay en pantalla. */}
-                    {viewMode === 'market' && (
+                    {aqui('familias') && (
                         <ActionButton
                             onClick={() => setShowTaxonomia(true)}
                             icon={ICONS.grid}
@@ -182,7 +198,7 @@ export const GrimoriumToolbar: React.FC = () => {
                             title="Taxonomía — a qué familia va cada categoría, y cuáles dicen lo mismo"
                         />
                     )}
-                    {viewMode === 'market' && (
+                    {aqui('precios') && (
                         <ActionButton
                             onClick={() => setShowPrecios(true)}
                             icon={ICONS.trendingUp}
@@ -191,7 +207,7 @@ export const GrimoriumToolbar: React.FC = () => {
                             title="Histórico de precios — qué ha subido, qué ha bajado y qué pagas de más"
                         />
                     )}
-                    {viewMode === 'market' && (
+                    {aqui('importar') && (
                         <ActionButton
                             onClick={() => setShowImportar(true)}
                             icon={ICONS.fileText}
@@ -200,22 +216,27 @@ export const GrimoriumToolbar: React.FC = () => {
                             title="Catálogo de proveedor — lectura en seco, no importa nada"
                         />
                     )}
-                    <ActionButton
-                        onClick={() => setShowDuplicados(true)}
-                        icon={ICONS.copy}
-                        label="Duplicados"
-                        iconClass="text-indigo-300"
-                        title="Informe de productos duplicados — solo lectura"
-                    />
+                    {aqui('duplicados') && (
+                        <ActionButton
+                            onClick={() => setShowDuplicados(true)}
+                            icon={ICONS.copy}
+                            label="Duplicados"
+                            iconClass="text-indigo-300"
+                            title="Informe de productos duplicados — solo lectura"
+                        />
+                    )}
 
-                    {/* Cost Layer (Escandallo) */}
-                    <LayerToggle
-                        activeLayer={activeLayer} toggleLayer={toggleLayer}
-                        layer="cost"
-                        label="Costes"
-                        icon={ICONS.chart}
-                        colorClass="bg-rose-500"
-                    />
+                    {/* La capa de coste tiñe el escandallo de una receta y el
+                        valor del inventario. En Mercado no hay nada que teñir. */}
+                    {aqui('costes') && (
+                        <LayerToggle
+                            activeLayer={activeLayer} toggleLayer={toggleLayer}
+                            layer="cost"
+                            label="Costes"
+                            icon={ICONS.chart}
+                            colorClass="bg-rose-500"
+                        />
+                    )}
 
                     {/* Zero Waste ya no tiene icono propio: vive como tercera pestaña
                         dentro de «Rentabilidad y producción». Seis iconos no caben con
@@ -265,7 +286,7 @@ const LayerToggle: React.FC<{
             <button
                 onClick={() => toggleLayer(layer)}
                 className={`
-                  shrink-0 h-10 px-3 lg:px-4 rounded-full text-xs font-bold uppercase tracking-wider
+                  min-w-0 h-10 px-3 lg:px-4 rounded-full text-xs font-bold uppercase tracking-wider
                   flex items-center gap-2 transition-all duration-300 border
                   ${isActive
                         ? 'bg-white shadow-md border-transparent' // Active: White bg
@@ -276,8 +297,8 @@ const LayerToggle: React.FC<{
                 aria-pressed={isActive}
                 aria-label={label}
             >
-                <Icon svg={icon} className={`w-4 h-4 ${tint}`} />
-                <span className={`hidden lg:inline ${tint}`}>{label}</span>
+                <Icon svg={icon} className={`w-4 h-4 shrink-0 ${tint}`} />
+                <span className={`hidden lg:inline truncate ${tint}`}>{label}</span>
             </button>
         );
     };
