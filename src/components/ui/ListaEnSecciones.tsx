@@ -27,7 +27,7 @@ import { Seccion, seccionesConResultados } from '../../core/agrupacion/secciones
  * la mejora de rendimiento (I5 y A4): lo plegado no existe en el DOM.
  */
 export function ListaEnSecciones<T>({
-    secciones, buscando, coincide, children, vacio, className = '',
+    secciones, buscando, coincide, children, vacio, cabeceraExtra, className = '',
 }: {
     secciones: Seccion<T>[];
     /** Si hay una búsqueda activa. No basta con mirar `coincide`. */
@@ -37,6 +37,13 @@ export function ListaEnSecciones<T>({
     /** Cómo se pinta el contenido de una sección abierta. */
     children: (items: T[], seccion: Seccion<T>) => React.ReactNode;
     vacio?: React.ReactNode;
+    /**
+     * Contenido extra en la cabecera, a la derecha del título. Va aquí y no
+     * dentro del contenido porque tiene que verse **con la sección cerrada**:
+     * si hicieras falta abrirla para enterarte de que ese proveedor llega
+     * tarde, te enterarías después de haber decidido pedirle.
+     */
+    cabeceraExtra?: (seccion: Seccion<T>) => React.ReactNode;
     className?: string;
 }) {
     const [abiertaAMano, setAbiertaAMano] = React.useState<string | null>(null);
@@ -70,7 +77,12 @@ export function ListaEnSecciones<T>({
                                 {seccion.titulo}
                             </span>
                         }
-                        insignia={`${seccion.items.length}`}
+                        insignia={
+                            <span className="flex items-center gap-2">
+                                {cabeceraExtra?.(seccion)}
+                                <span className="tabular-nums">{seccion.items.length}</span>
+                            </span>
+                        }
                         className={seccion.esSinAsignar ? 'border-amber-300/60 dark:border-amber-500/30' : ''}
                     >
                         {/* Solo se monta lo abierto. */}

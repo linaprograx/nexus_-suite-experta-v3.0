@@ -15,6 +15,10 @@ import { fijarProveedorPreferente } from '../../features/suppliers/proveedorPref
 import { fichaTieneProveedor, ofertasDeFicha } from '../../core/ofertas/oferta';
 import { seccionar, totalDistinto } from '../../core/agrupacion/secciones';
 import { ListaEnSecciones } from '../ui/ListaEnSecciones';
+import { useIncidencias } from '../../features/suppliers/hooks/useIncidencias';
+import { resumenDeIncidencias, fraseDeProveedor } from '../../core/proveedores/incidencias';
+import { PanelDeProveedor } from '../../features/proveedores/PanelDeProveedor';
+import { SIN_ASIGNAR } from '../../core/agrupacion/secciones';
 import { resumenDeProveedor } from '../../features/suppliers/resumenProveedor';
 import { useQueryClient } from '@tanstack/react-query';
 import { evaluateMarketSignals } from '../../core/signals/signal.engine';
@@ -223,6 +227,15 @@ export const IngredientListPanel: React.FC<IngredientListPanelProps> = ({
    * VERITAS quiere ver más de ese proveedor, no sesenta fichas cualesquiera.
    */
   const [visiblesPorSeccion, setVisiblesPorSeccion] = React.useState<Record<string, number>>({});
+
+  /**
+   * Incidencias del punto 27, en la cabecera del proveedor.
+   *
+   * Aquí y no en un informe aparte porque este es el momento en que decides
+   * pedirle: es la misma regla que cerró el punto 16 con el plazo de entrega.
+   */
+  const { incidencias } = useIncidencias(db, userId);
+  const [panelProveedor, setPanelProveedor] = React.useState<{ id: string; nombre: string } | null>(null);
   React.useEffect(() => { setVisiblesPorSeccion({}); },
     [ingredientSearchTerm, selectedProveedorId, ingredientFilters.category, soloPorRevisar]);
 
@@ -437,6 +450,26 @@ export const IngredientListPanel: React.FC<IngredientListPanelProps> = ({
             coincide={() => true}
             className="pb-20"
             vacio={<p className="text-sm text-slate-400 py-8 text-center">No hay productos que mostrar.</p>}
+            cabeceraExtra={seccion => {
+              if (seccion.esSinAsignar || seccion.id === SIN_ASIGNAR) return null;
+              const frase = fraseDeProveedor(resumenDeIncidencias(incidencias, seccion.id));
+              return (
+                <span
+                  role="button"
+                  tabIndex={0}
+                  onClick={e => { e.stopPropagation(); setPanelProveedor({ id: seccion.id, nombre: seccion.titulo }); }}
+                  onKeyDown={e => { if (e.key === 'Enter') { e.stopPropagation(); setPanelProveedor({ id: seccion.id, nombre: seccion.titulo }); } }}
+                  title={frase ? `${frase} — abrir el historial de este proveedor` : 'Incidencias y notas de este proveedor'}
+                  className={`normal-case tracking-normal text-[10px] font-bold px-2 py-0.5 rounded-full border transition-colors cursor-pointer ${
+                    frase
+                      ? 'border-amber-300 text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/30 hover:bg-amber-100'
+                      : 'border-slate-200 dark:border-slate-700 text-slate-400 hover:text-sky-600 hover:border-sky-300'
+                  }`}
+                >
+                  {frase || 'Historial'}
+                </span>
+              );
+            }}
           >
           {(grupos, seccion) => {
             const tope = visiblesPorSeccion[seccion.id] ?? POR_PAGINA;
@@ -735,6 +768,14 @@ export const IngredientListPanel: React.FC<IngredientListPanelProps> = ({
         )}
         <div className="h-12" /> {/* Bottom spacer for FAB */}
       </div>
+
+      {panelProveedor && (
+        <PanelDeProveedor
+          proveedorId={panelProveedor.id}
+          proveedorNombre={panelProveedor.nombre}
+          onClose={() => setPanelProveedor(null)}
+        />
+      )}
 
       {/* Floating Action Button for New Ingredient */}
       {/* Floating Action Button removed as per request */}
