@@ -48,7 +48,7 @@ implementación; **«parcial»**, que existe la pieza pero no el flujo completo.
 |---|---|---|---|
 | 1 | Jerarquía visual plegable | **hecho** (2026-08-23) — `core/agrupacion/secciones.ts` + `ui/ListaEnSecciones`. Inventario por familia con conmutador a proveedor; lo plegado no se monta | ✅ |
 | 2 | Regla de stock al primer ingreso real | **ya está** — `checkAndCreateRule` se llama en las **tres** rutas: compra directa (`GrimoriumView.tsx:1139`), compra múltiple (`:429`) y recepción de pedido (`:497`) | — |
-| 3 | Stock **máximo** / sobrestock | falta — `useStockRules` es solo «min stock + reorder qty» | **1** |
+| 3 | Stock **máximo** / sobrestock | **hecho** — `core/stock/nivelDeStock.ts`. Ausente ≠ cero, y el sobrestock es informativo (azul), no urgente | ✅ |
 | 4 | Motor de inteligencia de consumo | falta, y **bloqueado**: no hay consumo real | 5 |
 | 5 | Centro de alertas inteligentes | **hecho** (2026-08-16) — `core/alertas/centroDeAlertas.ts`: qué pasa · por qué importa · impacto · acciones según la causa | ✅ |
 | 6 | Priorización / score | **hecho** (2026-08-16) — tres niveles con criterio explícito (`ahora` · `esta-semana` · `cuando-puedas`), NO una puntuación opaca | ✅ |
@@ -56,7 +56,7 @@ implementación; **«parcial»**, que existe la pieza pero no el flujo completo.
 | 8 | Historial por producto | **hecho** (2026-08-16) — línea de tiempo única en la ficha, resolviendo el maestro | ✅ |
 | 9 | Unidades y conversiones | **roto** — ver **I1** | **0** |
 | 10 | Clasificación ABC | falta, bloqueado por el 4 | 5 |
-| 11 | Salud del inventario | parcial y con cifras falsas — ver **I3**, **I4** | 0 y 5 |
+| 11 | Salud del inventario | **la mitad de Fase 0, hecha**: I3 (variación mensual real) e I4 (un solo valor de almacén). La otra mitad —salud por rotación— sigue **bloqueada** por el punto 4 | parcial · 5 |
 | 12 | Motor de causa raíz | falta, bloqueado | 5 |
 | 13 | Integración TPV | falta — el gancho es `StockMovement` | 6 (preparar en **0**) |
 
@@ -92,7 +92,7 @@ implementación; **«parcial»**, que existe la pieza pero no el flujo completo.
 |---|---|---|---|
 | 35 | Qué vive en Negocio | parcial — `users/{uid}/settings/costes` ya guarda IVA, merma, coste laboral, estructura, comisiones y objetivo de coste | ampliar en 3-6 |
 | 36 | Qué **no** vive en Negocio | correcto y hoy se cumple: no hay proveedor ni precio global en ajustes | — |
-| 37 | Preferente por producto, no global | falta — parte del punto 17 | 3 |
+| 37 | Preferente por producto, no global | **hecho** — `features/suppliers/proveedorPreferente.ts`, con la estrella del desplegable «N opc.» y la posibilidad de quitarlo | ✅ |
 | 38 | Regla global + override específico | **el patrón YA EXISTE y tiene nombre**: `AJUSTES_COSTE_POR_DEFECTO` → `recipe.costingOverrides`, resuelto en `profitabilityEngine.ts:84`. **Reutilizarlo, no inventar un segundo mecanismo** | — |
 | 39 | Presupuesto de compras | falta | 4 |
 | 40 | Configuración de facturas en Negocio, entidades en Mercado | falta | 6 |
