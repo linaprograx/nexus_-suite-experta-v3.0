@@ -5,6 +5,8 @@ import { ICONS } from '../ui/icons';
 import { Input } from '../ui/Input';
 import { CapaModal } from '../ui/CapaModal';
 import { buscar } from '../../core/search/buscador';
+import { stockPorZona, progresoDeZona, SIN_ZONA } from '../../core/stock/zonas';
+import { Ingredient } from '../../types';
 
 export interface CountAdjustment {
     item: StockItem;
@@ -19,19 +21,37 @@ export interface CountAdjustment {
  */
 export const PhysicalCountModal: React.FC<{
     stockItems: StockItem[];
+    allIngredients?: Ingredient[];
     onClose: () => void;
     onConfirm: (adjustments: CountAdjustment[]) => void;
-}> = ({ stockItems, onClose, onConfirm }) => {
+}> = ({ stockItems, allIngredients = [], onClose, onConfirm }) => {
     const [counts, setCounts] = React.useState<Record<string, string>>({});
     const [search, setSearch] = React.useState('');
+
+    /**
+     * Punto 7: contar **por zonas**.
+     *
+     * El conteo ya hacía lo importante —no sobrescribe, genera un ajuste con
+     * signo— pero pedía contar 1.326 productos de una sentada, y eso no se
+     * hace: se cuenta la barra, luego el almacén, luego la cámara. Sin zonas un
+     * conteo se empieza y no se termina, y **uno a medias es peor que ninguno**,
+     * porque los ajustes que sí se guardaron parecen un inventario completo.
+     */
+    const [zona, setZona] = React.useState<string>('todas');
+    const zonas = React.useMemo(() => stockPorZona(stockItems, allIngredients), [stockItems, allIngredients]);
+    const enZona = React.useMemo(
+        () => (zona === 'todas' ? stockItems : (zonas.find(z => z.zona === zona)?.items || [])),
+        [zona, zonas, stockItems],
+    );
+    const progreso = React.useMemo(() => progresoDeZona(enZona, counts), [enZona, counts]);
 
     const items = React.useMemo(() => {
         // Alfabético y no por relevancia: en un conteo físico se recorre la
         // lista entera con las botellas delante, y el orden tiene que ser
         // estable para no perder el sitio.
-        const encontrados = buscar(stockItems, search, { camposDe: i => [i.ingredientName] });
+        const encontrados = buscar(enZona, search, { camposDe: i => [i.ingredientName] });
         return [...encontrados].sort((a, b) => a.ingredientName.localeCompare(b.ingredientName));
-    }, [stockItems, search]);
+    }, [enZona, search]);
 
     const adjustments: CountAdjustment[] = React.useMemo(() => {
         const out: CountAdjustment[] = [];
@@ -65,6 +85,24 @@ export const PhysicalCountModal: React.FC<{
 
                 {/* Search */}
                 <div className="px-4 pt-3 shrink-0">
+                    {/* La zona primero: decide QUÉ se cuenta. El buscador solo
+                        decide dónde mirar dentro de eso, así que va detrás. */}
+                    <div className="flex items-center gap-2 mb-2">
+                        <select
+                            value={zona}
+                            onChange={e => setZona(e.target.value)}
+                            aria-label="Zona a contar"
+                            className="flex-1 min-w-0 h-10 px-2 rounded-xl text-xs bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200"
+                        >
+                            <option value="todas">Todas las zonas ({stockItems.length})</option>
+                            {zonas.map(z => (
+                                <option key={z.zona} value={z.zona}>{z.zona} ({z.items.length}) · €{z.valor.toFixed(0)}</option>
+                            ))}
+                        </select>
+                        <span className="shrink-0 text-[10px] font-bold tabular-nums text-slate-500" title="Contados de esta zona">
+                            {progreso.hechos}/{progreso.total}
+                        </span>
+                    </div>
                     <Input value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar ingrediente…" className="bg-slate-50 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 text-sm" />
                 </div>
 

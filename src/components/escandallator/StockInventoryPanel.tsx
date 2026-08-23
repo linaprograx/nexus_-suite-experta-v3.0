@@ -491,6 +491,7 @@ export const StockInventoryPanel: React.FC<StockInventoryPanelProps> = ({
             {/* Physical count (#4) */}
             {showCount && onPhysicalCount && (
                 <PhysicalCountModal
+                    allIngredients={allIngredients}
                     stockItems={filteredStockItems}
                     onClose={() => setShowCount(false)}
                     onConfirm={onPhysicalCount}

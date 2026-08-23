@@ -21,6 +21,9 @@ import { historialDeProducto, resumenDeHistorial } from '../../core/historial/hi
 import { usePurchaseIngredient } from '../../hooks/usePurchaseIngredient';
 import { useStockMovements } from '../../hooks/useStockMovements';
 import { Plegable } from '../ui/Plegable';
+import { fijarZonaDeProducto } from '../../features/suppliers/zonaDeProducto';
+import { zonasDelCatalogo, normalizarZona, ZONAS_SUGERIDAS, SIN_ZONA } from '../../core/stock/zonas';
+import { useQueryClient } from '@tanstack/react-query';
 
 
 const FAMILY_BG_COLORS: { [key in AromaticFamily]: string } = {
@@ -74,6 +77,33 @@ export const IngredientDetailPanel: React.FC<IngredientDetailPanelProps> = ({
      * historial: son tres listas.
      */
     const { purchaseHistory } = usePurchaseIngredient();
+    const { appId } = useApp();
+    const queryClient = useQueryClient();
+
+    /**
+     * Dónde se guarda. Punto 7: sin poder asignarla, la zona sería un campo que
+     * se lee y nadie escribe — exactamente el caso del proveedor preferente,
+     * que estuvo seis lecturas y ninguna escritura.
+     *
+     * Las opciones salen de las zonas que ya existen más unas sugeridas, para
+     * que no haya que teclear «Cámara» distinto cada vez y acaben dos zonas que
+     * son la misma.
+     */
+    const zonasDisponibles = React.useMemo(() => {
+        const existentes = zonasDelCatalogo(allIngredients).filter(z => z !== SIN_ZONA);
+        return Array.from(new Set([...existentes, ...ZONAS_SUGERIDAS]))
+            .sort((a, b) => a.localeCompare(b, 'es'));
+    }, [allIngredients]);
+
+    const cambiarZona = React.useCallback(async (valor: string) => {
+        if (!db || !appId || !userId || !ingredient) return;
+        try {
+            await fijarZonaDeProducto(db, appId, userId, ingredient.id, valor || null);
+            queryClient.invalidateQueries({ queryKey: ['ingredients'] });
+        } catch (e) {
+            console.error('[zona] no se pudo guardar', e);
+        }
+    }, [db, appId, userId, ingredient, queryClient]);
     const { movements } = useStockMovements();
     const historial = React.useMemo(
         () => (ingredient ? historialDeProducto(ingredient.id, allIngredients, purchaseHistory || [], movements || []) : []),
@@ -397,6 +427,21 @@ export const IngredientDetailPanel: React.FC<IngredientDetailPanelProps> = ({
                     </Button>
                 )}
                 </div>
+
+            {/* La zona, editable. Va antes del historial porque es un dato que se
+                cambia; el historial solo se consulta. */}
+            <div className="flex items-center gap-2 mb-3">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 shrink-0">Zona</span>
+                <select
+                    value={normalizarZona((ingredient as any).zona) === SIN_ZONA ? '' : normalizarZona((ingredient as any).zona)}
+                    onChange={e => cambiarZona(e.target.value)}
+                    aria-label="Zona de almacenamiento"
+                    className="flex-1 min-w-0 h-9 px-2 rounded-lg text-xs bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200"
+                >
+                    <option value="">Sin colocar</option>
+                    {zonasDisponibles.map(z => <option key={z} value={z}>{z}</option>)}
+                </select>
+            </div>
 
             {/* Plegado por defecto: quien abre la ficha suele venir a otra cosa,
                 y una lista larga abierta empuja los botones fuera de la pantalla.

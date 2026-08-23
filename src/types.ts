@@ -139,6 +139,15 @@ export interface Ingredient {
     pendienteRevision?: boolean;
 
     /**
+     * Dónde se guarda físicamente: «Barra», «Almacén», «Cámara»…
+     *
+     * No es una categoría. «MEZCAL» dice qué es; la zona dice **dónde está**, y
+     * por tanto quién lo cuenta y cuándo. Ausente = todavía sin colocar, que es
+     * el estado normal antes de asignarlas y no un error.
+     */
+    zona?: string;
+
+    /**
      * Proveedor preferente para este producto. La preferencia pertenece a la
      * relación producto ↔ oferta, nunca a la configuración global del negocio:
      * se compra el Campari a uno y el limón a otro.
