@@ -61,6 +61,32 @@ Suma `quantity` **sin mirar `unit`**. Y la unidad del ítem se fija con la
 producto entró una vez en botellas y otra en litros, el resultado es un número
 sin significado con la etiqueta de la primera.
 
+> ### ⚠️ CORRECCIÓN — medido el 2026-08-23 sobre las compras reales
+>
+> **Lo de abajo es cierto en el código y falso en la conclusión.** Sí se suma
+> sin mirar `unit`; pero en el catálogo real eso **no** produce números sin
+> significado, porque `quantity` es **siempre número de envases**:
+>
+> - 435 de 435 fichas con etiquetas mezcladas son el mismo patrón: el
+>   **formato** («0.700 L») frente a la **unidad** («UND»), con la misma
+>   cantidad. **Cero** casos de volumen contra peso.
+> - De 147 compras donde el precio pagado distingue «precio del envase» de
+>   «precio por litro», **147 son el del envase y ninguna el del litro**.
+> - **Ninguna cantidad de todo el histórico pasa de 60.**
+>
+> Las sumas están bien. Lo que está mal es la **etiqueta**, que sale de la
+> primera compra procesada. Y los `10813.000 L` no son un stock: son un
+> **código de producto pegado a un formato** por el importador — hay 43 así,
+> con SKU secuenciales (14023, 14024, 14025…).
+>
+> **Consecuencia práctica:** I1 **no necesita migrar ninguna cantidad**. Ver
+> `core/unidades/mezclaDeUnidades.ts`.
+>
+> **Y destapó un fallo que este audit no vio:** `recipeDepletion` leía la
+> etiqueta antes que el formato de la ficha, así que 137 productos etiquetados
+> `L` con envase de 700 ml **descontaban un 43 % de más** en cada producción.
+> Arreglado el 2026-08-23.
+
 **Evidencia en producción**, tal cual se lee en pantalla:
 
 ```
