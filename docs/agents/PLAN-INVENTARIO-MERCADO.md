@@ -76,8 +76,8 @@ implementación; **«parcial»**, que existe la pieza pero no el flujo completo.
 | 24 | Envío directo al proveedor | falta | 6 |
 | 25 | Ciclo del pedido | **ya está** con menos estados: `draft → sent → completed/cancelled` | ampliar en 6 |
 | 26 | Inteligencia de proveedores | falta — existe `evaluateMarketSignals` solo para precio | 5 |
-| 27 | Incidencias | falta | 5 |
-| 28 | Conocimiento operativo (cualitativo) | falta | 5 |
+| 27 | Incidencias | **hecho** (2026-08-23) — `core/proveedores/incidencias.ts` + panel desde la cabecera del proveedor en Mercado. Seis tipos, gravedad de dos niveles, patrón a las 3 repeticiones en 90 días. **Falta que el fundador registre la primera** | ✅ |
+| 28 | Conocimiento operativo (cualitativo) | **hecho** (2026-08-23) — notas vigentes por proveedor, colección aparte de las incidencias porque no son sucesos con fecha | ✅ |
 | 29 | Recomendaciones de compra | parcial — señales de mercado | 5 |
 
 ### Facturas y negocio
@@ -282,7 +282,13 @@ Sin esto, cada función nueva hereda el error.
 
 ### Fase 5 — Inteligencia · *cuando haya histórico*
 
-16. Puntos **4, 10, 11, 12, 26, 27, 28, 29**.
+16. Puntos **27 y 28** ✅ **HECHOS 2026-08-23**: son captura, no análisis, y
+    no dependían de datos que no existen — los crean.
+
+    Los **4, 10 y 12** siguen bloqueados de verdad: necesitan consumo real a lo
+    largo del tiempo y sin TPV solo se sabe lo comprado, nunca lo gastado.
+    El **26** ya tiene de qué vivir en cuanto haya incidencias registradas;
+    el **11** y el **29** son los siguientes.
 
 ### Fase 6 — El mundo exterior
 
