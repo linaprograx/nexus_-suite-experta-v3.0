@@ -105,7 +105,7 @@ Las tres primeras están explicadas a fondo en `CONTEXT.md`.
 | Mercado · buscar y agrupar | ✅ Fases 1–4. Un solo buscador en los ocho sitios |
 | Fase 2 · navegación | **CERRADA.** Plegables ✅ · M5 ✅ · M6 ✅ · T1 ✅ |
 | Fase 3 · modelo canónico | **CERRADA.** 17 ✅ · 16 ✅ · 19 ✅ · 20 ✅ · taxonomía, precios y lector de catálogos ✅ |
-| Fase 4 · alertas | **EN MARCHA.** 5 ✅ · 6 ✅ · 8 ✅ · 34 ✅ · **falta el 7 (zonas)** |
+| Fase 4 · alertas | **CERRADA.** 5 ✅ · 6 ✅ · 7 ✅ · 8 ✅ · 34 ✅ |
 | Punto 34 · gasto | ✅ escalón barato: por proveedor, por mes y concentración |
 | Puntos 19 y 20 | **CERRADOS.** Preferente elegible desde Mercado · filtro por proveedor completo |
 | Fase 3 · modelo canónico | **EN MARCHA.** Decisiones ✅ · alias resueltos en toda la app ✅ · taxonomía ✅ · precios ✅ · lector de catálogos ✅ (sin escribir) |

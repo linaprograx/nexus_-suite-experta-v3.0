@@ -1376,3 +1376,39 @@ parece que ese proveedor vende menos cosas.
 
 > **El patrón, otra vez:** un dato con tres representaciones y cada consumidor
 > leyendo la que le tocó cuando se escribió. No falla — responde de menos.
+
+---
+
+## 2026-08-16 · Claude Code · Fase 4 cerrada (5, 6, 7, 8 y 34)
+
+**5 y 6 · Centro de alertas.** La bandeja daba título, mensaje y color: se sabía
+*qué pasa* y nada más. Ahora cada alerta responde a las cuatro preguntas —qué
+pasa · por qué importa · qué impacto · qué hacer— con acciones **dependientes de
+la causa**.
+
+La prioridad **no es una puntuación**, y es deliberado: un número del 0 al 100
+nadie puede auditarlo. Tres niveles con el criterio dicho en voz alta, y dentro
+de cada uno ordena el importe. Urgencia antes que dinero — al revés, la lista
+sería un ranking de importes y lo urgente se hundiría debajo de lo caro.
+
+**7 · Zonas.** El conteo pedía contar 1.326 productos de una sentada. Uno a
+medias es peor que ninguno: los ajustes guardados parecen un inventario
+completo. Ahora se cuenta por zona, con progreso, y **la zona se puede asignar**
+—que era lo que faltaba de verdad—.
+
+**8 · Historial por producto.** Los tres registros ya se escribían; faltaba la
+vista que los une. Resuelve el maestro: la historia de un producto fusionado
+está repartida entre sus fichas y se recogen todas.
+
+**34 · Gasto por proveedor.** Sin ningún dato nuevo. Destapó que el **73,6 %**
+del gasto está en un solo proveedor.
+
+### El fallo de esta tanda, y lo que enseña
+
+El selector de zona del conteo **nunca llegó a insertarse**: el patrón de
+sustitución del script no casó y nadie lo comprobó. El código compilaba, las
+pruebas pasaban —eran del módulo puro— y **la función no estaba**.
+
+> Una sustitución de texto que no afirma que ha sustituido es un `no-op`
+> silencioso. Y las pruebas del núcleo no ven la interfaz: si algo tiene que
+> aparecer en pantalla, hay que mirar la pantalla.

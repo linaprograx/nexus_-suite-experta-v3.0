@@ -52,7 +52,7 @@ implementación; **«parcial»**, que existe la pieza pero no el flujo completo.
 | 4 | Motor de inteligencia de consumo | falta, y **bloqueado**: no hay consumo real | 5 |
 | 5 | Centro de alertas inteligentes | **hecho** (2026-08-16) — `core/alertas/centroDeAlertas.ts`: qué pasa · por qué importa · impacto · acciones según la causa | ✅ |
 | 6 | Priorización / score | **hecho** (2026-08-16) — tres niveles con criterio explícito (`ahora` · `esta-semana` · `cuando-puedas`), NO una puntuación opaca | ✅ |
-| 7 | Inventario físico por zonas | parcial — el conteo existe y no sobrescribe (genera ajuste con signo); **las zonas, no** | 4 |
+| 7 | Inventario físico por zonas | **hecho** (2026-08-16) — conteo filtrado por zona con progreso, y zona asignable desde la ficha | ✅ |
 | 8 | Historial por producto | **hecho** (2026-08-16) — línea de tiempo única en la ficha, resolviendo el maestro | ✅ |
 | 9 | Unidades y conversiones | **roto** — ver **I1** | **0** |
 | 10 | Clasificación ABC | falta, bloqueado por el 4 | 5 |
