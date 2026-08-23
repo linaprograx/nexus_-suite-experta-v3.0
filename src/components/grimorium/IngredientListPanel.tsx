@@ -335,9 +335,13 @@ export const IngredientListPanel: React.FC<IngredientListPanelProps> = ({
 
           {/* Small Actions */}
           <div className="flex shrink-0 gap-1 items-center">
-            <Button variant="outline" size="icon" onClick={onImportCSV} title="Importar CSV" className="border-slate-200 dark:border-slate-700 h-10 w-10">
-              <Icon svg={ICONS.upload} className="w-4 h-4" />
-            </Button>
+            {/* Aquí vivía un SEGUNDO importador de CSV, con su propia flecha.
+                Dos motores de importación es la misma trampa de siempre: dos
+                formas de hacer lo mismo que se separan al primer cambio, y el
+                usuario sin saber cuál usar. Se queda el de la barra —«Importar»—,
+                que previsualiza, deja elegir línea a línea y NO sobrescribe
+                precios. `onImportCSV` sigue en las props porque la vista aún lo
+                pasa; se retira cuando se limpie GrimoriumView. */}
             {selectedIngredientIds.length > 0 && (
               <>
                 {/* BULK BUY BUTTON */}

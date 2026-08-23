@@ -121,10 +121,16 @@ export const GrimoriumToolbar: React.FC = () => {
                 their own full-width row; the secondary actions sit underneath as
                 icons. Previously both shared one overflow-x-auto strip, which meant
                 switching to Inventario required discovering a sideways swipe. */}
-            <div className="flex flex-col gap-2 w-full p-2 lg:flex-row lg:items-center lg:justify-between lg:gap-4">
+            {/* Dos filas SIEMPRE, también en escritorio.
+                Con nueve herramientas en la misma línea que las tres pestañas,
+                la barra se estiraba más allá del ancho de la pantalla y
+                aparecía un scroll horizontal: la navegación principal se salía
+                por la derecha. En móvil ya estaban en dos filas y se veía bien;
+                el error era hacer una excepción para el escritorio. */}
+            <div className="flex flex-col gap-2 w-full p-2 min-w-0">
 
                 {/* Primary: the three views. Equal thirds — no scroll, no ellipsis. */}
-                <div className="grid grid-cols-3 gap-2 w-full lg:flex lg:w-auto lg:gap-3 shrink-0">
+                <div className="grid grid-cols-3 gap-2 w-full lg:flex lg:w-auto lg:gap-3 shrink-0 lg:justify-start">
                     <ViewButton mode="recipes" label="RECETAS" />
                     <ViewButton mode="stock" label="INVENTARIO" />
                     <ViewButton mode="market" label="MERCADO" />
@@ -132,7 +138,8 @@ export const GrimoriumToolbar: React.FC = () => {
 
                 {/* Secondary: tools. Spread edge to edge on mobile so every target
                     lands under a thumb; right-aligned and labelled on desktop. */}
-                <div className="flex items-center justify-between gap-1.5 w-full lg:w-auto lg:justify-end lg:gap-2">
+                {/* `flex-wrap`: si no caben, bajan de línea. Nunca desbordan. */}
+                <div className="flex flex-wrap items-center gap-1.5 w-full lg:gap-2 min-w-0">
                     <ActionButton
                         onClick={() => setShowIntelPanel(true)}
                         icon={ICONS.sparkles}

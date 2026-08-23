@@ -116,6 +116,15 @@ export const ImportarCatalogoModal: React.FC<{ onClose: () => void }> = ({ onClo
      * escritura no se delega a un diálogo del navegador.**
      */
     const [confirmando, setConfirmando] = React.useState(false);
+    /**
+     * Filas ya importadas en esta sesión.
+     *
+     * Dejan de mostrarse a propósito. Una tarifa suele mezclar alcoholes,
+     * zumos y frutería: se importa un bloque a un proveedor, luego otro a otro.
+     * Si lo ya hecho sigue en pantalla, con 400 líneas es cuestión de tiempo
+     * volver a marcarlo y asignárselo al proveedor equivocado.
+     */
+    const [yaImportadas, setYaImportadas] = React.useState<Set<number>>(new Set());
 
     const lectura: LecturaCatalogo | null = React.useMemo(
         () => (texto.trim() ? leerCatalogo(texto, allIngredients || []) : null),
@@ -129,6 +138,7 @@ export const ImportarCatalogoModal: React.FC<{ onClose: () => void }> = ({ onClo
         // Un fichero nuevo empieza sin nada marcado. Heredar la selección del
         // anterior importaría filas que nadie ha mirado en ESTE fichero.
         setMarcadas(new Set());
+        setYaImportadas(new Set());
         setResultado(null);
     };
 
@@ -137,6 +147,9 @@ export const ImportarCatalogoModal: React.FC<{ onClose: () => void }> = ({ onClo
         if (s.has(fila)) s.delete(fila); else s.add(fila);
         return s;
     });
+
+    /** Todo lo que queda por importar en el fichero, no solo lo que se ve. */
+    const seleccionarTodo = () => setMarcadas(new Set(pendientes.map(l => l.fila)));
 
     /** Marca todo lo que se está viendo, no todo el fichero. */
     const marcarVisibles = (marcar: boolean) => setMarcadas(prev => {
@@ -161,7 +174,14 @@ export const ImportarCatalogoModal: React.FC<{ onClose: () => void }> = ({ onClo
         try {
             const r = await escribirImportacion(db, appId, userId, plan);
             queryClient.invalidateQueries({ queryKey: ['ingredients'] });
-            setResultado(`✓ ${r.ofertas} oferta(s) guardada(s) · ${r.nuevas} producto(s) creado(s)`);
+            // Se dicen las dos cosas por separado: «0 productos creados» con 5
+            // ofertas guardadas NO es un fallo, es que esas cinco ya existían.
+            setResultado(
+                `✓ ${r.escritas} escritura(s) confirmada(s): ${r.ofertas} oferta(s) sobre fichas existentes`
+                + ` · ${r.nuevas} producto(s) nuevo(s)`
+                + (r.nuevas === 0 && r.ofertas > 0 ? ' — ninguno era nuevo, todos ya estaban en tu catálogo.' : ''),
+            );
+            setYaImportadas(prev => new Set([...prev, ...marcadas]));
             setMarcadas(new Set());
         } catch (e: any) {
             console.error('[importacion]', e);
@@ -171,9 +191,16 @@ export const ImportarCatalogoModal: React.FC<{ onClose: () => void }> = ({ onClo
         }
     };
 
-    const visibles = React.useMemo(
-        () => (lectura ? (filtro === 'todas' ? lectura.lineas : lectura.lineas.filter(l => l.estado === filtro)) : []),
-        [lectura, filtro],
+    const visibles = React.useMemo(() => {
+        if (!lectura) return [];
+        const base = lectura.lineas.filter(l => !yaImportadas.has(l.fila));
+        return filtro === 'todas' ? base : base.filter(l => l.estado === filtro);
+    }, [lectura, filtro, yaImportadas]);
+
+    /** Lo que queda por importar: lo válido que no se ha importado ya. */
+    const pendientes = React.useMemo(
+        () => (lectura ? lectura.lineas.filter(l => l.estado !== 'invalida' && !yaImportadas.has(l.fila)) : []),
+        [lectura, yaImportadas],
     );
 
     const Boton: React.FC<{ v: EstadoLinea | 'todas'; children: React.ReactNode }> = ({ v, children }) => (
@@ -288,10 +315,16 @@ export const ImportarCatalogoModal: React.FC<{ onClose: () => void }> = ({ onClo
                                     {suppliers.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
                                 </select>
                                 <button
+                                    onClick={seleccionarTodo}
+                                    className="h-10 px-3 rounded-xl text-[11px] font-bold uppercase tracking-wider bg-emerald-600 hover:bg-emerald-500 text-white"
+                                >
+                                    Todo ({pendientes.length})
+                                </button>
+                                <button
                                     onClick={() => marcarVisibles(true)}
                                     className="h-10 px-3 rounded-xl text-[11px] font-bold uppercase tracking-wider border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300"
                                 >
-                                    Marcar visibles
+                                    Solo lo visible
                                 </button>
                                 <button
                                     onClick={() => marcarVisibles(false)}

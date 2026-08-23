@@ -27,7 +27,7 @@ export const escribirImportacion = async (
     appId: string,
     userId: string,
     plan: PlanImportacion,
-): Promise<{ ofertas: number; nuevas: number }> => {
+): Promise<{ ofertas: number; nuevas: number; escritas: number }> => {
     const ruta = `artifacts/${appId}/users/${userId}/grimorio-ingredients`;
     const lotes = new EscrituraPorLotes(db);
 
@@ -74,6 +74,8 @@ export const escribirImportacion = async (
         });
     }
 
-    await lotes.cerrar();
-    return { ofertas: plan.ofertas.length, nuevas: plan.nuevas.length };
+    // Se devuelve lo que Firestore confirmó, no lo que el plan pretendía: si
+    // algo falla a mitad, el número tiene que decir la verdad.
+    const r = await lotes.cerrar();
+    return { ofertas: plan.ofertas.length, nuevas: plan.nuevas.length, escritas: r.escritas };
 };
