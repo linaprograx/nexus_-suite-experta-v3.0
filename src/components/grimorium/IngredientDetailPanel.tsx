@@ -17,6 +17,10 @@ import { useUserIntelProfile } from '../../features/learning/hooks/useUserIntelP
 import { LearningEngine } from '../../core/learning/learning.engine';
 import { TOKENS_GENERICOS as WEAK_TOKENS, esTokenGenerico } from '../../core/identity/genericTokens';
 import { proveedorDeIngrediente } from '../../features/orders/resolverProveedor';
+import { historialDeProducto, resumenDeHistorial } from '../../core/historial/historialProducto';
+import { usePurchaseIngredient } from '../../hooks/usePurchaseIngredient';
+import { useStockMovements } from '../../hooks/useStockMovements';
+import { Plegable } from '../ui/Plegable';
 
 
 const FAMILY_BG_COLORS: { [key in AromaticFamily]: string } = {
@@ -59,6 +63,23 @@ export const IngredientDetailPanel: React.FC<IngredientDetailPanelProps> = ({
 }) => {
     const { db, userId } = useApp();
     const { suppliers } = useSuppliers({ db, userId });
+
+    /**
+     * Punto 8: todo lo que le ha pasado a este producto, en una sola línea.
+     *
+     * Los tres registros llevaban tiempo escribiéndose —compras, movimientos y
+     * el registro del asistente— pero **faltaba la vista que los une**, así que
+     * responder «¿qué ha pasado con este mezcal?» obligaba a abrir tres
+     * pantallas y cruzar fechas a mano. Un historial partido en tres no es un
+     * historial: son tres listas.
+     */
+    const { purchaseHistory } = usePurchaseIngredient();
+    const { movements } = useStockMovements();
+    const historial = React.useMemo(
+        () => (ingredient ? historialDeProducto(ingredient.id, allIngredients, purchaseHistory || [], movements || []) : []),
+        [ingredient, allIngredients, purchaseHistory, movements],
+    );
+    const resumenHist = React.useMemo(() => resumenDeHistorial(historial), [historial]);
 
     // --- CROSS-LAYER CONTEXT ---
     const contextHints = React.useMemo(() => {
@@ -375,6 +396,44 @@ export const IngredientDetailPanel: React.FC<IngredientDetailPanelProps> = ({
                         <span className="hidden sm:inline">Comprar</span>
                     </Button>
                 )}
+                </div>
+
+            {/* Plegado por defecto: quien abre la ficha suele venir a otra cosa,
+                y una lista larga abierta empuja los botones fuera de la pantalla.
+                Ver la regla en `Plegable`. */}
+            {historial.length > 0 && (
+                <Plegable
+                    titulo="Historial de este producto"
+                    insignia={`${resumenHist.eventos}`}
+                    className="mb-3"
+                >
+                    <div className="p-2.5">
+                        <p className="text-[10px] text-slate-500 mb-2 leading-relaxed">
+                            {resumenHist.compras} compra(s) por €{resumenHist.gastado.toFixed(2)} · {resumenHist.salidas} salida(s)
+                            {resumenHist.fichas > 1 && ` · repartido entre ${resumenHist.fichas} fichas fusionadas`}
+                        </p>
+                        <div className="space-y-1 max-h-64 overflow-y-auto custom-scrollbar">
+                            {historial.slice(0, 60).map((e, i) => (
+                                <div key={i} className="flex items-baseline justify-between gap-2 py-1 border-b border-slate-100 dark:border-slate-800 last:border-0">
+                                    <div className="min-w-0">
+                                        <span className="text-[11px] text-slate-700 dark:text-slate-300">{e.texto}</span>
+                                        <span className="text-[10px] text-slate-400"> · {e.fecha.toLocaleDateString()}</span>
+                                    </div>
+                                    <span className={`text-[11px] font-bold tabular-nums shrink-0 ${e.cantidad >= 0 ? 'text-emerald-600' : 'text-slate-500'}`}>
+                                        {e.cantidad >= 0 ? '+' : ''}{e.cantidad} {e.unidad}
+                                        {e.importe !== undefined && <span className="text-slate-400 font-normal"> · €{e.importe.toFixed(2)}</span>}
+                                    </span>
+                                </div>
+                            ))}
+                        </div>
+                        {historial.length > 60 && (
+                            <p className="text-[10px] text-slate-400 text-center pt-2">…y {historial.length - 60} más.</p>
+                        )}
+                    </div>
+                </Plegable>
+            )}
+
+            <div className="flex gap-2">
                 <Button variant="outline" className="flex-1" onClick={() => onEdit(ingredient)}>
                     <Icon svg={ICONS.edit} className="mr-2 w-4 h-4" /> <span className="hidden sm:inline">Editar</span>
                 </Button>
