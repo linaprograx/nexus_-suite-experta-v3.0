@@ -13,6 +13,7 @@ import { CatalogoItem } from '../../types';
 import { getCategoryColor } from '../../utils/categoryColors';
 import { fijarProveedorPreferente } from '../../features/suppliers/proveedorPreferente';
 import { fichaTieneProveedor } from '../../core/ofertas/oferta';
+import { resumenDeProveedor } from '../../features/suppliers/resumenProveedor';
 import { useQueryClient } from '@tanstack/react-query';
 import { evaluateMarketSignals } from '../../core/signals/signal.engine';
 import { Signal } from '../../core/signals/signal.types';
@@ -115,6 +116,18 @@ export const IngredientListPanel: React.FC<IngredientListPanelProps> = ({
 
   const nombreProveedor = React.useCallback(
     (id: string | null) => (id && proveedores.find(p => p.id === id)?.name) || 'Sin proveedor',
+    [proveedores],
+  );
+
+  /**
+   * Punto 16: el plazo, los días de reparto y las condiciones de pago, aquí.
+   *
+   * Estaban guardados en la ficha del proveedor y no llegaban a donde se
+   * compara, así que la decisión se tomaba solo con el precio. Dos euros más
+   * barato deja de serlo si tarda cinco días y solo reparte los martes.
+   */
+  const detalleProveedor = React.useCallback(
+    (id: string | null) => (id ? resumenDeProveedor(proveedores.find(p => p.id === id)) : ''),
     [proveedores],
   );
 
@@ -489,6 +502,11 @@ export const IngredientListPanel: React.FC<IngredientListPanelProps> = ({
                                     )}
                                   </div>
                                   <div className="text-[10px] text-slate-400 truncate">{op.fichaNombre}</div>
+                                  {detalleProveedor(op.proveedorId) && (
+                                    <div className="text-[9px] text-slate-400/90 truncate">
+                                      {detalleProveedor(op.proveedorId)}
+                                    </div>
+                                  )}
                                 </div>
                                 <div className="shrink-0 text-right">
                                   <div className="text-xs font-bold text-slate-700 dark:text-slate-200 tabular-nums">€{op.precio.toFixed(2)}</div>
