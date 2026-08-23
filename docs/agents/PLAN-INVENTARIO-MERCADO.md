@@ -50,10 +50,10 @@ implementación; **«parcial»**, que existe la pieza pero no el flujo completo.
 | 2 | Regla de stock al primer ingreso real | **ya está** — `checkAndCreateRule` se llama en las **tres** rutas: compra directa (`GrimoriumView.tsx:1139`), compra múltiple (`:429`) y recepción de pedido (`:497`) | — |
 | 3 | Stock **máximo** / sobrestock | falta — `useStockRules` es solo «min stock + reorder qty» | **1** |
 | 4 | Motor de inteligencia de consumo | falta, y **bloqueado**: no hay consumo real | 5 |
-| 5 | Centro de alertas inteligentes | parcial — existen alertas de stock y `computeGrimorioAlerts` con bandeja global | 4 |
-| 6 | Priorización / score | falta | 4 |
+| 5 | Centro de alertas inteligentes | **hecho** (2026-08-16) — `core/alertas/centroDeAlertas.ts`: qué pasa · por qué importa · impacto · acciones según la causa | ✅ |
+| 6 | Priorización / score | **hecho** (2026-08-16) — tres niveles con criterio explícito (`ahora` · `esta-semana` · `cuando-puedas`), NO una puntuación opaca | ✅ |
 | 7 | Inventario físico por zonas | parcial — el conteo existe y no sobrescribe (genera ajuste con signo); **las zonas, no** | 4 |
-| 8 | Historial por producto | parcial — existen `purchases`, `stock_movements` y `audit_log`; falta la vista que los une | 4 |
+| 8 | Historial por producto | **hecho** (2026-08-16) — línea de tiempo única en la ficha, resolviendo el maestro | ✅ |
 | 9 | Unidades y conversiones | **roto** — ver **I1** | **0** |
 | 10 | Clasificación ABC | falta, bloqueado por el 4 | 5 |
 | 11 | Salud del inventario | parcial y con cifras falsas — ver **I3**, **I4** | 0 y 5 |
