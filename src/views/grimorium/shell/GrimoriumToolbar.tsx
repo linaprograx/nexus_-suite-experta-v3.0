@@ -94,7 +94,7 @@ export const GrimoriumToolbar: React.FC = () => {
             onClick={onClick}
             title={title}
             aria-label={label}
-            className="min-w-0 h-10 px-3 lg:px-4 rounded-full bg-white/10 text-white hover:bg-white/20 border border-white/10 transition-all duration-300 flex items-center gap-2 text-xs font-bold uppercase tracking-wider"
+            className="min-w-0 flex-1 lg:flex-none h-10 px-2 lg:px-4 rounded-full bg-white/10 text-white hover:bg-white/20 border border-white/10 transition-all duration-300 flex items-center justify-center lg:justify-start gap-2 text-xs font-bold uppercase tracking-wider"
         >
             <Icon svg={icon} className={`w-4 h-4 shrink-0 ${iconClass}`} />
             <span className="hidden lg:inline truncate">{label}</span>
@@ -150,7 +150,15 @@ export const GrimoriumToolbar: React.FC = () => {
                     caben con holgura incluso con el menú lateral abierto, y si
                     alguna vez apretara, lo que cede es el rótulo (`truncate`),
                     no la línea. Un botón descolgado abajo parece otra fila de
-                    navegación y no lo es. */}
+                    navegación y no lo es.
+
+                    En móvil cada botón es `flex-1`: los cinco reparten el ancho
+                    entero de la línea, igual que las tres pestañas de arriba.
+                    Apelotonados a la izquierda dejaban media franja vacía y los
+                    blancos quedaban pequeños justo donde se pulsa con el pulgar.
+                    En escritorio vuelven a su tamaño natural, porque estirar
+                    cinco pastillas a lo ancho de 1.400 px las convierte en
+                    barras. */}
                 <div className="flex flex-nowrap items-center gap-1.5 w-full lg:gap-2 min-w-0">
                     {aqui('ia') && (
                         <ActionButton
@@ -286,8 +294,8 @@ const LayerToggle: React.FC<{
             <button
                 onClick={() => toggleLayer(layer)}
                 className={`
-                  min-w-0 h-10 px-3 lg:px-4 rounded-full text-xs font-bold uppercase tracking-wider
-                  flex items-center gap-2 transition-all duration-300 border
+                  min-w-0 flex-1 lg:flex-none h-10 px-2 lg:px-4 rounded-full text-xs font-bold uppercase tracking-wider
+                  flex items-center justify-center lg:justify-start gap-2 transition-all duration-300 border
                   ${isActive
                         ? 'bg-white shadow-md border-transparent' // Active: White bg
                         : 'bg-white/10 text-white border-white/10 hover:bg-white/20' // Inactive: Glass

@@ -77,12 +77,12 @@ export function ListaEnSecciones<T>({
                                 {seccion.titulo}
                             </span>
                         }
-                        insignia={
-                            <span className="flex items-center gap-2">
-                                {cabeceraExtra?.(seccion)}
-                                <span className="tabular-nums">{seccion.items.length}</span>
-                            </span>
-                        }
+                        insignia={seccion.items.length}
+                        /* Va por `acciones` y no por `insignia`: dentro de la
+                           insignia quedaría anidado en el botón que pliega, y
+                           en táctil el navegador se queda con el de fuera —el
+                           botón de dentro no se dispara nunca en el móvil. */
+                        acciones={cabeceraExtra?.(seccion)}
                         className={seccion.esSinAsignar ? 'border-amber-300/60 dark:border-amber-500/30' : ''}
                     >
                         {/* Solo se monta lo abierto. */}

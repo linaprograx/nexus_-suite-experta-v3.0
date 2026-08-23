@@ -42,9 +42,18 @@ export const Plegable: React.FC<{
      */
     abierto?: boolean;
     onAlternar?: () => void;
+    /**
+     * Contenido **fuera** del botón que pliega, a su derecha.
+     *
+     * Existe porque meter algo pulsable dentro de `insignia` lo metía dentro
+     * del `<button>`. Anidar un control dentro de otro es HTML inválido y en
+     * táctil el navegador se queda con el de fuera: en móvil el botón de
+     * dentro no llegaba a dispararse nunca. Aquí es hermano, no hijo.
+     */
+    acciones?: React.ReactNode;
     children: React.ReactNode;
     className?: string;
-}> = ({ titulo, insignia, inicialAbierto = false, abierto: abiertoFuera, onAlternar, children, className = '' }) => {
+}> = ({ titulo, insignia, inicialAbierto = false, abierto: abiertoFuera, onAlternar, acciones, children, className = '' }) => {
     const [abiertoDentro, setAbiertoDentro] = React.useState(inicialAbierto);
     const controlado = abiertoFuera !== undefined;
     const abierto = controlado ? abiertoFuera : abiertoDentro;
@@ -54,23 +63,26 @@ export const Plegable: React.FC<{
 
     return (
         <div className={`rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden bg-white/40 dark:bg-slate-800/40 ${className}`}>
-            <button
-                type="button"
-                onClick={setAbierto}
-                aria-expanded={abierto}
-                className="w-full flex items-center gap-2 px-3 py-2.5 text-left hover:bg-slate-50 dark:hover:bg-white/5 transition-colors"
-            >
-                <Icon
-                    svg={ICONS.chevronDown}
-                    className={`w-4 h-4 shrink-0 text-slate-400 transition-transform duration-200 ${abierto ? '' : '-rotate-90'}`}
-                />
-                <span className="flex-1 min-w-0 text-xs font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider truncate">
-                    {titulo}
-                </span>
-                {insignia != null && (
-                    <span className="shrink-0 text-[10px] font-bold text-slate-400 tabular-nums">{insignia}</span>
-                )}
-            </button>
+            <div className="flex items-center hover:bg-slate-50 dark:hover:bg-white/5 transition-colors">
+                <button
+                    type="button"
+                    onClick={setAbierto}
+                    aria-expanded={abierto}
+                    className="flex-1 min-w-0 flex items-center gap-2 pl-3 pr-2 py-2.5 text-left"
+                >
+                    <Icon
+                        svg={ICONS.chevronDown}
+                        className={`w-4 h-4 shrink-0 text-slate-400 transition-transform duration-200 ${abierto ? '' : '-rotate-90'}`}
+                    />
+                    <span className="flex-1 min-w-0 text-xs font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider truncate">
+                        {titulo}
+                    </span>
+                    {insignia != null && (
+                        <span className="shrink-0 text-[10px] font-bold text-slate-400 tabular-nums">{insignia}</span>
+                    )}
+                </button>
+                {acciones != null && <div className="shrink-0 pr-3 pl-1">{acciones}</div>}
+            </div>
 
             {abierto && (
                 <div className="border-t border-slate-100 dark:border-slate-700/50">{children}</div>

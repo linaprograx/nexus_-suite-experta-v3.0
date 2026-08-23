@@ -453,21 +453,30 @@ export const IngredientListPanel: React.FC<IngredientListPanelProps> = ({
             cabeceraExtra={seccion => {
               if (seccion.esSinAsignar || seccion.id === SIN_ASIGNAR) return null;
               const frase = fraseDeProveedor(resumenDeIncidencias(incidencias, seccion.id));
+              /**
+               * El rótulo dice lo que hace.
+               *
+               * Ponía «Historial», que se lee como algo de solo mirar, y el
+               * fundador buscó un botón de registrar y no lo encontró: el
+               * botón estaba, pero su nombre prometía otra cosa. Sin nada
+               * apuntado, lo útil es apuntar; con algo apuntado, lo útil es
+               * saber qué pasa, y entonces manda la frase.
+               */
               return (
-                <span
-                  role="button"
-                  tabIndex={0}
-                  onClick={e => { e.stopPropagation(); setPanelProveedor({ id: seccion.id, nombre: seccion.titulo }); }}
-                  onKeyDown={e => { if (e.key === 'Enter') { e.stopPropagation(); setPanelProveedor({ id: seccion.id, nombre: seccion.titulo }); } }}
-                  title={frase ? `${frase} — abrir el historial de este proveedor` : 'Incidencias y notas de este proveedor'}
-                  className={`normal-case tracking-normal text-[10px] font-bold px-2 py-0.5 rounded-full border transition-colors cursor-pointer ${
+                <button
+                  type="button"
+                  onClick={() => setPanelProveedor({ id: seccion.id, nombre: seccion.titulo })}
+                  title={frase
+                    ? `${frase} — abrir incidencias y notas de este proveedor`
+                    : 'Registrar una incidencia o una nota de este proveedor'}
+                  className={`normal-case tracking-normal text-[11px] font-bold px-2.5 py-1 rounded-full border transition-colors whitespace-nowrap ${
                     frase
                       ? 'border-amber-300 text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/30 hover:bg-amber-100'
-                      : 'border-slate-200 dark:border-slate-700 text-slate-400 hover:text-sky-600 hover:border-sky-300'
+                      : 'border-sky-300/70 dark:border-sky-700/60 text-sky-600 dark:text-sky-400 hover:bg-sky-50 dark:hover:bg-sky-950/30'
                   }`}
                 >
-                  {frase || 'Historial'}
-                </span>
+                  {frase || '+ Incidencia'}
+                </button>
               );
             }}
           >
