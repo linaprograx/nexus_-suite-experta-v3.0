@@ -1,4 +1,5 @@
 import React from 'react';
+import { createPortal } from 'react-dom';
 import { Icon } from '../../components/ui/Icon';
 import { ICONS } from '../../components/ui/icons';
 import { useApp } from '../../context/AppContext';
@@ -7,6 +8,10 @@ import {
     TIPOS_INCIDENCIA, TipoIncidencia, Gravedad, Incidencia,
     resumenDeIncidencias, notasDe, VENTANA_DIAS,
 } from '../../core/proveedores/incidencias';
+import { perfilDeProveedor, avisosDelPerfil, VENTANA_COMPRAS_DIAS } from '../../core/proveedores/perfilProveedor';
+import { useIngredients } from '../../hooks/useIngredients';
+import { usePurchaseIngredient } from '../../hooks/usePurchaseIngredient';
+import { useSuppliers } from '../suppliers/hooks/useSuppliers';
 
 /**
  * **Lo que pasa con un proveedor.** Puntos 27 y 28.
@@ -42,7 +47,27 @@ export const PanelDeProveedor: React.FC<{
     const { incidencias, notas, cargando, registrar, resolver, eliminar, guardarNota, eliminarNota } =
         useIncidencias(db, userId);
 
-    const [pestana, setPestana] = React.useState<'incidencias' | 'notas'>('incidencias');
+    const { ingredients } = useIngredients();
+    const { purchaseHistory } = usePurchaseIngredient();
+    const { suppliers } = useSuppliers({ db, userId });
+
+    /**
+     * El perfil del punto 26. Se compone de piezas que ya existen —gasto,
+     * ofertas, incidencias— en vez de recalcular ninguna: tres cifras del
+     * mismo dato calculadas por tres vías es el defecto que este proyecto
+     * lleva arreglando desde el principio.
+     */
+    const perfil = React.useMemo(() => perfilDeProveedor({
+        proveedorId,
+        proveedor: suppliers.find((x: any) => x.id === proveedorId) || null,
+        ingredientes: ingredients || [],
+        compras: purchaseHistory || [],
+        incidencias,
+    }), [proveedorId, suppliers, ingredients, purchaseHistory, incidencias]);
+
+    const avisos = React.useMemo(() => avisosDelPerfil(perfil), [perfil]);
+
+    const [pestana, setPestana] = React.useState<'resumen' | 'incidencias' | 'notas'>('resumen');
     const [registrando, setRegistrando] = React.useState(false);
     const [tipo, setTipo] = React.useState<TipoIncidencia>('retraso');
     const [gravedad, setGravedad] = React.useState<Gravedad>('leve');
@@ -88,6 +113,13 @@ export const PanelDeProveedor: React.FC<{
         }
     };
 
+    const Cifra: React.FC<{ n: React.ReactNode; etiqueta: string; color?: string }> = ({ n, etiqueta, color }) => (
+        <div className="rounded-xl border border-slate-200 dark:border-slate-700 p-2.5 text-center">
+            <div className={`text-lg font-black tabular-nums ${color || 'text-slate-800 dark:text-slate-100'}`}>{n}</div>
+            <div className="text-[9px] uppercase tracking-wider text-slate-400 leading-tight">{etiqueta}</div>
+        </div>
+    );
+
     const Fila: React.FC<{ i: Incidencia }> = ({ i }) => (
         <div className={`rounded-xl border p-3 ${i.resueltaEl
             ? 'border-slate-200 dark:border-slate-700 opacity-60'
@@ -125,8 +157,19 @@ export const PanelDeProveedor: React.FC<{
         </div>
     );
 
-    return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    /**
+     * Va en un **portal** a `document.body`.
+     *
+     * Este panel nace dentro del listado de Mercado, y por encima hay
+     * contenedores con `z-*` propio: cada uno es un contexto de apilamiento que
+     * encierra a sus hijos. Desde dentro de esa caja **no hay número de `z`
+     * que valga** —la franja de Grimorio se pintaba encima del panel—, y subir
+     * el número es el arreglo que parece funcionar y reaparece al siguiente
+     * cambio de maquetación. El mismo diagnóstico está escrito en
+     * `StackedMobileShell.tsx`. En el `body` no hay caja de la que salir.
+     */
+    return createPortal((
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
             <div className="absolute inset-0 bg-slate-900/50 backdrop-blur-md" onClick={onClose} style={{ WebkitBackdropFilter: 'blur(12px)' }} />
 
             <div className="relative w-full max-w-2xl max-h-[88vh] flex flex-col bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-200/60 dark:border-white/10 overflow-hidden">
@@ -156,7 +199,7 @@ export const PanelDeProveedor: React.FC<{
                 )}
 
                 <div className="flex gap-1 p-2 border-b border-slate-200 dark:border-slate-700 shrink-0">
-                    {([['incidencias', `Incidencias (${suyas.length})`], ['notas', `Notas (${susNotas.length})`]] as const).map(([id, rot]) => (
+                    {([['resumen', 'Resumen'], ['incidencias', `Incidencias (${suyas.length})`], ['notas', `Notas (${susNotas.length})`]] as const).map(([id, rot]) => (
                         <button
                             key={id}
                             onClick={() => setPestana(id as any)}
@@ -174,6 +217,86 @@ export const PanelDeProveedor: React.FC<{
                         <div className="rounded-xl border border-amber-300 bg-amber-50 dark:bg-amber-950/30 p-3 text-xs text-amber-800 dark:text-amber-200">
                             {aviso}
                         </div>
+                    )}
+
+                    {pestana === 'resumen' && (
+                        <>
+                            {/* Los avisos primero: son lo único que pide una
+                                decisión. Las cifras vienen detrás, para poder
+                                comprobarlos. */}
+                            {avisos.length === 0 ? (
+                                <p className="text-[11px] text-slate-500 text-center py-6 leading-relaxed">
+                                    Nada digno de mención con este proveedor.<br />
+                                    <span className="text-slate-400">
+                                        Y es una respuesta, no un hueco: se ha mirado su peso en tu gasto,
+                                        de cuántos productos eres rehén suyo, si hay alternativa más barata
+                                        y si sus fallos se repiten.
+                                    </span>
+                                </p>
+                            ) : avisos.map((a, i) => (
+                                <div
+                                    key={i}
+                                    className={`rounded-xl border p-3 ${a.tono === 'riesgo'
+                                        ? 'border-rose-200 dark:border-rose-900/40 bg-rose-50/50 dark:bg-rose-950/20'
+                                        : a.tono === 'dinero'
+                                            ? 'border-emerald-200 dark:border-emerald-900/40 bg-emerald-50/50 dark:bg-emerald-950/20'
+                                            : 'border-slate-200 dark:border-slate-700'}`}
+                                >
+                                    <p className="text-sm font-bold text-slate-800 dark:text-slate-100">{a.texto}</p>
+                                    <p className="text-[11px] text-slate-600 dark:text-slate-400 mt-0.5 leading-relaxed">{a.porQue}</p>
+                                </div>
+                            ))}
+
+                            <div className="grid grid-cols-2 gap-2 pt-1">
+                                <Cifra
+                                    n={perfil.gasto ? `€${perfil.gasto.total.toFixed(0)}` : '—'}
+                                    etiqueta={`gasto · ${perfil.pctDelGasto.toFixed(0)} % del total`}
+                                />
+                                <Cifra n={perfil.productos.length} etiqueta="productos que te vende" />
+                                <Cifra
+                                    n={perfil.fuenteUnica.length}
+                                    etiqueta="solo los vende él"
+                                    color={perfil.fuenteUnica.length > 0 ? 'text-rose-600 dark:text-rose-400' : undefined}
+                                />
+                                <Cifra
+                                    n={perfil.tasa === null ? '—' : perfil.tasa.toFixed(2)}
+                                    etiqueta={perfil.tasa === null ? 'sin compras que dividir' : 'incidencias por compra'}
+                                />
+                            </div>
+
+                            {/* `!!`: sin él, `diasReparto?.length` valiendo 0 hacía
+                                que la expresión entera valiera 0 — y React pinta
+                                el cero. Salía un «0» suelto bajo las cifras. */}
+                            {!!(perfil.condiciones.plazoDias != null || perfil.condiciones.pago || perfil.condiciones.diasReparto?.length) && (
+                                <div className="rounded-xl border border-slate-200 dark:border-slate-700 p-3 text-[11px] text-slate-600 dark:text-slate-300 space-y-0.5">
+                                    {perfil.condiciones.plazoDias != null && <p>Plazo de entrega: <strong>{perfil.condiciones.plazoDias} días</strong></p>}
+                                    {!!perfil.condiciones.diasReparto?.length && <p>Reparte: <strong>{perfil.condiciones.diasReparto.join(', ')}</strong></p>}
+                                    {perfil.condiciones.pago && <p>Pago: <strong>{perfil.condiciones.pago}</strong></p>}
+                                </div>
+                            )}
+
+                            {perfil.fuenteUnica.length > 0 && (
+                                <details className="rounded-xl border border-slate-200 dark:border-slate-700 p-3">
+                                    <summary className="text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer">
+                                        Los {perfil.fuenteUnica.length} que solo vende él
+                                    </summary>
+                                    <ul className="mt-2 space-y-0.5">
+                                        {perfil.fuenteUnica.slice(0, 40).map(x => (
+                                            <li key={x.fichaId} className="text-[11px] text-slate-500">{x.nombre}</li>
+                                        ))}
+                                        {perfil.fuenteUnica.length > 40 && (
+                                            <li className="text-[11px] text-slate-400">y {perfil.fuenteUnica.length - 40} más</li>
+                                        )}
+                                    </ul>
+                                </details>
+                            )}
+
+                            <p className="text-[10px] text-slate-400 leading-relaxed pt-1">
+                                El sobrecoste compara las ofertas de <strong>hoy</strong> con lo comprado en los
+                                últimos {VENTANA_COMPRAS_DIAS} días. No es dinero perdido: la alternativa barata
+                                puede no haber existido entonces.
+                            </p>
+                        </>
                     )}
 
                     {pestana === 'incidencias' && (
@@ -313,5 +436,5 @@ export const PanelDeProveedor: React.FC<{
                 </div>
             </div>
         </div>
-    );
+    ), document.body);
 };
