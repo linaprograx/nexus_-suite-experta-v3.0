@@ -9,6 +9,7 @@ import { IdentityReportModal } from '../../../features/identity/IdentityReportMo
 import { TaxonomiaReportModal } from '../../../features/taxonomia/TaxonomiaReportModal';
 import { PreciosReportModal } from '../../../features/precios/PreciosReportModal';
 import { ImportarCatalogoModal } from '../../../features/importacion/ImportarCatalogoModal';
+import { CentroDeAlertasModal } from '../../../features/alertas/CentroDeAlertasModal';
 import { fijarAlcanceCarta } from '../../../hooks/useAlcanceCarta';
 
 // Toolbar for Grimorium View (Recipes, Stock, Market)
@@ -21,6 +22,7 @@ export const GrimoriumToolbar: React.FC = () => {
     const [showTaxonomia, setShowTaxonomia] = useState(false);
     const [showPrecios, setShowPrecios] = useState(false);
     const [showImportar, setShowImportar] = useState(false);
+    const [showAlertas, setShowAlertas] = useState(false);
 
     /**
      * El rótulo, por pestaña.
@@ -138,6 +140,15 @@ export const GrimoriumToolbar: React.FC = () => {
                         iconClass="text-amber-300"
                         title="Inteligencia Activa — preferencias del asistente"
                     />
+                    {/* En las tres pestañas: lo que necesita atención no depende
+                        de dónde estés mirando. */}
+                    <ActionButton
+                        onClick={() => setShowAlertas(true)}
+                        icon={ICONS.alertCircle}
+                        label="Atención"
+                        iconClass="text-rose-300"
+                        title="Qué necesita tu atención: qué pasa, por qué importa y qué hacer"
+                    />
                     <ActionButton
                         onClick={() => setShowAuditLog(true)}
                         icon={ICONS.shield || ICONS.clock}
@@ -212,6 +223,7 @@ export const GrimoriumToolbar: React.FC = () => {
             {showTaxonomia && <TaxonomiaReportModal onClose={() => setShowTaxonomia(false)} />}
             {showPrecios && <PreciosReportModal onClose={() => setShowPrecios(false)} />}
             {showImportar && <ImportarCatalogoModal onClose={() => setShowImportar(false)} />}
+            {showAlertas && <CentroDeAlertasModal onClose={() => setShowAlertas(false)} />}
             {showMenu && (
                 <ActiveMenuModal
                     onClose={() => {
