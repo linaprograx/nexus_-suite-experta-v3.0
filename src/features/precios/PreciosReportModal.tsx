@@ -6,6 +6,7 @@ import { usePurchaseIngredient } from '../../hooks/usePurchaseIngredient';
 import {
     seriesDePrecio, explicarSerie, mayoresMovimientos, diferenciasEntreProveedores, resumenDeSeries, SeriePrecios,
 } from '../../core/precios/historicoPrecios';
+import { gastoPorProveedor, concentracion } from '../../core/compras/gastoPorProveedor';
 
 /**
  * Histórico de precios. **Solo lectura.**
@@ -40,6 +41,17 @@ export const PreciosReportModal: React.FC<{ onClose: () => void }> = ({ onClose 
     const diferencias = React.useMemo(() => diferenciasEntreProveedores(series), [series]);
 
     const resumen = React.useMemo(() => resumenDeSeries(series), [series]);
+
+    /**
+     * Punto 34: gasto por proveedor y por mes.
+     *
+     * Vive aquí y no en un botón nuevo porque es la misma pregunta que el resto
+     * del panel —qué está pasando con lo que compro— vista por el otro lado:
+     * arriba, cómo se mueven los precios; abajo, a quién se le va el dinero.
+     */
+    const gastos = React.useMemo(() => gastoPorProveedor(purchaseHistory || []), [purchaseHistory]);
+    const pesos = React.useMemo(() => concentracion(gastos), [gastos]);
+    const gastoTotal = React.useMemo(() => gastos.reduce((a, g) => a + g.total, 0), [gastos]);
 
     const Cifra: React.FC<{ n: React.ReactNode; etiqueta: string; color?: string }> = ({ n, etiqueta, color }) => (
         <div className="flex-1 min-w-0 text-center px-2">
@@ -90,6 +102,42 @@ export const PreciosReportModal: React.FC<{ onClose: () => void }> = ({ onClose 
                 </div>
 
                 <div className="flex-1 overflow-y-auto custom-scrollbar p-4 space-y-4">
+                    {gastos.length > 0 && (
+                        <div>
+                            <h3 className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2">
+                                A quién se le va el dinero ({eur(gastoTotal)})
+                            </h3>
+                            <p className="text-[10px] text-slate-500 mb-2 leading-relaxed">
+                                Sale de tus compras registradas. Un proveedor con la mayor parte del gasto no es un
+                                buen precio: es una <strong>dependencia</strong>.
+                            </p>
+                            <div className="space-y-2">
+                                {gastos.slice(0, 12).map((g, i) => (
+                                    <div key={g.proveedorId} className="rounded-xl border border-slate-200 dark:border-slate-700 p-2.5">
+                                        <div className="flex items-baseline justify-between gap-2">
+                                            <span className="text-xs font-bold text-slate-800 dark:text-slate-100 truncate">
+                                                {g.proveedorNombre}
+                                            </span>
+                                            <span className="text-xs font-black tabular-nums text-slate-700 dark:text-slate-200 shrink-0">
+                                                {eur(g.total)}
+                                                <span className="text-slate-400 font-normal"> · {pesos[i]?.pct ?? 0} %</span>
+                                            </span>
+                                        </div>
+                                        {/* La barra dice lo mismo que el número, pero de un vistazo. */}
+                                        <div className="mt-1 h-1.5 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
+                                            <div className="h-full bg-emerald-500" style={{ width: `${Math.min(100, pesos[i]?.pct ?? 0)}%` }} />
+                                        </div>
+                                        <p className="mt-1 text-[10px] text-slate-500">
+                                            {g.compras} compra(s) · {g.productos} producto(s)
+                                            {g.porMes.length > 1 && ` · ${g.porMes.length} meses`}
+                                            {g.ultima && ` · última el ${g.ultima.toLocaleDateString()}`}
+                                        </p>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
                     {series.size === 0 && (
                         <p className="text-[11px] text-slate-500 text-center py-8">
                             Todavía no hay compras registradas con precio.
