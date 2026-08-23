@@ -3,6 +3,11 @@ import { Icon } from '../../components/ui/Icon';
 import { ICONS } from '../../components/ui/icons';
 import { useIngredients } from '../../hooks/useIngredients';
 import { leerCatalogo, LecturaCatalogo, LineaCatalogo, EstadoLinea } from '../../core/importacion/leerCatalogo';
+import { planificarImportacion, resumirPlan } from '../../core/importacion/planDeImportacion';
+import { escribirImportacion } from './escribirCatalogo';
+import { useSuppliers } from '../suppliers/hooks/useSuppliers';
+import { useApp } from '../../context/AppContext';
+import { useQueryClient } from '@tanstack/react-query';
 
 /**
  * Previsualización de un catálogo de proveedor. **No importa nada todavía.**
@@ -31,11 +36,20 @@ const Cifra: React.FC<{ n: React.ReactNode; etiqueta: string; color?: string }> 
     </div>
 );
 
-const Fila: React.FC<{ l: LineaCatalogo }> = ({ l }) => {
+const Fila: React.FC<{ l: LineaCatalogo; marcada: boolean; onMarcar: () => void }> = ({ l, marcada, onMarcar }) => {
     const e = ESTILO[l.estado];
     return (
         <div className="rounded-xl border border-slate-200 dark:border-slate-700 p-2.5">
             <div className="flex items-start gap-2">
+                {l.estado !== 'invalida' && (
+                    <input
+                        type="checkbox"
+                        checked={marcada}
+                        onChange={onMarcar}
+                        aria-label={`Importar ${l.nombre}`}
+                        className="mt-0.5 w-4 h-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 shrink-0"
+                    />
+                )}
                 <span className={`shrink-0 text-[9px] font-bold uppercase px-1.5 py-0.5 rounded-full border ${e.cls}`}>{e.texto}</span>
                 <div className="flex-1 min-w-0">
                     <div className="flex items-baseline justify-between gap-2">
@@ -81,6 +95,14 @@ export const ImportarCatalogoModal: React.FC<{ onClose: () => void }> = ({ onClo
     const [nombreFichero, setNombreFichero] = React.useState('');
     const [filtro, setFiltro] = React.useState<EstadoLinea | 'todas'>('todas');
 
+    const { db, appId, userId } = useApp();
+    const { suppliers } = useSuppliers({ db, userId });
+    const queryClient = useQueryClient();
+    const [proveedorId, setProveedorId] = React.useState('');
+    const [marcadas, setMarcadas] = React.useState<Set<number>>(new Set());
+    const [escribiendo, setEscribiendo] = React.useState(false);
+    const [resultado, setResultado] = React.useState<string | null>(null);
+
     const lectura: LecturaCatalogo | null = React.useMemo(
         () => (texto.trim() ? leerCatalogo(texto, allIngredients || []) : null),
         [texto, allIngredients],
@@ -90,6 +112,62 @@ export const ImportarCatalogoModal: React.FC<{ onClose: () => void }> = ({ onClo
         if (!file) return;
         setNombreFichero(file.name);
         setTexto(await file.text());
+        // Un fichero nuevo empieza sin nada marcado. Heredar la selección del
+        // anterior importaría filas que nadie ha mirado en ESTE fichero.
+        setMarcadas(new Set());
+        setResultado(null);
+    };
+
+    const alternar = (fila: number) => setMarcadas(prev => {
+        const s = new Set(prev);
+        if (s.has(fila)) s.delete(fila); else s.add(fila);
+        return s;
+    });
+
+    /** Marca todo lo que se está viendo, no todo el fichero. */
+    const marcarVisibles = (marcar: boolean) => setMarcadas(prev => {
+        const s = new Set(prev);
+        for (const l of visibles) {
+            if (l.estado === 'invalida') continue;   // no se marcan las que no valen
+            if (marcar) s.add(l.fila); else s.delete(l.fila);
+        }
+        return s;
+    });
+
+    const plan = React.useMemo(
+        () => (lectura ? planificarImportacion(lectura.lineas, proveedorId, marcadas) : null),
+        [lectura, proveedorId, marcadas],
+    );
+
+    const importar = async () => {
+        if (!plan || !db || !appId || !userId || !proveedorId || escribiendo) return;
+        const nombreProv = suppliers.find(s => s.id === proveedorId)?.name || proveedorId;
+        const detalle = [
+            `Proveedor: ${nombreProv}`,
+            '',
+            resumirPlan(plan),
+            '',
+            'Las fichas que ya tienes reciben una OFERTA de este proveedor.',
+            'Su precio de compra NO se toca: el coste de tus recetas no cambia.',
+            'Los productos nuevos nacen marcados «por revisar».',
+            '',
+            'No se borra ni se fusiona nada. ¿Importar?',
+        ].join('\n');
+        if (!window.confirm(detalle)) return;
+
+        setEscribiendo(true);
+        setResultado(null);
+        try {
+            const r = await escribirImportacion(db, appId, userId, plan);
+            queryClient.invalidateQueries({ queryKey: ['ingredients'] });
+            setResultado(`✓ ${r.ofertas} oferta(s) guardada(s) · ${r.nuevas} producto(s) creado(s)`);
+            setMarcadas(new Set());
+        } catch (e: any) {
+            console.error('[importacion]', e);
+            setResultado(`✗ ${e?.message || 'No se pudo importar.'}`);
+        } finally {
+            setEscribiendo(false);
+        }
     };
 
     const visibles = React.useMemo(
@@ -185,6 +263,32 @@ export const ImportarCatalogoModal: React.FC<{ onClose: () => void }> = ({ onClo
                                 </div>
                             </div>
 
+                            {/* El proveedor primero: sin él no hay clave de oferta,
+                                y sin clave no se puede escribir nada. */}
+                            <div className="flex flex-wrap items-center gap-2">
+                                <select
+                                    value={proveedorId}
+                                    onChange={e => setProveedorId(e.target.value)}
+                                    aria-label="Proveedor de esta tarifa"
+                                    className="flex-1 min-w-0 h-10 px-2 rounded-xl text-xs bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200"
+                                >
+                                    <option value="">¿De qué proveedor es esta tarifa?</option>
+                                    {suppliers.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                                </select>
+                                <button
+                                    onClick={() => marcarVisibles(true)}
+                                    className="h-10 px-3 rounded-xl text-[11px] font-bold uppercase tracking-wider border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300"
+                                >
+                                    Marcar visibles
+                                </button>
+                                <button
+                                    onClick={() => marcarVisibles(false)}
+                                    className="h-10 px-3 rounded-xl text-[11px] font-bold uppercase tracking-wider border border-slate-200 dark:border-slate-700 text-slate-500"
+                                >
+                                    Ninguna
+                                </button>
+                            </div>
+
                             <div className="flex flex-wrap gap-1.5">
                                 <Boton v="todas">Todas ({lectura.resumen.total})</Boton>
                                 <Boton v="nuevo">Nuevas ({lectura.resumen.nuevas})</Boton>
@@ -195,7 +299,9 @@ export const ImportarCatalogoModal: React.FC<{ onClose: () => void }> = ({ onClo
                             </div>
 
                             <div className="space-y-2">
-                                {visibles.slice(0, 200).map(l => <Fila key={l.fila} l={l} />)}
+                                {visibles.slice(0, 200).map(l => (
+                                    <Fila key={l.fila} l={l} marcada={marcadas.has(l.fila)} onMarcar={() => alternar(l.fila)} />
+                                ))}
                                 {visibles.length > 200 && (
                                     <p className="text-[10px] text-slate-400 text-center py-2">
                                         …y {visibles.length - 200} líneas más. Filtra para verlas.
@@ -206,12 +312,27 @@ export const ImportarCatalogoModal: React.FC<{ onClose: () => void }> = ({ onClo
                     )}
                 </div>
 
-                <div className="p-3 border-t border-slate-200 dark:border-slate-700 shrink-0">
+                <div className="p-3 border-t border-slate-200 dark:border-slate-700 shrink-0 space-y-2">
+                    {resultado && (
+                        <p className={`text-[11px] font-bold text-center ${resultado.startsWith('✓') ? 'text-emerald-600' : 'text-rose-600'}`}>
+                            {resultado}
+                        </p>
+                    )}
                     <p className="text-[10px] text-slate-500 leading-relaxed text-center">
-                        <strong>Todavía no hay botón de importar.</strong> Va detrás de que veas esta pantalla con un
-                        fichero tuyo y confirmes que lo que propone es correcto: escribir sobre 1.326 fichas reales no
-                        se estrena a ciegas.
+                        Las fichas que ya tienes reciben <strong>una oferta de este proveedor</strong>. Su precio de
+                        compra no se toca, así que el coste de tus recetas no cambia. Los productos nuevos nacen
+                        marcados «por revisar». No se borra ni se fusiona nada.
                     </p>
+                    <button
+                        onClick={importar}
+                        disabled={!plan || !proveedorId || marcadas.size === 0 || escribiendo}
+                        className="w-full h-11 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold uppercase tracking-wider disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        {escribiendo ? 'Importando…'
+                            : !proveedorId ? 'Elige el proveedor de esta tarifa'
+                            : marcadas.size === 0 ? 'Marca las líneas que quieras importar'
+                            : `Importar ${marcadas.size} línea(s) — ${plan ? resumirPlan(plan) : ''}`}
+                    </button>
                 </div>
             </div>
         </div>

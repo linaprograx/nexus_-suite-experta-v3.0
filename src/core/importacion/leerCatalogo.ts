@@ -58,9 +58,13 @@ export interface LineaCatalogo {
     formatoQty?: number;
     formatoUnidad?: string;
     referencia?: string;
+    /** Categoría declarada por el proveedor. Solo se usa al crear productos. */
+    categoria?: string;
     /** Precio por unidad base (€/ml, €/g, €/und). El único comparable. */
     precioPorBase?: number;
     unidadBase?: BaseUnit;
+    /** El formato en unidades base: 700 para «0,700 L». Lo que necesita la clave de oferta. */
+    formatoBaseCantidad?: number;
     /** Formato ya resuelto, para enseñarlo: «0,7 L», «1 kg». */
     formatoLegible?: string;
     /** La ficha del catálogo con la que casa, si casa. */
@@ -132,6 +136,9 @@ const CAMPOS: Record<string, string[]> = {
     precio: ['precio', 'pvp', 'importe', 'coste', 'costo', 'precio unitario', 'precio ud', 'eur', '€'],
     unidad: ['unidad', 'ud', 'uds', 'medida', 'formato', 'envase', 'presentacion', 'presentación'],
     referencia: ['referencia', 'ref', 'codigo', 'código', 'sku', 'ean'],
+    // La categoría importa al crear productos nuevos: sin ella entrarían todos
+    // en el mismo cajón y habría que reclasificarlos a mano después.
+    categoria: ['categoria', 'categoría', 'familia', 'grupo', 'seccion', 'sección', 'tipo'],
 };
 
 const normalizarCabecera = (s: string) => s
@@ -243,8 +250,10 @@ export const leerCatalogo = (
             formatoUnidad: pack?.unit,
             precioPorBase,
             unidadBase: std?.standardUnit,
+            formatoBaseCantidad: std?.standardQuantity,
             formatoLegible: std ? formatPackDisplay(std.standardQuantity, std.standardUnit) : undefined,
             referencia: indice.referencia !== undefined ? campos[indice.referencia] || undefined : undefined,
+            categoria: indice.categoria !== undefined ? campos[indice.categoria] || undefined : undefined,
             estado: 'nuevo',
             motivo: '',
         };
