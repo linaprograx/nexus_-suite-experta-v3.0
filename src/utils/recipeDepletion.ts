@@ -132,14 +132,35 @@ const stockUnitSizeInBase = (
     targetBase: BaseUnit | 'unknown'
 ): { size: number; base: BaseUnit | 'unknown' } => {
     const norm = normalizeToBase(1, stockUnit);
-
-    // Clean volume/weight unit (L, kg, ml, g…) → 1 stock unit = norm.qty base units
-    if (norm.base === 'ml' || norm.base === 'g') return { size: norm.qty, base: norm.base };
-
-    // Counted per unit (bottle/box), OR an unrecognised label like "0.750 L":
-    // both mean "each stock unit is one pack", so we just need the pack size.
     const pack = packFromIngredient(ingredient) || packFromLabel(stockUnit);
+
+    /**
+     * **El formato de la ficha manda sobre la etiqueta del stock.** I1, medido
+     * el 2026-08-23 sobre las compras reales.
+     *
+     * Aquí se leía primero la etiqueta: si ponía `L`, una unidad de stock valía
+     * mil mililitros. Pero el campo `unit` de una compra **no es una unidad**,
+     * es un revoltijo —de 79 textos distintos solo 8 son unidades— y la
+     * cantidad guardada es **siempre número de envases**.
+     *
+     * La prueba, sobre el catálogo entero: de 147 compras donde el precio
+     * pagado distingue «precio del envase» de «precio por litro», **147 son el
+     * precio del envase y ninguna el del litro**. Y ninguna cantidad de todo el
+     * histórico pasa de 60.
+     *
+     * Consecuencia del orden antiguo: 137 productos etiquetados `L` con envase
+     * de 700 ml descontaban **1.000 ml por botella en vez de 700 — un 43 % de
+     * más**, en silencio y en cada producción.
+     *
+     * Por eso, cuando la ficha declara su formato, ese formato gana. La lectura
+     * literal de la etiqueta queda solo para cuando no hay formato que
+     * consultar, que es cuando de verdad no hay nada mejor.
+     */
     if (pack) return { size: pack.size, base: pack.base };
+
+    // Sin formato en la ficha: la etiqueta es lo único que hay. `L` o `kg`
+    // limpios se leen al pie de la letra.
+    if (norm.base === 'ml' || norm.base === 'g') return { size: norm.qty, base: norm.base };
 
     // No pack size anywhere: only safe when the recipe also counts in whole units
     if (norm.base === 'und' && targetBase === 'und') return { size: 1, base: 'und' };

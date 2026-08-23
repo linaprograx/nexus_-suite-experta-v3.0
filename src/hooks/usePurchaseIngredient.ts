@@ -3,6 +3,7 @@ import { Ingredient, PurchaseEvent } from '../types';
 export type { PurchaseEvent };
 import { useApp } from '../context/AppContext';
 import { collection, addDoc, query, orderBy, onSnapshot, serverTimestamp } from 'firebase/firestore';
+import { unidadParaGuardar } from '../core/unidades/mezclaDeUnidades';
 
 
 export const usePurchaseIngredient = () => {
@@ -59,6 +60,18 @@ export const usePurchaseIngredient = () => {
 
         const purchaseData = {
             ...data,
+            /**
+             * **La unidad se normaliza AQUÍ**, en el único embudo por el que
+             * pasa toda compra. I1: `packNormalization` era ya la fuente única
+             * de formatos pero solo se aplicaba al calcular, no al guardar, así
+             * que el texto sucio entraba en la base y cada pantalla lo
+             * interpretaba a su aire — 79 textos distintos en un campo de ocho
+             * valores, incluidos códigos de producto pegados al formato
+             * («14217.000 L + 0.750 L»).
+             *
+             * No arregla lo ya escrito: impide que siga creciendo.
+             */
+            unit: unidadParaGuardar(data.unit),
             createdAt: data.createdAt ? data.createdAt : serverTimestamp(),
             status: data.status || 'completed'
         };

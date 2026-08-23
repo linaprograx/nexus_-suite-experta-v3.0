@@ -183,3 +183,31 @@ export const informeDeMezcla = (compras: PurchaseEvent[]): InformeMezcla => {
         sospechosas: [...sospechosas].sort(),
     };
 };
+
+/**
+ * **La unidad con la que se guarda una compra.** Normalización en la entrada,
+ * que es lo que I1 pedía y no existía.
+ *
+ * `packNormalization.ts` es la fuente única de formatos desde hace tiempo, pero
+ * **no se aplicaba al guardar**: se normalizaba al calcular costes y no al
+ * escribir, así que el dato sucio entraba en la base y cada pantalla lo
+ * interpretaba a su manera. De ahí los 79 textos distintos en un campo que solo
+ * admite ocho valores.
+ *
+ * La regla es corta: **si el texto lleva un número, es un formato y no una
+ * unidad.** El formato ya vive en la ficha (`standardQuantity`), así que aquí
+ * se descarta y se guarda la unidad de recuento, que es lo que la cantidad
+ * cuenta de verdad: envases.
+ *
+ * No toca nada de lo ya escrito. Solo impide que crezca.
+ */
+export const unidadParaGuardar = (
+    texto: string | null | undefined,
+    respaldo: string = 'und',
+): string => {
+    const n = normalizarUnidad(texto);
+    if (!n) return respaldo;
+    if (esUnidadSospechosa(n)) return respaldo;
+    // `un` y `und` son la misma; el catálogo real tiene las dos.
+    return n === 'un' ? 'und' : n;
+};

@@ -1,4 +1,4 @@
-import { informeDeMezcla, normalizarUnidad, esUnidadSospechosa } from '../unidades/mezclaDeUnidades';
+import { informeDeMezcla, normalizarUnidad, esUnidadSospechosa, unidadParaGuardar } from '../unidades/mezclaDeUnidades';
 
 let fallos = 0;
 const ok = (c: boolean, m: string) => { if (!c) { console.error('  ✗ ' + m); fallos++; } };
@@ -64,6 +64,16 @@ ok(informeDeMezcla([compra({ id: 'a', ing: 'i4', u: 'L', q: 0, p: 5 })]).product
 // --- el importe afectado suma solo lo mezclado
 ok(Math.abs(inf.importeAfectado - 2199) < 0.01,
     `el importe afectado son los 2.199 € de la ficha mezclada, salió ${inf.importeAfectado}`);
+
+// --- normalización EN LA ENTRADA: lo que se guardará a partir de ahora
+ok(unidadParaGuardar('0.700 L') === 'und', 'un formato no se guarda como unidad: se guarda «und»');
+ok(unidadParaGuardar('14217.000 L + 0.750 L') === 'und', 'un código pegado a un formato, tampoco');
+ok(unidadParaGuardar('LT') === 'l' && unidadParaGuardar('KGS') === 'kg', 'las unidades reales se canonizan');
+ok(unidadParaGuardar('UN') === 'und' && unidadParaGuardar('UND') === 'und',
+    '«un» y «und» dejan de ser dos unidades distintas');
+ok(unidadParaGuardar('') === 'und' && unidadParaGuardar(null) === 'und', 'sin nada, envases');
+ok(unidadParaGuardar('0.700 L', 'kg') === 'kg', 'el respaldo se puede elegir');
+ok(unidadParaGuardar('bj') === 'bj', 'las unidades raras pero reales del catálogo se respetan');
 
 console.log(fallos === 0 ? '  ✓ todo correcto' : `  ${fallos} fallo(s)`);
 if (fallos > 0) process.exit(1);
