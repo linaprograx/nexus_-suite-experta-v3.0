@@ -65,7 +65,7 @@ implementación; **«parcial»**, que existe la pieza pero no el flujo completo.
 | # | Punto | Estado | Fase |
 |---|---|---|---|
 | 14-15 | Mercado como fuente de verdad, sin ERP | parcial | transversal |
-| 16 | Base de datos de proveedores | parcial — el CRUD ya guarda dirección, CIF, plazo de entrega y condiciones de pago | 3 |
+| 16 | Base de datos de proveedores | **hecho** (2026-08-16) — plazo, días de reparto y condiciones de pago se ven en el desplegable de opciones, donde se decide | ✅ |
 | 17 | **Producto maestro ↔ Oferta** | **hecho** (2026-08-16) — `core/ofertas/oferta.ts`: una oferta es proveedor + formato + precio, clave `prov::700ml`, las antiguas se siguen leyendo | ✅ |
 | 18 | Agrupación visual | falta | 2 |
 | 19 | Proveedor preferente y alternativos | **hecho** (2026-08-16) — se elige con la estrella del desplegable «N opc.»; las cuatro lecturas del `ing.proveedor` obsoleto, unificadas | ✅ |
@@ -85,7 +85,7 @@ implementación; **«parcial»**, que existe la pieza pero no el flujo completo.
 | # | Punto | Estado | Fase |
 |---|---|---|---|
 | 30-33 | Facturas y conciliación | falta | 6 |
-| 34 | Analítica de compras | falta; **hay un escalón barato**: gasto por proveedor y mes desde las compras ya registradas | 4 |
+| 34 | Analítica de compras | **escalón barato hecho** (2026-08-16) — gasto por proveedor, por mes y concentración, en el panel de Precios. Falta el presupuesto (punto 39) | parcial |
 ### Configuración de Negocio y arquitectura (Partes IV y V, recibidas 2026-08-09)
 
 | # | Punto | Estado | Fase |
