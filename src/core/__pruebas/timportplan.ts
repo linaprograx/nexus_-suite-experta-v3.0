@@ -1,5 +1,5 @@
 import { leerCatalogo } from '../importacion/leerCatalogo';
-import { planificarImportacion, resumirPlan } from '../importacion/planDeImportacion';
+import { planificarImportacion, resumirPlan, avisoDeTamano, LIMITES_IMPORTACION } from '../importacion/planDeImportacion';
 
 let f = 0;
 const eq = (t: string, r: any, e: any) => {
@@ -47,6 +47,16 @@ eq('  y es la que se marcó', soloUna.nuevas[0].nombre, 'GINEBRA NUEVA');
 console.log('\n— El resumen para confirmar —');
 eq('dice qué va a pasar', resumirPlan(plan),
     '1 oferta(s) sobre fichas que ya tienes · 1 producto(s) nuevo(s) · 2 línea(s) descartada(s)');
+
+
+console.log('\n— Los límites, dichos antes de importar —');
+eq('un fichero normal no avisa de nada', avisoDeTamano(53), null);
+eq('uno grande avisa de que tardará', /lotes y tardará/.test(String(avisoDeTamano(5000))), true);
+// Este es el límite que de verdad se toca: cada línea importada es una escritura.
+eq('  y uno enorme avisa del tope diario de Firebase',
+    /escrituras diarias del plan gratuito/.test(String(avisoDeTamano(25000))), true);
+eq('el troceo va por debajo del tope duro de Firestore',
+    LIMITES_IMPORTACION.operacionesPorLote <= 500, true);
 
 console.log(f ? `\n${f} FALLOS\n` : '\nTodo correcto\n');
 process.exit(f ? 1 : 0);

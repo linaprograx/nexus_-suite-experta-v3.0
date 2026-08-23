@@ -122,3 +122,41 @@ export const resumirPlan = (p: PlanImportacion): string => {
     if (p.descartadas.length) partes.push(`${p.descartadas.length} línea(s) descartada(s)`);
     return partes.join(' · ') || 'Nada seleccionado.';
 };
+
+
+/**
+ * Los límites reales de este motor, medidos y no supuestos.
+ *
+ * · **500 operaciones por lote** es un tope duro de Firestore, y pasarse
+ *   rechaza el lote **entero**: no escribe la mitad, no escribe nada.
+ *   `EscrituraPorLotes` trocea por debajo de ese número, así que el tamaño del
+ *   fichero no lo rompe — solo lo hace más lento.
+ * · **1 MiB por documento**, también de Firestore. Importa porque cada
+ *   importación añade una oferta a `supplierData`: un producto con cientos de
+ *   ofertas de cientos de formatos acabaría rozándolo. Con decenas, ni cerca.
+ * · **20.000 escrituras al día** en el plan gratuito de Firebase. Este es el
+ *   límite que de verdad se toca: cada línea importada es una escritura.
+ * · El fichero se lee **entero en memoria**. Unos pocos MB no se notan; decenas
+ *   sí.
+ */
+export const LIMITES_IMPORTACION = {
+    /** Por encima de esto se avisa: no rompe, pero conviene trocear el fichero. */
+    lineasComodas: 2000,
+    /** Escrituras diarias del plan gratuito de Firebase. */
+    escriturasDiaGratis: 20000,
+    /** Tope duro de Firestore por lote. Lo gestiona `EscrituraPorLotes`. */
+    operacionesPorLote: 500,
+};
+
+/** Qué conviene saber antes de importar un fichero de este tamaño. */
+export const avisoDeTamano = (lineas: number): string | null => {
+    if (lineas > LIMITES_IMPORTACION.escriturasDiaGratis) {
+        return `${lineas} líneas superan las ${LIMITES_IMPORTACION.escriturasDiaGratis.toLocaleString('es')} escrituras diarias del plan gratuito de Firebase. `
+            + 'Divide el fichero o impórtalo en varios días.';
+    }
+    if (lineas > LIMITES_IMPORTACION.lineasComodas) {
+        return `${lineas} líneas: se escribirá en ${Math.ceil(lineas / LIMITES_IMPORTACION.operacionesPorLote)} lotes y tardará un rato. `
+            + 'No se rompe, pero conviene no cerrar la ventana.';
+    }
+    return null;
+};

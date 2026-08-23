@@ -3,7 +3,7 @@ import { Icon } from '../../components/ui/Icon';
 import { ICONS } from '../../components/ui/icons';
 import { useIngredients } from '../../hooks/useIngredients';
 import { leerCatalogo, LecturaCatalogo, LineaCatalogo, EstadoLinea } from '../../core/importacion/leerCatalogo';
-import { planificarImportacion, resumirPlan } from '../../core/importacion/planDeImportacion';
+import { planificarImportacion, resumirPlan, avisoDeTamano, LIMITES_IMPORTACION } from '../../core/importacion/planDeImportacion';
 import { escribirImportacion } from './escribirCatalogo';
 import { useSuppliers } from '../suppliers/hooks/useSuppliers';
 import { useApp } from '../../context/AppContext';
@@ -102,6 +102,20 @@ export const ImportarCatalogoModal: React.FC<{ onClose: () => void }> = ({ onClo
     const [marcadas, setMarcadas] = React.useState<Set<number>>(new Set());
     const [escribiendo, setEscribiendo] = React.useState(false);
     const [resultado, setResultado] = React.useState<string | null>(null);
+    /**
+     * La confirmación, **en la propia pantalla**.
+     *
+     * Antes era un `window.confirm`, y ese fue el fallo: si el navegador
+     * suprime el diálogo —modo incógnito, una extensión, ciertos contextos
+     * embebidos— la llamada devuelve `false` y la función **muere en silencio**.
+     * El botón se pulsa y no pasa nada, que es lo peor que puede hacer un botón:
+     * no falla, no avisa, y quien lo pulsó no sabe si escribió o no.
+     *
+     * Es el mismo error que ya se cometió con el `alert` de la exportación a
+     * Sheets. La lección, esta vez escrita: **un paso del que depende una
+     * escritura no se delega a un diálogo del navegador.**
+     */
+    const [confirmando, setConfirmando] = React.useState(false);
 
     const lectura: LecturaCatalogo | null = React.useMemo(
         () => (texto.trim() ? leerCatalogo(texto, allIngredients || []) : null),
@@ -141,20 +155,7 @@ export const ImportarCatalogoModal: React.FC<{ onClose: () => void }> = ({ onClo
 
     const importar = async () => {
         if (!plan || !db || !appId || !userId || !proveedorId || escribiendo) return;
-        const nombreProv = suppliers.find(s => s.id === proveedorId)?.name || proveedorId;
-        const detalle = [
-            `Proveedor: ${nombreProv}`,
-            '',
-            resumirPlan(plan),
-            '',
-            'Las fichas que ya tienes reciben una OFERTA de este proveedor.',
-            'Su precio de compra NO se toca: el coste de tus recetas no cambia.',
-            'Los productos nuevos nacen marcados «por revisar».',
-            '',
-            'No se borra ni se fusiona nada. ¿Importar?',
-        ].join('\n');
-        if (!window.confirm(detalle)) return;
-
+        setConfirmando(false);
         setEscribiendo(true);
         setResultado(null);
         try {
@@ -224,11 +225,22 @@ export const ImportarCatalogoModal: React.FC<{ onClose: () => void }> = ({ onClo
                             producto, y «ABSOLUT VODKA» y «ABSOLUT MANDARINA» comparten casi todo.
                             {' '}Y los precios se comparan <strong>por unidad base</strong>, no por la etiqueta: un
                             formato de 3 L a 25 € es más barato que uno de 750 ml a 10 €.
+                            {' '}Aguanta ficheros grandes —escribe en lotes de {LIMITES_IMPORTACION.operacionesPorLote}—;
+                            el límite real son las {LIMITES_IMPORTACION.escriturasDiaGratis.toLocaleString('es')} escrituras
+                            diarias del plan gratuito de Firebase, y cada línea importada es una.
                         </p>
                     </div>
 
                     {lectura && (
                         <>
+                            {avisoDeTamano(lectura.resumen.total) && (
+                                <div className="rounded-xl border border-sky-200 dark:border-sky-800/40 bg-sky-50/60 dark:bg-sky-900/15 p-2.5">
+                                    <p className="text-[11px] text-sky-800 dark:text-sky-300 leading-relaxed">
+                                        {avisoDeTamano(lectura.resumen.total)}
+                                    </p>
+                                </div>
+                            )}
+
                             {lectura.avisos.length > 0 && (
                                 <div className="rounded-xl border border-amber-200 dark:border-amber-800/40 bg-amber-50/50 dark:bg-amber-900/10 p-2.5 space-y-1">
                                     {lectura.avisos.map(a => (
@@ -323,9 +335,39 @@ export const ImportarCatalogoModal: React.FC<{ onClose: () => void }> = ({ onClo
                         compra no se toca, así que el coste de tus recetas no cambia. Los productos nuevos nacen
                         marcados «por revisar». No se borra ni se fusiona nada.
                     </p>
+                    {confirmando && plan && (
+                        <div className="rounded-xl border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/20 p-3 space-y-2">
+                            <p className="text-[11px] font-bold text-amber-900 dark:text-amber-200">
+                                Se va a escribir en tu catálogo:
+                            </p>
+                            <p className="text-[11px] text-amber-800 dark:text-amber-300 leading-relaxed">
+                                Proveedor: <strong>{suppliers.find(x => x.id === proveedorId)?.name || proveedorId}</strong><br />
+                                {resumirPlan(plan)}
+                            </p>
+                            <p className="text-[10px] text-amber-700/90 dark:text-amber-400/90 leading-relaxed">
+                                Las fichas que ya tienes reciben una oferta de este proveedor; su precio de compra
+                                <strong> no se toca</strong>. Los nuevos nacen «por revisar». No se borra ni se fusiona nada.
+                            </p>
+                            <div className="flex gap-2">
+                                <button
+                                    onClick={importar}
+                                    className="flex-1 h-10 rounded-lg bg-amber-600 hover:bg-amber-500 text-white text-[11px] font-bold uppercase tracking-wider"
+                                >
+                                    Sí, importar
+                                </button>
+                                <button
+                                    onClick={() => setConfirmando(false)}
+                                    className="h-10 px-4 rounded-lg text-[11px] font-bold uppercase tracking-wider text-amber-800 dark:text-amber-300"
+                                >
+                                    Cancelar
+                                </button>
+                            </div>
+                        </div>
+                    )}
+
                     <button
-                        onClick={importar}
-                        disabled={!plan || !proveedorId || marcadas.size === 0 || escribiendo}
+                        onClick={() => setConfirmando(true)}
+                        disabled={!plan || !proveedorId || marcadas.size === 0 || escribiendo || confirmando}
                         className="w-full h-11 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold uppercase tracking-wider disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                         {escribiendo ? 'Importando…'
