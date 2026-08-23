@@ -16,6 +16,10 @@ import { useStockRules } from '../../hooks/useStockRules';
 import { buscar } from '../../core/search/buscador';
 import { nivelDeStock, NivelStock } from '../../core/stock/nivelDeStock';
 import { reglasPorMaestro } from '../../core/stock/reglasPorProducto';
+import { seccionar, totalDistinto } from '../../core/agrupacion/secciones';
+import { ListaEnSecciones } from '../ui/ListaEnSecciones';
+import { ofertasDeFicha } from '../../core/ofertas/oferta';
+import { useSuppliers } from '../../features/suppliers/hooks/useSuppliers';
 
 /**
  * El color de cada nivel. El texto lo pone `nivelDeStock`, que es quien sabe
@@ -109,7 +113,11 @@ export const StockInventoryPanel: React.FC<StockInventoryPanelProps> = ({
             const ingredient = allIngredients.find(i => i.id === item.ingredientId);
             return {
                 ...item,
-                category: ingredient?.categoria || 'General'
+                category: ingredient?.categoria || 'General',
+                // La ficha viaja con el ítem: agrupar por proveedor necesita
+                // sus ofertas, y volver a buscarla dentro del agrupador sería
+                // un segundo recorrido de 1.394 fichas por cada render.
+                ficha: ingredient,
             };
         });
     }, [stockItems, allIngredients]);
@@ -139,6 +147,41 @@ export const StockInventoryPanel: React.FC<StockInventoryPanelProps> = ({
             : enrichedStockItems.filter(item => item.category === selectedCategory);
         return buscar(porCategoria, searchQuery, { camposDe: item => [item.ingredientName, item.category] });
     }, [enrichedStockItems, searchQuery, selectedCategory]);
+
+    /**
+     * **Cómo se agrupa el inventario.** Puntos 1 y 18.
+     *
+     * Por familia de partida, porque Inventario se consulta con «¿tengo
+     * ginebra?». El conmutador a proveedor existe porque la otra pregunta
+     * legítima aquí es «¿qué me falta de los que reparten el martes?», y
+     * obligar a cambiar de pestaña para responderla sería mandar a Mercado a
+     * alguien que está delante de la estantería.
+     */
+    const [agruparPor, setAgruparPor] = useState<'familia' | 'proveedor'>('familia');
+    const { suppliers: proveedores } = useSuppliers({ db, userId });
+    const nombreProveedor = React.useCallback(
+        (id: string) => proveedores.find((p: { id: string; name?: string }) => p.id === id)?.name || id,
+        [proveedores],
+    );
+
+    const secciones = useMemo(() => {
+        if (agruparPor === 'proveedor') {
+            return seccionar(filteredStockItems, {
+                // `ofertasDeFicha` y no un campo suelto: es la MISMA fuente que
+                // usa Mercado. Deducir el proveedor por segunda vía aquí daría
+                // dos agrupaciones distintas del mismo catálogo.
+                clavesDe: item => (item.ficha
+                    ? [...new Set(ofertasDeFicha(item.ficha).map(o => o.proveedorId).filter(Boolean) as string[])]
+                    : []),
+                tituloDe: nombreProveedor,
+                tituloSinAsignar: 'Sin proveedor asignado',
+            });
+        }
+        return seccionar(filteredStockItems, {
+            clavesDe: item => (item.category && item.category !== 'General' ? [item.category] : []),
+            tituloSinAsignar: 'Sin familia',
+        });
+    }, [filteredStockItems, agruparPor, nombreProveedor]);
 
     // Recalculate metrics based on FILTERED items
     const filteredMetrics = useMemo(() => calculateInventoryMetrics(filteredStockItems), [filteredStockItems]);
@@ -402,13 +445,58 @@ export const StockInventoryPanel: React.FC<StockInventoryPanelProps> = ({
                         <Icon svg={ICONS.layers} className="w-4 h-4 lg:w-5 lg:h-5 text-emerald-500" />
                         Existencias Reales
                     </h3>
-                    <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400 bg-emerald-100/50 dark:bg-emerald-900/30 px-3 py-1 rounded-full border border-emerald-200/50 dark:border-emerald-800/50 backdrop-blur-sm">
-                        {filteredStockItems.length} productos
-                    </span>
+                    <div className="flex items-center gap-2">
+                        {/* El conmutador del punto 18. «¿Tengo ginebra?» se
+                            responde por familia; «¿qué me falta de los que
+                            reparten el martes?», por proveedor. */}
+                        <div className="flex rounded-full bg-slate-100 dark:bg-slate-800/60 p-0.5 border border-slate-200/60 dark:border-slate-700">
+                            {(['familia', 'proveedor'] as const).map(modo => (
+                                <button
+                                    key={modo}
+                                    onClick={() => setAgruparPor(modo)}
+                                    aria-pressed={agruparPor === modo}
+                                    className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider transition-colors ${
+                                        agruparPor === modo
+                                            ? 'bg-white dark:bg-slate-700 text-emerald-600 dark:text-emerald-400 shadow-sm'
+                                            : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'
+                                    }`}
+                                >
+                                    {modo}
+                                </button>
+                            ))}
+                        </div>
+                        <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400 bg-emerald-100/50 dark:bg-emerald-900/30 px-3 py-1 rounded-full border border-emerald-200/50 dark:border-emerald-800/50 backdrop-blur-sm">
+                            {totalDistinto(filteredStockItems)} productos
+                        </span>
+                    </div>
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-2 lg:gap-4 pb-20">
-                    {filteredStockItems.map((item) => {
+                {/* Un producto que venden tres proveedores sale en las tres
+                    secciones: la sección ES el catálogo de ese proveedor, y
+                    enseñarlo en una sola dejaría las otras dos incompletas sin
+                    decirlo. Por eso el contador de arriba cuenta distintos y
+                    los de cada sección pueden sumar más. */}
+                {agruparPor === 'proveedor' && secciones.length > 1 && (
+                    <p className="text-[11px] text-slate-400 mb-2 px-1">
+                        Un producto aparece en cada proveedor que lo vende, así que las secciones pueden sumar más de {totalDistinto(filteredStockItems)}.
+                    </p>
+                )}
+                <ListaEnSecciones
+                    secciones={secciones}
+                    /* La búsqueda ya se aplicó antes de agrupar, así que todo
+                       lo que queda dentro de una sección es un resultado. */
+                    buscando={!!searchQuery.trim()}
+                    coincide={() => true}
+                    className="pb-20"
+                    vacio={
+                        <p className="text-sm text-slate-400 py-8 text-center">
+                            No hay existencias que mostrar.
+                        </p>
+                    }
+                >
+                  {(items) => (
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-2 lg:gap-4">
+                    {items.map((item) => {
                         const isSelected = selectedIngIds.has(item.ingredientId);
                         return (
                             <div
@@ -485,7 +573,9 @@ export const StockInventoryPanel: React.FC<StockInventoryPanelProps> = ({
                             </div>
                         );
                     })}
-                </div>
+                    </div>
+                  )}
+                </ListaEnSecciones>
             </div>
 
             {/* Physical count (#4) */}

@@ -12,7 +12,9 @@ import { useApp } from '../../context/AppContext';
 import { CatalogoItem } from '../../types';
 import { getCategoryColor } from '../../utils/categoryColors';
 import { fijarProveedorPreferente } from '../../features/suppliers/proveedorPreferente';
-import { fichaTieneProveedor } from '../../core/ofertas/oferta';
+import { fichaTieneProveedor, ofertasDeFicha } from '../../core/ofertas/oferta';
+import { seccionar, totalDistinto } from '../../core/agrupacion/secciones';
+import { ListaEnSecciones } from '../ui/ListaEnSecciones';
 import { resumenDeProveedor } from '../../features/suppliers/resumenProveedor';
 import { useQueryClient } from '@tanstack/react-query';
 import { evaluateMarketSignals } from '../../core/signals/signal.engine';
@@ -211,12 +213,36 @@ export const IngredientListPanel: React.FC<IngredientListPanelProps> = ({
    * no bajando mil fichas.
    */
   const POR_PAGINA = 60;
-  const [visibles, setVisibles] = React.useState(POR_PAGINA);
-  React.useEffect(() => { setVisibles(POR_PAGINA); }, [ingredientSearchTerm, selectedProveedorId, ingredientFilters.category, soloPorRevisar]);
 
-  const gruposVisibles = React.useMemo(
-    () => aggregatedProducts.slice(0, visibles),
-    [aggregatedProducts, visibles],
+  /**
+   * Cuántas tarjetas se pintan **de cada sección**.
+   *
+   * Antes era un solo contador global, porque la lista era una sola. Con las
+   * secciones del punto 18 hay tres proveedores y una sección de limpieza, y
+   * un «Mostrar más» global no sabría a cuál pertenece: quien abre IN VINO
+   * VERITAS quiere ver más de ese proveedor, no sesenta fichas cualesquiera.
+   */
+  const [visiblesPorSeccion, setVisiblesPorSeccion] = React.useState<Record<string, number>>({});
+  React.useEffect(() => { setVisiblesPorSeccion({}); },
+    [ingredientSearchTerm, selectedProveedorId, ingredientFilters.category, soloPorRevisar]);
+
+  /**
+   * **Mercado agrupa por proveedor.** Punto 18: aquí se viene con «¿a quién se
+   * lo pido?», así que la sección es el catálogo de un proveedor.
+   *
+   * Un producto que venden tres sale en las tres secciones, a propósito: si
+   * cayera solo en la del preferente, abrir a los otros dos enseñaría un
+   * catálogo incompleto sin avisar de que lo está.
+   */
+  const secciones = React.useMemo(
+    () => seccionar(aggregatedProducts, {
+      clavesDe: grupo => [...new Set(
+        grupo.entries.flatMap(ing => ofertasDeFicha(ing).map(o => o.proveedorId).filter(Boolean) as string[])
+      )],
+      tituloDe: nombreProveedor,
+      tituloSinAsignar: 'Sin proveedor asignado',
+    }),
+    [aggregatedProducts, nombreProveedor],
   );
 
 
@@ -397,8 +423,27 @@ export const IngredientListPanel: React.FC<IngredientListPanelProps> = ({
         ) : (
           // Container-width aware grid: cards never squeeze below 250px, so opening the
           // sidebar reflows the columns instead of truncating the product names.
+          <>
+          {secciones.length > 1 && (
+            <p className="text-[11px] text-slate-400 mb-2 px-1">
+              {totalDistinto(aggregatedProducts)} productos. Los que vende más de un proveedor salen en cada una de sus secciones, así que los recuentos pueden sumar más.
+            </p>
+          )}
+          <ListaEnSecciones
+            secciones={secciones}
+            /* La búsqueda y los filtros se aplican ANTES de agrupar, así que
+               todo lo que queda dentro de una sección ya es un resultado. */
+            buscando={!!ingredientSearchTerm.trim()}
+            coincide={() => true}
+            className="pb-20"
+            vacio={<p className="text-sm text-slate-400 py-8 text-center">No hay productos que mostrar.</p>}
+          >
+          {(grupos, seccion) => {
+            const tope = visiblesPorSeccion[seccion.id] ?? POR_PAGINA;
+            const gruposVisibles = grupos.slice(0, tope);
+            return (
           <div
-            className="grid gap-2 lg:gap-4 pb-20"
+            className="grid gap-2 lg:gap-4"
             style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))' }}
           >
             {gruposVisibles.map((group) => {
@@ -673,16 +718,20 @@ export const IngredientListPanel: React.FC<IngredientListPanelProps> = ({
                 </div>
               );
             })}
-            {aggregatedProducts.length > gruposVisibles.length && (
+            {grupos.length > gruposVisibles.length && (
               <button
                 type="button"
-                onClick={() => setVisibles(v => v + POR_PAGINA)}
+                onClick={() => setVisiblesPorSeccion(v => ({ ...v, [seccion.id]: tope + POR_PAGINA }))}
                 className="w-full py-3 rounded-xl border border-dashed border-slate-300 dark:border-slate-700 text-xs font-bold text-slate-500 dark:text-slate-400 hover:border-emerald-400 hover:text-emerald-600 transition-colors"
               >
-                Mostrar más — {gruposVisibles.length} de {aggregatedProducts.length}
+                Mostrar más — {gruposVisibles.length} de {grupos.length}
               </button>
             )}
           </div>
+            );
+          }}
+          </ListaEnSecciones>
+          </>
         )}
         <div className="h-12" /> {/* Bottom spacer for FAB */}
       </div>

@@ -34,16 +34,29 @@ export const Plegable: React.FC<{
     insignia?: React.ReactNode;
     /** Abierto de inicio. Por defecto NO, que es el sentido de esto. */
     inicialAbierto?: boolean;
+    /**
+     * Modo **controlado**: quien lo usa manda si está abierto. Necesario para
+     * las secciones del catálogo, donde buscar tiene que abrir solas las que
+     * tienen resultados — con el estado dentro, plegar mataría el buscador.
+     * Si se pasa, `inicialAbierto` se ignora.
+     */
+    abierto?: boolean;
+    onAlternar?: () => void;
     children: React.ReactNode;
     className?: string;
-}> = ({ titulo, insignia, inicialAbierto = false, children, className = '' }) => {
-    const [abierto, setAbierto] = React.useState(inicialAbierto);
+}> = ({ titulo, insignia, inicialAbierto = false, abierto: abiertoFuera, onAlternar, children, className = '' }) => {
+    const [abiertoDentro, setAbiertoDentro] = React.useState(inicialAbierto);
+    const controlado = abiertoFuera !== undefined;
+    const abierto = controlado ? abiertoFuera : abiertoDentro;
+    const setAbierto = () => {
+        if (controlado) onAlternar?.(); else setAbiertoDentro(a => !a);
+    };
 
     return (
         <div className={`rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden bg-white/40 dark:bg-slate-800/40 ${className}`}>
             <button
                 type="button"
-                onClick={() => setAbierto(a => !a)}
+                onClick={setAbierto}
                 aria-expanded={abierto}
                 className="w-full flex items-center gap-2 px-3 py-2.5 text-left hover:bg-slate-50 dark:hover:bg-white/5 transition-colors"
             >
