@@ -110,6 +110,20 @@ Las tres primeras están explicadas a fondo en `CONTEXT.md`.
 | Puntos 19 y 20 | **CERRADOS.** Preferente elegible desde Mercado · filtro por proveedor completo |
 | Fase 3 · modelo canónico | **EN MARCHA.** Decisiones ✅ · alias resueltos en toda la app ✅ · taxonomía ✅ · precios ✅ · lector de catálogos ✅ (sin escribir) |
 
+## 🧭 Antes de nada — lee el plan maestro
+
+`PLAN-MAESTRO-NEXUS.md` (2026-08-23). Define los cuatro niveles de Nexus y **el
+orden de los seis bloques**: A cerrar Grimorio · B la gran auditoría (puerta) ·
+C cimientos del sistema operativo, roles y permisos (puerta) · D ecosistema
+empezando por el TPV · E motor inteligente · F horarios.
+
+**Dos puertas que no se cruzan antes de tiempo:** ningún módulo nuevo antes de
+la auditoría (B), y ningún módulo nuevo antes de roles y permisos (C) — uno
+escrito sin permisos hay que reescribirlo cuando lleguen.
+
+Cuando el fundador diga «sigue con el plan» o «vamos con lo siguiente», es el
+siguiente punto del bloque en curso, que hoy es el **A**.
+
 ## ⏸️ Lo siguiente — EMPIEZA POR AQUÍ
 
 ### Mercado · CERRADO. Las cuatro fases

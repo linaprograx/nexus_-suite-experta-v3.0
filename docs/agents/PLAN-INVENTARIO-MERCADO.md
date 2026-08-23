@@ -1,5 +1,15 @@
 # Plan canónico — Inventario y Mercado
 
+> **Hay una capa por encima de este documento.**
+>
+> `PLAN-MAESTRO-NEXUS.md` (2026-08-23) define hacia dónde va Nexus —un sistema
+> operativo para hostelería, no una app de inventario— y **el orden de los seis
+> bloques** de construcción. Este fichero sigue siendo la fuente de verdad del
+> **estado del código**; aquel manda en **qué se hace después y por qué**.
+>
+> Lo de aquí es el **Bloque A**: cerrar Grimorio.
+
+
 **Creado:** 2026-08-09 · **Origen:** documento de 35 puntos del fundador,
 contrastado punto por punto contra el código y contra la app en producción.
 
